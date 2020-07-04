@@ -1339,4 +1339,31 @@ describe('infer-not-null-experimental', () => {
         assert.deepEqual(actual, expected);
     });
 
+    it('select * from (union)', () => {
+        const sql = `
+        select * from (
+        select * from mytable1 t1 
+        union
+        select * from mytable1 t1
+        ) t
+        where t.value > 10
+        `;
+        const walker = parseSqlWalker(sql);
+        
+        const actual = walker.inferNotNull(dbSchema);
+        const expected: FieldNullability[] = [
+            {
+                name: 'id',
+                notNull: true
+            },
+            {
+                name: 'value',
+                notNull: true
+            }
+        ]
+
+        assert.deepEqual(actual, expected);
+    });
+
+
 });

@@ -10,7 +10,7 @@ import {
     SimpleExprUnaryContext, SimpleExprNotContext, SimpleExprOdbcContext, SimpleExprMatchContext, SimpleExprBinaryContext,
     SimpleExprCastContext, SimpleExprCaseContext, SimpleExprConvertContext, SimpleExprConvertUsingContext, SimpleExprDefaultContext,
     SimpleExprValuesContext, SimpleExprIntervalContext, SubqueryContext, TableFactorContext, TableReferenceListParensContext, SelectItemListContext, 
-    TableReferenceContext, SingleTableParensContext, SingleTableContext
+    TableReferenceContext, SingleTableParensContext, SingleTableContext, BoolPriContext
 } from "./MySQLParser";
 
 import { TerminalNode, ErrorNode, ParseTree } from "antlr4ts/tree";
@@ -377,19 +377,17 @@ export class MySQLWalker implements MySQLParserListener {
             }
             if (boolPri instanceof PrimaryExprIsNullContext) {
                 const compare = boolPri.boolPri();
-
-                if (boolPri.notRule() && (compare.text.trim() == field.trim()
-                    || compare.text.trim() == this.removePrefix(field.trim())
-                    || this.removePrefix(compare.text.trim()) == field.trim())) {
+                if (boolPri.notRule() && this.areEquals(field, compare)) {
                     return false; //possibleNull
                 }
-                return true; //possibleNull
             }
             if (boolPri instanceof PrimaryExprCompareContext) {
                 const compare = boolPri.boolPri();
-                if (compare.text == field) return false; //ex. value > 10; value < 2
+                if (this.areEquals(field, compare)) { //ex. value > 10; value < 2
+                    return false;  //possibleNull
+                }
             }
-            return true; //ex. id > 10
+            return true; //possibleNull
 
         }
         if (exprContext instanceof ExprNotContext) {
@@ -419,6 +417,12 @@ export class MySQLWalker implements MySQLParserListener {
         }
 
         throw Error('Unknow type:' + exprContext.constructor.name);
+    }
+
+    areEquals(field: string, expressionField: BoolPriContext) {
+        const compare = this.splitName(expressionField.text).name; //t1.name
+        const fieldName = this.splitName(field).name;
+        return fieldName.trim() == compare.trim();
     }
 
     removePrefix(name: string) {
