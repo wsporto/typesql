@@ -626,7 +626,7 @@ describe('Test simple select statements', () => {
         select * from (
             select name, name as id from mytable2
         ) t2
-        WHERE t2.id = ? and t2.name = ?
+        WHERE t2.id = ? and t2.name = ? 
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
@@ -634,12 +634,12 @@ describe('Test simple select statements', () => {
                 {
                     name: 'name',
                     dbtype: 'varchar',
-                    notNull: false
+                    notNull: true //if pass null on parameters the result query will be empty
                 },
                 {
                     name: 'id',
                     dbtype: 'varchar',
-                    notNull: false
+                    notNull: true //if pass null on parameters the result query will be empty
                 }
             ],
             parameters: [
