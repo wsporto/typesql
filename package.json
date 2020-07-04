@@ -1,0 +1,28 @@
+{
+  "name": "typesql",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha  dist/tests/**/*.js --watch --watch-files **/*.js",
+    "antlr4ts": "antlr4ts -Xexact-output-dir -o ./parser/ ./grammar/*.g4"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/mocha": "^7.0.2",
+    "@types/mysql2": "git+https://git@github.com/types/mysql2.git",
+    "@types/node": "^14.0.13",
+    "antlr4ts-cli": "^0.5.0-alpha.3",
+    "mocha": "^8.0.1",
+    "ts-node": "^8.10.2",
+    "typescript": "^3.9.5"
+  },
+  "dependencies": {
+    "@types/camelcase": "^5.2.0",
+    "antlr4ts": "^0.5.0-alpha.3",
+    "camelcase": "^6.0.0",
+    "mysql2": "^2.1.0"
+  }
+}
