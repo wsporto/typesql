@@ -1,7 +1,7 @@
 import { parseSql } from "./parser";
 import { SchemaDef } from "./types";
 import fs from "fs";
-import { parse } from "path";
+import path, { parse } from "path";
 import { DbClient } from "./queryExectutor";
 import camelCase from "camelcase";
 
@@ -46,12 +46,12 @@ function generateTsContent(tsDescriptor: TsDescriptor, sqlContext: string, query
 
     console.log("generateTsContent=", tsDescriptor)
     const paramsStr = tsDescriptor.parameters.reduce( (total, actual) => {
-        return total + `\t ${actual.name} : ${actual.tsType}\n`;
+        return total + `\t ${actual.name} : ${actual.tsType};\n`;
     }, '');
 
     const columnsStr = tsDescriptor.columns.reduce( (total, actual) => {
         const optional = actual.notNull? '' : '?';
-        return total + `\t ${actual.name}${optional} : ${actual.tsType}\n`;
+        return total + `\t ${actual.name}${optional} : ${actual.tsType};\n`;
     }, '');
 
     let paramValues = tsDescriptor.parameters.map( param => 'params.' + param.name).join(', ');
@@ -80,8 +80,8 @@ function generateTsContent(tsDescriptor: TsDescriptor, sqlContext: string, query
     return template;
 }
 
-function writeTsFile(fileName:string, tsContent: string) {
-    fs.writeFileSync(fileName, tsContent);
+function writeTsFile(filePath:string, tsContent: string) {
+    fs.writeFileSync(filePath, tsContent);
 }
 
 function capitalize(name: string) {
@@ -89,21 +89,20 @@ function capitalize(name: string) {
     return name.charAt(0).toUpperCase() + name.slice(1);
 }
 
-export async function generateTsFile(sqlFile: string) {
-
-    const client = new DbClient();
-    await client.connect('');
+export async function generateTsFile(client: DbClient, sqlFile: string) {
 
     const fileName = parse(sqlFile).name;
+    const dirPath = parse(sqlFile).dir;
+
     const queryName = camelCase(fileName);
     console.log("camelcase=", queryName);
-    const tsFileName = fileName + ".ts";
+    const tsFilePath = path.resolve(dirPath, fileName) + ".ts";
 
     const sqlContext = fs.readFileSync(sqlFile, 'utf8');
     const queryInfo = await parseSql(client, sqlContext);
     const tsDescriptor = generateTsDescriptor(queryInfo);
     const tsContent = generateTsContent(tsDescriptor, sqlContext, queryName);
-    writeTsFile(tsFileName, tsContent);
+    writeTsFile(tsFilePath, tsContent);
 }
 
 
