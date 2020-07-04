@@ -420,9 +420,15 @@ export class MySQLWalker implements MySQLParserListener {
     }
 
     areEquals(field: string, expressionField: BoolPriContext) {
-        const compare = this.splitName(expressionField.text).name; //t1.name
-        const fieldName = this.splitName(field).name;
-        return fieldName.trim() == compare.trim();
+        const compare = this.splitName(expressionField.text); //t1.name
+        const fieldName = this.splitName(field);
+        /*
+        t1.name == t1.name
+        t1.name == name
+        name    == t1.name
+        */
+        return fieldName.name == compare.name &&
+            ((fieldName.prefix == compare.prefix) || (fieldName.prefix == '' || compare.prefix == ''))
     }
 
     removePrefix(name: string) {
