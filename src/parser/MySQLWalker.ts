@@ -402,13 +402,15 @@ export class MySQLWalker implements MySQLParserListener {
             }
             if (boolPri instanceof PrimaryExprIsNullContext) {
                 const compare = boolPri.boolPri();
-                if (boolPri.notRule() && this.areEquals(field, compare)) {
+                if (boolPri.notRule() && this.areEquals(field, compare.text)) {
                     return false; //possibleNull
                 }
             }
             if (boolPri instanceof PrimaryExprCompareContext) {
-                const compare = boolPri.boolPri();
-                if (this.areEquals(field, compare)) { //ex. value > 10; value < 2
+                let compare = boolPri.boolPri().text; //value > 10;
+                let compare2 = boolPri.predicate().text; //10 < value
+                //TODO - more complex expressions. ex. (value + value2) > 10; 
+                if (this.areEquals(field, compare) || this.areEquals(field, compare2)) {
                     return false;  //possibleNull
                 }
             }
@@ -444,8 +446,8 @@ export class MySQLWalker implements MySQLParserListener {
         throw Error('Unknow type:' + exprContext.constructor.name);
     }
 
-    areEquals(field: FieldName, expressionField: BoolPriContext) {
-        const compare = this.splitName(expressionField.text); //t1.name
+    areEquals(field: FieldName, expressionField: string) {
+        const compare = this.splitName(expressionField); //t1.name
         /*
         t1.name == t1.name
         t1.name == name
