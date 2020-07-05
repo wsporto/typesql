@@ -2,6 +2,7 @@ import { SchemaDef } from "../src/types";
 import assert from "assert";
 import { parseSql } from "../src/parser";
 import { DbClient } from "../src/queryExectutor";
+import { isLeft } from "fp-ts/lib/Either";
 
 describe('Test parse select with subqueries', () => {
 
@@ -32,7 +33,10 @@ describe('Test parse select with subqueries', () => {
             parameters: []
 
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
 
@@ -60,7 +64,10 @@ describe('Test parse select with subqueries', () => {
             parameters: []
 
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('parse a select with nested select and alias', async () => {
@@ -81,7 +88,10 @@ describe('Test parse select with subqueries', () => {
             parameters: []
 
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('parse a select with nested select and alias 2', async () => {
@@ -102,7 +112,10 @@ describe('Test parse select with subqueries', () => {
             parameters: []
 
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('parse a select with 3-levels nested select', async () => {
@@ -125,7 +138,10 @@ describe('Test parse select with subqueries', () => {
             parameters: []
 
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('nested with *)', async () => {
@@ -149,7 +165,10 @@ describe('Test parse select with subqueries', () => {
             parameters: []
 
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('parse a select with 3-levels nested select (with alias)', async () => {
@@ -172,7 +191,10 @@ describe('Test parse select with subqueries', () => {
             parameters: []
 
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('parse a select with 3-levels nested select and union', async () => {
@@ -199,7 +221,10 @@ describe('Test parse select with subqueries', () => {
             parameters: []
 
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('select name from mytable1, (select count(*) as name from mytable2) t2', async () => {
@@ -218,7 +243,10 @@ describe('Test parse select with subqueries', () => {
             parameters: []
 
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('select name from mytable2 where exists ( select id from mytable1 where value = ?)', async () => {
@@ -243,6 +271,9 @@ describe('Test parse select with subqueries', () => {
             ]
 
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 });

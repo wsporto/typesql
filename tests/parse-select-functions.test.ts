@@ -2,6 +2,7 @@ import { SchemaDef } from "../src/types";
 import assert from "assert";
 import { parseSql } from "../src/parser";
 import { DbClient } from "../src/queryExectutor";
+import { isLeft } from "fp-ts/lib/Either";
 
 describe('Test parse select with functions', () => {
 
@@ -31,7 +32,10 @@ describe('Test parse select with functions', () => {
             parameters: []
 
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('parse a select with SUM function and alias', async () => {
@@ -50,7 +54,10 @@ describe('Test parse select with functions', () => {
             parameters: []
 
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('parse a select with SUM function and table alias', async () => {
@@ -69,7 +76,10 @@ describe('Test parse select with functions', () => {
             parameters: []
 
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('parse a select with COUNT(id) function', async () => {
@@ -87,7 +97,10 @@ describe('Test parse select with functions', () => {
             ],
             parameters: []
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('parse a select with COUNT(*) function', async () => {
@@ -105,7 +118,10 @@ describe('Test parse select with functions', () => {
             ],
             parameters: []
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     //TODO - VALUE/2 result decimal
@@ -125,7 +141,10 @@ describe('Test parse select with functions', () => {
             parameters: []
 
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('parse a select with AVG function', async () => {
@@ -144,7 +163,10 @@ describe('Test parse select with functions', () => {
             parameters: []
 
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('parse a select with AVG with expression', async () => {
@@ -163,7 +185,10 @@ describe('Test parse select with functions', () => {
             parameters: []
 
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('parse a select with SUM and with expression from multiple tables', async () => {
@@ -182,7 +207,10 @@ describe('Test parse select with functions', () => {
             parameters: []
 
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('parse a select with MIN function', async () => {
@@ -201,7 +229,10 @@ describe('Test parse select with functions', () => {
             parameters: []
 
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     //TODO EXPRESSION
@@ -221,7 +252,10 @@ describe('Test parse select with functions', () => {
             parameters: []
 
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('parse a select with STR_TO_DATE function', async () => {
@@ -240,7 +274,10 @@ describe('Test parse select with functions', () => {
             parameters: []
 
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('parse a select with STR_TO_DATE and CONCAT_WS function', async () => {
@@ -273,7 +310,10 @@ describe('Test parse select with functions', () => {
             ]
 
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('parse a select with datediff function', async () => {
@@ -305,6 +345,9 @@ describe('Test parse select with functions', () => {
             ]
 
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 });

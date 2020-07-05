@@ -4,6 +4,8 @@ import fs from "fs";
 import path, { parse } from "path";
 import { DbClient } from "./queryExectutor";
 import camelCase from "camelcase";
+import { isLeft } from "fp-ts/lib/Either";
+import { none, Option, some, isSome, isNone } from "fp-ts/lib/Option";
 
 function generateTsDescriptor(queryInfo: SchemaDef) : TsDescriptor {
     
@@ -41,7 +43,14 @@ function mapColumnType(columnType: string | string[]) : string {
 
 }
 
-function generateTsContent(tsDescriptor: TsDescriptor, sqlContext: string, queryName: string) {
+function generateTsContent(tsDescriptorOption: Option<TsDescriptor>, sqlContext: string, queryName: string) {
+    
+    if(isNone(tsDescriptorOption)) {
+        return '//Invalid sql';
+    }
+
+    const tsDescriptor = tsDescriptorOption.value;
+    
     const capitalizedName = capitalize(queryName);
 
     console.log("generateTsContent=", tsDescriptor)
@@ -98,10 +107,10 @@ export async function generateTsFile(client: DbClient, sqlFile: string) {
     console.log("camelcase=", queryName);
     const tsFilePath = path.resolve(dirPath, fileName) + ".ts";
 
-    const sqlContext = fs.readFileSync(sqlFile, 'utf8');
-    const queryInfo = await parseSql(client, sqlContext);
-    const tsDescriptor = generateTsDescriptor(queryInfo);
-    const tsContent = generateTsContent(tsDescriptor, sqlContext, queryName);
+    const sqlContent = fs.readFileSync(sqlFile, 'utf8');
+    const queryInfo = await parseSql(client, sqlContent);
+    const tsDescriptor = isLeft(queryInfo) ? none : some(generateTsDescriptor(queryInfo.right));
+    const tsContent = generateTsContent(tsDescriptor, sqlContent, queryName);
     writeTsFile(tsFilePath, tsContent);
 }
 

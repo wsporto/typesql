@@ -1,7 +1,8 @@
 import assert from "assert";
 import { parseSql } from "../src/parser";
-import { SchemaDef } from "../src/types";
+import { SchemaDef, InvalidSqlError } from "../src/types";
 import { DbClient } from "../src/queryExectutor";
+import { right, isLeft } from "fp-ts/lib/Either";
 
 describe('Test simple select statements', () => {
 
@@ -12,6 +13,21 @@ describe('Test simple select statements', () => {
 
     after(async () => {
         await client.closeConnection();
+    })
+
+    it('try to parse a empty query', async () => {
+        const sql = ``;
+
+        const actual = await parseSql(client, sql);
+        const expected = 'Invalid sql';
+       
+        if(isLeft(actual)) {
+            assert.deepEqual(actual.left.name, expected);
+        }
+        else {
+            assert.fail('should return an InvalidSqlError');
+        }
+        
     })
 
     it('parse a basic select', async () => {
@@ -29,7 +45,11 @@ describe('Test simple select statements', () => {
             parameters: []
 
         }
-        assert.deepEqual(actual, expected);
+        
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('SELECT id as name FROM MYTABLE', async () => {
@@ -47,7 +67,11 @@ describe('Test simple select statements', () => {
 
         }
 
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
+        
     })
 
     it('parse select * from mytable', async () => {
@@ -70,7 +94,10 @@ describe('Test simple select statements', () => {
             parameters: []
 
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('parse select t.* from mytable t', async () => {
@@ -93,7 +120,10 @@ describe('Test simple select statements', () => {
             parameters: []
 
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
 
@@ -124,7 +154,10 @@ describe('Test simple select statements', () => {
 
         }
 
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('parse select distinct column', async () => {
@@ -148,7 +181,10 @@ describe('Test simple select statements', () => {
 
         }
 
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('parse select distinct *', async () => {
@@ -172,7 +208,10 @@ describe('Test simple select statements', () => {
 
         }
 
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('parse a select with a single parameter', async () => {
@@ -199,7 +238,10 @@ describe('Test simple select statements', () => {
                 }
             ]
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('parse a select with a single parameter (not using *)', async () => {
@@ -221,7 +263,10 @@ describe('Test simple select statements', () => {
                 }
             ]
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('parse a select with multiples parameters', async () => {
@@ -247,7 +292,10 @@ describe('Test simple select statements', () => {
                 }
             ]
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('parse a select with param on column', async () => {
@@ -269,7 +317,10 @@ describe('Test simple select statements', () => {
                 }
             ]
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     //TODO - no reference to table.
@@ -292,7 +343,10 @@ describe('Test simple select statements', () => {
                 }
             ]
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('parse a select with multiples params', async () => {
@@ -340,7 +394,10 @@ describe('Test simple select statements', () => {
                 }
             ]
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('parse a select with table alias', async () => {
@@ -359,7 +416,10 @@ describe('Test simple select statements', () => {
             ],
             parameters: []
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('parse a select with table alias and parameter', async () => {
@@ -388,7 +448,10 @@ describe('Test simple select statements', () => {
                 }
             ]
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('parse a select with in operator', async () => {
@@ -412,7 +475,10 @@ describe('Test simple select statements', () => {
             ],
             parameters: []
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('parse a select with not in operator', async () => {
@@ -436,7 +502,10 @@ describe('Test simple select statements', () => {
             ],
             parameters: []
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('parse a select with in operator (and alias)', async () => {
@@ -460,7 +529,10 @@ describe('Test simple select statements', () => {
             ],
             parameters: []
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('parse a select with parameter inside in operator', async () => {
@@ -490,7 +562,10 @@ describe('Test simple select statements', () => {
                 }
             ]
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('SELECT * FROM MYTABLE1 t WHERE ? in (1, 2, 3)', async () => {
@@ -514,7 +589,10 @@ describe('Test simple select statements', () => {
                 }
             ]
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it(`SELECT * FROM MYTABLE1 t WHERE ? in ('a', 'b', 'c')`, async () => {
@@ -538,7 +616,10 @@ describe('Test simple select statements', () => {
                 }
             ]
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it(`SELECT id FROM MYTABLE1 t WHERE ? in (1, 2, 'a', 'b')`, async () => {
@@ -562,7 +643,10 @@ describe('Test simple select statements', () => {
                 }
             ]
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('compare parameter with subquery', async () => {
@@ -591,7 +675,10 @@ describe('Test simple select statements', () => {
                 }
             ]
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('compare parameter with complex subquery', async () => {
@@ -617,7 +704,10 @@ describe('Test simple select statements', () => {
             ],
             parameters: []
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('compare ', async () => {
@@ -653,7 +743,10 @@ describe('Test simple select statements', () => {
                 }
             ]
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('parse select with column expression', async () => {
@@ -671,7 +764,10 @@ describe('Test simple select statements', () => {
             ],
             parameters: []
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('parse select with column expression', async () => {
@@ -689,7 +785,10 @@ describe('Test simple select statements', () => {
             ],
             parameters: []
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('select id from mytable2 where name like ?', async () => {
@@ -713,7 +812,10 @@ describe('Test simple select statements', () => {
                 }
             ]
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('select id from mytable2 where ? like name', async () => {
@@ -737,7 +839,10 @@ describe('Test simple select statements', () => {
                 }
             ]
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('parse select with CASE WHEN', async () => {
@@ -763,7 +868,10 @@ describe('Test simple select statements', () => {
 
         }
 
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('parse select with CASE WHEN', async () => {
@@ -790,7 +898,10 @@ describe('Test simple select statements', () => {
 
         }
 
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('parse select with CASE WHEN using IN operator', async () => {
@@ -823,7 +934,10 @@ describe('Test simple select statements', () => {
 
         }
 
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('parse select using ANY operator', async () => {
@@ -849,7 +963,10 @@ describe('Test simple select statements', () => {
 
         }
 
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     //the mysql drive tell value is nullable even if there is a 'where value is not null' clause
@@ -871,7 +988,10 @@ describe('Test simple select statements', () => {
 
         }
 
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('parse select without from clause', async () => {
@@ -901,7 +1021,10 @@ describe('Test simple select statements', () => {
 
         }
 
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
 

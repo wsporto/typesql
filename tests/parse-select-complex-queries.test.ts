@@ -2,6 +2,7 @@ import { SchemaDef } from "../src/types";
 import assert from "assert";
 import { parseSql } from "../src/parser";
 import { DbClient } from "../src/queryExectutor";
+import { isLeft } from "fp-ts/lib/Either";
 
 describe('Test parse complex queries', () => {
 
@@ -51,7 +52,10 @@ describe('Test parse complex queries', () => {
             parameters: []
 
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     //https://www.mysqltutorial.org/mysql-subquery/
@@ -76,7 +80,10 @@ describe('Test parse complex queries', () => {
             parameters: []
         }
 
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('parse a select with UNION', async () => {
@@ -103,7 +110,10 @@ describe('Test parse complex queries', () => {
             parameters: []
         }
 
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('parse a select with UNION with multiples fields', async () => {
@@ -131,7 +141,10 @@ describe('Test parse complex queries', () => {
             parameters: []
         }
 
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('subselect in column', async () => {
@@ -151,7 +164,10 @@ describe('Test parse complex queries', () => {
             parameters: []
 
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
     it('subselect in column (with parameter)', async () => {
@@ -174,6 +190,9 @@ describe('Test parse complex queries', () => {
             }]
 
         }
-        assert.deepEqual(actual, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 });

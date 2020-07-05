@@ -3,6 +3,7 @@ import assert from "assert";
 import { parseSql } from "../src/parser";
 
 import { DbClient } from "../src/queryExectutor";
+import { isLeft } from "fp-ts/lib/Either";
 
 describe('Test parse parameters', () => {
 
@@ -26,7 +27,10 @@ describe('Test parse parameters', () => {
                 columnType: 'varchar'
             }
         ]
-        assert.deepEqual(actual.parameters, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right.parameters, expected);
     })
 
     it('SELECT ? > 1 from mytable1', async () => {
@@ -40,7 +44,10 @@ describe('Test parse parameters', () => {
                 columnType: 'bigint'
             }
         ]
-        assert.deepEqual(actual.parameters, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right.parameters, expected);
     })
 
     it(`SELECT ? > 'a' from mytable1`, async () => {
@@ -54,7 +61,10 @@ describe('Test parse parameters', () => {
                 columnType: 'varchar'
             }
         ]
-        assert.deepEqual(actual.parameters, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right.parameters, expected);
     })
 
     it('SELECT (select ? from mytable2) from mytable1', async () => {
@@ -68,7 +78,10 @@ describe('Test parse parameters', () => {
                 columnType: 'varchar'
             }
         ]
-        assert.deepEqual(actual.parameters, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right.parameters, expected);
     })
 
     it('SELECT (select id from mytable2 where name = ?) from mytable1', async () => {
@@ -82,7 +95,10 @@ describe('Test parse parameters', () => {
                 columnType: 'varchar'
             }
         ]
-        assert.deepEqual(actual.parameters, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right.parameters, expected);
     })
 
     it('SELECT * from mytable1 where id > ?', async () => {
@@ -96,7 +112,10 @@ describe('Test parse parameters', () => {
                 columnType: 'int'
             }
         ]
-        assert.deepEqual(actual.parameters, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right.parameters, expected);
     })
 
     it('SELECT * from mytable1 where ? > id', async () => {
@@ -110,7 +129,10 @@ describe('Test parse parameters', () => {
                 columnType: 'int'
             }
         ]
-        assert.deepEqual(actual.parameters, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right.parameters, expected);
     })
 
     it(`SELECT * from mytable1 where concat_ws('/', ?) < id`, async () => {
@@ -124,7 +146,10 @@ describe('Test parse parameters', () => {
                 columnType: 'varchar'
             }
         ]
-        assert.deepEqual(actual.parameters, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right.parameters, expected);
     })
 
     it(`SELECT * from mytable1 where id > concat_ws('/', ?)`, async () => {
@@ -138,7 +163,10 @@ describe('Test parse parameters', () => {
                 columnType: 'varchar'
             }
         ]
-        assert.deepEqual(actual.parameters, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right.parameters, expected);
     })
 
     it('SELECT * from mytable1 where ? > (select id from mytable2)', async () => {
@@ -152,7 +180,10 @@ describe('Test parse parameters', () => {
                 columnType: 'int'
             }
         ]
-        assert.deepEqual(actual.parameters, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right.parameters, expected);
     })
 
     it('SELECT * from mytable1 where (select id from mytable2) < ?', async () => {
@@ -166,7 +197,10 @@ describe('Test parse parameters', () => {
                 columnType: 'int'
             }
         ]
-        assert.deepEqual(actual.parameters, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right.parameters, expected);
     })
 
     it(`SELECT * from mytable2 where ? is null or id = ?`, async () => {
@@ -184,7 +218,10 @@ describe('Test parse parameters', () => {
                 columnType: 'int'
             }
         ]
-        assert.deepEqual(actual.parameters, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right.parameters, expected);
     })
 
     it(`SELECT * FROM mytable1 t WHERE ? in (select id from mytable1 m2 )`, async () => {
@@ -198,7 +235,10 @@ describe('Test parse parameters', () => {
                 columnType: 'int'
             }
         ]
-        assert.deepEqual(actual.parameters, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right.parameters, expected);
     })
 
     it(`SELECT * FROM mytable1 t WHERE ? in (select name from mytable2 m2 )`, async () => {
@@ -212,7 +252,10 @@ describe('Test parse parameters', () => {
                 columnType: 'varchar'
             }
         ]
-        assert.deepEqual(actual.parameters, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right.parameters, expected);
     })
 
     it(`SELECT * FROM mytable1 t WHERE ? in (UNION)`, async () => {
@@ -230,7 +273,10 @@ describe('Test parse parameters', () => {
                 columnType: 'varchar'
             }
         ]
-        assert.deepEqual(actual.parameters, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right.parameters, expected);
     })
 
     it(`SELECT * FROM mytable1 WHERE id in (?)`, async () => {
@@ -244,6 +290,9 @@ describe('Test parse parameters', () => {
                 list: true
             }
         ]
-        assert.deepEqual(actual.parameters, expected);
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right.parameters, expected);
     })
 });
