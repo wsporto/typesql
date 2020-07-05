@@ -280,6 +280,25 @@ describe('infer-not-null-experimental', () => {
         assert.deepEqual(actual, expected);
     })
 
+    it('select value from mytable1 where 10 > value', async () => {
+
+        const sql = `
+        select value from mytable1 where 10 > value
+            `;
+        
+        const walker = parseSqlWalker(sql);
+
+        const actual = walker.inferNotNull(dbSchema);
+        const expected: FieldNullability[] = [
+            {
+                name: 'value',
+                notNull: true
+            }
+        ]
+
+        assert.deepEqual(actual, expected);
+    })
+
     it('select value from mytable1 where value is not null or (id > 0 or value is not null)', async () => {
 
         const sql = `
@@ -1365,6 +1384,30 @@ describe('infer-not-null-experimental', () => {
         assert.deepEqual(actual, expected);
     });
 
+    it('select * from (union) multiple subselect', () => {
+        const sql = `
+        select t1.value, t2.value from 
+            (select value from mytable1) t1,
+            (select value from mytable1) t2
+        where t1.value is not null
+        `;
+        const walker = parseSqlWalker(sql);
+        
+        const actual = walker.inferNotNull(dbSchema);
+        const expected: FieldNullability[] = [
+            {
+                name: 'value',
+                notNull: true
+            },
+            {
+                name: 'value',
+                notNull: false
+            }
+        ]
+
+        assert.deepEqual(actual, expected);
+    });
+
     it('select * from (union)', () => {
         const sql = `
         select t1.value, t2.value from 
@@ -1383,6 +1426,29 @@ describe('infer-not-null-experimental', () => {
             {
                 name: 'value',
                 notNull: false
+            }
+        ]
+
+        assert.deepEqual(actual, expected);
+    });
+
+    it.skip('inner join on t1.name = t2.name', () => {
+        const sql = `
+        SELECT t1.name, t2.name 
+        FROM mytable2 t1 
+        INNER JOIN mytable2 t2 on t1.name = t2.name
+        `;
+        const walker = parseSqlWalker(sql);
+        
+        const actual = walker.inferNotNull(dbSchema);
+        const expected: FieldNullability[] = [
+            {
+                name: 'name',
+                notNull: true
+            },
+            {
+                name: 'name',
+                notNull: true
             }
         ]
 
