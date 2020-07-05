@@ -54,8 +54,7 @@ export async function parseSql(client: DbClient, sql: string) : Promise<Either<I
         return col;
     })
 
-    
-
+    renameDuplicatedColumns(mapped);
     const mappedParameters: ParameterDef[] = [];
 
     //console.log("parameters====", walker.parameters);
@@ -99,8 +98,20 @@ export async function parseSql(client: DbClient, sql: string) : Promise<Either<I
         parameters: mappedParameters,
     }
     return right(result);
+}
 
-
+function renameDuplicatedColumns(columns: ColumnDef[]) {
+    const columnsCount: Map<string, number> = new Map();
+    columns.forEach( column => {
+        if(columnsCount.has(column.name)) {
+            const count = columnsCount.get(column.name)! + 1;
+            columnsCount.set(column.name, count);
+            column.name = column.name + '_' + count
+        }
+        else {
+            columnsCount.set(column.name, 1);
+        }
+    })
 }
 
 
