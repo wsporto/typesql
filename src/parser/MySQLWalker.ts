@@ -262,14 +262,13 @@ export class MySQLWalker implements MySQLParserListener {
 
     }
 
-    findColumn(column: string, columns: ColumnDef2[]): ColumnDef2 {
+    findColumn(fieldName: FieldName, columns: ColumnDef2[]): ColumnDef2 {
         //TODO - Put tableAlias always ''
-        const fieldName = this.splitName(column);
         const found = columns.find(col => col.columnName == fieldName.name && (fieldName.prefix == '' || fieldName.prefix == col.tableAlias));
         // console.log("found==", found);
         if(!found) {
             // console.log("columns===", columns)
-            throw Error('column not found:' + JSON.stringify(column));
+            throw Error('column not found:' + JSON.stringify(fieldName));
         }
         return found;
     }
@@ -278,7 +277,12 @@ export class MySQLWalker implements MySQLParserListener {
         const allColumns : ColumnDef2[] = [];
         fromColumns.forEach( column=> {
             if(tablePrefix == '' || tablePrefix == column.tableAlias) {
-                const notNull = column.notNull || (whereExpr && !this.possibleNull(column.columnName, whereExpr)) || false;
+                //TODO - possible bug: column.columnName (need to pass the full qualified name)
+                const fieldName : FieldName = {
+                    name: column.columnName,
+                    prefix: column.tableAlias || ''
+                }
+                const notNull = column.notNull || (whereExpr && !this.possibleNull(fieldName, whereExpr)) || false;
                 const newCol : ColumnDef2 = {
                     ...column,
                     notNull
@@ -321,7 +325,7 @@ export class MySQLWalker implements MySQLParserListener {
                 }
                 else {
                     const tokensColumnRef = tokens.filter( token => token instanceof SimpleExprColumnRefContext);
-                    const columns = tokensColumnRef.map( token => token.text);
+                    const columns = tokensColumnRef.map( token => this.splitName(token.text));
                     const notNull = columns.every( column => this.findColumn(column, fromColumns).notNull || (whereExpr && !this.possibleNull(column, whereExpr)) );
                     const fieldName = this.splitName(selectItem.text);
                     const columnName = columns.length>1? this.extractOriginalSql(selectItem)! : fieldName.name;
@@ -384,7 +388,7 @@ export class MySQLWalker implements MySQLParserListener {
         return result;
     }
 
-    possibleNull(field: string, exprContext: ExprContext): boolean {
+    possibleNull(field: FieldName, exprContext: ExprContext): boolean {
         
         if (exprContext instanceof ExprIsContext) {
 
@@ -440,16 +444,15 @@ export class MySQLWalker implements MySQLParserListener {
         throw Error('Unknow type:' + exprContext.constructor.name);
     }
 
-    areEquals(field: string, expressionField: BoolPriContext) {
+    areEquals(field: FieldName, expressionField: BoolPriContext) {
         const compare = this.splitName(expressionField.text); //t1.name
-        const fieldName = this.splitName(field);
         /*
         t1.name == t1.name
         t1.name == name
         name    == t1.name
         */
-        return fieldName.name == compare.name &&
-            ((fieldName.prefix == compare.prefix) || (fieldName.prefix == '' || compare.prefix == ''))
+        return field.name == compare.name &&
+            ((field.prefix == compare.prefix) || (field.prefix == '' || compare.prefix == ''))
     }
 
     removePrefix(name: string) {
