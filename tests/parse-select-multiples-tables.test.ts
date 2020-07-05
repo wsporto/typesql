@@ -37,7 +37,7 @@ describe('Test select with multiples tables', () => {
                     notNull: false
                 },
                 {
-                    name: 'id',
+                    name: 'id_2',
                     dbtype: 'int',
                     notNull: true
                 },
@@ -152,7 +152,7 @@ describe('Test select with multiples tables', () => {
                     notNull: false
                 },
                 {
-                    name: 'id',
+                    name: 'id_2',
                     dbtype: 'int',
                     notNull: true
                 },
@@ -461,6 +461,57 @@ describe('Test select with multiples tables', () => {
             columns: [
                 {
                     name: 'name',
+                    dbtype: 'varchar',
+                    notNull: false
+                }
+            ],
+            parameters: []
+        }
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
+
+    })
+
+    it('parse a query with duplicated names', async () => {
+
+        const sql = `
+        select t1.id, t2.id, t1.value as name, t2.name, t1.id, name as descr
+        from mytable1 t1
+        inner join mytable2 t2 on t1.id = t2.id
+        `
+        const actual = await parseSql(client, sql);
+        //Add the sufix _2, _3 to the duplicated names
+        const expected: SchemaDef = {
+            columns: [
+                {
+                    name: 'id',
+                    dbtype: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'id_2',
+                    dbtype: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'name',
+                    dbtype: 'int',
+                    notNull: false
+                },
+                {
+                    name: 'name_2',
+                    dbtype: 'varchar',
+                    notNull: false
+                },
+                {
+                    name: 'id_3',
+                    dbtype: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'descr',
                     dbtype: 'varchar',
                     notNull: false
                 }
