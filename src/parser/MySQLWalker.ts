@@ -10,7 +10,7 @@ import {
     SimpleExprUnaryContext, SimpleExprNotContext, SimpleExprOdbcContext, SimpleExprMatchContext, SimpleExprBinaryContext,
     SimpleExprCastContext, SimpleExprCaseContext, SimpleExprConvertContext, SimpleExprConvertUsingContext, SimpleExprDefaultContext,
     SimpleExprValuesContext, SimpleExprIntervalContext, SubqueryContext, TableFactorContext, TableReferenceListParensContext, SelectItemListContext, 
-    TableReferenceContext, SingleTableParensContext, SingleTableContext, BoolPriContext
+    TableReferenceContext, SingleTableParensContext, SingleTableContext, BoolPriContext, JoinedTableContext
 } from "./MySQLParser";
 
 import { TerminalNode, ErrorNode, ParseTree } from "antlr4ts/tree";
@@ -108,9 +108,13 @@ export class MySQLWalker implements MySQLParserListener {
                 }
                 
                 const tableReferences = joined.tableReference();
+                
                 if(tableReferences) {
+                    const usingFields = this.extractFieldsFromUsingClause(joined);
                     const joinedFields = this.extractColumnsFromTableReferences(dbSchema, [tableReferences]);
-                    allJoinedColumns.push(joinedFields);
+                    //doesn't duplicate the fields of the USING clause. Ex. INNER JOIN mytable2 USING(id);
+                    const joinedFieldsFiltered = usingFields.length > 0? this.filterUsingFields(joinedFields, usingFields) : joinedFields;
+                    allJoinedColumns.push(joinedFieldsFiltered);
                 }
             })
             
@@ -134,6 +138,23 @@ export class MySQLWalker implements MySQLParserListener {
 
         })
         return result;
+    }
+
+    filterUsingFields(joinedFields: ColumnDef2[],  usingFields: string[]) {
+        return joinedFields.filter( joinedField => {
+            const isUsing = usingFields.includes(joinedField.columnName);
+            if(!isUsing) {
+                return joinedField;
+            }
+        })
+    }
+
+    extractFieldsFromUsingClause(joinedTableContext: JoinedTableContext) : string[] {
+        const usingFieldsClause = joinedTableContext.identifierListWithParentheses()?.identifierList();
+        if(usingFieldsClause) {
+            return usingFieldsClause.text.split(',').map( field => field.trim());
+        }
+        return [];
     }
 
     //rule: singleTable

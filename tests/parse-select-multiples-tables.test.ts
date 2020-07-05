@@ -525,6 +525,128 @@ describe('Test select with multiples tables', () => {
 
     })
 
+    it('select * from inner join using', async () => {
+
+        const sql = `
+        SELECT * 
+        FROM mytable1 t1 
+        INNER JOIN mytable2 t2 using(id)
+        WHERE name is not null and value > 0
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            columns: [
+                {
+                    name: 'id',
+                    dbtype: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'value',
+                    dbtype: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'name',
+                    dbtype: 'varchar',
+                    notNull: true
+                },
+                {
+                    name: 'descr',
+                    dbtype: 'varchar',
+                    notNull: false
+                }
+            ],
+            parameters: []
+
+        }
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
+    })
+
+    it('select * from inner join using (id) and table alias', async () => {
+
+        const sql = `
+        SELECT * 
+        FROM mytable1 t1 
+        INNER JOIN mytable2 t2 using(id)
+        WHERE t2.name is not null and t1.value > 0
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            columns: [
+                {
+                    name: 'id',
+                    dbtype: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'value',
+                    dbtype: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'name',
+                    dbtype: 'varchar',
+                    notNull: true
+                },
+                {
+                    name: 'descr',
+                    dbtype: 'varchar',
+                    notNull: false
+                }
+            ],
+            parameters: []
+
+        }
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
+    })
+
+    it('select * from inner join using (id, name)', async () => {
+
+        const sql = `
+        SELECT * 
+        FROM mytable2 t1 
+        INNER JOIN mytable2 t2 using (id, name)
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            columns: [
+                {
+                    name: 'id',
+                    dbtype: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'name',
+                    dbtype: 'varchar',
+                    notNull: false //TODO - using(id, name) makes the name notNull
+                },
+                {
+                    name: 'descr',
+                    dbtype: 'varchar',
+                    notNull: false
+                },
+                {
+                    name: 'descr_2',
+                    dbtype: 'varchar',
+                    notNull: false
+                },
+            ],
+            parameters: []
+
+        }
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
+    })
+
     it.skip('subquery in joined tables', () => {
 
     })
