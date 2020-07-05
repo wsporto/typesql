@@ -1432,7 +1432,7 @@ describe('infer-not-null-experimental', () => {
         assert.deepEqual(actual, expected);
     });
 
-    it.skip('inner join on t1.name = t2.name', () => {
+    it('inner join on t1.name = t2.name', () => {
         const sql = `
         SELECT t1.name, t2.name 
         FROM mytable2 t1 
