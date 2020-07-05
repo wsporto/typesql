@@ -3,7 +3,8 @@ import { MySQLLexer } from "./parser/MySQLLexer";
 import { MySQLParser } from "./parser/MySQLParser";
 import { ParseTreeWalker } from "antlr4ts/tree";
 import { MySQLWalker } from "./parser/MySQLWalker";
-import { ColumnDef, SchemaDef, ParameterDef, FieldDescriptor, DBSchema } from "./types";
+import { isLeft, right, Either } from "fp-ts/lib/Either"
+import { ColumnDef, SchemaDef, ParameterDef, FieldDescriptor, DBSchema, InvalidSqlError } from "./types";
 import { DbClient } from "./queryExectutor";
 
 export function parseSqlWalker(sql: string) : MySQLWalker {
@@ -21,10 +22,16 @@ export function parseSqlWalker(sql: string) : MySQLWalker {
     return walker;
 }
 
-export async function parseSql(client: DbClient, sql: string) {
+export async function parseSql(client: DbClient, sql: string) : Promise<Either<InvalidSqlError, SchemaDef>> {
     
+    const queryResult = await client.executeQuery(sql); //the original query
+    if( isLeft(queryResult)) {
+        return queryResult;
+    }
+    
+    const fields = queryResult.right;
+
     const walker = parseSqlWalker(sql);
-    const fields = await client.executeQuery(sql); //the original query
     const columnsSchema = await client.loadDbSchema();
     const dbSchema: DBSchema = {
         columns: columnsSchema
@@ -73,7 +80,7 @@ export async function parseSql(client: DbClient, sql: string) {
 
                 break;
             case 'expression':
-                const resultParams2 = await client.executeExpression(parameter.expression, parameter.from); //execute at once
+                const resultParams2 = await client.executeExpression(parameter.expression, parameter.from); //TODO - execute at once
                 const typeResult = getResultType(resultParams2);
                 param.name = parameter.name || resultParams2[0].name;
                 param.columnType = typeResult;
@@ -91,7 +98,7 @@ export async function parseSql(client: DbClient, sql: string) {
         columns: mapped,
         parameters: mappedParameters,
     }
-    return result;
+    return right(result);
 
 
 }

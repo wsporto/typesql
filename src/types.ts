@@ -65,3 +65,8 @@ export type FieldDescriptor = {
     columnType: number;
     notNull: boolean;
 }
+
+export type InvalidSqlError = {
+    name: string;
+    description: string;
+}

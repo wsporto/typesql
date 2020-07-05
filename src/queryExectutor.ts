@@ -1,5 +1,6 @@
 import mysql2, { Connection } from "mysql2/promise";
-import { ColumnSchema, FieldDescriptor } from "./types";
+import { Either, right, left } from "fp-ts/lib/Either";
+import { ColumnSchema, FieldDescriptor, InvalidSqlError, SchemaDef } from "./types";
 
 enum flag {
     NOT_NULL = 1,
@@ -32,18 +33,36 @@ export class DbClient {
     }
     
 
-    async executeQuery(query: string) : Promise<FieldDescriptor[]> {
+    async executeQuery(query: string) : Promise<Either<InvalidSqlError, FieldDescriptor[]>> {
         let params = [];
         for(var i=0; i<query.length;i++) {
             if (query[i] === "?") params.push('?');
         }
-        const [columns, fields] = await this.connection.query(`${query.toLowerCase()} LIMIT 0`, params);
-        return fields.map( field => ({
-            name: field.name,
-            column: field.orgName,
-            columnType: field.columnType,
-            notNull: this.checkNullFlag(field.flags)
-        }));
+        try {
+            const [columns, fields] = await this.connection
+            .query(`${query.toLowerCase()} LIMIT 0`, params);
+
+            const columnsSchema = fields.map( field => {
+                const column : FieldDescriptor = {
+                    name: field.name,
+                    column: field.orgName,
+                    columnType: field.columnType,
+                    notNull: this.checkNullFlag(field.flags)
+                }
+                return column;
+                
+            });
+            return right(columnsSchema);
+        }
+        catch( err ) {
+            const error : InvalidSqlError = {
+                name: 'Invalid sql',
+                description: err.message 
+            }
+            return left(error);
+        };
+            
+        
     }
     
     async executeExpression (expr: string, from?: string) : Promise<FieldDescriptor[]> {
@@ -60,9 +79,6 @@ export class DbClient {
             columnType: field.columnType,
             notNull: this.checkNullFlag(field.flags)
         }));
-    
-    
-    
     }
     
     functionParamType(functionName: string) {
