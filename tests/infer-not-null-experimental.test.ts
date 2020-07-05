@@ -1455,5 +1455,28 @@ describe('infer-not-null-experimental', () => {
         assert.deepEqual(actual, expected);
     });
 
+    it('inner join on t1.name = t2.name or t1.name is null', () => {
+        const sql = `
+        SELECT t1.name, t2.name 
+        FROM mytable2 t1 
+        INNER JOIN mytable2 t2 on t1.name = t2.name or t1.name is null
+        `;
+        const walker = parseSqlWalker(sql);
+        
+        const actual = walker.inferNotNull(dbSchema);
+        const expected: FieldNullability[] = [
+            {
+                name: 'name',
+                notNull: false
+            },
+            {
+                name: 'name',
+                notNull: false
+            }
+        ]
+
+        assert.deepEqual(actual, expected);
+    });
+
 
 });
