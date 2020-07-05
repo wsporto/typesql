@@ -108,12 +108,31 @@ export class MySQLWalker implements MySQLParserListener {
                 }
                 
                 const tableReferences = joined.tableReference();
+                const onClause = joined.expr(); //ON expr
                 
                 if(tableReferences) {
                     const usingFields = this.extractFieldsFromUsingClause(joined);
                     const joinedFields = this.extractColumnsFromTableReferences(dbSchema, [tableReferences]);
                     //doesn't duplicate the fields of the USING clause. Ex. INNER JOIN mytable2 USING(id);
                     const joinedFieldsFiltered = usingFields.length > 0? this.filterUsingFields(joinedFields, usingFields) : joinedFields;
+                    if(onClause) {
+                        joinedFieldsFiltered.forEach(field => {
+                            const fieldName : FieldName = {
+                                name: field.columnName,
+                                prefix: field.tableAlias || ''
+                            }
+                            field.notNull = field.notNull || !this.possibleNull(fieldName, onClause);
+                        })
+                        //apply inference to the parent join too
+                        result.forEach( field => {
+                            const fieldName : FieldName = {
+                                name: field.columnName,
+                                prefix: field.tableAlias || ''
+                            }
+                            field.notNull = field.notNull || !this.possibleNull(fieldName, onClause);
+                        })
+                    }
+
                     allJoinedColumns.push(joinedFieldsFiltered);
                 }
             })
