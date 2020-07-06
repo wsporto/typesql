@@ -295,4 +295,22 @@ describe('Test parse parameters', () => {
         }
         assert.deepEqual(actual.right.parameters, expected);
     })
+
+    it(`SELECT * FROM mytable1 WHERE id = :param or value = :param`, async () => {
+        const sql = `
+        SELECT * FROM mytable1 WHERE id = :param or value = :param`
+        const actual = await parseSql(client, sql);
+        const expectedParameters : ParameterDef[] = [
+            {
+                name: 'param',
+                columnType: 'int'
+            }
+        ]
+        const expectedNamedParameters = ['param', 'param']
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right.parameters, expectedParameters);
+        assert.deepEqual(actual.right.parameterNames, expectedNamedParameters);
+    })
 });

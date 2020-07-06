@@ -4,7 +4,7 @@ import { MySQLParser } from "./parser/MySQLParser";
 import { ParseTreeWalker } from "antlr4ts/tree";
 import { MySQLWalker } from "./parser/MySQLWalker";
 import { isLeft, right, Either } from "fp-ts/lib/Either"
-import { ColumnDef, SchemaDef, ParameterDef, FieldDescriptor, DBSchema, InvalidSqlError } from "./types";
+import { ColumnDef, SchemaDef, ParameterDef, FieldDescriptor, DBSchema, InvalidSqlError, PreprocessedSql } from "./types";
 import { DbClient } from "./queryExectutor";
 
 export function parseSqlWalker(sql: string) : MySQLWalker {
@@ -23,15 +23,18 @@ export function parseSqlWalker(sql: string) : MySQLWalker {
 }
 
 export async function parseSql(client: DbClient, sql: string) : Promise<Either<InvalidSqlError, SchemaDef>> {
+
+    const {sql: processedSql, namedParameters} = preprocessSql(sql);
+
     
-    const queryResult = await client.executeQuery(sql); //the original query
+    const queryResult = await client.executeQuery(processedSql); //the original query
     if( isLeft(queryResult)) {
         return queryResult;
     }
     
     const fields = queryResult.right;
 
-    const walker = parseSqlWalker(sql);
+    const walker = parseSqlWalker(processedSql);
     const columnsSchema = await client.loadDbSchema();
     const dbSchema: DBSchema = {
         columns: columnsSchema
@@ -93,11 +96,46 @@ export async function parseSql(client: DbClient, sql: string) : Promise<Either<I
 
     }
 
+    const resultParameters = namedParameters.length == 0 ? mappedParameters : getUniqueParameters(mappedParameters, namedParameters);
+
     const result: SchemaDef = {
         columns: mapped,
-        parameters: mappedParameters,
+        parameters: resultParameters
+    }
+    if(namedParameters.length > 0) {
+        result.parameterNames = namedParameters
     }
     return right(result);
+}
+
+function getUniqueParameters(parameters: ParameterDef[], namedParameters: string[]) {
+    const uniqueParameters : Map<string, ParameterDef[]> = new Map();
+    const resultParameters :ParameterDef[] = [];
+    namedParameters.forEach( (namedParam, paramIndex) => {
+        if(!uniqueParameters.get(namedParam)) {
+            resultParameters.push({
+                ...parameters[paramIndex],
+                name: namedParam
+            })
+            uniqueParameters.set(namedParam, []);
+        }
+        else {
+            const paramWithSameName = uniqueParameters.get(namedParam)!;
+            paramWithSameName.push(parameters[paramIndex]);
+        }
+    })
+    return resultParameters;
+}
+
+export function preprocessSql(sql: string) {
+    const regex = /:[a-zA-Z\d]+/g;
+    const namedParameters : string[] = sql.match(regex)?.map( param => param.slice(1) ) || [];
+    const newSql = sql.replace(regex, '?');
+    const processedSql : PreprocessedSql = {
+        sql: newSql,
+        namedParameters
+    }
+    return processedSql;
 }
 
 function renameDuplicatedColumns(columns: ColumnDef[]) {

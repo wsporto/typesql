@@ -27,10 +27,14 @@ function generateTsDescriptor(queryInfo: SchemaDef) : TsDescriptor {
         }
         return tsDesc;
     })
+
+    //TODO - should return queryInfo.parameterNames always
+    const parameterNames = queryInfo.parameterNames? queryInfo.parameterNames : queryInfo.parameters.map( param => param.name);
     
     return {
         columns,
-        parameters
+        parameters,
+        parameterNames
     };
 
 
@@ -63,7 +67,10 @@ function generateTsContent(tsDescriptorOption: Option<TsDescriptor>, sqlContext:
         return total + `\t ${actual.name}${optional} : ${actual.tsType};\n`;
     }, '');
 
-    let paramValues = tsDescriptor.parameters.map( param => 'params.' + param.name).join(', ');
+    //TODO - should return queryInfo.parameterNames always
+    let paramValues = tsDescriptor.parameterNames? tsDescriptor.parameterNames.map( param => 'params.' + param).join(', '):
+        tsDescriptor.parameters.map( param => 'params.' + param.name).join(', ');
+
     if(tsDescriptor.parameters.length > 0) paramValues = ', [' + paramValues + ']';
 
 
@@ -119,6 +126,7 @@ export async function generateTsFile(client: DbClient, sqlFile: string) {
 type TsDescriptor = {
     columns: FieldDescriptor[];
     parameters: FieldDescriptor[];
+    parameterNames: string[];
 }
 
 type FieldDescriptor = {
