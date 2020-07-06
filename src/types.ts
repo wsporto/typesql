@@ -11,6 +11,7 @@ export type ColumnSchema = {
 export type SchemaDef = {
     columns: ColumnDef[];
     parameters: ParameterDef[];
+    parameterNames?: string[];
 }
 
 export type ColumnDef = {
@@ -69,4 +70,9 @@ export type FieldDescriptor = {
 export type InvalidSqlError = {
     name: string;
     description: string;
+}
+
+export type PreprocessedSql = {
+    sql: string;
+    namedParameters: string[];
 }
