@@ -34,6 +34,8 @@ export class MySQLWalker implements MySQLParserListener {
     updateTable: string;
     updateColumns: string[];
 
+    deleteTable?: string;
+
     getTokens(ctx: SelectItemContext): ParseTree[] {
         let child = ctx.getChild(0);
         const tokens: ParseTree[] = [];
@@ -673,7 +675,9 @@ export class MySQLWalker implements MySQLParserListener {
         const isUpdateStmt = this.getParentContext(ctx, UpdateStatementContext);
         const isUpdateListContext = this.getParentContext(ctx, UpdateListContext);
 
-        const processParameter = isSelectStmt || (isUpdateStmt && !isUpdateListContext);
+        const isDeleteStmt = this.getParentContext(ctx, DeleteStatementContext);
+
+        const processParameter = isSelectStmt || (isUpdateStmt && !isUpdateListContext) || isDeleteStmt;
         if(!processParameter) {
             return;
         }
@@ -690,6 +694,9 @@ export class MySQLWalker implements MySQLParserListener {
             }
             if(isUpdateStmt && paramContext.type == 'expression') {
                 paramContext.from = 'from ' + this.updateTable
+            }
+            if(isDeleteStmt && paramContext.type == 'expression') {
+                paramContext.from = 'from ' + this.deleteTable
             }
             this.parameters.push(paramContext);
         }
@@ -723,6 +730,10 @@ export class MySQLWalker implements MySQLParserListener {
     enterUpdateStatement(ctx: UpdateStatementContext) {
         this.updateTable = ctx.tableReferenceList().tableReference()[0].text;
         this.updateColumns = ctx.updateList().updateElement().map( updateElement => updateElement.columnRef().text);
+    }
+
+    enterDeleteStatement(ctx: DeleteStatementContext) {
+        this.deleteTable = ctx.tableRef()?.text;
     }
 
 }

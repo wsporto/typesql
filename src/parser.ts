@@ -99,6 +99,27 @@ export async function parseSql(client: DbClient, sql: string) : Promise<Either<I
         return right(insertResult);
     }
 
+    if(walker.deleteTable) {
+
+        const insertResultColumns : ColumnDef[] = [
+            {
+                name: 'affectedRows',
+                dbtype: 'int',
+                notNull: true
+            }
+        ]
+
+        const parameters = await resolveParameters(client, walker.parameters);
+
+        const insertResult : SchemaDef = {
+            multipleRowsResult: false,
+            columns: insertResultColumns,
+            parameters: parameters,
+            filters: []
+        }
+        return right(insertResult);
+    }
+    
     const queryResult = await client.executeQuery(processedSql); //the original query
     if( isLeft(queryResult)) {
         return queryResult;
