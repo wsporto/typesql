@@ -10,7 +10,7 @@ import {
     SimpleExprUnaryContext, SimpleExprNotContext, SimpleExprOdbcContext, SimpleExprMatchContext, SimpleExprBinaryContext,
     SimpleExprCastContext, SimpleExprCaseContext, SimpleExprConvertContext, SimpleExprConvertUsingContext, SimpleExprDefaultContext,
     SimpleExprValuesContext, SimpleExprIntervalContext, SubqueryContext, TableFactorContext, TableReferenceListParensContext, SelectItemListContext, 
-    TableReferenceContext, SingleTableParensContext, SingleTableContext, BoolPriContext, JoinedTableContext, InsertStatementContext
+    TableReferenceContext, SingleTableParensContext, SingleTableContext, JoinedTableContext, InsertStatementContext, UpdateStatementContext, SelectStatementContext, UpdateListContext, DeleteStatementContext
 } from "./MySQLParser";
 
 import { TerminalNode, ErrorNode, ParseTree } from "antlr4ts/tree";
@@ -30,6 +30,9 @@ export class MySQLWalker implements MySQLParserListener {
     insertParameters: string[];
     insertIntoTable: string;
     insertIntoValues: string[];
+
+    updateTable: string;
+    updateColumns: string[];
 
     getTokens(ctx: SelectItemContext): ParseTree[] {
         let child = ctx.getChild(0);
@@ -666,6 +669,14 @@ export class MySQLWalker implements MySQLParserListener {
     enterSimpleExprParamMarker(ctx: SimpleExprParamMarkerContext) {
         //console.log('enterSimpleExprasyc=', ctx.constructor.name);
         //this.logParents(ctx);
+        const isSelectStmt = this.getParentContext(ctx, SelectStatementContext); //TODO - save statement type
+        const isUpdateStmt = this.getParentContext(ctx, UpdateStatementContext);
+        const isUpdateListContext = this.getParentContext(ctx, UpdateListContext);
+
+        const processParameter = isSelectStmt || (isUpdateStmt && !isUpdateListContext);
+        if(!processParameter) {
+            return;
+        }
 
         const predicateContext = ctx.parent!;
 
@@ -676,6 +687,9 @@ export class MySQLWalker implements MySQLParserListener {
             if (fromClause && paramContext.type == 'expression') {
                 const fromClauseStr = this.extractOriginalSql(fromClause)
                 paramContext.from = fromClauseStr;
+            }
+            if(isUpdateStmt && paramContext.type == 'expression') {
+                paramContext.from = 'from ' + this.updateTable
             }
             this.parameters.push(paramContext);
         }
@@ -704,6 +718,11 @@ export class MySQLWalker implements MySQLParserListener {
         this.insertParameters = fields;
         this.insertIntoValues = values;
         
+    }
+
+    enterUpdateStatement(ctx: UpdateStatementContext) {
+        this.updateTable = ctx.tableReferenceList().tableReference()[0].text;
+        this.updateColumns = ctx.updateList().updateElement().map( updateElement => updateElement.columnRef().text);
     }
 
 }

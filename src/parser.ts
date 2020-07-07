@@ -4,7 +4,7 @@ import { MySQLParser } from "./parser/MySQLParser";
 import { ParseTreeWalker } from "antlr4ts/tree";
 import { MySQLWalker } from "./parser/MySQLWalker";
 import { isLeft, right, Either } from "fp-ts/lib/Either"
-import { ColumnDef, SchemaDef, ParameterDef, FieldDescriptor, DBSchema, InvalidSqlError, PreprocessedSql } from "./types";
+import { ColumnDef, SchemaDef, ParameterDef, FieldDescriptor, DBSchema, InvalidSqlError, PreprocessedSql, ParameterContext } from "./types";
 import { DbClient } from "./queryExectutor";
 
 export function parseSqlWalker(sql: string) : MySQLWalker {
@@ -60,7 +60,45 @@ export async function parseSql(client: DbClient, sql: string) : Promise<Either<I
         }
         return right(insertResult);
     }
-    
+    if(walker.updateTable) {
+
+        const insertSchema = await client.loadDbSchema();
+        const insertParameters = walker.updateColumns.map( (columnName, index) => {
+            const column = insertSchema.find( col => col.column == columnName && col.table == walker.updateTable);
+            
+            const paramName = namedParameters.length > 0? namedParameters[index] : column?.column!;
+            const parameter : ParameterDef = {
+                name: paramName,
+                columnType: column?.column_type!,
+                notNull: column?.notNull
+            }
+            return parameter;
+        })
+
+        const insertResultColumns : ColumnDef[] = [
+            {
+                name: 'affectedRows',
+                dbtype: 'int',
+                notNull: true
+            },
+            {
+                name: 'insertId',
+                dbtype: 'int',
+                notNull: true
+            }
+        ]
+
+        const filterParameters = await resolveParameters(client, walker.parameters);
+
+        const insertResult : SchemaDef = {
+            multipleRowsResult: false,
+            columns: insertResultColumns,
+            parameters: insertParameters,
+            filters: filterParameters
+        }
+        return right(insertResult);
+    }
+
     const queryResult = await client.executeQuery(processedSql); //the original query
     if( isLeft(queryResult)) {
         return queryResult;
@@ -91,10 +129,28 @@ export async function parseSql(client: DbClient, sql: string) : Promise<Either<I
     })
 
     renameDuplicatedColumns(mapped);
+
+    const mappedParameters = await resolveParameters(client, walker.parameters);
+
+    const resultParameters = namedParameters.length == 0 ? mappedParameters : getUniqueParameters(mappedParameters, namedParameters, 
+        params => true);
+
+    const result: SchemaDef = {
+        multipleRowsResult: true,
+        columns: mapped,
+        parameters: resultParameters
+    }
+    if(namedParameters.length > 0) {
+        result.parameterNames = namedParameters
+    }
+    return right(result);
+}
+
+async function resolveParameters(client: DbClient, parameters: ParameterContext[]) {
     const mappedParameters: ParameterDef[] = [];
 
     let index = 0;
-    for (const parameter of walker.parameters) {
+    for (const parameter of parameters) {
         index++;
         const param: ParameterDef = {
             name: '?',
@@ -117,6 +173,7 @@ export async function parseSql(client: DbClient, sql: string) : Promise<Either<I
                 const typeResult = getResultType(resultParams2);
                 param.name = parameter.name || resultParams2[0].name;
                 param.columnType = typeResult;
+                //param.notNull = resultParams2[0].notNull
                 if(parameter.list) param.list = parameter.list;
                 break;
         }
@@ -126,19 +183,7 @@ export async function parseSql(client: DbClient, sql: string) : Promise<Either<I
         mappedParameters.push(param);
 
     }
-
-    const resultParameters = namedParameters.length == 0 ? mappedParameters : getUniqueParameters(mappedParameters, namedParameters, 
-        params => true);
-
-    const result: SchemaDef = {
-        multipleRowsResult: true,
-        columns: mapped,
-        parameters: resultParameters
-    }
-    if(namedParameters.length > 0) {
-        result.parameterNames = namedParameters
-    }
-    return right(result);
+    return mappedParameters;
 }
 
 function getUniqueParameters(parameters: ParameterDef[], namedParameters: string[], 
