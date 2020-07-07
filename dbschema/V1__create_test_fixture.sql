@@ -14,6 +14,7 @@ CREATE TABLE `mytable2` (
 CREATE TABLE `mytable3` (
   `id` int NOT NULL AUTO_INCREMENT,
   `double_value` double,
+  `name` varchar(50) NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB;
 

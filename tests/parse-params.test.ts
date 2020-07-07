@@ -303,7 +303,8 @@ describe('Test parse parameters', () => {
         const expectedParameters : ParameterDef[] = [
             {
                 name: 'param',
-                columnType: 'int'
+                columnType: 'int',
+                notNull: true
             }
         ]
         const expectedNamedParameters = ['param', 'param']

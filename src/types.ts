@@ -5,6 +5,7 @@ export type DBSchema = {
 export type ColumnSchema = {
     table: string;
     column: string;
+    column_type: string;
     notNull: boolean;
 }
 
@@ -36,6 +37,7 @@ export type ColumnDef2 = {
 export type ParameterDef = {
     name: string,
     columnType: string | string[];
+    notNull?: boolean,
     list?: boolean; //id in (?)
 }
 

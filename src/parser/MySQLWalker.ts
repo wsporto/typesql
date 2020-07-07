@@ -10,7 +10,7 @@ import {
     SimpleExprUnaryContext, SimpleExprNotContext, SimpleExprOdbcContext, SimpleExprMatchContext, SimpleExprBinaryContext,
     SimpleExprCastContext, SimpleExprCaseContext, SimpleExprConvertContext, SimpleExprConvertUsingContext, SimpleExprDefaultContext,
     SimpleExprValuesContext, SimpleExprIntervalContext, SubqueryContext, TableFactorContext, TableReferenceListParensContext, SelectItemListContext, 
-    TableReferenceContext, SingleTableParensContext, SingleTableContext, BoolPriContext, JoinedTableContext
+    TableReferenceContext, SingleTableParensContext, SingleTableContext, BoolPriContext, JoinedTableContext, InsertStatementContext
 } from "./MySQLParser";
 
 import { TerminalNode, ErrorNode, ParseTree } from "antlr4ts/tree";
@@ -27,6 +27,9 @@ export class MySQLWalker implements MySQLParserListener {
 
     parameters: ParameterContext[] = [];
     private querySpecification: QuerySpecificationContext[] = [];
+    insertParameters: string[];
+    insertIntoTable: string;
+    insertIntoValues: string[];
 
     getTokens(ctx: SelectItemContext): ParseTree[] {
         let child = ctx.getChild(0);
@@ -687,6 +690,20 @@ export class MySQLWalker implements MySQLParserListener {
         }
         return undefined;
 
+    }
+
+    enterInsertStatement(ctx: InsertStatementContext) {
+        this.insertIntoTable = this.splitName(ctx.tableRef().text).name;
+        const fields = ctx.insertFromConstructor()?.fields()?.insertIdentifier().map( fields => {
+            return fields.text
+        }) || [];
+        const values = ctx.insertFromConstructor()?.insertValues()?.valueList().values().map( values => {
+            return values.text
+        }) || [];
+        
+        this.insertParameters = fields;
+        this.insertIntoValues = values;
+        
     }
 
 }

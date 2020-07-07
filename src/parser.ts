@@ -25,7 +25,28 @@ export function parseSqlWalker(sql: string) : MySQLWalker {
 export async function parseSql(client: DbClient, sql: string) : Promise<Either<InvalidSqlError, SchemaDef>> {
 
     const {sql: processedSql, namedParameters} = preprocessSql(sql);
+    const walker = parseSqlWalker(processedSql);
+    if(walker.insertParameters) {
 
+        const insertSchema = await client.loadDbSchema();
+        const insertParameters = walker.insertParameters.map( (param, index) => {
+            const column = insertSchema.find( col => col.column == param && col.table == walker.insertIntoTable);
+            const paramName = namedParameters.length > 0? namedParameters[index] : param;
+            const parameter : ParameterDef = {
+                name: paramName,
+                columnType: column?.column_type!,
+                notNull: column?.notNull
+            }
+            return parameter;
+        })
+
+        const uniqueParameters = getUniqueParameters(insertParameters, namedParameters, params => params.some( param => param.notNull))
+        const insertResult : SchemaDef = {
+            columns: [],
+            parameters: uniqueParameters
+        }
+        return right(insertResult);
+    }
     
     const queryResult = await client.executeQuery(processedSql); //the original query
     if( isLeft(queryResult)) {
@@ -34,7 +55,6 @@ export async function parseSql(client: DbClient, sql: string) : Promise<Either<I
     
     const fields = queryResult.right;
 
-    const walker = parseSqlWalker(processedSql);
     const columnsSchema = await client.loadDbSchema();
     const dbSchema: DBSchema = {
         columns: columnsSchema
@@ -59,8 +79,6 @@ export async function parseSql(client: DbClient, sql: string) : Promise<Either<I
 
     renameDuplicatedColumns(mapped);
     const mappedParameters: ParameterDef[] = [];
-
-    //console.log("parameters====", walker.parameters);
 
     let index = 0;
     for (const parameter of walker.parameters) {
@@ -96,7 +114,8 @@ export async function parseSql(client: DbClient, sql: string) : Promise<Either<I
 
     }
 
-    const resultParameters = namedParameters.length == 0 ? mappedParameters : getUniqueParameters(mappedParameters, namedParameters);
+    const resultParameters = namedParameters.length == 0 ? mappedParameters : getUniqueParameters(mappedParameters, namedParameters, 
+        params => true);
 
     const result: SchemaDef = {
         columns: mapped,
@@ -108,21 +127,34 @@ export async function parseSql(client: DbClient, sql: string) : Promise<Either<I
     return right(result);
 }
 
-function getUniqueParameters(parameters: ParameterDef[], namedParameters: string[]) {
+function getUniqueParameters(parameters: ParameterDef[], namedParameters: string[], 
+    notNullResolver: (parameters: ParameterDef[]) => boolean) {
+
+    if(namedParameters.length == 0) {
+        return parameters;
+    }
+
     const uniqueParameters : Map<string, ParameterDef[]> = new Map();
-    const resultParameters :ParameterDef[] = [];
+    
     namedParameters.forEach( (namedParam, paramIndex) => {
         if(!uniqueParameters.get(namedParam)) {
-            resultParameters.push({
-                ...parameters[paramIndex],
-                name: namedParam
-            })
             uniqueParameters.set(namedParam, []);
         }
-        else {
-            const paramWithSameName = uniqueParameters.get(namedParam)!;
-            paramWithSameName.push(parameters[paramIndex]);
+        const paramWithSameName = uniqueParameters.get(namedParam)!;
+        paramWithSameName.push(parameters[paramIndex]);
+        uniqueParameters.set(namedParam, paramWithSameName)
+    })
+
+    const resultParameters :ParameterDef[] = [];
+    Array.from(uniqueParameters.keys()).forEach( paramName => {
+        const uniqParams = uniqueParameters.get(paramName)!;
+        const resultParam : ParameterDef = {
+            name: paramName,
+            columnType: uniqParams[0].columnType,
+            notNull: notNullResolver(uniqParams)
         }
+        resultParameters.push(resultParam);
+
     })
     return resultParameters;
 }
