@@ -2,7 +2,7 @@ import assert from "assert";
 import { preprocessSql } from "../src/parser";
 import { PreprocessedSql } from "../src/types";
 
-describe('infer-not-null', () => {
+describe('preprocess-sql', () => {
 
     it('preprocess sql with several parameters', async () => {
 
