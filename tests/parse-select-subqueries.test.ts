@@ -23,6 +23,7 @@ describe('Test parse select with subqueries', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'id',
@@ -49,6 +50,7 @@ describe('Test parse select with subqueries', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'id',
@@ -78,6 +80,7 @@ describe('Test parse select with subqueries', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'id',
@@ -102,6 +105,7 @@ describe('Test parse select with subqueries', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'code',
@@ -128,6 +132,7 @@ describe('Test parse select with subqueries', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'id',
@@ -150,6 +155,7 @@ describe('Test parse select with subqueries', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'id',
@@ -181,6 +187,7 @@ describe('Test parse select with subqueries', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'id',
@@ -211,6 +218,7 @@ describe('Test parse select with subqueries', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'id',
@@ -233,6 +241,7 @@ describe('Test parse select with subqueries', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'name',
@@ -255,6 +264,7 @@ describe('Test parse select with subqueries', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'name',

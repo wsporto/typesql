@@ -35,6 +35,7 @@ describe('Test simple select statements', () => {
 
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'id',
@@ -56,6 +57,7 @@ describe('Test simple select statements', () => {
         const sql = 'SELECT id as name FROM MYTABLE1';
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'name',
@@ -79,6 +81,7 @@ describe('Test simple select statements', () => {
 
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'id',
@@ -105,6 +108,7 @@ describe('Test simple select statements', () => {
 
         const actual = await parseSql(client, slq);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'id',
@@ -133,6 +137,7 @@ describe('Test simple select statements', () => {
 
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'id',
@@ -165,6 +170,7 @@ describe('Test simple select statements', () => {
         const sql = 'SELECT distinct id, value FROM MYTABLE1';
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'id',
@@ -192,6 +198,7 @@ describe('Test simple select statements', () => {
         const sql = 'SELECT distinct * FROM MYTABLE1';
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'id',
@@ -219,6 +226,7 @@ describe('Test simple select statements', () => {
 
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'id',
@@ -249,6 +257,7 @@ describe('Test simple select statements', () => {
 
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'id',
@@ -274,6 +283,7 @@ describe('Test simple select statements', () => {
 
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'value',
@@ -303,6 +313,7 @@ describe('Test simple select statements', () => {
 
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: '?', //TODO - PARAM1
@@ -329,6 +340,7 @@ describe('Test simple select statements', () => {
 
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'name',
@@ -357,6 +369,7 @@ describe('Test simple select statements', () => {
         `
         const actual = await parseSql(client, slq);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'name',
@@ -407,6 +420,7 @@ describe('Test simple select statements', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'name',
@@ -429,6 +443,7 @@ describe('Test simple select statements', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'id',
@@ -461,6 +476,7 @@ describe('Test simple select statements', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'id',
@@ -488,6 +504,7 @@ describe('Test simple select statements', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'id',
@@ -515,6 +532,7 @@ describe('Test simple select statements', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'id',
@@ -542,6 +560,7 @@ describe('Test simple select statements', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'id',
@@ -575,6 +594,7 @@ describe('Test simple select statements', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'id',
@@ -602,6 +622,7 @@ describe('Test simple select statements', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'id',
@@ -629,6 +650,7 @@ describe('Test simple select statements', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'id',
@@ -656,6 +678,7 @@ describe('Test simple select statements', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'id',
@@ -690,6 +713,7 @@ describe('Test simple select statements', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'name',
@@ -720,6 +744,7 @@ describe('Test simple select statements', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'name',
@@ -755,6 +780,7 @@ describe('Test simple select statements', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'bigger',
@@ -776,6 +802,7 @@ describe('Test simple select statements', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'bigger',
@@ -797,6 +824,7 @@ describe('Test simple select statements', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'id',
@@ -824,6 +852,7 @@ describe('Test simple select statements', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'id',
@@ -857,6 +886,7 @@ describe('Test simple select statements', () => {
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'id',
@@ -887,6 +917,7 @@ describe('Test simple select statements', () => {
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'id',
@@ -918,6 +949,7 @@ describe('Test simple select statements', () => {
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'id',
@@ -947,6 +979,7 @@ describe('Test simple select statements', () => {
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'id',
@@ -977,6 +1010,7 @@ describe('Test simple select statements', () => {
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'value',
@@ -1000,6 +1034,7 @@ describe('Test simple select statements', () => {
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: '10',

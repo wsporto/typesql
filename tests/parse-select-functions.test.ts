@@ -22,6 +22,7 @@ describe('Test parse select with functions', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'sum(value)',
@@ -44,6 +45,7 @@ describe('Test parse select with functions', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'total',
@@ -66,6 +68,7 @@ describe('Test parse select with functions', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'total',
@@ -88,6 +91,7 @@ describe('Test parse select with functions', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'count(id)',
@@ -109,6 +113,7 @@ describe('Test parse select with functions', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'count(*)',
@@ -131,6 +136,7 @@ describe('Test parse select with functions', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'sum(2*value)',
@@ -153,6 +159,7 @@ describe('Test parse select with functions', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'avg(value)',
@@ -175,6 +182,7 @@ describe('Test parse select with functions', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'avg(value + (value + 2))',
@@ -197,6 +205,7 @@ describe('Test parse select with functions', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'sum(t2.id + (t1.value + 2))',
@@ -219,6 +228,7 @@ describe('Test parse select with functions', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'min(value)',
@@ -242,6 +252,7 @@ describe('Test parse select with functions', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'min(name)',
@@ -264,6 +275,7 @@ describe('Test parse select with functions', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: `str_to_date('21/5/2013','%d/%m/%y')`,
@@ -286,6 +298,7 @@ describe('Test parse select with functions', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: `str_to_date(concat_ws('/', '?', '?', '?'),'%d/%m/%y')`,
@@ -322,6 +335,7 @@ describe('Test parse select with functions', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            multipleRowsResult: true,
             columns: [
                 {
                     name: 'days_stayed',

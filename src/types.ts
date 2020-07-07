@@ -10,6 +10,7 @@ export type ColumnSchema = {
 }
 
 export type SchemaDef = {
+    multipleRowsResult: boolean;
     columns: ColumnDef[];
     parameters: ParameterDef[];
     parameterNames?: string[];
