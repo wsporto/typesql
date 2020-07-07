@@ -13,6 +13,7 @@ export type SchemaDef = {
     multipleRowsResult: boolean;
     columns: ColumnDef[];
     parameters: ParameterDef[];
+    filters?: ParameterDef[];
     parameterNames?: string[];
 }
 
