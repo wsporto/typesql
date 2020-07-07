@@ -24,7 +24,7 @@ export class DbClient {
 
     async loadDbSchema() : Promise<ColumnSchema[]> {
         const sql = `
-        SELECT TABLE_NAME as "table", COLUMN_NAME as "column", if(IS_NULLABLE='NO', true, false) as "notNull"
+        SELECT TABLE_NAME as "table", COLUMN_NAME as "column", DATA_TYPE as "column_type", if(IS_NULLABLE='NO', true, false) as "notNull"
         FROM INFORMATION_SCHEMA.COLUMNS 
         ORDER BY TABLE_NAME, ORDINAL_POSITION
         `
