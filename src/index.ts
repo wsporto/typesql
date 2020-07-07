@@ -32,6 +32,7 @@ function generateTsDescriptor(queryInfo: SchemaDef) : TsDescriptor {
     const parameterNames = queryInfo.parameterNames? queryInfo.parameterNames : queryInfo.parameters.map( param => param.name);
     
     return {
+        multipleRowsResult: queryInfo.multipleRowsResult,
         columns,
         parameters,
         parameterNames
@@ -73,6 +74,7 @@ function generateTsContent(tsDescriptorOption: Option<TsDescriptor>, sqlContext:
 
     if(tsDescriptor.parameters.length > 0) paramValues = ', [' + paramValues + ']';
 
+    const resultStr = `${capitalizedName}Result` + (tsDescriptor.multipleRowsResult? '[]' : '');
 
     const template = `
     import { Connection } from 'mysql2/promise';
@@ -84,12 +86,13 @@ function generateTsContent(tsDescriptorOption: Option<TsDescriptor>, sqlContext:
         ${columnsStr}
     }
 
-    export async function ${queryName}(connection: Connection${tsDescriptor.parameters.length > 0 ? ', params: ' + capitalizedName + 'Params' : ''}) : Promise<${capitalizedName}Result[]> {
+    export async function ${queryName}(connection: Connection${tsDescriptor.parameters.length > 0 ? 
+            ', params: ' + capitalizedName + 'Params' : ''}) : Promise<${resultStr}> {
         const sql = \`
         ${sqlContext}
         \`;
         return connection.query(sql${paramValues})
-            .then( res => res[0] as ${capitalizedName}Result[] );
+            .then( res => res[0] as ${resultStr} );
     }
     `
 
@@ -124,6 +127,7 @@ export async function generateTsFile(client: DbClient, sqlFile: string) {
 
 
 type TsDescriptor = {
+    multipleRowsResult: boolean;
     columns: FieldDescriptor[];
     parameters: FieldDescriptor[];
     parameterNames: string[];

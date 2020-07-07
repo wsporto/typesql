@@ -40,9 +40,22 @@ export async function parseSql(client: DbClient, sql: string) : Promise<Either<I
             return parameter;
         })
 
-        const uniqueParameters = getUniqueParameters(insertParameters, namedParameters, params => params.some( param => param.notNull))
+        const uniqueParameters = getUniqueParameters(insertParameters, namedParameters, params => params.some( param => param.notNull));
+        const insertResultColumns : ColumnDef[] = [
+            {
+                name: 'affectedRows',
+                dbtype: 'int',
+                notNull: true
+            },
+            {
+                name: 'insertId',
+                dbtype: 'int',
+                notNull: true
+            }
+        ]
         const insertResult : SchemaDef = {
-            columns: [],
+            multipleRowsResult: false,
+            columns: insertResultColumns,
             parameters: uniqueParameters
         }
         return right(insertResult);
@@ -118,6 +131,7 @@ export async function parseSql(client: DbClient, sql: string) : Promise<Either<I
         params => true);
 
     const result: SchemaDef = {
+        multipleRowsResult: true,
         columns: mapped,
         parameters: resultParameters
     }
