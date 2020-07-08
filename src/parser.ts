@@ -35,7 +35,7 @@ export async function parseSql(client: DbClient, sql: string) : Promise<Either<I
             const parameter : ParameterDef = {
                 name: paramName,
                 columnType: column?.column_type!,
-                notNull: column?.notNull
+                notNull: column?.notNull!
             }
             return parameter;
         })
@@ -70,7 +70,7 @@ export async function parseSql(client: DbClient, sql: string) : Promise<Either<I
             const parameter : ParameterDef = {
                 name: paramName,
                 columnType: column?.column_type!,
-                notNull: column?.notNull
+                notNull: column?.notNull!
             }
             return parameter;
         })
@@ -178,7 +178,8 @@ async function resolveParameters(client: DbClient, parameters: ParameterContext[
         index++;
         const param: ParameterDef = {
             name: '?',
-            columnType: '?'
+            columnType: '?',
+            notNull: false
         }
 
         switch (parameter.type) {
@@ -197,7 +198,7 @@ async function resolveParameters(client: DbClient, parameters: ParameterContext[
                 const typeResult = getResultType(resultParams2);
                 param.name = parameter.name || resultParams2[0].name;
                 param.columnType = typeResult;
-                //param.notNull = resultParams2[0].notNull
+                param.notNull = parameter.notNull;
                 if(parameter.list) param.list = parameter.list;
                 break;
         }

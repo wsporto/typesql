@@ -196,7 +196,8 @@ describe('Test select with multiples tables', () => {
             parameters: [
                 {
                     name: 'id',
-                    columnType: 'int'
+                    columnType: 'int',
+                    notNull: true
                 }
             ]
 
@@ -248,19 +249,23 @@ describe('Test select with multiples tables', () => {
             parameters: [
                 {
                     name: 'param1',
-                    columnType: 'varchar'
+                    columnType: 'varchar',
+                    notNull: false
                 },
                 {
                     name: 'id',
-                    columnType: 'int'
+                    columnType: 'int',
+                    notNull: true
                 },
                 {
                     name: 'name',
-                    columnType: 'varchar'
+                    columnType: 'varchar',
+                    notNull: true
                 },
                 {
                     name: 'value',
-                    columnType: 'int'
+                    columnType: 'int',
+                    notNull: true
                 }
             ]
 
@@ -306,19 +311,23 @@ describe('Test select with multiples tables', () => {
             parameters: [
                 {
                     name: 'param1',
-                    columnType: 'varchar'
+                    columnType: 'varchar',
+                    notNull: false
                 },
                 {
                     name: 'id',
-                    columnType: 'int'
+                    columnType: 'int',
+                    notNull: true
                 },
                 {
                     name: 'value',
-                    columnType: 'int'
+                    columnType: 'int',
+                    notNull: true
                 },
                 {
                     name: 'name',
-                    columnType: 'varchar'
+                    columnType: 'varchar',
+                    notNull: true
                 }
             ]
 

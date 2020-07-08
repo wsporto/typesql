@@ -242,7 +242,8 @@ describe('Test simple select statements', () => {
             parameters: [
                 {
                     name: 'id',
-                    columnType: 'int'
+                    columnType: 'int',
+                    notNull: true
                 }
             ]
         }
@@ -268,7 +269,8 @@ describe('Test simple select statements', () => {
             parameters: [
                 {
                     name: 'id',
-                    columnType: 'int'
+                    columnType: 'int',
+                    notNull: true
                 }
             ]
         }
@@ -294,11 +296,13 @@ describe('Test simple select statements', () => {
             parameters: [
                 {
                     name: 'id',
-                    columnType: 'int'
+                    columnType: 'int',
+                    notNull: true
                 },
                 {
                     name: 'value',
-                    columnType: 'int'
+                    columnType: 'int',
+                    notNull: true
                 }
             ]
         }
@@ -324,7 +328,8 @@ describe('Test simple select statements', () => {
             parameters: [
                 {
                     name: 'param1',
-                    columnType: 'varchar'
+                    columnType: 'varchar',
+                    notNull: false
                 }
             ]
         }
@@ -351,7 +356,8 @@ describe('Test simple select statements', () => {
             parameters: [
                 {
                     name: 'name',
-                    columnType: 'varchar'
+                    columnType: 'varchar',
+                    notNull: false
                 }
             ]
         }
@@ -391,19 +397,23 @@ describe('Test simple select statements', () => {
             parameters: [
                 {
                     name: 'name',
-                    columnType: 'varchar'
+                    columnType: 'varchar',
+                    notNull: false
                 },
                 {
                     name: 'name',
-                    columnType: 'varchar'
+                    columnType: 'varchar',
+                    notNull: true
                 },
                 {
                     name: 'descr',
-                    columnType: 'varchar'
+                    columnType: 'varchar',
+                    notNull: true
                 },
                 {
                     name: 'id',
-                    columnType: 'int'
+                    columnType: 'int',
+                    notNull: true
                 }
             ]
         }
@@ -459,7 +469,8 @@ describe('Test simple select statements', () => {
             parameters: [
                 {
                     name: 'id',
-                    columnType: 'int'
+                    columnType: 'int',
+                    notNull: true
                 }
             ]
         }
@@ -577,6 +588,7 @@ describe('Test simple select statements', () => {
                 {
                     name: 'id',
                     columnType: 'int',
+                    notNull: true,
                     list: true
                 }
             ]
@@ -605,7 +617,8 @@ describe('Test simple select statements', () => {
             parameters: [
                 {
                     name: 'param1',
-                    columnType: 'bigint'
+                    columnType: 'bigint',
+                    notNull: true
                 }
             ]
         }
@@ -633,7 +646,8 @@ describe('Test simple select statements', () => {
             parameters: [
                 {
                     name: 'param1',
-                    columnType: 'varchar'
+                    columnType: 'varchar',
+                    notNull: true
                 }
             ]
         }
@@ -661,7 +675,8 @@ describe('Test simple select statements', () => {
             parameters: [
                 {
                     name: 'param1',
-                    columnType: ['bigint', 'varchar']
+                    columnType: ['bigint', 'varchar'],
+                    notNull: true
                 }
             ]
         }
@@ -694,7 +709,8 @@ describe('Test simple select statements', () => {
             parameters: [
                 {
                     name: 'id',
-                    columnType: 'int'
+                    columnType: 'int',
+                    notNull: true
                 }
             ]
         }
@@ -760,11 +776,13 @@ describe('Test simple select statements', () => {
             parameters: [
                 {
                     name: 'id',
-                    columnType: 'varchar'
+                    columnType: 'varchar',
+                    notNull: true
                 },
                 {
                     name: 'name',
-                    columnType: 'varchar'
+                    columnType: 'varchar',
+                    notNull: true
                 }
             ]
         }
@@ -836,7 +854,8 @@ describe('Test simple select statements', () => {
             parameters: [
                 {
                     name: 'name',
-                    columnType: 'varchar'
+                    columnType: 'varchar',
+                    notNull: true
                 }
             ]
         }
@@ -864,7 +883,8 @@ describe('Test simple select statements', () => {
             parameters: [
                 {
                     name: 'name',
-                    columnType: 'varchar'
+                    columnType: 'varchar',
+                    notNull: true
                 }
             ]
         }
@@ -960,7 +980,8 @@ describe('Test simple select statements', () => {
             parameters: [
                 {
                     name: 'param1',
-                    columnType: 'varchar'
+                    columnType: 'varchar',
+                    notNull: true
                 }
             ]
 
@@ -990,7 +1011,8 @@ describe('Test simple select statements', () => {
             parameters: [
                 {
                     name: 'name',
-                    columnType: 'varchar'
+                    columnType: 'varchar',
+                    notNull: true
                 }
             ]
 

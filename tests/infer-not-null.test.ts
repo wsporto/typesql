@@ -113,7 +113,8 @@ describe('infer-not-null', () => {
             parameters: [
                 {
                     name: "value+'?'",
-                    columnType: 'double'
+                    columnType: 'double',
+                    notNull: false
                 }
             ]
 

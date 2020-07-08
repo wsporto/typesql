@@ -276,7 +276,8 @@ describe('Test parse select with subqueries', () => {
             parameters: [
                 {
                     name: 'value',
-                    columnType: 'int'
+                    columnType: 'int',
+                    notNull: true
                 }
             ]
 

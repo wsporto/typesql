@@ -24,7 +24,8 @@ describe('parse delete statements', () => {
         const expected: ParameterDef[] = [
             {
                 name: 'id',
-                columnType: 'int'
+                columnType: 'int',
+                notNull: true
             }
         ]
 
@@ -55,16 +56,17 @@ describe('parse delete statements', () => {
         })
         //tableRef ({serverVersion >= 80017}? tableAlias)?
      */
-    it.skip('delete from mytable1 t1 where t1.value = ?', async () => {
+    it.skip('delete from mytable1 t1 where t1.id = ?', async () => {
 
         const sql = `
-        delete from mytable1 t1 where t1.id = 10
+        delete from mytable1 t1 where t1.id = ?
             `;
         const actual = await parseSql(client, sql);
         const expected: ParameterDef[] = [
             {
                 name: 'id',
-                columnType: 'int'
+                columnType: 'int',
+                notNull: true
             }
         ]
 

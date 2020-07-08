@@ -47,7 +47,8 @@ describe('parse update statements', () => {
             parameters: [
                 {
                     name: 'id',
-                    columnType: 'int'
+                    columnType: 'int',
+                    notNull: true
                 }
             ],
             parameterNames: []

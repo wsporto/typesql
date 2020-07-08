@@ -192,7 +192,8 @@ describe('Test parse complex queries', () => {
             ],
             parameters: [{
                 name: 'id',
-                columnType: 'int'
+                columnType: 'int',
+                notNull: true
             }]
 
         }

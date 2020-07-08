@@ -39,18 +39,20 @@ export type ColumnDef2 = {
 export type ParameterDef = {
     name: string,
     columnType: string | string[];
-    notNull?: boolean,
+    notNull: boolean,
     list?: boolean; //id in (?)
 }
 
 export type FunctionParamContext = {
     type: 'function'
     functionName: string;
+    notNull: boolean;
 }
 export type ExpressionParamContext = {
     type: 'expression';
     name?: string;
     expression: string;
+    notNull: boolean;
     from?: string;
     list?: boolean;
 }
@@ -58,6 +60,7 @@ export type ExpressionParamContext = {
 export type ResolvedParameter = {
     type: 'resolved';
     name: string;
+    notNull: boolean;
     columnType: string;
 }
 
