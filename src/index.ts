@@ -28,6 +28,16 @@ function generateTsDescriptor(queryInfo: SchemaDef) : TsDescriptor {
         return tsDesc;
     })
 
+    const data = queryInfo.data?.map( col => {
+
+        const tsDesc : FieldDescriptor = {
+            name: col.name,
+            tsType: mapColumnType(col.columnType),
+            notNull: false
+        }
+        return tsDesc;
+    })
+
     //TODO - should return queryInfo.parameterNames always
     const parameterNames = queryInfo.parameterNames? queryInfo.parameterNames : queryInfo.parameters.map( param => param.name);
     
@@ -35,6 +45,7 @@ function generateTsDescriptor(queryInfo: SchemaDef) : TsDescriptor {
         multipleRowsResult: queryInfo.multipleRowsResult,
         columns,
         parameters,
+        data,
         parameterNames
     };
 
@@ -63,24 +74,40 @@ function generateTsContent(tsDescriptorOption: Option<TsDescriptor>, sqlContext:
         return total + `\t ${actual.name} : ${actual.tsType};\n`;
     }, '');
 
+    const dataParamsStr = tsDescriptor.data?.reduce( (total, actual) => {
+        return total + `\t ${actual.name} : ${actual.tsType};\n`;
+    }, '');
+
     const columnsStr = tsDescriptor.columns.reduce( (total, actual) => {
         const optional = actual.notNull? '' : '?';
         return total + `\t ${actual.name}${optional} : ${actual.tsType};\n`;
     }, '');
 
+    const allParameters = (tsDescriptor.data? tsDescriptor.data : []).concat(tsDescriptor.parameters)
+
     //TODO - should return queryInfo.parameterNames always
     let paramValues = tsDescriptor.parameterNames? tsDescriptor.parameterNames.map( param => 'params.' + param).join(', '):
-        tsDescriptor.parameters.map( param => 'params.' + param.name).join(', ');
+        allParameters.map( param => 'params.' + param.name).join(', ');
 
-    if(tsDescriptor.parameters.length > 0) paramValues = ', [' + paramValues + ']';
+    if(allParameters.length > 0) paramValues = ', [' + paramValues + ']';
 
     const resultStr = `${capitalizedName}Result` + (tsDescriptor.multipleRowsResult? '[]' : '');
+
+    const dataType = tsDescriptor.data? `
+    export type ${capitalizedName}Data = {
+        ${dataParamsStr}
+    }
+    `
+    :
+    ''
 
     const template = `
     import { Connection } from 'mysql2/promise';
     export type ${capitalizedName}Params = {
         ${paramsStr}
     }
+
+    ${dataType}
 
     export type ${capitalizedName}Result = {
         ${columnsStr}
@@ -130,6 +157,7 @@ type TsDescriptor = {
     multipleRowsResult: boolean;
     columns: FieldDescriptor[];
     parameters: FieldDescriptor[];
+    data?: FieldDescriptor[];
     parameterNames: string[];
 }
 

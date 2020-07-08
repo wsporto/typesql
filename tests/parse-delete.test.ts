@@ -45,7 +45,7 @@ describe('parse delete statements', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.filters, expected);
+        assert.deepEqual(actual.right.data, expected);
     })
 
     /**
@@ -71,7 +71,7 @@ describe('parse delete statements', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.filters, expected);
+        assert.deepEqual(actual.right.data, expected);
     })
 
 });

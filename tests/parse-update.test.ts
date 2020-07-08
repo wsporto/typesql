@@ -1,6 +1,6 @@
 import assert from "assert";
 import { parseSql } from "../src/parser";
-import { ParameterDef } from "../src/types";
+import { SchemaDef } from "../src/types";
 import { DbClient } from "../src/queryExectutor";
 import { isLeft } from "fp-ts/lib/Either";
 
@@ -15,25 +15,18 @@ describe('parse update statements', () => {
         await client.closeConnection();
     })
 
-    it('update mytable1 set value = ? where id = 1', async () => {
-
-        const sql = `
-        update mytable1 set value = ? where id = 1
-            `;
-        const actual = await parseSql(client, sql);
-        const expected: ParameterDef[] = [
-            {
-                name: 'value',
-                columnType: 'int',
-                notNull: false
-            }
-        ]
-
-        if(isLeft(actual)) {
-            assert.fail(`Shouldn't return an error`);
+    const columns = [
+        {
+            name: 'affectedRows',
+            dbtype: 'int',
+            notNull: true
+        },
+        {
+            name: 'insertId',
+            dbtype: 'int',
+            notNull: true
         }
-        assert.deepEqual(actual.right.parameters, expected);
-    })
+    ]
 
     it('update mytable1 set value = ? where id = ?', async () => {
 
@@ -41,25 +34,97 @@ describe('parse update statements', () => {
         update mytable1 set value = ? where id = ?
             `;
         const actual = await parseSql(client, sql);
-        const expected: ParameterDef[] = [
-            {
-                name: 'value',
-                columnType: 'int',
-                notNull: false
-            }
-        ]
-        const expectedFilters: ParameterDef[] = [
-            {
-                name: 'id',
-                columnType: 'int',
-                //notNull: true
-            }
-        ]
+        const expected: SchemaDef = {
+            multipleRowsResult: false,
+            columns,
+            data: [
+                {
+                    name: 'value',
+                    columnType: 'int',
+                    notNull: false
+                }
+            ],
+            parameters: [
+                {
+                    name: 'id',
+                    columnType: 'int'
+                }
+            ],
+            parameterNames: []
+        }
 
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.parameters, expected);
-        assert.deepEqual(actual.right.filters, expectedFilters);
+        assert.deepEqual(actual.right, expected);
+    })
+
+    it('update mytable1 set value = ? where id = ?', async () => {
+
+        const sql = `
+        update mytable1 set value = :value where id > :min and id < :max 
+            `;
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            multipleRowsResult: false,
+            columns,
+            data: [
+                {
+                    name: 'value',
+                    columnType: 'int',
+                    notNull: false
+                }
+            ],
+            parameters: [
+                {
+                    name: 'min',
+                    columnType: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'max',
+                    columnType: 'int',
+                    notNull: true
+                }
+            ],
+            parameterNames: ['value', 'min', 'max']
+        }
+
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
+    })
+
+    it('update mytable1 set value = ? where id = ?', async () => {
+
+        const sql = `
+        update mytable1 set value = :value where id > :value or id < :value 
+            `;
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            multipleRowsResult: false,
+            columns,
+            data: [
+                {
+                    name: 'value',
+                    columnType: 'int',
+                    notNull: false
+                }
+            ],
+            parameters: [
+                {
+                    name: 'value',
+                    columnType: 'int',
+                    notNull: true
+                }
+            ],
+            parameterNames: ['value', 'value', 'value']
+        }
+
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 })
