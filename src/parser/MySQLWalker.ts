@@ -556,6 +556,7 @@ export class MySQLWalker implements MySQLParserListener {
             const paramContext: ResolvedParameter = {
                 type: 'resolved',
                 name: '?',
+                notNull: false,
                 columnType: 'null'
             }
             return paramContext;
@@ -592,6 +593,7 @@ export class MySQLWalker implements MySQLParserListener {
             const paramContext: ExpressionParamContext = {
                 type: 'expression',
                 name,
+                notNull: true,
                 expression: expr
             }
             return paramContext;
@@ -601,6 +603,7 @@ export class MySQLWalker implements MySQLParserListener {
             console.log("PrimaryExprAllAnyContext");
             const paramContext: ExpressionParamContext = {
                 type: 'expression',
+                notNull: true,
                 expression: 'anyAll'
             }
             return paramContext;
@@ -609,6 +612,7 @@ export class MySQLWalker implements MySQLParserListener {
             const functionName = parseRuleContext.pureIdentifier()?.text || 'error';
             const paramContext: FunctionParamContext = {
                 type: 'function',
+                notNull: false,
                 functionName
             }
             return paramContext;
@@ -632,6 +636,7 @@ export class MySQLWalker implements MySQLParserListener {
             const paramContext: ExpressionParamContext = {
                 type: 'expression',
                 name: name,
+                notNull: true,
                 expression: expr!,
                 list: list
             }
@@ -646,6 +651,7 @@ export class MySQLWalker implements MySQLParserListener {
 
             const paramContext: ExpressionParamContext = {
                 type: 'expression',
+                notNull: true,
                 expression: compare.text
             }
             return paramContext;
@@ -655,6 +661,7 @@ export class MySQLWalker implements MySQLParserListener {
             const originalExpr = this.extractOriginalSql(parseRuleContext) || "error";
             const paramContext: ExpressionParamContext = {
                 type: 'expression',
+                notNull: false,
                 expression: originalExpr
             }
             return paramContext;

@@ -309,16 +309,19 @@ describe('Test parse select with functions', () => {
             parameters: [
                 {
                     name: 'param1',
-                    columnType: 'varchar'
+                    columnType: 'varchar',
+                    notNull: false //TODO - verify if is possible any inference
                 },
                 {
                     name: 'param2',
-                    columnType: 'varchar'
+                    columnType: 'varchar',
+                    notNull: false //TODO - verify if is possible any inference
 
                 },
                 {
                     name: 'param3',
-                    columnType: 'varchar'
+                    columnType: 'varchar',
+                    notNull: false //TODO - verify if is possible any inference
                 }
             ]
 
@@ -346,15 +349,18 @@ describe('Test parse select with functions', () => {
             parameters: [
                 {
                     name: 'param1',
-                    columnType: 'varchar'
+                    columnType: 'varchar',
+                    notNull: false //TODO - verify if is possible any inference
                 },
                 {
                     name: 'param2',
-                    columnType: 'varchar'
+                    columnType: 'varchar',
+                    notNull: false //TODO - verify if is possible any inference
                 },
                 {
                     name: 'param3',
-                    columnType: 'varchar'
+                    columnType: 'varchar',
+                    notNull: false //TODO - verify if is possible any inference
                 }
             ]
 

@@ -24,7 +24,8 @@ describe('Test parse parameters', () => {
         const expected : ParameterDef[] = [
             {
                 name: 'param1',
-                columnType: 'varchar'
+                columnType: 'varchar',
+                notNull: false
             }
         ]
         if(isLeft(actual)) {
@@ -41,7 +42,8 @@ describe('Test parse parameters', () => {
         const expected : ParameterDef[] = [
             {
                 name: 'param1',
-                columnType: 'bigint'
+                columnType: 'bigint',
+                notNull: true
             }
         ]
         if(isLeft(actual)) {
@@ -58,7 +60,8 @@ describe('Test parse parameters', () => {
         const expected : ParameterDef[] = [
             {
                 name: 'param1',
-                columnType: 'varchar'
+                columnType: 'varchar',
+                notNull: true
             }
         ]
         if(isLeft(actual)) {
@@ -75,7 +78,8 @@ describe('Test parse parameters', () => {
         const expected : ParameterDef[] = [
             {
                 name: 'param1',
-                columnType: 'varchar'
+                columnType: 'varchar',
+                notNull: false
             }
         ]
         if(isLeft(actual)) {
@@ -92,7 +96,8 @@ describe('Test parse parameters', () => {
         const expected : ParameterDef[] = [
             {
                 name: 'name',
-                columnType: 'varchar'
+                columnType: 'varchar',
+                notNull: true
             }
         ]
         if(isLeft(actual)) {
@@ -109,7 +114,8 @@ describe('Test parse parameters', () => {
         const expected : ParameterDef[] = [
             {
                 name: 'id',
-                columnType: 'int'
+                columnType: 'int',
+                notNull: true
             }
         ]
         if(isLeft(actual)) {
@@ -126,7 +132,8 @@ describe('Test parse parameters', () => {
         const expected : ParameterDef[] = [
             {
                 name: 'id',
-                columnType: 'int'
+                columnType: 'int',
+                notNull: true
             }
         ]
         if(isLeft(actual)) {
@@ -143,7 +150,26 @@ describe('Test parse parameters', () => {
         const expected : ParameterDef[] = [
             {
                 name: 'param1',
-                columnType: 'varchar'
+                columnType: 'varchar',
+                notNull: false
+            }
+        ]
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right.parameters, expected);
+    })
+
+    it(`SELECT * from mytable1 where concat_ws('/', ?) is null`, async () => {
+        const sql = `
+        SELECT * from mytable1 where concat_ws('/', ?) is null 
+        `
+        const actual = await parseSql(client, sql);
+        const expected : ParameterDef[] = [
+            {
+                name: 'param1',
+                columnType: 'varchar',
+                notNull: false
             }
         ]
         if(isLeft(actual)) {
@@ -160,7 +186,8 @@ describe('Test parse parameters', () => {
         const expected : ParameterDef[] = [
             {
                 name: 'param1',
-                columnType: 'varchar'
+                columnType: 'varchar',
+                notNull: false
             }
         ]
         if(isLeft(actual)) {
@@ -177,7 +204,8 @@ describe('Test parse parameters', () => {
         const expected : ParameterDef[] = [
             {
                 name: 'param1',
-                columnType: 'int'
+                columnType: 'int',
+                notNull: true
             }
         ]
         if(isLeft(actual)) {
@@ -194,7 +222,8 @@ describe('Test parse parameters', () => {
         const expected : ParameterDef[] = [
             {
                 name: 'param1',
-                columnType: 'int'
+                columnType: 'int',
+                notNull: true
             }
         ]
         if(isLeft(actual)) {
@@ -211,11 +240,13 @@ describe('Test parse parameters', () => {
         const expected : ParameterDef[] = [
             {
                 name: 'param1',
-                columnType: 'null'
+                columnType: 'null',
+                notNull: false
             },
             {
                 name: 'id',
-                columnType: 'int'
+                columnType: 'int',
+                notNull: true
             }
         ]
         if(isLeft(actual)) {
@@ -224,6 +255,7 @@ describe('Test parse parameters', () => {
         assert.deepEqual(actual.right.parameters, expected);
     })
 
+    //TODO: new test: SELECT * FROM mytable1 t WHERE value in (select value from mytable1 m2 where m2.value is null) or value is null;
     it(`SELECT * FROM mytable1 t WHERE ? in (select id from mytable1 m2 )`, async () => {
         const sql = `
         SELECT * FROM mytable1 t WHERE ? in (select id from mytable1 m2 )
@@ -232,7 +264,8 @@ describe('Test parse parameters', () => {
         const expected : ParameterDef[] = [
             {
                 name: 'param1',
-                columnType: 'int'
+                columnType: 'int',
+                notNull: true
             }
         ]
         if(isLeft(actual)) {
@@ -249,7 +282,8 @@ describe('Test parse parameters', () => {
         const expected : ParameterDef[] = [
             {
                 name: 'param1',
-                columnType: 'varchar'
+                columnType: 'varchar',
+                notNull: true
             }
         ]
         if(isLeft(actual)) {
@@ -270,7 +304,8 @@ describe('Test parse parameters', () => {
         const expected : ParameterDef[] = [
             {
                 name: 'param1',
-                columnType: 'varchar'
+                columnType: 'varchar',
+                notNull: true
             }
         ]
         if(isLeft(actual)) {
@@ -287,6 +322,7 @@ describe('Test parse parameters', () => {
             {
                 name: 'id',
                 columnType: 'int',
+                notNull: true,
                 list: true
             }
         ]
