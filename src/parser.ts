@@ -89,12 +89,15 @@ export async function parseSql(client: DbClient, sql: string) : Promise<Either<I
         ]
 
         const filterParameters = await resolveParameters(client, walker.parameters);
+        const uniqueUpdateParams = getUniqueParameters(insertParameters, namedParameters.slice(0, insertParameters.length), params => params.some( param => param.notNull == true));
+        const uniqueFilters = getUniqueParameters(filterParameters, namedParameters.slice(insertParameters.length), params => true)
 
         const insertResult : SchemaDef = {
             multipleRowsResult: false,
             columns: insertResultColumns,
-            parameters: insertParameters,
-            filters: filterParameters
+            data: uniqueUpdateParams,
+            parameters: uniqueFilters,
+            parameterNames: namedParameters
         }
         return right(insertResult);
     }
@@ -115,7 +118,7 @@ export async function parseSql(client: DbClient, sql: string) : Promise<Either<I
             multipleRowsResult: false,
             columns: insertResultColumns,
             parameters: parameters,
-            filters: []
+            data: []
         }
         return right(insertResult);
     }
