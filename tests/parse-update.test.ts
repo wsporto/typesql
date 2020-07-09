@@ -46,7 +46,7 @@ describe('parse update statements', () => {
             ],
             parameters: [
                 {
-                    name: 'id',
+                    name: 'param1',
                     columnType: 'int',
                     notNull: true
                 }
@@ -60,7 +60,7 @@ describe('parse update statements', () => {
         assert.deepEqual(actual.right, expected);
     })
 
-    it('update mytable1 set value = ? where id = ?', async () => {
+    it('update mytable1 set value = :value where id > :min and id < :max', async () => {
 
         const sql = `
         update mytable1 set value = :value where id > :min and id < :max 
@@ -97,7 +97,7 @@ describe('parse update statements', () => {
         assert.deepEqual(actual.right, expected);
     })
 
-    it('update mytable1 set value = ? where id = ?', async () => {
+    it('update mytable1 set value = :value where id > :value or id < :value', async () => {
 
         const sql = `
         update mytable1 set value = :value where id > :value or id < :value 

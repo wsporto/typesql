@@ -95,7 +95,7 @@ describe('Test parse parameters', () => {
         const actual = await parseSql(client, sql);
         const expected : ParameterDef[] = [
             {
-                name: 'name',
+                name: 'param1',
                 columnType: 'varchar',
                 notNull: true
             }
@@ -113,7 +113,7 @@ describe('Test parse parameters', () => {
         const actual = await parseSql(client, sql);
         const expected : ParameterDef[] = [
             {
-                name: 'id',
+                name: 'param1',
                 columnType: 'int',
                 notNull: true
             }
@@ -131,7 +131,7 @@ describe('Test parse parameters', () => {
         const actual = await parseSql(client, sql);
         const expected : ParameterDef[] = [
             {
-                name: 'id',
+                name: 'param1',
                 columnType: 'int',
                 notNull: true
             }
@@ -244,7 +244,53 @@ describe('Test parse parameters', () => {
                 notNull: false
             },
             {
-                name: 'id',
+                name: 'param2',
+                columnType: 'int',
+                notNull: true
+            }
+        ]
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right.parameters, expected);
+    })
+
+    it(`SELECT * from mytable2 where id = ? or id > ?`, async () => {
+        const sql = `
+        SELECT * from mytable2 where id = ? or id > ?
+        `
+        const actual = await parseSql(client, sql);
+        const expected : ParameterDef[] = [
+            {
+                name: 'param1',
+                columnType: 'int',
+                notNull: true
+            },
+            {
+                name: 'param2',
+                columnType: 'int',
+                notNull: true
+            }
+        ]
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right.parameters, expected);
+    })
+
+    it(`select name from mytable2 where concat('/', id) > :p or id = :p`, async () => {
+        const sql = `
+        select name from mytable2 where concat('/', id) > ? or id = ?
+        `
+        const actual = await parseSql(client, sql);
+        const expected : ParameterDef[] = [
+            {
+                name: 'param1',
+                columnType: 'varchar',
+                notNull: true
+            },
+            {
+                name: 'param2',
                 columnType: 'int',
                 notNull: true
             }
@@ -320,7 +366,7 @@ describe('Test parse parameters', () => {
         const actual = await parseSql(client, sql);
         const expected : ParameterDef[] = [
             {
-                name: 'id',
+                name: 'param1',
                 columnType: 'int',
                 notNull: true,
                 list: true
