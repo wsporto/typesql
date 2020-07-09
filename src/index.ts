@@ -110,7 +110,7 @@ function generateTsContent(tsDescriptorOption: Option<TsDescriptor>, sqlContext:
     '';
 
     const orderByFunction = tsDescriptor.orderByColumns? `
-    function escapeOrderBy(connection: Connection, orderBy: OrderByOrderBy[]) {
+    function escapeOrderBy(connection: Connection, orderBy: ${orderByTypeName}[]) {
         return orderBy.map( order => \`\${connection.escapeId(order.column)} \${order.direction == 'desc' ? 'desc' : 'asc' }\`).join(', '); 
     }
     `
