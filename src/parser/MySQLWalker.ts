@@ -10,7 +10,7 @@ import {
     SimpleExprUnaryContext, SimpleExprNotContext, SimpleExprOdbcContext, SimpleExprMatchContext, SimpleExprBinaryContext,
     SimpleExprCastContext, SimpleExprCaseContext, SimpleExprConvertContext, SimpleExprConvertUsingContext, SimpleExprDefaultContext,
     SimpleExprValuesContext, SimpleExprIntervalContext, SubqueryContext, TableFactorContext, TableReferenceListParensContext, SelectItemListContext, 
-    TableReferenceContext, SingleTableParensContext, SingleTableContext, JoinedTableContext, InsertStatementContext, UpdateStatementContext, SelectStatementContext, UpdateListContext, DeleteStatementContext
+    TableReferenceContext, SingleTableParensContext, SingleTableContext, JoinedTableContext, InsertStatementContext, UpdateStatementContext, SelectStatementContext, UpdateListContext, DeleteStatementContext, OrderClauseContext
 } from "./MySQLParser";
 
 import { TerminalNode, ErrorNode, ParseTree } from "antlr4ts/tree";
@@ -24,9 +24,9 @@ type FieldName = {
 }
 
 export class MySQLWalker implements MySQLParserListener {
-
     parameters: ParameterContext[] = [];
-    private querySpecification: QuerySpecificationContext[] = [];
+    orderByParameter: boolean;
+    querySpecification: QuerySpecificationContext[] = [];
     insertParameters: string[];
     insertIntoTable: string;
     insertIntoValues: string[];
@@ -74,11 +74,15 @@ export class MySQLWalker implements MySQLParserListener {
         return fieldsNullability;
     }
 
-    processQuery(dbSchema: DBSchema, ctx: QuerySpecificationContext) {
+    getColumnsFrom(dbSchema: DBSchema, ctx: QuerySpecificationContext) {
         const tableReferences = ctx.fromClause()?.tableReferenceList()?.tableReference();
         const fromColumns = tableReferences? this.extractColumnsFromTableReferences(dbSchema, tableReferences) : [];
-        const fields = this.selectColumns(ctx.selectItemList(), fromColumns, ctx.whereClause()?.expr());
+        return fromColumns;
+    }
 
+    processQuery(dbSchema: DBSchema, ctx: QuerySpecificationContext) {
+        const fromColumns = this.getColumnsFrom(dbSchema, ctx);
+        const fields = this.selectColumns(ctx.selectItemList(), fromColumns, ctx.whereClause()?.expr());
         return fields
     }
 
@@ -689,7 +693,7 @@ export class MySQLWalker implements MySQLParserListener {
             return;
         }
 
-        const predicateContext = ctx.parent!;
+        const predicateContext = ctx.parent!; //PredicateContext
 
         const paramContext = this.processPredicateContext(predicateContext);
         const querySpecContext = <QuerySpecificationContext>this.getParentContext(predicateContext, QuerySpecificationContext);
@@ -743,4 +747,12 @@ export class MySQLWalker implements MySQLParserListener {
         this.deleteTable = ctx.tableRef()?.text;
     }
 
+    enterOrderClause(ctx: OrderClauseContext) {
+        ctx.orderList().orderExpression().forEach( orderByExpr => {
+            if(orderByExpr.text == '?') {
+                this.orderByParameter = true;
+                return;
+            }
+        })
+    }
 }

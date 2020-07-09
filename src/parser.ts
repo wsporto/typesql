@@ -167,6 +167,12 @@ export async function parseSql(client: DbClient, sql: string) : Promise<Either<I
     if(namedParameters.length > 0) {
         result.parameterNames = namedParameters
     }
+    const fromColumns = walker.getColumnsFrom(dbSchema, walker.querySpecification[0]).map( col => col.columnName);
+    const selectColumns = mapped.map( col => col.name);
+    const allOrderByColumns = Array.from(new Set(fromColumns.concat(selectColumns)));
+    if(walker.orderByParameter) {
+        result.orderByColumns = allOrderByColumns;
+    }
     return right(result);
 }
 

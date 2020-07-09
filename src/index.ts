@@ -44,6 +44,7 @@ function generateTsDescriptor(queryInfo: SchemaDef) : TsDescriptor {
     return {
         multipleRowsResult: queryInfo.multipleRowsResult,
         columns,
+        orderByColumns: queryInfo.orderByColumns,
         parameters,
         data,
         parameterNames
@@ -70,9 +71,13 @@ function generateTsContent(tsDescriptorOption: Option<TsDescriptor>, sqlContext:
     const capitalizedName = capitalize(queryName);
 
     console.log("generateTsContent=", tsDescriptor)
-    const paramsStr = tsDescriptor.parameters.reduce( (total, actual) => {
+    const paramsStrTemp = tsDescriptor.parameters.reduce( (total, actual) => {
         return total + `\t ${actual.name} : ${actual.tsType};\n`;
     }, '');
+
+    const orderByTypeName = `${capitalizedName}OrderBy`;
+
+    const paramsStr = paramsStrTemp + (tsDescriptor.orderByColumns? `orderBy: [${orderByTypeName}, ...${orderByTypeName}[]];` : '');
 
     const dataParamsStr = tsDescriptor.data?.reduce( (total, actual) => {
         return total + `\t ${actual.name} : ${actual.tsType};\n`;
@@ -93,6 +98,26 @@ function generateTsContent(tsDescriptorOption: Option<TsDescriptor>, sqlContext:
 
     const resultStr = `${capitalizedName}Result` + (tsDescriptor.multipleRowsResult? '[]' : '');
 
+    const orderByColumns = tsDescriptor.orderByColumns?.map(col => `'${col}'`).join( ' | ' );
+
+    const orderByType = tsDescriptor.orderByColumns? `
+     export type ${orderByTypeName} = {
+        column: ${orderByColumns};
+        direction: 'asc' | 'desc';
+     }
+     `
+    :
+    '';
+
+    const orderByFunction = tsDescriptor.orderByColumns? `
+    function escapeOrderBy(connection: Connection, orderBy: OrderByOrderBy[]) {
+        return orderBy.map( order => \`\${connection.escapeId(order.column)} \${order.direction == 'desc' ? 'desc' : 'asc' }\`).join(', '); 
+    }
+    `
+    :
+    '';
+
+
     const dataType = tsDescriptor.data? `
     export type ${capitalizedName}Data = {
         ${dataParamsStr}
@@ -109,21 +134,34 @@ function generateTsContent(tsDescriptorOption: Option<TsDescriptor>, sqlContext:
 
     ${dataType}
 
+    ${orderByType}
+
     export type ${capitalizedName}Result = {
         ${columnsStr}
     }
 
-    export async function ${queryName}(connection: Connection${tsDescriptor.parameters.length > 0 ? 
+    export async function ${queryName}(connection: Connection${tsDescriptor.parameters.length > 0 || tsDescriptor.orderByColumns? 
             ', params: ' + capitalizedName + 'Params' : ''}) : Promise<${resultStr}> {
         const sql = \`
-        ${sqlContext}
+        ${replaceOrderByParam(sqlContext)}
         \`;
         return connection.query(sql${paramValues})
             .then( res => res[0] as ${resultStr} );
     }
+
+    ${orderByFunction}
+   
     `
 
     return template;
+}
+
+function replaceOrderByParam(sql: string) {
+    const patern = /(.*order\s+by\s*)(\?)(.*$)/;
+    const newSql = sql.toLowerCase().replace(patern, "$1${escapeOrderBy(connection, params.orderBy)} $3");
+    console.log("sql:", sql);
+    console.log("newSql:", newSql);
+    return newSql;
 }
 
 function writeTsFile(filePath:string, tsContent: string) {
@@ -151,14 +189,13 @@ export async function generateTsFile(client: DbClient, sqlFile: string) {
     writeTsFile(tsFilePath, tsContent);
 }
 
-
-
 type TsDescriptor = {
     multipleRowsResult: boolean;
     columns: FieldDescriptor[];
     parameters: FieldDescriptor[];
     data?: FieldDescriptor[];
     parameterNames: string[];
+    orderByColumns? : string[];
 }
 
 type FieldDescriptor = {
