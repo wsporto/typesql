@@ -1084,6 +1084,115 @@ describe('Test simple select statements', () => {
         assert.deepEqual(actual.right, expected);
     })
 
+    it('select value from mytable1 order by ?', async () => {
+        const sql = `
+        select value from mytable1 order by ?
+        `;
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'value',
+                    dbtype: 'int',
+                    notNull: false
+                }
+            ],
+            orderByColumns: ['id', 'value'],
+            parameters: []
+        
+        }
+
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
+    })
+
+    it('order by with case when expression', async () => {
+        const sql = `
+        select value, case when value = 1 then 1 else 2 end as ordering from mytable1 order by ?
+        `;
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'value',
+                    dbtype: 'int',
+                    notNull: false
+                },
+                {
+                    name: 'ordering',
+                    dbtype: 'bigint',
+                    notNull: true
+                }
+            ],
+            orderByColumns: ['id', 'value', 'ordering'],
+            parameters: []
+        
+        }
+
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
+    })
+
+    it('order by with subselect', async () => {
+        const sql = `
+        select value from (
+        select id, value, case when value = 1 then 1 else 2 end as ordering from mytable1
+        ) t order by ?
+        `;
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'value',
+                    dbtype: 'int',
+                    notNull: false
+                }
+            ],
+            orderByColumns: ['id', 'value', 'ordering'],
+            parameters: []
+        
+        }
+
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
+    })
+
+    it.skip('remove the ordering column from select', async () => {
+        const sql = `
+        select value from (
+        select id, value, case when value = 1 then 1 else 2 end from mytable1
+        ) t order by ?
+        `;
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'value',
+                    dbtype: 'int',
+                    notNull: false
+                }
+            ],
+            orderByColumns: ['id', 'value'],
+            parameters: []
+        
+        }
+
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
+    })
+
 
     it('try to parse with reserved word desc'), () => {
         //SELECT id, name, desc as description FROM MYTABLE
