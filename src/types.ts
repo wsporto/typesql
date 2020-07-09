@@ -51,7 +51,6 @@ export type FunctionParamContext = {
 }
 export type ExpressionParamContext = {
     type: 'expression';
-    name?: string;
     expression: string;
     notNull: boolean;
     from?: string;
@@ -60,7 +59,6 @@ export type ExpressionParamContext = {
 
 export type ResolvedParameter = {
     type: 'resolved';
-    name: string;
     notNull: boolean;
     columnType: string;
 }

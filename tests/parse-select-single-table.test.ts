@@ -1,8 +1,8 @@
 import assert from "assert";
 import { parseSql } from "../src/parser";
-import { SchemaDef, InvalidSqlError } from "../src/types";
+import { SchemaDef } from "../src/types";
 import { DbClient } from "../src/queryExectutor";
-import { right, isLeft } from "fp-ts/lib/Either";
+import { isLeft } from "fp-ts/lib/Either";
 
 describe('Test simple select statements', () => {
 
@@ -241,7 +241,7 @@ describe('Test simple select statements', () => {
             ],
             parameters: [
                 {
-                    name: 'id',
+                    name: 'param1',
                     columnType: 'int',
                     notNull: true
                 }
@@ -268,7 +268,7 @@ describe('Test simple select statements', () => {
             ],
             parameters: [
                 {
-                    name: 'id',
+                    name: 'param1',
                     columnType: 'int',
                     notNull: true
                 }
@@ -295,12 +295,12 @@ describe('Test simple select statements', () => {
             ],
             parameters: [
                 {
-                    name: 'id',
+                    name: 'param1',
                     columnType: 'int',
                     notNull: true
                 },
                 {
-                    name: 'value',
+                    name: 'param2',
                     columnType: 'int',
                     notNull: true
                 }
@@ -355,7 +355,7 @@ describe('Test simple select statements', () => {
             ],
             parameters: [
                 {
-                    name: 'name',
+                    name: 'param1',
                     columnType: 'varchar',
                     notNull: false
                 }
@@ -396,22 +396,22 @@ describe('Test simple select statements', () => {
             ],
             parameters: [
                 {
-                    name: 'name',
+                    name: 'param1',
                     columnType: 'varchar',
                     notNull: false
                 },
                 {
-                    name: 'name',
+                    name: 'param2',
                     columnType: 'varchar',
                     notNull: true
                 },
                 {
-                    name: 'descr',
+                    name: 'param3',
                     columnType: 'varchar',
                     notNull: true
                 },
                 {
-                    name: 'id',
+                    name: 'param4',
                     columnType: 'int',
                     notNull: true
                 }
@@ -468,7 +468,7 @@ describe('Test simple select statements', () => {
             ],
             parameters: [
                 {
-                    name: 'id',
+                    name: 'param1',
                     columnType: 'int',
                     notNull: true
                 }
@@ -586,7 +586,7 @@ describe('Test simple select statements', () => {
             ],
             parameters: [
                 {
-                    name: 'id',
+                    name: 'param1',
                     columnType: 'int',
                     notNull: true,
                     list: true
@@ -708,7 +708,7 @@ describe('Test simple select statements', () => {
             ],
             parameters: [
                 {
-                    name: 'id',
+                    name: 'param1',
                     columnType: 'int',
                     notNull: true
                 }
@@ -750,7 +750,7 @@ describe('Test simple select statements', () => {
         assert.deepEqual(actual.right, expected);
     })
 
-    it('compare ', async () => {
+    it('compare', async () => {
 
         const sql = `
         select * from (
@@ -775,12 +775,12 @@ describe('Test simple select statements', () => {
             ],
             parameters: [
                 {
-                    name: 'id',
+                    name: 'param1',
                     columnType: 'varchar',
                     notNull: true
                 },
                 {
-                    name: 'name',
+                    name: 'param2',
                     columnType: 'varchar',
                     notNull: true
                 }
@@ -853,7 +853,7 @@ describe('Test simple select statements', () => {
             ],
             parameters: [
                 {
-                    name: 'name',
+                    name: 'param1',
                     columnType: 'varchar',
                     notNull: true
                 }
@@ -882,7 +882,7 @@ describe('Test simple select statements', () => {
             ],
             parameters: [
                 {
-                    name: 'name',
+                    name: 'param1',
                     columnType: 'varchar',
                     notNull: true
                 }
@@ -1010,7 +1010,7 @@ describe('Test simple select statements', () => {
             ],
             parameters: [
                 {
-                    name: 'name',
+                    name: 'param1',
                     columnType: 'varchar',
                     notNull: true
                 }

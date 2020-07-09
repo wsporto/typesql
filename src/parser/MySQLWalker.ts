@@ -559,7 +559,6 @@ export class MySQLWalker implements MySQLParserListener {
         else if (parseRuleContext instanceof PrimaryExprIsNullContext) { //primaryExprIsNull
             const paramContext: ResolvedParameter = {
                 type: 'resolved',
-                name: '?',
                 notNull: false,
                 columnType: 'null'
             }
@@ -573,30 +572,9 @@ export class MySQLWalker implements MySQLParserListener {
 
 
             const expr = this.extractOriginalSql(compare)!;
-            let name = undefined;
-            const simpleExpr = predicate.bitExpr()[0].simpleExpr();
-            if (boolPri.text == '?') {
-                if (simpleExpr instanceof SimpleExprLiteralContext) {
-                    name = '?';
-                }
-                if (simpleExpr instanceof SimpleExprSubQueryContext) {
-                    name = '?'
-                }
-            }
-            else if (boolPri instanceof PrimaryExprPredicateContext) {
-                const simpleExpr = boolPri.predicate().bitExpr()[0].simpleExpr();
-                if (simpleExpr instanceof SimpleExprLiteralContext) {
-                    name = '?';
-                }
-                if (simpleExpr instanceof SimpleExprSubQueryContext) {
-                    name = '?'
-                }
-            }
-
 
             const paramContext: ExpressionParamContext = {
                 type: 'expression',
-                name,
                 notNull: true,
                 expression: expr
             }
@@ -632,14 +610,12 @@ export class MySQLWalker implements MySQLParserListener {
             const bitExpr = predicate.bitExpr()[0];
             const predicateExprIn = parseRuleContext.subquery() || parseRuleContext.exprList();
             const compare = bitExpr.text == '?' ? predicateExprIn : bitExpr; //compare is the other side of the ?
-            const name = bitExpr.text; // id or ?
             const list = parseRuleContext.exprList() != null && bitExpr.text != '?'; // case 3) or 4)
 
             const expr = this.extractOriginalSql(compare!);
 
             const paramContext: ExpressionParamContext = {
                 type: 'expression',
-                name: name,
                 notNull: true,
                 expression: expr!,
                 list: list

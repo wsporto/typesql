@@ -195,7 +195,7 @@ describe('Test select with multiples tables', () => {
             ],
             parameters: [
                 {
-                    name: 'id',
+                    name: 'param1',
                     columnType: 'int',
                     notNull: true
                 }
@@ -253,17 +253,17 @@ describe('Test select with multiples tables', () => {
                     notNull: false
                 },
                 {
-                    name: 'id',
+                    name: 'param2',
                     columnType: 'int',
                     notNull: true
                 },
                 {
-                    name: 'name',
+                    name: 'param3',
                     columnType: 'varchar',
                     notNull: true
                 },
                 {
-                    name: 'value',
+                    name: 'param4',
                     columnType: 'int',
                     notNull: true
                 }
@@ -315,17 +315,17 @@ describe('Test select with multiples tables', () => {
                     notNull: false
                 },
                 {
-                    name: 'id',
+                    name: 'param2',
                     columnType: 'int',
                     notNull: true
                 },
                 {
-                    name: 'value',
+                    name: 'param3',
                     columnType: 'int',
                     notNull: true
                 },
                 {
-                    name: 'name',
+                    name: 'param4',
                     columnType: 'varchar',
                     notNull: true
                 }

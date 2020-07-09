@@ -23,7 +23,7 @@ describe('parse delete statements', () => {
         const actual = await parseSql(client, sql);
         const expected: ParameterDef[] = [
             {
-                name: 'id',
+                name: 'param1',
                 columnType: 'int',
                 notNull: true
             }

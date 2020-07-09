@@ -190,27 +190,22 @@ async function resolveParameters(client: DbClient, parameters: ParameterContext[
 
         switch (parameter.type) {
             case 'resolved':
-                param.name = parameter.name;
                 param.columnType = parameter.columnType;
                 break;
             case 'function':
                 const paramType = client.functionParamType(parameter.functionName);
-                param.name = '?';
                 param.columnType = paramType;
 
                 break;
             case 'expression':
                 const resultParams2 = await client.executeExpression(parameter.expression, parameter.from); //TODO - execute at once
                 const typeResult = getResultType(resultParams2);
-                param.name = parameter.name || resultParams2[0].name;
                 param.columnType = typeResult;
                 param.notNull = parameter.notNull;
                 if(parameter.list) param.list = parameter.list;
                 break;
         }
-        if (param.name == '?') {
-            param.name = 'param' + index;
-        }
+        param.name = 'param' + index;
         mappedParameters.push(param);
 
     }
