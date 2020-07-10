@@ -10,36 +10,42 @@ describe('infer-not-null-experimental', () => {
                 column: 'id',
                 column_type: 'int',
                 table: 'mytable1',
+                schema: 'mydb',
                 notNull: true
             },
             {
                 column: 'value',
                 column_type: 'int',
                 table: 'mytable1',
+                schema: 'mydb',
                 notNull: false
             },
             {
                 column: 'id',
                 column_type: 'int',
                 table: 'mytable2',
+                schema: 'mydb',
                 notNull: true
             },
             {
                 column: 'name',
                 column_type: 'varchar',
                 table: 'mytable2',
+                schema: 'mydb',
                 notNull: false
             },
             {
                 column: 'id',
                 column_type: 'int',
                 table: 'mytable3',
+                schema: 'mydb',
                 notNull: true
             },
             {
                 column: 'double_value',
                 column_type: 'double',
                 table: 'mytable3',
+                schema: 'mydb',
                 notNull: false
             }
         ]
