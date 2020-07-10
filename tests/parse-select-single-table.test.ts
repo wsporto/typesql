@@ -31,7 +31,7 @@ describe('Test simple select statements', () => {
     })
 
     it('parse a basic select', async () => {
-        const sql = `SELECT id FROM MYTABLE1`;
+        const sql = `SELECT id FROM mytable1`;
 
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
@@ -53,8 +53,8 @@ describe('Test simple select statements', () => {
         assert.deepEqual(actual.right, expected);
     })
 
-    it('SELECT id as name FROM MYTABLE', async () => {
-        const sql = 'SELECT id as name FROM MYTABLE1';
+    it('SELECT id as name FROM mytable1', async () => {
+        const sql = 'SELECT id as name FROM mytable1';
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             multipleRowsResult: true,
@@ -77,7 +77,7 @@ describe('Test simple select statements', () => {
     })
 
     it('parse select * from mytable', async () => {
-        const sql = 'SELECT * FROM MYTABLE1';
+        const sql = 'SELECT * FROM mytable1';
 
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
@@ -104,7 +104,7 @@ describe('Test simple select statements', () => {
     })
 
     it('parse select t.* from mytable t', async () => {
-        const slq = 'SELECT t.* FROM MYTABLE1 t';
+        const slq = 'SELECT t.* FROM mytable1 t';
 
         const actual = await parseSql(client, slq);
         const expected: SchemaDef = {
@@ -133,7 +133,7 @@ describe('Test simple select statements', () => {
 
     it('parse select with multiples columns', async () => {
 
-        const sql = 'SELECT id, name, descr as description FROM MYTABLE2';
+        const sql = 'SELECT id, name, descr as description FROM mytable2';
 
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
@@ -167,7 +167,7 @@ describe('Test simple select statements', () => {
 
     it('parse select distinct column', async () => {
 
-        const sql = 'SELECT distinct id, value FROM MYTABLE1';
+        const sql = 'SELECT distinct id, value FROM mytable1';
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             multipleRowsResult: true,
@@ -195,7 +195,7 @@ describe('Test simple select statements', () => {
 
     it('parse select distinct *', async () => {
 
-        const sql = 'SELECT distinct * FROM MYTABLE1';
+        const sql = 'SELECT distinct * FROM mytable1';
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             multipleRowsResult: true,
@@ -222,7 +222,7 @@ describe('Test simple select statements', () => {
     })
 
     it('parse a select with a single parameter', async () => {
-        const sql = 'SELECT * FROM MYTABLE1 WHERE id = ?';
+        const sql = 'SELECT * FROM mytable1 WHERE id = ?';
 
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
@@ -254,7 +254,7 @@ describe('Test simple select statements', () => {
     })
 
     it('parse a select with a single parameter (not using *)', async () => {
-        const sql = 'SELECT id FROM MYTABLE1 WHERE id = ? and value = 10';
+        const sql = 'SELECT id FROM mytable1 WHERE id = ? and value = 10';
 
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
@@ -281,7 +281,7 @@ describe('Test simple select statements', () => {
     })
 
     it('parse a select with multiples parameters', async () => {
-        const sql = 'SELECT value FROM MYTABLE1 WHERE id = ? or value > ?';
+        const sql = 'SELECT value FROM mytable1 WHERE id = ? or value > ?';
 
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
@@ -313,7 +313,7 @@ describe('Test simple select statements', () => {
     })
 
     it('parse a select with param on column', async () => {
-        const sql = 'SELECT ? FROM MYTABLE1';
+        const sql = 'SELECT ? FROM mytable1';
 
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
@@ -341,7 +341,7 @@ describe('Test simple select statements', () => {
 
     //TODO - no reference to table.
     it('parse a select with param on column', async () => {
-        const sql = 'SELECT ? as name FROM MYTABLE1';
+        const sql = 'SELECT ? as name FROM mytable1';
 
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
@@ -370,7 +370,7 @@ describe('Test simple select statements', () => {
     it('parse a select with multiples params', async () => {
         const slq = `
         SELECT ? as name, id, descr as description
-        FROM MYTABLE2 
+        FROM mytable2 
         WHERE (name = ? or descr = ?) and id > ?
         `
         const actual = await parseSql(client, slq);
@@ -426,7 +426,7 @@ describe('Test simple select statements', () => {
     it('parse a select with table alias', async () => {
 
         const sql = `
-        SELECT t.name FROM MYTABLE2 t
+        SELECT t.name FROM mytable2 t
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
@@ -449,7 +449,7 @@ describe('Test simple select statements', () => {
     it('parse a select with table alias and parameter', async () => {
 
         const sql = `
-        SELECT t.* FROM MYTABLE1 t WHERE t.id = ?
+        SELECT t.* FROM mytable1 t WHERE t.id = ?
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
@@ -483,7 +483,7 @@ describe('Test simple select statements', () => {
     it('parse a select with in operator', async () => {
 
         const sql = `
-        SELECT * FROM MYTABLE1 WHERE id in (1, 2, 3)
+        SELECT * FROM mytable1 WHERE id in (1, 2, 3)
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
@@ -511,7 +511,7 @@ describe('Test simple select statements', () => {
     it('parse a select with not in operator', async () => {
 
         const sql = `
-        SELECT * FROM MYTABLE1 WHERE id not in (1, 2, 3)
+        SELECT * FROM mytable1 WHERE id not in (1, 2, 3)
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
@@ -539,7 +539,7 @@ describe('Test simple select statements', () => {
     it('parse a select with in operator (and alias)', async () => {
 
         const sql = `
-        SELECT t.* FROM MYTABLE1 t WHERE t.id in (1, 2, 3)
+        SELECT t.* FROM mytable1 t WHERE t.id in (1, 2, 3)
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
@@ -567,7 +567,7 @@ describe('Test simple select statements', () => {
     it('parse a select with parameter inside in operator', async () => {
 
         const sql = `
-        SELECT * FROM MYTABLE1 t WHERE id in (1, 2, 3, ?)
+        SELECT * FROM mytable1 t WHERE id in (1, 2, 3, ?)
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
@@ -599,10 +599,10 @@ describe('Test simple select statements', () => {
         assert.deepEqual(actual.right, expected);
     })
 
-    it('SELECT * FROM MYTABLE1 t WHERE ? in (1, 2, 3)', async () => {
+    it('SELECT * FROM mytable1 t WHERE ? in (1, 2, 3)', async () => {
 
         const sql = `
-        SELECT id FROM MYTABLE1 t WHERE ? in (1, 2, 3)
+        SELECT id FROM mytable1 t WHERE ? in (1, 2, 3)
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
@@ -628,10 +628,10 @@ describe('Test simple select statements', () => {
         assert.deepEqual(actual.right, expected);
     })
 
-    it(`SELECT * FROM MYTABLE1 t WHERE ? in ('a', 'b', 'c')`, async () => {
+    it(`SELECT * FROM mytable1 t WHERE ? in ('a', 'b', 'c')`, async () => {
 
         const sql = `
-        SELECT id FROM MYTABLE1 t WHERE ? in ('a', 'b', 'c')
+        SELECT id FROM mytable1 t WHERE ? in ('a', 'b', 'c')
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
@@ -657,10 +657,10 @@ describe('Test simple select statements', () => {
         assert.deepEqual(actual.right, expected);
     })
 
-    it(`SELECT id FROM MYTABLE1 t WHERE ? in (1, 2, 'a', 'b')`, async () => {
+    it(`SELECT id FROM mytable1 t WHERE ? in (1, 2, 'a', 'b')`, async () => {
 
         const sql = `
-        SELECT id FROM MYTABLE1 t WHERE ? in (1, 2, 'a', 'b')
+        SELECT id FROM mytable1 t WHERE ? in (1, 2, 'a', 'b')
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
@@ -1064,7 +1064,7 @@ describe('Test simple select statements', () => {
                     notNull: true
                 },
                 {
-                    name: `concat_ws('a', 'b')`, //If the separator is NULL, the result is NULL.
+                    name: `CONCAT_WS('a', 'b')`, //If the separator is NULL, the result is NULL.
                     dbtype: 'varchar',
                     notNull: false
                 },

@@ -157,8 +157,8 @@ function generateTsContent(tsDescriptorOption: Option<TsDescriptor>, sqlContext:
 }
 
 function replaceOrderByParam(sql: string) {
-    const patern = /(.*order\s+by\s*)(\?)(.*$)/;
-    const newSql = sql.toLowerCase().replace(patern, "$1${escapeOrderBy(connection, params.orderBy)} $3");
+    const patern = /(.*order\s+by\s*)(\?)(.*$)/i;
+    const newSql = sql.replace(patern, "$1${escapeOrderBy(connection, params.orderBy)} $3");
     console.log("sql:", sql);
     console.log("newSql:", newSql);
     return newSql;

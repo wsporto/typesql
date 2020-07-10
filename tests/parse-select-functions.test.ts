@@ -231,7 +231,7 @@ describe('Test parse select with functions', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'min(value)',
+                    name: 'MIN(value)',
                     dbtype: 'int',
                     notNull: false
                 }
@@ -255,7 +255,7 @@ describe('Test parse select with functions', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'min(name)',
+                    name: 'MIN(name)',
                     dbtype: 'varchar',
                     notNull: false
                 }
@@ -278,7 +278,7 @@ describe('Test parse select with functions', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: `str_to_date('21/5/2013','%d/%m/%y')`,
+                    name: `STR_TO_DATE('21/5/2013','%d/%m/%Y')`,
                     dbtype: 'date',
                     notNull: false //invalid date
                 }
@@ -301,7 +301,7 @@ describe('Test parse select with functions', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: `str_to_date(concat_ws('/', '?', '?', '?'),'%d/%m/%y')`,
+                    name: `STR_TO_DATE(CONCAT_WS('/', '?', '?', '?'),'%d/%m/%Y')`,
                     dbtype: 'date',
                     notNull: false
                 }
