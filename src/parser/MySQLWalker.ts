@@ -86,12 +86,12 @@ export class MySQLWalker implements MySQLParserListener {
         return fields
     }
 
-    filterColumns(dbSchema: DBSchema, tablePrefix: string | undefined, table: string) {
-        const tableColumns = dbSchema.columns.filter(schema => schema.table.toLowerCase() == table.toLowerCase()) || [];
+    filterColumns(dbSchema: DBSchema, tablePrefix: string | undefined, table: FieldName) {
+        const tableColumns = dbSchema.columns.filter(schema => schema.table.toLowerCase() == table.name.toLowerCase() && (schema.schema == table.prefix || table.prefix == ''));
         return tableColumns.map(tableColumn => {
 
             //name and colum are the same on the leaf table
-            const r: ColumnDef2 = { columnName: tableColumn.column, column: tableColumn.column, notNull: tableColumn.notNull,  table: table, tableAlias: tablePrefix || ''}
+            const r: ColumnDef2 = { columnName: tableColumn.column, column: tableColumn.column, notNull: tableColumn.notNull,  table: table.name, tableAlias: tablePrefix || ''}
             return r;
 
         })
@@ -192,8 +192,8 @@ export class MySQLWalker implements MySQLParserListener {
     extractFieldsFromSingleTable(dbSchema: DBSchema, ctx: SingleTableContext) {
         const table = ctx?.tableRef().text;
         const tableAlias = ctx?.tableAlias()?.text;
-
-        const fields = this.filterColumns(dbSchema, tableAlias, table)
+        const tableName = this.splitName(table);
+        const fields = this.filterColumns(dbSchema, tableAlias, tableName)
         return fields;
     }
 

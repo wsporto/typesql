@@ -221,6 +221,29 @@ describe('Test simple select statements', () => {
         assert.deepEqual(actual.right, expected);
     })
 
+    it('SELECT id FROM mydb.MYTABLE1', async () => {
+
+        const sql = 'SELECT id FROM mydb.mytable1';
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'id',
+                    dbtype: 'int',
+                    notNull: true
+                }
+            ],
+            parameters: []
+
+        }
+
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
+    })
+
     it('parse a select with a single parameter', async () => {
         const sql = 'SELECT * FROM mytable1 WHERE id = ?';
 
