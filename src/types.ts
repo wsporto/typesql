@@ -3,6 +3,7 @@ export type DBSchema = {
 }
 
 export type ColumnSchema = {
+    schema: string;
     table: string;
     column: string;
     column_type: string;
