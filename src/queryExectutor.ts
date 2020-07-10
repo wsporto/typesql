@@ -40,7 +40,7 @@ export class DbClient {
         }
         try {
             const [columns, fields] = await this.connection
-            .query(`${query.toLowerCase()} LIMIT 0`, params);
+            .query(`${query} LIMIT 0`, params);
 
             const columnsSchema = fields.map( field => {
                 const column : FieldDescriptor = {
