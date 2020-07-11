@@ -6,13 +6,14 @@ import { DbClient } from "./queryExectutor";
 import camelCase from "camelcase";
 import { isLeft } from "fp-ts/lib/Either";
 import { none, Option, some, isSome, isNone } from "fp-ts/lib/Option";
+import { converToTsType, MySqlType, TsType } from "./mysql-database";
 
 function generateTsDescriptor(queryInfo: SchemaDef) : TsDescriptor {
     
     const columns = queryInfo.columns.map( col => {
         const tsDesc : FieldDescriptor = {
             name: col.name,
-            tsType: typesMapping[col.dbtype],
+            tsType: mapColumnType(col.dbtype),
             notNull: col.notNull? col.notNull : false 
         }
         return tsDesc;
@@ -53,9 +54,10 @@ function generateTsDescriptor(queryInfo: SchemaDef) : TsDescriptor {
 
 }
 
-function mapColumnType(columnType: string | string[]) : string {
-    const types = ([] as string[]).concat(columnType);
-    const mappedTypes = types.map( type => typesMapping[type]);
+function mapColumnType(columnType: MySqlType | MySqlType[] | '?') : string {
+    if(columnType == '?') return '?';
+    const types = ([] as MySqlType[]).concat(columnType);
+    const mappedTypes = types.map( type => converToTsType(type));
     return mappedTypes.join(' | '); // number | string
 
 }
@@ -202,22 +204,4 @@ type FieldDescriptor = {
     name: string;
     tsType: string;
     notNull: boolean;
-}
-
-type TypeDef = {
-    [a: string] : string
-}
-
-const typesMapping: TypeDef = {
-    'decimal': 'number',
-    'tinyint': 'number',
-    'smallint': 'number',
-    'int': 'number',
-    'float': 'number',
-    'double': 'number',
-    'null': 'undefined',
-    'timestamp': 'number',
-    'bigint': 'number',
-    'mediumint': 'number',
-    'varchar': 'string'
 }
