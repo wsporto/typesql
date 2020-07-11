@@ -6,7 +6,7 @@ import { MySQLWalker } from "./parser/MySQLWalker";
 import { isLeft, right, Either } from "fp-ts/lib/Either"
 import { ColumnDef, SchemaDef, ParameterDef, FieldDescriptor, DBSchema, InvalidSqlError, PreprocessedSql, ParameterContext } from "./types";
 import { DbClient } from "./queryExectutor";
-import { convertTypeCodeToMysqlType, MySqlType } from "./mysql-database";
+import { convertTypeCodeToMysqlType, MySqlType } from "./mysql-mapping";
 import { string } from "yargs";
 
 export function parseSqlWalker(sql: string) : MySQLWalker {
