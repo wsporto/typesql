@@ -35,6 +35,7 @@ describe('parse update statements', () => {
             `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: false,
             columns,
             data: [
@@ -63,10 +64,14 @@ describe('parse update statements', () => {
     it('update mytable1 set value = :value where id > :min and id < :max', async () => {
 
         const sql = `
-        update mytable1 set value = :value where id > :min and id < :max 
+        update mytable1 set value = :value where id > :min and id < :max
+            `;
+        const expectedSql = `
+        update mytable1 set value = ? where id > ? and id < ?
             `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql: expectedSql,
             multipleRowsResult: false,
             columns,
             data: [
@@ -100,10 +105,15 @@ describe('parse update statements', () => {
     it('update mytable1 set value = :value where id > :value or id < :value', async () => {
 
         const sql = `
-        update mytable1 set value = :value where id > :value or id < :value 
+        update mytable1 set value = :value where id > :value or id < :value
             `;
+        const expectedSql = `
+        update mytable1 set value = ? where id > ? or id < ?
+            `;
+
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql: expectedSql,
             multipleRowsResult: false,
             columns,
             data: [

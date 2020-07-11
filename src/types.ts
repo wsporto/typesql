@@ -13,6 +13,7 @@ export type ColumnSchema = {
 }
 
 export type SchemaDef = {
+    sql: string;
     multipleRowsResult: boolean;
     columns: ColumnDef[];
     orderByColumns?: string[];
