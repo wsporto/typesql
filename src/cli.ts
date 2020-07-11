@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import chokidar from "chokidar";
 import yargs from "yargs";
-import { generateTsFile } from ".";
+import { generateTsFile } from "./code-generator";
 import { DbClient } from "./queryExectutor";
 
 function parseArgs() {
