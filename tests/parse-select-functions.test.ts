@@ -22,6 +22,7 @@ describe('Test parse select with functions', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -45,6 +46,7 @@ describe('Test parse select with functions', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -68,6 +70,7 @@ describe('Test parse select with functions', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -91,6 +94,7 @@ describe('Test parse select with functions', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -113,6 +117,7 @@ describe('Test parse select with functions', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -136,6 +141,7 @@ describe('Test parse select with functions', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -159,6 +165,7 @@ describe('Test parse select with functions', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -182,6 +189,7 @@ describe('Test parse select with functions', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -205,6 +213,7 @@ describe('Test parse select with functions', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -228,6 +237,7 @@ describe('Test parse select with functions', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -252,6 +262,7 @@ describe('Test parse select with functions', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -275,6 +286,7 @@ describe('Test parse select with functions', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -298,6 +310,7 @@ describe('Test parse select with functions', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -338,6 +351,7 @@ describe('Test parse select with functions', () => {
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {

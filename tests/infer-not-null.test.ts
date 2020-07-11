@@ -22,6 +22,7 @@ describe('infer-not-null', () => {
             `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -47,6 +48,7 @@ describe('infer-not-null', () => {
             `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -77,6 +79,7 @@ describe('infer-not-null', () => {
             `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -102,6 +105,7 @@ describe('infer-not-null', () => {
             `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -133,6 +137,7 @@ describe('infer-not-null', () => {
             `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -158,6 +163,7 @@ describe('infer-not-null', () => {
             `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -183,6 +189,7 @@ describe('infer-not-null', () => {
             `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -208,6 +215,7 @@ describe('infer-not-null', () => {
             `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -233,6 +241,7 @@ describe('infer-not-null', () => {
             `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -258,6 +267,7 @@ describe('infer-not-null', () => {
             `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -283,6 +293,7 @@ describe('infer-not-null', () => {
             `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -308,6 +319,7 @@ describe('infer-not-null', () => {
     `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -333,6 +345,7 @@ describe('infer-not-null', () => {
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -358,6 +371,7 @@ describe('infer-not-null', () => {
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -383,6 +397,7 @@ describe('infer-not-null', () => {
     `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -408,6 +423,7 @@ describe('infer-not-null', () => {
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -433,6 +449,7 @@ describe('infer-not-null', () => {
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -458,6 +475,7 @@ describe('infer-not-null', () => {
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -483,6 +501,7 @@ describe('infer-not-null', () => {
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -508,6 +527,7 @@ describe('infer-not-null', () => {
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -533,6 +553,7 @@ describe('infer-not-null', () => {
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -558,6 +579,7 @@ describe('infer-not-null', () => {
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -583,6 +605,7 @@ describe('infer-not-null', () => {
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -608,6 +631,7 @@ describe('infer-not-null', () => {
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -637,6 +661,7 @@ describe('infer-not-null', () => {
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -666,6 +691,7 @@ describe('infer-not-null', () => {
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -695,6 +721,7 @@ describe('infer-not-null', () => {
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -724,6 +751,7 @@ describe('infer-not-null', () => {
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -751,6 +779,7 @@ describe('infer-not-null', () => {
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -790,6 +819,7 @@ describe('infer-not-null', () => {
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -819,6 +849,7 @@ describe('infer-not-null', () => {
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -844,6 +875,7 @@ describe('infer-not-null', () => {
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -879,6 +911,7 @@ describe('infer-not-null', () => {
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -909,6 +942,7 @@ describe('infer-not-null', () => {
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -934,6 +968,7 @@ describe('infer-not-null', () => {
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -959,6 +994,7 @@ describe('infer-not-null', () => {
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -984,6 +1020,7 @@ describe('infer-not-null', () => {
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -1009,6 +1046,7 @@ describe('infer-not-null', () => {
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -1044,6 +1082,7 @@ describe('infer-not-null', () => {
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {
@@ -1079,6 +1118,7 @@ describe('infer-not-null', () => {
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
+            sql,
             multipleRowsResult: true,
             columns: [
                 {

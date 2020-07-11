@@ -43,6 +43,7 @@ function generateTsDescriptor(queryInfo: SchemaDef) : TsDescriptor {
     const parameterNames = queryInfo.parameterNames? queryInfo.parameterNames : queryInfo.parameters.map( param => param.name);
     
     return {
+        sql: queryInfo.sql,
         multipleRowsResult: queryInfo.multipleRowsResult,
         columns,
         orderByColumns: queryInfo.orderByColumns,
@@ -62,7 +63,7 @@ function mapColumnType(columnType: MySqlType | MySqlType[] | '?') : string {
 
 }
 
-function generateTsContent(tsDescriptorOption: Option<TsDescriptor>, sqlContext: string, queryName: string) {
+function generateTsContent(tsDescriptorOption: Option<TsDescriptor>, queryName: string) {
     
     if(isNone(tsDescriptorOption)) {
         return '//Invalid sql';
@@ -145,7 +146,7 @@ function generateTsContent(tsDescriptorOption: Option<TsDescriptor>, sqlContext:
     export async function ${queryName}(connection: Connection${tsDescriptor.parameters.length > 0 || tsDescriptor.orderByColumns? 
             ', params: ' + capitalizedName + 'Params' : ''}) : Promise<${resultStr}> {
         const sql = \`
-        ${replaceOrderByParam(sqlContext)}
+        ${replaceOrderByParam(tsDescriptor.sql)}
         \`;
         return connection.query(sql${paramValues})
             .then( res => res[0] as ${resultStr} );
@@ -187,11 +188,12 @@ export async function generateTsFile(client: DbClient, sqlFile: string) {
     const sqlContent = fs.readFileSync(sqlFile, 'utf8');
     const queryInfo = await parseSql(client, sqlContent);
     const tsDescriptor = isLeft(queryInfo) ? none : some(generateTsDescriptor(queryInfo.right));
-    const tsContent = generateTsContent(tsDescriptor, sqlContent, queryName);
+    const tsContent = generateTsContent(tsDescriptor, queryName);
     writeTsFile(tsFilePath, tsContent);
 }
 
 type TsDescriptor = {
+    sql: string;
     multipleRowsResult: boolean;
     columns: FieldDescriptor[];
     parameters: FieldDescriptor[];

@@ -7,6 +7,7 @@ import { isLeft, right, Either } from "fp-ts/lib/Either"
 import { ColumnDef, SchemaDef, ParameterDef, FieldDescriptor, DBSchema, InvalidSqlError, PreprocessedSql, ParameterContext } from "./types";
 import { DbClient } from "./queryExectutor";
 import { convertTypeCodeToMysqlType, MySqlType } from "./mysql-database";
+import { string } from "yargs";
 
 export function parseSqlWalker(sql: string) : MySQLWalker {
 
@@ -55,6 +56,7 @@ export async function parseSql(client: DbClient, sql: string) : Promise<Either<I
             }
         ]
         const insertResult : SchemaDef = {
+            sql: processedSql,
             multipleRowsResult: false,
             columns: insertResultColumns,
             parameters: uniqueParameters
@@ -94,6 +96,7 @@ export async function parseSql(client: DbClient, sql: string) : Promise<Either<I
         const uniqueFilters = getUniqueParameters(filterParameters, namedParameters.slice(insertParameters.length), params => true)
 
         const insertResult : SchemaDef = {
+            sql: processedSql,
             multipleRowsResult: false,
             columns: insertResultColumns,
             data: uniqueUpdateParams,
@@ -116,6 +119,7 @@ export async function parseSql(client: DbClient, sql: string) : Promise<Either<I
         const parameters = await resolveParameters(client, walker.parameters);
 
         const insertResult : SchemaDef = {
+            sql: processedSql,
             multipleRowsResult: false,
             columns: insertResultColumns,
             parameters: parameters,
@@ -161,6 +165,7 @@ export async function parseSql(client: DbClient, sql: string) : Promise<Either<I
         params => true);
 
     const result: SchemaDef = {
+        sql: processedSql,
         multipleRowsResult: true,
         columns: mapped,
         parameters: resultParameters
