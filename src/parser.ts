@@ -6,6 +6,7 @@ import { MySQLWalker } from "./parser/MySQLWalker";
 import { isLeft, right, Either } from "fp-ts/lib/Either"
 import { ColumnDef, SchemaDef, ParameterDef, FieldDescriptor, DBSchema, InvalidSqlError, PreprocessedSql, ParameterContext } from "./types";
 import { DbClient } from "./queryExectutor";
+import { convertTypeCodeToMysqlType, MySqlType } from "./mysql-database";
 
 export function parseSqlWalker(sql: string) : MySQLWalker {
 
@@ -143,7 +144,7 @@ export async function parseSql(client: DbClient, sql: string) : Promise<Either<I
     const mapped = fields.map( (field, fieldIndex) => {
         const col : ColumnDef = {
             name: field.name.trim(),
-            dbtype: typesMapping[field.columnType],
+            dbtype: convertTypeCodeToMysqlType(field.columnType),
             notNull: field.notNull
         }
         if(!col.notNull && fields.length == fieldsNullability.length) {
@@ -270,33 +271,15 @@ function renameDuplicatedColumns(columns: ColumnDef[]) {
 }
 
 
-function getResultType(packet: FieldDescriptor[]): string | string[] {
-    if (packet.length == 1) return typesMapping[packet[0].columnType];
-    const resultTypes: string[] = [];
+function getResultType(packet: FieldDescriptor[]): MySqlType | MySqlType[] {
+    if (packet.length == 1) return convertTypeCodeToMysqlType(packet[0].columnType);
+    const resultTypes: MySqlType[] = [];
     packet.forEach(p => {
-        const mappedType = typesMapping[p.columnType];
+        const mappedType = convertTypeCodeToMysqlType(p.columnType);
         if (!resultTypes.includes(mappedType)) {
             resultTypes.push(mappedType);
         }
     })
     if (resultTypes.length == 1) return resultTypes[0];
     return resultTypes;
-}
-
-
-type typeDef = {
-    [a: number]: string
-}
-
-export const typesMapping: typeDef = {
-    0: 'decimal',
-    1: 'tiny',
-    2: 'short',
-    3: 'int',
-    4: 'float',
-    5: 'double',
-    8: 'bigint',
-    10: 'date',
-    246: 'decimal',
-    253: 'varchar'
 }

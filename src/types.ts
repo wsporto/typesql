@@ -1,3 +1,5 @@
+import { MySqlType } from "./mysql-database"
+
 export type DBSchema = {
     columns: ColumnSchema[];
 }
@@ -6,7 +8,7 @@ export type ColumnSchema = {
     schema: string;
     table: string;
     column: string;
-    column_type: string;
+    column_type: MySqlType;
     notNull: boolean;
 }
 
@@ -21,7 +23,7 @@ export type SchemaDef = {
 
 export type ColumnDef = {
     name: string;
-    dbtype: string;
+    dbtype: MySqlType;
     notNull?: boolean;
 }
 
@@ -40,7 +42,7 @@ export type ColumnDef2 = {
 
 export type ParameterDef = {
     name: string,
-    columnType: string | string[];
+    columnType: MySqlType | MySqlType[] | '?';
     notNull: boolean,
     list?: boolean; //id in (?)
 }
@@ -61,7 +63,7 @@ export type ExpressionParamContext = {
 export type ResolvedParameter = {
     type: 'resolved';
     notNull: boolean;
-    columnType: string;
+    columnType: MySqlType;
 }
 
 export type ParameterContext = ExpressionParamContext | FunctionParamContext | ResolvedParameter;

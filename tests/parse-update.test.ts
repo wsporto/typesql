@@ -1,6 +1,6 @@
 import assert from "assert";
 import { parseSql } from "../src/parser";
-import { SchemaDef } from "../src/types";
+import { SchemaDef, ColumnDef } from "../src/types";
 import { DbClient } from "../src/queryExectutor";
 import { isLeft } from "fp-ts/lib/Either";
 
@@ -15,7 +15,7 @@ describe('parse update statements', () => {
         await client.closeConnection();
     })
 
-    const columns = [
+    const columns : ColumnDef[] = [
         {
             name: 'affectedRows',
             dbtype: 'int',
