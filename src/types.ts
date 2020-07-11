@@ -1,4 +1,5 @@
-import { MySqlType } from "./mysql-database"
+import { MySqlType } from "./mysql-mapping"
+import { Brand } from "./utility-types"
 
 export type DBSchema = {
     columns: ColumnSchema[];
@@ -77,6 +78,12 @@ export type FieldDescriptor = {
     notNull: boolean;
 }
 
+export type TsFieldDescriptor = {
+    name: string;
+    tsType: string;
+    notNull: boolean;
+}
+
 export type InvalidSqlError = {
     name: string;
     description: string;
@@ -86,3 +93,5 @@ export type PreprocessedSql = {
     sql: string;
     namedParameters: string[];
 }
+
+export type CamelCaseName = Brand<string, 'CamelCase'>;
