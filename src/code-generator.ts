@@ -112,14 +112,15 @@ export function generateDataType(queryName: CamelCaseName, dataParams: TsFieldDe
     return dataType;
 }
 
-export function generateReturnType(queryName: CamelCaseName, dataParams: TsFieldDescriptor[] | undefined) {
-    const capitalizedName = capitalize(queryName);
+export function generateReturnType(queryName: CamelCaseName, dataParams: TsFieldDescriptor[] | undefined, isMultResult: boolean) {
     const dataParamsStr = dataParams?.map( (actual) => {
         return `${actual.name}${actual.notNull? '': '?'}: ${actual.tsType};`;
     }).join('\n');
 
+    const returnTypeName = generateReturnName(queryName, isMultResult);
+
     const dataType = dataParams? `
-    export type ${capitalizedName}Data = {
+    export type ${returnTypeName} = {
         ${dataParamsStr}
     }
     `
@@ -204,7 +205,7 @@ function generateTsContent(tsDescriptorOption: Option<TsDescriptor>, queryName: 
     
     const camelCaseName = convertToCamelCaseName(queryName);
     const dataType = generateDataType(camelCaseName, tsDescriptor.data);
-    const returnType = generateReturnType(camelCaseName, tsDescriptor.columns);
+    const returnType = generateReturnType(camelCaseName, tsDescriptor.columns, tsDescriptor.multipleRowsResult);
     const includeOrderByParams = (tsDescriptor.orderByColumns && tsDescriptor.orderByColumns.length > 0) || false;
     const paramsType = generateParamsType(camelCaseName, tsDescriptor.parameters, includeOrderByParams);
     const orderByType = generateOrderByType(camelCaseName, tsDescriptor.orderByColumns);
@@ -255,8 +256,7 @@ export async function generateTsFile(client: DbClient, sqlFile: string) {
     const fileName = parse(sqlFile).name;
     const dirPath = parse(sqlFile).dir;
 
-    const queryName = convertToCamelCaseName(sqlFile);
-    console.log("camelcase=", queryName);
+    const queryName = convertToCamelCaseName(fileName);
     const tsFilePath = path.resolve(dirPath, fileName) + ".ts";
 
     const sqlContent = fs.readFileSync(sqlFile, 'utf8');
