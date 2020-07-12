@@ -19,22 +19,31 @@ CREATE TABLE `mytable3` (
 ) ENGINE=InnoDB;
 
 CREATE TABLE mydb.all_types (
-	decimal_column DECIMAL NULL,
-	tinyint_column TINYINT NULL,
-	smallint_column SMALLINT NULL,
-	int_column INT NULL,
-	float_column FLOAT NULL,
-	double_column DOUBLE NULL,
-	timestamp_column TIMESTAMP NULL,
-	bigint_column BIGINT NULL,
-	mediumint_column MEDIUMINT NULL,
-	date_column DATE NULL,
-	time_column TIME NULL,
-	datetime_column DATETIME NULL,
-	year_column YEAR NULL,
-	varchar_column varchar(100) NULL,
-	bit_column BIT NULL,
-	json_column json NULL
+	decimal_column DECIMAL, -- code: 246
+	tinyint_column TINYINT, -- code: 1
+	smallint_column SMALLINT, -- code: 2
+	int_column INT, -- code: 3
+	float_column FLOAT, -- code: 4
+	double_column DOUBLE, -- code: 5
+	timestamp_column TIMESTAMP, -- code: 7
+	bigint_column BIGINT, -- code: 8
+	mediumint_column MEDIUMINT, -- code: 9
+	date_column DATE, -- code: 10
+	time_column TIME, -- code: 11
+	datetime_column DATETIME, -- code: 12
+	year_column YEAR, -- code: 13
+	varchar_column varchar(100), -- code: 253
+	bit_column BIT, -- code: 16
+	json_column json, -- code: 245
+	enum_column ENUM('x-small', 'small', 'medium', 'large', 'x-large'), -- code: 254 WRONG? flags: 256
+	set_column SET('a', 'b', 'c'), -- code: 254 WRONG? flags: 2048
+	tinytext_column TINYTEXT, -- code: 252 length: 765
+	mediumtext_column MEDIUMTEXT, -- code: 252 length: 50331645
+	longtext_column LONGTEXT, -- code: 252 length: 4294967295
+	text_column TEXT(500), -- code: 252 length: 196605
+	varbinary_column VARBINARY(200), -- code: 253
+	binary_column BINARY(100), -- code: 254
+	geometry_column GEOMETRY -- code 255
 )
 ENGINE=InnoDB;
 

@@ -74,7 +74,7 @@ export type ParameterContext = ExpressionParamContext | FunctionParamContext | R
 export type FieldDescriptor = {
     name: string;
     column: string;
-    columnType: number;
+    columnType: MySqlType;
     notNull: boolean;
 }
 

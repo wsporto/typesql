@@ -1,3 +1,11 @@
+export enum FlagEnum {
+    NOT_NULL = 1,
+    PRI_KEY = 2,
+    BINARY_FLAG = 128,
+    ENUM_FLAG = 256,
+    SET_FLAG = 2048
+}
+
 export type MySqlType = 
     | 'decimal'  
     | 'tinyint'
@@ -28,7 +36,7 @@ export type MySqlType =
     | 'blob'
     | 'varbinary'
     | 'binary'
-    | 'gemoetry'
+    | 'geometry'
 
 export type TsType =
     | 'string'
@@ -54,7 +62,7 @@ export function converToTsType(mySqlType: MySqlType) : TsType {
             return 'number';
         case 'varchar':
         case 'varbinary':
-        case 'gemoetry':
+        case 'geometry':
             return 'string';
         case 'tinyint':
             return 'boolean';
@@ -88,18 +96,32 @@ export function converToTsType(mySqlType: MySqlType) : TsType {
         
 }
 
-export function convertTypeCodeToMysqlType(typeCode: number) : MySqlType {
-    return typesMapping[typeCode];
+export function checkFlag(flags: number, flag: FlagEnum) {
+    return (flags & flag) != 0;
+}
+
+export function convertTypeCodeToMysqlType(typeCode: number, flags: FlagEnum) : MySqlType {
+    if(flags & FlagEnum.SET_FLAG) {
+        return 'set'
+    }
+    if(flags & FlagEnum.ENUM_FLAG) {
+        return 'enum'
+    }
+    const mappedType = typesMapping[typeCode];
+    if(mappedType == 'varchar' && (flags & FlagEnum.BINARY_FLAG)) {
+        return 'varbinary';
+    }
+    return mappedType;
 }
 
 
 
-type typeDef = {
+type MySqlTypeHash = {
     [a: number]: MySqlType
 }
 
-export const typesMapping: typeDef = {
-    0: 'decimal',
+export const typesMapping: MySqlTypeHash = {
+    0: 'decimal', //deprecated? newdecimal=246
     1: 'tinyint',
     2: 'smallint',
     3: 'int',
@@ -114,7 +136,7 @@ export const typesMapping: typeDef = {
     12: 'datetime',
     13: 'year',
     14: 'newdate', //NEWDATE?
-    15: 'varchar', //VARCHAR?
+    15: 'varchar', //deprecated? newvarchar=253
     16: 'bit',
     17: 'timestamp2', //TIMESTAMP2?
     18: 'datetime2', //DATETIME2?
@@ -129,5 +151,5 @@ export const typesMapping: typeDef = {
     252: 'blob',
     253: 'varchar', //aka VAR_STRING, VARBINARY
     254: 'binary',
-    255: 'gemoetry'
+    255: 'geometry'
 }
