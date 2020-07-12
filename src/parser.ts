@@ -148,7 +148,7 @@ export async function parseSql(client: DbClient, sql: string) : Promise<Either<I
     const mapped = fields.map( (field, fieldIndex) => {
         const col : ColumnDef = {
             name: field.name.trim(),
-            dbtype: convertTypeCodeToMysqlType(field.columnType),
+            dbtype: field.columnType,
             notNull: field.notNull
         }
         if(!col.notNull && fields.length == fieldsNullability.length) {
@@ -277,10 +277,10 @@ function renameDuplicatedColumns(columns: ColumnDef[]) {
 
 
 function getResultType(packet: FieldDescriptor[]): MySqlType | MySqlType[] {
-    if (packet.length == 1) return convertTypeCodeToMysqlType(packet[0].columnType);
+    if (packet.length == 1) return packet[0].columnType;
     const resultTypes: MySqlType[] = [];
     packet.forEach(p => {
-        const mappedType = convertTypeCodeToMysqlType(p.columnType);
+        const mappedType = p.columnType;
         if (!resultTypes.includes(mappedType)) {
             resultTypes.push(mappedType);
         }

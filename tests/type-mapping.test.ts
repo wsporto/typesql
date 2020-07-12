@@ -100,6 +100,52 @@ describe('type-mapping', () => {
                 name: 'json_column',
                 dbtype: 'json',
                 notNull: false
+            },
+            {
+                name: 'enum_column',
+                dbtype: 'enum',
+                notNull: false
+            },
+            {
+                name: 'set_column',
+                dbtype: 'set',
+                notNull: false
+            },
+            {
+                name: 'tinytext_column',
+                dbtype: 'blob', //tinyblob
+                notNull: false
+            },
+            {
+                name: 'mediumtext_column',
+                dbtype: 'blob', //mediumblob
+                notNull: false
+            },
+            {
+                name: 'longtext_column',
+                dbtype: 'blob', //TODO - longblob
+                notNull: false
+            },
+            {
+                name: 'text_column',
+                dbtype: 'blob',
+                notNull: false
+            },
+            {
+                name: 'varbinary_column',
+                dbtype: 'varbinary',
+                notNull: false
+            },
+            {
+                name: 'binary_column',
+                dbtype: 'binary',
+                notNull: 
+                false
+            },
+            {
+                name: 'geometry_column',
+                dbtype: 'geometry',
+                notNull: false
             }
             
         ]

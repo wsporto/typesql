@@ -1,11 +1,7 @@
-import mysql2, { Connection } from "mysql2/promise";
+import mysql2, { Connection, FieldPacket } from "mysql2/promise";
 import { Either, right, left } from "fp-ts/lib/Either";
 import { ColumnSchema, FieldDescriptor, InvalidSqlError, SchemaDef } from "./types";
-
-enum flag {
-    NOT_NULL = 1,
-    PRI_KEY = 2
-}
+import { FlagEnum, checkFlag, convertTypeCodeToMysqlType } from "./mysql-mapping";
 
 export class DbClient {
 
@@ -16,10 +12,6 @@ export class DbClient {
 
     async closeConnection() {
         this.connection.end();
-    }
-
-    checkNullFlag(flags: number) {
-        return (flags & flag.NOT_NULL) != 0;
     }
 
     async loadDbSchema() : Promise<ColumnSchema[]> {
@@ -42,16 +34,7 @@ export class DbClient {
             const [columns, fields] = await this.connection
             .query(`${query} LIMIT 0`, params);
 
-            const columnsSchema = fields.map( field => {
-                const column : FieldDescriptor = {
-                    name: field.name,
-                    column: field.orgName,
-                    columnType: field.columnType,
-                    notNull: this.checkNullFlag(field.flags)
-                }
-                return column;
-                
-            });
+            const columnsSchema = fields.map( field => this.fieldPacketToFieldDescriptor(field));
             return right(columnsSchema);
         }
         catch( err ) {
@@ -73,12 +56,17 @@ export class DbClient {
             if (query[i] === "?") params.push('?');
         }
         const [columns, fields] = await this.connection.query(`${query.toLowerCase()}`, params);
-        return fields.map( field => ({
+        return fields.map( field => this.fieldPacketToFieldDescriptor(field));
+    }
+
+    fieldPacketToFieldDescriptor(field: FieldPacket) {
+        const fieldDescriptor : FieldDescriptor = {
             name: field.name,
             column: field.orgName,
-            columnType: field.columnType,
-            notNull: this.checkNullFlag(field.flags)
-        }));
+            columnType: convertTypeCodeToMysqlType(field.columnType, field.flags),
+            notNull: checkFlag(field.flags, FlagEnum.NOT_NULL)
+        }
+        return fieldDescriptor;
     }
     
     functionParamType(functionName: string) {
