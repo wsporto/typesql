@@ -49,7 +49,7 @@ export class DbClient {
     }
     
     async executeExpression (expr: string, from?: string) : Promise<FieldDescriptor[]> {
-        
+
         const query = `select ${expr}` + (from? ` ${from} LIMIT 0`: '');
         let params = [];
         for(var i=0; i<query.length;i++) {
@@ -63,7 +63,7 @@ export class DbClient {
         const fieldDescriptor : FieldDescriptor = {
             name: field.name,
             column: field.orgName,
-            columnType: convertTypeCodeToMysqlType(field.columnType, field.flags),
+            columnType: convertTypeCodeToMysqlType(field.columnType, field.flags, field.columnLength),
             notNull: checkFlag(field.flags, FlagEnum.NOT_NULL)
         }
         return fieldDescriptor;
