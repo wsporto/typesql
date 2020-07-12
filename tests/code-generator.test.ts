@@ -1,22 +1,13 @@
 import assert from "assert";
 import { TsFieldDescriptor } from "../src/types";
-import { TsDescriptor, generateReturnName, convertToCamelCaseName, generateParamsType, generateDataType, generateFunction } from "../src/code-generator";
+import { TsDescriptor, generateReturnName, convertToCamelCaseName, generateParamsType, generateDataType, generateFunction, generateReturnType } from "../src/code-generator";
 
 describe('code-generator', () => {
     
     it('generate return name with isMultResult = true', () => {
-        const isMultiResult = true;
         const queryName = convertToCamelCaseName('update-person');
-        const actual = generateReturnName(queryName, isMultiResult);
-        const expected = 'UpdatePersonResult[]';
-        assert.deepEqual(actual, expected);
-    })
-
-    it('generate return name with isMultResult = false', () => {
-        const isMultiResult = false;
-        const queryName = convertToCamelCaseName('get-person');
-        const actual = generateReturnName(queryName, isMultiResult);
-        const expected = 'GetPersonResult';
+        const actual = generateReturnName(queryName);
+        const expected = 'UpdatePersonResult';
         assert.deepEqual(actual, expected);
     })
 
@@ -115,6 +106,31 @@ describe('code-generator', () => {
         const actual = generateDataType(queryName, fields);
         const expected = `
         export type GetPersonData = {
+            id: number;
+            name?: string;
+        }
+        `
+
+        assert.deepEqual(actual.replace(/  /g, ''), expected.replace(/  /g, ''));
+    })
+
+    it('generate result type', () => {
+        const queryName = convertToCamelCaseName('get-person');
+        const fields: TsFieldDescriptor[] = [
+            {
+                name: 'id',
+                tsType: 'number',
+                notNull: true
+            },
+            {
+                name: 'name',
+                tsType: 'string',
+                notNull: false
+            }
+        ]
+        const actual = generateReturnType(queryName, fields);
+        const expected = `
+        export type GetPersonResult = {
             id: number;
             name?: string;
         }

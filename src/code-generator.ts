@@ -51,13 +51,11 @@ export function generateTsDescriptor(queryInfo: SchemaDef) : TsDescriptor {
         data,
         parameterNames
     };
-
-
 }
 
-export function generateReturnName(name: CamelCaseName, isMultiResult: boolean) {
+export function generateReturnName(name: CamelCaseName) {
     const capitalizedName = capitalize(name);
-    return `${capitalizedName}Result` + (isMultiResult? '[]' : '');
+    return `${capitalizedName}Result`;
 }
 
 function generateOrderByTypeName(queryName: CamelCaseName) {
@@ -112,12 +110,12 @@ export function generateDataType(queryName: CamelCaseName, dataParams: TsFieldDe
     return dataType;
 }
 
-export function generateReturnType(queryName: CamelCaseName, dataParams: TsFieldDescriptor[] | undefined, isMultResult: boolean) {
+export function generateReturnType(queryName: CamelCaseName, dataParams: TsFieldDescriptor[] | undefined) {
     const dataParamsStr = dataParams?.map( (actual) => {
         return `${actual.name}${actual.notNull? '': '?'}: ${actual.tsType};`;
     }).join('\n');
 
-    const returnTypeName = generateReturnName(queryName, isMultResult);
+    const returnTypeName = generateReturnName(queryName);
 
     const dataType = dataParams? `
     export type ${returnTypeName} = {
@@ -157,7 +155,7 @@ export function generateOrderByFunction(queryName: CamelCaseName, orderByColumns
 
 export function generateFunction(camelCaseName: CamelCaseName, tsDescriptor: TsDescriptor) {
 
-    const resultStr = generateReturnName(camelCaseName, tsDescriptor.multipleRowsResult);
+    const resultStr = generateReturnName(camelCaseName);
 
     let functionParams = '';
     if(tsDescriptor.data && tsDescriptor.data.length > 0) functionParams += ', data: ' + generateDataTypeName(camelCaseName);
@@ -175,13 +173,15 @@ export function generateFunction(camelCaseName: CamelCaseName, tsDescriptor: TsD
     }
     if(paramValues != '') paramValues = ', [' + paramValues + ']';
 
+    const functionReturn = resultStr + (tsDescriptor.multipleRowsResult? '[]' : ''); 
+
     const mainFunction = `
-    export async function ${camelCaseName}(connection: Connection${functionParams}) : Promise<${resultStr}> {
+    export async function ${camelCaseName}(connection: Connection${functionParams}) : Promise<${functionReturn}> {
     const sql = \`
     ${replaceOrderByParam(tsDescriptor.sql)}
     \`;
     return connection.query(sql${paramValues})
-        .then( res => res[0] as ${resultStr} );
+        .then( res => res[0] as ${functionReturn} );
     }
     `
     return mainFunction;
@@ -205,7 +205,7 @@ function generateTsContent(tsDescriptorOption: Option<TsDescriptor>, queryName: 
     
     const camelCaseName = convertToCamelCaseName(queryName);
     const dataType = generateDataType(camelCaseName, tsDescriptor.data);
-    const returnType = generateReturnType(camelCaseName, tsDescriptor.columns, tsDescriptor.multipleRowsResult);
+    const returnType = generateReturnType(camelCaseName, tsDescriptor.columns);
     const includeOrderByParams = (tsDescriptor.orderByColumns && tsDescriptor.orderByColumns.length > 0) || false;
     const paramsType = generateParamsType(camelCaseName, tsDescriptor.parameters, includeOrderByParams);
     const orderByType = generateOrderByType(camelCaseName, tsDescriptor.orderByColumns);
