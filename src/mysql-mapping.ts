@@ -30,10 +30,10 @@ export type MySqlType =
     | 'json'
     | 'enum'
     | 'set'
-    | 'tinyblob'
-    | 'mediumblob'
-    | 'longblob'
-    | 'blob'
+    | 'tinytext'
+    | 'mediumtext'
+    | 'longtext'
+    | 'text'
     | 'varbinary'
     | 'binary'
     | 'geometry'
@@ -80,10 +80,10 @@ export function converToTsType(mySqlType: MySqlType) : TsType {
             return 'Object';
         case 'null':
             return 'null';
-        case 'tinyblob':
-        case 'mediumblob':
-        case 'longblob':
-        case 'blob':
+        case 'tinytext':
+        case 'mediumtext':
+        case 'longtext':
+        case 'text':
         case 'binary':
             return 'Buffer';
         case 'enum':
@@ -100,7 +100,8 @@ export function checkFlag(flags: number, flag: FlagEnum) {
     return (flags & flag) != 0;
 }
 
-export function convertTypeCodeToMysqlType(typeCode: number, flags: FlagEnum) : MySqlType {
+export function convertTypeCodeToMysqlType(typeCode: number, flags: FlagEnum, columnLength: number) : MySqlType {
+    
     if(flags & FlagEnum.SET_FLAG) {
         return 'set'
     }
@@ -110,6 +111,22 @@ export function convertTypeCodeToMysqlType(typeCode: number, flags: FlagEnum) : 
     const mappedType = typesMapping[typeCode];
     if(mappedType == 'varchar' && (flags & FlagEnum.BINARY_FLAG)) {
         return 'varbinary';
+    }
+    //max column lenght = 255 but the mysql driver return columnLenght=262140 (octet lenght?)
+    if(mappedType == 'text' && columnLength == 255 * 4) { 
+        return 'tinytext';
+    }
+    //max column lenght = 65535 but the mysql driver return columnLenght=65535 * 4 (octet lenght?)
+    if(mappedType == 'text' && columnLength == 65535 * 4) {
+        return 'text';
+    }
+    //max column lenght = 16777215 but the mysql driver return columnLenght=16777215 * 4 (octet lenght?)
+    if(mappedType == 'text' && columnLength == 16777215 * 4) {
+        return 'mediumtext';
+    }
+    //max column lenght = 4294967295
+    if(mappedType == 'text' && columnLength == 4294967295) {
+        return 'longtext';
     }
     return mappedType;
 }
@@ -145,10 +162,10 @@ export const typesMapping: MySqlTypeHash = {
     246: 'decimal', //NEWDECIMAL
     247: 'enum',
     248: 'set',
-    249: 'tinyblob',
-    250: 'mediumblob',
-    251: 'longblob',
-    252: 'blob',
+    249: 'tinytext',
+    250: 'mediumtext',
+    251: 'longtext',
+    252: 'text',
     253: 'varchar', //aka VAR_STRING, VARBINARY
     254: 'binary',
     255: 'geometry'

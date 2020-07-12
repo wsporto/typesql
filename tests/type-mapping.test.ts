@@ -15,7 +15,7 @@ describe('type-mapping', () => {
         await client.closeConnection();
     })
 
-    it('selec table with all types', async () => {
+    it('select table with all types', async () => {
 
         const sql = 'select * from all_types';
         const actual = await parseSql(client, sql);
@@ -113,22 +113,22 @@ describe('type-mapping', () => {
             },
             {
                 name: 'tinytext_column',
-                dbtype: 'blob', //tinyblob
+                dbtype: 'tinytext',
                 notNull: false
             },
             {
                 name: 'mediumtext_column',
-                dbtype: 'blob', //mediumblob
+                dbtype: 'mediumtext',
                 notNull: false
             },
             {
                 name: 'longtext_column',
-                dbtype: 'blob', //TODO - longblob
+                dbtype: 'longtext',
                 notNull: false
             },
             {
                 name: 'text_column',
-                dbtype: 'blob',
+                dbtype: 'text',
                 notNull: false
             },
             {
@@ -154,5 +154,38 @@ describe('type-mapping', () => {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepEqual(actual.right.columns, expected);
+    });
+
+    it('compare type names from schema with convertion from code', async () => {
+
+        const sql = 'select * from all_types';
+        const actual = await parseSql(client, sql);
+        
+
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+
+        const actualColumns = actual.right.columns.map( col => {
+            const nameAndType = {
+                name: col.name,
+                type: col.dbtype
+            }
+            return nameAndType;
+        });
+
+        const schema = await client.loadDbSchema();
+        const expected = schema
+            .filter( colInfo => actualColumns.find(col => col.name == colInfo.column))
+            .map( col => {
+                const nameAndType = {
+                    name: col.column,
+                    type: col.column_type
+                }
+                return nameAndType;
+            });
+
+        assert.deepEqual(actualColumns, expected);
+        
     });
 });
