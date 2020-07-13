@@ -26,6 +26,10 @@ export function parseSqlWalker(sql: string) : MySQLWalker {
 export async function parseSql(client: DbClient, sql: string) : Promise<Either<InvalidSqlError, SchemaDef>> {
 
     const {sql: processedSql, namedParameters} = preprocessSql(sql);
+    const explainResult = await client.explainSql(processedSql);
+    if(isLeft(explainResult)) {
+        return explainResult;
+    }
     const walker = parseSqlWalker(processedSql);
     if(walker.insertParameters) {
 
