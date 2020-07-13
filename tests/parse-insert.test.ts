@@ -141,6 +141,11 @@ describe('parse insert statements', () => {
                 name: 'name',
                 columnType: 'varchar',
                 notNull: false
+            },
+            {
+                name: 'name',
+                columnType: 'varchar',
+                notNull: false
             }
         ]
 

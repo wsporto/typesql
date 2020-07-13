@@ -89,6 +89,31 @@ describe('code-generator', () => {
         assert.deepEqual(actual.replace(/  /g, ''), expected.replace(/  /g, ''));
     })
 
+    it('generate params type - duplicated field name', () => {
+        const queryName = convertToCamelCaseName('get-person');
+        const fields: TsFieldDescriptor[] = [
+            {
+                name: 'name',
+                tsType: 'string',
+                notNull: true
+            },
+            {
+                name: 'name',
+                tsType: 'string',
+                notNull: true
+            }
+        ]
+        const includeOrderBy = false;
+        const actual = generateParamsType(queryName, fields, includeOrderBy);
+        const expected = `
+        export type GetPersonParams = {
+            name: string;
+        }
+        `
+
+        assert.deepEqual(actual.replace(/  /g, ''), expected.replace(/  /g, ''));
+    })
+
     it('generate data type', () => {
         const queryName = convertToCamelCaseName('get-person');
         const fields: TsFieldDescriptor[] = [
@@ -156,8 +181,7 @@ describe('code-generator', () => {
                     notNull: false
                 }
             ],
-            parameters: [],
-            parameterNames: []
+            parameters: []
         }
 
         const actual = generateFunction(queryName, tsDescriptor);
@@ -197,8 +221,7 @@ describe('code-generator', () => {
                     tsType: 'number',
                     notNull: true
                 }
-            ],
-            parameterNames: []
+            ]
         }
 
         const actual = generateFunction(queryName, tsDescriptor);
@@ -240,8 +263,7 @@ describe('code-generator', () => {
                     tsType: 'number',
                     notNull: true
                 }
-            ],
-            parameterNames: []
+            ]
         }
 
         const actual = generateFunction(queryName, tsDescriptor);

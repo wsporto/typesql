@@ -20,7 +20,6 @@ export type SchemaDef = {
     orderByColumns?: string[];
     parameters: ParameterDef[];
     data?: ParameterDef[];
-    parameterNames?: string[];
 }
 
 export type ColumnDef = {
