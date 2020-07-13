@@ -2,7 +2,7 @@ import assert from "assert";
 import { parseSql } from "../src/parser";
 import { ParameterDef } from "../src/types";
 import { DbClient } from "../src/queryExectutor";
-import { isLeft } from "fp-ts/lib/Either";
+import { isLeft, isRight } from "fp-ts/lib/Either";
 
 describe('parse insert statements', () => {
 
@@ -154,4 +154,19 @@ describe('parse insert statements', () => {
         }
         assert.deepEqual(actual.right.parameters, expected);
     })
+
+    it('insert with inexistent columns names', async () => {
+
+        const sql = `
+        insert into mytable1 (name) values (?)
+            `;
+        const actual = await parseSql(client, sql);
+        
+        if(isRight(actual)) {
+            assert.fail(`Should return an error`);
+        }
+        const expectedError = `Unknown column 'name' in 'field list'`;
+        assert.deepEqual(actual.left.description, expectedError);
+    })
+
 });

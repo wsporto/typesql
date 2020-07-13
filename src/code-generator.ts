@@ -254,6 +254,10 @@ export async function generateTsFile(client: DbClient, sqlFile: string) {
     const sqlContent = fs.readFileSync(sqlFile, 'utf8');
     const queryInfo = await parseSql(client, sqlContent);
     const tsDescriptor = isLeft(queryInfo) ? none : some(generateTsDescriptor(queryInfo.right));
+    if(isLeft(queryInfo)) {
+        console.error('ERROR: ', queryInfo.left.description);
+        console.error('at ', sqlFile);
+    }
     const tsContent = generateTsContent(tsDescriptor, queryName);
     writeTsFile(tsFilePath, tsContent);
 }

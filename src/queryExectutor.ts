@@ -23,13 +23,35 @@ export class DbClient {
         return this.connection.execute(sql)
             .then( res => res[0] as ColumnSchema[]);
     }
+
+    createParams(sql: string, paramValue: '1' | '?') {
+        let params = [];
+        for(var i=0; i<sql.length;i++) {
+            if (sql[i] === "?") params.push(paramValue);
+        }
+        return params;
+    }
+
+    async explainSql(sql: string) : Promise<Either<InvalidSqlError, boolean>>{
+        const explainSql = `EXPLAIN ${sql}`;
+        let params = this.createParams(explainSql, '1');
+        return this.connection.execute(explainSql, params)
+            .then( () => {
+                return right(true)
+            }).catch( err => this.createInvalidSqlError(err));
+    }
+
+    createInvalidSqlError(err: any) {
+        const error : InvalidSqlError = {
+            name: 'Invalid sql',
+            description: err.message
+        }
+        return left(error);
+    }
     
 
     async executeQuery(query: string) : Promise<Either<InvalidSqlError, FieldDescriptor[]>> {
-        let params = [];
-        for(var i=0; i<query.length;i++) {
-            if (query[i] === "?") params.push('?');
-        }
+        const params = this.createParams(query, '?');
         try {
             const [columns, fields] = await this.connection
             .query(`${query} LIMIT 0`, params);
@@ -38,11 +60,7 @@ export class DbClient {
             return right(columnsSchema);
         }
         catch( err ) {
-            const error : InvalidSqlError = {
-                name: 'Invalid sql',
-                description: err.message 
-            }
-            return left(error);
+            return this.createInvalidSqlError(err);
         };
             
         
@@ -51,10 +69,7 @@ export class DbClient {
     async executeExpression (expr: string, from?: string) : Promise<FieldDescriptor[]> {
 
         const query = `select ${expr}` + (from? ` ${from} LIMIT 0`: '');
-        let params = [];
-        for(var i=0; i<query.length;i++) {
-            if (query[i] === "?") params.push('?');
-        }
+        let params = this.createParams(query, '?');
         const [columns, fields] = await this.connection.query(`${query.toLowerCase()}`, params);
         return fields.map( field => this.fieldPacketToFieldDescriptor(field));
     }
