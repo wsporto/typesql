@@ -387,13 +387,18 @@ describe('Test parse parameters', () => {
                 name: 'param',
                 columnType: 'int',
                 notNull: true
+            },
+            {
+                
+                name: 'param',
+                columnType: 'int',
+                notNull: true
             }
         ]
-        const expectedNamedParameters = ['param', 'param']
+        
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepEqual(actual.right.parameters, expectedParameters);
-        assert.deepEqual(actual.right.parameterNames, expectedNamedParameters);
     })
 });

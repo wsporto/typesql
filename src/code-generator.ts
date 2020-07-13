@@ -38,18 +38,14 @@ export function generateTsDescriptor(queryInfo: SchemaDef) : TsDescriptor {
         }
         return tsDesc;
     })
-
-    //TODO - should return queryInfo.parameterNames always
-    const parameterNames = queryInfo.parameterNames? queryInfo.parameterNames : queryInfo.parameters.map( param => param.name);
-    
+   
     return {
         sql: queryInfo.sql,
         multipleRowsResult: queryInfo.multipleRowsResult,
         columns,
         orderByColumns: queryInfo.orderByColumns,
         parameters,
-        data,
-        parameterNames
+        data
     };
 }
 
@@ -79,9 +75,7 @@ export function generateParamsType(queryName:CamelCaseName, params: TsFieldDescr
     }
     
     const orderByTypeName = generateOrderByTypeName(queryName);
-    const paramsStrTemp = params.map( actual => {
-        return `${actual.name}${ actual.notNull? '': '?'}: ${actual.tsType};`;
-    }).join('\n');
+    const paramsStrTemp = paramsToString(params);
     const paramsStr = includeOrderByParam? paramsStrTemp + ( `\norderBy: [${orderByTypeName}, ...${orderByTypeName}[]];` ) : paramsStrTemp;
     const paramTypeName = generateParamsTypeName(queryName);
 
@@ -93,37 +87,40 @@ export function generateParamsType(queryName:CamelCaseName, params: TsFieldDescr
     return paramsType;
 }
 
-export function generateDataType(queryName: CamelCaseName, dataParams: TsFieldDescriptor[] | undefined) {
-    const dataParamsStr = dataParams?.map( (actual) => {
-        return `${actual.name}${actual.notNull? '': '?'}: ${actual.tsType};`;
+function paramsToString(params: TsFieldDescriptor[]) {
+    const uniqueFields = new Map();
+    return params.map( actual => {
+        if(!uniqueFields.get(actual.name)) {
+            uniqueFields.set(actual.name, 1);
+            return `${actual.name}${ actual.notNull? '': '?'}: ${actual.tsType};`;
+        }
+        
     }).join('\n');
+}
 
+export function generateDataType(queryName: CamelCaseName, dataParams: TsFieldDescriptor[]) {
+    
+    const dataParamsStr = paramsToString(dataParams);
     const dataTypeName = generateDataTypeName(queryName);
 
-    const dataType = dataParams? `
+    const dataType = `
     export type ${dataTypeName} = {
         ${dataParamsStr}
     }
     `
-    :
-    ''
     return dataType;
 }
 
-export function generateReturnType(queryName: CamelCaseName, dataParams: TsFieldDescriptor[] | undefined) {
-    const dataParamsStr = dataParams?.map( (actual) => {
-        return `${actual.name}${actual.notNull? '': '?'}: ${actual.tsType};`;
-    }).join('\n');
-
+export function generateReturnType(queryName: CamelCaseName, dataParams: TsFieldDescriptor[]) {
+    
+    const dataParamsStr = paramsToString(dataParams);
     const returnTypeName = generateReturnName(queryName);
 
-    const dataType = dataParams? `
+    const dataType = `
     export type ${returnTypeName} = {
         ${dataParamsStr}
     }
     `
-    :
-    ''
     return dataType;
 }
 
@@ -161,16 +158,11 @@ export function generateFunction(camelCaseName: CamelCaseName, tsDescriptor: TsD
     if(tsDescriptor.data && tsDescriptor.data.length > 0) functionParams += ', data: ' + generateDataTypeName(camelCaseName);
     if(tsDescriptor.parameters.length > 0) functionParams += ', params: ' + generateParamsTypeName(camelCaseName);
 
-    let paramValues = '';
-    if(tsDescriptor.parameterNames.length > 0) {
-        paramValues = tsDescriptor.parameterNames.map( param => 'params.' + param).join(', ');
-    }
-    else {
-        const allParameters : string[] = [];
-        if(tsDescriptor.data) allParameters.push(...tsDescriptor.data.map(param => 'data.' + param.name));
-        if(tsDescriptor.parameters) allParameters.push(...tsDescriptor.parameters.map(param => 'params.' + param.name));
-        paramValues += allParameters.join(', ');
-    }
+    const allParameters : string[] = [];
+    if(tsDescriptor.data) allParameters.push(...tsDescriptor.data.map(param => 'data.' + param.name));
+    if(tsDescriptor.parameters) allParameters.push(...tsDescriptor.parameters.map(param => 'params.' + param.name));
+    let paramValues = allParameters.join(', ');
+
     if(paramValues != '') paramValues = ', [' + paramValues + ']';
 
     const functionReturn = resultStr + (tsDescriptor.multipleRowsResult? '[]' : ''); 
@@ -204,7 +196,7 @@ function generateTsContent(tsDescriptorOption: Option<TsDescriptor>, queryName: 
     const tsDescriptor = tsDescriptorOption.value;
     
     const camelCaseName = convertToCamelCaseName(queryName);
-    const dataType = generateDataType(camelCaseName, tsDescriptor.data);
+    const dataType = tsDescriptor.data? generateDataType(camelCaseName, tsDescriptor.data) : '';
     const returnType = generateReturnType(camelCaseName, tsDescriptor.columns);
     const includeOrderByParams = (tsDescriptor.orderByColumns && tsDescriptor.orderByColumns.length > 0) || false;
     const paramsType = generateParamsType(camelCaseName, tsDescriptor.parameters, includeOrderByParams);
@@ -272,7 +264,6 @@ export type TsDescriptor = {
     columns: TsFieldDescriptor[];
     parameters: TsFieldDescriptor[];
     data?: TsFieldDescriptor[];
-    parameterNames: string[];
     orderByColumns? : string[];
 }
 

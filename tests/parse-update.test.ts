@@ -51,8 +51,7 @@ describe('parse update statements', () => {
                     columnType: 'int',
                     notNull: true
                 }
-            ],
-            parameterNames: []
+            ]
         }
 
         if(isLeft(actual)) {
@@ -92,8 +91,7 @@ describe('parse update statements', () => {
                     columnType: 'int',
                     notNull: true
                 }
-            ],
-            parameterNames: ['value', 'min', 'max']
+            ]
         }
 
         if(isLeft(actual)) {
@@ -128,9 +126,13 @@ describe('parse update statements', () => {
                     name: 'value',
                     columnType: 'int',
                     notNull: true
+                },
+                {
+                    name: 'value',
+                    columnType: 'int',
+                    notNull: true
                 }
-            ],
-            parameterNames: ['value', 'value', 'value']
+            ]
         }
 
         if(isLeft(actual)) {
