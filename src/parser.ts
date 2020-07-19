@@ -205,6 +205,7 @@ async function resolveParameters(client: DbClient, parameters: ParameterContext[
         switch (parameter.type) {
             case 'resolved':
                 param.columnType = parameter.columnType;
+                param.notNull = parameter.notNull;
                 break;
             case 'function':
                 const paramType = client.functionParamType(parameter.functionName);
