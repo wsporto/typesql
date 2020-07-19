@@ -10,7 +10,8 @@ import {
     SimpleExprUnaryContext, SimpleExprNotContext, SimpleExprOdbcContext, SimpleExprMatchContext, SimpleExprBinaryContext,
     SimpleExprCastContext, SimpleExprCaseContext, SimpleExprConvertContext, SimpleExprConvertUsingContext, SimpleExprDefaultContext,
     SimpleExprValuesContext, SimpleExprIntervalContext, SubqueryContext, TableFactorContext, TableReferenceListParensContext, SelectItemListContext, 
-    TableReferenceContext, SingleTableParensContext, SingleTableContext, JoinedTableContext, InsertStatementContext, UpdateStatementContext, SelectStatementContext, UpdateListContext, DeleteStatementContext, OrderClauseContext
+    TableReferenceContext, SingleTableParensContext, SingleTableContext, JoinedTableContext, InsertStatementContext, UpdateStatementContext, 
+    SelectStatementContext, UpdateListContext, DeleteStatementContext, OrderClauseContext, ThenExpressionContext, ElseExpressionContext
 } from "./MySQLParser";
 
 import { TerminalNode, ErrorNode, ParseTree } from "antlr4ts/tree";
@@ -557,10 +558,11 @@ export class MySQLWalker implements MySQLParserListener {
             }
         }
         else if (parseRuleContext instanceof PrimaryExprIsNullContext) { //primaryExprIsNull
+            const notNull = parseRuleContext.notRule()? true : false;
             const paramContext: ResolvedParameter = {
                 type: 'resolved',
-                notNull: false,
-                columnType: 'null'
+                notNull,
+                columnType: '?'
             }
             return paramContext;
         }
@@ -635,7 +637,26 @@ export class MySQLWalker implements MySQLParserListener {
                 expression: compare.text
             }
             return paramContext;
-
+        }
+        else if (parseRuleContext instanceof ThenExpressionContext || parseRuleContext instanceof ElseExpressionContext) {
+            const caseExpr = <SimpleExprCaseContext> parseRuleContext.parent;
+            const thenExprList = caseExpr.thenExpression();
+            const elseExpr = caseExpr.elseExpression();
+            
+            const expressionList = thenExprList.map( thenExpr => thenExpr.expr().text).filter(exprText => exprText != '?');
+            if(elseExpr) {
+                const elseExprText = elseExpr.expr().text;
+                if(elseExprText != '?') {
+                    expressionList.push(elseExprText);
+                }
+            }
+            const caseExprStr = expressionList.length == 0? '?' : expressionList.join(',');
+            const paramContext: ExpressionParamContext = {
+                type: 'expression',
+                notNull: false,
+                expression: caseExprStr
+            }
+            return paramContext;
         }
         else if (parseRuleContext instanceof SelectItemContext) {
             const originalExpr = this.extractOriginalSql(parseRuleContext) || "error";

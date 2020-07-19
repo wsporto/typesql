@@ -64,7 +64,7 @@ export type ExpressionParamContext = {
 export type ResolvedParameter = {
     type: 'resolved';
     notNull: boolean;
-    columnType: MySqlType;
+    columnType: MySqlType | '?';
 }
 
 export type ParameterContext = ExpressionParamContext | FunctionParamContext | ResolvedParameter;
