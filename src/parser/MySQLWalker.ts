@@ -638,7 +638,27 @@ export class MySQLWalker implements MySQLParserListener {
             }
             return paramContext;
         }
+        else if (parseRuleContext instanceof BitExprContext && parseRuleContext.childCount > 2) { //id+id
+            const expr = this.extractOriginalSql(parseRuleContext)!
+            const paramContext: ExpressionParamContext = {
+                type: 'expression',
+                notNull: false,
+                expression: expr
+            }
+            return paramContext;
+        }
         else if (parseRuleContext instanceof ThenExpressionContext || parseRuleContext instanceof ElseExpressionContext) {
+            const expr = parseRuleContext.expr();
+            if(expr.text != '?') { // ex: id+?
+                const exprStr = this.extractOriginalSql(expr)!;
+                const paramContext: ExpressionParamContext = {
+                    type: 'expression',
+                    notNull: false,
+                    expression: exprStr
+                }
+                return paramContext;
+            }
+            
             const caseExpr = <SimpleExprCaseContext> parseRuleContext.parent;
             const thenExprList = caseExpr.thenExpression();
             const elseExpr = caseExpr.elseExpression();
