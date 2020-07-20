@@ -34,6 +34,47 @@ describe('Test parse parameters', () => {
         assert.deepEqual(actual.right.parameters, expected);
     })
 
+    it('SELECT ?+id from mytable1', async () => {
+        const sql = `
+        SELECT ?+id from mytable1
+        `
+        const actual = await parseSql(client, sql);
+        const expected : ParameterDef[] = [
+            {
+                name: 'param1',
+                columnType: 'double',
+                notNull: false
+            }
+        ]
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right.parameters, expected);
+    })
+
+    it('SELECT :value+id from mytable1 where :value is not null', async () => {
+        const sql = `
+        SELECT :value+id from mytable1 where :value is not null
+        `
+        const actual = await parseSql(client, sql);
+        const expected : ParameterDef[] = [
+            {
+                name: 'value',
+                columnType: 'double',
+                notNull: false
+            },
+            {
+                name: 'value',
+                columnType: '?',
+                notNull: true
+            }
+        ]
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right.parameters, expected);
+    })
+
     it('SELECT ? > 1 from mytable1', async () => {
         const sql = `
         SELECT ? > 1 from mytable1
@@ -402,7 +443,7 @@ describe('Test parse parameters', () => {
         assert.deepEqual(actual.right.parameters, expectedParameters);
     })
 
-    it(`SELECT CASE WHEN id = 1 THEN ? ELSE id from mytable1`, async () => {
+    it(`SELECT CASE WHEN id = 1 THEN ? ELSE id END from mytable1`, async () => {
         const sql = `
         SELECT CASE WHEN id = 1 THEN ? ELSE id END from mytable1`
         const actual = await parseSql(client, sql);
@@ -420,9 +461,9 @@ describe('Test parse parameters', () => {
         assert.deepEqual(actual.right.parameters, expectedParameters);
     })
 
-    it(`SELECT CASE WHEN id = 1 THEN ? ELSE id END from mytable1`, async () => {
+    it(`SELECT CASE WHEN id = 1 THEN id ELSE ? END from mytable1`, async () => {
         const sql = `
-        SELECT CASE WHEN id = 1 THEN ? ELSE id END from mytable1`
+        SELECT CASE WHEN id = 1 THEN id ELSE ? END from mytable1`
         const actual = await parseSql(client, sql);
         const expectedParameters : ParameterDef[] = [
             {
@@ -514,6 +555,59 @@ describe('Test parse parameters', () => {
             {
                 name: 'param2',
                 columnType: 'varchar',
+                notNull: false
+            }
+        ]
+        
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right.parameters, expectedParameters);
+    })
+
+    it(`parse select with case when expression 2`, async () => {
+        const sql = `
+        SELECT
+            CASE WHEN id = 1
+              THEN ?+id
+              ELSE 'a'
+            END
+        FROM mytable2`
+        const actual = await parseSql(client, sql);
+        const expectedParameters : ParameterDef[] = [
+            {
+                name: 'param1',
+                columnType: 'double',
+                notNull: false
+            }
+        ]
+        
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right.parameters, expectedParameters);
+    })
+
+    it(`parse select with case when expression 3`, async () => {
+        const sql = `
+        SELECT 
+            CASE 
+                WHEN id = 1 THEN ? + id
+                WHEN id = 2 THEN 2
+                WHEN id = 3 then ?
+                ELSE 'a' 
+            END as result
+        FROM mytable1`
+        const actual = await parseSql(client, sql);
+        const expectedParameters : ParameterDef[] = [
+            {
+                name: 'param1',
+                columnType: 'double',
+                notNull: false
+            },
+            {
+                name: 'param2',
+                columnType: ['double', 'bigint', 'varchar'],
                 notNull: false
             }
         ]
