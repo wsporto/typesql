@@ -134,6 +134,34 @@ describe('Test simple select statements', () => {
         assert.deepEqual(actual.right, expected);
     })
 
+    it('select mytable1.id from mytable1', async () => {
+        const sql = 'SELECT mytable1.id, mytable1.value FROM mytable1';
+
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'id',
+                    dbtype: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'value',
+                    dbtype: 'int',
+                    notNull: false
+                }
+            ],
+            parameters: []
+
+        }
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
+    })
+
 
     it('parse select with multiples columns', async () => {
 

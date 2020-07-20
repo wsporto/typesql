@@ -296,8 +296,8 @@ export class MySQLWalker implements MySQLParserListener {
 
     findColumn(fieldName: FieldName, columns: ColumnDef2[]): ColumnDef2 {
         //TODO - Put tableAlias always ''
-        const found = columns.find(col => col.columnName == fieldName.name && (fieldName.prefix == '' || fieldName.prefix == col.tableAlias));
-        // console.log("found==", found);
+        const found = columns.find(col => col.columnName == fieldName.name && 
+            (fieldName.prefix == '' || fieldName.prefix == col.tableAlias || fieldName.prefix == col.table));
         if(!found) {
             // console.log("columns===", columns)
             throw Error('column not found:' + JSON.stringify(fieldName));
