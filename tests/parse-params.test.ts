@@ -617,4 +617,31 @@ describe('Test parse parameters', () => {
         }
         assert.deepEqual(actual.right.parameters, expectedParameters);
     })
+    it.only(`select id from mytable2 where (name, id) = (select ?, ? from mytable2 where id = ?)`, async () => {
+        const sql = `
+        SELECT id FROM mytable2 WHERE (?, ?) = (select id, name from mytable2 where id = 1)`
+        const actual = await parseSql(client, sql);
+        const expectedParameters : ParameterDef[] = [
+            {
+                name: 'param1',
+                columnType: 'varchar',
+                notNull: true
+            },
+            {
+                name: 'param2',
+                columnType: 'int',
+                notNull: true
+            },
+            {
+                name: 'param3',
+                columnType: 'int',
+                notNull: true
+            }
+        ]
+        
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right.parameters, expectedParameters);
+    })
 });
