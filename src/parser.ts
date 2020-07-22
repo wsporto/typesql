@@ -9,13 +9,19 @@ import { ColumnDef, SchemaDef, ParameterDef, FieldDescriptor, DBSchema, InvalidS
 import { DbClient } from "./queryExectutor";
 import { MySqlType } from "./mysql-mapping";
 
-export function parseSqlWalker(sql: string) : MySQLWalker {
 
+export function parseSqlTree(sql: string) {
     const lexer = new MySQLLexer(new ANTLRInputStream(sql));
     const tokens = new CommonTokenStream(lexer);
     const parser = new MySQLParser(tokens);
 
     let tree = parser.query();
+    return tree;
+}
+
+export function parseSqlWalker(sql: string) : MySQLWalker {
+
+    let tree = parseSqlTree(sql);
 
     const walker = new MySQLWalker()
     // console.log("before walk");
