@@ -617,9 +617,9 @@ describe('Test parse parameters', () => {
         }
         assert.deepEqual(actual.right.parameters, expectedParameters);
     })
-    it.only(`select id from mytable2 where (name, id) = (select ?, ? from mytable2 where id = ?)`, async () => {
+    it(`select id from mytable2 where (name, id) = (select ?, ? from mytable2 where id = ?)`, async () => {
         const sql = `
-        SELECT id FROM mytable2 WHERE (?, ?) = (select id, name from mytable2 where id = 1)`
+        SELECT id FROM mytable2 WHERE (?, ?) = (select name, id from mytable2 where id = ?)`
         const actual = await parseSql(client, sql);
         const expectedParameters : ParameterDef[] = [
             {
