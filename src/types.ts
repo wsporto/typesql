@@ -61,13 +61,22 @@ export type ExpressionParamContext = {
     list?: boolean;
 }
 
+export type ExpressionCompareParamContext = {
+    type: 'expressionCompare';
+    expressionLeft: string;
+    expressionRight: string;
+    notNull: boolean;
+    from?: string;
+    list?: boolean;
+}
+
 export type ResolvedParameter = {
     type: 'resolved';
     notNull: boolean;
     columnType: MySqlType | '?';
 }
 
-export type ParameterContext = ExpressionParamContext | FunctionParamContext | ResolvedParameter;
+export type ParameterContext = ExpressionParamContext | FunctionParamContext | ResolvedParameter | ExpressionCompareParamContext;
 
 
 export type FieldDescriptor = {

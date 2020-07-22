@@ -11,13 +11,13 @@ import {
     SimpleExprCastContext, SimpleExprCaseContext, SimpleExprConvertContext, SimpleExprConvertUsingContext, SimpleExprDefaultContext,
     SimpleExprValuesContext, SimpleExprIntervalContext, SubqueryContext, TableFactorContext, TableReferenceListParensContext, SelectItemListContext, 
     TableReferenceContext, SingleTableParensContext, SingleTableContext, JoinedTableContext, InsertStatementContext, UpdateStatementContext, 
-    SelectStatementContext, UpdateListContext, DeleteStatementContext, OrderClauseContext, ThenExpressionContext, ElseExpressionContext
+    SelectStatementContext, UpdateListContext, DeleteStatementContext, OrderClauseContext, ThenExpressionContext, ElseExpressionContext, VariableContext, BoolPriContext, SimpleExprContext
 } from "./MySQLParser";
 
 import { TerminalNode, ErrorNode, ParseTree } from "antlr4ts/tree";
 import { ParserRuleContext, RuleContext } from "antlr4ts";
 import { Interval } from "antlr4ts/misc/Interval";
-import { ParameterContext, ExpressionParamContext, FunctionParamContext, ResolvedParameter, ColumnDef2, DBSchema, FieldNullability } from "../types";
+import { ParameterContext, ExpressionParamContext, FunctionParamContext, ResolvedParameter, ColumnDef2, DBSchema, FieldNullability, ExpressionCompareParamContext } from "../types";
 
 type FieldName = {
     name: string;
@@ -36,6 +36,8 @@ export class MySQLWalker implements MySQLParserListener {
     updateColumns: string[];
 
     deleteTable?: string;
+
+    seen : Map<string, boolean> = new Map();
 
     getTokens(ctx: SelectItemContext): ParseTree[] {
         let child = ctx.getChild(0);
@@ -567,20 +569,14 @@ export class MySQLWalker implements MySQLParserListener {
             return paramContext;
         }
         else if (parseRuleContext instanceof PrimaryExprCompareContext) { //primaryExprCompare
-            const boolPri = parseRuleContext.boolPri();
-            const predicate = parseRuleContext.predicate();
 
-            let compare = boolPri.text == '?' ? predicate : boolPri; // id > ? or ? > id (boolPri comp predicate)
-
-
-            const expr = this.extractOriginalSql(compare)!;
-
-            const paramContext: ExpressionParamContext = {
-                type: 'expression',
-                notNull: true,
-                expression: expr
+            const key = parseRuleContext.start.tokenIndex + ':' + parseRuleContext.stop?.tokenIndex;
+            if(this.seen.get(key)) {
+                return undefined;
             }
-            return paramContext;
+            this.seen.set(key, true);
+            const result = this.inferPrimaryExprCompare(parseRuleContext);
+            return result;
 
         }
         else if (parseRuleContext instanceof PrimaryExprAllAnyContext) { //primaryExprAllAny
@@ -696,6 +692,95 @@ export class MySQLWalker implements MySQLParserListener {
 
     }
 
+    removeExtraParentheses(sql: string) {
+        let result = sql;
+        while(result.startsWith('(') && result.endsWith(')')) {
+            result = result.slice(1, -1);
+        }
+        return result;
+    }
+
+    inferPrimaryExprCompare(primaryExprCompare: PrimaryExprCompareContext) : ExpressionCompareParamContext {
+        const compareLeft = primaryExprCompare.boolPri();
+        const compareRight = primaryExprCompare.predicate();
+        const sqlLeft = this.extractOriginalSql(compareLeft)!;
+        const sqlRight = this.extractOriginalSql(compareRight)!;
+        
+        const paramContext: ExpressionCompareParamContext = {
+            type: 'expressionCompare',
+            notNull: true,
+            expressionLeft: this.removeExtraParentheses(sqlLeft),
+            expressionRight: this.removeExtraParentheses(sqlRight)
+        }
+        return paramContext;
+    }
+
+   inferBoolPri(boolPri: BoolPriContext, dbSchema: DBSchema) {
+        if( boolPri instanceof PrimaryExprPredicateContext) {
+            const predicate = boolPri.predicate();
+            return this.inferPredicate(predicate, dbSchema);
+        }
+        if( boolPri instanceof PrimaryExprIsNullContext) {
+
+        }
+        if( boolPri instanceof PrimaryExprCompareContext) {
+
+        }
+        if( boolPri instanceof PrimaryExprAllAnyContext) {
+
+        }
+    }
+
+    inferPredicate(predicate: PredicateContext, dbSchema: DBSchema) {
+        const bitExpr = predicate.bitExpr()[0];
+        const predicateOperations = predicate.predicateOperations();
+        if(predicateOperations) {
+
+        }
+        const simpleExprWithParentheses = predicate.simpleExprWithParentheses();
+        if(simpleExprWithParentheses) {
+
+        }
+        if(predicate.bitExpr().length > 1) {
+            const bitExpr2 = predicate.bitExpr()[1];
+
+        }
+        const result = this.inferBitExpr(bitExpr, dbSchema)
+        return result;
+    }
+
+    inferBitExpr(bitExpr: BitExprContext, dbSchema: DBSchema) {
+        const simpleExpr = bitExpr.simpleExpr();
+        if(simpleExpr) {
+            return this.inferSimpleExpr(simpleExpr, dbSchema);
+        }
+    }
+
+    inferSimpleExpr(simpleExpr: SimpleExprContext, dbSchema: DBSchema) : string[] {
+        console.log("inferSimpleExpr=", simpleExpr.constructor.name, "-", simpleExpr.text);
+        if( simpleExpr instanceof VariableContext) {
+
+        }
+        if( simpleExpr instanceof SimpleExprColumnRefContext) {
+
+        }
+        if( simpleExpr instanceof SimpleExprParamMarkerContext) {
+            return ['?']
+        }
+        if( simpleExpr instanceof SimpleExprListContext) {
+            const exprList = simpleExpr.exprList().text;
+            return [exprList];
+            
+        }
+        if( simpleExpr instanceof SimpleExprSubQueryContext) {
+            const subquery = simpleExpr.subquery();
+            const subQuerySql = this.extractOriginalSql(subquery)!;
+            return [subQuerySql];
+        }
+        return [];
+
+    }
+
     enterSimpleExprParamMarker(ctx: SimpleExprParamMarkerContext) {
         //console.log('enterSimpleExprasyc=', ctx.constructor.name);
         //this.logParents(ctx);
@@ -713,17 +798,19 @@ export class MySQLWalker implements MySQLParserListener {
         const predicateContext = ctx.parent!; //PredicateContext
 
         const paramContext = this.processPredicateContext(predicateContext);
+        if(!paramContext) return;
+
         const querySpecContext = <QuerySpecificationContext>this.getParentContext(predicateContext, QuerySpecificationContext);
         const fromClause = querySpecContext?.fromClause();
         if (paramContext) {
-            if (fromClause && paramContext.type == 'expression') {
+            if (fromClause && (paramContext.type == 'expression' || paramContext.type == 'expressionCompare')) {
                 const fromClauseStr = this.extractOriginalSql(fromClause)
                 paramContext.from = fromClauseStr;
             }
-            if(isUpdateStmt && paramContext.type == 'expression') {
+            if(isUpdateStmt && (paramContext.type == 'expression' || paramContext.type == 'expressionCompare')) {
                 paramContext.from = 'from ' + this.updateTable
             }
-            if(isDeleteStmt && paramContext.type == 'expression') {
+            if(isDeleteStmt && (paramContext.type == 'expression' || paramContext.type == 'expressionCompare')) {
                 paramContext.from = 'from ' + this.deleteTable
             }
             this.parameters.push(paramContext);

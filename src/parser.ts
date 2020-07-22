@@ -4,7 +4,8 @@ import { MySQLParser } from "./parser/MySQLParser";
 import { ParseTreeWalker } from "antlr4ts/tree";
 import { MySQLWalker } from "./parser/MySQLWalker";
 import { isLeft, right, Either } from "fp-ts/lib/Either"
-import { ColumnDef, SchemaDef, ParameterDef, FieldDescriptor, DBSchema, InvalidSqlError, PreprocessedSql, ParameterContext } from "./types";
+import { ColumnDef, SchemaDef, ParameterDef, FieldDescriptor, DBSchema, InvalidSqlError, 
+    PreprocessedSql, ParameterContext, ExpressionCompareParamContext } from "./types";
 import { DbClient } from "./queryExectutor";
 import { MySqlType } from "./mysql-mapping";
 
@@ -193,9 +194,7 @@ function addParameterNames(parameters: ParameterDef[], namedParameters: string[]
 async function resolveParameters(client: DbClient, parameters: ParameterContext[]) {
     const mappedParameters: ParameterDef[] = [];
 
-    let index = 0;
     for (const parameter of parameters) {
-        index++;
         const param: ParameterDef = {
             name: '?',
             columnType: '?',
@@ -206,11 +205,12 @@ async function resolveParameters(client: DbClient, parameters: ParameterContext[
             case 'resolved':
                 param.columnType = parameter.columnType;
                 param.notNull = parameter.notNull;
+                mappedParameters.push(param);
                 break;
             case 'function':
                 const paramType = client.functionParamType(parameter.functionName);
                 param.columnType = paramType;
-
+                mappedParameters.push(param);
                 break;
             case 'expression':
                 const resultParams2 = await client.executeExpression(parameter.expression, parameter.from); //TODO - execute at once
@@ -218,13 +218,62 @@ async function resolveParameters(client: DbClient, parameters: ParameterContext[
                 param.columnType = typeResult;
                 param.notNull = parameter.notNull;
                 if(parameter.list) param.list = parameter.list;
+                mappedParameters.push(param);
+                break;
+            case 'expressionCompare':
+                const parameters = await createParametersFromExpressionCompare(client, parameter);
+                mappedParameters.push(...parameters);
                 break;
         }
-        param.name = 'param' + index;
-        mappedParameters.push(param);
 
     }
-    return mappedParameters;
+    const namedParameters = mappedParameters.map( (param, paramIndex) => ({...param, name: 'param' + (paramIndex + 1)}));
+    return namedParameters;
+}
+
+async function createParametersFromExpressionCompare(client: DbClient, parameterContext: ExpressionCompareParamContext) :  Promise<ParameterDef[]> {
+
+    const parametersResult : ParameterDef[] = [];
+    const typesLeft = await describeExpression(client, parameterContext.expressionLeft, parameterContext.from);
+    const typesRight = await describeExpression(client, parameterContext.expressionRight, parameterContext.from);
+
+    typesLeft.forEach( (paramLeft, index) => {
+        if(paramLeft.name == '?') {
+            parametersResult.push({
+                name: '?',
+                notNull: true,
+                columnType: typesRight[index].columnType
+            });
+        }
+     })
+     typesRight.forEach( (paramRight, index) => {
+        if(paramRight.name == '?') {
+            parametersResult.push({
+                name: '?',
+                notNull: true,
+                columnType: typesLeft[index].columnType
+            });
+        }
+     })
+
+     return parametersResult;
+}
+
+async function describeExpression(dbClient: DbClient, sqlExpression: string, fromSql?: string) {
+    let params : FieldDescriptor[] = [];
+    if(sqlExpression.trim().toLowerCase().startsWith('select')) {
+        const paramsTemp = await dbClient.executeQuery(sqlExpression);
+        if(isLeft(paramsTemp)) {
+            return [];
+        }
+        else {
+            params = paramsTemp.right;
+        }
+    }
+    else {
+        params = await dbClient.executeExpression(sqlExpression, fromSql);
+    }
+    return params;
 }
 
 // Will be used to validating same params with different types
