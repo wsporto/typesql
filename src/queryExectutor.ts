@@ -70,7 +70,7 @@ export class DbClient {
 
         const query = `select ${expr}` + (from? ` ${from} LIMIT 0`: '');
         let params = this.createParams(query, '?');
-        const [columns, fields] = await this.connection.query(`${query.toLowerCase()}`, params);
+        const [columns, fields] = await this.connection.execute(`${query.toLowerCase()}`, params);
         return fields.map( field => this.fieldPacketToFieldDescriptor(field));
     }
 
