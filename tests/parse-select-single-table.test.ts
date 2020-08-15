@@ -1256,7 +1256,7 @@ describe('Test simple select statements', () => {
         assert.deepEqual(actual.right, expected);
     })
 
-    it.skip('remove the ordering column from select', async () => {
+    it('remove the ordering column from select', async () => {
         const sql = `
         select value from (
         select id, value, case when value = 1 then 1 else 2 end from mytable1
@@ -1273,7 +1273,7 @@ describe('Test simple select statements', () => {
                     notNull: false
                 }
             ],
-            orderByColumns: ['id', 'value'],
+            orderByColumns: ['id', 'value', 'case when value = 1 then 1 else 2 end'],
             parameters: []
         
         }
