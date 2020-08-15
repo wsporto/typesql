@@ -154,6 +154,35 @@ describe('Test parse select with subqueries', () => {
         assert.deepEqual(actual.right, expected);
     })
 
+    it('parse a select with 3-levels nested select and case expression', async () => {
+        const sql = `
+        select id from (
+            select id from (
+                select id+id as id from mytable1 
+            ) t1
+        ) t2
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'id',
+                    dbtype: 'bigint',
+                    notNull: true
+                }
+            ],
+            parameters: []
+
+        }
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
+    })
+
+
     it('nested with *)', async () => {
         const sql = `
         SELECT * from (select * from (select id, name from mytable2) t1) t2

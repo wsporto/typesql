@@ -237,9 +237,9 @@ describe('Test parse parameters', () => {
         assert.deepEqual(actual.right.parameters, expected);
     })
 
-    it('SELECT * from mytable1 where ? > (select id from mytable2)', async () => {
+    it('SELECT * from mytable1 where ? > (select id from mytable2 where id = 1)', async () => {
         const sql = `
-        SELECT * from mytable1 where ? > (select id from mytable2)
+        SELECT * from mytable1 where ? > (select id from mytable2 where id = 1)
         `
         const actual = await parseSql(client, sql);
         const expected : ParameterDef[] = [
@@ -250,14 +250,14 @@ describe('Test parse parameters', () => {
             }
         ]
         if(isLeft(actual)) {
-            assert.fail(`Shouldn't return an error`);
+            assert.fail(`Shouldn't return an error:`, actual.left);
         }
         assert.deepEqual(actual.right.parameters, expected);
     })
 
-    it('SELECT * from mytable1 where (select id from mytable2) < ?', async () => {
+    it('SELECT * from mytable1 where (select id from mytable2 where id = 1) < ?', async () => {
         const sql = `
-        SELECT * from mytable1 where (select id from mytable2) < ?
+        SELECT * from mytable1 where (select id from mytable2 where id = 1) < ?
         `
         const actual = await parseSql(client, sql);
         const expected : ParameterDef[] = [
@@ -634,6 +634,29 @@ describe('Test parse parameters', () => {
             },
             {
                 name: 'param3',
+                columnType: 'int',
+                notNull: true
+            }
+        ]
+        
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right.parameters, expectedParameters);
+    })
+
+    it.skip(`SELECT id FROM mytable2 WHERE ? = CASE WHEN id = 1 THEN id ELSE ? END`, async () => {
+        const sql = `
+        SELECT id FROM mytable2 WHERE ? = CASE WHEN id = 1 THEN id ELSE ? END`
+        const actual = await parseSql(client, sql);
+        const expectedParameters : ParameterDef[] = [
+            {
+                name: 'param1',
+                columnType: 'double',
+                notNull: true
+            },
+            {
+                name: 'param2',
                 columnType: 'int',
                 notNull: true
             }
