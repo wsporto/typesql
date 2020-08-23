@@ -1,7 +1,8 @@
 import mysql2, { Connection, FieldPacket } from "mysql2/promise";
 import { Either, right, left } from "fp-ts/lib/Either";
-import { ColumnSchema, FieldDescriptor, InvalidSqlError, SchemaDef } from "./types";
+import { FieldDescriptor, InvalidSqlError } from "./types";
 import { FlagEnum, checkFlag, convertTypeCodeToMysqlType } from "./mysql-mapping";
+import { ColumnSchema } from "./mysql-query-analyzer/types";
 
 export class DbClient {
 
@@ -33,12 +34,11 @@ export class DbClient {
     }
 
     async explainSql(sql: string) : Promise<Either<InvalidSqlError, boolean>>{
-        const explainSql = `EXPLAIN ${sql}`;
-        let params = this.createParams(explainSql, '1');
-        return this.connection.execute(explainSql, params)
+        //@ts-ignore
+        return this.connection.prepare(sql)
             .then( () => {
                 return right(true)
-            }).catch( err => this.createInvalidSqlError(err));
+            }).catch( (err: any) => this.createInvalidSqlError(err));
     }
 
     createInvalidSqlError(err: any) {

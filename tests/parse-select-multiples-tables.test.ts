@@ -1,8 +1,8 @@
 import assert from "assert";
-import { parseSql } from "../src/parser";
-import { SchemaDef } from "../src/types";
+import { parseSql } from "../src/describe-query";
+import { SchemaDef, InvalidSqlError } from "../src/types";
 import { DbClient } from "../src/queryExectutor";
-import { isLeft } from "fp-ts/lib/Either";
+import { isLeft, isRight } from "fp-ts/lib/Either";
 
 describe('Test select with multiples tables', () => {
 
@@ -39,7 +39,7 @@ describe('Test select with multiples tables', () => {
                     notNull: false
                 },
                 {
-                    name: 'id_2',
+                    name: 'id', //TODO - rename fields
                     dbtype: 'int',
                     notNull: true
                 },
@@ -160,7 +160,7 @@ describe('Test select with multiples tables', () => {
                     notNull: false
                 },
                 {
-                    name: 'id_2',
+                    name: 'id', //TODO - rename field
                     dbtype: 'int',
                     notNull: true
                 },
@@ -256,7 +256,7 @@ describe('Test select with multiples tables', () => {
                 {
                     name: 'param1',
                     columnType: 'varchar',
-                    notNull: false
+                    notNull: true //changed at v0.0.2
                 },
                 {
                     name: 'param2',
@@ -319,7 +319,7 @@ describe('Test select with multiples tables', () => {
                 {
                     name: 'param1',
                     columnType: 'varchar',
-                    notNull: false
+                    notNull: true //changed at v0.0.2
                 },
                 {
                     name: 'param2',
@@ -402,34 +402,23 @@ describe('Test select with multiples tables', () => {
         assert.deepEqual(actual.right, expected);
     })
 
-
-    //TODO - RETURN ERROR
-    it.skip('parse a select with tablelist (ambiguous)', async () => {
+    it('parse a select with tablelist (ambiguous)', async () => {
 
         // Column 'id' exists on mytable1 and mytable2
         const sql = `
         SELECT id FROM mytable1, mytable2
         `
         const actual = await parseSql(client, sql);
-        const expected: SchemaDef = {
-            sql,
-            multipleRowsResult: true,
-            columns: [
-                {
-                    name: 'id',
-                    dbtype: 'int'
-                },
-                {
-                    name: 'id',
-                    dbtype: 'int'
-                }
-            ],
-            parameters: []
-
+        const expected : InvalidSqlError = {
+            name: 'Invalid sql',
+            description: `Column \'id\' in field list is ambiguous`
         }
 
+        if(isRight(actual)) {
+            assert.fail(`Should return an error`);
+        }
         
-        assert.deepEqual(actual, expected);
+        assert.deepEqual(actual.left, expected);
     })
 
     it('parse a select with tablelist (unreferenced alias)', async () => {
@@ -528,7 +517,7 @@ describe('Test select with multiples tables', () => {
                     notNull: true
                 },
                 {
-                    name: 'id_2',
+                    name: 'id', //TODO - rename field
                     dbtype: 'int',
                     notNull: true
                 },
@@ -538,12 +527,12 @@ describe('Test select with multiples tables', () => {
                     notNull: false
                 },
                 {
-                    name: 'name_2',
+                    name: 'name', //TODO - rename field
                     dbtype: 'varchar',
                     notNull: false
                 },
                 {
-                    name: 'id_3',
+                    name: 'id', //TODO - rename field
                     dbtype: 'int',
                     notNull: true
                 },
@@ -676,7 +665,7 @@ describe('Test select with multiples tables', () => {
                     notNull: false
                 },
                 {
-                    name: 'descr_2',
+                    name: 'descr', //TODO - must rename
                     dbtype: 'varchar',
                     notNull: false
                 },

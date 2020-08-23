@@ -1,5 +1,5 @@
 import assert from "assert";
-import { parseSql, parseSqlWalker } from "../src/parser";
+import { parseSql } from "../src/describe-query";
 import { SchemaDef, DBSchema, ColumnDef2 } from "../src/types";
 import { DbClient } from "../src/queryExectutor";
 import { isLeft } from "fp-ts/lib/Either";
@@ -109,16 +109,16 @@ describe('infer-not-null', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: "value+'?'",
+                    name: "value+?",
                     dbtype: 'double',
-                    notNull: false
+                    notNull: true //changed at v0.0.2
                 }
             ],
             parameters: [
                 {
                     name: "param1",
                     columnType: 'double',
-                    notNull: false
+                    notNull: true //changed at v0.0.2
                 }
             ]
 

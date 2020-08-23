@@ -1,16 +1,9 @@
 import { MySqlType } from "./mysql-mapping"
 import { Brand } from "./utility-types"
+import { ColumnSchema } from "./mysql-query-analyzer/types"
 
 export type DBSchema = {
     columns: ColumnSchema[];
-}
-
-export type ColumnSchema = {
-    schema: string;
-    table: string;
-    column: string;
-    column_type: MySqlType;
-    notNull: boolean;
 }
 
 export type SchemaDef = {
@@ -43,7 +36,7 @@ export type ColumnDef2 = {
 
 export type ParameterDef = {
     name: string,
-    columnType: MySqlType | MySqlType[] | '?';
+    columnType: MySqlType | '?';
     notNull: boolean,
     list?: boolean; //id in (?)
 }

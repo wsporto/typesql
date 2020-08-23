@@ -1,4 +1,3 @@
-import { parseSql } from "./parser";
 import { SchemaDef, CamelCaseName, TsFieldDescriptor } from "./types";
 import fs from "fs";
 import path, { parse } from "path";
@@ -7,6 +6,7 @@ import camelCase from "camelcase";
 import { isLeft } from "fp-ts/lib/Either";
 import { none, Option, some, isNone } from "fp-ts/lib/Option";
 import { converToTsType, MySqlType } from "./mysql-mapping";
+import { parseSql } from "./describe-query";
 
 export function generateTsDescriptor(queryInfo: SchemaDef) : TsDescriptor {
     
@@ -243,6 +243,7 @@ export function convertToCamelCaseName(name: string) : CamelCaseName {
     return camelCaseStr;
 }
 
+//TODO - pass dbSchema instead of connection
 export async function generateTsFile(client: DbClient, sqlFile: string) {
 
     const fileName = parse(sqlFile).name;
@@ -252,12 +253,14 @@ export async function generateTsFile(client: DbClient, sqlFile: string) {
     const tsFilePath = path.resolve(dirPath, fileName) + ".ts";
 
     const sqlContent = fs.readFileSync(sqlFile, 'utf8');
+
     const queryInfo = await parseSql(client, sqlContent);
-    const tsDescriptor = isLeft(queryInfo) ? none : some(generateTsDescriptor(queryInfo.right));
+    
     if(isLeft(queryInfo)) {
         console.error('ERROR: ', queryInfo.left.description);
         console.error('at ', sqlFile);
     }
+    const tsDescriptor = isLeft(queryInfo) ? none : some(generateTsDescriptor(queryInfo.right));
     const tsContent = generateTsContent(tsDescriptor, queryName);
     writeTsFile(tsFilePath, tsContent);
 }

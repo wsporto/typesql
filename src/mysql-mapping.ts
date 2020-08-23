@@ -6,21 +6,22 @@ export enum FlagEnum {
     SET_FLAG = 2048
 }
 
+
 export type MySqlType = 
-    | 'decimal'  
-    | 'tinyint'
-    | 'smallint' 
-    | 'int'
-    | 'float'
-    | 'double'
+    | 'decimal' | 'decimal[]' 
+    | 'tinyint' | 'tinyint[]'
+    | 'smallint' | 'smallint[]'
+    | 'int' | 'int[]'
+    | 'float' | 'float[]'
+    | 'double' | 'double[]'
     | 'null'
     | 'timestamp'
-    | 'bigint'
-    | 'mediumint'
+    | 'bigint' | 'bigint[]'
+    | 'mediumint' | 'mediumint[]'
     | 'date'
     | 'time'
     | 'datetime'
-    | 'year'
+    | 'year' | 'year[]'
     | 'newdate'
     | 'varchar'
     | 'bit'
@@ -39,11 +40,11 @@ export type MySqlType =
     | 'geometry'
 
 export type TsType =
-    | 'string'
-    | 'number'
-    | 'boolean'
-    | 'Date'
-    | 'Object'
+    | 'string' | 'string[]'
+    | 'number' | 'number[]'
+    | 'boolean' | 'boolean[]'
+    | 'Date' | 'Date[]'
+    | 'Object' | 'Object[]'
     | 'Buffer'
     | 'any'
     | 'null'
@@ -60,12 +61,25 @@ export function converToTsType(mySqlType: MySqlType) : TsType {
         case 'mediumint':
         case 'year':
             return 'number';
+
+        case 'decimal[]': 
+        case 'smallint[]':
+        case 'int[]':
+        case 'float[]':
+        case 'double[]':
+        case 'bigint[]':
+        case 'mediumint[]':
+        case 'year[]':
+            return 'number[]';
+
         case 'varchar':
         case 'varbinary':
         case 'geometry':
             return 'string';
         case 'tinyint':
             return 'boolean';
+        case 'tinyint[]':
+            return 'boolean[]';
         case 'timestamp':
         case 'timestamp2':
         case 'date':

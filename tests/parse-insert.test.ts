@@ -1,5 +1,5 @@
 import assert from "assert";
-import { parseSql } from "../src/parser";
+import { parseSql } from "../src/describe-query";
 import { ParameterDef } from "../src/types";
 import { DbClient } from "../src/queryExectutor";
 import { isLeft, isRight } from "fp-ts/lib/Either";
@@ -55,7 +55,7 @@ describe('parse insert statements', () => {
         assert.deepEqual(actual.right.parameters, expected);
     })
 
-    it('insert into mytable1 (value, descr) values (?, ?)', async () => {
+    it('insert into mytable3 (name, double_value) values (?, ?)', async () => {
 
         const sql = `
         insert into mytable3 (name, double_value) values (?, ?)

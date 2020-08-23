@@ -1,5 +1,5 @@
 import assert from "assert";
-import { preprocessSql } from "../src/parser";
+import { preprocessSql } from "../src/describe-query";
 import { PreprocessedSql } from "../src/types";
 
 describe('preprocess-sql', () => {
