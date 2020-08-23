@@ -76,15 +76,17 @@ export function generateParamsType(queryName:CamelCaseName, params: TsFieldDescr
     
     const orderByTypeName = generateOrderByTypeName(queryName);
     const paramsStrTemp = paramsToString(params);
-    const paramsStr = includeOrderByParam? paramsStrTemp + ( `\norderBy: [${orderByTypeName}, ...${orderByTypeName}[]];` ) : paramsStrTemp;
+    const paramsStr = includeOrderByParam? paramsStrTemp + ( `\n\torderBy: [${orderByTypeName}, ...${orderByTypeName}[]];` ) : paramsStrTemp;
     const paramTypeName = generateParamsTypeName(queryName);
 
-    const paramsType = `
-    export type ${paramTypeName} = {
-        ${paramsStr.trim()}
-    }
-    `
-    return paramsType;
+    let codeBlock = `export type ${paramTypeName} = {`;
+    codeBlock += '\n';
+    codeBlock += paramsStr;
+    codeBlock += '\n';
+    codeBlock += '}';
+
+    
+    return codeBlock;
 }
 
 function paramsToString(params: TsFieldDescriptor[]) {
@@ -92,7 +94,7 @@ function paramsToString(params: TsFieldDescriptor[]) {
     return params.map( actual => {
         if(!uniqueFields.get(actual.name)) {
             uniqueFields.set(actual.name, 1);
-            return `${actual.name}${ actual.notNull? '': '?'}: ${actual.tsType};`;
+            return `\t${actual.name}${ actual.notNull? '': '?'}: ${actual.tsType};`;
         }
         
     }).join('\n');
@@ -103,12 +105,13 @@ export function generateDataType(queryName: CamelCaseName, dataParams: TsFieldDe
     const dataParamsStr = paramsToString(dataParams);
     const dataTypeName = generateDataTypeName(queryName);
 
-    const dataType = `
-    export type ${dataTypeName} = {
-        ${dataParamsStr}
-    }
-    `
-    return dataType;
+    let codeBlock = `export type ${dataTypeName} = {`;
+    codeBlock += '\n';
+    codeBlock += dataParamsStr;
+    codeBlock += '\n';
+    codeBlock += '}';
+
+    return codeBlock;
 }
 
 export function generateReturnType(queryName: CamelCaseName, dataParams: TsFieldDescriptor[]) {
@@ -116,12 +119,13 @@ export function generateReturnType(queryName: CamelCaseName, dataParams: TsField
     const dataParamsStr = paramsToString(dataParams);
     const returnTypeName = generateReturnName(queryName);
 
-    const dataType = `
-    export type ${returnTypeName} = {
-        ${dataParamsStr}
-    }
-    `
-    return dataType;
+    let codeBlock = `export type ${returnTypeName} = {`;
+    codeBlock += '\n';
+    codeBlock += dataParamsStr;
+    codeBlock += '\n';
+    codeBlock += '}';
+    
+    return codeBlock;
 }
 
 export function generateOrderByType(queryName: CamelCaseName, orderByColumns: string[] | undefined) {
@@ -167,14 +171,13 @@ export function generateFunction(camelCaseName: CamelCaseName, tsDescriptor: TsD
 
     const functionReturn = resultStr + (tsDescriptor.multipleRowsResult? '[]' : ''); 
 
-    const mainFunction = `
-    export async function ${camelCaseName}(connection: Connection${functionParams}) : Promise<${functionReturn}> {
+    const mainFunction = `export async function ${camelCaseName}(connection: Connection${functionParams}) : Promise<${functionReturn}> {
     const sql = \`
     ${replaceOrderByParam(tsDescriptor.sql)}
     \`;
     return connection.query(sql${paramValues})
         .then( res => res[0] as ${functionReturn} );
-    }
+}
     `
     return mainFunction;
 }
@@ -204,23 +207,18 @@ function generateTsContent(tsDescriptorOption: Option<TsDescriptor>, queryName: 
     const orderByFunction = generateOrderByFunction(camelCaseName, tsDescriptor.orderByColumns);
     const mainFunction = generateFunction(camelCaseName, tsDescriptor);
 
-    const template = `
-    import { Connection } from 'mysql2/promise';
-    
-    ${paramsType}
+    let generatedCode = `import { Connection } from 'mysql2/promise';`;
+    generatedCode += addCodeBlock(paramsType);
+    generatedCode += addCodeBlock(dataType);
+    generatedCode += addCodeBlock(orderByType);
+    generatedCode += addCodeBlock(returnType);
+    generatedCode += addCodeBlock(mainFunction);
+    generatedCode += addCodeBlock(orderByFunction);
+    return generatedCode;
+}
 
-    ${dataType}
-
-    ${orderByType}
-
-    ${returnType}
-
-    ${mainFunction}
-
-    ${orderByFunction}
-   
-    `
-    return template;
+function addCodeBlock(codeBlock: string) {
+    return codeBlock !=  '' ? '\n\n' + codeBlock : '';
 }
 
 function replaceOrderByParam(sql: string) {
