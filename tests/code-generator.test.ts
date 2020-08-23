@@ -34,7 +34,7 @@ describe('code-generator', () => {
         }
         `
 
-        assert.deepEqual(actual.replace(/  /g, ''), expected.replace(/  /g, ''));
+        assert.deepEqual(actual.replace(/\s/g, ''), expected.replace(/\s/g, ''));
     })
 
     it('generate params type with order by', () => {
@@ -62,7 +62,7 @@ describe('code-generator', () => {
         }
         `
 
-        assert.deepEqual(actual.replace(/  /g, ''), expected.replace(/  /g, ''));
+        assert.deepEqual(actual.replace(/\s/g, ''), expected.replace(/\s/g, ''));
     })
 
     it('generate params type - no fields', () => {
@@ -86,7 +86,7 @@ describe('code-generator', () => {
         }
         `
 
-        assert.deepEqual(actual.replace(/  /g, ''), expected.replace(/  /g, ''));
+        assert.deepEqual(actual.replace(/\s/g, ''), expected.replace(/\s/g, ''));
     })
 
     it('generate params type - duplicated field name', () => {
@@ -111,7 +111,7 @@ describe('code-generator', () => {
         }
         `
 
-        assert.deepEqual(actual.replace(/  /g, ''), expected.replace(/  /g, ''));
+        assert.deepEqual(actual.replace(/\s/g, ''), expected.replace(/\s/g, ''));
     })
 
     it('generate data type', () => {
@@ -136,7 +136,7 @@ describe('code-generator', () => {
         }
         `
 
-        assert.deepEqual(actual.replace(/  /g, ''), expected.replace(/  /g, ''));
+        assert.deepEqual(actual.replace(/\s/g, ''), expected.replace(/\s/g, ''));
     })
 
     it('generate result type', () => {
@@ -161,7 +161,7 @@ describe('code-generator', () => {
         }
         `
 
-        assert.deepEqual(actual.replace(/  /g, ''), expected.replace(/  /g, ''));
+        assert.deepEqual(actual.replace(/\s/g, ''), expected.replace(/\s/g, ''));
     })
 
     it('generate main function', () => {
@@ -195,7 +195,7 @@ describe('code-generator', () => {
         }
         `
 
-        assert.deepEqual(actual.replace(/  /g, ''), expected.replace(/  /g, ''));
+        assert.deepEqual(actual.replace(/\s/g, ''), expected.replace(/\s/g, ''));
     })
 
     it('generate main function with parameters', () => {
@@ -235,7 +235,7 @@ describe('code-generator', () => {
         }
         `
 
-        assert.deepEqual(actual.replace(/  /g, ''), expected.replace(/  /g, ''));
+        assert.deepEqual(actual.replace(/\s/g, ''), expected.replace(/\s/g, ''));
     })
 
     it('generate main function with data and parameters', () => {
@@ -277,6 +277,6 @@ describe('code-generator', () => {
         }
         `
 
-        assert.deepEqual(actual.replace(/  /g, ''), expected.replace(/  /g, ''));
+        assert.deepEqual(actual.replace(/\s/g, ''), expected.replace(/\s/g, ''));
     })
 })
