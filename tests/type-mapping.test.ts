@@ -1,8 +1,8 @@
 import assert from "assert";
-import { parseSql } from "../src/parser";
 import { ColumnDef } from "../src/types";
 import { DbClient } from "../src/queryExectutor";
 import { isLeft } from "fp-ts/lib/Either";
+import { parseSql } from "../src/describe-query";
 
 describe('type-mapping', () => {
 

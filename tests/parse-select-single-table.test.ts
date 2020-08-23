@@ -1,5 +1,5 @@
 import assert from "assert";
-import { parseSql } from "../src/parser";
+import { parseSql } from "../src/describe-query";
 import { SchemaDef } from "../src/types";
 import { DbClient } from "../src/queryExectutor";
 import { isLeft } from "fp-ts/lib/Either";
@@ -392,7 +392,7 @@ describe('Test simple select statements', () => {
                 {
                     name: 'param1',
                     columnType: 'varchar',
-                    notNull: false
+                    notNull: true //todo - changed v0.0.2
                 }
             ]
         }
@@ -421,7 +421,7 @@ describe('Test simple select statements', () => {
                 {
                     name: 'param1',
                     columnType: 'varchar',
-                    notNull: false
+                    notNull: true //changed on v0.0.2
                 }
             ]
         }
@@ -463,7 +463,7 @@ describe('Test simple select statements', () => {
                 {
                     name: 'param1',
                     columnType: 'varchar',
-                    notNull: false
+                    notNull: true //changed at v0.0.2
                 },
                 {
                     name: 'param2',
@@ -658,9 +658,8 @@ describe('Test simple select statements', () => {
             parameters: [
                 {
                     name: 'param1',
-                    columnType: 'int',
-                    notNull: true,
-                    list: true
+                    columnType: 'int[]',
+                    notNull: true
                 }
             ]
         }
@@ -730,7 +729,7 @@ describe('Test simple select statements', () => {
         assert.deepEqual(actual.right, expected);
     })
 
-    it(`SELECT id FROM mytable1 t WHERE ? in (1, 2, 'a', 'b')`, async () => {
+    it.skip(`SELECT id FROM mytable1 t WHERE ? in (1, 2, 'a', 'b')`, async () => {
 
         const sql = `
         SELECT id FROM mytable1 t WHERE ? in (1, 2, 'a', 'b')
@@ -749,7 +748,7 @@ describe('Test simple select statements', () => {
             parameters: [
                 {
                     name: 'param1',
-                    columnType: ['bigint', 'varchar'],
+                    columnType: 'varchar',
                     notNull: true
                 }
             ]
@@ -880,7 +879,7 @@ describe('Test simple select statements', () => {
             columns: [
                 {
                     name: 'bigger',
-                    dbtype: 'bigint',
+                    dbtype: 'tinyint', //changed at v0.0.2
                     notNull: true
                 }
             ],
@@ -903,7 +902,7 @@ describe('Test simple select statements', () => {
             columns: [
                 {
                     name: 'bigger',
-                    dbtype: 'bigint', //TODO: 1 or 0; why bigint?
+                    dbtype: 'tinyint', //changed at v0.0.2
                     notNull: false
                 }
             ],
@@ -975,6 +974,7 @@ describe('Test simple select statements', () => {
         assert.deepEqual(actual.right, expected);
     })
 
+    //TODO - CREATE TEST WITH ELSE; not null can be inferred
     it('parse select with CASE WHEN', async () => {
 
         const sql = `
@@ -993,7 +993,7 @@ describe('Test simple select statements', () => {
                 {
                     name: 'id',
                     dbtype: 'varchar',
-                    notNull: false
+                    notNull: false //not null can't be inferred
                 }
             ],
             parameters: []
@@ -1077,7 +1077,7 @@ describe('Test simple select statements', () => {
         assert.deepEqual(actual.right, expected);
     })
 
-    it('parse select using ANY operator', async () => {
+    it.skip('parse select using ANY operator', async () => {
 
         const sql = `
         select id from mytable1 where value > any(select id from mytable2 where name like ?)
@@ -1153,7 +1153,7 @@ describe('Test simple select statements', () => {
                 {
                     name: `CONCAT_WS('a', 'b')`, //If the separator is NULL, the result is NULL.
                     dbtype: 'varchar',
-                    notNull: false
+                    notNull: true
                 },
                 {
                     name: 'name',

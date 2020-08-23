@@ -1,6 +1,6 @@
 import { SchemaDef } from "../src/types";
 import assert from "assert";
-import { parseSql } from "../src/parser";
+import { parseSql } from "../src/describe-query";
 import { DbClient } from "../src/queryExectutor";
 import { isLeft } from "fp-ts/lib/Either";
 
