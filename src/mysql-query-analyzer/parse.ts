@@ -29,8 +29,6 @@ export type SubstitutionHash = {
 }
 
 export function unify(constraints: Constraint[], substitutions: SubstitutionHash) {
-
-          
     for (const constraint of constraints) {
         unifyOne(constraint, substitutions);
     }
@@ -59,17 +57,10 @@ function unifyOne(constraint: Constraint, substitutions: SubstitutionHash) {
             
             if(ty2.type != '?') {
                 const bestType = getBestPossibleType(ty1.type, ty2.type, constraint.mostGeneralType, constraint.sum) as MySqlType;
-                ty1.type = bestType as MySqlType;
+                ty1.type = bestType;
                 ty2.type = bestType;
-                // if(substitutions[ty1.id]) {
-                //     substitutions[ty1.id].type = bestType;
-                // }
-                // if(substitutions[ty2.id]) {
-                //     substitutions[ty2.id].type = bestType;
-                // }
-                //substitutions[ty2.id] = ty1;
-                setSubstitution(ty1, ty2, substitutions);
-                setSubstitution(ty2, ty1, substitutions);
+                substitutions[ty2.id] = ty1;
+                substitutions[ty1.id] = ty2;
             }
             else {
                 
@@ -113,7 +104,7 @@ function unifyOne(constraint: Constraint, substitutions: SubstitutionHash) {
             const newContraint : Constraint = {
                 ...constraint,
                 type1: ty1,
-                type2: {...t, list: true} as TypeVar //retirei: list: true
+                type2: {...t, list: true} as TypeVar
             }
             unifyOne(newContraint, substitutions);
         })
@@ -128,21 +119,7 @@ function unifyOne(constraint: Constraint, substitutions: SubstitutionHash) {
     }
 }
 
-function setSubstitution(ty1: TypeVar, ty2: TypeVar, substitutions: SubstitutionHash) {
-    const sub = substitutions[ty1.id];
-    substitutions[ty1.id] = ty2;
-    if(sub && sub.id != ty2.id) {
-        sub.type = ty2.type;
-        setSubstitution(sub, ty2, substitutions);
-    }
-    
-}
-
 function getBestPossibleType(type1: string, type2: string, max?:boolean, sum?: 'sum') : string {
-    // if( type1 == 'number' || type2 == 'number') return 'number';
-    //?+id=double
-    
-
     if( sum && max && type1 == 'number' && type2 == 'int' ||  type1 == 'int' && type2 == 'number') return 'double';
     // if( sum && type1 == 'number' && type2 == 'bigint' ||  type1 == 'bigint' && type2 == 'number') return 'double';
     if( sum && max && type1 == 'int' && type2 == 'int') return 'bigint';
@@ -283,8 +260,6 @@ export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[]): QueryIn
         
     }
     throw Error('Not supported');
-    
-
 }
 
 export function analiseQuery(querySpec: QuerySpecificationContext[], dbSchema: ColumnSchema[], parentFromColumns: ColumnDef[]) {
