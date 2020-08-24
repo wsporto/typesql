@@ -7,7 +7,7 @@ import {
     SimpleExprListContext, ExprListContext, PrimaryExprIsNullContext, ExprContext, ExprIsContext, BoolPriContext, 
     PrimaryExprPredicateContext, SimpleExprContext, PredicateOperationsContext, ExprNotContext, ExprAndContext, 
     ExprOrContext, ExprXorContext, PredicateExprLikeContext, SelectStatementContext, SimpleExprRuntimeFunctionContext, 
-    SubqueryContext, InsertStatementContext
+    SubqueryContext, InsertStatementContext, UpdateStatementContext
 } from "ts-mysql-parser";
 
 import { ColumnSchema, ColumnDef, TypeInferenceResult } from "./types";
@@ -99,13 +99,10 @@ export function analiseTree(tree: RuleContext, dbSchema: ColumnSchema[]) {
         if(insertStatement) {
             return analiseInsertStatement(insertStatement, dbSchema);
         }
-
-        // const updateExpr = tree.simpleStatement()?.updateStatement()?.updateList().updateElement();
-        // updateExpr?.forEach(updateElement => {
-        //     //collectConstraints(updateElement, namedNodes, constraints, dbSchema);
-        // })
-        // return constraints;
-
+        const updateStatement = tree.simpleStatement()?.updateStatement();
+        if(updateStatement) {
+            return analiseUpdateStatement(updateStatement, dbSchema);;
+        }
 
     }
     throw Error('invalid type of tree');
@@ -158,6 +155,56 @@ export function analiseInsertStatement(insertStatement: InsertStatementContext, 
     return typeInfer;
 }
 
+export function analiseUpdateStatement(updateStatement: UpdateStatementContext, dbSchema: ColumnSchema[]): TypeInferenceResult {
+    const constraints: Constraint[] = [];
+    const namedNodes: TypeVar[] = [];
+
+    const updateElement = updateStatement.updateList().updateElement();
+    const updateColumns : ColumnDef[] = getUpdateColumns(updateStatement, dbSchema);
+    updateElement.forEach(updateElement => {
+        const expr = updateElement.expr();
+        if(expr) {
+            const result = walkExpr(expr, namedNodes, constraints, dbSchema, updateColumns);
+            const columnName = updateElement.columnRef().text;
+            const field = splitName(columnName);
+            const column = findColumn(field, updateColumns);
+            constraints.push({
+                expression: updateStatement.text,
+                type1: result,
+                type2: freshVar(column.table, column.columnType)
+                
+            })
+        }
+        
+    })
+    
+    
+
+    
+
+    const substitutions: SubstitutionHash = {}
+    unify(constraints, substitutions);
+
+    const parameters = namedNodes.map(param => {
+        // if(param.type != '?') return param.type  as MySqlType;
+        const type = substitutions[param.id];
+        if (!type) {
+            return 'varchar' as MySqlType;
+        }
+        if (type.type == 'number') return 'double'
+    
+        const resultType = type.list ? type.type + '[]' : type.type;
+        return resultType as MySqlType;
+    });
+
+    console.log("parameters=", parameters);
+    const typeInfer : TypeInferenceResult = {
+        columns: [],
+        parameters
+    }
+    return typeInfer;
+}
+
 export function getInsertColumns(insertStatement: InsertStatementContext, dbSchema: ColumnSchema[]) {
     const insertIntoTable = splitName(insertStatement.tableRef().text).name;
 
@@ -173,6 +220,24 @@ export function getInsertColumns(insertStatement: InsertStatementContext, dbSche
         
     });
     return fields;
+}
+
+export function getUpdateColumns(updateStatement: UpdateStatementContext, dbSchema: ColumnSchema[]) {
+    const insertIntoTable = splitName(updateStatement.tableReferenceList().tableReference()[0].text).name;
+    const columns = dbSchema
+        .filter( col => col.table == insertIntoTable)
+        .map( col => {
+            const colDef : ColumnDef = {
+                table: col.table,
+                column: col.column,
+                columnName: col.column,
+                columnType: col.column_type,
+                notNull: col.notNull,
+                tableAlias: ''
+            }
+            return colDef;
+        })
+    return columns;
 }
 
 
@@ -384,7 +449,7 @@ function walkPredicate(predicate: PredicateContext, namedNodes: TypeVar[], const
             expression: predicateOperations.text,
             type1: bitExprType, // ? array of id+id
             type2: rightType,
-            // mostGeneralType: true,
+            mostGeneralType: true,
             strict: true
         })
         return rightType;

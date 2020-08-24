@@ -658,7 +658,7 @@ describe('Test simple select statements', () => {
             parameters: [
                 {
                     name: 'param1',
-                    columnType: 'int[]',
+                    columnType: 'bigint[]',
                     notNull: true
                 }
             ]

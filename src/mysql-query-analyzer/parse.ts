@@ -61,19 +61,20 @@ function unifyOne(constraint: Constraint, substitutions: SubstitutionHash) {
                 const bestType = getBestPossibleType(ty1.type, ty2.type, constraint.mostGeneralType, constraint.sum) as MySqlType;
                 ty1.type = bestType as MySqlType;
                 ty2.type = bestType;
-                if(substitutions[ty1.id]) {
-                    substitutions[ty1.id].type = bestType;
-                }
-                if(substitutions[ty2.id]) {
-                    substitutions[ty2.id].type = bestType;
-                }
-                substitutions[ty2.id] = ty2;
-                substitutions[ty1.id] = ty1;
+                // if(substitutions[ty1.id]) {
+                //     substitutions[ty1.id].type = bestType;
+                // }
+                // if(substitutions[ty2.id]) {
+                //     substitutions[ty2.id].type = bestType;
+                // }
+                //substitutions[ty2.id] = ty1;
+                setSubstitution(ty1, ty2, substitutions);
+                setSubstitution(ty2, ty1, substitutions);
             }
             else {
                 
                 const numberTypes = ['number', 'tinyint', 'int', 'bigint', 'decimal', 'double'];
-                if(constraint.sum && numberTypes.indexOf(ty1.type) >= 0) {
+                if(constraint.sum && constraint.mostGeneralType && numberTypes.indexOf(ty1.type) >= 0) {
                     //In the expression ty1 + ?, ty2 = double
                     ty1.type = 'double';   
                     ty2.type = 'double'; 
@@ -127,16 +128,26 @@ function unifyOne(constraint: Constraint, substitutions: SubstitutionHash) {
     }
 }
 
+function setSubstitution(ty1: TypeVar, ty2: TypeVar, substitutions: SubstitutionHash) {
+    const sub = substitutions[ty1.id];
+    substitutions[ty1.id] = ty2;
+    if(sub && sub.id != ty2.id) {
+        sub.type = ty2.type;
+        setSubstitution(sub, ty2, substitutions);
+    }
+    
+}
+
 function getBestPossibleType(type1: string, type2: string, max?:boolean, sum?: 'sum') : string {
     // if( type1 == 'number' || type2 == 'number') return 'number';
     //?+id=double
     
 
-    if( sum && type1 == 'number' && type2 == 'int' ||  type1 == 'int' && type2 == 'number') return 'double';
+    if( sum && max && type1 == 'number' && type2 == 'int' ||  type1 == 'int' && type2 == 'number') return 'double';
     // if( sum && type1 == 'number' && type2 == 'bigint' ||  type1 == 'bigint' && type2 == 'number') return 'double';
-    if( sum && type1 == 'int' && type2 == 'int') return 'bigint';
-    if( sum && (type1 == 'int' && type2 == 'double') || type1 == 'double' && type2 == 'int' ) return 'double';
-    if( sum && (type1 == 'bigint' && type2 == 'double') || type1 == 'double' && type2 == 'bigint' ) return 'double';
+    if( sum && max && type1 == 'int' && type2 == 'int') return 'bigint';
+    if( sum && max && ((type1 == 'int' && type2 == 'double') || type1 == 'double' && type2 == 'int' )) return 'double';
+    if( sum && max && ((type1 == 'bigint' && type2 == 'double') || type1 == 'double' && type2 == 'bigint' )) return 'double';
     //if( sum && (type1 == 'decimal' && type2 == 'number') || type1 == 'number' && type2 == 'decimal' ) return 'double';
 
     const order : string[] = ['number', 'tinyint', 'int', 'bigint', 'decimal', 'float', 'double'];

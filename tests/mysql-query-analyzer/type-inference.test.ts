@@ -375,20 +375,27 @@ describe('type-inference test', () => {
         assert.deepEqual(actual, expected);
     })
 
-    it.skip('update mytable1 set id = ?', () => {
+    it('update mytable1 set id = ?', () => {
         const sql = `update mytable1 set id = ?`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : MySqlType[] = ['int'];
+        const expected : TypeInferenceResult = {
+            columns: [],
+            parameters:  ['int']
+        }
+
 
         assert.deepEqual(actual, expected);
     })
 
-    it.skip('update mytable1 set id = ?+id', () => {
+    it('update mytable1 set id = ?+id', () => {
         const sql = `update mytable1 set id = ?+id`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : MySqlType[] = ['int'];
+        const expected : TypeInferenceResult = {
+            columns: [],
+            parameters:  ['int']
+        }
 
         assert.deepEqual(actual, expected);
     })
