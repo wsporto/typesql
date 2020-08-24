@@ -400,6 +400,18 @@ describe('type-inference test', () => {
         assert.deepEqual(actual, expected);
     })
 
+    it('update mytable1 set id = floor(?+?)', () => {
+        const sql = `update mytable1 set id = floor(?+?)`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: [],
+            parameters:  ['double', 'double']
+        }
+
+        assert.deepEqual(actual, expected);
+    })
+
     it('SELECT id FROM mytable1 WHERE id in (?)', () => {
         const sql = `SELECT name FROM mytable2 WHERE id in (?)`;
         const actual = parseAndInfer(sql, dbSchema);
