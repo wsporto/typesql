@@ -1,7 +1,7 @@
 import MySQLParser, { SqlMode, QueryContext, QuerySpecificationContext, SelectStatementContext, SubqueryContext } from 'ts-mysql-parser';
 import { RuleContext } from "antlr4ts";
 import { ParseTree } from "antlr4ts/tree";
-import { analiseTree, Constraint, Type, TypeVar, analiseQuerySpecification, unionTypeResult, getInsertColumns } from './collect-constraints';
+import { analiseTree, Constraint, Type, TypeVar, analiseQuerySpecification, unionTypeResult, getInsertColumns, analiseInsertStatement } from './collect-constraints';
 import { ColumnSchema, TypeInferenceResult, QueryInfoResult, ColumnInfo, ParameterInfo, ColumnDef, InsertInfoResult } from './types';
 import { getColumnsFrom, getColumnNames } from './select-columns';
 import { inferParamNullability, inferParamNullabilityQuery } from './infer-param-nullability';
@@ -59,8 +59,10 @@ function unifyOne(constraint: Constraint, substitutions: SubstitutionHash) {
                 const bestType = getBestPossibleType(ty1.type, ty2.type, constraint.mostGeneralType, constraint.sum) as MySqlType;
                 ty1.type = bestType;
                 ty2.type = bestType;
-                substitutions[ty2.id] = ty1;
-                substitutions[ty1.id] = ty2;
+                setSubstitution(ty1, ty2, substitutions);
+                setSubstitution(ty2, ty1, substitutions);
+                // substitutions[ty2.id] = ty1;
+                // substitutions[ty1.id] = ty2;
             }
             else {
                 
@@ -116,6 +118,16 @@ function unifyOne(constraint: Constraint, substitutions: SubstitutionHash) {
             type2: ty1
         }
         unifyOne(newConstraint, substitutions);
+    }
+}
+
+function setSubstitution(ty1: TypeVar, ty2: TypeVar, substitutions: SubstitutionHash) {
+
+    const subs = substitutions[ty1.id];
+    substitutions[ty1.id] = ty2;
+    if(subs && subs.id != ty2.id) {
+        subs.type = ty2.type;
+        setSubstitution(subs, ty2, substitutions);
     }
 }
 
@@ -241,28 +253,29 @@ export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[]): QueryIn
         const insertStatement = tree.simpleStatement()?.insertStatement();
         if(insertStatement) {
             const insertColumns = getInsertColumns(insertStatement, dbSchema);
-            //const typeInfer = analiseInsertStatement(insertStatement, insertColumns);
+            const typeInfer = analiseInsertStatement(insertStatement, insertColumns);
+            return typeInfer;
             
-            const parameters : ParameterDef[] =  insertColumns.map( (param) => {
-                const paramDef : ParameterDef = {
-                    name: param.column,
-                    columnType: param.column_type,
-                    notNull: param.notNull
-                }
-                return paramDef;
-            });
-            const paramInfoResult : InsertInfoResult = {
-                kind: 'Insert',
-                parameters
-            } 
-            return paramInfoResult;
+            // const parameters : ParameterDef[] =  typeInfer.parameters.map( (param, index) => {
+            //     const paramDef : ParameterDef = {
+            //         name: 'param' + (index + 1),
+            //         columnType: param,
+            //         notNull: insertColumns[index].notNull
+            //     }
+            //     return paramDef;
+            // });
+            // const paramInfoResult : InsertInfoResult = {
+            //     kind: 'Insert',
+            //     parameters
+            // } 
+            // return paramInfoResult;
         }
         
     }
     throw Error('Not supported');
 }
 
-export function analiseQuery(querySpec: QuerySpecificationContext[], dbSchema: ColumnSchema[], parentFromColumns: ColumnDef[]) {
+export function analiseQuery(querySpec: QuerySpecificationContext[], dbSchema: ColumnSchema[], parentFromColumns: ColumnDef[]) : QueryInfoResult {
 
     const mainQueryResult = extractQueryInfoFromQuerySpecification(querySpec[0], dbSchema, parentFromColumns);
             

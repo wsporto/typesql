@@ -36,7 +36,7 @@ export type ColumnDef2 = {
 
 export type ParameterDef = {
     name: string,
-    columnType: MySqlType | '?';
+    columnType: MySqlType;
     notNull: boolean,
     list?: boolean; //id in (?)
 }

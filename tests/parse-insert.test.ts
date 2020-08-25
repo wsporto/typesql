@@ -1,6 +1,6 @@
 import assert from "assert";
 import { parseSql } from "../src/describe-query";
-import { ParameterDef } from "../src/types";
+import { ParameterDef, SchemaDef } from "../src/types";
 import { DbClient } from "../src/queryExectutor";
 import { isLeft, isRight } from "fp-ts/lib/Either";
 
@@ -23,7 +23,7 @@ describe('parse insert statements', () => {
         const actual = await parseSql(client, sql);
         const expected: ParameterDef[] = [
             {
-                name: 'value',
+                name: 'param1',
                 columnType: 'int',
                 notNull: false
             }
@@ -43,7 +43,7 @@ describe('parse insert statements', () => {
         const actual = await parseSql(client, sql);
         const expected: ParameterDef[] = [
             {
-                name: 'value',
+                name: 'param1',
                 columnType: 'int',
                 notNull: false
             }
@@ -63,12 +63,12 @@ describe('parse insert statements', () => {
         const actual = await parseSql(client, sql);
         const expected: ParameterDef[] = [
             {
-                name: 'name',
+                name: 'param1',
                 columnType: 'varchar',
                 notNull: true
             },
             {
-                name: 'double_value',
+                name: 'param2',
                 columnType: 'double',
                 notNull: false
             }
@@ -88,12 +88,12 @@ describe('parse insert statements', () => {
         const actual = await parseSql(client, sql);
         const expected: ParameterDef[] = [
             {
-                name: 'double_value',
+                name: 'param1',
                 columnType: 'double',
                 notNull: false
             },
             {
-                name: 'name',
+                name: 'param2',
                 columnType: 'varchar',
                 notNull: true
             }
@@ -167,6 +167,74 @@ describe('parse insert statements', () => {
         }
         const expectedError = `Unknown column 'name' in 'field list'`;
         assert.deepEqual(actual.left.description, expectedError);
+    })
+
+    it('insert into all_types (int_column) values (?+?)', async () => {
+
+        const sql = `insert into all_types (int_column) values (?+?)`;
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql: 'insert into all_types (int_column) values (?+?)',
+            multipleRowsResult: false,
+            columns: [],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'int',
+                    notNull: false
+                },
+                {
+                    name: 'param2',
+                    columnType: 'int',
+                    notNull: false
+                }
+            ]
+        }
+            
+        
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
+    })
+    
+    it.skip('insert into all_types (varchar_column, int_column) values (concat(?, ?), ?+?)', async () => {
+
+        const sql = `insert into all_types (varchar_column, int_column) values (concat(?, ?), ?+?)`;
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql: 'insert into all_types (varchar_column, int_column) values (concat(?, ?), ?+?)',
+            multipleRowsResult: false,
+            columns: [],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'varchar',
+                    notNull: false
+                },
+                {
+                    name: 'param2',
+                    columnType: 'varchar',
+                    notNull: false
+                },
+                {
+                    name: 'param3',
+                    columnType: 'int',
+                    notNull: false
+                },
+                {
+                    name: 'param4',
+                    columnType: 'int',
+                    notNull: false
+                }
+            ]
+        }
+            
+        
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
     })
 
 });
