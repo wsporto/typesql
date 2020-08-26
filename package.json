@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "mocha  dist/tests/**/*.js --watch --watch-files **/*.js",
-    "antlr4ts": "antlr4ts -Xexact-output-dir -o ./parser/ ./grammar/*.g4"
+    "antlr4ts": "antlr4ts -Xexact-output-dir -o ./parser/ ./grammar/*.g4",
+    "dist": "tsc && cpy ./package.json ./dist/src && cd ./dist/src && npm dist"
   },
   "keywords": [],
   "author": "",
@@ -16,6 +17,7 @@
     "@types/node": "^14.0.13",
     "@types/yargs": "^15.0.5",
     "antlr4ts-cli": "^0.5.0-alpha.3",
+    "cpy-cli": "^3.1.1",
     "mocha": "^8.0.1",
     "ts-node": "^8.10.2",
     "typescript": "^3.9.5"
