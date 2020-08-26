@@ -38,13 +38,7 @@ export function describeSql(dbSchema: ColumnSchema[], sql: string, namedParamete
 
     }
     if( queryInfo.kind == 'Insert') {
-        const parameters = queryInfo.parameters.map( (param, paramIndex) => {
-            const paramDef : ParameterDef = {
-                ...param,
-                name: namedParameters && namedParameters[paramIndex]? namedParameters[paramIndex] : param.name
-            }
-            return paramDef;
-        })
+        const parameters = namedParameters? addParameterNames(queryInfo.parameters, namedParameters) : queryInfo.parameters;
         const schemaDef: SchemaDef = {
             sql: sql,
             multipleRowsResult: false,
@@ -66,17 +60,30 @@ export function describeSql(dbSchema: ColumnSchema[], sql: string, namedParamete
                 notNull: true
             }
         ]
+        const updateParamNamesNames = namedParameters? namedParameters.slice(0, queryInfo.data.length) : [];
+        const whereParametersNames = namedParameters? namedParameters.slice(queryInfo.data.length) : [];
+
         const schemaDef: SchemaDef = {
             sql: sql,
             multipleRowsResult: false,
             columns: resultColumns,
-            parameters: queryInfo.parameters,
-            data: queryInfo.parameters,
+            parameters: addParameterNames(queryInfo.parameters, whereParametersNames),
+            data: queryInfo.data,
         }
         return schemaDef;
     }
     
     throw Error ("Not supported!");
+}
+
+function addParameterNames(parameters: ParameterDef[], namedParameters: string[]) {
+    return parameters.map( (param, paramIndex) => {
+        const paramDef : ParameterDef = {
+            ...param,
+            name: namedParameters && namedParameters[paramIndex]? namedParameters[paramIndex] : param.name
+        }
+        return paramDef;
+    })
 }
 
 export async function parseSql(client: DbClient, sql: string) : Promise<Either<InvalidSqlError, SchemaDef>> {

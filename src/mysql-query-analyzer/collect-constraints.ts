@@ -17,6 +17,7 @@ import { SubstitutionHash, getQuerySpecificationsFromSelectStatement as getQuery
 import { MySqlType } from "../mysql-mapping";
 import { ParameterDef } from "../types";
 import { unify } from "./unify";
+import { inferParamNullability } from "./infer-param-nullability";
 
 export type TypeVar = {
     kind: 'TypeVar';
@@ -183,7 +184,7 @@ export function analiseUpdateStatement(updateStatement: UpdateStatementContext, 
             const typeInfo = generateTypeInfo(namedNodes, constraints);
             typeInfo.forEach( param => {
                 dataParameters.push({
-                    name: 'param' + (dataParameters.length),
+                    name: column.columnName,
                     columnType: param,
                     notNull: column.notNull
                 })
@@ -197,11 +198,13 @@ export function analiseUpdateStatement(updateStatement: UpdateStatementContext, 
         const namedNodes: TypeVar[] = [];
         walkExpr(whereExpr, namedNodes, constraints, dbSchema, updateColumns);
         const typeInfo = generateTypeInfo(namedNodes, constraints);
-        typeInfo.forEach( param => {
+
+        const paramNullability = inferParamNullability(whereExpr);
+        typeInfo.forEach( (param, paramIndex) => {
             whereParameters.push({
-                name: 'param' + (dataParameters.length),
+                name: 'param' + (whereParameters.length + 1),
                 columnType: param,
-                notNull: false
+                notNull: paramNullability[paramIndex]
             })
         })
 
