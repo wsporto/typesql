@@ -4,7 +4,7 @@ import { SchemaDef, ColumnDef } from "../src/types";
 import { DbClient } from "../src/queryExectutor";
 import { isLeft } from "fp-ts/lib/Either";
 
-describe.skip('parse update statements', () => {
+describe('parse update statements', () => {
 
     let client: DbClient = new DbClient();
     before(async () => {
@@ -40,7 +40,7 @@ describe.skip('parse update statements', () => {
             columns,
             data: [
                 {
-                    name: 'param1',
+                    name: 'value',
                     columnType: 'int',
                     notNull: false
                 }
