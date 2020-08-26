@@ -61,3 +61,8 @@ export type UpdateInfoResult = {
     data: ParameterDef[];
     parameters: ParameterDef[];
 }
+
+export type DeleteInfoResult = {
+    kind: 'Delete';
+    parameters: ParameterDef[];
+}

@@ -7,10 +7,10 @@ import {
     SimpleExprListContext, ExprListContext, PrimaryExprIsNullContext, ExprContext, ExprIsContext, BoolPriContext, 
     PrimaryExprPredicateContext, SimpleExprContext, PredicateOperationsContext, ExprNotContext, ExprAndContext, 
     ExprOrContext, ExprXorContext, PredicateExprLikeContext, SelectStatementContext, SimpleExprRuntimeFunctionContext, 
-    SubqueryContext, InsertStatementContext, UpdateStatementContext
+    SubqueryContext, InsertStatementContext, UpdateStatementContext, DeleteStatementContext
 } from "ts-mysql-parser";
 
-import { ColumnSchema, ColumnDef, TypeInferenceResult, InsertInfoResult, UpdateInfoResult } from "./types";
+import { ColumnSchema, ColumnDef, TypeInferenceResult, InsertInfoResult, UpdateInfoResult, DeleteInfoResult } from "./types";
 import { getColumnsFrom, findColumn, splitName, selectAllColumns, findColumn2 } from "./select-columns";
 import { SubstitutionHash, getQuerySpecificationsFromSelectStatement as getQuerySpecificationsFromQuery, 
     analiseQuery, getQuerySpecificationsFromSelectStatement } from "./parse";
@@ -158,6 +158,36 @@ export function analiseInsertStatement(insertStatement: InsertStatementContext, 
     return typeInferenceResult;
 }
 
+export function analiseDeleteStatement(deleteStatement: DeleteStatementContext, dbSchema: ColumnSchema[]): DeleteInfoResult {
+
+    const whereExpr = deleteStatement.whereClause()?.expr();
+    const deleteColumns = getDeleteColumns(deleteStatement, dbSchema);
+    const allParameters: ParameterDef [] = [];
+
+    if(whereExpr) {
+        const constraints: Constraint[] = [];
+        const namedNodes: TypeVar[] = [];
+        walkExpr(whereExpr, namedNodes, constraints, dbSchema, deleteColumns);
+        const typeInfo = generateTypeInfo(namedNodes, constraints);
+
+        const paramNullability = inferParamNullability(whereExpr);
+        typeInfo.forEach( (param, paramIndex) => {
+            allParameters.push({
+                name: 'param' + (allParameters.length + 1),
+                columnType: param,
+                notNull: paramNullability[paramIndex]
+            })
+        })
+    }
+ 
+    
+    const typeInferenceResult : DeleteInfoResult = {
+        kind: 'Delete',
+        parameters: allParameters
+    }
+    return typeInferenceResult;
+}
+
 export function analiseUpdateStatement(updateStatement: UpdateStatementContext, dbSchema: ColumnSchema[]): UpdateInfoResult {
 
     const updateElement = updateStatement.updateList().updateElement();
@@ -248,6 +278,26 @@ export function getUpdateColumns(updateStatement: UpdateStatementContext, dbSche
                 columnType: col.column_type,
                 notNull: col.notNull,
                 tableAlias: ''
+            }
+            return colDef;
+        })
+    return columns;
+}
+
+export function getDeleteColumns(deleteStatement: DeleteStatementContext, dbSchema: ColumnSchema[]) {
+    const tableNameStr = deleteStatement.tableRef()?.text!
+    const tableAlias = deleteStatement.tableAlias()?.text;
+    const tableName = splitName(tableNameStr).name;
+    const columns = dbSchema
+        .filter( col => col.table == tableName)
+        .map( col => {
+            const colDef : ColumnDef = {
+                table: col.table,
+                column: col.column,
+                columnName: col.column,
+                columnType: col.column_type,
+                notNull: col.notNull,
+                tableAlias: tableAlias
             }
             return colDef;
         })

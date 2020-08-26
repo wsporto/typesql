@@ -72,6 +72,24 @@ export function describeSql(dbSchema: ColumnSchema[], sql: string, namedParamete
         }
         return schemaDef;
     }
+    if(queryInfo.kind == 'Delete') {
+        const resultColumns : ColumnDef[] = [
+            {
+                name: 'affectedRows',
+                dbtype: 'int',
+                notNull: true
+            }
+        ]
+        const parameters = namedParameters? addParameterNames(queryInfo.parameters, namedParameters) : queryInfo.parameters;
+        const schemaDef: SchemaDef = {
+            sql: sql,
+            multipleRowsResult: false,
+            columns: resultColumns,
+            parameters,
+        }
+        return schemaDef;
+
+    }
     
     throw Error ("Not supported!");
 }

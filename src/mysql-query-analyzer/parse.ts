@@ -1,14 +1,14 @@
 import MySQLParser, { SqlMode, QueryContext, QuerySpecificationContext, SelectStatementContext, SubqueryContext } from 'ts-mysql-parser';
 import { ParseTree } from "antlr4ts/tree";
-import { analiseTree, TypeVar, analiseQuerySpecification, unionTypeResult, getInsertColumns, analiseInsertStatement, analiseUpdateStatement } from './collect-constraints';
-import { ColumnSchema, TypeInferenceResult, QueryInfoResult, ColumnInfo, ParameterInfo, ColumnDef, InsertInfoResult, UpdateInfoResult } from './types';
+import { analiseTree, TypeVar, analiseQuerySpecification, unionTypeResult, getInsertColumns, analiseInsertStatement, analiseUpdateStatement, analiseDeleteStatement } from './collect-constraints';
+import { ColumnSchema, TypeInferenceResult, QueryInfoResult, ColumnInfo, ParameterInfo, ColumnDef, InsertInfoResult, UpdateInfoResult, DeleteInfoResult } from './types';
 import { getColumnsFrom, getColumnNames } from './select-columns';
 import { inferParamNullability, inferParamNullabilityQuery } from './infer-param-nullability';
 import { inferNotNull } from './infer-column-nullability';
 
 
 const parser = new MySQLParser({
-  version: '8.0.0',
+  version: '8.0.17',
   mode: SqlMode.NoMode
 })
 
@@ -80,7 +80,7 @@ function extractOrderByColumns(selectStatement: SelectStatementContext) {
 }
 
 
-export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[]): QueryInfoResult | InsertInfoResult | UpdateInfoResult {
+export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[]): QueryInfoResult | InsertInfoResult | UpdateInfoResult | DeleteInfoResult {
 
     const tree = parse(sql);
     if (tree instanceof QueryContext) {
@@ -113,6 +113,11 @@ export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[]): QueryIn
         const updateStatement = tree.simpleStatement()?.updateStatement();
         if(updateStatement) {
             const typeInfer = analiseUpdateStatement(updateStatement, dbSchema);
+            return typeInfer;
+        }
+        const deleteStatement = tree.simpleStatement()?.deleteStatement();
+        if(deleteStatement) {
+            const typeInfer = analiseDeleteStatement(deleteStatement, dbSchema);
             return typeInfer;
         }
         
