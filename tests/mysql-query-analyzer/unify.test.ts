@@ -1,7 +1,7 @@
 
-import assert from "assert";
-import { parseAndInfer, substitute, SubstitutionHash, unify } from "../../src/mysql-query-analyzer/parse";
-import { TypeVar, Constraint, freshVar } from "../../src/mysql-query-analyzer/collect-constraints";
+import { SubstitutionHash } from "../../src/mysql-query-analyzer/parse";
+import { Constraint, freshVar } from "../../src/mysql-query-analyzer/collect-constraints";
+import { unify } from "../../src/mysql-query-analyzer/unify";
 
 describe('Unification tests', () => {
 

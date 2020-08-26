@@ -1,7 +1,8 @@
 
 import assert from "assert";
-import { parseAndInfer, substitute, SubstitutionHash, unify } from "../../src/mysql-query-analyzer/parse";
+import { parseAndInfer, SubstitutionHash } from "../../src/mysql-query-analyzer/parse";
 import { TypeVar, Constraint } from "../../src/mysql-query-analyzer/collect-constraints";
+import { substitute, unify } from "../../src/mysql-query-analyzer/unify";
 
 describe.skip('Substitution tests', () => {
 

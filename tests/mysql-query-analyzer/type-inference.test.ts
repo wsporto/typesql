@@ -1,10 +1,11 @@
 
 import assert from "assert";
-import { parseAndInfer, SubstitutionHash, unify } from "../../src/mysql-query-analyzer/parse";
+import { parseAndInfer, SubstitutionHash } from "../../src/mysql-query-analyzer/parse";
 import { TypeVar, Constraint } from "../../src/mysql-query-analyzer/collect-constraints";
 import { dbSchema } from "./create-schema";
 import { TypeInferenceResult } from "../../src/mysql-query-analyzer/types";
 import { MySqlType } from "../../src/mysql-mapping";
+import { unify } from "../../src/mysql-query-analyzer/unify";
 
 describe('type-inference test', () => {
 
