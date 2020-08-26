@@ -1,8 +1,8 @@
 import MySQLParser, { SqlMode, QueryContext, QuerySpecificationContext, SelectStatementContext, SubqueryContext } from 'ts-mysql-parser';
 import { RuleContext } from "antlr4ts";
 import { ParseTree } from "antlr4ts/tree";
-import { analiseTree, Constraint, Type, TypeVar, analiseQuerySpecification, unionTypeResult, getInsertColumns, analiseInsertStatement } from './collect-constraints';
-import { ColumnSchema, TypeInferenceResult, QueryInfoResult, ColumnInfo, ParameterInfo, ColumnDef, InsertInfoResult } from './types';
+import { analiseTree, Constraint, Type, TypeVar, analiseQuerySpecification, unionTypeResult, getInsertColumns, analiseInsertStatement, analiseUpdateStatement } from './collect-constraints';
+import { ColumnSchema, TypeInferenceResult, QueryInfoResult, ColumnInfo, ParameterInfo, ColumnDef, InsertInfoResult, UpdateInfoResult } from './types';
 import { getColumnsFrom, getColumnNames } from './select-columns';
 import { inferParamNullability, inferParamNullabilityQuery } from './infer-param-nullability';
 import { inferNotNull } from './infer-column-nullability';
@@ -226,7 +226,7 @@ function extractOrderByColumns(selectStatement: SelectStatementContext) {
 }
 
 
-export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[]): QueryInfoResult | InsertInfoResult {
+export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[]): QueryInfoResult | InsertInfoResult | UpdateInfoResult {
 
     const tree = parse(sql);
     if (tree instanceof QueryContext) {
@@ -255,20 +255,11 @@ export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[]): QueryIn
             const insertColumns = getInsertColumns(insertStatement, dbSchema);
             const typeInfer = analiseInsertStatement(insertStatement, insertColumns);
             return typeInfer;
-            
-            // const parameters : ParameterDef[] =  typeInfer.parameters.map( (param, index) => {
-            //     const paramDef : ParameterDef = {
-            //         name: 'param' + (index + 1),
-            //         columnType: param,
-            //         notNull: insertColumns[index].notNull
-            //     }
-            //     return paramDef;
-            // });
-            // const paramInfoResult : InsertInfoResult = {
-            //     kind: 'Insert',
-            //     parameters
-            // } 
-            // return paramInfoResult;
+        }
+        const updateStatement = tree.simpleStatement()?.updateStatement();
+        if(updateStatement) {
+            const typeInfer = analiseUpdateStatement(updateStatement, dbSchema);
+            return typeInfer;
         }
         
     }

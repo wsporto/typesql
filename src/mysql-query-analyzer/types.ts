@@ -55,3 +55,9 @@ export type InsertInfoResult = {
     kind: 'Insert'
     parameters: ParameterDef[];
 }
+
+export type UpdateInfoResult = {
+    kind: 'Update';
+    data: ParameterDef[];
+    parameters: ParameterDef[];
+}
