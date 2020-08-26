@@ -4,7 +4,7 @@ import { SchemaDef, ColumnDef } from "../src/types";
 import { DbClient } from "../src/queryExectutor";
 import { isLeft } from "fp-ts/lib/Either";
 
-describe('parse update statements', () => {
+describe.skip('parse update statements', () => {
 
     let client: DbClient = new DbClient();
     before(async () => {
@@ -28,7 +28,7 @@ describe('parse update statements', () => {
         }
     ]
 
-    it.only('update mytable1 set value = ? where id = ?', async () => {
+    it('update mytable1 set value = ? where id = ?', async () => {
 
         const sql = `
         update mytable1 set value = ? where id = ?

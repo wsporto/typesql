@@ -12,10 +12,11 @@ import {
 
 import { ColumnSchema, ColumnDef, TypeInferenceResult, InsertInfoResult, UpdateInfoResult } from "./types";
 import { getColumnsFrom, findColumn, splitName, selectAllColumns, findColumn2 } from "./select-columns";
-import { unify, SubstitutionHash, getQuerySpecificationsFromSelectStatement as getQuerySpecificationsFromQuery, 
+import { SubstitutionHash, getQuerySpecificationsFromSelectStatement as getQuerySpecificationsFromQuery, 
     analiseQuery, getQuerySpecificationsFromSelectStatement } from "./parse";
 import { MySqlType } from "../mysql-mapping";
 import { ParameterDef } from "../types";
+import { unify } from "./unify";
 
 export type TypeVar = {
     kind: 'TypeVar';
