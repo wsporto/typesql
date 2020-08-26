@@ -24,7 +24,7 @@ export function generateTsDescriptor(queryInfo: SchemaDef) : TsDescriptor {
         const tsDesc : TsFieldDescriptor = {
             name: col.name,
             tsType: mapColumnType(col.columnType) + arraySymbol,
-            notNull: false
+            notNull: col.notNull? col.notNull : false
         }
         return tsDesc;
     })
@@ -34,7 +34,7 @@ export function generateTsDescriptor(queryInfo: SchemaDef) : TsDescriptor {
         const tsDesc : TsFieldDescriptor = {
             name: col.name,
             tsType: mapColumnType(col.columnType),
-            notNull: false
+            notNull: col.notNull? col.notNull : false
         }
         return tsDesc;
     })
