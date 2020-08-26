@@ -1,1 +1,0 @@
-SELECT * FROM mytable1 t WHERE ? in (1, 2, 3, 'a') and id = ?
