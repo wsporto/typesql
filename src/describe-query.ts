@@ -53,6 +53,28 @@ export function describeSql(dbSchema: ColumnSchema[], sql: string, namedParamete
         }
         return schemaDef;
     }
+    if(queryInfo.kind == 'Update') {
+        const resultColumns : ColumnDef[] = [
+            {
+                name: 'affectedRows',
+                dbtype: 'int',
+                notNull: true
+            },
+            {
+                name: 'insertId',
+                dbtype: 'int',
+                notNull: true
+            }
+        ]
+        const schemaDef: SchemaDef = {
+            sql: sql,
+            multipleRowsResult: false,
+            columns: resultColumns,
+            parameters: queryInfo.parameters,
+            data: queryInfo.parameters,
+        }
+        return schemaDef;
+    }
     
     throw Error ("Not supported!");
 }

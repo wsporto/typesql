@@ -10,7 +10,7 @@ import {
     SubqueryContext, InsertStatementContext, UpdateStatementContext
 } from "ts-mysql-parser";
 
-import { ColumnSchema, ColumnDef, TypeInferenceResult, InsertInfoResult } from "./types";
+import { ColumnSchema, ColumnDef, TypeInferenceResult, InsertInfoResult, UpdateInfoResult } from "./types";
 import { getColumnsFrom, findColumn, splitName, selectAllColumns, findColumn2 } from "./select-columns";
 import { unify, SubstitutionHash, getQuerySpecificationsFromSelectStatement as getQuerySpecificationsFromQuery, 
     analiseQuery, getQuerySpecificationsFromSelectStatement } from "./parse";
@@ -107,7 +107,12 @@ export function analiseTree(tree: RuleContext, dbSchema: ColumnSchema[]) : TypeI
         }
         const updateStatement = tree.simpleStatement()?.updateStatement();
         if(updateStatement) {
-            return analiseUpdateStatement(updateStatement, dbSchema);;
+            const updateStmt = analiseUpdateStatement(updateStatement, dbSchema);
+            const TypeInfer : TypeInferenceResult = {
+                columns: [],
+                parameters: updateStmt.data.map(param => param.columnType)
+            }
+            return TypeInfer;
         }
 
     }
@@ -116,12 +121,11 @@ export function analiseTree(tree: RuleContext, dbSchema: ColumnSchema[]) : TypeI
 }
 
 export function analiseInsertStatement(insertStatement: InsertStatementContext, dbSchema: ColumnSchema[]): InsertInfoResult {
-    
 
     const valuesContext = insertStatement.insertFromConstructor()!.insertValues().valueList().values()[0];
-    
     const insertColumns = getInsertColumns(insertStatement, dbSchema);
     const allParameters: ParameterDef [] = [];
+
     valuesContext.expr().forEach( (expr, index) => {
         const constraints: Constraint[] = [];
         const namedNodes: TypeVar[] = [];
@@ -152,15 +156,19 @@ export function analiseInsertStatement(insertStatement: InsertStatementContext, 
     return typeInferenceResult;
 }
 
-export function analiseUpdateStatement(updateStatement: UpdateStatementContext, dbSchema: ColumnSchema[]): TypeInferenceResult {
-    const constraints: Constraint[] = [];
-    const namedNodes: TypeVar[] = [];
+export function analiseUpdateStatement(updateStatement: UpdateStatementContext, dbSchema: ColumnSchema[]): UpdateInfoResult {
 
     const updateElement = updateStatement.updateList().updateElement();
-    const updateColumns : ColumnDef[] = getUpdateColumns(updateStatement, dbSchema);
+    const updateColumns = getUpdateColumns(updateStatement, dbSchema);
+    const dataParameters: ParameterDef [] = [];
+    const whereParameters: ParameterDef[] = [];
+
     updateElement.forEach(updateElement => {
         const expr = updateElement.expr();
         if(expr) {
+            const constraints: Constraint[] = [];
+            const namedNodes: TypeVar[] = [];
+
             const result = walkExpr(expr, namedNodes, constraints, dbSchema, updateColumns);
             const columnName = updateElement.columnRef().text;
             const field = splitName(columnName);
@@ -171,35 +179,40 @@ export function analiseUpdateStatement(updateStatement: UpdateStatementContext, 
                 type2: freshVar(column.table, column.columnType)
                 
             })
+            const typeInfo = generateTypeInfo(namedNodes, constraints);
+            typeInfo.forEach( param => {
+                dataParameters.push({
+                    name: 'param' + (dataParameters.length),
+                    columnType: param,
+                    notNull: column.notNull
+                })
+            })
         }
         
     })
-    
-    
+    const whereExpr = updateStatement.whereClause()?.expr();
+    if(whereExpr) {
+        const constraints: Constraint[] = [];
+        const namedNodes: TypeVar[] = [];
+        walkExpr(whereExpr, namedNodes, constraints, dbSchema, updateColumns);
+        const typeInfo = generateTypeInfo(namedNodes, constraints);
+        typeInfo.forEach( param => {
+            whereParameters.push({
+                name: 'param' + (dataParameters.length),
+                columnType: param,
+                notNull: false
+            })
+        })
 
-    
 
-    const substitutions: SubstitutionHash = {}
-    unify(constraints, substitutions);
-
-    const parameters = namedNodes.map(param => {
-        // if(param.type != '?') return param.type  as MySqlType;
-        const type = substitutions[param.id];
-        if (!type) {
-            return 'varchar' as MySqlType;
-        }
-        if (type.type == 'number') return 'double'
-    
-        const resultType = type.list ? type.type + '[]' : type.type;
-        return resultType as MySqlType;
-    });
-
-    console.log("parameters=", parameters);
-    const typeInfer : TypeInferenceResult = {
-        columns: [],
-        parameters
     }
-    return typeInfer;
+    const typeInferenceResult : UpdateInfoResult = {
+        kind: 'Update',
+        data: dataParameters,
+        parameters: whereParameters
+    }
+    
+    return typeInferenceResult;
 }
 
 export function getInsertColumns(insertStatement: InsertStatementContext, dbSchema: ColumnSchema[]) {
