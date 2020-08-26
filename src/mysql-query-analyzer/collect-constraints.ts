@@ -344,7 +344,6 @@ export function generateTypeInfo(namedNodes: TypeVar[], constraints: Constraint[
     unify(constraints, substitutions);
 
     const parameters = namedNodes.map(param => {
-        if(param.type != '?') return param.type  as MySqlType;
         const type = substitutions[param.id];
         if (!type) {
             return 'varchar' as MySqlType;
