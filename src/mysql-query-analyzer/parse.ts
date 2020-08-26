@@ -1,13 +1,10 @@
 import MySQLParser, { SqlMode, QueryContext, QuerySpecificationContext, SelectStatementContext, SubqueryContext } from 'ts-mysql-parser';
-import { RuleContext } from "antlr4ts";
 import { ParseTree } from "antlr4ts/tree";
-import { analiseTree, Constraint, Type, TypeVar, analiseQuerySpecification, unionTypeResult, getInsertColumns, analiseInsertStatement, analiseUpdateStatement } from './collect-constraints';
+import { analiseTree, TypeVar, analiseQuerySpecification, unionTypeResult, getInsertColumns, analiseInsertStatement, analiseUpdateStatement } from './collect-constraints';
 import { ColumnSchema, TypeInferenceResult, QueryInfoResult, ColumnInfo, ParameterInfo, ColumnDef, InsertInfoResult, UpdateInfoResult } from './types';
 import { getColumnsFrom, getColumnNames } from './select-columns';
 import { inferParamNullability, inferParamNullabilityQuery } from './infer-param-nullability';
 import { inferNotNull } from './infer-column-nullability';
-import { MySqlType } from '../mysql-mapping';
-import { ParameterDef } from '../types';
 
 
 const parser = new MySQLParser({
@@ -30,8 +27,8 @@ export type SubstitutionHash = {
 
 
 
-export function infer(tree: RuleContext, dbSchema: ColumnSchema[]) : TypeInferenceResult {
-    const typeInferenceResult =  analiseTree(tree, dbSchema);
+export function infer(queryContext: QueryContext, dbSchema: ColumnSchema[]) : TypeInferenceResult {
+    const typeInferenceResult =  analiseTree(queryContext, dbSchema);
     return typeInferenceResult;
 }
 
@@ -129,11 +126,10 @@ export function analiseQuery(querySpec: QuerySpecificationContext[], dbSchema: C
             
     for (let queryIndex = 1; queryIndex < querySpec.length; queryIndex++) { //union (if have any)
         const unionResult = extractQueryInfoFromQuerySpecification(querySpec[queryIndex], dbSchema, parentFromColumns);
-        const notNullColumns = inferNotNull(querySpec[queryIndex], dbSchema);
 
         mainQueryResult.columns.forEach( (field, fieldIndex) => {
             const unionField = unionResult.columns[fieldIndex];
-            field.notNull = field.notNull && notNullColumns[fieldIndex]; //if all the fields at the fieldIndex is null
+            field.notNull = field.notNull && unionField.notNull; //if all the fields at the fieldIndex is null
             field.type = unionTypeResult(field.type, unionField.type);
         }) 
         mainQueryResult.parameters.push(...unionResult.parameters);
