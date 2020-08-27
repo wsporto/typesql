@@ -18,6 +18,11 @@ function parseArgs() {
             alias: 'w',
             describe: 'Watch for changes in the folders',
             type: 'boolean'
+        }).option('target', {
+            alias: 't',
+            describe: 'Define the target runtime as node or deno. Default is node.',
+            choices: ['node', 'deno'],
+            default: 'node',
         })
         .argv;
 }
@@ -36,12 +41,12 @@ function validateDirectories(dirPaths: string[]) {
     return dirPaths;
 }
 
-function watchDirectories(client:DbClient, dirPath: string) {
+function watchDirectories(client:DbClient, dirPath: string, target: 'node' | 'deno') {
     const dirGlob = `${dirPath}/**/*.sql`;
 
     chokidar.watch(dirGlob)
-        .on('add', path => generateTsFile(client, path))
-        .on('change', path => generateTsFile(client, path));
+        .on('add', path => generateTsFile(client, path, target))
+        .on('change', path => generateTsFile(client, path, target));
 }
 
 async function main() {
@@ -58,13 +63,14 @@ async function main() {
     const client = new DbClient();
     await client.connect(args.database);
 
-    const filesGeneration = sqlFiles.map( sqlFile => generateTsFile(client, sqlFile));
+    const target = args.target as 'node' | 'deno';
+    const filesGeneration = sqlFiles.map( sqlFile => generateTsFile(client, sqlFile, target));
     await Promise.all(filesGeneration);
 
 
     if(args.watch) {
         console.log("watching");
-        watchDirectories(client, dirPath);
+        watchDirectories(client, dirPath, target);
     }
     else {
         client.closeConnection();

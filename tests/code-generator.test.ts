@@ -184,7 +184,7 @@ describe('code-generator', () => {
             parameters: []
         }
 
-        const actual = generateFunction(queryName, tsDescriptor);
+        const actual = generateFunction(queryName, tsDescriptor, 'node');
         const expected = `
         export async function getPerson(connection: Connection) : Promise<GetPersonResult[]> {
             const sql = \`
@@ -224,7 +224,7 @@ describe('code-generator', () => {
             ]
         }
 
-        const actual = generateFunction(queryName, tsDescriptor);
+        const actual = generateFunction(queryName, tsDescriptor, 'node');
         const expected = `
         export async function getPerson(connection: Connection, params: GetPersonParams) : Promise<GetPersonResult[]> {
             const sql = \`
@@ -266,7 +266,7 @@ describe('code-generator', () => {
             ]
         }
 
-        const actual = generateFunction(queryName, tsDescriptor);
+        const actual = generateFunction(queryName, tsDescriptor, 'node');
         const expected = `
         export async function updatePerson(connection: Connection, data: UpdatePersonData, params: UpdatePersonParams) : Promise<UpdatePersonResult> {
             const sql = \`
