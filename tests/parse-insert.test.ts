@@ -223,14 +223,25 @@ describe('parse insert statements', () => {
         assert.deepEqual(actual.right, expected);
     })
     
-    it.skip('insert into all_types (varchar_column, int_column) values (concat(?, ?), ?+?)', async () => {
+    it('insert into all_types (varchar_column, int_column) values (concat(?, ?), ?+?)', async () => {
 
         const sql = `insert into all_types (varchar_column, int_column) values (concat(?, ?), ?+?)`;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql: 'insert into all_types (varchar_column, int_column) values (concat(?, ?), ?+?)',
             multipleRowsResult: false,
-            columns: [],
+            columns: [
+                {
+                    name: 'affectedRows',
+                    dbtype: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'insertId',
+                    dbtype: 'int',
+                    notNull: true
+                }
+            ],
             parameters: [
                 {
                     name: 'param1',

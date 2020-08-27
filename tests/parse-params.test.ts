@@ -342,6 +342,30 @@ describe('Test parse parameters', () => {
         assert.deepEqual(actual.right.parameters, expected);
     })
 
+    it(`select concat(?, ?) from mytable2`, async () => {
+        const sql = `
+        select concat(?, ?) from mytable2
+        `
+        const actual = await parseSql(client, sql);
+        const expected : ParameterDef[] = [
+            {
+                name: 'param1',
+                columnType: 'varchar',
+                notNull: true
+            },
+            {
+                name: 'param2',
+                columnType: 'varchar',
+                notNull: true
+            }
+        ]
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right.parameters, expected);
+    })
+
+
     //TODO: new test: SELECT * FROM mytable1 t WHERE value in (select value from mytable1 m2 where m2.value is null) or value is null;
     it(`SELECT * FROM mytable1 t WHERE ? in (select id from mytable1 m2 )`, async () => {
         const sql = `
