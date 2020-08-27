@@ -3,6 +3,9 @@
   "version": "0.0.3",
   "description": "",
   "main": "index.js",
+  "bin": {
+    "typesql": "dist/cli.cs"
+  },
   "scripts": {
     "test": "mocha  dist/tests/**/*.js --watch --watch-files **/*.js",
     "antlr4ts": "antlr4ts -Xexact-output-dir -o ./parser/ ./grammar/*.g4",
