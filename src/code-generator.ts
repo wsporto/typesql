@@ -154,7 +154,7 @@ export function generateOrderByFunction(queryName: CamelCaseName, orderByColumns
     '';
 }
 
-export function generateFunction(camelCaseName: CamelCaseName, tsDescriptor: TsDescriptor) {
+export function generateFunction(camelCaseName: CamelCaseName, tsDescriptor: TsDescriptor, target: 'node' | 'deno') {
 
     const resultStr = generateReturnName(camelCaseName);
 
@@ -171,15 +171,34 @@ export function generateFunction(camelCaseName: CamelCaseName, tsDescriptor: TsD
 
     const functionReturn = resultStr + (tsDescriptor.multipleRowsResult? '[]' : ''); 
 
-    const mainFunction = `export async function ${camelCaseName}(connection: Connection${functionParams}) : Promise<${functionReturn}> {
-    const sql = \`
-    ${replaceOrderByParam(tsDescriptor.sql)}
-    \`;
-    return connection.query(sql${paramValues})
-        .then( res => res[0] as ${functionReturn} );
-}
-    `
+    const mainFunction = target == 'node'?
+        getMainNodeFunction(camelCaseName, functionParams, functionReturn, tsDescriptor.sql, paramValues):
+        getMainDenoFunction(camelCaseName, functionParams, functionReturn, tsDescriptor.sql, paramValues);
     return mainFunction;
+}
+
+function getMainNodeFunction(camelCaseName: string, functionParams: string, functionReturn: string, sql: string, paramValues: string) {
+    const mainFuncion = `export async function ${camelCaseName}(connection: Connection${functionParams}) : Promise<${functionReturn}> {
+        const sql = \`
+        ${replaceOrderByParam(sql)}
+        \`;
+        return connection.query(sql${paramValues})
+            .then( res => res[0] as ${functionReturn} );
+    }
+        `
+    return mainFuncion;
+}
+
+function getMainDenoFunction(camelCaseName: string, functionParams: string, functionReturn: string, sql: string, paramValues: string) {
+    const mainFuncion = `export async function ${camelCaseName}(client: Client${functionParams}) : Promise<${functionReturn}> {
+        const sql = \`
+        ${replaceOrderByParam(sql)}
+        \`;
+        return client.query(sql${paramValues})
+            .then( res => res as ${functionReturn} );
+    }
+        `
+    return mainFuncion;
 }
 
 function mapColumnType(columnType: MySqlType | MySqlType[] | '?') : string {
@@ -190,7 +209,7 @@ function mapColumnType(columnType: MySqlType | MySqlType[] | '?') : string {
 
 }
 
-function generateTsContent(tsDescriptorOption: Option<TsDescriptor>, queryName: string) {
+function generateTsContent(tsDescriptorOption: Option<TsDescriptor>, queryName: string, target: 'node' | 'deno') {
     
     if(isNone(tsDescriptorOption)) {
         return '//Invalid sql';
@@ -205,9 +224,9 @@ function generateTsContent(tsDescriptorOption: Option<TsDescriptor>, queryName: 
     const paramsType = generateParamsType(camelCaseName, tsDescriptor.parameters, includeOrderByParams);
     const orderByType = generateOrderByType(camelCaseName, tsDescriptor.orderByColumns);
     const orderByFunction = generateOrderByFunction(camelCaseName, tsDescriptor.orderByColumns);
-    const mainFunction = generateFunction(camelCaseName, tsDescriptor);
+    const mainFunction = generateFunction(camelCaseName, tsDescriptor, target);
 
-    let generatedCode = `import { Connection } from 'mysql2/promise';`;
+    let generatedCode = getImportDeclaration(target);
     generatedCode += addCodeBlock(paramsType);
     generatedCode += addCodeBlock(dataType);
     generatedCode += addCodeBlock(orderByType);
@@ -215,6 +234,12 @@ function generateTsContent(tsDescriptorOption: Option<TsDescriptor>, queryName: 
     generatedCode += addCodeBlock(mainFunction);
     generatedCode += addCodeBlock(orderByFunction);
     return generatedCode;
+}
+
+function getImportDeclaration(target: 'node' | 'deno') {
+    return target == 'node'?
+        `import { Connection } from 'mysql2/promise';` :
+        `import { Client } from "https://deno.land/x/mysql/mod.ts";`
 }
 
 function addCodeBlock(codeBlock: string) {
@@ -242,7 +267,7 @@ export function convertToCamelCaseName(name: string) : CamelCaseName {
 }
 
 //TODO - pass dbSchema instead of connection
-export async function generateTsFile(client: DbClient, sqlFile: string) {
+export async function generateTsFile(client: DbClient, sqlFile: string, target: 'node' | 'deno') {
 
     const fileName = parse(sqlFile).name;
     const dirPath = parse(sqlFile).dir;
@@ -259,7 +284,7 @@ export async function generateTsFile(client: DbClient, sqlFile: string) {
         console.error('at ', sqlFile);
     }
     const tsDescriptor = isLeft(queryInfo) ? none : some(generateTsDescriptor(queryInfo.right));
-    const tsContent = generateTsContent(tsDescriptor, queryName);
+    const tsContent = generateTsContent(tsDescriptor, queryName, target);
     writeTsFile(tsFilePath, tsContent);
 }
 
