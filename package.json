@@ -1,5 +1,5 @@
 {
-  "name": "typesql",
+  "name": "node-typesql",
   "version": "0.0.3",
   "description": "",
   "main": "index.js",
@@ -9,11 +9,14 @@
   "scripts": {
     "test": "mocha  dist/tests/**/*.js --watch --watch-files **/*.js",
     "antlr4ts": "antlr4ts -Xexact-output-dir -o ./parser/ ./grammar/*.g4",
-    "dist": "tsc && cpy ./package.json ./dist/src && cd ./dist/src && npm dist"
+    "dist": "tsc && cpy ./package.json ./dist/src && cd ./dist/src && npm publish"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "devDependencies": {
     "@types/mocha": "^7.0.2",
     "@types/mysql2": "git+https://git@github.com/types/mysql2.git",
