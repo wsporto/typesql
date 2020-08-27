@@ -3,6 +3,7 @@ import { extractQueryInfo } from "./mysql-query-analyzer/parse";
 import { DbClient } from "./queryExectutor";
 import { Either, isLeft, right } from "fp-ts/lib/Either";
 import { ColumnSchema } from "./mysql-query-analyzer/types";
+import { MySqlType } from "./mysql-mapping";
 
 export function describeSql(dbSchema: ColumnSchema[], sql: string, namedParameters?: string[]) : SchemaDef {
     const queryInfo = extractQueryInfo(sql, dbSchema);
@@ -10,7 +11,7 @@ export function describeSql(dbSchema: ColumnSchema[], sql: string, namedParamete
         const columnDef = queryInfo.columns.map( colInfo => {
             const colDef : ColumnDef = {
                 name: colInfo.columnName,
-                dbtype: colInfo.type,
+                dbtype: verifyNotInferred(colInfo.type),
                 notNull: colInfo.notNull
             }
             return colDef;
@@ -19,7 +20,7 @@ export function describeSql(dbSchema: ColumnSchema[], sql: string, namedParamete
         const parametersDef = queryInfo.parameters.map( (paramInfo, paramIndex) => {
             const paramDef : ParameterDef = {
                 name: namedParameters && namedParameters[paramIndex]? namedParameters[paramIndex] : 'param' + (paramIndex + 1),
-                columnType: paramInfo.type,
+                columnType: verifyNotInferred(paramInfo.type),
                 notNull: paramInfo.notNull
             }
             return paramDef;
@@ -52,11 +53,12 @@ export function describeSql(dbSchema: ColumnSchema[], sql: string, namedParamete
         ]
 
         const parameters = namedParameters? addParameterNames(queryInfo.parameters, namedParameters) : queryInfo.parameters;
+        const verifiedParameters = parameters.map( param => ({...param, columnType: verifyNotInferred(param.columnType)}))
         const schemaDef: SchemaDef = {
             sql: sql,
             multipleRowsResult: false,
             columns: resultColumns,
-            parameters,
+            parameters: verifiedParameters,
         }
         return schemaDef;
     }
@@ -73,7 +75,6 @@ export function describeSql(dbSchema: ColumnSchema[], sql: string, namedParamete
                 notNull: true
             }
         ]
-        const updateParamNamesNames = namedParameters? namedParameters.slice(0, queryInfo.data.length) : [];
         const whereParametersNames = namedParameters? namedParameters.slice(queryInfo.data.length) : [];
 
         const schemaDef: SchemaDef = {
@@ -115,6 +116,10 @@ function addParameterNames(parameters: ParameterDef[], namedParameters: string[]
         }
         return paramDef;
     })
+}
+
+function verifyNotInferred(type: MySqlType | '?') : MySqlType {
+    return type == '?' ? 'varchar' : type;
 }
 
 export async function parseSql(client: DbClient, sql: string) : Promise<Either<InvalidSqlError, SchemaDef>> {
