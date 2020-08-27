@@ -17,22 +17,36 @@ describe('parse insert statements', () => {
 
     it('insert into mytable1 (value) values (?)', async () => {
 
-        const sql = `
-        insert into mytable1 (value) values (?)
-            `;
+        const sql = `insert into mytable1 (value) values (?)`;
         const actual = await parseSql(client, sql);
-        const expected: ParameterDef[] = [
-            {
-                name: 'param1',
-                columnType: 'int',
-                notNull: false
-            }
-        ]
+        const expected: SchemaDef = {
+            multipleRowsResult: false,
+            sql: 'insert into mytable1 (value) values (?)',
+            columns: [
+                {
+                    name: 'affectedRows',
+                    dbtype: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'insertId',
+                    dbtype: 'int',
+                    notNull: true
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'int',
+                    notNull: false
+                }
+            ]
+        }
 
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.parameters, expected);
+        assert.deepEqual(actual.right, expected);
     })
 
     it('insert into mydb.mytable1 (value) values (?)', async () => {
@@ -176,7 +190,18 @@ describe('parse insert statements', () => {
         const expected: SchemaDef = {
             sql: 'insert into all_types (int_column) values (?+?)',
             multipleRowsResult: false,
-            columns: [],
+            columns: [
+                {
+                    name: 'affectedRows',
+                    dbtype: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'insertId',
+                    dbtype: 'int',
+                    notNull: true
+                }
+            ],
             parameters: [
                 {
                     name: 'param1',
