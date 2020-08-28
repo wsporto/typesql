@@ -26,7 +26,7 @@ describe('Utility functions tests', () => {
         assert.deepEqual(actualUpperCase, colDef[0]);
     })
 
-    it.only('findColumn2 should be case insensitive', () => {
+    it('findColumn2 should be case insensitive', () => {
         const colDef : ColumnSchema[] = [
             {
                 column: 'name',
