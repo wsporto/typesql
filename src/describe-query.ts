@@ -133,8 +133,10 @@ export async function parseSql(client: DbClient, sql: string) : Promise<Either<I
     return right(result);
 }
 
+//http://dev.mysql.com/doc/refman/8.0/en/identifiers.html
+//Permitted characters in unquoted identifiers: ASCII: [0-9,a-z,A-Z$_] (basic Latin letters, digits 0-9, dollar, underscore)
 export function preprocessSql(sql: string) {
-    const regex = /:[a-zA-Z\d]+/g;
+    const regex = /:[a-zA-Z\d$_]+/g;
     const namedParameters : string[] = sql.match(regex)?.map( param => param.slice(1) ) || [];
     const newSql = sql.replace(regex, '?');
     const processedSql : PreprocessedSql = {

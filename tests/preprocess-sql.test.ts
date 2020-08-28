@@ -17,6 +17,19 @@ describe('preprocess-sql', () => {
         assert.deepEqual(actual, expected);
     })
 
+    it('preprocess sql with undescore and dollar in the param name', async () => {
+
+        const sql = 'select * from mytable1 where id = :emp_id or id = :$1';
+        const actual = preprocessSql(sql);
+
+        const expected :PreprocessedSql = {
+            sql: 'select * from mytable1 where id = ? or id = ?',
+            namedParameters: ['emp_id', '$1']
+        }
+
+        assert.deepEqual(actual, expected);
+    })
+
     it('preprocess sql without parameters', async () => {
 
         const sql = 'select * from mytable1';
