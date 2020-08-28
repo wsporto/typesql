@@ -734,7 +734,23 @@ function walkSimpleExpr(simpleExpr: SimpleExprContext, namedNodes: TypeVar[], co
             })
             return freshVar(simpleExpr.text, 'bigint');
         }
-        throw Error('SimpleExprRuntimeFunctionContext');
+
+        if (functionIdentifier?.toLowerCase() === 'str_to_date') {
+            const exprList = simpleExpr.functionCall().udfExprList()?.udfExpr();
+            exprList?.forEach(inExpr => {
+                const expr = inExpr.expr();
+                const exprType = walkExpr(expr, namedNodes, constraints, dbSchema, fromColumns);
+                constraints.push({
+                    expression: expr.text,
+                    type1: exprType,
+                    type2: freshVar(expr.text, 'varchar'),
+                    mostGeneralType: true
+                })
+            })
+            return freshVar(simpleExpr.text, 'date');
+        }
+
+        throw Error('SimpleExprFunctionContext');
     }
 
     if (simpleExpr instanceof SimpleExprParamMarkerContext) {

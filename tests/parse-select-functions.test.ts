@@ -280,7 +280,7 @@ describe('Test parse select with functions', () => {
         assert.deepEqual(actual.right, expected);
     })
 
-    it.skip('parse a select with STR_TO_DATE function', async () => {
+    it('parse a select with STR_TO_DATE function', async () => {
         const sql = `
         SELECT STR_TO_DATE('21/5/2013','%d/%m/%Y')
         `
@@ -304,7 +304,7 @@ describe('Test parse select with functions', () => {
         assert.deepEqual(actual.right, expected);
     })
 
-    it.skip('parse a select with STR_TO_DATE and CONCAT_WS function', async () => {
+    it('parse a select with STR_TO_DATE and CONCAT_WS function', async () => {
         const sql = `
         SELECT STR_TO_DATE(CONCAT_WS('/', ?, ?, ?),'%d/%m/%Y')
         `
@@ -314,7 +314,7 @@ describe('Test parse select with functions', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: `STR_TO_DATE(CONCAT_WS('/', '?', '?', '?'),'%d/%m/%Y')`,
+                    name: `STR_TO_DATE(CONCAT_WS('/', ?, ?, ?),'%d/%m/%Y')`,
                     dbtype: 'date',
                     notNull: false
                 }
@@ -323,18 +323,18 @@ describe('Test parse select with functions', () => {
                 {
                     name: 'param1',
                     columnType: 'varchar',
-                    notNull: false //TODO - verify if is possible any inference
+                    notNull: true //changed at v0.0.2
                 },
                 {
                     name: 'param2',
                     columnType: 'varchar',
-                    notNull: false //TODO - verify if is possible any inference
+                    notNull: true //changed at v0.0.2
 
                 },
                 {
                     name: 'param3',
                     columnType: 'varchar',
-                    notNull: false //TODO - verify if is possible any inference
+                    notNull: true //changed at v0.0.2
                 }
             ]
 

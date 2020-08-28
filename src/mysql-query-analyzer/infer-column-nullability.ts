@@ -179,20 +179,30 @@ function inferNotNullSimpleExpr(simpleExpr: SimpleExprContext, dbSchema: ColumnS
 
 function inferNotNullFunctionCall(functionCall: FunctionCallContext, dbSchema: ColumnSchema[], fromColumns: ColumnDef[]): boolean {
     const functionName = functionCall.pureIdentifier()?.text.toLowerCase() || functionCall.qualifiedIdentifier()?.text.toLowerCase();
-    const udfExprList = functionCall.udfExprList();
-    if((functionName == 'concat' || functionName == 'concat_ws') && udfExprList) {
-        return udfExprList.udfExpr().every( udfExpr => {
-            const expr = udfExpr.expr();
-            return inferNotNullExpr(expr, dbSchema, fromColumns);
-        });
-    }
     if(functionName == 'ifnull') {
         return false;
     }
     if(functionName == 'avg') {
         return false;
     }
-    throw Error('Error during column null inference');
+    if(functionName == 'str_to_date') {
+        return false; //invalid date
+    }
+    const udfExprList = functionCall.udfExprList()?.udfExpr();
+    if(udfExprList) {
+        return udfExprList.every( udfExpr => {
+            const expr = udfExpr.expr();
+            return inferNotNullExpr(expr, dbSchema, fromColumns);
+        });
+    }
+    const exprList = functionCall.exprList()?.expr();
+    if(exprList) {
+        return exprList.every( expr => {
+            return inferNotNullExpr(expr, dbSchema, fromColumns);
+        });
+    }
+
+    return true;
 }
 
 
