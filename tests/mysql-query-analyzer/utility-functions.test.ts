@@ -1,11 +1,49 @@
 import assert from "assert";
 import { parse } from "../../src/mysql-query-analyzer/parse";
 import { dbSchema } from "./create-schema";
-import { ColumnDef, FieldInfo } from "../../src/mysql-query-analyzer/types";
-import { getColumnsFrom, getColumnNames } from "../../src/mysql-query-analyzer/select-columns";
+import { ColumnDef, FieldInfo, ColumnSchema } from "../../src/mysql-query-analyzer/types";
+import { getColumnsFrom, getColumnNames, findColumn, splitName, findColumn2 } from "../../src/mysql-query-analyzer/select-columns";
 import { unionTypeResult } from "../../src/mysql-query-analyzer/collect-constraints";
 
 describe('Utility functions tests', () => {
+
+    it('findColumn should be case insensitive', () => {
+        const colDef : ColumnDef[] = [
+            {
+                column: 'name',
+                columnName: 'name',
+                columnType: 'varchar',
+                notNull: true,
+                table: 'mytable2'
+            }
+        ]
+        const fieldName = splitName('name');
+        const actual = findColumn(fieldName, colDef);
+        assert.deepEqual(actual, colDef[0]);
+
+        const fieldNameUperCase = splitName('NAME');
+        const actualUpperCase = findColumn(fieldNameUperCase, colDef);
+        assert.deepEqual(actualUpperCase, colDef[0]);
+    })
+
+    it.only('findColumn2 should be case insensitive', () => {
+        const colDef : ColumnSchema[] = [
+            {
+                column: 'name',
+                column_type: 'varchar',
+                notNull: true,
+                table: 'mytable2',
+                schema: 'mydb'
+            }
+        ]
+        const fieldName = splitName('name');
+        const actual = findColumn2(fieldName, 'mytable2', colDef);
+        assert.deepEqual(actual, colDef[0]);
+
+        const fieldNameUperCase = splitName('NAME');
+        const actualUpperCase = findColumn2(fieldNameUperCase, 'mytable2', colDef);
+        assert.deepEqual(actualUpperCase, colDef[0]);
+    })
 
     it.skip(`test selectColumns`, () => {
 
