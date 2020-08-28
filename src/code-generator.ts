@@ -143,13 +143,12 @@ export function generateOrderByType(queryName: CamelCaseName, orderByColumns: st
     return orderByType;
 }
 
-export function generateOrderByFunction(queryName: CamelCaseName, orderByColumns: string[] | undefined) {
+export function generateOrderByFunction(queryName: CamelCaseName, orderByColumns: string[] | undefined, target: 'node' | 'deno') {
     const orderByTypeName = generateOrderByTypeName(queryName);
     return orderByColumns? `
-    function escapeOrderBy(connection: Connection, orderBy: ${orderByTypeName}[]) {
-        return orderBy.map( order => \`\${connection.escapeId(order.column)} \${order.direction == 'desc' ? 'desc' : 'asc' }\`).join(', '); 
-    }
-    `
+    function escapeOrderBy(orderBy: ${orderByTypeName}[]) {
+        return orderBy.map( order => \`\\\`\${order.column}\\\` \${order.direction == 'desc' ? 'desc' : 'asc' }\`).join(', '); 
+    }`
     :
     '';
 }
@@ -182,10 +181,10 @@ function getMainNodeFunction(camelCaseName: string, functionParams: string, func
         const sql = \`
         ${replaceOrderByParam(sql)}
         \`;
+
         return connection.query(sql${paramValues})
             .then( res => res[0] as ${functionReturn} );
-    }
-        `
+    }`
     return mainFuncion;
 }
 
@@ -194,10 +193,10 @@ function getMainDenoFunction(camelCaseName: string, functionParams: string, func
         const sql = \`
         ${replaceOrderByParam(sql)}
         \`;
+
         return client.query(sql${paramValues})
             .then( res => res as ${functionReturn} );
-    }
-        `
+    }`
     return mainFuncion;
 }
 
@@ -223,7 +222,7 @@ function generateTsContent(tsDescriptorOption: Option<TsDescriptor>, queryName: 
     const includeOrderByParams = (tsDescriptor.orderByColumns && tsDescriptor.orderByColumns.length > 0) || false;
     const paramsType = generateParamsType(camelCaseName, tsDescriptor.parameters, includeOrderByParams);
     const orderByType = generateOrderByType(camelCaseName, tsDescriptor.orderByColumns);
-    const orderByFunction = generateOrderByFunction(camelCaseName, tsDescriptor.orderByColumns);
+    const orderByFunction = generateOrderByFunction(camelCaseName, tsDescriptor.orderByColumns, target);
     const mainFunction = generateFunction(camelCaseName, tsDescriptor, target);
 
     let generatedCode = getImportDeclaration(target);
@@ -248,7 +247,7 @@ function addCodeBlock(codeBlock: string) {
 
 function replaceOrderByParam(sql: string) {
     const patern = /(.*order\s+by\s*)(\?)(.*$)/i;
-    const newSql = sql.replace(patern, "$1${escapeOrderBy(connection, params.orderBy)} $3");
+    const newSql = sql.replace(patern, "$1${escapeOrderBy(params.orderBy)} $3");
     return newSql;
 }
 
