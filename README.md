@@ -34,7 +34,7 @@ sqls\
     update-product.sql
 ```
 
-2. Then run `npx typesql -w -t=deno -d mysql://root:password@localhost/mydb .\sqls` to start typesql in watch mode and generate code targeting the deno runtime.
+2. Then run `npx typesql-cli -w -t=deno -d mysql://root:password@localhost/mydb .\sqls` to start typesql in watch mode and generate code targeting the deno runtime.
 
 3. After that you will have one Typescript file for each query file.
 
