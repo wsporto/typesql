@@ -14,7 +14,7 @@ import { ColumnSchema, ColumnDef, TypeInferenceResult, InsertInfoResult, UpdateI
 import { getColumnsFrom, findColumn, splitName, selectAllColumns, findColumn2 } from "./select-columns";
 import {
     SubstitutionHash, getQuerySpecificationsFromSelectStatement as getQuerySpecificationsFromQuery,
-    analiseQuery, getQuerySpecificationsFromSelectStatement
+    getQuerySpecificationsFromSelectStatement
 } from "./parse";
 import { MySqlType, InferType } from "../mysql-mapping";
 import { ParameterDef } from "../types";
@@ -120,7 +120,7 @@ export function analiseInsertStatement(insertStatement: InsertStatementContext, 
         constraints.push({
             expression: expr.text,
             type1: freshVar(column.column, column.column_type),
-            type2: exprType
+            type2: exprType.kind == 'TypeOperator'? exprType.types[0] : exprType
         })
 
         const typeInfo = generateTypeInfo(namedNodes, constraints);
@@ -509,7 +509,7 @@ function walkpredicateOperations(parentType: Type, predicateOperations: Predicat
 
         const subquery = predicateOperations.subquery();
         if (subquery) {
-            const rightType = walkSubquery(subquery, dbSchema, namedNodes, fromColumns);
+            const rightType = walkSubquery(subquery, dbSchema, namedNodes, constraints, fromColumns);
             return rightType;
         }
         const exprList = predicateOperations.exprList();
@@ -811,7 +811,7 @@ function walkSimpleExpr(simpleExpr: SimpleExprContext, namedNodes: TypeVar[], co
 
     if (simpleExpr instanceof SimpleExprSubQueryContext) {
         const subquery = simpleExpr.subquery();
-        const subqueryType = walkSubquery(subquery, dbSchema, namedNodes, fromColumns);
+        const subqueryType = walkSubquery(subquery, dbSchema, namedNodes, constraints, fromColumns);
         return subqueryType;
     }
 
@@ -870,22 +870,28 @@ function walkSimpleExpr(simpleExpr: SimpleExprContext, namedNodes: TypeVar[], co
     throw Error('Invalid expression');
 }
 
-export function walkSubquery(queryExpressionParens: SubqueryContext, dbSchema: ColumnSchema[], namedNodes: TypeVar[], fromColumns: ColumnDef[]): Type {
+export function walkSubquery(queryExpressionParens: SubqueryContext, dbSchema: ColumnSchema[], namedNodes: TypeVar[], constraints: Constraint[], fromColumns: ColumnDef[]): Type {
 
     const querySpec = getQuerySpecificationsFromQuery(queryExpressionParens);
-    const typeInferResult = analiseQuery(querySpec, dbSchema, fromColumns);
-    const typeVars = typeInferResult.columns.map(col => {
-        const typeVar = freshVar(col.name, col.type);
+    const subqueryColumns = getColumnsFrom(querySpec[0], dbSchema);
+    const allColumns = fromColumns.concat(subqueryColumns);
+    const typeInferResult = walkQuerySpecification(querySpec[0], namedNodes, constraints, dbSchema, allColumns) as TypeOperator;
+    
+    for (let queryIndex = 1; queryIndex < querySpec.length; queryIndex++) { //union (if have any)
+        const unionColumns = getColumnsFrom(querySpec[queryIndex], dbSchema);
+        const allColumns2 = fromColumns.concat(unionColumns);
+        const unionResult = walkQuerySpecification(querySpec[queryIndex], namedNodes, constraints, dbSchema, allColumns2) as TypeOperator;
 
-        return typeVar;
-    })
-    typeInferResult.parameters.forEach(param => {
-        namedNodes.push(freshVar('?', param.type));
-    })
-    const type: TypeOperator = {
-        kind: 'TypeOperator',
-        types: typeVars
-    };
-    return type;
+        typeInferResult.types.forEach( (field, fieldIndex) => {
+            constraints.push({
+                expression: querySpec[queryIndex].text,
+                type1: typeInferResult.types[fieldIndex],
+                type2: unionResult.types[fieldIndex],
+                mostGeneralType: true
+            })
+        }) 
+    }
+    //Should retrun the union result type, not the first query from result
+    return typeInferResult;
 
 }
