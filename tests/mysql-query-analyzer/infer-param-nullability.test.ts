@@ -57,6 +57,15 @@ describe('Infer param nullability', () => {
         assert.deepEqual(actual, expected);
     })
 
+    it(`SELECT * FROM mytable2 where name like ?`, () => {
+        const sql = `SELECT * FROM mytable2 where name like ?`;
+        const actual = parseAndInferParamNullability(sql);
+
+        const expected = [true];
+
+        assert.deepEqual(actual, expected);
+    })
+
     it(`SELECT concat(?, ?) from mytable1 where concat_ws('/', ?) < id`, () => {
         const sql = `SELECT concat(?, ?) from mytable1`;
         const actual = parseAndInferParamNullability(sql);
