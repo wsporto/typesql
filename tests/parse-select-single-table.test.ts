@@ -1077,7 +1077,7 @@ describe('Test simple select statements', () => {
         assert.deepEqual(actual.right, expected);
     })
 
-    it.skip('parse select using ANY operator', async () => {
+    it('parse select using ANY operator', async () => {
 
         const sql = `
         select id from mytable1 where value > any(select id from mytable2 where name like ?)
@@ -1096,6 +1096,43 @@ describe('Test simple select statements', () => {
             parameters: [
                 {
                     name: 'param1',
+                    columnType: 'varchar',
+                    notNull: true
+                }
+            ]
+
+        }
+
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
+    })
+
+    it('parse select using ANY operator with parameter', async () => {
+
+        const sql = `
+        select id from mytable1 where ? > any(select id from mytable2 where name like ?)
+        `;
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'id',
+                    dbtype: 'int',
+                    notNull: true
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'param2',
                     columnType: 'varchar',
                     notNull: true
                 }
