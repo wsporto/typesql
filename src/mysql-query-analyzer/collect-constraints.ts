@@ -7,7 +7,7 @@ import {
     SimpleExprListContext, ExprListContext, PrimaryExprIsNullContext, ExprContext, ExprIsContext, BoolPriContext,
     PrimaryExprPredicateContext, SimpleExprContext, PredicateOperationsContext, ExprNotContext, ExprAndContext,
     ExprOrContext, ExprXorContext, PredicateExprLikeContext, SelectStatementContext, SimpleExprRuntimeFunctionContext,
-    SubqueryContext, InsertStatementContext, UpdateStatementContext, DeleteStatementContext
+    SubqueryContext, InsertStatementContext, UpdateStatementContext, DeleteStatementContext, PrimaryExprAllAnyContext
 } from "ts-mysql-parser";
 
 import { ColumnSchema, ColumnDef, TypeInferenceResult, InsertInfoResult, UpdateInfoResult, DeleteInfoResult } from "./types";
@@ -501,6 +501,20 @@ function walkBoolPri(boolPri: BoolPriContext, namedNodes: TypeVar[], constraints
         })
         return freshVar(boolPri.text, 'tinyint');
     }
+
+    if(boolPri instanceof PrimaryExprAllAnyContext) {
+        const compareLeft = boolPri.boolPri();
+        const compareRight = boolPri.subquery();
+        const typeLeft = walkBoolPri(compareLeft, namedNodes, constraints, dbSchema, fromColumns);
+        const typeRight = walkSubquery(compareRight, namedNodes, constraints, dbSchema, fromColumns);
+        constraints.push({
+            expression: boolPri.text,
+            type1: typeLeft,
+            type2: typeRight,
+            strict: true
+        })
+        return freshVar(boolPri.text, 'tinyint');
+    }
     throw Error('invalid sql');
 
 }
@@ -532,7 +546,7 @@ function walkpredicateOperations(parentType: Type, predicateOperations: Predicat
 
         const subquery = predicateOperations.subquery();
         if (subquery) {
-            const rightType = walkSubquery(subquery, dbSchema, namedNodes, constraints, fromColumns);
+            const rightType = walkSubquery(subquery, namedNodes, constraints, dbSchema, fromColumns);
             return rightType;
         }
         const exprList = predicateOperations.exprList();
@@ -834,7 +848,7 @@ function walkSimpleExpr(simpleExpr: SimpleExprContext, namedNodes: TypeVar[], co
 
     if (simpleExpr instanceof SimpleExprSubQueryContext) {
         const subquery = simpleExpr.subquery();
-        const subqueryType = walkSubquery(subquery, dbSchema, namedNodes, constraints, fromColumns);
+        const subqueryType = walkSubquery(subquery, namedNodes, constraints, dbSchema, fromColumns);
         return subqueryType;
     }
 
@@ -893,7 +907,7 @@ function walkSimpleExpr(simpleExpr: SimpleExprContext, namedNodes: TypeVar[], co
     throw Error('Invalid expression');
 }
 
-export function walkSubquery(queryExpressionParens: SubqueryContext, dbSchema: ColumnSchema[], namedNodes: TypeVar[], constraints: Constraint[], fromColumns: ColumnDef[]): Type {
+export function walkSubquery(queryExpressionParens: SubqueryContext, namedNodes: TypeVar[], constraints: Constraint[], dbSchema: ColumnSchema[], fromColumns: ColumnDef[]): Type {
 
     const querySpec = getQuerySpecificationsFromQuery(queryExpressionParens);
     const subqueryColumns = getColumnsFrom(querySpec[0], dbSchema);
