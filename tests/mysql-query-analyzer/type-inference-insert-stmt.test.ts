@@ -57,7 +57,22 @@ describe('type-inference test', () => {
         assert.deepEqual(actual, expected);
     })
 
-    it.skip(`INSERT INTO alltypes (double_column, int_column) VALUES (?, ?)`, () => {
+    it(`INSERT INTO alltypes (double_column, int_column) VALUES (?, ?)`, () => {
+        const sql = `INSERT INTO all_types (bigint_column) 
+                     VALUES (
+                        (SELECT ? from mytable2)
+                    )`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: [],
+            parameters: ['bigint']   
+        }
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it(`INSERT INTO alltypes (double_column, int_column) VALUES (?, ?)`, () => {
         const sql = `INSERT INTO all_types (double_column, bigint_column) 
                      VALUES (
                         (SELECT double_column+? FROM all_types WHERE int_column = ?),

@@ -403,7 +403,8 @@ describe('Test parse parameters', () => {
         assert.deepEqual(actual.right.parameters, expected);
     })
 
-    it(`SELECT * FROM mytable1 t WHERE ? in (UNION)`, async () => {
+    //type mismatch
+    it.skip(`SELECT * FROM mytable1 t WHERE ? in (UNION - type mismatch)`, async () => {
         const sql = `
         SELECT * FROM mytable1 t WHERE ? in (
             select id from mytable1
@@ -416,6 +417,28 @@ describe('Test parse parameters', () => {
             {
                 name: 'param1',
                 columnType: 'varchar',
+                notNull: true
+            }
+        ]
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right.parameters, expected);
+    })
+
+    it(`SELECT * FROM mytable1 t WHERE ? in (UNION)`, async () => {
+        const sql = `
+        SELECT * FROM mytable1 t WHERE ? in (
+            select value from mytable1
+            union
+            select id+id from mytable2
+        )
+        `
+        const actual = await parseSql(client, sql);
+        const expected : ParameterDef[] = [
+            {
+                name: 'param1',
+                columnType: 'bigint',
                 notNull: true
             }
         ]
