@@ -131,7 +131,7 @@ export function analiseInsertStatement(insertStatement: InsertStatementContext, 
     valuesContext.expr().forEach( (expr, index) => {
         const constraints: Constraint[] = [];
         const namedNodes: TypeVar[] = [];
-        const exprType = walkExpr(expr, namedNodes, constraints, insertColumns, []);
+        const exprType = walkExpr(expr, namedNodes, constraints, dbSchema, []);
         const column = insertColumns[index];
         constraints.push({
             expression: expr.text,
@@ -399,6 +399,7 @@ export function generateTypeInfo(namedNodes: TypeVar[], constraints: Constraint[
     const parameters = namedNodes.map(param => {
         const type = substitutions[param.id];
         if (!type) {
+            if(param.type != '?') return param.type  as MySqlType;
             return 'varchar' as MySqlType;
         }
         if (type.type == 'number') return 'double';

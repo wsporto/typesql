@@ -27,7 +27,7 @@ function zip(arrays: boolean[][]): boolean[][] {
 }
 
 export function inferNotNull(querySpec: QuerySpecificationContext, dbSchema: ColumnSchema[]) {
-    const fromColumns = getColumnsFrom(querySpec, dbSchema);
+    const fromColumns = getColumnsFrom(querySpec, dbSchema); //TODO - called twice
 
     const notNullInference : boolean[] = [];
     const whereClause = querySpec.whereClause();

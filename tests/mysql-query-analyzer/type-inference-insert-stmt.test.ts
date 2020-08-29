@@ -41,6 +41,37 @@ describe('type-inference test', () => {
 
         assert.deepEqual(actual, expected);
     })
+
+    it(`INSERT INTO all_types (double_column) VALUE (subquery)`, () => {
+        const sql = `INSERT INTO all_types (double_column) 
+                     VALUES (
+                        (SELECT double_value FROM mytable3 WHERE id = ?)
+                    )`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: [],
+            parameters: ['int']   
+        }
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it.skip(`INSERT INTO alltypes (double_column, int_column) VALUES (?, ?)`, () => {
+        const sql = `INSERT INTO all_types (double_column, bigint_column) 
+                     VALUES (
+                        (SELECT double_column+? FROM all_types WHERE int_column = ?),
+                        (SELECT id + id + ? from mytable2 WHERE name = ?)
+                    )`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: [],
+            parameters: ['double', 'int', 'bigint', 'varchar']   
+        }
+
+        assert.deepEqual(actual, expected);
+    })
     
 
 });
