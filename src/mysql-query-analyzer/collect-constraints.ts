@@ -21,6 +21,7 @@ import { ParameterDef } from "../types";
 import { unify } from "./unify";
 import { inferParamNullability } from "./infer-param-nullability";
 import { verifyNotInferred } from "../describe-query";
+import { TerminalNode } from "antlr4ts/tree";
 
 export type TypeVar = {
     kind: 'TypeVar';
@@ -106,22 +107,39 @@ export function analiseTree(tree: RuleContext, dbSchema: ColumnSchema[]): TypeIn
 
 }
 
+type ExprOrDefault = ExprContext | TerminalNode;
+
 export function analiseInsertStatement(insertStatement: InsertStatementContext, dbSchema: ColumnSchema[]): InsertInfoResult {
 
     const valuesContext = insertStatement.insertFromConstructor()!.insertValues().valueList().values()[0];
     const insertColumns = getInsertColumns(insertStatement, dbSchema);
     const allParameters: ParameterDef[] = [];
 
-    valuesContext.expr().forEach((expr, index) => {
+    const exprOrDefaultList : ExprOrDefault[] = [];
+    valuesContext.DEFAULT_SYMBOL().forEach( terminalNode => {
+        exprOrDefaultList.push(terminalNode);
+    })
+    valuesContext.expr().forEach( expr => {
+        exprOrDefaultList.push(expr);
+    })
+
+    //order the tokens based on sql position
+    exprOrDefaultList.sort( (token1, token2) => token1.sourceInterval.a - token2.sourceInterval.a)
+
+    exprOrDefaultList.forEach((expr, index) => {
         const constraints: Constraint[] = [];
         const namedNodes: TypeVar[] = [];
-        const exprType = walkExpr(expr, namedNodes, constraints, dbSchema, []);
+
         const column = insertColumns[index];
-        constraints.push({
-            expression: expr.text,
-            type1: freshVar(column.column, column.column_type),
-            type2: exprType.kind == 'TypeOperator'? exprType.types[0] : exprType
-        })
+
+        if(expr instanceof ExprContext) {
+            const exprType = walkExpr(expr, namedNodes, constraints, dbSchema, []);
+            constraints.push({
+                expression: expr.text,
+                type1: freshVar(column.column, column.column_type),
+                type2: exprType.kind == 'TypeOperator'? exprType.types[0] : exprType
+            })
+        }
 
         const typeInfo = generateTypeInfo(namedNodes, constraints);
         typeInfo.forEach(param => {
@@ -236,7 +254,7 @@ export function analiseUpdateStatement(updateStatement: UpdateStatementContext, 
 export function getInsertColumns(insertStatement: InsertStatementContext, dbSchema: ColumnSchema[]) {
     const insertIntoTable = splitName(insertStatement.tableRef().text).name;
 
-    const fields: ColumnSchema[] = insertStatement.insertFromConstructor()!.fields()!.insertIdentifier().map(insertIdentifier => {
+    const fields = insertStatement.insertFromConstructor()?.fields()?.insertIdentifier().map(insertIdentifier => {
         const colRef = insertIdentifier.columnRef();
         if (colRef) {
             const fieldName = splitName(colRef.text);
@@ -247,6 +265,11 @@ export function getInsertColumns(insertStatement: InsertStatementContext, dbSche
         throw Error('Invalid sql');
 
     });
+
+    //check insert stmt without fields (only values). Ex.: insert into mytable values()
+    if(!fields) {
+        return dbSchema.filter( column => column.table == insertIntoTable);
+    }
     return fields;
 }
 

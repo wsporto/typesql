@@ -2,7 +2,7 @@
 import assert from "assert";
 import { parseAndInfer } from "../../src/mysql-query-analyzer/parse";
 import { dbSchema } from "./create-schema";
-import { TypeInferenceResult } from "../../src/mysql-query-analyzer/types";
+import { TypeInferenceResult, ColumnSchema } from "../../src/mysql-query-analyzer/types";
 
 describe('type-inference test', () => {
 
@@ -37,6 +37,36 @@ describe('type-inference test', () => {
         const expected : TypeInferenceResult = {
             columns: [],
             parameters: ['double', 'int', 'varchar']   
+        }
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it(`INSERT INTO mytable1 VALUES (DEFAULT, ?, ?, DEFAULT)`, () => {
+        //values(int, int, double, bigint)
+        const sql = `INSERT INTO mytable1 VALUES (DEFAULT, ?, ?, DEFAULT)`;
+        const newSchema : ColumnSchema [] = [
+            ...dbSchema,
+            {
+                column: 'column3',
+                column_type: 'double',
+                table: 'mytable1',
+                schema: 'mydb',
+                notNull: false
+            },
+            {
+                column: 'column4',
+                column_type: 'bigint',
+                table: 'mytable1',
+                schema: 'mydb',
+                notNull: false
+            }
+        ]
+        const actual = parseAndInfer(sql, newSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: [],
+            parameters: ['int', 'double']   
         }
 
         assert.deepEqual(actual, expected);

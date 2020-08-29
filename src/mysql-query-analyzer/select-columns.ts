@@ -14,7 +14,7 @@ import { QuerySpecificationContext, TableReferenceContext, TableFactorContext, T
 import { ColumnSchema, ColumnDef, FieldName } from "./types";
 import { extractQueryInfoFromQuerySpecification } from "./parse";
 
-function filterColumns(dbSchema: ColumnSchema[], tablePrefix: string | undefined, table: FieldName) {
+export function filterColumns(dbSchema: ColumnSchema[], tablePrefix: string | undefined, table: FieldName) {
     const tableColumns = dbSchema.filter(schema => schema.table.toLowerCase() == table.name.toLowerCase() && (schema.schema == table.prefix || table.prefix == ''));
     return tableColumns.map(tableColumn => {
 
