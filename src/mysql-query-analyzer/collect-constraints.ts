@@ -838,7 +838,7 @@ function walkSimpleExpr(simpleExpr: SimpleExprContext, namedNodes: TypeVar[], co
             constraints.push({
                 expression: thenExprCtx.text,
                 type1: caseType,
-                type2: thenType,
+                type2: thenType.kind == 'TypeOperator'? thenType.types[0] : thenType,
                 mostGeneralType: true,
             })
             return thenType;
@@ -852,14 +852,14 @@ function walkSimpleExpr(simpleExpr: SimpleExprContext, namedNodes: TypeVar[], co
             constraints.push({
                 expression: simpleExpr.elseExpression()?.text!,
                 type1: caseType,
-                type2: elseType,
+                type2: elseType.kind == 'TypeOperator'? elseType.types[0] : elseType,
                 mostGeneralType: true
             })
             thenTypes.forEach(thenType => {
                 constraints.push({
                     expression: simpleExpr.elseExpression()?.text!,
                     type1: thenType,
-                    type2: elseType,
+                    type2: elseType.kind == 'TypeOperator'? elseType.types[0] : elseType,
                     mostGeneralType: true
                 })
 
