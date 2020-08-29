@@ -14,7 +14,7 @@ import { ColumnSchema, ColumnDef, TypeInferenceResult, InsertInfoResult, UpdateI
 import { getColumnsFrom, findColumn, splitName, selectAllColumns, findColumn2 } from "./select-columns";
 import { SubstitutionHash, getQuerySpecificationsFromSelectStatement as getQuerySpecificationsFromQuery, 
     analiseQuery, getQuerySpecificationsFromSelectStatement } from "./parse";
-import { MySqlType } from "../mysql-mapping";
+import { MySqlType, InferType } from "../mysql-mapping";
 import { ParameterDef } from "../types";
 import { unify } from "./unify";
 import { inferParamNullability } from "./infer-param-nullability";
@@ -332,8 +332,8 @@ function unionResult(typeInference1: TypeInferenceResult, typeInference2: TypeIn
     }
 }
 
-export function unionTypeResult(type1: MySqlType, type2: MySqlType) {
-    const typeOrder: MySqlType[] = ['tinyint', 'smallint', 'mediumint', 'int', 'bigint', 'float', 'double', 'varchar'];
+export function unionTypeResult(type1: InferType, type2: InferType) {
+    const typeOrder: InferType[] = ['tinyint', 'smallint', 'mediumint', 'int', 'bigint', 'float', 'double', 'varchar'];
     const indexType1 = typeOrder.indexOf(type1);
     const indexType2 = typeOrder.indexOf(type2);
     const max = Math.max(indexType1, indexType2);
@@ -354,18 +354,9 @@ export function analiseQuerySpecification(querySpec: QuerySpecificationContext, 
     const substitutions: SubstitutionHash = {}
     unify(constraints, substitutions);
 
-    const parameters = namedNodes.map(param => {
-        if(param.type != '?') return param.type  as MySqlType;
-        const type = substitutions[param.id];
-        if (!type) {
-            return 'varchar' as MySqlType;
-        }
-        if (type.type == 'number') return 'double';
-        const resultType = type.list ? type.type + '[]' : type.type;
-        return resultType as MySqlType;
-    });
+    const parameters = namedNodes.map(param => getVarType(substitutions, param));
 
-    const columnTypes: MySqlType[] = queryTypes.types.map(param => {
+    const columnTypes: InferType[] = queryTypes.types.map(param => {
         if (param.kind == 'TypeVar') {
 
             const type = substitutions[param.id];
@@ -373,12 +364,12 @@ export function analiseQuerySpecification(querySpec: QuerySpecificationContext, 
                 if (param.type != '?') {
                     return param.type == 'number' ? 'double' : param.type;
                 }
-                return 'varchar'
+                return '?'
 
             }
             return type.type == 'number' ? 'double' : type.type;
         }
-        return 'varchar'
+        return '?'
 
     });
 
@@ -396,17 +387,17 @@ export function generateTypeInfo(namedNodes: TypeVar[], constraints: Constraint[
     const substitutions: SubstitutionHash = {}
     unify(constraints, substitutions);
 
-    const parameters = namedNodes.map(param => {
-        const type = substitutions[param.id];
-        if (!type) {
-            if(param.type != '?') return param.type  as MySqlType;
-            return 'varchar' as MySqlType;
-        }
-        if (type.type == 'number') return 'double';
-        const resultType = type.list ? type.type + '[]' : type.type;
-        return resultType as MySqlType;
-    });
+    const parameters = namedNodes.map(param => getVarType(substitutions, param));
     return parameters;
+}
+
+function getVarType(substitutions: SubstitutionHash, typeVar: TypeVar) {
+    const type = substitutions[typeVar.id];
+    if (!type) {
+        return typeVar.type as MySqlType;
+    }
+    const resultType = typeVar.list ? type.type + '[]' : type.type;
+    return resultType as MySqlType;
 }
 
 
@@ -912,7 +903,7 @@ export function walkSubquery(queryExpressionParens: SubqueryContext, dbSchema: C
     const querySpec = getQuerySpecificationsFromQuery(queryExpressionParens);
     const typeInferResult = analiseQuery(querySpec, dbSchema, fromColumns);
     const typeVars = typeInferResult.columns.map(col => {
-        const typeVar = freshVar(col.columnName, col.type);
+        const typeVar = freshVar(col.name, col.type);
         
         return typeVar;
     })

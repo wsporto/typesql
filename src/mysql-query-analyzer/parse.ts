@@ -1,10 +1,11 @@
 import MySQLParser, { SqlMode, QueryContext, QuerySpecificationContext, SelectStatementContext, SubqueryContext } from 'ts-mysql-parser';
 import { ParseTree } from "antlr4ts/tree";
 import { analiseTree, TypeVar, analiseQuerySpecification, unionTypeResult, getInsertColumns, analiseInsertStatement, analiseUpdateStatement, analiseDeleteStatement } from './collect-constraints';
-import { ColumnSchema, TypeInferenceResult, QueryInfoResult, ColumnInfo, ParameterInfo, ColumnDef, InsertInfoResult, UpdateInfoResult, DeleteInfoResult } from './types';
+import { ColumnSchema, TypeInferenceResult, QueryInfoResult, ColumnInfo, ParameterInfo, ColumnDef, InsertInfoResult, UpdateInfoResult, DeleteInfoResult, TypeAndNullInferResult, TypeAndNullInfer } from './types';
 import { getColumnsFrom, getColumnNames } from './select-columns';
 import { inferParamNullability, inferParamNullabilityQuery } from './infer-param-nullability';
 import { inferNotNull } from './infer-column-nullability';
+import { verifyNotInferred } from '../describe-query';
 
 
 const parser = new MySQLParser({
@@ -41,7 +42,7 @@ export function parseAndInferParamNullability(sql: string) : boolean[] {
     return inferParamNullabilityQuery(queryContext); 
 }
 
-export function extractQueryInfoFromQuerySpecification(querySpec: QuerySpecificationContext, dbSchema: ColumnSchema[], parentFromColumns: ColumnDef[]) : QueryInfoResult {
+export function extractQueryInfoFromQuerySpecification(querySpec: QuerySpecificationContext, dbSchema: ColumnSchema[], parentFromColumns: ColumnDef[]) : TypeAndNullInferResult {
     const fromColumns = getColumnsFrom(querySpec, dbSchema).concat(parentFromColumns);
     const inferResult = analiseQuerySpecification(querySpec, dbSchema, fromColumns);
     // console.log("inferResult=", inferResult);
@@ -50,8 +51,8 @@ export function extractQueryInfoFromQuerySpecification(querySpec: QuerySpecifica
     const columnResult = selectedColumns.map( (col, index)=> {
         const columnType = inferResult.columns[index];
         const columnNotNull = columnNullability[index];
-        const colInfo: ColumnInfo = {
-            columnName: col,
+        const colInfo: TypeAndNullInfer = {
+            name: col,
             type: columnType,
             notNull: columnNotNull
         }
@@ -60,15 +61,15 @@ export function extractQueryInfoFromQuerySpecification(querySpec: QuerySpecifica
 
     const paramInference = inferParamNullability(querySpec);
     const parametersResult = inferResult.parameters.map( (param, index) => {
-        const paramInfo : ParameterInfo = {
+        const paramInfo : TypeAndNullInfer = {
+            name: '?',
             type: param,
             notNull: paramInference[index]
         }
         return paramInfo;
     });
 
-    const queryResult : QueryInfoResult = {
-        kind: 'Select',
+    const queryResult : TypeAndNullInferResult = {
         columns: columnResult,
         parameters: parametersResult
     }
@@ -93,16 +94,23 @@ export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[]): QueryIn
             const orderByColumns = extractOrderByColumns(selectStatement);
             if(orderByColumns.length > 0) {
                 const fromColumns = getColumnsFrom(querySpec[0], dbSchema).map( col => col.columnName);
-                const selectColumns = mainQueryResult.columns.map( col => col.columnName);
+                const selectColumns = mainQueryResult.columns.map( col => col.name);
                 const allOrderByColumns = Array.from(new Set(fromColumns.concat(selectColumns)));
                 const resultWithOrderBy: QueryInfoResult = {
-                    ...mainQueryResult,
+                    kind: 'Select',
+                    columns: mainQueryResult.columns.map( col => ({columnName: col.name, type: verifyNotInferred(col.type),  notNull: col.notNull})),
+                    parameters: mainQueryResult.parameters.map( param => ({columnName: param.name, type: verifyNotInferred(param.type),  notNull: param.notNull})),
                     orderByColumns: allOrderByColumns
                 }
                 return resultWithOrderBy;
             }
             
-            return mainQueryResult;
+            const resultWithoutOrderBy: QueryInfoResult = {
+                kind: 'Select',
+                columns: mainQueryResult.columns.map( col => ({columnName: col.name, type: verifyNotInferred(col.type),  notNull: col.notNull})),
+                parameters: mainQueryResult.parameters.map( param => ({type: verifyNotInferred(param.type),  notNull: param.notNull})),
+            }
+            return resultWithoutOrderBy;
         }
         const insertStatement = tree.simpleStatement()?.insertStatement();
         if(insertStatement) {
@@ -125,7 +133,7 @@ export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[]): QueryIn
     throw Error('Not supported');
 }
 
-export function analiseQuery(querySpec: QuerySpecificationContext[], dbSchema: ColumnSchema[], parentFromColumns: ColumnDef[]) : QueryInfoResult {
+export function analiseQuery(querySpec: QuerySpecificationContext[], dbSchema: ColumnSchema[], parentFromColumns: ColumnDef[]) : TypeAndNullInferResult {
 
     const mainQueryResult = extractQueryInfoFromQuerySpecification(querySpec[0], dbSchema, parentFromColumns);
             
