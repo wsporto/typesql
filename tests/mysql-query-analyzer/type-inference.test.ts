@@ -974,7 +974,7 @@ describe('type-inference test', () => {
         assert.deepEqual(actual, expected);
     })
 
-    it.skip('in with case expression and subquery', () => {
+    it('in with case expression and subquery', () => {
         const sql = `SELECT id FROM mytable2 WHERE (case when id = 1 then ? else (select ? from mytable2 where id = 1) end) in (id)
         `;
         const actual = parseAndInfer(sql, dbSchema);
@@ -987,7 +987,7 @@ describe('type-inference test', () => {
         assert.deepEqual(actual, expected);
     })
 
-    it.skip('in with case expression and subquery 2', () => {
+    it('in with case expression and subquery 2', () => {
         const sql = `
         SELECT id FROM mytable2
         WHERE (CASE WHEN id = 1 THEN ? ELSE (SELECT ? FROM mytable2 WHERE id = 1) END, ?) 
