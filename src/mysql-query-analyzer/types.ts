@@ -1,4 +1,4 @@
-import { MySqlType } from "../mysql-mapping"
+import { MySqlType, InferType } from "../mysql-mapping"
 import { ParameterDef } from "../types"
 
 export type ColumnSchema = {
@@ -13,7 +13,7 @@ export type ColumnDef = {
     table: string;
     column: string;
     columnName: string;
-    columnType: MySqlType;
+    columnType: MySqlType | '?';
     tableAlias?: string;
     notNull: boolean;
 }
@@ -40,8 +40,19 @@ export type ParameterInfo = {
 }
 
 export type TypeInferenceResult = {
-    columns: MySqlType[];
-    parameters: MySqlType[];
+    columns: InferType[];
+    parameters: InferType[];
+}
+
+export type TypeAndNullInfer = {
+    name: string;
+    type: InferType;
+    notNull: boolean;
+}
+
+export type TypeAndNullInferResult = {
+    columns: TypeAndNullInfer[];
+    parameters: TypeAndNullInfer[];
 }
 
 export type QueryInfoResult = {

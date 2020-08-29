@@ -35,8 +35,6 @@ function unifyOne(constraint: Constraint, substitutions: SubstitutionHash) {
                 ty2.type = bestType;
                 setSubstitution(ty1, ty2, substitutions);
                 setSubstitution(ty2, ty1, substitutions);
-                // substitutions[ty2.id] = ty1;
-                // substitutions[ty1.id] = ty2;
             }
             else {
                 
@@ -47,10 +45,6 @@ function unifyOne(constraint: Constraint, substitutions: SubstitutionHash) {
                     ty2.type = 'double'; 
                 }
                 substitutions[ty2.id] = ty1;
-            }
-            
-            if(ty2.list) {
-                substitutions[ty2.id].list = true;
             }
         }
         else {
@@ -77,10 +71,12 @@ function unifyOne(constraint: Constraint, substitutions: SubstitutionHash) {
     }
     else if(ty1.kind == 'TypeVar' && ty2.kind == 'TypeOperator') {
         ty2.types.forEach( t => {
+            const listType = t as TypeVar;
+            listType.list = true;
             const newContraint : Constraint = {
                 ...constraint,
                 type1: ty1,
-                type2: {...t, list: true} as TypeVar
+                type2: listType
             }
             unifyOne(newContraint, substitutions);
         })
@@ -101,6 +97,7 @@ function setSubstitution(ty1: TypeVar, ty2: TypeVar, substitutions: Substitution
     substitutions[ty1.id] = ty2;
     if(subs && subs.id != ty2.id) {
         subs.type = ty2.type;
+        // if(ty2.list) subs.list = true;
         setSubstitution(subs, ty2, substitutions);
     }
 }

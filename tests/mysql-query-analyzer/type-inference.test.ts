@@ -4,7 +4,6 @@ import { parseAndInfer, SubstitutionHash } from "../../src/mysql-query-analyzer/
 import { TypeVar, Constraint } from "../../src/mysql-query-analyzer/collect-constraints";
 import { dbSchema } from "./create-schema";
 import { TypeInferenceResult } from "../../src/mysql-query-analyzer/types";
-import { MySqlType } from "../../src/mysql-mapping";
 import { unify } from "../../src/mysql-query-analyzer/unify";
 
 describe('type-inference test', () => {
@@ -52,8 +51,8 @@ describe('type-inference test', () => {
         const actual = parseAndInfer(sql, dbSchema);
 
         const expected : TypeInferenceResult = {
-            columns: ['varchar'],
-            parameters: ['varchar']   
+            columns: ['?'],
+            parameters: ['?']   
         }
 
         assert.deepEqual(actual, expected);
@@ -76,8 +75,8 @@ describe('type-inference test', () => {
         const actual = parseAndInfer(sql, dbSchema);
 
         const expected : TypeInferenceResult = {
-            columns: ['varchar'],
-            parameters: ['varchar']   
+            columns: ['?'],
+            parameters: ['?']   
         }
 
         assert.deepEqual(actual, expected);
@@ -88,8 +87,8 @@ describe('type-inference test', () => {
         const actual = parseAndInfer(sql, dbSchema);
 
         const expected : TypeInferenceResult = {
-            columns: ['varchar', 'bigint', 'varchar'],
-            parameters: ['varchar', 'bigint', 'varchar']  
+            columns: ['?', 'bigint', '?'],
+            parameters: ['?', 'bigint', '?']  
         }
 
         assert.deepEqual(actual, expected);
@@ -515,7 +514,7 @@ describe('type-inference test', () => {
 
         const expected : TypeInferenceResult = {
             columns: ['int'],
-            parameters:  ['varchar', 'int']
+            parameters:  ['?', 'int']
         }
 
         assert.deepEqual(actual, expected);
@@ -633,8 +632,8 @@ describe('type-inference test', () => {
         const actual = parseAndInfer(sql, dbSchema);
 
         const expected : TypeInferenceResult = {
-            columns: ['varchar'],
-            parameters:  ['varchar']
+            columns: ['?'],
+            parameters:  ['?']
         }
 
         assert.deepEqual(actual, expected);
@@ -870,8 +869,8 @@ describe('type-inference test', () => {
         const actual = parseAndInfer(sql, dbSchema);
 
         const expected : TypeInferenceResult = {
-            columns: ['varchar'],
-            parameters: ['varchar']
+            columns: ['?'],
+            parameters: ['?']
         }
 
 
@@ -883,8 +882,8 @@ describe('type-inference test', () => {
         const actual = parseAndInfer(sql, dbSchema);
 
         const expected : TypeInferenceResult = {
-            columns: ['varchar'],
-            parameters: ['varchar', 'int']
+            columns: ['?'],
+            parameters: ['?', 'int']
         }
 
         assert.deepEqual(actual, expected);
@@ -1132,7 +1131,7 @@ describe('type-inference test', () => {
 
         const expected : TypeInferenceResult = {
             columns: ['varchar'],
-            parameters: ['varchar', 'varchar']
+            parameters: ['?', 'varchar']
         }
 
         assert.deepEqual(actual, expected);

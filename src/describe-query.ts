@@ -3,7 +3,7 @@ import { extractQueryInfo } from "./mysql-query-analyzer/parse";
 import { DbClient } from "./queryExectutor";
 import { Either, isLeft, right } from "fp-ts/lib/Either";
 import { ColumnSchema } from "./mysql-query-analyzer/types";
-import { MySqlType } from "./mysql-mapping";
+import { MySqlType, InferType } from "./mysql-mapping";
 
 export function describeSql(dbSchema: ColumnSchema[], sql: string, namedParameters?: string[]) : SchemaDef {
     const queryInfo = extractQueryInfo(sql, dbSchema);
@@ -11,7 +11,7 @@ export function describeSql(dbSchema: ColumnSchema[], sql: string, namedParamete
         const columnDef = queryInfo.columns.map( colInfo => {
             const colDef : ColumnDef = {
                 name: colInfo.columnName,
-                dbtype: verifyNotInferred(colInfo.type),
+                dbtype: colInfo.type,
                 notNull: colInfo.notNull
             }
             return colDef;
@@ -20,7 +20,7 @@ export function describeSql(dbSchema: ColumnSchema[], sql: string, namedParamete
         const parametersDef = queryInfo.parameters.map( (paramInfo, paramIndex) => {
             const paramDef : ParameterDef = {
                 name: namedParameters && namedParameters[paramIndex]? namedParameters[paramIndex] : 'param' + (paramIndex + 1),
-                columnType: verifyNotInferred(paramInfo.type),
+                columnType: paramInfo.type,
                 notNull: paramInfo.notNull
             }
             return paramDef;
@@ -118,7 +118,7 @@ function addParameterNames(parameters: ParameterDef[], namedParameters: string[]
     })
 }
 
-function verifyNotInferred(type: MySqlType | '?') : MySqlType {
+export function verifyNotInferred(type: InferType) : MySqlType {
     return type == '?' ? 'varchar' : type;
 }
 

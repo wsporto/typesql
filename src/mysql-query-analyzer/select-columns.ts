@@ -223,8 +223,8 @@ function extractFieldsFromTableFactor(tableFactor: TableFactorContext, dbSchema:
             const tableAlias = derivadTable.tableAlias()?.text;
             return queryResult.columns.map( col => {
                 const newCol : ColumnDef = {
-                    column: col.columnName,
-                    columnName: col.columnName,
+                    column: col.name,
+                    columnName: col.name,
                     columnType: col.type,
                     notNull: col.notNull,
                     table: tableAlias || '',
