@@ -345,7 +345,40 @@ describe('Test parse select with functions', () => {
         assert.deepEqual(actual.right, expected);
     })
 
-    it.skip('parse a select with datediff function', async () => {
+    it('SELECT datediff(:date1, :date2) as days_stayed', async () => {
+        const sql = `SELECT datediff(:date1, :date2) as days_stayed`
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql: 'SELECT datediff(?, ?) as days_stayed',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'days_stayed',
+                    dbtype: 'bigint',
+                    notNull: true
+                }
+            ],
+            parameters: [
+                {
+                    name: 'date1',
+                    columnType: 'date',
+                    notNull: true
+                },
+                {
+                    name: 'date2',
+                    columnType: 'date',
+                    notNull: true
+                }
+            ]
+
+        }
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
+    })
+
+    it('parse a select with datediff function', async () => {
         const sql = `
         SELECT datediff(STR_TO_DATE(CONCAT_WS('/', ?, ?, ?),'%d/%m/%Y'), STR_TO_DATE('01/01/2020','%d/%m/%Y')) as days_stayed
         `
@@ -357,24 +390,24 @@ describe('Test parse select with functions', () => {
                 {
                     name: 'days_stayed',
                     dbtype: 'bigint',
-                    notNull: false
+                    notNull: false //STR_TO_DATE will return null if pass an invalid date
                 }
             ],
             parameters: [
                 {
                     name: 'param1',
                     columnType: 'varchar',
-                    notNull: false //TODO - verify if is possible any inference
+                    notNull: true
                 },
                 {
                     name: 'param2',
                     columnType: 'varchar',
-                    notNull: false //TODO - verify if is possible any inference
+                    notNull: true
                 },
                 {
                     name: 'param3',
                     columnType: 'varchar',
-                    notNull: false //TODO - verify if is possible any inference
+                    notNull: true
                 }
             ]
 
