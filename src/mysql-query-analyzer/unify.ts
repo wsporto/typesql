@@ -103,6 +103,7 @@ function setSubstitution(ty1: TypeVar, ty2: TypeVar, substitutions: Substitution
 }
 
 function getBestPossibleType(type1: string, type2: string, max?:boolean, sum?: 'sum') : string {
+    if(!sum && type1 === type2) return type1;
     if( sum && max && type1 == 'number' && type2 == 'int' ||  type1 == 'int' && type2 == 'number') return 'double';
     // if( sum && type1 == 'number' && type2 == 'bigint' ||  type1 == 'bigint' && type2 == 'number') return 'double';
     if( sum && max && type1 == 'int' && type2 == 'int') return 'bigint';

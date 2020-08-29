@@ -751,7 +751,22 @@ function walkSimpleExpr(simpleExpr: SimpleExprContext, namedNodes: TypeVar[], co
             return freshVar(simpleExpr.text, 'date');
         }
 
-        throw Error('SimpleExprFunctionContext');
+        if (functionIdentifier?.toLowerCase() === 'datediff') {
+            const exprList = simpleExpr.functionCall().udfExprList()?.udfExpr();
+            exprList?.forEach(inExpr => {
+                const expr = inExpr.expr();
+                const exprType = walkExpr(expr, namedNodes, constraints, dbSchema, fromColumns);
+                constraints.push({
+                    expression: expr.text,
+                    type1: exprType,
+                    type2: freshVar(expr.text, 'date'),
+                    mostGeneralType: true
+                })
+            })
+            return freshVar(simpleExpr.text, 'bigint');
+        }
+
+        throw Error('Function not supported: ' + functionIdentifier);
     }
 
     if (simpleExpr instanceof SimpleExprParamMarkerContext) {
