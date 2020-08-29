@@ -4,20 +4,23 @@ import {
     QueryContext, PrimaryExprCompareContext, BitExprContext, SimpleExprColumnRefContext, SimpleExprLiteralContext,
     SimpleExprParamMarkerContext, SimpleExprCaseContext, SimpleExprFunctionContext, SimpleExprSumContext,
     PredicateExprInContext, PredicateContext, SimpleExprSubQueryContext, QuerySpecificationContext,
-    SimpleExprListContext, ExprListContext, PrimaryExprIsNullContext, ExprContext, ExprIsContext, BoolPriContext, 
-    PrimaryExprPredicateContext, SimpleExprContext, PredicateOperationsContext, ExprNotContext, ExprAndContext, 
-    ExprOrContext, ExprXorContext, PredicateExprLikeContext, SelectStatementContext, SimpleExprRuntimeFunctionContext, 
+    SimpleExprListContext, ExprListContext, PrimaryExprIsNullContext, ExprContext, ExprIsContext, BoolPriContext,
+    PrimaryExprPredicateContext, SimpleExprContext, PredicateOperationsContext, ExprNotContext, ExprAndContext,
+    ExprOrContext, ExprXorContext, PredicateExprLikeContext, SelectStatementContext, SimpleExprRuntimeFunctionContext,
     SubqueryContext, InsertStatementContext, UpdateStatementContext, DeleteStatementContext
 } from "ts-mysql-parser";
 
 import { ColumnSchema, ColumnDef, TypeInferenceResult, InsertInfoResult, UpdateInfoResult, DeleteInfoResult } from "./types";
 import { getColumnsFrom, findColumn, splitName, selectAllColumns, findColumn2 } from "./select-columns";
-import { SubstitutionHash, getQuerySpecificationsFromSelectStatement as getQuerySpecificationsFromQuery, 
-    analiseQuery, getQuerySpecificationsFromSelectStatement } from "./parse";
+import {
+    SubstitutionHash, getQuerySpecificationsFromSelectStatement as getQuerySpecificationsFromQuery,
+    analiseQuery, getQuerySpecificationsFromSelectStatement
+} from "./parse";
 import { MySqlType, InferType } from "../mysql-mapping";
 import { ParameterDef } from "../types";
 import { unify } from "./unify";
 import { inferParamNullability } from "./infer-param-nullability";
+import { verifyNotInferred } from "../describe-query";
 
 export type TypeVar = {
     kind: 'TypeVar';
@@ -71,26 +74,7 @@ export type NamedNodes = {
     [key: string]: Type;
 }
 
-// export function collectConstraints(node: RuleContext, namedNodes: TypeVar[], constraints: Constraint[], dbSchema: ColumnSchema[]) {
-
-//     if (node instanceof UpdateElementContext) {
-//         const colRef = node.columnRef();
-//         const colRefType = addNamedNode(colRef, freshVar(colRef.text, 'int'), namedNodes);
-//         const expr = node.expr();
-//         if (expr) {
-//             collectConstraints(expr, namedNodes, constraints, dbSchema);
-//             const exprType = getType(expr, namedNodes);
-//             constraints.push({
-//                 expression: node.text,
-//                 type1: colRefType,
-//                 type2: exprType
-//             })
-//         }
-//         return;
-//     }
-// }
-
-export function analiseTree(tree: RuleContext, dbSchema: ColumnSchema[]) : TypeInferenceResult {
+export function analiseTree(tree: RuleContext, dbSchema: ColumnSchema[]): TypeInferenceResult {
 
     if (tree instanceof QueryContext) {
 
@@ -99,18 +83,18 @@ export function analiseTree(tree: RuleContext, dbSchema: ColumnSchema[]) : TypeI
             return analiseSelectStatement(selectStatement, dbSchema);
         }
         const insertStatement = tree.simpleStatement()?.insertStatement();
-        if(insertStatement) {
+        if (insertStatement) {
             const insertStmt = analiseInsertStatement(insertStatement, dbSchema);
-            const TypeInfer : TypeInferenceResult = {
+            const TypeInfer: TypeInferenceResult = {
                 columns: [],
-                parameters: insertStmt.parameters.map (param => param.columnType)
+                parameters: insertStmt.parameters.map(param => param.columnType)
             }
             return TypeInfer;
         }
         const updateStatement = tree.simpleStatement()?.updateStatement();
-        if(updateStatement) {
+        if (updateStatement) {
             const updateStmt = analiseUpdateStatement(updateStatement, dbSchema);
-            const TypeInfer : TypeInferenceResult = {
+            const TypeInfer: TypeInferenceResult = {
                 columns: [],
                 parameters: updateStmt.data.map(param => param.columnType)
             }
@@ -126,9 +110,9 @@ export function analiseInsertStatement(insertStatement: InsertStatementContext, 
 
     const valuesContext = insertStatement.insertFromConstructor()!.insertValues().valueList().values()[0];
     const insertColumns = getInsertColumns(insertStatement, dbSchema);
-    const allParameters: ParameterDef [] = [];
+    const allParameters: ParameterDef[] = [];
 
-    valuesContext.expr().forEach( (expr, index) => {
+    valuesContext.expr().forEach((expr, index) => {
         const constraints: Constraint[] = [];
         const namedNodes: TypeVar[] = [];
         const exprType = walkExpr(expr, namedNodes, constraints, dbSchema, []);
@@ -138,20 +122,20 @@ export function analiseInsertStatement(insertStatement: InsertStatementContext, 
             type1: freshVar(column.column, column.column_type),
             type2: exprType
         })
-        
+
         const typeInfo = generateTypeInfo(namedNodes, constraints);
-        typeInfo.forEach( param => {
+        typeInfo.forEach(param => {
             allParameters.push({
                 name: 'param' + (allParameters.length + 1),
-                columnType: param,
+                columnType: verifyNotInferred(param),
                 notNull: column.notNull
             })
         })
 
     })
 
-    
-    const typeInferenceResult : InsertInfoResult = {
+
+    const typeInferenceResult: InsertInfoResult = {
         kind: 'Insert',
         parameters: allParameters
     }
@@ -162,26 +146,26 @@ export function analiseDeleteStatement(deleteStatement: DeleteStatementContext, 
 
     const whereExpr = deleteStatement.whereClause()?.expr();
     const deleteColumns = getDeleteColumns(deleteStatement, dbSchema);
-    const allParameters: ParameterDef [] = [];
+    const allParameters: ParameterDef[] = [];
 
-    if(whereExpr) {
+    if (whereExpr) {
         const constraints: Constraint[] = [];
         const namedNodes: TypeVar[] = [];
         walkExpr(whereExpr, namedNodes, constraints, dbSchema, deleteColumns);
         const typeInfo = generateTypeInfo(namedNodes, constraints);
 
         const paramNullability = inferParamNullability(whereExpr);
-        typeInfo.forEach( (param, paramIndex) => {
+        typeInfo.forEach((param, paramIndex) => {
             allParameters.push({
                 name: 'param' + (allParameters.length + 1),
-                columnType: param,
+                columnType: verifyNotInferred(param),
                 notNull: paramNullability[paramIndex]
             })
         })
     }
- 
-    
-    const typeInferenceResult : DeleteInfoResult = {
+
+
+    const typeInferenceResult: DeleteInfoResult = {
         kind: 'Delete',
         parameters: allParameters
     }
@@ -192,12 +176,12 @@ export function analiseUpdateStatement(updateStatement: UpdateStatementContext, 
 
     const updateElement = updateStatement.updateList().updateElement();
     const updateColumns = getUpdateColumns(updateStatement, dbSchema);
-    const dataParameters: ParameterDef [] = [];
+    const dataParameters: ParameterDef[] = [];
     const whereParameters: ParameterDef[] = [];
 
     updateElement.forEach(updateElement => {
         const expr = updateElement.expr();
-        if(expr) {
+        if (expr) {
             const constraints: Constraint[] = [];
             const namedNodes: TypeVar[] = [];
 
@@ -209,59 +193,59 @@ export function analiseUpdateStatement(updateStatement: UpdateStatementContext, 
                 expression: updateStatement.text,
                 type1: result,
                 type2: freshVar(column.table, column.columnType)
-                
+
             })
             const typeInfo = generateTypeInfo(namedNodes, constraints);
-            typeInfo.forEach( param => {
+            typeInfo.forEach(param => {
                 dataParameters.push({
                     name: column.columnName,
-                    columnType: param,
+                    columnType: verifyNotInferred(param),
                     notNull: column.notNull
                 })
             })
         }
-        
+
     })
     const whereExpr = updateStatement.whereClause()?.expr();
-    if(whereExpr) {
+    if (whereExpr) {
         const constraints: Constraint[] = [];
         const namedNodes: TypeVar[] = [];
         walkExpr(whereExpr, namedNodes, constraints, dbSchema, updateColumns);
         const typeInfo = generateTypeInfo(namedNodes, constraints);
 
         const paramNullability = inferParamNullability(whereExpr);
-        typeInfo.forEach( (param, paramIndex) => {
+        typeInfo.forEach((param, paramIndex) => {
             whereParameters.push({
                 name: 'param' + (whereParameters.length + 1),
-                columnType: param,
+                columnType: verifyNotInferred(param),
                 notNull: paramNullability[paramIndex]
             })
         })
 
 
     }
-    const typeInferenceResult : UpdateInfoResult = {
+    const typeInferenceResult: UpdateInfoResult = {
         kind: 'Update',
         data: dataParameters,
         parameters: whereParameters
     }
-    
+
     return typeInferenceResult;
 }
 
 export function getInsertColumns(insertStatement: InsertStatementContext, dbSchema: ColumnSchema[]) {
     const insertIntoTable = splitName(insertStatement.tableRef().text).name;
 
-    const fields : ColumnSchema[] = insertStatement.insertFromConstructor()!.fields()!.insertIdentifier().map( insertIdentifier => {
+    const fields: ColumnSchema[] = insertStatement.insertFromConstructor()!.fields()!.insertIdentifier().map(insertIdentifier => {
         const colRef = insertIdentifier.columnRef();
-        if(colRef) {
+        if (colRef) {
             const fieldName = splitName(colRef.text);
             const column = findColumn2(fieldName, insertIntoTable, dbSchema);
             return column;
 
         }
         throw Error('Invalid sql');
-        
+
     });
     return fields;
 }
@@ -269,9 +253,9 @@ export function getInsertColumns(insertStatement: InsertStatementContext, dbSche
 export function getUpdateColumns(updateStatement: UpdateStatementContext, dbSchema: ColumnSchema[]) {
     const insertIntoTable = splitName(updateStatement.tableReferenceList().tableReference()[0].text).name;
     const columns = dbSchema
-        .filter( col => col.table == insertIntoTable)
-        .map( col => {
-            const colDef : ColumnDef = {
+        .filter(col => col.table == insertIntoTable)
+        .map(col => {
+            const colDef: ColumnDef = {
                 table: col.table,
                 column: col.column,
                 columnName: col.column,
@@ -289,9 +273,9 @@ export function getDeleteColumns(deleteStatement: DeleteStatementContext, dbSche
     const tableAlias = deleteStatement.tableAlias()?.text;
     const tableName = splitName(tableNameStr).name;
     const columns = dbSchema
-        .filter( col => col.table == tableName)
-        .map( col => {
-            const colDef : ColumnDef = {
+        .filter(col => col.table == tableName)
+        .map(col => {
+            const colDef: ColumnDef = {
                 table: col.table,
                 column: col.column,
                 columnName: col.column,
@@ -314,7 +298,7 @@ function analiseSelectStatement(selectStatement: SelectStatementContext, dbSchem
         const fromColumns2 = getColumnsFrom(unionQuery, dbSchema);
         const result2 = analiseQuerySpecification(unionQuery, dbSchema, fromColumns2);
         result = unionResult(result, result2);
-        
+
     }
     return result;
 }
@@ -355,23 +339,7 @@ export function analiseQuerySpecification(querySpec: QuerySpecificationContext, 
     unify(constraints, substitutions);
 
     const parameters = namedNodes.map(param => getVarType(substitutions, param));
-
-    const columnTypes: InferType[] = queryTypes.types.map(param => {
-        if (param.kind == 'TypeVar') {
-
-            const type = substitutions[param.id];
-            if (!type || type.type == '?') {
-                if (param.type != '?') {
-                    return param.type == 'number' ? 'double' : param.type;
-                }
-                return '?'
-
-            }
-            return type.type == 'number' ? 'double' : type.type;
-        }
-        return '?'
-
-    });
+    const columnTypes = queryTypes.types.map(param => getVarType(substitutions, param));
 
 
 
@@ -382,7 +350,7 @@ export function analiseQuerySpecification(querySpec: QuerySpecificationContext, 
     return querySpecResult;
 }
 
-export function generateTypeInfo(namedNodes: TypeVar[], constraints: Constraint[]): MySqlType[] {
+export function generateTypeInfo(namedNodes: TypeVar[], constraints: Constraint[]): InferType[] {
 
     const substitutions: SubstitutionHash = {}
     unify(constraints, substitutions);
@@ -391,13 +359,17 @@ export function generateTypeInfo(namedNodes: TypeVar[], constraints: Constraint[
     return parameters;
 }
 
-function getVarType(substitutions: SubstitutionHash, typeVar: TypeVar) {
-    const type = substitutions[typeVar.id];
-    if (!type) {
-        return typeVar.type as MySqlType;
+function getVarType(substitutions: SubstitutionHash, typeVar: Type) {
+    if (typeVar.kind == 'TypeVar') {
+        const type = substitutions[typeVar.id];
+        if (!type) {
+            return typeVar.type as MySqlType;
+        }
+        const resultType = typeVar.list ? type.type + '[]' : type.type;
+        return resultType as MySqlType;
     }
-    const resultType = typeVar.list ? type.type + '[]' : type.type;
-    return resultType as MySqlType;
+    return '?'
+
 }
 
 
@@ -532,7 +504,7 @@ function walkPredicate(predicate: PredicateContext, namedNodes: TypeVar[], const
     return bitExprType;
 }
 
-function walkpredicateOperations(parentType: Type, predicateOperations: PredicateOperationsContext, namedNodes: TypeVar[], constraints: Constraint[], dbSchema: ColumnSchema[], fromColumns: ColumnDef[]) : Type {
+function walkpredicateOperations(parentType: Type, predicateOperations: PredicateOperationsContext, namedNodes: TypeVar[], constraints: Constraint[], dbSchema: ColumnSchema[], fromColumns: ColumnDef[]): Type {
     if (predicateOperations instanceof PredicateExprInContext) {
 
         const subquery = predicateOperations.subquery();
@@ -545,7 +517,7 @@ function walkpredicateOperations(parentType: Type, predicateOperations: Predicat
             const rightType = walkExprList(exprList, namedNodes, constraints, dbSchema, fromColumns);
             return rightType;
         }
-       
+
     }
 
     if (predicateOperations instanceof PredicateExprLikeContext) {
@@ -904,10 +876,10 @@ export function walkSubquery(queryExpressionParens: SubqueryContext, dbSchema: C
     const typeInferResult = analiseQuery(querySpec, dbSchema, fromColumns);
     const typeVars = typeInferResult.columns.map(col => {
         const typeVar = freshVar(col.name, col.type);
-        
+
         return typeVar;
     })
-    typeInferResult.parameters.forEach( param => {
+    typeInferResult.parameters.forEach(param => {
         namedNodes.push(freshVar('?', param.type));
     })
     const type: TypeOperator = {
