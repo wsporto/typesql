@@ -7,7 +7,7 @@ import {
     SimpleExprListContext, ExprListContext, PrimaryExprIsNullContext, ExprContext, ExprIsContext, BoolPriContext,
     PrimaryExprPredicateContext, SimpleExprContext, PredicateOperationsContext, ExprNotContext, ExprAndContext,
     ExprOrContext, ExprXorContext, PredicateExprLikeContext, SelectStatementContext, SimpleExprRuntimeFunctionContext,
-    SubqueryContext, InsertStatementContext, UpdateStatementContext, DeleteStatementContext, PrimaryExprAllAnyContext
+    SubqueryContext, InsertStatementContext, UpdateStatementContext, DeleteStatementContext, PrimaryExprAllAnyContext, UdfExprContext
 } from "ts-mysql-parser";
 
 import { ColumnSchema, ColumnDef, TypeInferenceResult, InsertInfoResult, UpdateInfoResult, DeleteInfoResult } from "./types";
@@ -50,6 +50,13 @@ export type Constraint = {
     sum?: 'sum';
     strict?: boolean;
     functionName?: 'sum'
+}
+
+export type InferenceContext = {
+    dbSchema: ColumnSchema[];
+    parameters: TypeVar[];
+    constraints: Constraint[];
+    fromColumns: ColumnDef[];
 }
 
 let counter = 0;
@@ -127,21 +134,25 @@ export function analiseInsertStatement(insertStatement: InsertStatementContext, 
     exprOrDefaultList.sort( (token1, token2) => token1.sourceInterval.a - token2.sourceInterval.a)
 
     exprOrDefaultList.forEach((expr, index) => {
-        const constraints: Constraint[] = [];
-        const namedNodes: TypeVar[] = [];
+        const context: InferenceContext = {
+            dbSchema,
+            constraints: [],
+            parameters: [],
+            fromColumns: []
+        }
 
         const column = insertColumns[index];
 
         if(expr instanceof ExprContext) {
-            const exprType = walkExpr(expr, namedNodes, constraints, dbSchema, []);
-            constraints.push({
+            const exprType = walkExpr(context, expr);
+            context.constraints.push({
                 expression: expr.text,
                 type1: freshVar(column.column, column.column_type),
                 type2: exprType.kind == 'TypeOperator'? exprType.types[0] : exprType
             })
         }
 
-        const typeInfo = generateTypeInfo(namedNodes, constraints);
+        const typeInfo = generateTypeInfo(context.parameters, context.constraints);
         typeInfo.forEach(param => {
             allParameters.push({
                 name: 'param' + (allParameters.length + 1),
@@ -167,10 +178,14 @@ export function analiseDeleteStatement(deleteStatement: DeleteStatementContext, 
     const allParameters: ParameterDef[] = [];
 
     if (whereExpr) {
-        const constraints: Constraint[] = [];
-        const namedNodes: TypeVar[] = [];
-        walkExpr(whereExpr, namedNodes, constraints, dbSchema, deleteColumns);
-        const typeInfo = generateTypeInfo(namedNodes, constraints);
+        const context: InferenceContext = {
+            fromColumns: deleteColumns,
+            parameters: [],
+            constraints: [],
+            dbSchema
+        }
+        walkExpr(context, whereExpr);
+        const typeInfo = generateTypeInfo(context.parameters, context.constraints);
 
         const paramNullability = inferParamNullability(whereExpr);
         typeInfo.forEach((param, paramIndex) => {
@@ -200,20 +215,24 @@ export function analiseUpdateStatement(updateStatement: UpdateStatementContext, 
     updateElement.forEach(updateElement => {
         const expr = updateElement.expr();
         if (expr) {
-            const constraints: Constraint[] = [];
-            const namedNodes: TypeVar[] = [];
+            const context: InferenceContext = {
+                dbSchema,
+                parameters: [],
+                constraints: [],
+                fromColumns: updateColumns
+            }
 
-            const result = walkExpr(expr, namedNodes, constraints, dbSchema, updateColumns);
+            const result = walkExpr(context, expr);
             const columnName = updateElement.columnRef().text;
             const field = splitName(columnName);
             const column = findColumn(field, updateColumns);
-            constraints.push({
+            context.constraints.push({
                 expression: updateStatement.text,
                 type1: result,
                 type2: freshVar(column.table, column.columnType)
 
             })
-            const typeInfo = generateTypeInfo(namedNodes, constraints);
+            const typeInfo = generateTypeInfo(context.parameters, context.constraints);
             typeInfo.forEach(param => {
                 dataParameters.push({
                     name: column.columnName,
@@ -226,10 +245,14 @@ export function analiseUpdateStatement(updateStatement: UpdateStatementContext, 
     })
     const whereExpr = updateStatement.whereClause()?.expr();
     if (whereExpr) {
-        const constraints: Constraint[] = [];
-        const namedNodes: TypeVar[] = [];
-        walkExpr(whereExpr, namedNodes, constraints, dbSchema, updateColumns);
-        const typeInfo = generateTypeInfo(namedNodes, constraints);
+        const context: InferenceContext = {
+            dbSchema,
+            parameters: [],
+            constraints: [],
+            fromColumns: updateColumns
+        }
+        walkExpr(context, whereExpr);
+        const typeInfo = generateTypeInfo(context.parameters, context.constraints);
 
         const paramNullability = inferParamNullability(whereExpr);
         typeInfo.forEach((param, paramIndex) => {
@@ -349,19 +372,23 @@ export function unionTypeResult(type1: InferType, type2: InferType) {
 
 export function analiseQuerySpecification(querySpec: QuerySpecificationContext, dbSchema: ColumnSchema[], fromColumns: ColumnDef[]): TypeInferenceResult {
 
-    const constraints: Constraint[] = [];
-    const namedNodes: TypeVar[] = [];
+    const context : InferenceContext = {
+        dbSchema,
+        parameters: [],
+        constraints: [],
+        fromColumns: fromColumns
+    }
 
-    const queryTypes = walkQuerySpecification(querySpec, namedNodes, constraints, dbSchema, fromColumns) as TypeOperator;
+    const queryTypes = walkQuerySpecification(context, querySpec) as TypeOperator;
     // console.log("namedNodes");
     // console.dir(namedNodes, { depth: null });
     // console.log("constraints2=");
     // console.dir(constraints, { depth: null });
 
     const substitutions: SubstitutionHash = {}
-    unify(constraints, substitutions);
+    unify(context.constraints, substitutions);
 
-    const parameters = namedNodes.map(param => getVarType(substitutions, param));
+    const parameters = context.parameters.map(param => getVarType(substitutions, param));
     const columnTypes = queryTypes.types.map(param => getVarType(substitutions, param));
 
 
@@ -396,13 +423,13 @@ function getVarType(substitutions: SubstitutionHash, typeVar: Type) {
 }
 
 
-function walkQuerySpecification(querySpec: QuerySpecificationContext, namedNodes: TypeVar[], constraints: Constraint[], dbSchema: ColumnSchema[], fromColumns: ColumnDef[]): Type {
+function walkQuerySpecification(context: InferenceContext, querySpec: QuerySpecificationContext): TypeOperator {
 
     const listType: TypeVar[] = [];
 
     if (querySpec.selectItemList().MULT_OPERATOR()) {
 
-        fromColumns.forEach(col => {
+        context.fromColumns.forEach(col => {
             const colType = freshVar(col.columnName, col.columnType);
             listType.push(colType);
         })
@@ -413,7 +440,7 @@ function walkQuerySpecification(querySpec: QuerySpecificationContext, namedNodes
         if (tableWild?.MULT_OPERATOR()) {
             tableWild.identifier().forEach(tabWild => {
                 const prefix = tabWild.text;
-                const columns = selectAllColumns(prefix, fromColumns);
+                const columns = selectAllColumns(prefix, context.fromColumns);
                 columns.forEach(col => {
                     const colType = freshVar(col.columnName, col.columnType);
                     listType.push(colType);
@@ -424,7 +451,7 @@ function walkQuerySpecification(querySpec: QuerySpecificationContext, namedNodes
         else {
             const expr = selectItem.expr();
             if (expr) {
-                const exprType = walkExpr(expr, namedNodes, constraints, dbSchema, fromColumns);
+                const exprType = walkExpr(context, expr);
                 if (exprType.kind == 'TypeOperator') {
                     const subqueryType = exprType.types[0] as TypeVar;
                     listType.push(subqueryType);
@@ -447,16 +474,16 @@ function walkQuerySpecification(querySpec: QuerySpecificationContext, namedNodes
     //TODO - FROM, HAVING, BLAH
     if (whereClause) {
         const whereExpr = whereClause?.expr();
-        walkExpr(whereExpr, namedNodes, constraints, dbSchema, fromColumns);
+        walkExpr(context, whereExpr);
     }
     return typeOperator;
 }
 
-function walkExpr(expr: ExprContext, namedNodes: TypeVar[], constraints: Constraint[], dbSchema: ColumnSchema[], fromColumns: ColumnDef[]): Type {
+function walkExpr(context: InferenceContext, expr: ExprContext): Type {
 
     if (expr instanceof ExprIsContext) {
         const boolPri = expr.boolPri();
-        const boolPriType = walkBoolPri(boolPri, namedNodes, constraints, dbSchema, fromColumns);
+        const boolPriType = walkBoolPri(context, boolPri);
         return boolPriType;
     }
     if (expr instanceof ExprNotContext) {
@@ -464,25 +491,25 @@ function walkExpr(expr: ExprContext, namedNodes: TypeVar[], constraints: Constra
     }
     if (expr instanceof ExprAndContext || expr instanceof ExprXorContext || expr instanceof ExprOrContext) {
         const exprLeft = expr.expr()[0];
-        walkExpr(exprLeft, namedNodes, constraints, dbSchema, fromColumns);
+        walkExpr(context, exprLeft);
         const exprRight = expr.expr()[1];
-        walkExpr(exprRight, namedNodes, constraints, dbSchema, fromColumns);
+        walkExpr(context, exprRight);
         return freshVar(expr.text, 'tinyint');
     }
     throw Error('invalid type');
 
 }
 
-function walkBoolPri(boolPri: BoolPriContext, namedNodes: TypeVar[], constraints: Constraint[], dbSchema: ColumnSchema[], fromColumns: ColumnDef[]): Type {
+function walkBoolPri(context: InferenceContext, boolPri: BoolPriContext): Type {
 
     if (boolPri instanceof PrimaryExprPredicateContext) {
         const predicate = boolPri.predicate();
-        const predicateType = walkPredicate(predicate, namedNodes, constraints, dbSchema, fromColumns);
+        const predicateType = walkPredicate(context, predicate);
         return predicateType;
     }
     if (boolPri instanceof PrimaryExprIsNullContext) {
         const boolPri2 = boolPri.boolPri();
-        walkBoolPri(boolPri2, namedNodes, constraints, dbSchema, fromColumns);
+        walkBoolPri(context, boolPri2);
         return freshVar(boolPri.text, '?');
     }
 
@@ -490,10 +517,10 @@ function walkBoolPri(boolPri: BoolPriContext, namedNodes: TypeVar[], constraints
 
         const compareLeft = boolPri.boolPri();
         const compareRight = boolPri.predicate();
-        const typeLeft = walkBoolPri(compareLeft, namedNodes, constraints, dbSchema, fromColumns);
-        const typeRight = walkPredicate(compareRight, namedNodes, constraints, dbSchema, fromColumns);
+        const typeLeft = walkBoolPri(context, compareLeft);
+        const typeRight = walkPredicate(context, compareRight);
 
-        constraints.push({
+        context.constraints.push({
             expression: boolPri.text,
             type1: typeLeft,
             type2: typeRight,
@@ -505,9 +532,9 @@ function walkBoolPri(boolPri: BoolPriContext, namedNodes: TypeVar[], constraints
     if(boolPri instanceof PrimaryExprAllAnyContext) {
         const compareLeft = boolPri.boolPri();
         const compareRight = boolPri.subquery();
-        const typeLeft = walkBoolPri(compareLeft, namedNodes, constraints, dbSchema, fromColumns);
-        const typeRight = walkSubquery(compareRight, namedNodes, constraints, dbSchema, fromColumns);
-        constraints.push({
+        const typeLeft = walkBoolPri(context, compareLeft);
+        const typeRight = walkSubquery(context, compareRight);
+        context.constraints.push({
             expression: boolPri.text,
             type1: typeLeft,
             type2: typeRight,
@@ -519,15 +546,15 @@ function walkBoolPri(boolPri: BoolPriContext, namedNodes: TypeVar[], constraints
 
 }
 
-function walkPredicate(predicate: PredicateContext, namedNodes: TypeVar[], constraints: Constraint[], dbSchema: ColumnSchema[], fromColumns: ColumnDef[]): Type {
+function walkPredicate(context: InferenceContext, predicate: PredicateContext): Type {
 
     const bitExpr = predicate.bitExpr()[0];
-    const bitExprType = walkBitExpr(bitExpr, namedNodes, constraints, dbSchema, fromColumns);
+    const bitExprType = walkBitExpr(context, bitExpr);
 
     const predicateOperations = predicate.predicateOperations();
     if (predicateOperations) {
-        const rightType = walkpredicateOperations(bitExprType, predicateOperations, namedNodes, constraints, dbSchema, fromColumns);
-        constraints.push({
+        const rightType = walkpredicateOperations(context, bitExprType, predicateOperations);
+        context.constraints.push({
             expression: predicateOperations.text,
             type1: bitExprType, // ? array of id+id
             type2: rightType,
@@ -541,17 +568,17 @@ function walkPredicate(predicate: PredicateContext, namedNodes: TypeVar[], const
     return bitExprType;
 }
 
-function walkpredicateOperations(parentType: Type, predicateOperations: PredicateOperationsContext, namedNodes: TypeVar[], constraints: Constraint[], dbSchema: ColumnSchema[], fromColumns: ColumnDef[]): Type {
+function walkpredicateOperations(context: InferenceContext, parentType: Type, predicateOperations: PredicateOperationsContext): Type {
     if (predicateOperations instanceof PredicateExprInContext) {
 
         const subquery = predicateOperations.subquery();
         if (subquery) {
-            const rightType = walkSubquery(subquery, namedNodes, constraints, dbSchema, fromColumns);
+            const rightType = walkSubquery(context, subquery);
             return rightType;
         }
         const exprList = predicateOperations.exprList();
         if (exprList) {
-            const rightType = walkExprList(exprList, namedNodes, constraints, dbSchema, fromColumns);
+            const rightType = walkExprList(context, exprList);
             return rightType;
         }
 
@@ -559,8 +586,8 @@ function walkpredicateOperations(parentType: Type, predicateOperations: Predicat
 
     if (predicateOperations instanceof PredicateExprLikeContext) {
         const simpleExpr = predicateOperations.simpleExpr()[0];
-        const rightType = walkSimpleExpr(simpleExpr, namedNodes, constraints, dbSchema, fromColumns);
-        constraints.push({
+        const rightType = walkSimpleExpr(context, simpleExpr);
+        context.constraints.push({
             expression: simpleExpr.text,
             type1: parentType,
             type2: rightType
@@ -572,10 +599,10 @@ function walkpredicateOperations(parentType: Type, predicateOperations: Predicat
 
 }
 
-function walkExprList(exprList: ExprListContext, namedNodes: TypeVar[], constraints: Constraint[], dbSchema: ColumnSchema[], fromColumns: ColumnDef[]): Type {
+function walkExprList(context:InferenceContext, exprList: ExprListContext): Type {
 
     const listType = exprList.expr().map(item => {
-        const exprType = walkExpr(item, namedNodes, constraints, dbSchema, fromColumns);
+        const exprType = walkExpr(context, item);
         return exprType;
 
     })
@@ -586,10 +613,10 @@ function walkExprList(exprList: ExprListContext, namedNodes: TypeVar[], constrai
     return type;
 }
 
-function walkBitExpr(bitExpr: BitExprContext, namedNodes: TypeVar[], constraints: Constraint[], dbSchema: ColumnSchema[], fromColumns: ColumnDef[]): Type {
+function walkBitExpr(context: InferenceContext, bitExpr: BitExprContext): Type {
     const simpleExpr = bitExpr.simpleExpr();
     if (simpleExpr) {
-        return walkSimpleExpr(simpleExpr, namedNodes, constraints, dbSchema, fromColumns);
+        return walkSimpleExpr(context, simpleExpr);
     }
 
     if (bitExpr.bitExpr().length == 2) {
@@ -597,32 +624,32 @@ function walkBitExpr(bitExpr: BitExprContext, namedNodes: TypeVar[], constraints
         const bitExprType = freshVar(bitExpr.text, 'number');
 
         const bitExprLeft = bitExpr.bitExpr()[0];
-        const typeLeftTemp = walkBitExpr(bitExprLeft, namedNodes, constraints, dbSchema, fromColumns);
+        const typeLeftTemp = walkBitExpr(context, bitExprLeft);
         const typeLeft = typeLeftTemp.kind == 'TypeOperator' ? typeLeftTemp.types[0] as TypeVar : typeLeftTemp;
         //const newTypeLeft = typeLeft.name == '?'? freshVar('?', 'bigint') : typeLeft;
 
         const bitExprRight = bitExpr.bitExpr()[1]
-        const typeRightTemp = walkBitExpr(bitExprRight, namedNodes, constraints, dbSchema, fromColumns);
+        const typeRightTemp = walkBitExpr(context, bitExprRight);
 
         //In the expression 'id + (value + 2) + ?' the '(value+2)' is treated as a SimpleExprListContext and return a TypeOperator
         const typeRight = typeRightTemp.kind == 'TypeOperator' ? typeRightTemp.types[0] as TypeVar : typeRightTemp;
         //const newTypeRight = typeRight.name == '?'? freshVar('?', 'bigint') : typeRight;
 
-        constraints.push({
+        context.constraints.push({
             expression: bitExpr.text,
             type1: typeLeft,
             type2: typeRight,
             mostGeneralType: true,
             sum: 'sum'
         })
-        constraints.push({
+        context.constraints.push({
             expression: bitExpr.text,
             type1: bitExprType,
             type2: typeLeft,
             mostGeneralType: true,
             sum: 'sum'
         })
-        constraints.push({
+        context.constraints.push({
             expression: bitExpr.text,
             type1: bitExprType,
             type2: typeRight,
@@ -633,15 +660,15 @@ function walkBitExpr(bitExpr: BitExprContext, namedNodes: TypeVar[], constraints
     }
     const expr = bitExpr.expr();
     if (expr) {
-        walkExpr(expr, namedNodes, constraints, dbSchema, fromColumns);
+        walkExpr(context, expr);
     }
     throw Error('Invalid sql');
 }
 
-function walkSimpleExpr(simpleExpr: SimpleExprContext, namedNodes: TypeVar[], constraints: Constraint[], dbSchema: ColumnSchema[], fromColumns: ColumnDef[]): Type {
+function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext): Type {
     if (simpleExpr instanceof SimpleExprColumnRefContext) {
         const fieldName = splitName(simpleExpr.text);
-        const columnType = findColumn(fieldName, fromColumns).columnType;
+        const columnType = findColumn(fieldName, context.fromColumns).columnType;
         const type = freshVar(simpleExpr.text, columnType);
         return type;
     }
@@ -651,8 +678,8 @@ function walkSimpleExpr(simpleExpr: SimpleExprContext, namedNodes: TypeVar[], co
         if (runtimeFunctionCall.MINUTE_SYMBOL()) {
             const expr = runtimeFunctionCall.exprWithParentheses()?.expr();
             if (expr) {
-                const paramType = walkExpr(expr, namedNodes, constraints, dbSchema, fromColumns);
-                constraints.push({
+                const paramType = walkExpr(context, expr);
+                context.constraints.push({
                     expression: expr.text,
                     type1: paramType,
                     type2: freshVar(simpleExpr.text, 'varchar')
@@ -680,8 +707,8 @@ function walkSimpleExpr(simpleExpr: SimpleExprContext, namedNodes: TypeVar[], co
             const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr();
             udfExprList?.forEach(udfExpr => {
                 const expr = udfExpr.expr();
-                const paramType = walkExpr(expr, namedNodes, constraints, dbSchema, fromColumns);
-                constraints.push({
+                const paramType = walkExpr(context, expr);
+                context.constraints.push({
                     expression: expr.text,
                     type1: paramType,
                     type2: functionType
@@ -692,7 +719,7 @@ function walkSimpleExpr(simpleExpr: SimpleExprContext, namedNodes: TypeVar[], co
 
         if (functionIdentifier?.toLowerCase() === 'avg') {
             const functionType = freshVar(simpleExpr.text, '?');
-            constraints.push({
+            context.constraints.push({
                 expression: simpleExpr.text,
                 type1: functionType,
                 type2: freshVar('decimal', 'decimal'),
@@ -700,8 +727,8 @@ function walkSimpleExpr(simpleExpr: SimpleExprContext, namedNodes: TypeVar[], co
             })
             const exprList = simpleExpr.functionCall().exprList()?.expr();
             exprList?.forEach(inExpr => {
-                const inSumExprType = walkExpr(inExpr, namedNodes, constraints, dbSchema, fromColumns);
-                constraints.push({
+                const inSumExprType = walkExpr(context, inExpr);
+                context.constraints.push({
                     expression: simpleExpr.text,
                     type1: functionType,
                     type2: inSumExprType,
@@ -716,12 +743,12 @@ function walkSimpleExpr(simpleExpr: SimpleExprContext, namedNodes: TypeVar[], co
             const exprList = simpleExpr.functionCall().udfExprList()?.udfExpr();
             const parametersType = exprList?.map(inExpr => {
                 const expr = inExpr.expr();
-                const inSumExprType = walkExpr(expr, namedNodes, constraints, dbSchema, fromColumns);
+                const inSumExprType = walkExpr(context, expr);
                 return inSumExprType;
             })!
 
             //The return value has the same type as the first argument
-            constraints.push({
+            context.constraints.push({
                 expression: simpleExpr.text,
                 type1: functionType,
                 type2: parametersType[0], //type of the first parameter
@@ -731,17 +758,8 @@ function walkSimpleExpr(simpleExpr: SimpleExprContext, namedNodes: TypeVar[], co
         }
 
         if (functionIdentifier?.toLowerCase() === 'floor') {
-            const exprList = simpleExpr.functionCall().udfExprList()?.udfExpr();
-            exprList?.forEach(inExpr => {
-                const expr = inExpr.expr();
-                const exprType = walkExpr(expr, namedNodes, constraints, dbSchema, fromColumns);
-                constraints.push({
-                    expression: expr.text,
-                    type1: exprType,
-                    type2: freshVar(expr.text, 'double'),
-                    mostGeneralType: true
-                })
-            })
+            const exprList = simpleExpr.functionCall().udfExprList()?.udfExpr() || [];
+            walkFunctionParameters(context, exprList, 'double');
             return freshVar(simpleExpr.text, 'bigint');
         }
 
@@ -749,8 +767,8 @@ function walkSimpleExpr(simpleExpr: SimpleExprContext, namedNodes: TypeVar[], co
             const exprList = simpleExpr.functionCall().udfExprList()?.udfExpr();
             exprList?.forEach(inExpr => {
                 const expr = inExpr.expr();
-                const exprType = walkExpr(expr, namedNodes, constraints, dbSchema, fromColumns);
-                constraints.push({
+                const exprType = walkExpr(context, expr);
+                context.constraints.push({
                     expression: expr.text,
                     type1: exprType,
                     type2: freshVar(expr.text, 'varchar'),
@@ -764,8 +782,8 @@ function walkSimpleExpr(simpleExpr: SimpleExprContext, namedNodes: TypeVar[], co
             const exprList = simpleExpr.functionCall().udfExprList()?.udfExpr();
             exprList?.forEach(inExpr => {
                 const expr = inExpr.expr();
-                const exprType = walkExpr(expr, namedNodes, constraints, dbSchema, fromColumns);
-                constraints.push({
+                const exprType = walkExpr(context, expr);
+                context.constraints.push({
                     expression: expr.text,
                     type1: exprType,
                     type2: freshVar(expr.text, 'date'),
@@ -780,8 +798,7 @@ function walkSimpleExpr(simpleExpr: SimpleExprContext, namedNodes: TypeVar[], co
 
     if (simpleExpr instanceof SimpleExprParamMarkerContext) {
         const param = freshVar('?', '?');
-        // addNamedNode2(simpleExpr, param, namedNodes);
-        namedNodes.push(param);
+        context.parameters.push(param);
         return param;
     }
 
@@ -791,8 +808,8 @@ function walkSimpleExpr(simpleExpr: SimpleExprContext, namedNodes: TypeVar[], co
             const functionType = freshVar(simpleExpr.text, '?');
             const inSumExpr = simpleExpr.sumExpr().inSumExpr()?.expr();
             if (inSumExpr) {
-                const inSumExprType = walkExpr(inSumExpr, namedNodes, constraints, dbSchema, fromColumns);
-                constraints.push({
+                const inSumExprType = walkExpr(context, inSumExpr);
+                context.constraints.push({
                     expression: simpleExpr.text,
                     type1: functionType,
                     type2: inSumExprType,
@@ -805,7 +822,7 @@ function walkSimpleExpr(simpleExpr: SimpleExprContext, namedNodes: TypeVar[], co
             const functionType = freshVar(simpleExpr.text, 'bigint');
             const inSumExpr = simpleExpr.sumExpr().inSumExpr()?.expr();
             if (inSumExpr) {
-                walkExpr(inSumExpr, namedNodes, constraints, dbSchema, fromColumns);
+                walkExpr(context, inSumExpr);
             }
             return functionType;
         }
@@ -814,8 +831,8 @@ function walkSimpleExpr(simpleExpr: SimpleExprContext, namedNodes: TypeVar[], co
             const functionType = freshVar(simpleExpr.text, '?');
             const inSumExpr = simpleExpr.sumExpr().inSumExpr()?.expr();
             if (inSumExpr) {
-                const inSumExprType = walkExpr(inSumExpr, namedNodes, constraints, dbSchema, fromColumns);
-                constraints.push({
+                const inSumExprType = walkExpr(context, inSumExpr);
+                context.constraints.push({
                     expression: simpleExpr.text,
                     type1: functionType,
                     type2: inSumExprType,
@@ -859,7 +876,7 @@ function walkSimpleExpr(simpleExpr: SimpleExprContext, namedNodes: TypeVar[], co
         const exprList = simpleExpr.exprList();
 
         const listType = exprList.expr().map(item => {
-            const exprType = walkExpr(item, namedNodes, constraints, dbSchema, fromColumns);
+            const exprType = walkExpr(context, item);
             return exprType;
         })
         const resultType: TypeOperator = {
@@ -872,7 +889,7 @@ function walkSimpleExpr(simpleExpr: SimpleExprContext, namedNodes: TypeVar[], co
 
     if (simpleExpr instanceof SimpleExprSubQueryContext) {
         const subquery = simpleExpr.subquery();
-        const subqueryType = walkSubquery(subquery, namedNodes, constraints, dbSchema, fromColumns);
+        const subqueryType = walkSubquery(context, subquery);
         return subqueryType;
     }
 
@@ -883,9 +900,9 @@ function walkSimpleExpr(simpleExpr: SimpleExprContext, namedNodes: TypeVar[], co
 
         simpleExpr.whenExpression().forEach(whenExprCont => {
             const whenExpr = whenExprCont.expr();
-            const whenType = walkExpr(whenExpr, namedNodes, constraints, dbSchema, fromColumns);
+            const whenType = walkExpr(context, whenExpr);
 
-            constraints.push({
+            context.constraints.push({
                 expression: whenExpr.text,
                 type1: whenType.kind == 'TypeOperator' ? whenType.types[0] : whenType,
                 type2: freshVar('tinyint', 'tinyint') //bool
@@ -894,9 +911,9 @@ function walkSimpleExpr(simpleExpr: SimpleExprContext, namedNodes: TypeVar[], co
 
         const thenTypes = simpleExpr.thenExpression().map(thenExprCtx => {
             const thenExpr = thenExprCtx.expr();
-            const thenType = walkExpr(thenExpr, namedNodes, constraints, dbSchema, fromColumns);
+            const thenType = walkExpr(context, thenExpr);
 
-            constraints.push({
+            context.constraints.push({
                 expression: thenExprCtx.text,
                 type1: caseType,
                 type2: thenType.kind == 'TypeOperator'? thenType.types[0] : thenType,
@@ -908,16 +925,16 @@ function walkSimpleExpr(simpleExpr: SimpleExprContext, namedNodes: TypeVar[], co
 
         const elseExpr = simpleExpr.elseExpression()?.expr();
         if (elseExpr) {
-            const elseType = walkExpr(elseExpr, namedNodes, constraints, dbSchema, fromColumns);
+            const elseType = walkExpr(context, elseExpr);
 
-            constraints.push({
+            context.constraints.push({
                 expression: simpleExpr.elseExpression()?.text!,
                 type1: caseType,
                 type2: elseType.kind == 'TypeOperator'? elseType.types[0] : elseType,
                 mostGeneralType: true
             })
             thenTypes.forEach(thenType => {
-                constraints.push({
+                context.constraints.push({
                     expression: simpleExpr.elseExpression()?.text!,
                     type1: thenType,
                     type2: elseType.kind == 'TypeOperator'? elseType.types[0] : elseType,
@@ -931,20 +948,39 @@ function walkSimpleExpr(simpleExpr: SimpleExprContext, namedNodes: TypeVar[], co
     throw Error('Invalid expression');
 }
 
-export function walkSubquery(queryExpressionParens: SubqueryContext, namedNodes: TypeVar[], constraints: Constraint[], dbSchema: ColumnSchema[], fromColumns: ColumnDef[]): Type {
+function walkFunctionParameters(context: InferenceContext, exprList: UdfExprContext[], paramType: InferType) {
+    exprList.forEach(inExpr => {
+        const expr = inExpr.expr();
+        const exprType = walkExpr(context, expr);
+        context.constraints.push({
+            expression: expr.text,
+            type1: exprType,
+            type2: freshVar(expr.text, paramType),
+            mostGeneralType: true
+        })
+    })
+}
+
+export function walkSubquery(context: InferenceContext, queryExpressionParens: SubqueryContext): Type {
 
     const querySpec = getQuerySpecificationsFromQuery(queryExpressionParens);
-    const subqueryColumns = getColumnsFrom(querySpec[0], dbSchema);
-    const allColumns = fromColumns.concat(subqueryColumns);
-    const typeInferResult = walkQuerySpecification(querySpec[0], namedNodes, constraints, dbSchema, allColumns) as TypeOperator;
+    const subqueryColumns = getColumnsFrom(querySpec[0], context.dbSchema);
+    const newContext : InferenceContext = {
+        ...context,
+        fromColumns: context.fromColumns.concat(subqueryColumns)
+    }
+    const typeInferResult = walkQuerySpecification(newContext, querySpec[0]) as TypeOperator;
     
     for (let queryIndex = 1; queryIndex < querySpec.length; queryIndex++) { //union (if have any)
-        const unionColumns = getColumnsFrom(querySpec[queryIndex], dbSchema);
-        const allColumns2 = fromColumns.concat(unionColumns);
-        const unionResult = walkQuerySpecification(querySpec[queryIndex], namedNodes, constraints, dbSchema, allColumns2) as TypeOperator;
+        const unionColumns = getColumnsFrom(querySpec[queryIndex], context.dbSchema);
+        const unionNewContext : InferenceContext = {
+            ...context,
+            fromColumns: context.fromColumns.concat(unionColumns)
+        }
+        const unionResult = walkQuerySpecification(unionNewContext, querySpec[queryIndex]);
 
         typeInferResult.types.forEach( (field, fieldIndex) => {
-            constraints.push({
+            context.constraints.push({
                 expression: querySpec[queryIndex].text,
                 type1: typeInferResult.types[fieldIndex],
                 type2: unionResult.types[fieldIndex],
