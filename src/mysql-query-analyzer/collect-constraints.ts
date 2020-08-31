@@ -660,6 +660,15 @@ function walkSimpleExpr(simpleExpr: SimpleExprContext, namedNodes: TypeVar[], co
             }
             return freshVar(simpleExpr.text, 'smallint');
         }
+        if (runtimeFunctionCall.NOW_SYMBOL()) {
+            return freshVar(simpleExpr.text, 'datetime');
+        }
+        if (runtimeFunctionCall.CURDATE_SYMBOL()) {
+            return freshVar(simpleExpr.text, 'date');
+        }
+        if (runtimeFunctionCall.CURTIME_SYMBOL()) {
+            return freshVar(simpleExpr.text, 'time');
+        }
         throw Error('SimpleExprRuntimeFunctionContext');
     }
 
