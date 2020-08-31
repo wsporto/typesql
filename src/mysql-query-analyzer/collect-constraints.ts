@@ -700,24 +700,16 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
     }
 
     if (simpleExpr instanceof SimpleExprFunctionContext) {
-        const functionIdentifier = simpleExpr.functionCall().pureIdentifier()?.text || simpleExpr.functionCall().qualifiedIdentifier()?.text;
+        const functionIdentifier = simpleExpr.functionCall().pureIdentifier()?.text.toLowerCase() 
+            || simpleExpr.functionCall().qualifiedIdentifier()?.text.toLowerCase();
 
-        if (functionIdentifier?.toLowerCase() === 'concat_ws' || functionIdentifier?.toLowerCase() === 'concat') {
-            const functionType = freshVar(simpleExpr.text, '?');
-            const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr();
-            udfExprList?.forEach(udfExpr => {
-                const expr = udfExpr.expr();
-                const paramType = walkExpr(context, expr);
-                context.constraints.push({
-                    expression: expr.text,
-                    type1: paramType,
-                    type2: functionType
-                })
-            })
+        if (functionIdentifier === 'concat_ws' || functionIdentifier?.toLowerCase() === 'concat') {
+            const functionType = freshVar(simpleExpr.text, 'varchar');
+            walkFunctionParameters(context, simpleExpr, functionType);
             return functionType;
         }
 
-        if (functionIdentifier?.toLowerCase() === 'avg') {
+        if (functionIdentifier === 'avg') {
             const functionType = freshVar(simpleExpr.text, '?');
             context.constraints.push({
                 expression: simpleExpr.text,
@@ -725,71 +717,35 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
                 type2: freshVar('decimal', 'decimal'),
                 mostGeneralType: true
             })
-            const exprList = simpleExpr.functionCall().exprList()?.expr();
-            exprList?.forEach(inExpr => {
-                const inSumExprType = walkExpr(context, inExpr);
-                context.constraints.push({
-                    expression: simpleExpr.text,
-                    type1: functionType,
-                    type2: inSumExprType,
-                    mostGeneralType: true
-                })
-            })
+            walkFunctionParameters(context, simpleExpr, functionType);
             return functionType;
         }
 
-        if (functionIdentifier?.toLowerCase() === 'round') {
+        if (functionIdentifier === 'round') {
             const functionType = freshVar(simpleExpr.text, '?');
-            const exprList = simpleExpr.functionCall().udfExprList()?.udfExpr();
-            const parametersType = exprList?.map(inExpr => {
-                const expr = inExpr.expr();
-                const inSumExprType = walkExpr(context, expr);
-                return inSumExprType;
-            })!
-
+            const paramsType = walkFunctionParameters(context, simpleExpr, functionType);
             //The return value has the same type as the first argument
             context.constraints.push({
                 expression: simpleExpr.text,
                 type1: functionType,
-                type2: parametersType[0], //type of the first parameter
+                type2: paramsType[0], //type of the first parameter
                 mostGeneralType: true
             })
             return functionType;
         }
 
-        if (functionIdentifier?.toLowerCase() === 'floor') {
-            const exprList = simpleExpr.functionCall().udfExprList()?.udfExpr() || [];
-            walkFunctionParameters(context, exprList, 'double');
+        if (functionIdentifier === 'floor') {
+            walkFunctionParameters(context, simpleExpr, freshVar('double', 'double'));
             return freshVar(simpleExpr.text, 'bigint');
         }
 
-        if (functionIdentifier?.toLowerCase() === 'str_to_date') {
-            const exprList = simpleExpr.functionCall().udfExprList()?.udfExpr();
-            exprList?.forEach(inExpr => {
-                const expr = inExpr.expr();
-                const exprType = walkExpr(context, expr);
-                context.constraints.push({
-                    expression: expr.text,
-                    type1: exprType,
-                    type2: freshVar(expr.text, 'varchar'),
-                    mostGeneralType: true
-                })
-            })
+        if (functionIdentifier === 'str_to_date') {
+            walkFunctionParameters(context, simpleExpr, freshVar('varchar', 'varchar'));
             return freshVar(simpleExpr.text, 'date');
         }
 
-        if (functionIdentifier?.toLowerCase() === 'datediff') {
-            const exprList = simpleExpr.functionCall().udfExprList()?.udfExpr();
-            exprList?.forEach(inExpr => {
-                const expr = inExpr.expr();
-                const exprType = walkExpr(context, expr);
-                context.constraints.push({
-                    expression: expr.text,
-                    type1: exprType,
-                    type2: freshVar(expr.text, 'date'),
-                    mostGeneralType: true
-                })
-            })
+        if (functionIdentifier === 'datediff') {
+            walkFunctionParameters(context, simpleExpr, freshVar('date', 'date'));
             return freshVar(simpleExpr.text, 'bigint');
         }
 
@@ -948,17 +904,37 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
     throw Error('Invalid expression');
 }
 
-function walkFunctionParameters(context: InferenceContext, exprList: UdfExprContext[], paramType: InferType) {
-    exprList.forEach(inExpr => {
-        const expr = inExpr.expr();
-        const exprType = walkExpr(context, expr);
-        context.constraints.push({
-            expression: expr.text,
-            type1: exprType,
-            type2: freshVar(expr.text, paramType),
-            mostGeneralType: true
+function walkFunctionParameters(context: InferenceContext, simpleExprFunction: SimpleExprFunctionContext, paramType: TypeVar) {
+    const udfExprList = simpleExprFunction.functionCall().udfExprList()?.udfExpr();
+    if(udfExprList) {
+        const paramTypes = udfExprList.map(inExpr => {
+            const expr = inExpr.expr();
+            const exprType = walkExpr(context, expr);
+            context.constraints.push({
+                expression: expr.text,
+                type1: exprType,
+                type2: paramType,
+                mostGeneralType: true
+            })
+            return exprType;
         })
-    })
+        return paramTypes;
+    }
+    const exprList = simpleExprFunction.functionCall().exprList()?.expr();
+    if(exprList) {
+        const paramTypes = exprList.map(inExpr => {
+            const inSumExprType = walkExpr(context, inExpr);
+            context.constraints.push({
+                expression: inExpr.text,
+                type1: paramType,
+                type2: inSumExprType,
+                mostGeneralType: true
+            })
+            return inSumExprType;
+        })
+        return paramTypes;
+    }
+    throw Error('Error in walkFunctionParameters')
 }
 
 export function walkSubquery(context: InferenceContext, queryExpressionParens: SubqueryContext): Type {
