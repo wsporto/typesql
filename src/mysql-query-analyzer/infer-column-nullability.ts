@@ -3,7 +3,8 @@ import { QuerySpecificationContext, SelectItemContext, ExprContext, ExprIsContex
     PredicateContext, BitExprContext, SimpleExprContext, FunctionCallContext, SimpleExprFunctionContext, SimpleExprColumnRefContext, 
     WhereClauseContext, SimpleExprListContext, PrimaryExprIsNullContext, PrimaryExprCompareContext, ExprNotContext, ExprAndContext, 
     ExprXorContext, ExprOrContext, SimpleExprParamMarkerContext, SimpleExprLiteralContext, SimpleExprCaseContext, SimpleExprSumContext, 
-    SimpleExprSubQueryContext } from "ts-mysql-parser";
+    SimpleExprSubQueryContext, 
+    SimpleExprRuntimeFunctionContext} from "ts-mysql-parser";
 import { ColumnSchema, ColumnDef, FieldName } from "./types";
 import { getColumnsFrom, findColumn, splitName, selectAllColumns } from "./select-columns";
 import { getParentContext, inferParameterNotNull } from "./infer-param-nullability";
@@ -127,6 +128,12 @@ function inferNotNullSimpleExpr(simpleExpr: SimpleExprContext, dbSchema: ColumnS
         const fieldName = splitName(columnName);
         const column = findColumn(fieldName, fromColumns);
         return column.notNull || (whereClause && !possibleNullWhere(fieldName, whereClause) || false);
+    }
+    if(simpleExpr instanceof SimpleExprRuntimeFunctionContext) {
+        const functionCall = simpleExpr.runtimeFunctionCall();
+        if(functionCall.NOW_SYMBOL() || functionCall.CURDATE_SYMBOL() || functionCall.CURTIME_SYMBOL()) {
+            return true;
+        }
     }
     if(simpleExpr instanceof SimpleExprFunctionContext) {
         const functionCall = simpleExpr.functionCall();
