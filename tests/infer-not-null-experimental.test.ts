@@ -687,17 +687,28 @@ describe('infer-not-null-experimental', () => {
     });
 
     it('select with inner join after left join', () => {
-        const sql = `
+        const sqlInnerJoin = `
         select t1.id, t2.id, t3.id, t1.value, t2.name, t3.double_value 
         from mytable1 t1 
         left join mytable2 t2 on t1.id = t2.id
         inner join mytable3 t3 on t2.id = t3.id
         `;
-        const actual = parseAndInferNotNull(sql, dbSchema);
+        const actualInnerJoin = parseAndInferNotNull(sqlInnerJoin, dbSchema);
 
         const expected = [true, true, true, false, false, false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepEqual(actualInnerJoin, expected);
+
+        //USE JOIN instead of INNER JOIN. The same result is expected
+        const sqlJoin = `
+        select t1.id, t2.id, t3.id, t1.value, t2.name, t3.double_value 
+        from mytable1 t1 
+        left join mytable2 t2 on t1.id = t2.id
+        join mytable3 t3 on t2.id = t3.id
+        `;
+        const actualJoin = parseAndInferNotNull(sqlJoin, dbSchema);
+
+        assert.deepEqual(actualJoin, expected);
     });
 
     it('select with left join after inner join', () => {
