@@ -128,13 +128,61 @@ describe('type-inference - functions', () => {
         assert.deepEqual(actual, expected);
     })
 
-    it(`SELECT LOWER(?), LCASE(?), UPPER(?), UCASE(?)`, () => {
-        const sql = `SELECT LOWER(?), LCASE(?), UPPER(?), UCASE(?)`;
+    it(`SELECT LOWER(?), LCASE(?), UPPER(?), UCASE(?), LTRIM(?), RTRIM(?)`, () => {
+        const sql = `SELECT LOWER(?), LCASE(?), UPPER(?), UCASE(?), LTRIM(?), RTRIM(?)`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['varchar', 'varchar', 'varchar', 'varchar', 'varchar', 'varchar'],
+            parameters: ['varchar', 'varchar', 'varchar', 'varchar', 'varchar', 'varchar']   
+        }
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it(`SELECT TRIM(' x '), TRIM(' ? '), TRIM(?)`, () => {
+        const sql = `SELECT TRIM(' x '), TRIM(' ? '), TRIM(?)`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['varchar', 'varchar', 'varchar'],
+            parameters: ['varchar']   
+        }
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it(`SELECT TRIM(LEADING ? FROM ?), TRIM(TRAILING ? FROM ?), TRIM(BOTH ? FROM ?)`, () => {
+        const sql = `SELECT TRIM(LEADING ? FROM ?), TRIM(TRAILING ? FROM ?), TRIM(BOTH ? FROM ?)`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['varchar', 'varchar', 'varchar'],
+            parameters: ['varchar', 'varchar', 'varchar', 'varchar', 'varchar', 'varchar']   
+        }
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it(`TRIM varchar - table column`, () => {
+        const sql = `SELECT TRIM(name), TRIM(LEADING 'x' FROM name), TRIM(TRAILING 'x' FROM t1.name), TRIM(BOTH 'x' FROM t1.name) FROM mytable2 t1`;
         const actual = parseAndInfer(sql, dbSchema);
 
         const expected : TypeInferenceResult = {
             columns: ['varchar', 'varchar', 'varchar', 'varchar'],
-            parameters: ['varchar', 'varchar', 'varchar', 'varchar']   
+            parameters: []   
+        }
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it.only(`SELECT TRIM(concat(?, ?, name)) FROM mytable2`, () => {
+        const sql = `SELECT TRIM(concat(?, ?, name)) FROM mytable2`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['varchar'],
+            parameters: ['varchar', 'varchar']   
         }
 
         assert.deepEqual(actual, expected);
