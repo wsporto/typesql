@@ -709,6 +709,33 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
             const returnType = runtimeFunctionCall.YEAR_SYMBOL()? 'year' : 'tinyint';
             return freshVar(simpleExpr.text, returnType);
         }
+        const trimFunction = runtimeFunctionCall.trimFunction();
+        if(trimFunction) {
+            const exprList = trimFunction.expr();
+                if(exprList.length == 1) {
+                    const exprType = walkExpr(context, exprList[0]);
+                    context.constraints.push({
+                        expression: exprList[0].text,
+                        type1: exprType,
+                        type2: freshVar('varchar', 'varchar')
+                    })
+                }
+                if(exprList.length == 2) {
+                    const exprType = walkExpr(context, exprList[0]);
+                    const expr2Type = walkExpr(context, exprList[1]);
+                    context.constraints.push({
+                        expression: exprList[0].text,
+                        type1: exprType,
+                        type2: freshVar('varchar', 'varchar')
+                    })
+                    context.constraints.push({
+                        expression: exprList[1].text,
+                        type1: expr2Type,
+                        type2: freshVar('varchar', 'varchar')
+                    })
+                }
+            return freshVar('varchar', 'varchar');
+        }
         throw Error('SimpleExprRuntimeFunctionContext');
     }
 
@@ -802,7 +829,9 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
         if (functionIdentifier === 'lower' 
             || functionIdentifier === 'lcase' 
             || functionIdentifier === 'upper' 
-            || functionIdentifier === 'ucase') {
+            || functionIdentifier === 'ucase'
+            || functionIdentifier === 'ltrim'
+            || functionIdentifier === 'rtrim') {
             const varcharParam = freshVar('varchar', 'varchar');
             const params : FixedLengthParams = {
                 kind: 'FixedLengthParams',
