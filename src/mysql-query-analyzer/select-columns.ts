@@ -89,7 +89,7 @@ function extractColumnsFromTableReferences(tablesReferences: TableReferenceConte
         const allJoinedColumns : ColumnDef[][] = [];
         let firstLeftJoinIndex = -1;
         tab.joinedTable().forEach( (joined, index) => {
-            if(joined.text.toLowerCase().startsWith("innerjoin")) {
+            if(joined.innerJoinType()?.INNER_SYMBOL() || joined.innerJoinType()?.JOIN_SYMBOL()) {
                 firstLeftJoinIndex = -1; //dont need to add notNull = false to joins
             }
             else if(firstLeftJoinIndex == -1) {
