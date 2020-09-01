@@ -140,7 +140,7 @@ describe('type-inference - functions', () => {
         assert.deepEqual(actual, expected);
     })
 
-    it.only(`SELECT LENGTH(?)`, () => {
+    it(`SELECT LENGTH(?)`, () => {
         const sql = `SELECT LENGTH(?)`;
         const actual = parseAndInfer(sql, dbSchema);
 
