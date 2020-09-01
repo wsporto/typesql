@@ -103,4 +103,28 @@ describe('type-inference - functions', () => {
 
         assert.deepEqual(actual, expected);
     })
+
+    it(`SELECT LPAD('hi',4,'??')`, () => {
+        const sql = `SELECT LPAD('hi',4,'??')`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['varchar'],
+            parameters: []   
+        }
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it(`SELECT LPAD(?, ?, ?)`, () => {
+        const sql = `SELECT LPAD(?, ?, ?)`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['varchar'],
+            parameters: ['varchar', 'int', 'varchar']   
+        }
+
+        assert.deepEqual(actual, expected);
+    })
 })

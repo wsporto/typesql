@@ -232,4 +232,22 @@ describe('Infer column nullability', () => {
         assert.deepEqual(actual, expected);
     })
 
+    it(`SELECT lpad(?, ?, ?)`, () => {
+        const sql = `SELECT lpad(?, ?, ?)`;
+        const actual = parseAndInferNotNull(sql, dbSchema);
+
+        const expected = [true];
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it(`SELECT lpad(name, ?, ?) FROM mytable2`, () => {
+        const sql = `SELECT lpad(name, ?, ?) FROM mytable2`;
+        const actual = parseAndInferNotNull(sql, dbSchema);
+
+        const expected = [false];
+
+        assert.deepEqual(actual, expected);
+    })
+
 });

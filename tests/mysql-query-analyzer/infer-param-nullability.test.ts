@@ -101,4 +101,13 @@ describe('Infer param nullability', () => {
 
         assert.deepEqual(actual, expected);
     })
+
+    it(`SELECT lpad(?, ?, ?)`, () => {
+        const sql = `SELECT lpad(?, ?, ?)`;
+        const actual = parseAndInferParamNullability(sql);
+
+        const expected = [true, true, true];
+
+        assert.deepEqual(actual, expected);
+    })
 });
