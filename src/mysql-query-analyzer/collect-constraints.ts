@@ -788,7 +788,7 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
             walkFunctionParameters(context, simpleExpr, params);
             return freshVar(simpleExpr.text, 'bigint');
         }
-        if (functionIdentifier === 'lpad') {
+        if (functionIdentifier === 'lpad' || functionIdentifier == 'rpad') {
             const varcharParam = freshVar('varchar', 'varchar');
             const intParam = freshVar('int', 'int');
             const params : FixedLengthParams = {
@@ -810,6 +810,16 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
             }
             walkFunctionParameters(context, simpleExpr, params);
             return varcharParam;
+        }
+
+        if (functionIdentifier === 'length') {
+            const varcharParam = freshVar('varchar', 'varchar');
+            const params : FixedLengthParams = {
+                kind: 'FixedLengthParams',
+                paramsType: [varcharParam]
+            }
+            walkFunctionParameters(context, simpleExpr, params);
+            return freshVar('int', 'int');
         }
 
         throw Error('Function not supported: ' + functionIdentifier);
