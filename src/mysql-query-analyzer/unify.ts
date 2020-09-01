@@ -125,6 +125,15 @@ function getBestPossibleType(type1: string, type2: string, max?:boolean, sum?: '
         const index = max? Math.max(indexStrType1, indexStrType2) : Math.min(indexStrType1, indexStrType2);
         return order2[index];
     } 
+
+    //datetime <- date <- time
+    const dateTypeOrder = ['date', 'datetime'];
+    const indexDateType1 = dateTypeOrder.indexOf(type1);
+    const indexDateType2 = dateTypeOrder.indexOf(type2);
+    if(indexDateType1 != -1 && indexDateType2 != -1) {
+        const index = max? Math.max(indexDateType1, indexDateType2) : Math.min(indexDateType1, indexDateType2);
+        return order2[index];
+    }
     throw Error ('Type mismatch: ' + type1 + ' and ' + type2);
 }
 

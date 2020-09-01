@@ -696,6 +696,19 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
         if (runtimeFunctionCall.CURTIME_SYMBOL()) {
             return freshVar(simpleExpr.text, 'time');
         }
+        if (runtimeFunctionCall.YEAR_SYMBOL() || runtimeFunctionCall.MONTH_SYMBOL() || runtimeFunctionCall.DAY_SYMBOL()) {
+            const expr = runtimeFunctionCall.exprWithParentheses()?.expr();
+            if(expr) {
+                const paramType = walkExpr(context, expr);
+                context.constraints.push({
+                    expression: expr.text,
+                    type1: paramType,
+                    type2: freshVar(simpleExpr.text, 'date')
+                })
+            }
+            const returnType = runtimeFunctionCall.YEAR_SYMBOL()? 'year' : 'tinyint';
+            return freshVar(simpleExpr.text, returnType);
+        }
         throw Error('SimpleExprRuntimeFunctionContext');
     }
 
