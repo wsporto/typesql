@@ -189,9 +189,14 @@ function inferNotNullRuntimeFunctionCall(simpleExprRuntimeFunction: SimpleExprRu
     const trimFunction = functionCall.trimFunction();
     if(trimFunction) {
         const exprList = trimFunction.expr();
-        return exprList.every( expr => inferNotNullExpr(expr, dbSchema, fromColumns))
+        return exprList.every( expr => inferNotNullExpr(expr, dbSchema, fromColumns));
     }
-    throw Error ('Function not supported:' + functionCall.text);
+    const substringFunction = functionCall.substringFunction();
+    if(substringFunction) {
+        const exprList = substringFunction.expr();
+        return exprList.every( expr => inferNotNullExpr(expr, dbSchema, fromColumns));
+    }
+    throw Error ('Function not supported: ' + functionCall.text);
 
 }
 

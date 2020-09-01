@@ -736,7 +736,19 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
                 }
             return freshVar('varchar', 'varchar');
         }
-        throw Error('SimpleExprRuntimeFunctionContext');
+        const substringFunction = runtimeFunctionCall.substringFunction();
+        if(substringFunction) {
+            const exprList = substringFunction.expr();
+            const varcharParam = freshVar('varchar', 'varchar');
+            const intParam = freshVar('int', 'int');
+            const params: FunctionParams = {
+                kind: 'FixedLengthParams',
+                paramsType: [varcharParam, intParam, intParam]
+            }
+            walkExprListParameters(context, exprList, params);
+            return varcharParam;
+        }
+        throw Error('Function not supported: ' + runtimeFunctionCall.text);
     }
 
     if (simpleExpr instanceof SimpleExprFunctionContext) {
@@ -1017,6 +1029,19 @@ type FixedLengthParams = {
 }
 
 type FunctionParams = VariableLengthParams | FixedLengthParams;
+
+function walkExprListParameters(context: InferenceContext, exprList: ExprContext[], params: FunctionParams) {
+    return exprList.map( (expr, paramIndex) => {
+        const exprType = walkExpr(context, expr);
+        context.constraints.push({
+            expression: expr.text,
+            type1: exprType,
+            type2: params.kind == 'FixedLengthParams'? params.paramsType[paramIndex] : params.paramType,
+            mostGeneralType: true
+        })
+        return exprType;
+    })
+}
 
 function walkFunctionParameters(context: InferenceContext, simpleExprFunction: SimpleExprFunctionContext, params: FunctionParams) {
     const udfExprList = simpleExprFunction.functionCall().udfExprList()?.udfExpr();
