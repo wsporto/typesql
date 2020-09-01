@@ -211,4 +211,16 @@ describe('type-inference - functions', () => {
 
         assert.deepEqual(actual, expected);
     })
+
+    it(`SELECT SUBSTRING(?, ?), SUBSTRING(?, ?, ?)`, () => {
+        const sql = `SELECT SUBSTRING(?, ?), SUBSTRING(?, ?, ?)`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['varchar', 'varchar'],
+            parameters: ['varchar', 'int', 'varchar', 'int', 'int']   
+        }
+
+        assert.deepEqual(actual, expected);
+    })
 })

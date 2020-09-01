@@ -272,4 +272,13 @@ describe('Infer column nullability', () => {
         assert.deepEqual(actual, expected);
     })
 
+    it(`SELECT SUBSTRING(?, ?), SUBSTRING(?, ?, ?)`, () => {
+        const sql = `SELECT SUBSTRING(?, ?), SUBSTRING(?, ?, ?)`;
+        const actual = parseAndInferNotNull(sql, dbSchema);
+
+        const expected = [true, true]
+
+        assert.deepEqual(actual, expected);
+    })
+
 });
