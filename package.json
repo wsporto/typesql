@@ -9,7 +9,7 @@
   "scripts": {
     "test": "mocha  dist/tests/**/*.js --watch --watch-files **/*.js",
     "antlr4ts": "antlr4ts -Xexact-output-dir -o ./parser/ ./grammar/*.g4",
-    "dist": "tsc && cpy ./package.json ./dist/src && cd ./dist/src && npm publish"
+    "dist": "tsc && cpy ./package.json ./README.md ./*.gif ./dist/src && cd ./dist/src && npm publish"
   },
   "keywords": [],
   "author": "",
