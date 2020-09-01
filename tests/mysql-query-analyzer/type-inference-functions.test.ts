@@ -176,7 +176,7 @@ describe('type-inference - functions', () => {
         assert.deepEqual(actual, expected);
     })
 
-    it.only(`SELECT TRIM(concat(?, ?, name)) FROM mytable2`, () => {
+    it(`SELECT TRIM(concat(?, ?, name)) FROM mytable2`, () => {
         const sql = `SELECT TRIM(concat(?, ?, name)) FROM mytable2`;
         const actual = parseAndInfer(sql, dbSchema);
 
@@ -190,6 +190,18 @@ describe('type-inference - functions', () => {
 
     it(`SELECT LENGTH(?)`, () => {
         const sql = `SELECT LENGTH(?)`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['int'],
+            parameters: ['varchar']   
+        }
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it(`SELECT LENGTH(concat(name, ?)) FROM mytable2`, () => {
+        const sql = `SELECT LENGTH(concat(name, ?)) FROM mytable2`;
         const actual = parseAndInfer(sql, dbSchema);
 
         const expected : TypeInferenceResult = {
