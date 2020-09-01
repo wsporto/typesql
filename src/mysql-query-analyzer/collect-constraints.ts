@@ -717,9 +717,13 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
             || simpleExpr.functionCall().qualifiedIdentifier()?.text.toLowerCase();
 
         if (functionIdentifier === 'concat_ws' || functionIdentifier?.toLowerCase() === 'concat') {
-            const functionType = freshVar(simpleExpr.text, 'varchar');
-            walkFunctionParameters(context, simpleExpr, functionType);
-            return functionType;
+            const varcharType = freshVar(simpleExpr.text, 'varchar');
+            const params : VariableLengthParams = {
+                kind: 'VariableLengthParams',
+                paramType: varcharType
+            }
+            walkFunctionParameters(context, simpleExpr, params);
+            return varcharType;
         }
 
         if (functionIdentifier === 'avg') {
@@ -730,13 +734,21 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
                 type2: freshVar('decimal', 'decimal'),
                 mostGeneralType: true
             })
-            walkFunctionParameters(context, simpleExpr, functionType);
+            const params : FixedLengthParams = {
+                kind: 'FixedLengthParams',
+                paramsType: [functionType]
+            }
+            walkFunctionParameters(context, simpleExpr, params);
             return functionType;
         }
 
         if (functionIdentifier === 'round') {
             const functionType = freshVar(simpleExpr.text, '?');
-            const paramsType = walkFunctionParameters(context, simpleExpr, functionType);
+            const params : FixedLengthParams = {
+                kind: 'FixedLengthParams',
+                paramsType: [functionType]
+            }
+            const paramsType = walkFunctionParameters(context, simpleExpr, params);
             //The return value has the same type as the first argument
             context.constraints.push({
                 expression: simpleExpr.text,
@@ -748,18 +760,43 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
         }
 
         if (functionIdentifier === 'floor') {
-            walkFunctionParameters(context, simpleExpr, freshVar('double', 'double'));
+            const doubleParam = freshVar('double', 'double');
+            const params : FixedLengthParams = {
+                kind: 'FixedLengthParams',
+                paramsType: [doubleParam, doubleParam]
+            }
+            walkFunctionParameters(context, simpleExpr, params);
             return freshVar(simpleExpr.text, 'bigint');
         }
 
         if (functionIdentifier === 'str_to_date') {
-            walkFunctionParameters(context, simpleExpr, freshVar('varchar', 'varchar'));
+            const varcharParam = freshVar('varchar', 'varchar');
+            const params : FixedLengthParams = {
+                kind: 'FixedLengthParams',
+                paramsType: [varcharParam, varcharParam]
+            }
+            walkFunctionParameters(context, simpleExpr, params);
             return freshVar(simpleExpr.text, 'date');
         }
 
         if (functionIdentifier === 'datediff') {
-            walkFunctionParameters(context, simpleExpr, freshVar('date', 'date'));
+            const dateParam = freshVar('date', 'date');
+            const params : FixedLengthParams = {
+                kind: 'FixedLengthParams',
+                paramsType: [dateParam, dateParam]
+            }
+            walkFunctionParameters(context, simpleExpr, params);
             return freshVar(simpleExpr.text, 'bigint');
+        }
+        if (functionIdentifier === 'lpad') {
+            const varcharParam = freshVar('varchar', 'varchar');
+            const intParam = freshVar('int', 'int');
+            const params : FixedLengthParams = {
+                kind: 'FixedLengthParams',
+                paramsType: [varcharParam, intParam, varcharParam]
+            }
+            walkFunctionParameters(context, simpleExpr, params);
+            return freshVar(simpleExpr.text, 'varchar');
         }
 
         throw Error('Function not supported: ' + functionIdentifier);
@@ -917,16 +954,28 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
     throw Error('Invalid expression');
 }
 
-function walkFunctionParameters(context: InferenceContext, simpleExprFunction: SimpleExprFunctionContext, paramType: TypeVar) {
+type VariableLengthParams = {
+    kind: 'VariableLengthParams'
+    paramType: TypeVar;
+}
+
+type FixedLengthParams = {
+    kind: 'FixedLengthParams'
+    paramsType: TypeVar[];
+}
+
+type FunctionParams = VariableLengthParams | FixedLengthParams;
+
+function walkFunctionParameters(context: InferenceContext, simpleExprFunction: SimpleExprFunctionContext, params: FunctionParams) {
     const udfExprList = simpleExprFunction.functionCall().udfExprList()?.udfExpr();
     if(udfExprList) {
-        const paramTypes = udfExprList.map(inExpr => {
+        const paramTypes = udfExprList.map( (inExpr, paramIndex) => {
             const expr = inExpr.expr();
             const exprType = walkExpr(context, expr);
             context.constraints.push({
                 expression: expr.text,
                 type1: exprType,
-                type2: paramType,
+                type2: params.kind == 'FixedLengthParams'? params.paramsType[paramIndex] : params.paramType,
                 mostGeneralType: true
             })
             return exprType;
@@ -935,11 +984,11 @@ function walkFunctionParameters(context: InferenceContext, simpleExprFunction: S
     }
     const exprList = simpleExprFunction.functionCall().exprList()?.expr();
     if(exprList) {
-        const paramTypes = exprList.map(inExpr => {
+        const paramTypes = exprList.map( (inExpr, paramIndex) => {
             const inSumExprType = walkExpr(context, inExpr);
             context.constraints.push({
                 expression: inExpr.text,
-                type1: paramType,
+                type1: params.kind == 'FixedLengthParams'? params.paramsType[paramIndex] : params.paramType,
                 type2: inSumExprType,
                 mostGeneralType: true
             })
