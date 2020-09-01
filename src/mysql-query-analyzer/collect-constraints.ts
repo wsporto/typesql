@@ -796,7 +796,20 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
                 paramsType: [varcharParam, intParam, varcharParam]
             }
             walkFunctionParameters(context, simpleExpr, params);
-            return freshVar(simpleExpr.text, 'varchar');
+            return varcharParam;
+        }
+
+        if (functionIdentifier === 'lower' 
+            || functionIdentifier === 'lcase' 
+            || functionIdentifier === 'upper' 
+            || functionIdentifier === 'ucase') {
+            const varcharParam = freshVar('varchar', 'varchar');
+            const params : FixedLengthParams = {
+                kind: 'FixedLengthParams',
+                paramsType: [varcharParam]
+            }
+            walkFunctionParameters(context, simpleExpr, params);
+            return varcharParam;
         }
 
         throw Error('Function not supported: ' + functionIdentifier);

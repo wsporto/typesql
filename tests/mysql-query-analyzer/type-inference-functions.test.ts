@@ -127,4 +127,16 @@ describe('type-inference - functions', () => {
 
         assert.deepEqual(actual, expected);
     })
+
+    it(`SELECT LOWER(?), LCASE(?), UPPER(?), UCASE(?)`, () => {
+        const sql = `SELECT LOWER(?), LCASE(?), UPPER(?), UCASE(?)`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['varchar', 'varchar', 'varchar', 'varchar'],
+            parameters: ['varchar', 'varchar', 'varchar', 'varchar']   
+        }
+
+        assert.deepEqual(actual, expected);
+    })
 })
