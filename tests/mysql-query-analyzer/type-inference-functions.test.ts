@@ -116,13 +116,13 @@ describe('type-inference - functions', () => {
         assert.deepEqual(actual, expected);
     })
 
-    it(`SELECT LPAD(?, ?, ?)`, () => {
-        const sql = `SELECT LPAD(?, ?, ?)`;
+    it(`SELECT LPAD(?, ?, ?), RPAD(?, ?, ?)`, () => {
+        const sql = `SELECT LPAD(?, ?, ?), RPAD(?, ?, ?)`;
         const actual = parseAndInfer(sql, dbSchema);
 
         const expected : TypeInferenceResult = {
-            columns: ['varchar'],
-            parameters: ['varchar', 'int', 'varchar']   
+            columns: ['varchar', 'varchar'],
+            parameters: ['varchar', 'int', 'varchar', 'varchar', 'int', 'varchar']   
         }
 
         assert.deepEqual(actual, expected);
@@ -135,6 +135,18 @@ describe('type-inference - functions', () => {
         const expected : TypeInferenceResult = {
             columns: ['varchar', 'varchar', 'varchar', 'varchar'],
             parameters: ['varchar', 'varchar', 'varchar', 'varchar']   
+        }
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it.only(`SELECT LENGTH(?)`, () => {
+        const sql = `SELECT LENGTH(?)`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['int'],
+            parameters: ['varchar']   
         }
 
         assert.deepEqual(actual, expected);
