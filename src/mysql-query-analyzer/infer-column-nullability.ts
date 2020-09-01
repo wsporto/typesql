@@ -130,10 +130,7 @@ function inferNotNullSimpleExpr(simpleExpr: SimpleExprContext, dbSchema: ColumnS
         return column.notNull || (whereClause && !possibleNullWhere(fieldName, whereClause) || false);
     }
     if(simpleExpr instanceof SimpleExprRuntimeFunctionContext) {
-        const functionCall = simpleExpr.runtimeFunctionCall();
-        if(functionCall.NOW_SYMBOL() || functionCall.CURDATE_SYMBOL() || functionCall.CURTIME_SYMBOL()) {
-            return true;
-        }
+        return inferNotNullRuntimeFunctionCall(simpleExpr, dbSchema, fromColumns);
     }
     if(simpleExpr instanceof SimpleExprFunctionContext) {
         const functionCall = simpleExpr.functionCall();
@@ -182,6 +179,20 @@ function inferNotNullSimpleExpr(simpleExpr: SimpleExprContext, dbSchema: ColumnS
         }
     }
     throw Error('Error during column null inference');
+}
+
+function inferNotNullRuntimeFunctionCall(simpleExprRuntimeFunction: SimpleExprRuntimeFunctionContext, dbSchema: ColumnSchema[], fromColumns: ColumnDef[]) {
+    const functionCall = simpleExprRuntimeFunction.runtimeFunctionCall();
+    if(functionCall.NOW_SYMBOL() || functionCall.CURDATE_SYMBOL() || functionCall.CURTIME_SYMBOL()) {
+        return true;
+    }
+    const trimFunction = functionCall.trimFunction();
+    if(trimFunction) {
+        const exprList = trimFunction.expr();
+        return exprList.every( expr => inferNotNullExpr(expr, dbSchema, fromColumns))
+    }
+    throw Error ('Function not supported:' + functionCall.text);
+
 }
 
 function inferNotNullFunctionCall(functionCall: FunctionCallContext, dbSchema: ColumnSchema[], fromColumns: ColumnDef[]): boolean {

@@ -250,4 +250,26 @@ describe('Infer column nullability', () => {
         assert.deepEqual(actual, expected);
     })
 
+    it(`SELECT TRIM(LEADING ? FROM ?), TRIM(TRAILING ? FROM ?), TRIM(BOTH ? FROM ?)`, () => {
+        const sql = `SELECT TRIM (?), TRIM(LEADING ? FROM ?), TRIM(TRAILING ? FROM ?), TRIM(BOTH ? FROM ?)`;
+        const actual = parseAndInferNotNull(sql, dbSchema);
+
+        const expected = [true, true, true, true];
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it(`SELECT TRIM(LEADING ? FROM null), TRIM(LEADING null FROM ?)`, () => {
+        const sql = `SELECT 
+            TRIM(null),
+            TRIM(LEADING 'hi' FROM null), TRIM(LEADING null FROM 'hi'), 
+            TRIM(TRAILING 'hi' FROM null), TRIM(TRAILING null FROM 'hi'), 
+            TRIM(BOTH 'hi' FROM null), TRIM(BOTH null FROM 'hi')`;
+        const actual = parseAndInferNotNull(sql, dbSchema);
+
+        const expected = [false, false, false, false, false, false, false];
+
+        assert.deepEqual(actual, expected);
+    })
+
 });
