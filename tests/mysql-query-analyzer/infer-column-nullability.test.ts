@@ -281,4 +281,13 @@ describe('Infer column nullability', () => {
         assert.deepEqual(actual, expected);
     })
 
+    it(`SELECT YEAR(?), MONTH(?), DAY(?), HOUR(?), MINUTE(?), SECOND(?)`, () => {
+        const sql = `SELECT YEAR(?), MONTH(?), DAY(?), HOUR(?), MINUTE(?), SECOND(?)`;
+        const actual = parseAndInferNotNull(sql, dbSchema);
+
+        const expected = [true, true, true, true, true, true]
+
+        assert.deepEqual(actual, expected);
+    })
+
 });

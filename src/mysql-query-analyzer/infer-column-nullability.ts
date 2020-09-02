@@ -196,6 +196,11 @@ function inferNotNullRuntimeFunctionCall(simpleExprRuntimeFunction: SimpleExprRu
         const exprList = substringFunction.expr();
         return exprList.every( expr => inferNotNullExpr(expr, dbSchema, fromColumns));
     }
+    if(functionCall.YEAR_SYMBOL() || functionCall.MONTH_SYMBOL() || functionCall.DAY_SYMBOL() 
+    || functionCall.HOUR_SYMBOL() || functionCall.MINUTE_SYMBOL() || functionCall.SECOND_SYMBOL()) {
+        const expr = functionCall.exprWithParentheses()?.expr()!;
+        return inferNotNullExpr(expr, dbSchema, fromColumns);
+    }
     throw Error ('Function not supported: ' + functionCall.text);
 
 }
