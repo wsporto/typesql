@@ -6,7 +6,7 @@ export enum FlagEnum {
     SET_FLAG = 2048
 }
 
-export type InferType = MySqlType | '?';
+export type InferType = MySqlType | '?' | 'number';
 
 
 export type MySqlType = 

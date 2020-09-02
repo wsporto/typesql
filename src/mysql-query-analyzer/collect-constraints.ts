@@ -27,7 +27,7 @@ export type TypeVar = {
     kind: 'TypeVar';
     id: number;
     name: string;
-    type: MySqlType | '?' | 'number';
+    type: InferType;
     list?: true;
     selectItem?: true
 }
@@ -60,7 +60,7 @@ export type InferenceContext = {
 }
 
 let counter = 0;
-export function freshVar(name: string, typeVar: MySqlType | '?' | 'number', selectItem?: true, list?: true): TypeVar {
+export function freshVar(name: string, typeVar: InferType, selectItem?: true, list?: true): TypeVar {
     const param: TypeVar = {
         kind: 'TypeVar',
         id: ++counter,
@@ -675,18 +675,6 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
 
     if (simpleExpr instanceof SimpleExprRuntimeFunctionContext) {
         const runtimeFunctionCall = simpleExpr.runtimeFunctionCall();
-        if (runtimeFunctionCall.MINUTE_SYMBOL()) {
-            const expr = runtimeFunctionCall.exprWithParentheses()?.expr();
-            if (expr) {
-                const paramType = walkExpr(context, expr);
-                context.constraints.push({
-                    expression: expr.text,
-                    type1: paramType,
-                    type2: freshVar(simpleExpr.text, 'varchar')
-                })
-            }
-            return freshVar(simpleExpr.text, 'smallint');
-        }
         if (runtimeFunctionCall.NOW_SYMBOL()) {
             return freshVar(simpleExpr.text, 'datetime');
         }
@@ -707,6 +695,21 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
                 })
             }
             const returnType = runtimeFunctionCall.YEAR_SYMBOL()? 'year' : 'tinyint';
+            return freshVar(simpleExpr.text, returnType);
+        }
+        if(runtimeFunctionCall.HOUR_SYMBOL() || runtimeFunctionCall.MINUTE_SYMBOL() || runtimeFunctionCall.SECOND_SYMBOL()) {
+            const expr = runtimeFunctionCall.exprWithParentheses()?.expr();
+            if(expr) {
+                const paramType = walkExpr(context, expr);
+                context.constraints.push({
+                    expression: expr.text,
+                    type1: paramType,
+                    type2: freshVar(simpleExpr.text, 'time')
+                })
+            }
+            //HOUR can return values greater than 23. Ex.: SELECT HOUR('272:59:59');
+            //https://dev.mysql.com/doc/refman/8.0/en/date-and-time-functions.html#function_hour
+            const returnType = runtimeFunctionCall.HOUR_SYMBOL()? 'int' : 'tinyint';
             return freshVar(simpleExpr.text, returnType);
         }
         const trimFunction = runtimeFunctionCall.trimFunction();
@@ -918,6 +921,7 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
         const literal = simpleExpr.literal();
 
         if (literal.textLiteral()) {
+            const text = literal.textLiteral()?.text.slice(1, -1); //remove quotes
             return freshVar('varchar', 'varchar');
         }
         const numLiteral = literal.numLiteral();

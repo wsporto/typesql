@@ -838,32 +838,6 @@ describe('type-inference test', () => {
         assert.deepEqual(actual, expected);
     })
 
-    
-
-    it('SELECT MINUTE("2017-06-20 09:34:00");', () => {
-        const sql = `SELECT MINUTE("2017-06-20 09:34:00");`
-        const actual = parseAndInfer(sql, dbSchema);
-
-        const expected : TypeInferenceResult = {
-            columns: ['smallint'],
-            parameters: []
-        }
-
-        assert.deepEqual(actual, expected);
-    })
-
-    it('SELECT MINUTE(?)', () => {
-        const sql = `SELECT MINUTE(?)`
-        const actual = parseAndInfer(sql, dbSchema);
-
-        const expected : TypeInferenceResult = {
-            columns: ['smallint'],
-            parameters: ['varchar']
-        }
-
-        assert.deepEqual(actual, expected);
-    })
-
     it('SELECT (SELECT ? FROM mytable2) FROM mytable1', () => {
         const sql = `SELECT (SELECT ? FROM mytable2) FROM mytable1`;
         const actual = parseAndInfer(sql, dbSchema);

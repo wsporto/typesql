@@ -13,7 +13,7 @@ export type ColumnDef = {
     table: string;
     column: string;
     columnName: string;
-    columnType: MySqlType | '?';
+    columnType: InferType;
     tableAlias?: string;
     notNull: boolean;
 }
