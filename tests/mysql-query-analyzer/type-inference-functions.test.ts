@@ -104,6 +104,78 @@ describe('type-inference - functions', () => {
         assert.deepEqual(actual, expected);
     })
 
+    it(`SELECT HOUR(?), MINUTE(?), SECOND(?)`, () => {
+        const sql = `SELECT HOUR(?), MINUTE(?), SECOND(?)`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['int', 'tinyint', 'tinyint'],
+            parameters: ['time', 'time', 'time']   
+        }
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it(`SELECT HOUR(?), MINUTE(?), SECOND(?)`, () => {
+        const sql = `SELECT MINUTE(?)`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['tinyint'],
+            parameters: ['time']   
+        }
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it('SELECT HOUR("2017-06-20 09:34:00");', () => {
+        const sql = `SELECT 
+            HOUR("2017-06-20 09:34:00"), HOUR('2017-06-20 09:34:00'), 
+            HOUR("09:34:00"), HOUR('09:34:00'),
+            HOUR("09:34"), HOUR('09:34')
+        `
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['int', 'int', 'int', 'int', 'int', 'int'],
+            parameters: []
+        }
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it('SELECT MINUTE("2017-06-20 09:34:00");', () => {
+        const sql = `SELECT 
+            MINUTE("2017-06-20 09:34:00"), MINUTE('2017-06-20 09:34:00'), 
+            MINUTE("09:34:00"), MINUTE('09:34:00'),
+            MINUTE("09:34"), MINUTE('09:34')
+        `
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['tinyint', 'tinyint', 'tinyint', 'tinyint', 'tinyint', 'tinyint'],
+            parameters: []
+        }
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it('SELECT SECOND("2017-06-20 09:34:00");', () => {
+        const sql = `SELECT 
+            SECOND("2017-06-20 09:34:00"), SECOND('2017-06-20 09:34:00'), 
+            SECOND("09:34:00"), SECOND('09:34:00'),
+            SECOND("09:34"), SECOND('09:34')
+        `
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['tinyint', 'tinyint', 'tinyint', 'tinyint', 'tinyint', 'tinyint'],
+            parameters: []
+        }
+
+        assert.deepEqual(actual, expected);
+    })
+
     it(`SELECT LPAD('hi',4,'??')`, () => {
         const sql = `SELECT LPAD('hi',4,'??')`;
         const actual = parseAndInfer(sql, dbSchema);

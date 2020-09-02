@@ -1,6 +1,6 @@
 import { SubstitutionHash } from "./parse";
 import { Constraint, TypeVar, Type } from "./collect-constraints";
-import { MySqlType } from "../mysql-mapping";
+import { MySqlType, InferType } from "../mysql-mapping";
 
 export function unify(constraints: Constraint[], substitutions: SubstitutionHash) {
     for (const constraint of constraints) {
@@ -102,7 +102,7 @@ function setSubstitution(ty1: TypeVar, ty2: TypeVar, substitutions: Substitution
     }
 }
 
-function getBestPossibleType(type1: string, type2: string, max?:boolean, sum?: 'sum') : string {
+function getBestPossibleType(type1: InferType, type2: InferType, max?:boolean, sum?: 'sum') : string {
     if(!sum && type1 === type2) return type1;
     if( sum && max && type1 == 'number' && type2 == 'int' ||  type1 == 'int' && type2 == 'number') return 'double';
     // if( sum && type1 == 'number' && type2 == 'bigint' ||  type1 == 'bigint' && type2 == 'number') return 'double';
@@ -132,11 +132,19 @@ function getBestPossibleType(type1: string, type2: string, max?:boolean, sum?: '
     const indexDateType2 = dateTypeOrder.indexOf(type2);
     if(indexDateType1 != -1 && indexDateType2 != -1) {
         const index = max? Math.max(indexDateType1, indexDateType2) : Math.min(indexDateType1, indexDateType2);
-        return order2[index];
+        return dateTypeOrder[index];
     }
+
+    const dateTypeLiteralOrder = ['time', 'timeliteral', 'datetimeliteral', 'varchar'];
+    const indexDateLiteralType1 = dateTypeLiteralOrder.indexOf(type1);
+    const indexDateLiteralType2 = dateTypeLiteralOrder.indexOf(type2);
+    if(indexDateLiteralType1 != -1 && indexDateLiteralType2 != -1) {
+        const index = max? Math.max(indexDateLiteralType1, indexDateLiteralType2) : Math.min(indexDateLiteralType1, indexDateLiteralType2);
+        return dateTypeLiteralOrder[index];
+    }
+    
     throw Error ('Type mismatch: ' + type1 + ' and ' + type2);
 }
-
 
 export function substitute(type: Type, substitutions: SubstitutionHash) : Type {
     if(type.kind == 'TypeVar' && type.type != '?') {

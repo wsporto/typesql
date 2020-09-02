@@ -119,7 +119,9 @@ function addParameterNames(parameters: ParameterDef[], namedParameters: string[]
 }
 
 export function verifyNotInferred(type: InferType) : MySqlType {
-    return type == '?' ? 'varchar' : type;
+    if(type == '?') return "varchar";
+    if(type == 'number') return "double";
+    return type;
 }
 
 export async function parseSql(client: DbClient, sql: string) : Promise<Either<InvalidSqlError, SchemaDef>> {
