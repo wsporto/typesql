@@ -7,7 +7,7 @@ import {
     SimpleExprListContext, ExprListContext, PrimaryExprIsNullContext, ExprContext, ExprIsContext, BoolPriContext,
     PrimaryExprPredicateContext, SimpleExprContext, PredicateOperationsContext, ExprNotContext, ExprAndContext,
     ExprOrContext, ExprXorContext, PredicateExprLikeContext, SelectStatementContext, SimpleExprRuntimeFunctionContext,
-    SubqueryContext, InsertStatementContext, UpdateStatementContext, DeleteStatementContext, PrimaryExprAllAnyContext, UdfExprContext
+    SubqueryContext, InsertStatementContext, UpdateStatementContext, DeleteStatementContext, PrimaryExprAllAnyContext, FromClauseContext
 } from "ts-mysql-parser";
 
 import { ColumnSchema, ColumnDef, TypeInferenceResult, InsertInfoResult, UpdateInfoResult, DeleteInfoResult } from "./types";
@@ -470,13 +470,30 @@ function walkQuerySpecification(context: InferenceContext, querySpec: QuerySpeci
         types: listType
     }
 
+    const fromClause = querySpec.fromClause();
+    if(fromClause) {
+        walkFromClause(context, fromClause);
+    }
+
     const whereClause = querySpec.whereClause();
-    //TODO - FROM, HAVING, BLAH
+    //TODO - HAVING, BLAH
     if (whereClause) {
         const whereExpr = whereClause?.expr();
         walkExpr(context, whereExpr);
     }
     return typeOperator;
+}
+
+function walkFromClause(context: InferenceContext, fromClause: FromClauseContext) {
+    const tableReferences = fromClause.tableReferenceList()?.tableReference();
+    tableReferences?.forEach(tabeRef => {
+        tabeRef.joinedTable().forEach( joinedTable => {
+            const onExpr = joinedTable.expr();
+            if(onExpr) {
+                walkExpr(context, onExpr);
+            }
+        })
+    })
 }
 
 function walkExpr(context: InferenceContext, expr: ExprContext): Type {
