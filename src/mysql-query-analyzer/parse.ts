@@ -77,9 +77,12 @@ export function extractQueryInfoFromQuerySpecification(querySpec: QuerySpecifica
 }
 
 function extractOrderByColumns(selectStatement: SelectStatementContext) {
-    return selectStatement.queryExpression()?.orderClause()?.orderList().orderExpression().map( orderExpr => orderExpr.text) || [];
+    return selectStatement.queryExpression()
+        ?.orderClause()
+        ?.orderList()
+        .orderExpression()
+        .map( orderExpr => orderExpr.text) || [];
 }
-
 
 export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[]): QueryInfoResult | InsertInfoResult | UpdateInfoResult | DeleteInfoResult {
 
@@ -92,7 +95,7 @@ export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[]): QueryIn
             const mainQueryResult = analiseQuery(querySpec, dbSchema, []);
             
             const orderByColumns = extractOrderByColumns(selectStatement);
-            if(orderByColumns.length > 0) {
+            if(orderByColumns.includes('?')) {
                 const fromColumns = getColumnsFrom(querySpec[0], dbSchema).map( col => col.columnName);
                 const selectColumns = mainQueryResult.columns.map( col => col.name);
                 const allOrderByColumns = Array.from(new Set(fromColumns.concat(selectColumns)));
