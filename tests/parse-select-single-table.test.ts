@@ -1234,6 +1234,34 @@ describe('Test simple select statements', () => {
         assert.deepEqual(actual.right, expected);
     })
 
+    it('select with order by without parameter', async () => {
+        const sql = `
+        select value from mytable1 order by value
+        `;
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'value',
+                    dbtype: 'int',
+                    notNull: false
+                }
+            ],
+            //shouldn't include order by columns because there is no parameters on the order by clause
+            //orderByColumns: ['id', 'value'], 
+            parameters: []
+        
+        }
+
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
+    })
+
+
     it('order by with case when expression', async () => {
         const sql = `
         select value, case when value = 1 then 1 else 2 end as ordering from mytable1 order by ?
