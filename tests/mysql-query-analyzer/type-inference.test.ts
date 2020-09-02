@@ -1418,6 +1418,40 @@ describe('type-inference test', () => {
         assert.deepEqual(actual, expected);
     });
 
+    
+    it('inner join with parameters in the ON clause', async () => {
+        const sql = `
+        SELECT id
+        FROM mytable1 t1
+        INNER JOIN mytable2 t2 ON t1.id = ? and t2.name = ?
+        `
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['int'],
+            parameters: ['int', 'varchar']
+        }
+
+        assert.deepEqual(actual, expected);
+    });
+
+    //TODO - id is ambigue
+    it.skip('verify ambiguous column', async () => {
+        const sql = `
+        SELECT id
+        FROM mytable1 t1
+        INNER JOIN mytable2 t2 ON t1.id = 1
+        `
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['int'],
+            parameters: ['int', 'varchar']
+        }
+
+        assert.deepEqual(actual, expected);
+    });
+
 });
 
 //select `id+id` from (select id+id from mytable1) t;
