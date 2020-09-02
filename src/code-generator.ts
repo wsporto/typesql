@@ -10,35 +10,42 @@ import { parseSql } from "./describe-query";
 
 export function generateTsDescriptor(queryInfo: SchemaDef) : TsDescriptor {
     
-    const columns = queryInfo.columns.map( col => {
+    const escapedColumnsNames = renameInvalidNames(queryInfo.columns.map( col => col.name));
+    const columns = queryInfo.columns.map( (col, columnIndex) => {
         const tsDesc : TsFieldDescriptor = {
-            name: col.name,
+            name: escapedColumnsNames[columnIndex],
             tsType: mapColumnType(col.dbtype),
             notNull: col.notNull? col.notNull : false 
         }
         return tsDesc;
     })
-    const parameters = queryInfo.parameters.map( col => {
+
+    const escapedParametersNames = renameInvalidNames(queryInfo.parameters.map( col => col.name));
+    const parameters = queryInfo.parameters.map( (col, paramIndex) => {
         const arraySymbol = col.list? '[]' : '';
 
         const tsDesc : TsFieldDescriptor = {
-            name: col.name,
+            name: escapedParametersNames[paramIndex],
             tsType: mapColumnType(col.columnType) + arraySymbol,
             notNull: col.notNull? col.notNull : false
         }
         return tsDesc;
     })
 
-    const data = queryInfo.data?.map( col => {
+    const escapedDataNames = queryInfo.data? renameInvalidNames(queryInfo.data.map( col => col.name)) : [];
+    const data = queryInfo.data?.map( (col, dataIndex) => {
 
         const tsDesc : TsFieldDescriptor = {
-            name: col.name,
+            name: escapedDataNames[dataIndex],
             tsType: mapColumnType(col.columnType),
             notNull: col.notNull? col.notNull : false
         }
         return tsDesc;
     })
    
+
+    
+
     return {
         sql: queryInfo.sql,
         multipleRowsResult: queryInfo.multipleRowsResult,
@@ -47,6 +54,31 @@ export function generateTsDescriptor(queryInfo: SchemaDef) : TsDescriptor {
         parameters,
         data
     };
+}
+
+export function renameInvalidNames(columnNames: string[]) : string[] {
+    const columnsCount: Map<string, number> = new Map();
+    return columnNames.map( columnName => {
+        if(columnsCount.has(columnName)) {
+            const count = columnsCount.get(columnName)! + 1;
+            columnsCount.set(columnName, count);
+            const newName = columnName + '_' + count;
+            return escapeInvalidTsField(newName);
+
+        }
+        else {
+            columnsCount.set(columnName, 1);
+            return escapeInvalidTsField(columnName);
+        }
+    })
+}
+
+export function escapeInvalidTsField(columnName: string) {
+    const validPattern = /^[a-zA-Z0-9_$]+$/g;
+    if (!validPattern.test(columnName)) {
+        return `"${columnName}"`;
+    }
+    return columnName;
 }
 
 export function generateReturnName(name: CamelCaseName) {
