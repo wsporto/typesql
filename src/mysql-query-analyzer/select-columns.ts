@@ -281,8 +281,61 @@ export function splitName(fieldName: string) : FieldName {
 
 }
 
+const functionAlias : ColumnSchema[] = [
+    {
+        column: 'CURRENT_DATE',
+        column_type: 'date',
+        notNull: true,
+        schema: '',
+        table: ''
+    },
+    {
+        column: 'CURRENT_TIME',
+        column_type: 'time',
+        notNull: true,
+        schema: '',
+        table: ''
+
+    },
+    {
+        column: 'CURRENT_TIMESTAMP',
+        column_type: 'timestamp',
+        notNull: true,
+        schema: '',
+        table: ''
+
+    },
+    {
+        column: 'LOCALTIME',
+        column_type: 'datetime',
+        notNull: true,
+        schema: '',
+        table: ''
+
+    },
+    {
+        column: 'LOCALTIMESTAMP',
+        column_type: 'datetime',
+        notNull: true,
+        schema: '',
+        table: ''
+
+    }
+]
+
 export function findColumn(fieldName: FieldName, columns: ColumnDef[]): ColumnDef {
     //TODO - Put tableAlias always ''
+    const functionType = functionAlias.find( col => col.column == fieldName.name);
+    if(functionType) {
+        const colDef : ColumnDef = {
+            column: functionType.column,
+            columnName: functionType.column,
+            columnType: functionType.column_type,
+            notNull: functionType.notNull,
+            table: ''
+        }
+        return colDef;
+    }
     const found = columns.find(col => col.columnName.toLowerCase() == fieldName.name.toLowerCase() && 
         (fieldName.prefix == '' || fieldName.prefix == col.tableAlias || fieldName.prefix == col.table));
     if(!found) {
@@ -293,6 +346,10 @@ export function findColumn(fieldName: FieldName, columns: ColumnDef[]): ColumnDe
 
 export function findColumn2(fieldName: FieldName, table: string, columns: ColumnSchema[]): ColumnSchema {
     //TODO - Put tableAlias always ''
+    const functionType = functionAlias.find( col => col.column == fieldName.name);
+    if(functionType) {
+        return functionType;
+    }
     const found = columns.find(col => col.column.toLowerCase() === fieldName.name.toLowerCase() && table === col.table);
     if(!found) {
         throw Error('column not found:' + JSON.stringify(fieldName));

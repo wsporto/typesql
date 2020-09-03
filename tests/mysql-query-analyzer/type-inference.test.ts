@@ -520,6 +520,18 @@ describe('type-inference test', () => {
         assert.deepEqual(actual, expected);
     })
 
+    it(`select CURRENT_DATE > ?`, () => {
+        const sql = `select CURRENT_DATE, CURRENT_TIME, CURRENT_TIMESTAMP, LOCALTIME, LOCALTIMESTAMP`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['date', 'time', 'datetime', 'datetime', 'datetime'],
+            parameters:  []
+        }
+
+        assert.deepEqual(actual, expected);
+    })
+
     it(`SELECT id FROM mytable1 WHERE ? is not null OR id=?`, () => {
         const sql = `SELECT id FROM mytable1 WHERE ? is not null OR id=?`;
         const actual = parseAndInfer(sql, dbSchema);
