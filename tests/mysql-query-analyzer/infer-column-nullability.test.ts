@@ -290,4 +290,13 @@ describe('Infer column nullability', () => {
         assert.deepEqual(actual, expected);
     })
 
+    it(`SELECT YEAR(?), MONTH(?), DAY(?), HOUR(?), MINUTE(?), SECOND(?)`, () => {
+        const sql = `SELECT COALESCE(id, id, id+id), COALESCE(id, value, id+id) from mytable1`;
+        const actual = parseAndInferNotNull(sql, dbSchema);
+
+        const expected = [true, false]
+
+        assert.deepEqual(actual, expected);
+    })
+
 });

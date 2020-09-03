@@ -768,6 +768,19 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
             walkExprListParameters(context, exprList, params);
             return varcharParam;
         }
+        if(runtimeFunctionCall.COALESCE_SYMBOL()) {
+            const exprList = runtimeFunctionCall.exprListWithParentheses()?.exprList().expr();
+            if(exprList) {
+                const paramType = freshVar('?', '?');
+                const params: FunctionParams = {
+                    kind: 'VariableLengthParams',
+                    paramType: paramType
+                }
+                walkExprListParameters(context, exprList, params);
+                return paramType;
+            }
+            
+        }
         throw Error('Function not supported: ' + runtimeFunctionCall.text);
     }
 
