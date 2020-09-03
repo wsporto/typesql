@@ -1,7 +1,9 @@
 import MySQLParser, { SqlMode, QueryContext, QuerySpecificationContext, SelectStatementContext, SubqueryContext } from 'ts-mysql-parser';
 import { ParseTree } from "antlr4ts/tree";
-import { analiseTree, TypeVar, analiseQuerySpecification, unionTypeResult, getInsertColumns, analiseInsertStatement, analiseUpdateStatement, analiseDeleteStatement } from './collect-constraints';
-import { ColumnSchema, TypeInferenceResult, QueryInfoResult, ColumnInfo, ParameterInfo, ColumnDef, InsertInfoResult, UpdateInfoResult, DeleteInfoResult, TypeAndNullInferResult, TypeAndNullInfer } from './types';
+import { analiseTree, TypeVar, analiseQuerySpecification, unionTypeResult, getInsertColumns, analiseInsertStatement, 
+    analiseUpdateStatement, analiseDeleteStatement } from './collect-constraints';
+import { ColumnSchema, TypeInferenceResult, QueryInfoResult, ColumnDef, InsertInfoResult, UpdateInfoResult, DeleteInfoResult, 
+    TypeAndNullInferResult, TypeAndNullInfer, ParameterInfo } from './types';
 import { getColumnsFrom, getColumnNames } from './select-columns';
 import { inferParamNullability, inferParamNullabilityQuery } from './infer-param-nullability';
 import { inferNotNull } from './infer-column-nullability';
@@ -84,6 +86,21 @@ function extractOrderByColumns(selectStatement: SelectStatementContext) {
         .map( orderExpr => orderExpr.text) || [];
 }
 
+function extractLimitParameters(selectStatement: SelectStatementContext) : ParameterInfo[] {
+    return selectStatement.queryExpression()
+        ?.limitClause()
+        ?.limitOptions()
+        .limitOption()
+        .filter( limit => limit.PARAM_MARKER())
+        .map( () => {
+            const paramInfo: ParameterInfo = {
+                type: 'bigint',
+                notNull: true
+            }
+            return paramInfo;
+        }) || [];
+}
+
 export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[]): QueryInfoResult | InsertInfoResult | UpdateInfoResult | DeleteInfoResult {
 
     const tree = parse(sql);
@@ -107,11 +124,16 @@ export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[]): QueryIn
                 }
                 return resultWithOrderBy;
             }
+            const limitParameters = extractLimitParameters(selectStatement);
+
+            const allParameters = mainQueryResult.parameters
+                .map( param => ({type: verifyNotInferred(param.type),  notNull: param.notNull}))
+                .concat(limitParameters);
             
             const resultWithoutOrderBy: QueryInfoResult = {
                 kind: 'Select',
                 columns: mainQueryResult.columns.map( col => ({columnName: col.name, type: verifyNotInferred(col.type),  notNull: col.notNull})),
-                parameters: mainQueryResult.parameters.map( param => ({type: verifyNotInferred(param.type),  notNull: param.notNull})),
+                parameters: allParameters,
             }
             return resultWithoutOrderBy;
         }

@@ -2,7 +2,7 @@ import assert from "assert";
 import { parseSql } from "../src/describe-query";
 import { SchemaDef } from "../src/types";
 import { DbClient } from "../src/queryExectutor";
-import { isLeft } from "fp-ts/lib/Either";
+import { isLeft, isRight } from "fp-ts/lib/Either";
 
 describe('Test simple select statements', () => {
 
@@ -1348,6 +1348,52 @@ describe('Test simple select statements', () => {
         }
         assert.deepEqual(actual.right, expected);
     })
+
+    it('SELECT id FROM mytable1 LIMIT ?, ?', async () => {
+        const sql = 'SELECT id FROM mytable1 LIMIT ?, ?'
+        
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'id',
+                    dbtype: 'int',
+                    notNull: true
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'bigint',
+                    notNull: true
+                },
+                {
+                    name: 'param2',
+                    columnType: 'bigint',
+                    notNull: true
+                }
+            ]
+        }
+
+        if(isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepEqual(actual.right, expected);
+    });
+
+    it('SELECT id FROM mytable1 LIMIT ?, ?', async () => {
+        const sql = `SELECT id FROM mytable1 LIMIT 'a', ?`
+        
+        const actual = await parseSql(client, sql);
+
+        if(isRight(actual)) {
+            assert.fail(`Should return an error`);
+        }
+        const expectedMessage = `Invalid sql`;
+        assert.deepEqual(actual.left.name, expectedMessage);
+    });
 
 
     it('try to parse with reserved word desc'), () => {
