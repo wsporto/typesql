@@ -470,4 +470,60 @@ describe('Test parse parameters', () => {
 
         assert.deepEqual(actual, expected);
     });
+
+    it('SELECT id FROM mytable1 LIMIT ?', async () => {
+        const sql = `
+        SELECT id FROM mytable1 LIMIT ?
+        `
+        const actual = extractQueryInfo(sql, dbSchema);
+
+        const expected : QueryInfoResult = {
+            kind: 'Select',
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true
+                }
+            ],
+            parameters: [
+                {
+                    type: 'bigint',
+                    notNull: true
+                }
+            ]
+        }
+
+        assert.deepEqual(actual, expected);
+    });
+
+    it('SELECT id FROM mytable1 LIMIT ?, ?', async () => {
+        const sql = `
+        SELECT id FROM mytable1 LIMIT ?, ?
+        `
+        const actual = extractQueryInfo(sql, dbSchema);
+
+        const expected : QueryInfoResult = {
+            kind: 'Select',
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true
+                }
+            ],
+            parameters: [
+                {
+                    type: 'bigint',
+                    notNull: true
+                },
+                {
+                    type: 'bigint',
+                    notNull: true
+                }
+            ]
+        }
+
+        assert.deepEqual(actual, expected);
+    });
 });
