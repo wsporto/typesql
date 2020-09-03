@@ -44,6 +44,13 @@ export const dbSchema : ColumnSchema[] = [
         notNull: false
     },
     {
+        column: 'smallint_column',
+        column_type: 'smallint',
+        table: 'all_types',
+        schema: 'mydb',
+        notNull: false
+    },
+    {
         column: 'int_column',
         column_type: 'int',
         table: 'all_types',

@@ -295,4 +295,33 @@ describe('type-inference - functions', () => {
 
         assert.deepEqual(actual, expected);
     })
+
+    it(`SELECT COALESCE (VALUE, ID, 10) FROM mytable1`, () => {
+        const sql = `SELECT COALESCE (VALUE, ID, ?) FROM mytable1`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['int'],
+            parameters: ['int']   
+        }
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it(`SELECT COALESCE (double_column, int_column, ?) FROM all_types`, () => {
+        const sql = `
+        SELECT 
+            COALESCE (double_column, int_column, ?), 
+            COALESCE (int_column, bigint_column, smallint_column, ?) 
+        FROM all_types`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['double', 'bigint'],
+            parameters: ['double', 'bigint']   
+        }
+
+        assert.deepEqual(actual, expected);
+    })
+    
 })
