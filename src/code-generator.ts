@@ -277,9 +277,9 @@ function addCodeBlock(codeBlock: string) {
     return codeBlock !=  '' ? '\n\n' + codeBlock : '';
 }
 
-function replaceOrderByParam(sql: string) {
-    const patern = /(.*order\s+by\s*)(\?)(.*$)/i;
-    const newSql = sql.replace(patern, "$1${escapeOrderBy(params.orderBy)} $3");
+export function replaceOrderByParam(sql: string) {
+    const patern = /(.*order\s+by\s*)(\?)(.\n$)*/i;
+    const newSql = sql.replace(patern, "$1${escapeOrderBy(params.orderBy)}$3");
     return newSql;
 }
 

@@ -1,6 +1,6 @@
 import assert from "assert";
 import { TsFieldDescriptor } from "../src/types";
-import { TsDescriptor, generateReturnName, convertToCamelCaseName, generateParamsType, generateDataType, generateFunction, generateReturnType } from "../src/code-generator";
+import { TsDescriptor, generateReturnName, convertToCamelCaseName, generateParamsType, generateDataType, generateFunction, generateReturnType, replaceOrderByParam } from "../src/code-generator";
 
 describe('code-generator', () => {
     
@@ -278,5 +278,60 @@ describe('code-generator', () => {
         `
 
         assert.deepEqual(actual.replace(/\s/g, ''), expected.replace(/\s/g, ''));
+    })
+
+    it('test replace order by parameter', () => {
+        const sql = `
+        SELECT *
+        FROM mytable1
+        ORDER BY ?`;
+
+        const actual = replaceOrderByParam(sql);
+        
+        const expected = `
+        SELECT *
+        FROM mytable1
+        ORDER BY \${escapeOrderBy(params.orderBy)}`;
+        
+        assert.deepEqual(actual, expected);
+
+    })
+
+    it('test replace order by parameter with LIMIT', () => {
+        const sql = `
+        SELECT *
+        FROM mytable1
+        ORDER BY ? LIMIT 10`;
+
+        const actual = replaceOrderByParam(sql);
+        
+        const expected = `
+        SELECT *
+        FROM mytable1
+        ORDER BY \${escapeOrderBy(params.orderBy)} LIMIT 10`;
+        
+        assert.deepEqual(actual, expected);
+
+    })
+
+    it('test replace order by parameter with extra blank line', () => {
+        const sql = `
+        SELECT *
+        FROM mytable1
+        ORDER BY ?
+        
+        `;
+
+        const actual = replaceOrderByParam(sql);
+        
+        const expected = `
+        SELECT *
+        FROM mytable1
+        ORDER BY \${escapeOrderBy(params.orderBy)}
+        
+        `;
+        
+        assert.deepEqual(actual, expected);
+
     })
 })
