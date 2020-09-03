@@ -111,7 +111,7 @@ function getBestPossibleType(type1: InferType, type2: InferType, max?:boolean, s
     if( sum && max && ((type1 == 'bigint' && type2 == 'double') || type1 == 'double' && type2 == 'bigint' )) return 'double';
     //if( sum && (type1 == 'decimal' && type2 == 'number') || type1 == 'number' && type2 == 'decimal' ) return 'double';
 
-    const order : string[] = ['number', 'tinyint', 'int', 'bigint', 'decimal', 'float', 'double'];
+    const order : string[] = ['number', 'tinyint', 'smallint', 'int', 'bigint', 'decimal', 'float', 'double'];
     const indexType1 = order.indexOf(type1);
     const indexType2 = order.indexOf(type2);
     if(indexType1 != -1 && indexType2 != -1) {
