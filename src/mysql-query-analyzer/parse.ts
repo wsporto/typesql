@@ -78,11 +78,12 @@ export function extractQueryInfoFromQuerySpecification(querySpec: QuerySpecifica
     return queryResult;
 }
 
-function extractOrderByColumns(selectStatement: SelectStatementContext) {
+function extractOrderByParameters(selectStatement: SelectStatementContext) {
     return selectStatement.queryExpression()
         ?.orderClause()
         ?.orderList()
         .orderExpression()
+        .filter( orderExpr => orderExpr.text == '?')
         .map( orderExpr => orderExpr.text) || [];
 }
 
@@ -111,19 +112,7 @@ export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[]): QueryIn
             const querySpec = getQuerySpecificationsFromSelectStatement(selectStatement);
             const mainQueryResult = analiseQuery(querySpec, dbSchema, []);
             
-            const orderByColumns = extractOrderByColumns(selectStatement);
-            if(orderByColumns.includes('?')) {
-                const fromColumns = getColumnsFrom(querySpec[0], dbSchema).map( col => col.columnName);
-                const selectColumns = mainQueryResult.columns.map( col => col.name);
-                const allOrderByColumns = Array.from(new Set(fromColumns.concat(selectColumns)));
-                const resultWithOrderBy: QueryInfoResult = {
-                    kind: 'Select',
-                    columns: mainQueryResult.columns.map( col => ({columnName: col.name, type: verifyNotInferred(col.type),  notNull: col.notNull})),
-                    parameters: mainQueryResult.parameters.map( param => ({columnName: param.name, type: verifyNotInferred(param.type),  notNull: param.notNull})),
-                    orderByColumns: allOrderByColumns
-                }
-                return resultWithOrderBy;
-            }
+            const orderByParameters = extractOrderByParameters(selectStatement);
             const limitParameters = extractLimitParameters(selectStatement);
 
             const allParameters = mainQueryResult.parameters
@@ -135,6 +124,12 @@ export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[]): QueryIn
                 columns: mainQueryResult.columns.map( col => ({columnName: col.name, type: verifyNotInferred(col.type),  notNull: col.notNull})),
                 parameters: allParameters,
             }
+            
+            const orderByColumns = orderByParameters.length > 0? getOrderByColumns(querySpec[0], dbSchema, mainQueryResult.columns) : undefined;
+            if(orderByColumns) {
+                resultWithoutOrderBy.orderByColumns = orderByColumns;
+            }
+
             return resultWithoutOrderBy;
         }
         const insertStatement = tree.simpleStatement()?.insertStatement();
@@ -156,6 +151,13 @@ export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[]): QueryIn
         
     }
     throw Error('Not supported');
+}
+
+function getOrderByColumns(querySpec: QuerySpecificationContext, dbSchema: ColumnSchema[], selectColumns: TypeAndNullInfer[]) {
+    const fromColumns = getColumnsFrom(querySpec, dbSchema).map( col => col.columnName); //TODO - loading twice
+    const selectColumnsNames = selectColumns.map( col => col.name);
+    const allOrderByColumns = Array.from(new Set(fromColumns.concat(selectColumnsNames)));
+    return allOrderByColumns;
 }
 
 export function analiseQuery(querySpec: QuerySpecificationContext[], dbSchema: ColumnSchema[], parentFromColumns: ColumnDef[]) : TypeAndNullInferResult {
