@@ -323,5 +323,17 @@ describe('type-inference - functions', () => {
 
         assert.deepEqual(actual, expected);
     })
+
+    it(`SELECT COALESCE (varchar_column, ?) FROM all_types`, () => {
+        const sql = `SELECT COALESCE (varchar_column, CONCAT(?, ?)) FROM all_types`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['varchar'],
+            parameters: ['varchar', 'varchar']   
+        }
+
+        assert.deepEqual(actual, expected);
+    })
     
 })
