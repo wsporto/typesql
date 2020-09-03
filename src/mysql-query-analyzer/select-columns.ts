@@ -3,16 +3,16 @@ import { TerminalNode, ParseTree } from "antlr4ts/tree";
 import { Interval } from "antlr4ts/misc/Interval";
 
 import { QuerySpecificationContext, TableReferenceContext, TableFactorContext, TableReferenceListParensContext, SingleTableParensContext, 
-    JoinedTableContext, SingleTableContext, ExprContext, SimpleExprLiteralContext, SimpleExprColumnRefContext, ExprIsContext, 
-    PrimaryExprPredicateContext, SimpleExprListContext, PrimaryExprIsNullContext, PrimaryExprCompareContext, ExprNotContext, 
-    ExprAndContext, ExprXorContext, ExprOrContext, SelectItemContext, PredicateContext, BitExprContext, SimpleExprVariableContext, 
-    SimpleExprRuntimeFunctionContext, SimpleExprFunctionContext, SimpleExprCollateContext, SimpleExprParamMarkerContext, SimpleExprSumContext, 
-    SimpleExprGroupingOperationContext, SimpleExprWindowingFunctionContext, SimpleExprConcatContext, SimpleExprUnaryContext, SimpleExprNotContext, 
-    SimpleExprSubQueryContext, SimpleExprOdbcContext, SimpleExprMatchContext, SimpleExprBinaryContext, SimpleExprCastContext, SimpleExprCaseContext, 
-    SimpleExprConvertContext, SimpleExprConvertUsingContext, SimpleExprDefaultContext, SimpleExprValuesContext, SimpleExprIntervalContext } from "ts-mysql-parser";
+    JoinedTableContext, SingleTableContext, SimpleExprLiteralContext, SimpleExprColumnRefContext, SimpleExprListContext, SelectItemContext, 
+    PredicateContext, BitExprContext, SimpleExprVariableContext, SimpleExprRuntimeFunctionContext, SimpleExprFunctionContext, 
+    SimpleExprCollateContext, SimpleExprParamMarkerContext, SimpleExprSumContext, SimpleExprGroupingOperationContext, SimpleExprWindowingFunctionContext, 
+    SimpleExprConcatContext, SimpleExprUnaryContext, SimpleExprNotContext, SimpleExprSubQueryContext, SimpleExprOdbcContext, SimpleExprMatchContext, 
+    SimpleExprBinaryContext, SimpleExprCastContext, SimpleExprCaseContext, SimpleExprConvertContext, SimpleExprConvertUsingContext, 
+    SimpleExprDefaultContext, SimpleExprValuesContext, SimpleExprIntervalContext } from "ts-mysql-parser";
 
 import { ColumnSchema, ColumnDef, FieldName } from "./types";
 import { extractQueryInfoFromQuerySpecification } from "./parse";
+import { possibleNull } from "./infer-column-nullability";
 
 export function filterColumns(dbSchema: ColumnSchema[], tablePrefix: string | undefined, table: FieldName) {
     const tableColumns = dbSchema.filter(schema => schema.table.toLowerCase() == table.name.toLowerCase() && (schema.schema == table.prefix || table.prefix == ''));
@@ -233,15 +233,6 @@ function extractFieldsFromTableFactor(tableFactor: TableFactorContext, dbSchema:
                 return newCol;
             });
         }
-        
-        // const tableAlias = derivadTable.tableAlias()?.text;
-        // const querySpec = subQuery?.queryExpressionBody()?.querySpecification();
-        // if(querySpec) {
-        //     const subQueryColumns = processQuery(dbSchema, querySpec)
-        //     const resultColumns = tableAlias? addTableAlias(subQueryColumns, tableAlias) : subQueryColumns;
-
-        //     return resultColumns;
-        // }
     }
     const tableReferenceListParens = tableFactor.tableReferenceListParens();
     if (tableReferenceListParens) {
@@ -356,75 +347,6 @@ export function findColumn2(fieldName: FieldName, table: string, columns: Column
     }
     return found;
 }
-
-function possibleNull(field: FieldName, exprContext: ExprContext): boolean {
-        
-    if (exprContext instanceof ExprIsContext) {
-
-        const boolPri = exprContext.boolPri();
-        if (boolPri instanceof PrimaryExprPredicateContext) {
-            const res = boolPri.predicate().bitExpr()[0].simpleExpr();
-            if (res instanceof SimpleExprListContext) {
-                const expr = res.exprList().expr()[0];
-                return possibleNull(field, expr);
-            }
-        }
-        if (boolPri instanceof PrimaryExprIsNullContext) {
-            const compare = boolPri.boolPri();
-            if (boolPri.notRule() && areEquals(field, compare.text)) {
-                return false; //possibleNull
-            }
-        }
-        if (boolPri instanceof PrimaryExprCompareContext) {
-            let compare = boolPri.boolPri().text; //value > 10;
-            let compare2 = boolPri.predicate().text; //10 < value
-            //TODO - more complex expressions. ex. (value + value2) > 10; 
-            if (areEquals(field, compare) || areEquals(field, compare2)) {
-                return false;  //possibleNull
-            }
-        }
-        return true; //possibleNull
-
-    }
-    if (exprContext instanceof ExprNotContext) {
-        const expr = exprContext.expr();
-        return !possibleNull(field, expr);
-    }
-    if (exprContext instanceof ExprAndContext) {
-        const [first, ...rest] = exprContext.expr();
-        let isPossibleNull = possibleNull(field, first);
-        rest.forEach(expr => {
-            isPossibleNull = isPossibleNull && possibleNull(field, expr);
-        })
-        return isPossibleNull;
-    }
-    if (exprContext instanceof ExprXorContext) {
-
-    }
-    if (exprContext instanceof ExprOrContext) {
-
-        const [first, ...rest] = exprContext.expr();
-        let isPossibleNull = possibleNull(field, first);
-        rest.forEach(expr => {
-            isPossibleNull = isPossibleNull || possibleNull(field, expr);
-        })
-        return isPossibleNull;
-    }
-
-    throw Error('Unknow type:' + exprContext.constructor.name);
-}
-
-function areEquals(field: FieldName, expressionField: string) {
-    const compare = splitName(expressionField); //t1.name
-    /*
-    t1.name == t1.name
-    t1.name == name
-    name    == t1.name
-    */
-    return field.name == compare.name &&
-        ((field.prefix == compare.prefix) || (field.prefix == '' || compare.prefix == ''))
-}
-
 
 function extractOriginalSql(rule: ParserRuleContext) {
 
