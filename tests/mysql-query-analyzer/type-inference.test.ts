@@ -508,6 +508,18 @@ describe('type-inference test', () => {
         assert.deepEqual(actual, expected);
     })
 
+    it(`SELECT id FROM mytable1 WHERE id in (((?)))`, () => {
+        const sql = `SELECT id FROM mytable1 WHERE id in (((?)))`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['int'],
+            parameters:  ['int[]']
+        }
+
+        assert.deepEqual(actual, expected);
+    })
+
     it(`SELECT id FROM mytable1 WHERE ? is not null OR id=?`, () => {
         const sql = `SELECT id FROM mytable1 WHERE ? is not null OR id=?`;
         const actual = parseAndInfer(sql, dbSchema);
