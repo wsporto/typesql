@@ -243,7 +243,7 @@ function possibleNullWhere(field: FieldName, whereClause: WhereClauseContext) : 
     return possibleNull(field, expr);
 }
 
-function possibleNull(field: FieldName, exprContext: ExprContext) : boolean {
+export function possibleNull(field: FieldName, exprContext: ExprContext) : boolean {
     if (exprContext instanceof ExprIsContext) {
 
         const boolPri = exprContext.boolPri();
