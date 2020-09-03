@@ -56,4 +56,6 @@ const products = await selectProducts(...
 const updateResult = await updateProduct(...
 ```
 
+# Examples
 
+[Order by and limit clauses](/docs/orderBy_limit.md)
