@@ -44,7 +44,7 @@ export function generateTsDescriptor(queryInfo: SchemaDef) : TsDescriptor {
     })
    
 
-    
+
 
     return {
         sql: queryInfo.sql,
@@ -161,7 +161,7 @@ export function generateReturnType(queryName: CamelCaseName, dataParams: TsField
 }
 
 export function generateOrderByType(queryName: CamelCaseName, orderByColumns: string[] | undefined) {
-    const orderByColumnsType = orderByColumns?.map(col => `'${col}'`).join( ' | ' );
+    const orderByColumnsType = orderByColumns?.map(col => `"${col}"`).join( ' | ' );
     const orderByTypeName = generateOrderByTypeName(queryName);
 
     const orderByType = orderByColumns? `
