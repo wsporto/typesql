@@ -78,12 +78,14 @@ describe('rename invalid names', () => {
                     notNull: true,
                 }
             ],
+            orderByColumns: ['id', 'count(*)', `concat(name, ' ', name)`]
         }
         const actual = generateTsDescriptor(schema);
 
         assert.deepEqual(actual.columns.map(col => col.name), ['id', 'id_2', '"count(*)"']);
         assert.deepEqual(actual.data!.map(col => col.name), ['"id+id"']);
         assert.deepEqual(actual.parameters.map(col => col.name), ['name', 'name_2']);
+        assert.deepEqual(actual.orderByColumns, ['id', 'count(*)', `concat(name, ' ', name)`]);
     })
 
 });
