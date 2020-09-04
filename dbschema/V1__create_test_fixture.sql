@@ -42,7 +42,8 @@ CREATE TABLE mydb.all_types (
 	longtext_column LONGTEXT, -- code: 252 length: 4294967295
 	text_column TEXT(500), -- code: 252 length: 196605
 	varbinary_column VARBINARY(200), -- code: 253
-	binary_column BINARY(100), -- code: 254
+	binary_column BINARY(100), -- code: 254 (aka STRING, CHAR)
+	char_column CHAR(4), -- code: 254
 	geometry_column GEOMETRY -- code 255
 )
 ENGINE=InnoDB;

@@ -139,8 +139,12 @@ describe('type-mapping', () => {
             {
                 name: 'binary_column',
                 dbtype: 'binary',
-                notNull: 
-                false
+                notNull: false
+            },
+            {
+                name: 'char_column',
+                dbtype: 'char',
+                notNull: false
             },
             {
                 name: 'geometry_column',

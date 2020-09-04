@@ -39,6 +39,7 @@ export type MySqlType =
     | 'text'
     | 'varbinary'
     | 'binary'
+    | 'char' | 'char[]'
     | 'geometry'
 
 export type TsType =
@@ -101,7 +102,10 @@ export function converToTsType(mySqlType: MySqlType) : TsType {
         case 'longtext':
         case 'text':
         case 'binary':
-            return 'Buffer';
+        case 'char':
+            return 'string';
+        case 'char[]':
+            return 'string[]'
         case 'enum':
         case 'set':
             return 'any'
