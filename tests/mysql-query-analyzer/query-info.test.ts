@@ -471,6 +471,28 @@ describe('Test parse parameters', () => {
         assert.deepEqual(actual, expected);
     });
 
+    it('SELECT id FROM mytable1 ORDER BY ?', async () => {
+        const sql = `
+        SELECT id FROM mytable1 ORDER BY ?
+        `
+        const actual = extractQueryInfo(sql, dbSchema);
+
+        const expected : QueryInfoResult = {
+            kind: 'Select',
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true
+                }
+            ],
+            parameters: [],
+            orderByColumns: ['id', 'value']
+        }
+
+        assert.deepEqual(actual, expected);
+    });
+
     it('SELECT id FROM mytable1 LIMIT ?', async () => {
         const sql = `
         SELECT id FROM mytable1 LIMIT ?
