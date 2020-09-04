@@ -280,6 +280,37 @@ describe('code-generator', () => {
         assert.deepEqual(actual.replace(/\s/g, ''), expected.replace(/\s/g, ''));
     })
 
+    it('generate main function only with order by parameter', () => {
+        const queryName = convertToCamelCaseName('select-person');
+        const tsDescriptor : TsDescriptor = {
+            sql: 'SELECT id FROM person ORDER BY ?', 
+            multipleRowsResult: false,
+            columns: [
+                {
+                    name: 'id',
+                    tsType: 'number',
+                    notNull: true
+                }
+            ],
+            data: [],
+            parameters: [],
+            orderByColumns: ['id', 'name']
+        }
+
+        const actual = generateFunction(queryName, tsDescriptor, 'node');
+        const expected = `
+        export async function selectPerson(connection: Connection, params: SelectPersonParams) : Promise<SelectPersonResult> {
+            const sql = \`
+            SELECT id FROM person ORDER BY \${escapeOrderBy(params.orderBy)}
+            \`;
+            return connection.query(sql)
+                .then( res => res[0] as SelectPersonResult );
+        }
+        `
+
+        assert.deepEqual(actual.replace(/\s/g, ''), expected.replace(/\s/g, ''));
+    })
+
     it('test replace order by parameter', () => {
         const sql = `
         SELECT *

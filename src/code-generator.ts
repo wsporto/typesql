@@ -191,7 +191,9 @@ export function generateFunction(camelCaseName: CamelCaseName, tsDescriptor: TsD
 
     let functionParams = '';
     if(tsDescriptor.data && tsDescriptor.data.length > 0) functionParams += ', data: ' + generateDataTypeName(camelCaseName);
-    if(tsDescriptor.parameters.length > 0) functionParams += ', params: ' + generateParamsTypeName(camelCaseName);
+    if(tsDescriptor.parameters.length > 0 || (tsDescriptor.orderByColumns && tsDescriptor.orderByColumns.length > 0)) {
+        functionParams += ', params: ' + generateParamsTypeName(camelCaseName);
+    }
 
     const allParameters : string[] = [];
     if(tsDescriptor.data) allParameters.push(...tsDescriptor.data.map(param => 'data.' + param.name));
