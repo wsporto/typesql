@@ -222,7 +222,9 @@ function inferNotNullFunctionCall(functionCall: FunctionCallContext, dbSchema: C
     }
     const udfExprList = functionCall.udfExprList()?.udfExpr();
     if(udfExprList) {
-        return udfExprList.every( udfExpr => {
+        return udfExprList.filter( (expr, paramIndex) => {
+            return functionName == 'timestampdiff'? paramIndex != 0 : true //filter the first parameter of timestampdiff function
+        }).every( (udfExpr) => {
             const expr = udfExpr.expr();
             return inferNotNullExpr(expr, dbSchema, fromColumns);
         });

@@ -788,8 +788,7 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
     }
 
     if (simpleExpr instanceof SimpleExprFunctionContext) {
-        const functionIdentifier = simpleExpr.functionCall().pureIdentifier()?.text.toLowerCase() 
-            || simpleExpr.functionCall().qualifiedIdentifier()?.text.toLowerCase();
+        const functionIdentifier = getFunctionName(simpleExpr);
 
         if (functionIdentifier === 'concat_ws' || functionIdentifier?.toLowerCase() === 'concat') {
             const varcharType = freshVar(simpleExpr.text, 'varchar');
@@ -894,6 +893,15 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
             const params : FixedLengthParams = {
                 kind: 'FixedLengthParams',
                 paramsType: [varcharParam]
+            }
+            walkFunctionParameters(context, simpleExpr, params);
+            return freshVar('int', 'int');
+        }
+        if(functionIdentifier == 'timestampdiff') {
+            const dateType = freshVar('date', 'date');
+            const params: FunctionParams = {
+                kind: 'FixedLengthParams',
+                paramsType: [dateType, dateType]
             }
             walkFunctionParameters(context, simpleExpr, params);
             return freshVar('int', 'int');
@@ -1055,13 +1063,18 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
     throw Error('Invalid expression');
 }
 
+function getFunctionName(simpleExprFunction: SimpleExprFunctionContext) {
+    return simpleExprFunction.functionCall().pureIdentifier()?.text.toLowerCase() 
+            || simpleExprFunction.functionCall().qualifiedIdentifier()?.text.toLowerCase();
+}
+
 type VariableLengthParams = {
-    kind: 'VariableLengthParams'
+    kind: 'VariableLengthParams';
     paramType: InferType;
 }
 
 type FixedLengthParams = {
-    kind: 'FixedLengthParams'
+    kind: 'FixedLengthParams';
     paramsType: TypeVar[];
 }
 
@@ -1082,9 +1095,14 @@ function walkExprListParameters(context: InferenceContext, exprList: ExprContext
 }
 
 function walkFunctionParameters(context: InferenceContext, simpleExprFunction: SimpleExprFunctionContext, params: FunctionParams) {
+    const functionName = getFunctionName(simpleExprFunction);
     const udfExprList = simpleExprFunction.functionCall().udfExprList()?.udfExpr();
     if(udfExprList) {
-        const paramTypes = udfExprList.map( (inExpr, paramIndex) => {
+        const paramTypes = udfExprList
+        .filter( (undefined, paramIndex) => {
+            return functionName == 'timestampdiff'? paramIndex != 0 : true; //filter the first parameter of timestampdiff function
+        })
+        .map( (inExpr, paramIndex) => {
             const expr = inExpr.expr();
             const exprType = walkExpr(context, expr);
             context.constraints.push({
