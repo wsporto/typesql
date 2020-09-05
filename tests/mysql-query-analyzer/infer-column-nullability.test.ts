@@ -299,4 +299,22 @@ describe('Infer column nullability', () => {
         assert.deepEqual(actual, expected);
     })
 
+    it(`SELECT TIMESTAMPDIFF(MONTH, ?, ?)`, () => {
+        const sql = `SELECT 
+            TIMESTAMPDIFF(MICROSECOND, ?, ?),
+            TIMESTAMPDIFF(SECOND, ?, null),
+            TIMESTAMPDIFF(MINUTE, ?, ?),
+            TIMESTAMPDIFF(HOUR, ?, ?),
+            TIMESTAMPDIFF(DAY, ?, ?),
+            TIMESTAMPDIFF(WEEK, ?, ?),
+            TIMESTAMPDIFF(MONTH, ?, ?),
+            TIMESTAMPDIFF(QUARTER, ?, ?),
+            TIMESTAMPDIFF(year, ?, ?)`;
+        const actual = parseAndInferNotNull(sql, dbSchema);
+
+        const expected = [true, false, true, true, true, true, true, true, true];
+
+        assert.deepEqual(actual, expected);
+    })
+
 });

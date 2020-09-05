@@ -342,5 +342,52 @@ describe('type-inference - functions', () => {
 
         assert.deepEqual(actual, expected);
     })
+
+    //unit: MICROSECOND (microseconds), SECOND, MINUTE, HOUR, DAY, WEEK, MONTH, QUARTER, or YEAR
+    it(`SELECT TIMESTAMPDIFF(MONTH, ?, ?), ...`, () => {
+        const sql = `SELECT 
+            TIMESTAMPDIFF(MICROSECOND, ?, ?),
+            TIMESTAMPDIFF(SECOND, ?, ?),
+            TIMESTAMPDIFF(MINUTE, ?, ?),
+            TIMESTAMPDIFF(HOUR, ?, ?),
+            TIMESTAMPDIFF(DAY, ?, ?),
+            TIMESTAMPDIFF(WEEK, ?, ?),
+            TIMESTAMPDIFF(MONTH, ?, ?),
+            TIMESTAMPDIFF(QUARTER, ?, ?),
+            TIMESTAMPDIFF(year, ?, ?)`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['int', 'int', 'int', 'int', 'int', 'int', 'int', 'int', 'int'],
+            parameters: ['date', 'date', 'date', 'date', 'date', 'date', 'date', 'date', 
+            'date', 'date', 'date', 'date', 'date', 'date', 'date', 'date', 'date', 'date']   
+        }
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it(`SELECT TIMESTAMPDIFF(SECOND, CURTIME(), CURTIME())`, () => {
+        const sql = `SELECT TIMESTAMPDIFF(SECOND, CURTIME(), CURTIME())`;
+        try {
+            parseAndInfer(sql, dbSchema);
+            assert.fail('Should throw an exception'); //Only DATE and DATETIME are allowed
+        }
+        catch(e) {
+            const expectedMessage = 'Type mismatch: time and date';
+            assert.deepEqual(e.message, expectedMessage);
+        }
+    })
+
+    it(`SELECT TIMESTAMPDIFF(SECOND, CURDATE(), CURDATE())`, () => {
+        const sql = `SELECT TIMESTAMPDIFF(SECOND, CURDATE(), CURDATE())`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['int'],
+            parameters: []   
+        }
+
+        assert.deepEqual(actual, expected);
+    })
     
 })
