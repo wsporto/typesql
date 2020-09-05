@@ -11,6 +11,7 @@ describe('Test parse parameters', () => {
 
          const expected: QueryInfoResult = {
             kind: 'Select',
+            multipleRowsResult: true,
             columns: [
                 {
                     columnName: 'id',
@@ -30,6 +31,7 @@ describe('Test parse parameters', () => {
 
          const expected: QueryInfoResult = {
             kind: 'Select',
+            multipleRowsResult: true,
             columns: [
                 {
                     columnName: 'value',
@@ -49,6 +51,7 @@ describe('Test parse parameters', () => {
 
          const expected: QueryInfoResult = {
             kind: 'Select',
+            multipleRowsResult: true,
             columns: [
                 {
                     columnName: 'id',
@@ -73,6 +76,7 @@ describe('Test parse parameters', () => {
 
          const expected: QueryInfoResult = {
             kind: 'Select',
+            multipleRowsResult: true,
             columns: [
                 {
                     columnName: 'id+id',
@@ -92,6 +96,7 @@ describe('Test parse parameters', () => {
 
          const expected: QueryInfoResult = {
             kind: 'Select',
+            multipleRowsResult: true,
             columns: [
                 {
                     columnName: 'id+double_value',
@@ -111,6 +116,7 @@ describe('Test parse parameters', () => {
 
          const expected: QueryInfoResult = {
             kind: 'Select',
+            multipleRowsResult: true,
             columns: [
                 {
                     columnName: 'datetime_column',
@@ -135,6 +141,7 @@ describe('Test parse parameters', () => {
 
          const expected: QueryInfoResult = {
             kind: 'Select',
+            multipleRowsResult: true,
             columns: [
                 {
                     columnName: '?',
@@ -159,6 +166,7 @@ describe('Test parse parameters', () => {
 
          const expected: QueryInfoResult = {
             kind: 'Select',
+            multipleRowsResult: true,
             columns: [
                 {
                     columnName: 'CASE WHEN id = 1 then ? else id END',
@@ -184,6 +192,7 @@ describe('Test parse parameters', () => {
 
          const expected: QueryInfoResult = {
             kind: 'Select',
+            multipleRowsResult: true,
             columns: [
                 {
                     columnName: 'CASE WHEN id = 1 then ? else id END',
@@ -209,6 +218,7 @@ describe('Test parse parameters', () => {
 
          const expected: QueryInfoResult = {
             kind: 'Select',
+            multipleRowsResult: true,
             columns: [
                 {
                     columnName: '?+id',
@@ -234,6 +244,7 @@ describe('Test parse parameters', () => {
 
          const expected: QueryInfoResult = {
             kind: 'Select',
+            multipleRowsResult: true,
             columns: [
                 {
                     columnName: 'case when id=1 then ? else (select id from mytable1 where id = 1) end',
@@ -259,6 +270,7 @@ describe('Test parse parameters', () => {
 
          const expected: QueryInfoResult = {
             kind: 'Select',
+            multipleRowsResult: true,
             columns: [
                 {
                     columnName: `concat_ws('/', ?, ?, ?)`,
@@ -292,6 +304,7 @@ describe('Test parse parameters', () => {
 
          const expected: QueryInfoResult = {
             kind: 'Select',
+            multipleRowsResult: true,
             columns: [
                 {
                     columnName: 'id',
@@ -316,6 +329,7 @@ describe('Test parse parameters', () => {
 
          const expected: QueryInfoResult = {
             kind: 'Select',
+            multipleRowsResult: true,
             columns: [
                 {
                     columnName: '(SELECT id FROM mytable2)',
@@ -337,6 +351,7 @@ describe('Test parse parameters', () => {
 
          const expected: QueryInfoResult = {
             kind: 'Select',
+            multipleRowsResult: true,
             columns: [
                 {
                     columnName: '?=id',
@@ -376,6 +391,7 @@ describe('Test parse parameters', () => {
 
          const expected: QueryInfoResult = {
             kind: 'Select',
+            multipleRowsResult: true,
             columns: [
                 {
                     columnName: 'id',
@@ -399,6 +415,7 @@ describe('Test parse parameters', () => {
 
         const expected: QueryInfoResult = {
             kind: 'Select',
+            multipleRowsResult: true,
             columns: [
                 {
                     columnName: 'name',
@@ -439,6 +456,7 @@ describe('Test parse parameters', () => {
 
         const expected : QueryInfoResult = {
             kind: 'Select',
+            multipleRowsResult: true,
             columns: [
                 {
                     columnName: 'id',
@@ -479,6 +497,7 @@ describe('Test parse parameters', () => {
 
         const expected : QueryInfoResult = {
             kind: 'Select',
+            multipleRowsResult: true,
             columns: [
                 {
                     columnName: 'id',
@@ -501,6 +520,7 @@ describe('Test parse parameters', () => {
 
         const expected : QueryInfoResult = {
             kind: 'Select',
+            multipleRowsResult: true,
             columns: [
                 {
                     columnName: 'id',
@@ -527,6 +547,7 @@ describe('Test parse parameters', () => {
 
         const expected : QueryInfoResult = {
             kind: 'Select',
+            multipleRowsResult: true,
             columns: [
                 {
                     columnName: 'id',
@@ -547,5 +568,29 @@ describe('Test parse parameters', () => {
         }
 
         assert.deepEqual(actual, expected);
+    });
+
+    it('SELECT id FROM mytable1 LIMIT 1', async () => {
+        const sql = `
+        SELECT id FROM mytable1 LIMIT 1
+        `
+        const actual = extractQueryInfo(sql, dbSchema) as QueryInfoResult;
+        assert.deepEqual(actual.multipleRowsResult, false);
+    });
+
+    it('SELECT id FROM mytable1 LIMIT 1,10', async () => {
+        const sql = `
+        SELECT id FROM mytable1 LIMIT 1,10
+        `
+        const actual = extractQueryInfo(sql, dbSchema) as QueryInfoResult;
+        assert.deepEqual(actual.multipleRowsResult, true);
+    });
+
+    it('SELECT id FROM mytable1 LIMIT 10,1', async () => {
+        const sql = `
+        SELECT id FROM mytable1 LIMIT 10,1
+        `
+        const actual = extractQueryInfo(sql, dbSchema) as QueryInfoResult;
+        assert.deepEqual(actual.multipleRowsResult, false);
     });
 });
