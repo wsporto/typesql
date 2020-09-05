@@ -304,6 +304,7 @@ export function getUpdateColumns(updateStatement: UpdateStatementContext, dbSche
                 column: col.column,
                 columnName: col.column,
                 columnType: col.column_type,
+                columnKey: col.columnKey,
                 notNull: col.notNull,
                 tableAlias: ''
             }
@@ -324,6 +325,7 @@ export function getDeleteColumns(deleteStatement: DeleteStatementContext, dbSche
                 column: col.column,
                 columnName: col.column,
                 columnType: col.column_type,
+                columnKey: col.columnKey,
                 notNull: col.notNull,
                 tableAlias: tableAlias
             }

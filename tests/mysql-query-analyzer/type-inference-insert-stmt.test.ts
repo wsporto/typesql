@@ -50,6 +50,7 @@ describe('type-inference test', () => {
             {
                 column: 'column3',
                 column_type: 'double',
+                columnKey: '',
                 table: 'mytable1',
                 schema: 'mydb',
                 notNull: false
@@ -57,6 +58,7 @@ describe('type-inference test', () => {
             {
                 column: 'column4',
                 column_type: 'bigint',
+                columnKey: '',
                 table: 'mytable1',
                 schema: 'mydb',
                 notNull: false

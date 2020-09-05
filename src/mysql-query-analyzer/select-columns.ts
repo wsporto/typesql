@@ -1,4 +1,4 @@
-import { ParserRuleContext } from "antlr4ts";
+import { ParserRuleContext, RuleContext } from "antlr4ts";
 import { TerminalNode, ParseTree } from "antlr4ts/tree";
 import { Interval } from "antlr4ts/misc/Interval";
 
@@ -20,7 +20,7 @@ export function filterColumns(dbSchema: ColumnSchema[], tablePrefix: string | un
 
         //name and colum are the same on the leaf table
         const r: ColumnDef = { columnName: tableColumn.column, column: tableColumn.column, columnType: tableColumn.column_type,
-            notNull: tableColumn.notNull,  table: table.name, tableAlias: tablePrefix || ''}
+            notNull: tableColumn.notNull,  table: table.name, tableAlias: tablePrefix || '', columnKey: tableColumn.columnKey}
         return r;
 
     })
@@ -56,7 +56,7 @@ export function getColumnNames(querySpec: QuerySpecificationContext, fromColumns
         }
         else {
             const alias = selectItem.selectAlias()?.identifier()?.text;
-            const tokens = getTokens(selectItem);
+            const tokens = getSimpleExpressions(selectItem);
             let columnName = extractOriginalSql(selectItem.expr()!)!; //TODO VERIFICAR NULL
             if(tokens.length == 1 && tokens[0] instanceof SimpleExprColumnRefContext) {
                 columnName = splitName(tokens[0].text).name;
@@ -226,6 +226,7 @@ function extractFieldsFromTableFactor(tableFactor: TableFactorContext, dbSchema:
                     column: col.name,
                     columnName: col.name,
                     columnType: col.type,
+                    columnKey: '',
                     notNull: col.notNull,
                     table: tableAlias || '',
                     tableAlias: tableAlias
@@ -276,6 +277,7 @@ const functionAlias : ColumnSchema[] = [
     {
         column: 'CURRENT_DATE',
         column_type: 'date',
+        columnKey: '',
         notNull: true,
         schema: '',
         table: ''
@@ -283,6 +285,7 @@ const functionAlias : ColumnSchema[] = [
     {
         column: 'CURRENT_TIME',
         column_type: 'time',
+        columnKey: '',
         notNull: true,
         schema: '',
         table: ''
@@ -291,6 +294,7 @@ const functionAlias : ColumnSchema[] = [
     {
         column: 'CURRENT_TIMESTAMP',
         column_type: 'timestamp',
+        columnKey: '',
         notNull: true,
         schema: '',
         table: ''
@@ -299,6 +303,7 @@ const functionAlias : ColumnSchema[] = [
     {
         column: 'LOCALTIME',
         column_type: 'datetime',
+        columnKey: '',
         notNull: true,
         schema: '',
         table: ''
@@ -307,6 +312,7 @@ const functionAlias : ColumnSchema[] = [
     {
         column: 'LOCALTIMESTAMP',
         column_type: 'datetime',
+        columnKey: '',
         notNull: true,
         schema: '',
         table: ''
@@ -322,6 +328,7 @@ export function findColumn(fieldName: FieldName, columns: ColumnDef[]): ColumnDe
             column: functionType.column,
             columnName: functionType.column,
             columnType: functionType.column_type,
+            columnKey: functionType.columnKey,
             notNull: functionType.notNull,
             table: ''
         }
@@ -357,35 +364,23 @@ function extractOriginalSql(rule: ParserRuleContext) {
     return result;
 }
 
-function getTokens(ctx: SelectItemContext): ParseTree[] {
-    let child = ctx.getChild(0);
-    const tokens: ParseTree[] = [];
-    while (!(child instanceof TerminalNode)) {
-        //console.log("child=", child.constructor.name)
-        if (child instanceof PredicateContext) {
-            break;
-        }
-        child = child.getChild(0);
-    }
-
-    if (child instanceof PredicateContext) {
-
-        expressionTraversal(tokens, child);
-        return tokens;
-    }
+export function getSimpleExpressions(ctx: RuleContext): ParseTree[] {
+    
+    const tokens: RuleContext[] = [];
+    collectSimpleExpr(tokens, ctx);
     return tokens;
 }
 
-function expressionTraversal(tokens: ParseTree[], parent: ParseTree) {
+function collectSimpleExpr(tokens: RuleContext[], parent: RuleContext) {
 
+    if(isSimpleExpression(parent)) {
+        tokens.push(parent);
+    }
+    
     for (let i = 0; i < parent.childCount; i++) {
-
         const child = parent.getChild(i);
-        if (child instanceof BitExprContext) { //bitExpr op bitExpr | simpleExpr
-            expressionTraversal(tokens, child);
-        }
-        else if (child.text == "*" || isSimpleExpression(child)) { //leaf
-            tokens.push(child);
+        if(child instanceof RuleContext) {
+            collectSimpleExpr(tokens, child);
         }
     }
 }

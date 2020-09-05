@@ -1,4 +1,4 @@
-import MySQLParser, { SqlMode, QueryContext, QuerySpecificationContext, SelectStatementContext, SubqueryContext, WhereClauseContext } from 'ts-mysql-parser';
+import MySQLParser, { SqlMode, QueryContext, QuerySpecificationContext, SelectStatementContext, SubqueryContext } from 'ts-mysql-parser';
 import { ParseTree } from "antlr4ts/tree";
 import { analiseTree, TypeVar, analiseQuerySpecification, unionTypeResult, getInsertColumns, analiseInsertStatement, 
     analiseUpdateStatement, analiseDeleteStatement } from './collect-constraints';
@@ -104,7 +104,16 @@ function extractLimitParameters(selectStatement: SelectStatementContext) : Param
         }) || [];
 }
 
-function isMultipleRowResult(selectStatement: SelectStatementContext) {
+function isMultipleRowResult(selectStatement: SelectStatementContext, fromColumns: ColumnDef[]) {
+    const querySpecs = getQuerySpecificationsFromSelectStatement(selectStatement);
+    if(querySpecs.length == 1) { //UNION queries are multipleRowsResult = true
+        const whereClauseExpr = querySpecs[0].whereClause()?.expr();
+        const isMultipleRowResult = whereClauseExpr && verifyMultipleResult(whereClauseExpr, fromColumns);
+        if(isMultipleRowResult == false) {
+            return false;
+        }
+    }
+    
     const limitOptions = getLimitOptions(selectStatement);
     if(limitOptions.length == 1 && limitOptions[0].text == '1') {
         return false;
@@ -140,7 +149,8 @@ export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[]): QueryIn
                 .map( param => ({type: verifyNotInferred(param.type),  notNull: param.notNull}))
                 .concat(limitParameters);
 
-            const multipleRowsResult = isMultipleRowResult(selectStatement);
+            const fromColumns = getColumnsFrom(querySpec[0], dbSchema); //TODO - UNION multipleRows=true
+            const multipleRowsResult = isMultipleRowResult(selectStatement, fromColumns);
             
             const resultWithoutOrderBy: QueryInfoResult = {
                 kind: 'Select',

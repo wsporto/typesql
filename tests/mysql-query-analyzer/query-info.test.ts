@@ -593,4 +593,94 @@ describe('Test parse parameters', () => {
         const actual = extractQueryInfo(sql, dbSchema) as QueryInfoResult;
         assert.deepEqual(actual.multipleRowsResult, false);
     });
+
+    it('SELECT id FROM mytable1 WHERE id = 1 LIMIT 10', async () => {
+        const sql = `
+        SELECT id FROM mytable1 WHERE id = 1 LIMIT 10
+        `
+        const actual = extractQueryInfo(sql, dbSchema) as QueryInfoResult;
+        assert.deepEqual(actual.multipleRowsResult, false);
+    });
+
+    it('SELECT id FROM mytable1 WHERE id+id = 1', async () => {
+        const sql = `
+        SELECT id FROM mytable1 WHERE id+id = 1
+        `
+        const actual = extractQueryInfo(sql, dbSchema) as QueryInfoResult;
+        assert.deepEqual(actual.multipleRowsResult, true);
+    });
+
+    it('SELECT id FROM mytable1 WHERE 1 = id LIMIT 10', async () => {
+        const sql = `
+        SELECT id FROM mytable1 WHERE 1 = id LIMIT 10
+        `
+        const actual = extractQueryInfo(sql, dbSchema) as QueryInfoResult;
+        assert.deepEqual(actual.multipleRowsResult, false);
+    });
+
+    it('SELECT id FROM mytable1 WHERE 1 = id LIMIT 10', async () => {
+        const sql = `
+        SELECT id FROM mytable1 WHERE 1 = id+id
+        `
+        const actual = extractQueryInfo(sql, dbSchema) as QueryInfoResult;
+        assert.deepEqual(actual.multipleRowsResult, true);
+    });
+
+    it('SELECT id FROM mytable1 WHERE id > 10', async () => {
+        const sql = `
+        SELECT id FROM mytable1 WHERE id > 10
+        `
+        const actual = extractQueryInfo(sql, dbSchema) as QueryInfoResult;
+        assert.deepEqual(actual.multipleRowsResult, true);
+    });
+
+    it('SELECT id FROM mytable1 WHERE id > 10 and id = 11', async () => {
+        const sql = `
+        SELECT id FROM mytable1 WHERE id > 10 and id = 11
+        `
+        const actual = extractQueryInfo(sql, dbSchema) as QueryInfoResult;
+        assert.deepEqual(actual.multipleRowsResult, false);
+    });
+
+    it('SELECT id FROM mytable1 WHERE id > 10 or id = 5', async () => {
+        const sql = `
+        SELECT id FROM mytable1 WHERE id > 10 or id = 5
+        `
+        const actual = extractQueryInfo(sql, dbSchema) as QueryInfoResult;
+        assert.deepEqual(actual.multipleRowsResult, true);
+    });
+
+    it('SELECT id FROM mytable1 WHERE id > 10 or (id = 5 or id = 6)', async () => {
+        const sql = `
+        SELECT id FROM mytable1 WHERE id > 10 or (id = 5 or id = 6)
+        `
+        const actual = extractQueryInfo(sql, dbSchema) as QueryInfoResult;
+        assert.deepEqual(actual.multipleRowsResult, true);
+    });
+
+    it('SELECT id FROM mytable1 WHERE (id = 5 or id = 6) and id = 10', async () => {
+        const sql = `
+        SELECT id FROM mytable1 WHERE (id = 5 or id = 6) and id = 10
+        `
+        const actual = extractQueryInfo(sql, dbSchema) as QueryInfoResult;
+        assert.deepEqual(actual.multipleRowsResult, false);
+    });
+
+    it('SELECT id FROM mytable1 WHERE value = 1 LIMIT 10', async () => {
+        const sql = `
+        SELECT id FROM mytable1 WHERE value = 1 LIMIT 10
+        `
+        const actual = extractQueryInfo(sql, dbSchema) as QueryInfoResult;
+        assert.deepEqual(actual.multipleRowsResult, true);
+    });
+
+    it('SELECT id FROM mytable1 UNION...', async () => {
+        const sql = `
+        SELECT id FROM mytable1 WHERE id=1
+        UNION
+        SELECT id FROM mytable2 WHERE id=1
+        `
+        const actual = extractQueryInfo(sql, dbSchema) as QueryInfoResult;
+        assert.deepEqual(actual.multipleRowsResult, true);
+    });
 });
