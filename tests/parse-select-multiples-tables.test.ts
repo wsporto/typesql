@@ -185,12 +185,12 @@ describe('Test select with multiples tables', () => {
         SELECT t1.id
         FROM mytable1 t1 
         INNER JOIN mytable2 t2 on t2.id = t1.id
-        WHERE t1.id = ?
+        WHERE t2.id = ?
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
-            multipleRowsResult: true,
+            multipleRowsResult: false, //changed at v0.3.0
             columns: [
                 {
                     name: 'id',
@@ -224,7 +224,7 @@ describe('Test select with multiples tables', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
-            multipleRowsResult: true,
+            multipleRowsResult: false, //changed at v0.3.0
             columns: [
                 {
                     name: 'id',
