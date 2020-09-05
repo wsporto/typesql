@@ -1,4 +1,5 @@
 import { RuleContext } from "antlr4ts";
+import moment from 'moment';
 
 import {
     QueryContext, PrimaryExprCompareContext, BitExprContext, SimpleExprColumnRefContext, SimpleExprLiteralContext,
@@ -963,6 +964,19 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
 
         if (literal.textLiteral()) {
             const text = literal.textLiteral()?.text.slice(1, -1); //remove quotes
+            
+            const isDateTimeLiteral = moment(text,"YYYY-MM-DD HH:mm:ss", true).isValid();
+            if(isDateTimeLiteral) {
+                return freshVar('datetime', 'datetime');
+            }
+            const isDateLiteral = moment(text,"YYYY-MM-DD", true).isValid();
+            if(isDateLiteral) {
+                return freshVar('date', 'date');
+            }
+            const isTimeLiteral = moment(text,"HH:mm:ss", true).isValid() || moment(text,"HH:mm", true).isValid();
+            if(isTimeLiteral) {
+                return freshVar('time', 'time');
+            }
             return freshVar('varchar', 'varchar');
         }
         const numLiteral = literal.numLiteral();

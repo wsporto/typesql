@@ -389,5 +389,29 @@ describe('type-inference - functions', () => {
 
         assert.deepEqual(actual, expected);
     })
+
+    it(`SELECT TIMESTAMPDIFF(MINUTE,'2003-02-01','2003-05-01 12:05:55')`, () => {
+        const sql = `SELECT TIMESTAMPDIFF(MINUTE,'2003-02-01','2003-05-01 12:05:55')`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['int'],
+            parameters: []   
+        }
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it(`SELECT TIMESTAMPDIFF(SECOND, name, name) FROM mytable2`, () => {
+        const sql = `SELECT TIMESTAMPDIFF(SECOND, name, name) FROM mytable2`;
+        try {
+            parseAndInfer(sql, dbSchema);
+            assert.fail('Should throw an exception'); //Only DATE and DATETIME are allowed
+        }
+        catch(e) {
+            const expectedMessage = 'Type mismatch: varchar and date';
+            assert.deepEqual(e.message, expectedMessage);
+        }
+    })
     
 })
