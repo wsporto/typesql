@@ -28,7 +28,7 @@ export function describeSql(dbSchema: ColumnSchema[], sql: string, namedParamete
     
         const schemaDef: SchemaDef = {
             sql,
-            multipleRowsResult: true,
+            multipleRowsResult: queryInfo.multipleRowsResult,
             columns: columnDef,
             parameters: parametersDef,
         }

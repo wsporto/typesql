@@ -7,16 +7,7 @@ export function verifyMultipleResult(exprContext: ExprContext, fromColumns: Colu
     if (exprContext instanceof ExprIsContext) {
 
         const boolPri = exprContext.boolPri();
-        if (boolPri instanceof PrimaryExprPredicateContext) {
-            const res = boolPri.predicate().bitExpr()[0].simpleExpr();
-            if (res instanceof SimpleExprListContext) {
-                const expr = res.exprList().expr()[0];
-                return verifyMultipleResult(expr, fromColumns);
-            }
-        }
-        if (boolPri instanceof PrimaryExprIsNullContext) {
-            return false; //multipleRow = false
-        }
+
         if (boolPri instanceof PrimaryExprCompareContext) {
             if(boolPri.compOp().EQUAL_OPERATOR()) {
                 let compareLeft = boolPri.boolPri();

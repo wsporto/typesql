@@ -683,4 +683,11 @@ describe('Test parse parameters', () => {
         const actual = extractQueryInfo(sql, dbSchema) as QueryInfoResult;
         assert.deepEqual(actual.multipleRowsResult, true);
     });
+
+    it('SELECT value FROM mytable1 WHERE value > 1 and value is null', async () => {
+        const sql = 'SELECT value FROM mytable1 WHERE value > 1 and value is null'
+        
+        const actual = extractQueryInfo(sql, dbSchema) as QueryInfoResult;
+        assert.deepEqual(actual.multipleRowsResult, true);
+    });
 });
