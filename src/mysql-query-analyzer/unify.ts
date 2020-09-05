@@ -29,7 +29,7 @@ function unifyOne(constraint: Constraint, substitutions: SubstitutionHash) {
         if(ty1.type != '?') {
             
             if(ty2.type != '?') {
-                const bestType = getBestPossibleType(ty1.type, ty2.type, constraint.mostGeneralType, constraint.coercionType) as MySqlType;
+                const bestType = getBestPossibleType(ty1.type, ty2.type, constraint.mostGeneralType, constraint.coercionType);
                 ty1.type = bestType;
                 ty2.type = bestType;
                 setSubstitution(ty1, ty2, substitutions);
@@ -104,7 +104,7 @@ function setSubstitution(ty1: TypeVar, ty2: TypeVar, substitutions: Substitution
     }
 }
 
-function getBestPossibleType(type1: InferType, type2: InferType, max?:boolean, coercionType?: 'Sum' | 'Irrestrict' | 'SumFunction') : string {
+function getBestPossibleType(type1: InferType, type2: InferType, max?:boolean, coercionType?: 'Sum' | 'Irrestrict' | 'SumFunction') : InferType {
 
     if(type1 == 'any') {
         return coercionType == 'Irrestrict'? 'any': type2;
@@ -120,14 +120,14 @@ function getBestPossibleType(type1: InferType, type2: InferType, max?:boolean, c
     if( coercionType == 'Sum' && max && ((type1 == 'bigint' && type2 == 'double') || type1 == 'double' && type2 == 'bigint' )) return 'double';
     //if( sum && (type1 == 'decimal' && type2 == 'number') || type1 == 'number' && type2 == 'decimal' ) return 'double';
 
-    const order : string[] = ['number', 'tinyint', 'smallint', 'int', 'bigint', 'decimal', 'float', 'double'];
+    const order : InferType[] = ['number', 'tinyint', 'smallint', 'int', 'bigint', 'decimal', 'float', 'double'];
     const indexType1 = order.indexOf(type1);
     const indexType2 = order.indexOf(type2);
     if(indexType1 != -1 && indexType2 != -1) {
         const index = max? Math.max(indexType1, indexType2) : Math.min(indexType1, indexType2);
         return order[index];
     } 
-    const order2 : string[] = ['varchar'];
+    const order2 : InferType[] = ['varchar'];
     const indexStrType1 = order2.indexOf(type1);
     const indexStrType2 = order2.indexOf(type2);
     if(indexStrType1 != -1 && indexStrType2 != -1) {
@@ -135,8 +135,8 @@ function getBestPossibleType(type1: InferType, type2: InferType, max?:boolean, c
         return order2[index];
     } 
 
-    //datetime <- date <- time
-    const dateTypeOrder = ['date', 'datetime'];
+    // Is possible to convert to date to datetime
+    const dateTypeOrder  : InferType[] = ['date', 'datetime'];
     const indexDateType1 = dateTypeOrder.indexOf(type1);
     const indexDateType2 = dateTypeOrder.indexOf(type2);
     if(indexDateType1 != -1 && indexDateType2 != -1) {
@@ -144,7 +144,8 @@ function getBestPossibleType(type1: InferType, type2: InferType, max?:boolean, c
         return dateTypeOrder[index];
     }
 
-    const dateTypeLiteralOrder = ['time', 'timeliteral', 'datetimeliteral', 'varchar'];
+    // Is possitlbe to conver to time to dateTime
+    const dateTypeLiteralOrder : InferType[] = ['time', 'datetime'];
     const indexDateLiteralType1 = dateTypeLiteralOrder.indexOf(type1);
     const indexDateLiteralType2 = dateTypeLiteralOrder.indexOf(type2);
     if(indexDateLiteralType1 != -1 && indexDateLiteralType2 != -1) {
