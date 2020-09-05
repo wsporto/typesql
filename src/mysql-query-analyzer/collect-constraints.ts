@@ -40,16 +40,13 @@ type TypeOperator = {
     selectItem?: true
 };
 
-
 export type Constraint = {
     type1: Type;
     type2: Type;
     expression: string;
     mostGeneralType?: true;
+    coercionType?: 'Sum' | 'Irrestrict' | 'SumFunction'
     list?: true;
-    sum?: 'sum';
-    strict?: boolean;
-    functionName?: 'sum'
 }
 
 export type InferenceContext = {
@@ -540,8 +537,7 @@ function walkBoolPri(context: InferenceContext, boolPri: BoolPriContext): Type {
         context.constraints.push({
             expression: boolPri.text,
             type1: typeLeft,
-            type2: typeRight,
-            strict: true
+            type2: typeRight
         })
         return freshVar(boolPri.text, 'tinyint');
     }
@@ -554,8 +550,7 @@ function walkBoolPri(context: InferenceContext, boolPri: BoolPriContext): Type {
         context.constraints.push({
             expression: boolPri.text,
             type1: typeLeft,
-            type2: typeRight,
-            strict: true
+            type2: typeRight
         })
         return freshVar(boolPri.text, 'tinyint');
     }
@@ -575,8 +570,7 @@ function walkPredicate(context: InferenceContext, predicate: PredicateContext): 
             expression: predicateOperations.text,
             type1: bitExprType, // ? array of id+id
             type2: rightType,
-            mostGeneralType: true,
-            strict: true
+            mostGeneralType: true
         })
         return rightType;
 
@@ -657,21 +651,21 @@ function walkBitExpr(context: InferenceContext, bitExpr: BitExprContext): Type {
             type1: typeLeft,
             type2: typeRight,
             mostGeneralType: true,
-            sum: 'sum'
+            coercionType: 'Sum'
         })
         context.constraints.push({
             expression: bitExpr.text,
             type1: bitExprType,
             type2: typeLeft,
             mostGeneralType: true,
-            sum: 'sum'
+            coercionType: 'Sum'
         })
         context.constraints.push({
             expression: bitExpr.text,
             type1: bitExprType,
             type2: typeRight,
             mostGeneralType: true,
-            sum: 'sum'
+            coercionType: 'Sum'
         })
         return bitExprType;
     }
@@ -774,9 +768,18 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
                 const paramType = freshVar('?', '?');
                 const params: FunctionParams = {
                     kind: 'VariableLengthParams',
-                    paramType: paramType
+                    paramType: 'any'
                 }
-                walkExprListParameters(context, exprList, params);
+                const paramsTypeList = walkExprListParameters(context, exprList, params);
+                paramsTypeList.forEach( (typeVar, paramIndex) => {
+                    context.constraints.push({
+                        expression: runtimeFunctionCall.text + '_param' + (paramIndex+1),
+                        type1: paramType,
+                        type2: typeVar,
+                        mostGeneralType: true,
+                        coercionType: 'Irrestrict'
+                    })
+                })
                 return paramType;
             }
             
@@ -792,7 +795,7 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
             const varcharType = freshVar(simpleExpr.text, 'varchar');
             const params : VariableLengthParams = {
                 kind: 'VariableLengthParams',
-                paramType: varcharType
+                paramType: '?'
             }
             walkFunctionParameters(context, simpleExpr, params);
             return varcharType;
@@ -940,7 +943,7 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
                     type1: functionType,
                     type2: inSumExprType,
                     mostGeneralType: true,
-                    functionName: 'sum'
+                    coercionType: 'SumFunction'
                 })
             }
             return functionType;
@@ -1054,7 +1057,7 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
 
 type VariableLengthParams = {
     kind: 'VariableLengthParams'
-    paramType: TypeVar;
+    paramType: InferType;
 }
 
 type FixedLengthParams = {
@@ -1067,13 +1070,14 @@ type FunctionParams = VariableLengthParams | FixedLengthParams;
 function walkExprListParameters(context: InferenceContext, exprList: ExprContext[], params: FunctionParams) {
     return exprList.map( (expr, paramIndex) => {
         const exprType = walkExpr(context, expr);
+        const paramType = params.kind == 'FixedLengthParams'? params.paramsType[paramIndex] : freshVar(params.paramType, params.paramType);
         context.constraints.push({
             expression: expr.text,
             type1: exprType,
-            type2: params.kind == 'FixedLengthParams'? params.paramsType[paramIndex] : params.paramType,
+            type2: paramType,
             mostGeneralType: true
         })
-        return exprType;
+        return paramType;
     })
 }
 
@@ -1086,7 +1090,7 @@ function walkFunctionParameters(context: InferenceContext, simpleExprFunction: S
             context.constraints.push({
                 expression: expr.text,
                 type1: exprType,
-                type2: params.kind == 'FixedLengthParams'? params.paramsType[paramIndex] : params.paramType,
+                type2: params.kind == 'FixedLengthParams'? params.paramsType[paramIndex] : freshVar(params.paramType, params.paramType),
                 mostGeneralType: true
             })
             return exprType;
@@ -1099,7 +1103,7 @@ function walkFunctionParameters(context: InferenceContext, simpleExprFunction: S
             const inSumExprType = walkExpr(context, inExpr);
             context.constraints.push({
                 expression: inExpr.text,
-                type1: params.kind == 'FixedLengthParams'? params.paramsType[paramIndex] : params.paramType,
+                type1: params.kind == 'FixedLengthParams'? params.paramsType[paramIndex] : freshVar(params.paramType, params.paramType),
                 type2: inSumExprType,
                 mostGeneralType: true
             })

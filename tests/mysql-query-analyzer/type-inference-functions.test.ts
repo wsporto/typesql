@@ -254,7 +254,7 @@ describe('type-inference - functions', () => {
 
         const expected : TypeInferenceResult = {
             columns: ['varchar'],
-            parameters: ['varchar', 'varchar']   
+            parameters: ['?', '?']   
         }
 
         assert.deepEqual(actual, expected);
@@ -278,7 +278,7 @@ describe('type-inference - functions', () => {
 
         const expected : TypeInferenceResult = {
             columns: ['int'],
-            parameters: ['varchar']   
+            parameters: ['?']   
         }
 
         assert.deepEqual(actual, expected);
@@ -296,13 +296,13 @@ describe('type-inference - functions', () => {
         assert.deepEqual(actual, expected);
     })
 
-    it(`SELECT COALESCE (VALUE, ID, 10) FROM mytable1`, () => {
-        const sql = `SELECT COALESCE (VALUE, ID, ?) FROM mytable1`;
+    it(`SELECT COALESCE (VALUE, ID) FROM mytable1`, () => {
+        const sql = `SELECT COALESCE (VALUE, ID) FROM mytable1`;
         const actual = parseAndInfer(sql, dbSchema);
 
         const expected : TypeInferenceResult = {
             columns: ['int'],
-            parameters: ['int']   
+            parameters: []   
         }
 
         assert.deepEqual(actual, expected);
@@ -311,15 +311,22 @@ describe('type-inference - functions', () => {
     it(`SELECT COALESCE (double_column, int_column, ?) FROM all_types`, () => {
         const sql = `
         SELECT 
+            COALESCE (double_column, int_column), 
             COALESCE (double_column, int_column, ?), 
             COALESCE (int_column, bigint_column, smallint_column, ?) 
         FROM all_types`;
+        // const sql = 'SELECT COALESCE (double_column, int_column, ?) from all_types';
+        
         const actual = parseAndInfer(sql, dbSchema);
 
         const expected : TypeInferenceResult = {
-            columns: ['double', 'bigint'],
-            parameters: ['double', 'bigint']   
+            columns: ['double', 'any', 'any'],
+            parameters: ['any', 'any']   
         }
+        // const expected : TypeInferenceResult = {
+        //     columns: ['?'],
+        //     parameters: ['?']   
+        // }
 
         assert.deepEqual(actual, expected);
     })
@@ -330,7 +337,7 @@ describe('type-inference - functions', () => {
 
         const expected : TypeInferenceResult = {
             columns: ['varchar'],
-            parameters: ['varchar', 'varchar']   
+            parameters: ['?', '?']   
         }
 
         assert.deepEqual(actual, expected);

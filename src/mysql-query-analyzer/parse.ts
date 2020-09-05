@@ -32,6 +32,10 @@ export type SubstitutionHash = {
 
 export function infer(queryContext: QueryContext, dbSchema: ColumnSchema[]) : TypeInferenceResult {
     const typeInferenceResult =  analiseTree(queryContext, dbSchema);
+    // const newTypeInference : TypeInferenceResult = {
+    //     columns: typeInferenceResult.columns.map( col => verifyNotInferred(col)),
+    //     parameters: typeInferenceResult.parameters.map(paramType => verifyNotInferred(paramType))
+    // }
     return typeInferenceResult;
 }
 
