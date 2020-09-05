@@ -13,6 +13,7 @@ describe('Utility functions tests', () => {
                 column: 'name',
                 columnName: 'name',
                 columnType: 'varchar',
+                columnKey: '',
                 notNull: true,
                 table: 'mytable2'
             }
@@ -31,6 +32,7 @@ describe('Utility functions tests', () => {
             {
                 column: 'name',
                 column_type: 'varchar',
+                columnKey: '',
                 notNull: true,
                 table: 'mytable2',
                 schema: 'mydb'
@@ -62,6 +64,7 @@ describe('Utility functions tests', () => {
                 column: 'id',
                 columnName: 'id',
                 columnType: 'int',
+                columnKey: 'PRI',
                 notNull: true,
                 table: 'mytable1',
                 tableAlias: ''
@@ -70,6 +73,7 @@ describe('Utility functions tests', () => {
                 column: 'value',
                 columnName: 'value',
                 columnType: 'int',
+                columnKey: '',
                 notNull: false,
                 table: 'mytable1',
                 tableAlias: ''

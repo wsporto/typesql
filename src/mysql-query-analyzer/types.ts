@@ -6,6 +6,7 @@ export type ColumnSchema = {
     table: string;
     column: string;
     column_type: MySqlType;
+    columnKey: 'PRI' | 'MUL' | 'UNI' | '';
     notNull: boolean;
 }
 
@@ -14,6 +15,7 @@ export type ColumnDef = {
     column: string;
     columnName: string;
     columnType: InferType;
+    columnKey: 'PRI' | 'MUL' | 'UNI' | '';
     tableAlias?: string;
     notNull: boolean;
 }

@@ -4,10 +4,12 @@ import { ColumnSchema } from "../src/mysql-query-analyzer/types";
 
 describe('infer-not-null-experimental', () => {
 
+    //TODO createSchema
     const dbSchema: ColumnSchema[] = [
         {
             column: 'id',
             column_type: 'int',
+            columnKey: 'PRI',
             table: 'mytable1',
             schema: 'mydb',
             notNull: true
@@ -15,6 +17,7 @@ describe('infer-not-null-experimental', () => {
         {
             column: 'value',
             column_type: 'int',
+            columnKey: '',
             table: 'mytable1',
             schema: 'mydb',
             notNull: false
@@ -22,6 +25,7 @@ describe('infer-not-null-experimental', () => {
         {
             column: 'id',
             column_type: 'int',
+            columnKey: '',
             table: 'mytable2',
             schema: 'mydb',
             notNull: true
@@ -29,6 +33,7 @@ describe('infer-not-null-experimental', () => {
         {
             column: 'name',
             column_type: 'varchar',
+            columnKey: '',
             table: 'mytable2',
             schema: 'mydb',
             notNull: false
@@ -36,6 +41,7 @@ describe('infer-not-null-experimental', () => {
         {
             column: 'id',
             column_type: 'int',
+            columnKey: 'PRI',
             table: 'mytable3',
             schema: 'mydb',
             notNull: true
@@ -43,6 +49,7 @@ describe('infer-not-null-experimental', () => {
         {
             column: 'double_value',
             column_type: 'double',
+            columnKey: '',
             table: 'mytable3',
             schema: 'mydb',
             notNull: false
