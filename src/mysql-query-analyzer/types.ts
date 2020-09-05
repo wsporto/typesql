@@ -59,6 +59,7 @@ export type QueryInfoResult = {
     kind: 'Select'
     columns: ColumnInfo[];
     parameters: ParameterInfo[];
+    multipleRowsResult: boolean;
     orderByColumns?: string[];
 }
 

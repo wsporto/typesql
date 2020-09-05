@@ -1,4 +1,4 @@
-import MySQLParser, { SqlMode, QueryContext, QuerySpecificationContext, SelectStatementContext, SubqueryContext } from 'ts-mysql-parser';
+import MySQLParser, { SqlMode, QueryContext, QuerySpecificationContext, SelectStatementContext, SubqueryContext, WhereClauseContext } from 'ts-mysql-parser';
 import { ParseTree } from "antlr4ts/tree";
 import { analiseTree, TypeVar, analiseQuerySpecification, unionTypeResult, getInsertColumns, analiseInsertStatement, 
     analiseUpdateStatement, analiseDeleteStatement } from './collect-constraints';
@@ -8,6 +8,7 @@ import { getColumnsFrom, getColumnNames } from './select-columns';
 import { inferParamNullability, inferParamNullabilityQuery } from './infer-param-nullability';
 import { inferNotNull } from './infer-column-nullability';
 import { verifyNotInferred } from '../describe-query';
+import { verifyMultipleResult } from './verify-multiple-result';
 
 
 const parser = new MySQLParser({
@@ -92,10 +93,7 @@ function extractOrderByParameters(selectStatement: SelectStatementContext) {
 }
 
 function extractLimitParameters(selectStatement: SelectStatementContext) : ParameterInfo[] {
-    return selectStatement.queryExpression()
-        ?.limitClause()
-        ?.limitOptions()
-        .limitOption()
+    return getLimitOptions(selectStatement)
         .filter( limit => limit.PARAM_MARKER())
         .map( () => {
             const paramInfo: ParameterInfo = {
@@ -104,6 +102,25 @@ function extractLimitParameters(selectStatement: SelectStatementContext) : Param
             }
             return paramInfo;
         }) || [];
+}
+
+function isMultipleRowResult(selectStatement: SelectStatementContext) {
+    const limitOptions = getLimitOptions(selectStatement);
+    if(limitOptions.length == 1 && limitOptions[0].text == '1') {
+        return false;
+    }
+    if(limitOptions.length == 2 && limitOptions[1].text == '1') {
+        return false;
+    }
+
+    return true;
+}
+
+function getLimitOptions(selectStatement: SelectStatementContext) {
+    return selectStatement.queryExpression()
+    ?.limitClause()
+    ?.limitOptions()
+    .limitOption() || []
 }
 
 export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[]): QueryInfoResult | InsertInfoResult | UpdateInfoResult | DeleteInfoResult {
@@ -122,9 +139,12 @@ export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[]): QueryIn
             const allParameters = mainQueryResult.parameters
                 .map( param => ({type: verifyNotInferred(param.type),  notNull: param.notNull}))
                 .concat(limitParameters);
+
+            const multipleRowsResult = isMultipleRowResult(selectStatement);
             
             const resultWithoutOrderBy: QueryInfoResult = {
                 kind: 'Select',
+                multipleRowsResult: multipleRowsResult,
                 columns: mainQueryResult.columns.map( col => ({columnName: col.name, type: verifyNotInferred(col.type),  notNull: col.notNull})),
                 parameters: allParameters,
             }
