@@ -318,7 +318,7 @@ describe('type-inference test', () => {
 
         const expected : TypeInferenceResult = {
             columns: ['bigint', 'varchar', 'varchar'],
-            parameters:  ['varchar']
+            parameters:  ['?']
         }
 
         assert.deepEqual(actual, expected);
@@ -334,6 +334,30 @@ describe('type-inference test', () => {
         const expected : TypeInferenceResult = {
             columns: ['varchar'],
             parameters:  ['varchar']
+        }
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it(`SELECT concat(id, name, ?) FROM mytable2`, () => {
+        const sql = `SELECT concat(id, name, ?) FROM mytable2`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['varchar'],
+            parameters:  ['?']
+        }
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it(`SELECT concat(id, name, ?+?) FROM mytable2`, () => {
+        const sql = `SELECT concat(id, name, ?+?) FROM mytable2`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['varchar'],
+            parameters:  ['double', 'double']
         }
 
         assert.deepEqual(actual, expected);
@@ -357,7 +381,7 @@ describe('type-inference test', () => {
 
         const expected : TypeInferenceResult = {
             columns: ['varchar'],
-            parameters:  ['varchar', 'varchar', 'varchar']
+            parameters:  ['?', '?', '?']
         }
 
         assert.deepEqual(actual, expected);
@@ -369,7 +393,7 @@ describe('type-inference test', () => {
 
         const expected : TypeInferenceResult = {
             columns: ['varchar'],
-            parameters:  ['varchar', 'varchar']
+            parameters:  ['?', '?']
         }
 
         assert.deepEqual(actual, expected);

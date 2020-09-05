@@ -18,8 +18,7 @@ function unifyOne(constraint: Constraint, substitutions: SubstitutionHash) {
             const newConstr : Constraint = {
                 expression: 'list',
                 type1: ty1.types[i],
-                type2: ty2.types[i],
-                strict: true
+                type2: ty2.types[i]
             }
             unifyOne(newConstr, substitutions)
         })
@@ -30,7 +29,7 @@ function unifyOne(constraint: Constraint, substitutions: SubstitutionHash) {
         if(ty1.type != '?') {
             
             if(ty2.type != '?') {
-                const bestType = getBestPossibleType(ty1.type, ty2.type, constraint.mostGeneralType, constraint.sum) as MySqlType;
+                const bestType = getBestPossibleType(ty1.type, ty2.type, constraint.mostGeneralType, constraint.coercionType) as MySqlType;
                 ty1.type = bestType;
                 ty2.type = bestType;
                 setSubstitution(ty1, ty2, substitutions);
@@ -39,11 +38,12 @@ function unifyOne(constraint: Constraint, substitutions: SubstitutionHash) {
             else {
                 
                 const numberTypes = ['number', 'tinyint', 'int', 'bigint', 'decimal', 'double'];
-                if(constraint.sum && constraint.mostGeneralType && numberTypes.indexOf(ty1.type) >= 0) {
+                if(constraint.coercionType == 'Sum' && numberTypes.indexOf(ty1.type) >= 0) {
                     //In the expression ty1 + ?, ty2 = double
                     ty1.type = 'double';   
                     ty2.type = 'double'; 
                 }
+               
                 substitutions[ty2.id] = ty1;
             }
         }
@@ -53,19 +53,21 @@ function unifyOne(constraint: Constraint, substitutions: SubstitutionHash) {
             // if(!constraint.strict && numberTypes.indexOf(ty2.type) >= 0) {
             //     ty2.type = 'number';
             // }
-            const exactValueNumbers = ['int', 'bigint', 'decimal'];
-            if( constraint.functionName &&  (exactValueNumbers.indexOf(ty2.type) >=0)) {
-                ty2.type = 'decimal';
-            }
 
-            const aproximatedValues = ['float', 'double'];
-            if( constraint.functionName &&  (aproximatedValues.indexOf(ty2.type) >=0)) {
-                ty2.type = 'double';
-            } 
+            if(constraint.coercionType == 'SumFunction') {
+                const exactValueNumbers = ['int', 'bigint', 'decimal'];
+                if(exactValueNumbers.indexOf(ty2.type) >=0) {
+                    ty2.type = 'decimal';
+                }
+                else {
+                    ty2.type = 'double';
+                }
+            }
 
             substitutions[ty1.id] = ty2;
             ty1.type = ty2.type
             ty2.list = ty1.list;
+            
             
         }
     }
@@ -102,13 +104,20 @@ function setSubstitution(ty1: TypeVar, ty2: TypeVar, substitutions: Substitution
     }
 }
 
-function getBestPossibleType(type1: InferType, type2: InferType, max?:boolean, sum?: 'sum') : string {
-    if(!sum && type1 === type2) return type1;
-    if( sum && max && type1 == 'number' && type2 == 'int' ||  type1 == 'int' && type2 == 'number') return 'double';
-    // if( sum && type1 == 'number' && type2 == 'bigint' ||  type1 == 'bigint' && type2 == 'number') return 'double';
-    if( sum && max && type1 == 'int' && type2 == 'int') return 'bigint';
-    if( sum && max && ((type1 == 'int' && type2 == 'double') || type1 == 'double' && type2 == 'int' )) return 'double';
-    if( sum && max && ((type1 == 'bigint' && type2 == 'double') || type1 == 'double' && type2 == 'bigint' )) return 'double';
+function getBestPossibleType(type1: InferType, type2: InferType, max?:boolean, coercionType?: 'Sum' | 'Irrestrict' | 'SumFunction') : string {
+
+    if(type1 == 'any') {
+        return coercionType == 'Irrestrict'? 'any': type2;
+    }
+    if(type2 == 'any') {
+        return coercionType == 'Irrestrict'? 'any': type1;
+    }
+    if(coercionType != 'Sum' && type1 === type2) return type1;
+    if( coercionType == 'Sum' && max && type1 == 'number' && type2 == 'int' ||  type1 == 'int' && type2 == 'number') return 'double';
+    // if( coercionType == 'Sum' && type1 == 'number' && type2 == 'bigint' ||  type1 == 'bigint' && type2 == 'number') return 'double';
+    if( coercionType == 'Sum' && max && type1 == 'int' && type2 == 'int') return 'bigint';
+    if( coercionType == 'Sum' && max && ((type1 == 'int' && type2 == 'double') || type1 == 'double' && type2 == 'int' )) return 'double';
+    if( coercionType == 'Sum' && max && ((type1 == 'bigint' && type2 == 'double') || type1 == 'double' && type2 == 'bigint' )) return 'double';
     //if( sum && (type1 == 'decimal' && type2 == 'number') || type1 == 'number' && type2 == 'decimal' ) return 'double';
 
     const order : string[] = ['number', 'tinyint', 'smallint', 'int', 'bigint', 'decimal', 'float', 'double'];
