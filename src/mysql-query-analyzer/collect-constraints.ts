@@ -868,17 +868,26 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
                 kind: 'FixedLengthParams',
                 paramsType: [varcharParam, varcharParam]
             }
-            const paramsType = walkFunctionParameters(context, simpleExpr, params);
+            walkFunctionParameters(context, simpleExpr, params);
             return freshVar(simpleExpr.text, 'date');
         }
 
         if (functionIdentifier === 'datediff') {
-            const dateParam = freshVar('date', 'date');
-            const params : FixedLengthParams = {
-                kind: 'FixedLengthParams',
-                paramsType: [dateParam, dateParam]
+            const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr();
+            if(udfExprList) {
+                udfExprList.forEach( (inExpr) => {
+                    const expr = inExpr.expr();
+                    const exprType = walkExpr(context, expr);
+                    const newType = verifyDateTypesCoercion(exprType);
+    
+                    context.constraints.push({
+                        expression: expr.text,
+                        type1: newType,
+                        type2: freshVar('date', 'date'),
+                        mostGeneralType: true
+                    })
+                })
             }
-            walkFunctionParameters(context, simpleExpr, params);
             return freshVar(simpleExpr.text, 'bigint');
         }
         if (functionIdentifier === 'lpad' || functionIdentifier == 'rpad') {
@@ -925,20 +934,12 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
                 rest.forEach( (inExpr, paramIndex) => {
                     const expr = inExpr.expr();
                     const exprType = walkExpr(context, expr);
-                    if(exprType.kind == 'TypeVar' && isDateTimeLiteral(exprType.name)) {
-                        exprType.type = 'datetime';
-                    }
-                    if(exprType.kind == 'TypeVar' && isDateLiteral(exprType.name)) {
-                        exprType.type = 'date';
-                    }
-                    if(exprType.kind == 'TypeVar' && isTimeLiteral(exprType.name)) {
-                        exprType.type = 'time';
-                    }
+                    const newType = verifyDateTypesCoercion(exprType);
 
                     //const expectedType = ['hour', 'minute', 'second'].includes(unit)? 'time' : 'datetime'
                     context.constraints.push({
                         expression: expr.text,
-                        type1: exprType,
+                        type1: newType,
                         type2: freshVar('datetime', 'datetime'),
                         mostGeneralType: true
                     })
@@ -1102,6 +1103,21 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
         return caseType;
     }
     throw Error('Invalid expression');
+}
+
+function verifyDateTypesCoercion(type: Type) {
+
+    if(type.kind == 'TypeVar' && isDateTimeLiteral(type.name)) {
+        type.type = 'datetime';
+    }
+    if(type.kind == 'TypeVar' && isDateLiteral(type.name)) {
+        type.type = 'date';
+    }
+    if(type.kind == 'TypeVar' && isTimeLiteral(type.name)) {
+        type.type = 'time';
+    }
+    return type;
+
 }
 
 function isTimeLiteral(literal: string) {
