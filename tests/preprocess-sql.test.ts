@@ -43,6 +43,32 @@ describe('preprocess-sql', () => {
         assert.deepEqual(actual, expected);
     })
 
+    it('preprocess with string literal', async () => {
+
+        const sql = `SELECT HOUR('13:01:02')`;
+        const actual = preprocessSql(sql);
+
+        const expected :PreprocessedSql = {
+            sql: `SELECT HOUR('13:01:02')`,
+            namedParameters: []
+        }
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it('preprocess with string literal', async () => {
+
+        const sql = `SELECT HOUR("13:01:02")`;
+        const actual = preprocessSql(sql);
+
+        const expected :PreprocessedSql = {
+            sql: `SELECT HOUR("13:01:02")`,
+            namedParameters: []
+        }
+
+        assert.deepEqual(actual, expected);
+    })
+
     it.skip('preprocess sql with invalid parameter names', async () => {
 
         const sql = 'select * from mytable1 where :1 > 0 or :=0 or :111 > 0';
