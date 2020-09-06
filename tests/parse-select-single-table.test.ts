@@ -1395,6 +1395,21 @@ describe('Test simple select statements', () => {
         assert.deepEqual(actual.left.name, expectedMessage);
     });
 
+    it('try to parse a SQL with type coercion error', async () => {
+        const sql = `SELECT MONTH('ASDF')`;
+
+        const actual = await parseSql(client, sql);
+        const expected = 'Type mismatch: varchar and date';
+       
+        if(isLeft(actual)) {
+            assert.deepEqual(actual.left.description, expected);
+        }
+        else {
+            assert.fail('should return an InvalidSqlError');
+        }
+        
+    })
+
 
     it('try to parse with reserved word desc'), () => {
         //SELECT id, name, desc as description FROM MYTABLE

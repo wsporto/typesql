@@ -1,7 +1,7 @@
 import { ColumnDef, SchemaDef, ParameterDef, InvalidSqlError, PreprocessedSql } from "./types";
 import { extractQueryInfo } from "./mysql-query-analyzer/parse";
 import { DbClient } from "./queryExectutor";
-import { Either, isLeft, right } from "fp-ts/lib/Either";
+import { Either, isLeft, right, left } from "fp-ts/lib/Either";
 import { ColumnSchema } from "./mysql-query-analyzer/types";
 import { MySqlType, InferType } from "./mysql-mapping";
 
@@ -131,8 +131,19 @@ export async function parseSql(client: DbClient, sql: string) : Promise<Either<I
         return explainResult;
     }
     const dbSchema = await client.loadDbSchema();
-    const result = describeSql(dbSchema, processedSql, namedParameters);
-    return right(result);
+    try {
+        const result = describeSql(dbSchema, processedSql, namedParameters);
+        return right(result);
+    }
+    catch(e) {
+        const InvalidSqlError: InvalidSqlError = {
+            name: 'Invalid SQL',
+            description: e.message,
+        }
+        return left(InvalidSqlError);
+    }
+    
+    
 }
 
 //http://dev.mysql.com/doc/refman/8.0/en/identifiers.html
