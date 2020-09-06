@@ -119,6 +119,7 @@ function getBestPossibleType(type1: InferType, type2: InferType, max?:boolean, c
     if( coercionType == 'Sum' && max && ((type1 == 'int' && type2 == 'double') || type1 == 'double' && type2 == 'int' )) return 'double';
     if( coercionType == 'Sum' && max && ((type1 == 'bigint' && type2 == 'double') || type1 == 'double' && type2 == 'bigint' )) return 'double';
     //if( sum && (type1 == 'decimal' && type2 == 'number') || type1 == 'number' && type2 == 'decimal' ) return 'double';
+    if( coercionType == 'Sum' && max && type1 == 'date' && type2 == 'date') return 'bigint';
 
     const order : InferType[] = ['number', 'tinyint', 'smallint', 'int', 'bigint', 'decimal', 'float', 'double'];
     const indexType1 = order.indexOf(type1);

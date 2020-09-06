@@ -702,6 +702,12 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
             const expr = runtimeFunctionCall.exprWithParentheses()?.expr();
             if(expr) {
                 const paramType = walkExpr(context, expr);
+                if(paramType.kind == 'TypeVar' && isDateTimeLiteral(paramType.name)) {
+                    paramType.type = 'datetime'
+                }
+                if(paramType.kind == 'TypeVar' && isDateLiteral(paramType.name)) {
+                    paramType.type = 'date'
+                }
                 context.constraints.push({
                     expression: expr.text,
                     type1: paramType,
@@ -715,6 +721,16 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
             const expr = runtimeFunctionCall.exprWithParentheses()?.expr();
             if(expr) {
                 const paramType = walkExpr(context, expr);
+                if(paramType.kind == 'TypeVar' && isTimeLiteral(paramType.name)) {
+                    paramType.type = 'time';
+                }
+                if(paramType.kind == 'TypeVar' && isDateLiteral(paramType.name)) {
+                    paramType.type = 'date';
+                }
+                if(paramType.kind == 'TypeVar' && isDateTimeLiteral(paramType.name)) {
+                    paramType.type = 'datetime';
+                }
+
                 context.constraints.push({
                     expression: expr.text,
                     type1: paramType,
@@ -852,7 +868,7 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
                 kind: 'FixedLengthParams',
                 paramsType: [varcharParam, varcharParam]
             }
-            walkFunctionParameters(context, simpleExpr, params);
+            const paramsType = walkFunctionParameters(context, simpleExpr, params);
             return freshVar(simpleExpr.text, 'date');
         }
 
@@ -901,12 +917,34 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
             return freshVar('int', 'int');
         }
         if(functionIdentifier == 'timestampdiff') {
-            const dateType = freshVar('date', 'date');
-            const params: FunctionParams = {
-                kind: 'FixedLengthParams',
-                paramsType: [dateType, dateType]
+           
+            const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr();
+            if(udfExprList) {
+                const [first, ...rest] = udfExprList;
+                const unit = first.text.trim().toLowerCase();
+                rest.forEach( (inExpr, paramIndex) => {
+                    const expr = inExpr.expr();
+                    const exprType = walkExpr(context, expr);
+                    if(exprType.kind == 'TypeVar' && isDateTimeLiteral(exprType.name)) {
+                        exprType.type = 'datetime';
+                    }
+                    if(exprType.kind == 'TypeVar' && isDateLiteral(exprType.name)) {
+                        exprType.type = 'date';
+                    }
+                    if(exprType.kind == 'TypeVar' && isTimeLiteral(exprType.name)) {
+                        exprType.type = 'time';
+                    }
+
+                    //const expectedType = ['hour', 'minute', 'second'].includes(unit)? 'time' : 'datetime'
+                    context.constraints.push({
+                        expression: expr.text,
+                        type1: exprType,
+                        type2: freshVar('datetime', 'datetime'),
+                        mostGeneralType: true
+                    })
+                })
+
             }
-            walkFunctionParameters(context, simpleExpr, params);
             return freshVar('int', 'int');
         }
 
@@ -965,21 +1003,8 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
         const literal = simpleExpr.literal();
 
         if (literal.textLiteral()) {
-            const text = literal.textLiteral()?.text.slice(1, -1); //remove quotes
-            
-            const isDateTimeLiteral = moment(text,"YYYY-MM-DD HH:mm:ss", true).isValid();
-            if(isDateTimeLiteral) {
-                return freshVar('datetime', 'datetime');
-            }
-            const isDateLiteral = moment(text,"YYYY-MM-DD", true).isValid();
-            if(isDateLiteral) {
-                return freshVar('date', 'date');
-            }
-            const isTimeLiteral = moment(text,"HH:mm:ss", true).isValid() || moment(text,"HH:mm", true).isValid();
-            if(isTimeLiteral) {
-                return freshVar('time', 'time');
-            }
-            return freshVar('varchar', 'varchar');
+            const text = literal.textLiteral()?.text.slice(1, -1) || ''; //remove quotes
+            return freshVar(text, 'varchar');
         }
         const numLiteral = literal.numLiteral();
         if (numLiteral) {
@@ -1077,6 +1102,18 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
         return caseType;
     }
     throw Error('Invalid expression');
+}
+
+function isTimeLiteral(literal: string) {
+    return moment(literal, 'HH:mm:ss', true).isValid() || moment(literal, 'HH:mm', true).isValid();
+}
+
+function isDateTimeLiteral(literal: string) {
+    return moment(literal, 'YYYY-MM-DD HH:mm:ss', true).isValid()
+}
+
+function isDateLiteral(literal: string) {
+    return moment(literal,"YYYY-MM-DD", true).isValid();
 }
 
 function getFunctionName(simpleExprFunction: SimpleExprFunctionContext) {
