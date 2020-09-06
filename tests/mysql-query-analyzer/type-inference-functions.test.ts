@@ -348,6 +348,18 @@ describe('type-inference - functions', () => {
         assert.deepEqual(actual, expected);
     })
 
+    it(`SELECT DATEDIFF('2003-02-01','2003-05-01 12:05:55')`, () => {
+        const sql = `SELECT DATEDIFF('2003-02-01','2003-05-01 12:05:55')`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['bigint'],
+            parameters: []   
+        }
+
+        assert.deepEqual(actual, expected);
+    })
+
     //unit: MICROSECOND (microseconds), SECOND, MINUTE, HOUR, DAY, WEEK, MONTH, QUARTER, or YEAR
     it(`SELECT TIMESTAMPDIFF(MONTH, ?, ?), ...`, () => {
         const sql = `SELECT 
