@@ -116,60 +116,65 @@ describe('type-inference - functions', () => {
         assert.deepEqual(actual, expected);
     })
 
-    it(`SELECT HOUR(?), MINUTE(?), SECOND(?)`, () => {
-        const sql = `SELECT MINUTE(?)`;
-        const actual = parseAndInfer(sql, dbSchema);
-
-        const expected : TypeInferenceResult = {
-            columns: ['tinyint'],
-            parameters: ['time']   
-        }
-
-        assert.deepEqual(actual, expected);
-    })
-
-    it('SELECT HOUR("2017-06-20 09:34:00");', () => {
+    it('SELECT HOUR, MINUTE and SECOND with literal', () => {
         const sql = `SELECT 
-            HOUR("2017-06-20 09:34:00"), HOUR('2017-06-20 09:34:00'), 
-            HOUR("09:34:00"), HOUR('09:34:00'),
-            HOUR("09:34"), HOUR('09:34')
+            HOUR("2017-06-20 09:34:00"), MINUTE('2017-06-20 09:34:00'), SECOND('2017-06-20 09:34:00'),
+            HOUR("09:34:00"), MINUTE('09:34:00'), SECOND('09:34:00'),
+            HOUR("09:34"), MINUTE('09:34'), SECOND('09:34')
         `
         const actual = parseAndInfer(sql, dbSchema);
 
         const expected : TypeInferenceResult = {
-            columns: ['int', 'int', 'int', 'int', 'int', 'int'],
+            columns: ['int', 'tinyint', 'tinyint', 'int', 'tinyint', 'tinyint', 'int', 'tinyint', 'tinyint'],
             parameters: []
         }
 
         assert.deepEqual(actual, expected);
     })
 
-    it('SELECT MINUTE("2017-06-20 09:34:00");', () => {
-        const sql = `SELECT 
-            MINUTE("2017-06-20 09:34:00"), MINUTE('2017-06-20 09:34:00'), 
-            MINUTE("09:34:00"), MINUTE('09:34:00'),
-            MINUTE("09:34"), MINUTE('09:34')
-        `
-        const actual = parseAndInfer(sql, dbSchema);
-
-        const expected : TypeInferenceResult = {
-            columns: ['tinyint', 'tinyint', 'tinyint', 'tinyint', 'tinyint', 'tinyint'],
-            parameters: []
+    it(`SELECT HOUR('2017-06-20')`, () => {
+        const sql = `SELECT HOUR('2017-06-20')`;
+        try {
+            parseAndInfer(sql, dbSchema);
+            assert.fail('Should throw an exception'); //Only DATE and DATETIME are allowed
         }
-
-        assert.deepEqual(actual, expected);
+        catch(e) {
+            const expectedMessage = 'Type mismatch: date and time';
+            assert.deepEqual(e.message, expectedMessage);
+        }
+    })
+    it(`SELECT MINUTE('2017-06-20')`, () => {
+        const sql = `SELECT MINUTE('2017-06-20')`;
+        try {
+            parseAndInfer(sql, dbSchema);
+            assert.fail('Should throw an exception'); //Only DATE and DATETIME are allowed
+        }
+        catch(e) {
+            const expectedMessage = 'Type mismatch: date and time';
+            assert.deepEqual(e.message, expectedMessage);
+        }
+    })
+    it(`SELECT SECOND('2017-06-20')`, () => {
+        const sql = `SELECT SECOND('2017-06-20')`;
+        try {
+            parseAndInfer(sql, dbSchema);
+            assert.fail('Should throw an exception'); //Only DATE and DATETIME are allowed
+        }
+        catch(e) {
+            const expectedMessage = 'Type mismatch: date and time';
+            assert.deepEqual(e.message, expectedMessage);
+        }
     })
 
-    it('SELECT SECOND("2017-06-20 09:34:00");', () => {
+    it('SELECT YEAR, MONTH and DAY with literal', () => {
         const sql = `SELECT 
-            SECOND("2017-06-20 09:34:00"), SECOND('2017-06-20 09:34:00'), 
-            SECOND("09:34:00"), SECOND('09:34:00'),
-            SECOND("09:34"), SECOND('09:34')
+            YEAR("2017-06-20 09:34:00"), MONTH('2017-06-20 09:34:00'), DAY('2017-06-20 09:34:00'),
+            YEAR("2017-06-20"), MONTH('2017-06-20'), DAY('2017-06-20')
         `
         const actual = parseAndInfer(sql, dbSchema);
 
         const expected : TypeInferenceResult = {
-            columns: ['tinyint', 'tinyint', 'tinyint', 'tinyint', 'tinyint', 'tinyint'],
+            columns: ['year', 'tinyint', 'tinyint', 'year', 'tinyint', 'tinyint'],
             parameters: []
         }
 
@@ -359,8 +364,8 @@ describe('type-inference - functions', () => {
 
         const expected : TypeInferenceResult = {
             columns: ['int', 'int', 'int', 'int', 'int', 'int', 'int', 'int', 'int'],
-            parameters: ['date', 'date', 'date', 'date', 'date', 'date', 'date', 'date', 
-            'date', 'date', 'date', 'date', 'date', 'date', 'date', 'date', 'date', 'date']   
+            parameters: ['datetime', 'datetime', 'datetime', 'datetime', 'datetime', 'datetime', 'datetime', 'datetime', 
+            'datetime', 'datetime', 'datetime', 'datetime', 'datetime', 'datetime', 'datetime', 'datetime', 'datetime', 'datetime']   
         }
 
         assert.deepEqual(actual, expected);
@@ -368,14 +373,12 @@ describe('type-inference - functions', () => {
 
     it(`SELECT TIMESTAMPDIFF(SECOND, CURTIME(), CURTIME())`, () => {
         const sql = `SELECT TIMESTAMPDIFF(SECOND, CURTIME(), CURTIME())`;
-        try {
-            parseAndInfer(sql, dbSchema);
-            assert.fail('Should throw an exception'); //Only DATE and DATETIME are allowed
+        const actual =  parseAndInfer(sql, dbSchema);
+        const expected : TypeInferenceResult = {
+            columns: ['int'],
+            parameters: []   
         }
-        catch(e) {
-            const expectedMessage = 'Type mismatch: time and date';
-            assert.deepEqual(e.message, expectedMessage);
-        }
+        assert.deepEqual(actual, expected);
     })
 
     it(`SELECT TIMESTAMPDIFF(SECOND, CURDATE(), CURDATE())`, () => {
@@ -409,9 +412,22 @@ describe('type-inference - functions', () => {
             assert.fail('Should throw an exception'); //Only DATE and DATETIME are allowed
         }
         catch(e) {
-            const expectedMessage = 'Type mismatch: varchar and date';
+            const expectedMessage = 'Type mismatch: varchar and datetime';
             assert.deepEqual(e.message, expectedMessage);
         }
+    })
+
+    // - str_to_date('2014-01-01', '%Y-%m-%d') AS days
+    it(`SELECT str_to_date('2015-01-12', '%Y-%m-%d')`, () => {
+        const sql = `SELECT str_to_date('2015-01-12', '%Y-%m-%d') - str_to_date('2014-01-01', '%Y-%m-%d') AS days`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['bigint'],
+            parameters: []   
+        }
+
+        assert.deepEqual(actual, expected);
     })
     
 })
