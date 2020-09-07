@@ -36,6 +36,7 @@ describe('parse update statements', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Update',
             multipleRowsResult: false,
             columns,
             data: [
@@ -71,6 +72,7 @@ describe('parse update statements', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql: expectedSql,
+            queryType: 'Update',
             multipleRowsResult: false,
             columns,
             data: [
@@ -112,6 +114,7 @@ describe('parse update statements', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql: expectedSql,
+            queryType: 'Update',
             multipleRowsResult: false,
             columns,
             data: [

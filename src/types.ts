@@ -8,10 +8,11 @@ export type DBSchema = {
 
 export type SchemaDef = {
     sql: string;
+    queryType: 'Select' | 'Insert' | 'Update' | 'Delete'
     multipleRowsResult: boolean;
-    columns: ColumnDef[];
+    columns: ColumnDef[]; //TODO - ColumnDef and ParamterDef should be the same
     orderByColumns?: string[];
-    parameters: ParameterDef[];
+    parameters: ParameterDef[]; 
     data?: ParameterDef[];
 }
 
