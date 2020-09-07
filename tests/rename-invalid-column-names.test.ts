@@ -41,6 +41,7 @@ describe('rename invalid names', () => {
 
         const schema : SchemaDef = {
             sql: 'UPDATE ...',
+            queryType: 'Update',
             multipleRowsResult: true,
             columns: [
                 {

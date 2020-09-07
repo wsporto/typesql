@@ -22,6 +22,7 @@ describe('parse delete statements', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql: 'delete from mytable1 where id = ?',
+            queryType: 'Delete',
             multipleRowsResult: false,
             columns: [
                 {
@@ -51,6 +52,7 @@ describe('parse delete statements', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql: 'delete from mytable1 where value = 0 or value is null',
+            queryType: 'Delete',
             multipleRowsResult: false,
             columns: [
                 {
@@ -81,6 +83,7 @@ describe('parse delete statements', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql: 'delete from mytable1 t1 where t1.id = ?',
+            queryType: 'Delete',
             multipleRowsResult: false,
             columns: [
                 {

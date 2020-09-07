@@ -26,6 +26,7 @@ describe('Test select with multiples tables', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -73,6 +74,7 @@ describe('Test select with multiples tables', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -105,6 +107,7 @@ describe('Test select with multiples tables', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -142,6 +145,7 @@ describe('Test select with multiples tables', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -190,6 +194,7 @@ describe('Test select with multiples tables', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: false, //changed at v0.3.0
             columns: [
                 {
@@ -224,6 +229,7 @@ describe('Test select with multiples tables', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: false, //changed at v0.3.0
             columns: [
                 {
@@ -292,6 +298,7 @@ describe('Test select with multiples tables', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -354,6 +361,7 @@ describe('Test select with multiples tables', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -385,6 +393,7 @@ describe('Test select with multiples tables', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -430,6 +439,7 @@ describe('Test select with multiples tables', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -456,6 +466,7 @@ describe('Test select with multiples tables', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -481,6 +492,7 @@ describe('Test select with multiples tables', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -509,6 +521,7 @@ describe('Test select with multiples tables', () => {
         //Add the sufix _2, _3 to the duplicated names
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -562,6 +575,7 @@ describe('Test select with multiples tables', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -605,6 +619,7 @@ describe('Test select with multiples tables', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -647,6 +662,7 @@ describe('Test select with multiples tables', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {

@@ -28,6 +28,7 @@ export function describeSql(dbSchema: ColumnSchema[], sql: string, namedParamete
     
         const schemaDef: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: queryInfo.multipleRowsResult,
             columns: columnDef,
             parameters: parametersDef,
@@ -56,6 +57,7 @@ export function describeSql(dbSchema: ColumnSchema[], sql: string, namedParamete
         const verifiedParameters = parameters.map( param => ({...param, columnType: verifyNotInferred(param.columnType)}))
         const schemaDef: SchemaDef = {
             sql: sql,
+            queryType: 'Insert',
             multipleRowsResult: false,
             columns: resultColumns,
             parameters: verifiedParameters,
@@ -79,6 +81,7 @@ export function describeSql(dbSchema: ColumnSchema[], sql: string, namedParamete
 
         const schemaDef: SchemaDef = {
             sql: sql,
+            queryType: 'Update',
             multipleRowsResult: false,
             columns: resultColumns,
             parameters: addParameterNames(queryInfo.parameters, whereParametersNames),
@@ -97,6 +100,7 @@ export function describeSql(dbSchema: ColumnSchema[], sql: string, namedParamete
         const parameters = namedParameters? addParameterNames(queryInfo.parameters, namedParameters) : queryInfo.parameters;
         const schemaDef: SchemaDef = {
             sql: sql,
+            queryType: 'Delete',
             multipleRowsResult: false,
             columns: resultColumns,
             parameters,

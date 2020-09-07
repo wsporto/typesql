@@ -1,207 +1,15 @@
 import assert from "assert";
-import { TsFieldDescriptor } from "../src/types";
-import { TsDescriptor, generateReturnName, convertToCamelCaseName, generateParamsType, generateDataType, generateFunction, generateReturnType, replaceOrderByParam } from "../src/code-generator";
+import { TsDescriptor, convertToCamelCaseName,  replaceOrderByParam, generateTsCode, generateTsDescriptor } from "../src/code-generator";
+import { describeSql } from "../src/describe-query";
+import { dbSchema } from "./mysql-query-analyzer/create-schema";
 
 describe('code-generator', () => {
-    
-    it('generate return name with isMultResult = true', () => {
-        const queryName = convertToCamelCaseName('update-person');
-        const actual = generateReturnName(queryName);
-        const expected = 'UpdatePersonResult';
-        assert.deepEqual(actual, expected);
-    })
-
-    it('generate params type', () => {
-        const queryName = convertToCamelCaseName('get-person');
-        const fields: TsFieldDescriptor[] = [
-            {
-                name: 'param1',
-                tsType: 'number',
-                notNull: true
-            },
-            {
-                name: 'param2',
-                tsType: 'string',
-                notNull: false
-            }
-        ]
-        const includeOrderBy = false;
-        const actual = generateParamsType(queryName, fields, includeOrderBy);
-        const expected = `
-        export type GetPersonParams = {
-            param1: number;
-            param2?: string;
-        }
-        `
-
-        assert.deepEqual(actual.replace(/\s/g, ''), expected.replace(/\s/g, ''));
-    })
-
-    it('generate params type with order by', () => {
-        const queryName = convertToCamelCaseName('get-person');
-        const fields: TsFieldDescriptor[] = [
-            {
-                name: 'param1',
-                tsType: 'number',
-                notNull: true
-            },
-            {
-                name: 'param2',
-                tsType: 'string',
-                notNull: false
-            }
-        ]
-        const includeOrderBy = true;
-
-        const actual = generateParamsType(queryName, fields, includeOrderBy);
-        const expected = `
-        export type GetPersonParams = {
-            param1: number;
-            param2?: string;
-            orderBy: [GetPersonOrderBy, ...GetPersonOrderBy[]];
-        }
-        `
-
-        assert.deepEqual(actual.replace(/\s/g, ''), expected.replace(/\s/g, ''));
-    })
-
-    it('generate params type - no fields', () => {
-        const queryName = convertToCamelCaseName('get-person');
-        const fields: TsFieldDescriptor[] = []
-        const includeOrderBy = false;
-        const actual = generateParamsType(queryName, fields, includeOrderBy);
-        const expected = '';
-
-        assert.deepEqual(actual, expected);
-    })
-
-    it('generate params type - only order by', () => {
-        const queryName = convertToCamelCaseName('get-person');
-        const fields: TsFieldDescriptor[] = []
-        const includeOrderBy = true;
-        const actual = generateParamsType(queryName, fields, includeOrderBy);
-        const expected = `
-        export type GetPersonParams = {
-            orderBy: [GetPersonOrderBy, ...GetPersonOrderBy[]];
-        }
-        `
-
-        assert.deepEqual(actual.replace(/\s/g, ''), expected.replace(/\s/g, ''));
-    })
-
-    it('generate params type - duplicated field name', () => {
-        const queryName = convertToCamelCaseName('get-person');
-        const fields: TsFieldDescriptor[] = [
-            {
-                name: 'name',
-                tsType: 'string',
-                notNull: true
-            },
-            {
-                name: 'name',
-                tsType: 'string',
-                notNull: true
-            }
-        ]
-        const includeOrderBy = false;
-        const actual = generateParamsType(queryName, fields, includeOrderBy);
-        const expected = `
-        export type GetPersonParams = {
-            name: string;
-        }
-        `
-
-        assert.deepEqual(actual.replace(/\s/g, ''), expected.replace(/\s/g, ''));
-    })
-
-    it('generate data type', () => {
-        const queryName = convertToCamelCaseName('get-person');
-        const fields: TsFieldDescriptor[] = [
-            {
-                name: 'id',
-                tsType: 'number',
-                notNull: true
-            },
-            {
-                name: 'name',
-                tsType: 'string',
-                notNull: false
-            }
-        ]
-        const actual = generateDataType(queryName, fields);
-        const expected = `
-        export type GetPersonData = {
-            id: number;
-            name?: string;
-        }
-        `
-
-        assert.deepEqual(actual.replace(/\s/g, ''), expected.replace(/\s/g, ''));
-    })
-
-    it('generate result type', () => {
-        const queryName = convertToCamelCaseName('get-person');
-        const fields: TsFieldDescriptor[] = [
-            {
-                name: 'id',
-                tsType: 'number',
-                notNull: true
-            },
-            {
-                name: 'name',
-                tsType: 'string',
-                notNull: false
-            }
-        ]
-        const actual = generateReturnType(queryName, fields);
-        const expected = `
-        export type GetPersonResult = {
-            id: number;
-            name?: string;
-        }
-        `
-
-        assert.deepEqual(actual.replace(/\s/g, ''), expected.replace(/\s/g, ''));
-    })
-
-    it('generate main function', () => {
-        const queryName = convertToCamelCaseName('get-person');
-        const tsDescriptor : TsDescriptor = {
-            sql: 'select id, name from person',
-            multipleRowsResult: true,
-            columns: [
-                {
-                    name: 'id',
-                    tsType: 'number',
-                    notNull: true
-                },
-                {
-                    name: 'name',
-                    tsType: 'string',
-                    notNull: false
-                }
-            ],
-            parameters: []
-        }
-
-        const actual = generateFunction(queryName, tsDescriptor, 'node');
-        const expected = `
-        export async function getPerson(connection: Connection) : Promise<GetPersonResult[]> {
-            const sql = \`
-            select id, name from person
-            \`;
-            return connection.query(sql)
-                .then( res => res[0] as GetPersonResult[] );
-        }
-        `
-
-        assert.deepEqual(actual.replace(/\s/g, ''), expected.replace(/\s/g, ''));
-    })
-
+  
     it('generate main function with parameters', () => {
-        const queryName = convertToCamelCaseName('get-person');
+        const queryName = 'get-person';
         const tsDescriptor : TsDescriptor = {
             sql: 'select id, name from person where id = ?',
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -224,24 +32,36 @@ describe('code-generator', () => {
             ]
         }
 
-        const actual = generateFunction(queryName, tsDescriptor, 'node');
-        const expected = `
-        export async function getPerson(connection: Connection, params: GetPersonParams) : Promise<GetPersonResult[]> {
-            const sql = \`
-            select id, name from person where id = ?
-            \`;
-            return connection.query(sql, [params.param1])
-                .then( res => res[0] as GetPersonResult[] );
-        }
-        `
+        const actual = generateTsCode(tsDescriptor, queryName, 'node');
+        const expected = 
+`import { Connection } from 'mysql2/promise';
 
-        assert.deepEqual(actual.replace(/\s/g, ''), expected.replace(/\s/g, ''));
+export type GetPersonParams = {
+    param1: number;
+}
+
+export type GetPersonResult = {
+    id: number;
+    name?: string;
+}
+
+export async function getPerson(connection: Connection, params: GetPersonParams) : Promise<GetPersonResult[]> {
+    const sql = \`
+    select id, name from person where id = ?
+    \`
+
+    return connection.query(sql, [params.param1])
+        .then( res => res[0] as GetPersonResult[] );
+}`
+
+        assert.deepEqual(actual, expected);
     })
 
     it('generate main function with data and parameters', () => {
         const queryName = convertToCamelCaseName('update-person');
         const tsDescriptor : TsDescriptor = {
             sql: 'update person set name=? where id = ?', 
+            queryType: 'Update',
             multipleRowsResult: false,
             columns: [
                 {
@@ -266,24 +86,39 @@ describe('code-generator', () => {
             ]
         }
 
-        const actual = generateFunction(queryName, tsDescriptor, 'node');
-        const expected = `
-        export async function updatePerson(connection: Connection, data: UpdatePersonData, params: UpdatePersonParams) : Promise<UpdatePersonResult> {
-            const sql = \`
-            update person set name=? where id = ?
-            \`;
-            return connection.query(sql, [data.name, params.param1])
-                .then( res => res[0] as UpdatePersonResult );
-        }
-        `
+        const actual = generateTsCode(tsDescriptor, queryName, 'node');
+        const expected = 
+`import { Connection } from 'mysql2/promise';
 
-        assert.deepEqual(actual.replace(/\s/g, ''), expected.replace(/\s/g, ''));
+export type UpdatePersonData = {
+    name: string;
+}
+
+export type UpdatePersonParams = {
+    param1: number;
+}
+
+export type UpdatePersonResult = {
+    affectedRows: number;
+}
+
+export async function updatePerson(connection: Connection, data: UpdatePersonData, params: UpdatePersonParams) : Promise<UpdatePersonResult> {
+    const sql = \`
+    update person set name=? where id = ?
+    \`
+
+    return connection.query(sql, [data.name, params.param1])
+        .then( res => res[0] as UpdatePersonResult );
+}`
+
+        assert.deepEqual(actual, expected);
     })
 
     it('generate main function only with order by parameter', () => {
         const queryName = convertToCamelCaseName('select-person');
         const tsDescriptor : TsDescriptor = {
             sql: 'SELECT id FROM person ORDER BY ?', 
+            queryType: 'Select',
             multipleRowsResult: false,
             columns: [
                 {
@@ -297,18 +132,38 @@ describe('code-generator', () => {
             orderByColumns: ['id', 'name']
         }
 
-        const actual = generateFunction(queryName, tsDescriptor, 'node');
-        const expected = `
-        export async function selectPerson(connection: Connection, params: SelectPersonParams) : Promise<SelectPersonResult> {
-            const sql = \`
-            SELECT id FROM person ORDER BY \${escapeOrderBy(params.orderBy)}
-            \`;
-            return connection.query(sql)
-                .then( res => res[0] as SelectPersonResult );
-        }
-        `
+        const actual = generateTsCode(tsDescriptor, queryName, 'node');
+        const expected = 
+`import { Connection } from 'mysql2/promise';
 
-        assert.deepEqual(actual.replace(/\s/g, ''), expected.replace(/\s/g, ''));
+export type SelectPersonParams = {
+    orderBy: [SelectPersonOrderBy, ...SelectPersonOrderBy[]];
+}
+
+export type SelectPersonResult = {
+    id: number;
+}
+
+export async function selectPerson(connection: Connection, params: SelectPersonParams) : Promise<SelectPersonResult | null> {
+    const sql = \`
+    SELECT id FROM person ORDER BY \${escapeOrderBy(params.orderBy)}
+    \`
+
+    return connection.query(sql)
+        .then( res => res[0] as SelectPersonResult[] )
+        .then( res => res[0] );
+}
+
+export type SelectPersonOrderBy = {
+    column: "id" | "name";
+    direction: 'asc' | 'desc';
+}
+
+function escapeOrderBy(orderBy: SelectPersonOrderBy[]) : string {
+    return orderBy.map( order => \`\\\`\${order.column}\\\` \${order.direction == 'desc' ? 'desc' : 'asc' }\`).join(', ');
+}`
+
+        assert.deepEqual(actual, expected);
     })
 
     it('test replace order by parameter', () => {
@@ -364,5 +219,159 @@ describe('code-generator', () => {
         
         assert.deepEqual(actual, expected);
 
+    })
+
+    it('test generateTsDescriptor - select without parameters', () => {
+        let sql = 'SELECT id FROM mytable1';
+        
+        const schemaDef = describeSql(dbSchema, sql);
+        const tsDescriptor = generateTsDescriptor(schemaDef);
+        const actual = generateTsCode(tsDescriptor, 'select-id', 'deno');
+        const expected = 
+`import { Client } from "https://deno.land/x/mysql/mod.ts";
+
+export type SelectIdResult = {
+    id: number;
+}
+
+export async function selectId(client: Client) : Promise<SelectIdResult[]> {
+    const sql = \`
+    SELECT id FROM mytable1
+    \`
+
+    return client.query(sql)
+        .then( res => res );
+}`
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it('test generateTsDescriptor - select with parameters', () => {
+        const sql = 'SELECT id from mytable1 where id = ? and value in (?)';
+        const schemaDef = describeSql(dbSchema, sql);
+        const tsDescriptor = generateTsDescriptor(schemaDef);
+        const actual = generateTsCode(tsDescriptor, 'selectId', 'deno');
+        const expected = 
+`import { Client } from "https://deno.land/x/mysql/mod.ts";
+
+export type SelectIdParams = {
+    param1: number;
+    param2: number[];
+}
+
+export type SelectIdResult = {
+    id: number;
+}
+
+export async function selectId(client: Client, params: SelectIdParams) : Promise<SelectIdResult | null> {
+    const sql = \`
+    SELECT id from mytable1 where id = ? and value in (?)
+    \`
+
+    return client.query(sql, [params.param1, params.param2])
+        .then( res => res );
+}`
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it('test generateTsDescriptor - update', () => {
+        const sql = 'UPDATE mytable1 SET value = ?';
+        const schemaDef = describeSql(dbSchema, sql);
+        const tsDescriptor = generateTsDescriptor(schemaDef);
+        const actual = generateTsCode(tsDescriptor, 'update-value', 'deno');
+        const expected = 
+`import { Client } from "https://deno.land/x/mysql/mod.ts";
+
+export type UpdateValueData = {
+    value?: number;
+}
+
+export type UpdateValueResult = {
+    affectedRows: number;
+    insertId: number;
+}
+
+export async function updateValue(client: Client, data: UpdateValueData) : Promise<UpdateValueResult> {
+    const sql = \`
+    UPDATE mytable1 SET value = ?
+    \`
+
+    return client.query(sql, [data.value])
+        .then( res => res );
+}`
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it('test generateTsDescriptor - update with parameters', () => {
+        const sql = 'UPDATE mytable1 SET value = ? WHERE id = ?';
+        const schemaDef = describeSql(dbSchema, sql);
+        const tsDescriptor = generateTsDescriptor(schemaDef);
+        const actual = generateTsCode(tsDescriptor, 'update-value', 'deno');
+
+        const expected = 
+`import { Client } from "https://deno.land/x/mysql/mod.ts";
+
+export type UpdateValueData = {
+    value?: number;
+}
+
+export type UpdateValueParams = {
+    param1: number;
+}
+
+export type UpdateValueResult = {
+    affectedRows: number;
+    insertId: number;
+}
+
+export async function updateValue(client: Client, data: UpdateValueData, params: UpdateValueParams) : Promise<UpdateValueResult> {
+    const sql = \`
+    UPDATE mytable1 SET value = ? WHERE id = ?
+    \`
+
+    return client.query(sql, [data.value, params.param1])
+        .then( res => res );
+}`
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it('test generateTsDescriptor - select with order by', () => {
+        const sql = 'SELECT id from mytable1 ORDER BY ?';
+        const schemaDef = describeSql(dbSchema, sql);
+        const tsDescriptor = generateTsDescriptor(schemaDef);
+        const actual = generateTsCode(tsDescriptor, 'selectId', 'deno');
+        const expected = 
+`import { Client } from "https://deno.land/x/mysql/mod.ts";
+
+export type SelectIdParams = {
+    orderBy: [SelectIdOrderBy, ...SelectIdOrderBy[]];
+}
+
+export type SelectIdResult = {
+    id: number;
+}
+
+export async function selectId(client: Client, params: SelectIdParams) : Promise<SelectIdResult[]> {
+    const sql = \`
+    SELECT id from mytable1 ORDER BY \${escapeOrderBy(params.orderBy)}
+    \`
+
+    return client.query(sql)
+        .then( res => res );
+}
+
+export type SelectIdOrderBy = {
+    column: "id" | "value";
+    direction: 'asc' | 'desc';
+}
+
+function escapeOrderBy(orderBy: SelectIdOrderBy[]) : string {
+    return orderBy.map( order => \`\\\`\${order.column}\\\` \${order.direction == 'desc' ? 'desc' : 'asc' }\`).join(', ');
+}`
+
+        assert.deepEqual(actual, expected);
     })
 })

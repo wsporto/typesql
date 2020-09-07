@@ -23,6 +23,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -49,6 +50,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -80,6 +82,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -106,6 +109,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -138,6 +142,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -164,6 +169,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -190,6 +196,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -216,6 +223,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -242,6 +250,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -268,6 +277,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -294,6 +304,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -320,6 +331,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -346,6 +358,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -372,6 +385,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -398,6 +412,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -424,6 +439,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -450,6 +466,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -476,6 +493,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -502,6 +520,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -528,6 +547,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -554,6 +574,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -580,6 +601,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -606,6 +628,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -632,6 +655,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -662,6 +686,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -692,6 +717,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -722,6 +748,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -752,6 +779,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -780,6 +808,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -820,6 +849,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -850,6 +880,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -876,6 +907,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -912,6 +944,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -943,6 +976,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -969,6 +1003,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -995,6 +1030,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -1021,6 +1057,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -1047,6 +1084,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -1083,6 +1121,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {
@@ -1119,6 +1158,7 @@ describe('infer-not-null', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
+            queryType: 'Select',
             multipleRowsResult: true,
             columns: [
                 {

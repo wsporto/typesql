@@ -21,6 +21,7 @@ describe('parse insert statements', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             multipleRowsResult: false,
+            queryType: 'Insert',
             sql: 'insert into mytable1 (value) values (?)',
             columns: [
                 {
@@ -189,6 +190,7 @@ describe('parse insert statements', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql: 'insert into all_types (int_column) values (?+?)',
+            queryType: 'Insert',
             multipleRowsResult: false,
             columns: [
                 {
@@ -229,6 +231,7 @@ describe('parse insert statements', () => {
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql: 'insert into all_types (varchar_column, int_column) values (concat(?, ?), ?+?)',
+            queryType: 'Insert',
             multipleRowsResult: false,
             columns: [
                 {
