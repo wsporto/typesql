@@ -516,4 +516,52 @@ describe('type-inference - functions', () => {
             assert.deepEqual(e.message, expected);
         }
     })
+
+    it(`SELECT ADDDATE('2008-01-02', INTERVAL 31 DAY)`, () => {
+        const sql = `SELECT ADDDATE('2008-01-02', INTERVAL 31 DAY)`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['datetime'],
+            parameters: []   
+        }
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it(`SELECT ADDDATE(?, INTERVAL ? DAY)`, () => {
+        const sql = `SELECT ADDDATE(?, INTERVAL ? DAY)`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['datetime'],
+            parameters: ['datetime', 'bigint']   
+        }
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it(`SELECT ADDDATE('2008-01-02', 31)`, () => {
+        const sql = `SELECT ADDDATE('2008-01-02', 31)`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['datetime'],
+            parameters: []   
+        }
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it(`SELECT ADDDATE(?, ?)`, () => {
+        const sql = `SELECT ADDDATE(?, ?)`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['datetime'],
+            parameters: ['datetime', 'bigint']   
+        }
+
+        assert.deepEqual(actual, expected);
+    })
 })
