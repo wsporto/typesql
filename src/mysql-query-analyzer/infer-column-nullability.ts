@@ -205,7 +205,7 @@ function inferNotNullRuntimeFunctionCall(simpleExprRuntimeFunction: SimpleExprRu
         const expr = functionCall.exprWithParentheses()?.expr()!;
         return inferNotNullExpr(expr, dbSchema, fromColumns);
     }
-    if(functionCall.ADDDATE_SYMBOL()) {
+    if(functionCall.ADDDATE_SYMBOL() || functionCall.DATE_ADD_SYMBOL()) {
         const exprList = functionCall.expr();
         return exprList.every( expr => inferNotNullExpr(expr, dbSchema, fromColumns));
     }

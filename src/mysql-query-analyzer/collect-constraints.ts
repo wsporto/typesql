@@ -792,7 +792,7 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
             return varcharParam;
         }
 
-        if(runtimeFunctionCall.ADDDATE_SYMBOL()) {
+        if(runtimeFunctionCall.ADDDATE_SYMBOL() || runtimeFunctionCall.DATE_ADD_SYMBOL()) {
 
             //SELECT ADDDATE('2008-01-02', INTERVAL 31 DAY)
             //SELECT ADDDATE('2008-01-02', 31)
