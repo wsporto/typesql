@@ -8,8 +8,8 @@ import {
     SimpleExprListContext, ExprListContext, PrimaryExprIsNullContext, ExprContext, ExprIsContext, BoolPriContext,
     PrimaryExprPredicateContext, SimpleExprContext, PredicateOperationsContext, ExprNotContext, ExprAndContext,
     ExprOrContext, ExprXorContext, PredicateExprLikeContext, SelectStatementContext, SimpleExprRuntimeFunctionContext,
-    SubqueryContext, InsertStatementContext, UpdateStatementContext, DeleteStatementContext, PrimaryExprAllAnyContext, FromClauseContext
-} from "ts-mysql-parser";
+    SubqueryContext, InsertStatementContext, UpdateStatementContext, DeleteStatementContext, PrimaryExprAllAnyContext, 
+    FromClauseContext, SimpleExprIntervalContext } from "ts-mysql-parser";
 
 import { ColumnSchema, ColumnDef, TypeInferenceResult, InsertInfoResult, UpdateInfoResult, DeleteInfoResult } from "./types";
 import { getColumnsFrom, findColumn, splitName, selectAllColumns, findColumn2 } from "./select-columns";
@@ -672,9 +672,19 @@ function walkBitExpr(context: InferenceContext, bitExpr: BitExprContext): Type {
         })
         return bitExprType;
     }
-    const expr = bitExpr.expr();
-    if (expr) {
+    
+    if (bitExpr.INTERVAL_SYMBOL()) {
+        const bitExpr2 = bitExpr.bitExpr()[0];
+        const leftType = walkBitExpr(context, bitExpr2);
+        const expr = bitExpr.expr()!; //expr interval
         walkExpr(context, expr);
+        context.constraints.push({
+            expression: bitExpr.text,
+            type1: leftType,
+            type2: freshVar('datetime', 'datetime')
+        })
+        return freshVar('datetime', 'datetime');
+
     }
     throw Error('Invalid sql');
 }
@@ -1101,6 +1111,28 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
             })
         }
         return caseType;
+    }
+    if( simpleExpr instanceof SimpleExprIntervalContext ) {
+        const exprList = simpleExpr.expr();
+        const exprLeft = exprList[0];
+        const exprRight =  exprList[1];
+        const typeLeft = walkExpr(context, exprLeft);
+        const typeRight = walkExpr(context, exprRight);
+        context.constraints.push({
+            expression: exprLeft.text,
+            type1: typeLeft,
+            type2: freshVar('bigint', 'bigint')
+        })
+        if(typeRight.kind == 'TypeVar' && (isDateLiteral(typeRight.name) || isDateTimeLiteral(typeRight.name))) {
+            typeRight.type = 'datetime';
+        }
+        context.constraints.push({
+            expression: exprRight.text,
+            type1: typeRight,
+            type2: freshVar('datetime', 'datetime')
+        })
+        return freshVar('datetime', 'datetime');
+
     }
     throw Error('Invalid expression');
 }

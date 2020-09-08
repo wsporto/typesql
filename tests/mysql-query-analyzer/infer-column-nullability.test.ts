@@ -317,4 +317,40 @@ describe('Infer column nullability', () => {
         assert.deepEqual(actual, expected);
     })
 
+    it(`SELECT INTERVAL ? MONTH + ?`, () => {
+        const sql = `SELECT INTERVAL ? MONTH + ?`;
+        const actual = parseAndInferNotNull(sql, dbSchema);
+
+        const expected = [true];
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it(`SELECT INTERVAL ? MONTH + STR_TO_DATE(?,'%d,%m,%Y')`, () => {
+        const sql = `SELECT INTERVAL ? MONTH + STR_TO_DATE(?,'%d,%m,%Y')`;
+        const actual = parseAndInferNotNull(sql, dbSchema);
+
+        const expected = [false];
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it(`SELECT INTERVAL ? MONTH + '2018-05-01'`, () => {
+        const sql = `SELECT INTERVAL ? MONTH + '2018-05-01'`; //The type inference must guarantee a valid date.
+        const actual = parseAndInferNotNull(sql, dbSchema);
+
+        const expected = [true];
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it(`SELECT INTERVAL ? MONTH + ?`, () => {
+        const sql = `SELECT INTERVAL ? MONTH + null`;
+        const actual = parseAndInferNotNull(sql, dbSchema);
+
+        const expected = [false];
+
+        assert.deepEqual(actual, expected);
+    })
+
 });

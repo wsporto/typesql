@@ -441,5 +441,79 @@ describe('type-inference - functions', () => {
 
         assert.deepEqual(actual, expected);
     })
+
+    //INTERVAL expr unit is permitted on either side of the + operator if the expression on the other side is a date or datetime value. 
+    //https://dev.mysql.com/doc/refman/8.0/en/expressions.html#temporal-intervals
+    it(`select current_date - INTERVAL 1 DAY`, () => {
+        const sql = `select current_date - INTERVAL 1 DAY`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['datetime'],
+            parameters: []   
+        }
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it(`SELECT ? - INTERVAL 1 DAY`, () => {
+        const sql = `SELECT ? - INTERVAL 1 DAY`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['datetime'],
+            parameters: ['datetime']   
+        }
+
+        assert.deepEqual(actual, expected);
+    })
     
+    it(`SELECT INTERVAL 1 DAY + '2018-12-31'`, () => {
+        const sql = `SELECT INTERVAL 1 DAY + '2018-12-31'`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['datetime'],
+            parameters: []   
+        }
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it(`SELECT INTERVAL 1 DAY + '2018-12-31'`, () => {
+        const sql = `SELECT INTERVAL ? DAY + '2018-12-31'`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['datetime'],
+            parameters: ['bigint']   
+        }
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it(`SELECT INTERVAL ? MONTH + '2018-12-31 13:01:02'`, () => {
+        const sql = `SELECT INTERVAL ? MONTH + '2018-12-31 13:01:02'`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['datetime'],
+            parameters: ['bigint']   
+        }
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it(`INTERVAL expression with invalid date`, () => {
+        const sql = `SELECT INTERVAL ? MONTH + '2018-12-3'`;
+
+        try {
+            parseAndInfer(sql, dbSchema);
+            assert.fail("Should thrown an exception.");
+        }
+        catch (e) {
+            const expected = 'Type mismatch: varchar and datetime';
+            assert.deepEqual(e.message, expected);
+        }
+    })
 })
