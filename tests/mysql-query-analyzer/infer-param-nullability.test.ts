@@ -110,4 +110,13 @@ describe('Infer param nullability', () => {
 
         assert.deepEqual(actual, expected);
     })
+
+    it(`SELECT INTERVAL ? MONTH + ?`, () => {
+        const sql = `SELECT INTERVAL ? MONTH + ?`;
+        const actual = parseAndInferParamNullability(sql);
+
+        const expected = [true, true];
+
+        assert.deepEqual(actual, expected);
+    })
 });

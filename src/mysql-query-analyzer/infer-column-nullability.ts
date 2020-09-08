@@ -3,8 +3,7 @@ import { QuerySpecificationContext, SelectItemContext, ExprContext, ExprIsContex
     PredicateContext, BitExprContext, SimpleExprContext, FunctionCallContext, SimpleExprFunctionContext, SimpleExprColumnRefContext, 
     WhereClauseContext, SimpleExprListContext, PrimaryExprIsNullContext, PrimaryExprCompareContext, ExprNotContext, ExprAndContext, 
     ExprXorContext, ExprOrContext, SimpleExprParamMarkerContext, SimpleExprLiteralContext, SimpleExprCaseContext, SimpleExprSumContext, 
-    SimpleExprSubQueryContext, 
-    SimpleExprRuntimeFunctionContext} from "ts-mysql-parser";
+    SimpleExprSubQueryContext, SimpleExprRuntimeFunctionContext,SimpleExprIntervalContext} from "ts-mysql-parser";
 import { ColumnSchema, ColumnDef, FieldName } from "./types";
 import { getColumnsFrom, findColumn, splitName, selectAllColumns } from "./select-columns";
 import { getParentContext, inferParameterNotNull } from "./infer-param-nullability";
@@ -177,6 +176,11 @@ function inferNotNullSimpleExpr(simpleExpr: SimpleExprContext, dbSchema: ColumnS
         else {
             return false; //if doesn't have else, the not null can't be inferred
         }
+    }
+    if (simpleExpr instanceof SimpleExprIntervalContext) {
+        const exprList = simpleExpr.expr();
+        return exprList.every( expr => inferNotNullExpr(expr, dbSchema, fromColumns ));
+
     }
     throw Error('Error during column null inference');
 }

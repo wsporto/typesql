@@ -322,7 +322,7 @@ const functionAlias : ColumnSchema[] = [
 
 export function findColumn(fieldName: FieldName, columns: ColumnDef[]): ColumnDef {
     //TODO - Put tableAlias always ''
-    const functionType = functionAlias.find( col => col.column == fieldName.name);
+    const functionType = functionAlias.find( col => col.column.toLowerCase() == fieldName.name.toLowerCase());
     if(functionType) {
         const colDef : ColumnDef = {
             column: functionType.column,
