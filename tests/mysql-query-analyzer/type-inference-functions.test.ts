@@ -568,4 +568,30 @@ describe('type-inference - functions', () => {
 
         assert.deepEqual(actual, expected);
     })
+
+    it(`Pass invalid date to ADDDATE function`, () => {
+        const sql = `SELECT ADDDATE('2008-01-0', 31)`;
+
+        try {
+            parseAndInfer(sql, dbSchema);
+            assert.fail("Should thrown an exception.");
+        }
+        catch(e) {
+            const expected = 'Type mismatch: varchar and datetime';
+            assert.deepEqual(e.message, expected);
+        }
+    })
+
+    it(`Pass invalid date to DATE_ADD function`, () => {
+        const sql = `SELECT DATE_ADD('2008-01-0', INTERVAL 31 DAY)`;
+
+        try {
+            parseAndInfer(sql, dbSchema);
+            assert.fail("Should thrown an exception.");
+        }
+        catch(e) {
+            const expected = 'Type mismatch: varchar and datetime';
+            assert.deepEqual(e.message, expected);
+        }
+    })
 })
