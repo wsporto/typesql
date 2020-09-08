@@ -353,4 +353,30 @@ describe('Infer column nullability', () => {
         assert.deepEqual(actual, expected);
     })
 
+    it(`SELECT ADDDATE('2008-01-02', INTERVAL 31 DAY)`, () => {
+        const sql = `SELECT ADDDATE('2008-01-02', INTERVAL 31 DAY)`; //The type inference must guarantee a valid date.
+        const actual = parseAndInferNotNull(sql, dbSchema);
+
+        const expected = [true];
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it(`SELECT ADDDATE(?, INTERVAL ? DAY)`, () => {
+        const sql = `SELECT ADDDATE(?, INTERVAL ? DAY)`;
+        const actual = parseAndInferNotNull(sql, dbSchema);
+
+        const expected = [true];
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it(`SELECT ADDDATE(null, INTERVAL ? DAY)`, () => {
+        const sql = `SELECT ADDDATE(null, INTERVAL 10 DAY), ADDDATE('2008-01-02', INTERVAL null DAY)`;
+        const actual = parseAndInferNotNull(sql, dbSchema);
+
+        const expected = [false, false];
+
+        assert.deepEqual(actual, expected);
+    })
 });

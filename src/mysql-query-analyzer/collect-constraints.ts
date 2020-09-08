@@ -791,6 +791,35 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
             walkExprListParameters(context, exprList, params);
             return varcharParam;
         }
+
+        if(runtimeFunctionCall.ADDDATE_SYMBOL()) {
+
+            //SELECT ADDDATE('2008-01-02', INTERVAL 31 DAY)
+            //SELECT ADDDATE('2008-01-02', 31)
+            const expr1 = runtimeFunctionCall.expr()[0];
+            const expr2 = runtimeFunctionCall.expr()[1];
+            const typeExpr1 = walkExpr(context, expr1);
+            const typeExpr2 = walkExpr(context, expr2);
+
+            if(typeExpr1.kind == 'TypeVar' && (isDateLiteral(typeExpr1.name) || isDateTimeLiteral(typeExpr1.name))) {
+                typeExpr1.type = 'datetime';
+            }
+            
+            context.constraints.push( {
+                expression: expr1.text,
+                type1: typeExpr1,
+                type2: freshVar('datetime', 'datetime')
+            })
+
+            context.constraints.push( {
+                expression: expr2.text,
+                type1: typeExpr2,
+                type2: freshVar('bigint', 'bigint')
+            })
+
+            return freshVar('datetime', 'datetime');
+        }
+
         if(runtimeFunctionCall.COALESCE_SYMBOL()) {
             const exprList = runtimeFunctionCall.exprListWithParentheses()?.exprList().expr();
             if(exprList) {
