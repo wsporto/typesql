@@ -3,42 +3,74 @@ import fs from "fs";
 import path from "path";
 import chokidar from "chokidar";
 import yargs from "yargs";
-import { generateTsFile } from "./code-generator";
+import { generateTsFile, writeFile } from "./code-generator";
 import { DbClient } from "./queryExectutor";
+import { generateInsertStatment, generateUpdateStatment, generateDeleteStatment, generateSelectStatment } from "./sql-generator";
+import { ColumnSchema2 } from "./mysql-query-analyzer/types";
+import { TypeSqlConfig, SqlGenOption } from "./types";
 
 function parseArgs() {
     return yargs
         .usage('Usage: $0 [options] DIRECTORY')
-        .option('database', {
-            alias: 'd',
+        .option('config', {
             describe: 'Database URI to connect to, e.g. -d mysql://user:password@localhost/mydb.',
             demandOption: true,
-            type: 'string' 
-        }).option('watch', {
-            alias: 'w',
-            describe: 'Watch for changes in the folders',
-            type: 'boolean'
-        }).option('target', {
-            alias: 't',
-            describe: 'Define the target runtime as node or deno. Default is node.',
-            choices: ['node', 'deno'],
-            default: 'node',
+            type: 'string',
+            default: 'typesql.json'
         })
+        .command(['compile [options]', 'c [options]'], 'Compile the queries and generate ts files', yargs => {
+            return yargs
+                .option('watch', {
+                    alias: 'w',
+                    describe: 'Watch for changes in the folders',
+                    type: 'boolean',
+                    default: false
+                })
+        }, args => {
+            const config = loadConfig(args.config);
+            compile(args.watch, config);
+        })
+        .command(['generate <option> <sql-name>', 'g <option> <sql-name>'], 'generate sql files templates', yargs => {
+            return yargs
+                .positional('option', {
+                    type: 'string',
+                    demandOption: true,
+                    choices: ['select', 'insert', 'update', 'delete', 's', 'i', 'u', 'd']
+                })
+                .positional('sql-name', {
+                    type: 'string',
+                    demandOption: true
+                })
+                .option('table', {
+                    alias: 't',
+                    type: 'string',
+                    demandOption: true,
+                })
+            .strict()
+        }, args => {
+            const config = loadConfig(args.config);
+            const genOption = args.option as SqlGenOption
+            writeSql(genOption, args.table, args["sql-name"], config);
+        })
+        
+        .demand(1, 'Please specify one of the commands!')
+        .wrap(null)
+        .strict()
         .argv;
 }
 
-function validateDirectories(dirPaths: string[]) {
-    if(dirPaths.length == 0) {
-        console.error("No input folder.");
-        return 1;
+
+
+function loadConfig(configPath: string) : TypeSqlConfig {
+    let rawdata = fs.readFileSync(configPath, 'utf-8');
+    let config = JSON.parse(rawdata);
+    return config;
+}
+
+function validateDirectories(dir: string) {
+    if(!fs.statSync(dir).isDirectory()) {
+        console.log(`The argument is not a directory: ${dir}`);
     }
-    for(const dir of dirPaths) {
-        if(!fs.statSync(dir).isDirectory()) {
-            console.log(`The argument is not a directory: ${dir}`);
-            return 1;
-        }
-    }
-    return dirPaths;
 }
 
 function watchDirectories(client:DbClient, dirPath: string, target: 'node' | 'deno') {
@@ -50,35 +82,66 @@ function watchDirectories(client:DbClient, dirPath: string, target: 'node' | 'de
 }
 
 async function main() {
-    const args = parseArgs();
-    
-    const dirPaths = validateDirectories(args._);
-    if(dirPaths == 1) return 1; //error
+    parseArgs();
+}
 
-    const dirPath = dirPaths[0];
-    const sqlFiles = fs.readdirSync(dirPath)
+async function compile(watch: boolean, config: TypeSqlConfig) {
+
+    const { sqlDir, databaseUri, target } = config;
+    validateDirectories(sqlDir);
+
+    const sqlFiles = fs.readdirSync(sqlDir)
         .filter( file => path.extname(file) == '.sql')
-        .map( sqlFileName => path.resolve(dirPath, sqlFileName));
+        .map( sqlFileName => path.resolve(sqlDir, sqlFileName));
     
     const client = new DbClient();
-    await client.connect(args.database);
+    await client.connect(databaseUri);
 
-    const target = args.target as 'node' | 'deno';
     const filesGeneration = sqlFiles.map( sqlFile => generateTsFile(client, sqlFile, target));
     await Promise.all(filesGeneration);
 
 
-    if(args.watch) {
-        console.log("watching");
-        watchDirectories(client, dirPath, target);
+    if(watch) {
+        console.log("watching mode!");
+        watchDirectories(client, sqlDir, target);
     }
     else {
         client.closeConnection();
     }
+}
 
+async function writeSql(stmtType: SqlGenOption, tableName: string, queryName: string, config: TypeSqlConfig) {
+    const { sqlDir, databaseUri } = config;
+    const client = new DbClient();
+    await client.connect(databaseUri);
 
+    const columns = await client.loadTableSchema(tableName)
+
+    client.closeConnection();
     
+    let generatedSql = generateSql(stmtType, tableName, columns);
+    const filePath = sqlDir + '/' + queryName;
+    writeFile(filePath, generatedSql);
+}
 
+function generateSql(stmtType: SqlGenOption, tableName: string, columns: ColumnSchema2[]) {
+    switch(stmtType) {
+        case 'select' :
+        case 's':
+            return generateSelectStatment(tableName, columns);
+        case 'insert': 
+        case 'i':
+            return generateInsertStatment(tableName, columns);
+        case 'update':
+            case 'u':
+            return generateUpdateStatment(tableName, columns);
+        case 'delete':
+        case 'd':
+            return generateDeleteStatment(tableName, columns);
+        default:
+            const exhaustive: never = stmtType;
+            return exhaustive;
+    }
 }
 
 main().then( () => console.log("finished!"));

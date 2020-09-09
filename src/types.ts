@@ -97,3 +97,11 @@ export type PreprocessedSql = {
 }
 
 export type CamelCaseName = Brand<string, 'CamelCase'>;
+
+export type TypeSqlConfig = {
+    databaseUri: string;
+    sqlDir: string;
+    target: 'node' | 'deno';
+}
+
+export type SqlGenOption = 'select' | 's' | 'insert' | 'i' | 'update' | 'u' | 'delete' | 'd';
