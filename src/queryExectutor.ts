@@ -2,7 +2,7 @@ import mysql2, { Connection, FieldPacket } from "mysql2/promise";
 import { Either, right, left } from "fp-ts/lib/Either";
 import { FieldDescriptor, InvalidSqlError } from "./types";
 import { FlagEnum, checkFlag, convertTypeCodeToMysqlType } from "./mysql-mapping";
-import { ColumnSchema } from "./mysql-query-analyzer/types";
+import { ColumnSchema, ColumnSchema2 } from "./mysql-query-analyzer/types";
 
 export class DbClient {
 
@@ -24,6 +24,24 @@ export class DbClient {
         `
         return this.connection.execute(sql)
             .then( res => res[0] as ColumnSchema[]);
+    }
+
+    async loadTableSchema(tableName: string) : Promise<ColumnSchema2[]> {
+        const sql = `
+        SELECT 
+            TABLE_SCHEMA as "schema", 
+            TABLE_NAME as "table", 
+            COLUMN_NAME as "column", 
+            DATA_TYPE as "column_type", 
+            IF(IS_NULLABLE='NO', true, false) as "notNull",
+            COLUMN_KEY as "columnKey",
+            IF(EXTRA = 'auto_increment', true, false) as "autoincrement"
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_NAME = ?
+        ORDER BY TABLE_NAME, ORDINAL_POSITION
+        `
+        return this.connection.execute(sql, [tableName])
+            .then( res => res[0] as ColumnSchema2[]);
     }
 
     createParams(sql: string, paramValue: '1' | '?') {

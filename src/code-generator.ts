@@ -208,7 +208,7 @@ export function replaceOrderByParam(sql: string) {
     return newSql;
 }
 
-function writeTsFile(filePath:string, tsContent: string) {
+export function writeFile(filePath:string, tsContent: string) {
     fs.writeFileSync(filePath, tsContent);
 }
 
@@ -241,7 +241,7 @@ export async function generateTsFile(client: DbClient, sqlFile: string, target: 
     }
     const tsDescriptor = isLeft(queryInfo) ? none : some(generateTsDescriptor(queryInfo.right));
     const tsContent = generateTsContent(tsDescriptor, queryName, target);
-    writeTsFile(tsFilePath, tsContent);
+    writeFile(tsFilePath, tsContent);
 }
 
 export type TsDescriptor = {

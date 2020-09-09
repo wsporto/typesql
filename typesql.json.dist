@@ -1,0 +1,5 @@
+{
+    "databaseUri": "mysql://root:password@localhost/mydb",
+    "sqlDir": "./sqls",
+    "target": "node"
+}

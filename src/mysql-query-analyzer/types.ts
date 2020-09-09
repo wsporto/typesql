@@ -10,6 +10,10 @@ export type ColumnSchema = {
     notNull: boolean;
 }
 
+export type ColumnSchema2 = ColumnSchema & {
+    autoincrement: boolean;
+}
+
 export type ColumnDef = {
     table: string;
     column: string;
