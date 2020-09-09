@@ -353,35 +353,41 @@ describe('Infer column nullability', () => {
         assert.deepEqual(actual, expected);
     })
 
-    it(`SELECT ADDDATE('2008-01-02', INTERVAL 31 DAY), DATE_ADD('2008-01-02', INTERVAL 31 DAY)`, () => {
+    it(`test ADDDATE, SUBDATE, DATE_ADD and DATE_SUB nullability with date literal`, () => {
         const sql = `SELECT 
             ADDDATE('2008-01-02', INTERVAL 31 DAY),
-            DATE_ADD('2008-01-02', INTERVAL 31 DAY)`; //The type inference must guarantee a valid date.
+            SUBDATE('2008-01-02', INTERVAL 31 DAY),
+            DATE_ADD('2008-01-02', INTERVAL 31 DAY),
+            DATE_SUB('2008-01-02', INTERVAL 31 DAY)`; //The type inference must guarantee a valid date.
         const actual = parseAndInferNotNull(sql, dbSchema);
 
-        const expected = [true, true];
+        const expected = [true, true, true, true];
 
         assert.deepEqual(actual, expected);
     })
 
-    it(`SELECT ADDDATE(?, INTERVAL ? DAY), SELECT DATE_ADD(?, INTERVAL ? DAY)`, () => {
+    it(`test ADDDATE, SUBDATE, DATE_ADD and and DATE_SUB nullability with parameters`, () => {
         const sql = `SELECT 
             ADDDATE(?, INTERVAL ? DAY),
-            DATE_ADD(?, INTERVAL ? DAY)`;
+            SUBDATE(?, INTERVAL ? DAY),
+            DATE_ADD(?, INTERVAL ? DAY),
+            DATE_SUB(?, INTERVAL ? DAY)`;
         const actual = parseAndInferNotNull(sql, dbSchema);
 
-        const expected = [true, true];
+        const expected = [true, true, true, true];
 
         assert.deepEqual(actual, expected);
     })
 
-    it(`SELECT ADDDATE(null, INTERVAL ? DAY), DATE_ADD(null, INTERVAL ? DAY)`, () => {
+    it(`test ADDDATE, SUBDATE, DATE_ADD and DATE_SUB nullability with null paramters`, () => {
         const sql = `SELECT 
             ADDDATE(null, INTERVAL 10 DAY), ADDDATE('2008-01-02', INTERVAL null DAY),
-            DATE_ADD(null, INTERVAL 10 DAY), DATE_ADD('2008-01-02', INTERVAL null DAY)`;
+            SUBDATE(null, INTERVAL 10 DAY), SUBDATE('2008-01-02', INTERVAL null DAY),
+            DATE_ADD(null, INTERVAL 10 DAY), DATE_ADD('2008-01-02', INTERVAL null DAY),
+            DATE_SUB(null, INTERVAL 10 DAY), DATE_SUB('2008-01-02', INTERVAL null DAY)`;
         const actual = parseAndInferNotNull(sql, dbSchema);
 
-        const expected = [false, false, false, false];
+        const expected = [false, false, false, false, false, false, false, false];
 
         assert.deepEqual(actual, expected);
     })

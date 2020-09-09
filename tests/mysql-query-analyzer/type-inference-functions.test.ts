@@ -517,10 +517,42 @@ describe('type-inference - functions', () => {
         }
     })
 
-    it(`SELECT ADDDATE('2008-01-02', INTERVAL 31 DAY), DATE_ADD('2008-01-02', INTERVAL 31 DAY)`, () => {
+    it(`test ADDDATE, DATE_ADD, SUBDATE and DATE_SUB with literal`, () => {
         const sql = `SELECT 
             ADDDATE('2008-01-02', INTERVAL 31 DAY),
-            DATE_ADD('2008-01-02', INTERVAL 31 DAY)`;
+            SUBDATE('2008-01-02', INTERVAL 31 DAY),
+            DATE_ADD('2008-01-02', INTERVAL 31 DAY),
+            DATE_SUB('2008-01-02', INTERVAL 31 DAY)`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['datetime', 'datetime', 'datetime', 'datetime'],
+            parameters: []   
+        }
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it(`test ADDDATE, DATE_ADD, SUBDATE and DATE_SUB with parameters`, () => {
+        const sql = `SELECT 
+            ADDDATE(?, INTERVAL ? DAY), 
+            SUBDATE(?, INTERVAL ? DAY), 
+            DATE_ADD(?, INTERVAL ? DAY),
+            DATE_SUB(?, INTERVAL ? DAY)`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['datetime', 'datetime', 'datetime', 'datetime'],
+            parameters: ['datetime', 'bigint', 'datetime', 'bigint', 'datetime', 'bigint', 'datetime', 'bigint']   
+        }
+
+        assert.deepEqual(actual, expected);
+    })
+
+    it(`SELECT ADDDATE and SUBDATE without INTERVAL (with literal)`, () => {
+        const sql = `SELECT 
+            ADDDATE('2008-01-02', 31),
+            SUBDATE('2008-01-02', 31)`;
         const actual = parseAndInfer(sql, dbSchema);
 
         const expected : TypeInferenceResult = {
@@ -531,39 +563,13 @@ describe('type-inference - functions', () => {
         assert.deepEqual(actual, expected);
     })
 
-    it(`SELECT ADDDATE(?, INTERVAL ? DAY), DATE_ADD(?, INTERVAL ? DAY)`, () => {
-        const sql = `SELECT 
-            ADDDATE(?, INTERVAL ? DAY), 
-            DATE_ADD(?, INTERVAL ? DAY)`;
+    it(`SELECT ADDDATE(?, ?), SUBDATE(?, ?)`, () => {
+        const sql = `SELECT ADDDATE(?, ?), SUBDATE(?, ?)`;
         const actual = parseAndInfer(sql, dbSchema);
 
         const expected : TypeInferenceResult = {
             columns: ['datetime', 'datetime'],
             parameters: ['datetime', 'bigint', 'datetime', 'bigint']   
-        }
-
-        assert.deepEqual(actual, expected);
-    })
-
-    it(`SELECT ADDDATE('2008-01-02', 31)`, () => {
-        const sql = `SELECT ADDDATE('2008-01-02', 31)`;
-        const actual = parseAndInfer(sql, dbSchema);
-
-        const expected : TypeInferenceResult = {
-            columns: ['datetime'],
-            parameters: []   
-        }
-
-        assert.deepEqual(actual, expected);
-    })
-
-    it(`SELECT ADDDATE(?, ?)`, () => {
-        const sql = `SELECT ADDDATE(?, ?)`;
-        const actual = parseAndInfer(sql, dbSchema);
-
-        const expected : TypeInferenceResult = {
-            columns: ['datetime'],
-            parameters: ['datetime', 'bigint']   
         }
 
         assert.deepEqual(actual, expected);
@@ -582,8 +588,34 @@ describe('type-inference - functions', () => {
         }
     })
 
+    it(`Pass invalid date to SUBDATE function`, () => {
+        const sql = `SELECT SUBDATE('2008-01-0', 31)`;
+
+        try {
+            parseAndInfer(sql, dbSchema);
+            assert.fail("Should thrown an exception.");
+        }
+        catch(e) {
+            const expected = 'Type mismatch: varchar and datetime';
+            assert.deepEqual(e.message, expected);
+        }
+    })
+
     it(`Pass invalid date to DATE_ADD function`, () => {
         const sql = `SELECT DATE_ADD('2008-01-0', INTERVAL 31 DAY)`;
+
+        try {
+            parseAndInfer(sql, dbSchema);
+            assert.fail("Should thrown an exception.");
+        }
+        catch(e) {
+            const expected = 'Type mismatch: varchar and datetime';
+            assert.deepEqual(e.message, expected);
+        }
+    })
+
+    it(`Pass invalid date to DATE_SUB function`, () => {
+        const sql = `SELECT DATE_SUB('2008-01-0', INTERVAL 31 DAY)`;
 
         try {
             parseAndInfer(sql, dbSchema);
