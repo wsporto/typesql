@@ -1,6 +1,4 @@
-Obs.: This is a WIP experimental project.
-
-Typesql: Generate type safe code for **mysql** database.
+Typesql: Generate type safe api for **mysql** databases.
 
 ## Example
 
@@ -12,8 +10,7 @@ SELECT
   list_price
 FROM products
 WHERE discontinued = 0
-  AND list_price > :minPrice
-  AND list_price  < :maxPrice
+  AND list_price BETWEEN :minPrice AND :maxPrice
 ```
 
 TypeSql will generate the types and function in the file `select-products.ts`. 
@@ -25,7 +22,19 @@ deno syntax:
 
 ## Usage
 
-1. Write your queries in a determined folder, like this:
+1. *npm install -g typesql-cli*.
+
+2. Add the `typesql.json` configuration file in project root folder. You can generate an template with cli command `typesql init`.
+
+```json
+{
+    "databaseUri": "mysql://root:password@localhost/mydb",
+    "sqlDir": "./sqls",
+    "target": "node"
+}
+```
+
+3. Write your queries in the folder specified in the configuration file. You can also use the cli to scaffold the queries.
 
 ```
 sqls\
@@ -34,9 +43,7 @@ sqls\
     update-product.sql
 ```
 
-2. Then run `npx typesql-cli -w -t=deno -d mysql://root:password@localhost/mydb .\sqls` to start typesql in watch mode and generate code targeting the deno runtime.
-
-3. After that you will have one Typescript file for each query file.
+4. Then run `typesql compile --watch` to start typesql in watch mode. After that you will have one Typescript file for each query file.
 
 ```
 sqls\
@@ -48,7 +55,7 @@ sqls\
     update-product.ts
 ```
 
-4. Now you can import and use the generated code
+5. Now you can import and use the generated code.
 
 ```
 const products = await selectProducts(...
@@ -57,5 +64,12 @@ const updateResult = await updateProduct(...
 ```
 
 # Examples
+[Query scaffolding](/docs/query_scaffolding.md)
 
 [Order by and limit clauses](/docs/orderBy_limit.md)
+
+# Project status
+
+**WARNING:** This is an WIP experimental project. It is under active development and its API can change. 
+
+Issues reports and feature requests are welcome.
