@@ -22,7 +22,7 @@ deno syntax:
 
 ## Usage
 
-1. *npm install -g typesql-cli*.
+1. *npm install -g typesql-cli*
 
 2. Add the `typesql.json` configuration file in project root folder. You can generate an template with cli command `typesql init`.
 
