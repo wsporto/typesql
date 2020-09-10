@@ -1,4 +1,4 @@
-import { ColumnDef, SchemaDef, ParameterDef, InvalidSqlError, PreprocessedSql } from "./types";
+import { ColumnDef, SchemaDef, ParameterDef, TypeSqlError, PreprocessedSql } from "./types";
 import { extractQueryInfo } from "./mysql-query-analyzer/parse";
 import { DbClient } from "./queryExectutor";
 import { Either, isLeft, right, left } from "fp-ts/lib/Either";
@@ -128,19 +128,22 @@ export function verifyNotInferred(type: InferType) : MySqlType {
     return type;
 }
 
-export async function parseSql(client: DbClient, sql: string) : Promise<Either<InvalidSqlError, SchemaDef>> {
+export async function parseSql(client: DbClient, sql: string) : Promise<Either<TypeSqlError, SchemaDef>> {
     const {sql: processedSql, namedParameters} = preprocessSql(sql);
     const explainResult = await client.explainSql(processedSql);
         if(isLeft(explainResult)) {
         return explainResult;
     }
     const dbSchema = await client.loadDbSchema();
+    if(isLeft(dbSchema)) {
+        return left(dbSchema.left);
+    } 
     try {
-        const result = describeSql(dbSchema, processedSql, namedParameters);
+        const result = describeSql(dbSchema.right, processedSql, namedParameters);
         return right(result);
     }
     catch(e) {
-        const InvalidSqlError: InvalidSqlError = {
+        const InvalidSqlError: TypeSqlError = {
             name: 'Invalid SQL',
             description: e.message,
         }
