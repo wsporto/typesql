@@ -1,4 +1,4 @@
-TypeSQL: Generate type safe api for **mysql** databases.
+TypeSQL: An alternative to access MySQL databases without an ORM. Write your queries in raw SQL and TypeSQL will generate a type-safe API to execute the queries. 
 
 ## Example
 
@@ -13,12 +13,24 @@ WHERE discontinued = 0
   AND list_price BETWEEN :minPrice AND :maxPrice
 ```
 
-TypeSql will generate the types and function in the file `select-products.ts`. 
+TypeSQL will generate the types and function in the file `select-products.ts`. 
 Then you can import the generate code and execute as following:
 
 deno syntax:
 
 ![](typesql-deno.gif)
+
+## Some features:
+
+- **Do not limit the power and expressiveness of SQL.** You dont need to learn any new query language.
+
+- **Infer parameters and columns types.** `SELECT DATEDIFF(:date1, :date2) as days_stayed` will resolve the `date1` and `date2` parameters to the type `Date` and the function return type as `number`. 
+
+- **Infer parameter and column nullability.** The nullable database column `email` will generate a nullable field for the query `SELECT email FROM mytable`, but will generate a non-nullable field for the query `SELECT email FROM mytable WHERE email is not null`;
+
+- **Infer the query return type (single row vs multiple rows).** If the `id` is a primary key or unique key, then function for the query `SELECT * FROM Books where id = :id` will return `Book|null`, instead of `Book[]`. The same is true for filters with LIMIT 1;
+
+- Allow the use of **dynamic ORDER BY** with auto-completion and compile-time verification. See [here](/docs/orderBy_limit.md).
 
 ## Usage
 
@@ -70,6 +82,6 @@ const updateResult = await updateProduct(...
 
 # Project status
 
-**WARNING:** This is an WIP experimental project. It is under active development and its API can change. 
+**WARNING:** This is a WIP experimental project. It is under active development and its API can change. 
 
 Issues reports and feature requests are welcome.
