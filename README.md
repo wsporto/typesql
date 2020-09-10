@@ -1,4 +1,4 @@
-Typesql: Generate type safe api for **mysql** databases.
+TypeSQL: Generate type safe api for **mysql** databases.
 
 ## Example
 
