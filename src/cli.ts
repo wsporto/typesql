@@ -8,6 +8,7 @@ import { DbClient } from "./queryExectutor";
 import { generateInsertStatment, generateUpdateStatment, generateDeleteStatment, generateSelectStatment } from "./sql-generator";
 import { ColumnSchema2 } from "./mysql-query-analyzer/types";
 import { TypeSqlConfig, SqlGenOption } from "./types";
+import { isLeft } from "fp-ts/lib/Either";
 
 function parseArgs() {
     return yargs
@@ -113,7 +114,12 @@ async function compile(watch: boolean, config: TypeSqlConfig) {
 async function writeSql(stmtType: SqlGenOption, tableName: string, queryName: string, config: TypeSqlConfig) {
     const { sqlDir, databaseUri } = config;
     const client = new DbClient();
-    await client.connect(databaseUri);
+    const connectionResult = await client.connect(databaseUri);
+    if(isLeft(connectionResult)) {
+        console.error("Error:", connectionResult.left);
+        return 1; 
+    }
+    
 
     const columns = await client.loadTableSchema(tableName);
     if(columns.length == 0) {
