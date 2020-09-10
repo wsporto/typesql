@@ -106,7 +106,11 @@ async function compile(watch: boolean, config: TypeSqlConfig) {
         .map( sqlFileName => path.resolve(sqlDir, sqlFileName));
     
     const client = new DbClient();
-    await client.connect(databaseUri);
+    const result = await client.connect(databaseUri);
+    if(isLeft(result)) {
+        console.error(`Error: ${result.left.description}.`);
+        return;
+    }
 
     const filesGeneration = sqlFiles.map( sqlFile => generateTsFile(client, sqlFile, target));
     await Promise.all(filesGeneration);
@@ -121,21 +125,28 @@ async function compile(watch: boolean, config: TypeSqlConfig) {
     }
 }
 
-async function writeSql(stmtType: SqlGenOption, tableName: string, queryName: string, config: TypeSqlConfig) {
+async function writeSql(stmtType: SqlGenOption, tableName: string, queryName: string, config: TypeSqlConfig) : Promise<boolean> {
     const { sqlDir, databaseUri } = config;
     const client = new DbClient();
     const connectionResult = await client.connect(databaseUri);
     if(isLeft(connectionResult)) {
-        console.error("Error:", connectionResult.left);
-        return 1; 
+        console.error(connectionResult.left.name);
+        return false;
     }
     
 
-    const columns = await client.loadTableSchema(tableName);
+    const columnsOption = await client.loadTableSchema(tableName);
+    if(isLeft(columnsOption)) {
+        console.error(columnsOption.left.description);
+        return false;
+    }
+
+    const columns = columnsOption.right;
+
     if(columns.length == 0) {
         console.error(`Got no columns for table '${tableName}'. Did you type the table name correclty?`);
         client.closeConnection();
-        return 1;
+        return false;
     }
 
     client.closeConnection();
@@ -145,6 +156,7 @@ async function writeSql(stmtType: SqlGenOption, tableName: string, queryName: st
     const filePath = sqlDir + '/' + queryName;
     writeFile(filePath, generatedSql);
     console.log("Generated file:", filePath);
+    return true;
 }
 
 function generateSql(stmtType: SqlGenOption, tableName: string, columns: ColumnSchema2[]) {

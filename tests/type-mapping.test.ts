@@ -179,7 +179,10 @@ describe('type-mapping', () => {
         });
 
         const schema = await client.loadDbSchema();
-        const expected = schema
+        if(isLeft(schema)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        const expected = schema.right
             .filter( colInfo => actualColumns.find(col => col.name == colInfo.column))
             .map( col => {
                 const nameAndType = {

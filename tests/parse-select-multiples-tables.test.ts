@@ -1,6 +1,6 @@
 import assert from "assert";
 import { parseSql } from "../src/describe-query";
-import { SchemaDef, InvalidSqlError } from "../src/types";
+import { SchemaDef, TypeSqlError } from "../src/types";
 import { DbClient } from "../src/queryExectutor";
 import { isLeft, isRight } from "fp-ts/lib/Either";
 
@@ -418,7 +418,7 @@ describe('Test select with multiples tables', () => {
         SELECT id FROM mytable1, mytable2
         `
         const actual = await parseSql(client, sql);
-        const expected : InvalidSqlError = {
+        const expected : TypeSqlError = {
             name: 'Invalid sql',
             description: `Column \'id\' in field list is ambiguous`
         }

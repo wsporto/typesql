@@ -86,7 +86,7 @@ export type TsFieldDescriptor = {
     notNull: boolean;
 }
 
-export type InvalidSqlError = {
+export type TypeSqlError = {
     name: string;
     description: string;
 }
