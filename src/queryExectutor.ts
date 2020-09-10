@@ -7,8 +7,15 @@ import { ColumnSchema, ColumnSchema2 } from "./mysql-query-analyzer/types";
 export class DbClient {
 
     private connection: Connection;
-    async connect(connectionUri: string) {
-        this.connection = await mysql2.createConnection(connectionUri);
+    async connect(connectionUri: string) : Promise<Either<string, true>> {
+        try {
+            this.connection = await mysql2.createConnection(connectionUri);
+            return right(true);
+        }
+        catch (e) {
+            const message = e.message as string;
+            return left(e.message);
+        }
     }
 
     async closeConnection() {
