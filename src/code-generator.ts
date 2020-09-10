@@ -63,7 +63,8 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
         writer.blankLine();
         if(target == 'deno') {
             writer.writeLine(`return client.query(sql${queryParams})`);
-            writer.indent().write('.then( res => res );');
+            const singleRowSlect = tsDescriptor.multipleRowsResult === false && tsDescriptor.queryType == 'Select';
+            writer.indent().write(`.then( res => res${singleRowSlect? '[0]' : ''} );`);
         }
         else {
             writer.writeLine(`return connection.query(sql${queryParams})`);

@@ -247,7 +247,7 @@ export async function selectId(client: Client) : Promise<SelectIdResult[]> {
     })
 
     it('test generateTsDescriptor - select with parameters', () => {
-        const sql = 'SELECT id from mytable1 where id = ? and value in (?)';
+        const sql = 'SELECT id from mytable1 where id = ? and value in (?)'; //returns single row result
         const schemaDef = describeSql(dbSchema, sql);
         const tsDescriptor = generateTsDescriptor(schemaDef);
         const actual = generateTsCode(tsDescriptor, 'selectId', 'deno');
@@ -269,7 +269,7 @@ export async function selectId(client: Client, params: SelectIdParams) : Promise
     \`
 
     return client.query(sql, [params.param1, params.param2])
-        .then( res => res );
+        .then( res => res[0] );
 }`
 
         assert.deepEqual(actual, expected);
