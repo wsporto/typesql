@@ -115,13 +115,20 @@ async function writeSql(stmtType: SqlGenOption, tableName: string, queryName: st
     const client = new DbClient();
     await client.connect(databaseUri);
 
-    const columns = await client.loadTableSchema(tableName)
+    const columns = await client.loadTableSchema(tableName);
+    if(columns.length == 0) {
+        console.error(`Got no columns for table '${tableName}'. Did you type the table name correclty?`);
+        client.closeConnection();
+        return 1;
+    }
 
     client.closeConnection();
+    
     
     let generatedSql = generateSql(stmtType, tableName, columns);
     const filePath = sqlDir + '/' + queryName;
     writeFile(filePath, generatedSql);
+    console.log("Generated file:", filePath);
 }
 
 function generateSql(stmtType: SqlGenOption, tableName: string, columns: ColumnSchema2[]) {
