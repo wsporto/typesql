@@ -19,6 +19,16 @@ function parseArgs() {
             type: 'string',
             default: 'typesql.json'
         })
+        .command('init', 'generate config file', () => {
+            const config : TypeSqlConfig = {
+                "databaseUri": "mysql://root:password@localhost/mydb",
+                "sqlDir": "./sqls",
+                "target": "node"
+            }
+            const configPath = "./typesql.json";
+            writeFile(configPath, JSON.stringify(config, null, 4));
+            console.log("Init file generated:", configPath);
+        })
         .command(['compile [options]', 'c [options]'], 'Compile the queries and generate ts files', yargs => {
             return yargs
                 .option('watch', {
@@ -31,7 +41,7 @@ function parseArgs() {
             const config = loadConfig(args.config);
             compile(args.watch, config);
         })
-        .command(['generate <option> <sql-name>', 'g <option> <sql-name>'], 'generate sql files templates', yargs => {
+        .command(['generate <option> <sql-name>', 'g <option> <sql-name>'], 'generate sql queries', yargs => {
             return yargs
                 .positional('option', {
                     type: 'string',
