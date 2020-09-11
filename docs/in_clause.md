@@ -48,4 +48,4 @@ const products = await selectProductsInCategories(client, {
 
 You can also use the `NOT IN` Clause.
 
-**NOTE:** The IN Clause as shown will work only in the deno_mysql driver. See issue [#70](https://github.com/manyuanrong/deno_mysql/issues/70) in the deno_mysql repository. 
+**NOTE:** The IN Clause as shown will work only with the deno_mysql driver. See issue [#70](https://github.com/manyuanrong/deno_mysql/issues/70) in the deno_mysql repository. 
