@@ -25,8 +25,8 @@ export type MySqlType =
     | 'datetime'
     | 'year' | 'year[]'
     | 'newdate'
-    | 'varchar'
-    | 'bit'
+    | 'varchar' | 'varchar[]'
+    | 'bit' | 'bit[]'
     | 'timestamp2'
     | 'datetime2'
     | 'time2'
@@ -56,6 +56,7 @@ export type TsType =
 export function converToTsType(mySqlType: MySqlType) : TsType {
     switch (mySqlType) {
         case 'decimal': 
+        case 'tinyint':
         case 'smallint':
         case 'int':
         case 'float':
@@ -66,6 +67,7 @@ export function converToTsType(mySqlType: MySqlType) : TsType {
             return 'number';
 
         case 'decimal[]': 
+        case 'tinyint[]':
         case 'smallint[]':
         case 'int[]':
         case 'float[]':
@@ -79,10 +81,8 @@ export function converToTsType(mySqlType: MySqlType) : TsType {
         case 'varbinary':
         case 'geometry':
             return 'string';
-        case 'tinyint':
-            return 'boolean';
-        case 'tinyint[]':
-            return 'boolean[]';
+        case 'varchar[]':
+            return 'string[]'
         case 'timestamp':
         case 'timestamp2':
         case 'date':
@@ -93,6 +93,9 @@ export function converToTsType(mySqlType: MySqlType) : TsType {
         case 'time2':
             return 'Date';
         case 'bit':
+            return 'boolean';
+        case 'bit[]':
+            return 'boolean[]';
         case 'json':
             return 'Object';
         case 'null':

@@ -1067,6 +1067,10 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
             // }
             ;
         }
+        const boolLiteral = literal.boolLiteral();
+        if(boolLiteral) {
+            return freshVar(boolLiteral.text, 'bit');
+        }
         throw Error('SimpleExprLiteralContext');
         //...
     }

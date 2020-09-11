@@ -58,12 +58,12 @@ describe('type-inference test', () => {
         assert.deepEqual(actual, expected);
     })
 
-    it.skip(`SELECT 2 as intValue, 200000000000 as longVallue  FROM mytable1`, () => {
-        const sql = `SELECT 2 as intValue, 2.0 as decimalValue, 2.0123123123 as decimalValue FROM mytable1`;
+    it.skip(`SELECT 2 as intValue, 200000000000 as longVallue, false as falseValue, true as trueValue  FROM mytable1`, () => {
+        const sql = `SELECT 2 as intValue, 2.0 as decimalValue, 2.0123123123 as decimalValue, false as falseValue, true as trueValue FROM mytable1`;
         const actual = parseAndInfer(sql, dbSchema);
 
         const expected : TypeInferenceResult = {
-            columns: ['int', 'decimal'],
+            columns: ['int', 'decimal', 'decimal', 'decimal', 'bit', 'bit'],
             parameters: []   
         }
 
