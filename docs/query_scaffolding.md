@@ -1,5 +1,17 @@
 Using the typesql cli to scaffold your sql queries can be a time saver. You can adjust them according your needs.
 
+Command:
+
+typesql **generate** *\<option\>* *\<sql-name\>*\
+typesql **g** *\<option\>* *\<sql-name\>*
+
+|option|alias|example
+|------|-----|-------
+|select|s|`typesql generate select select-user.sql`
+|insert|i|`typesql generate insert insert-user.sql`
+|update|u|`typesql generate update update-user.sql`
+|delete|d|`typesql generate delete delete-user.sql`
+
 # Examples:
 
 ## SELECT:
