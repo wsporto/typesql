@@ -6,7 +6,7 @@ SELECT
     ProductName, 
     UnitPrice
 FROM Products
-WHERE Discontinued = 0
+WHERE Discontinued = false
     AND CategoryID IN (?)
 ```
 
@@ -46,6 +46,15 @@ const products = await selectProductsInCategories(client, {
 })
 ```
 
-You can also use the `NOT IN` Clause.
+You can also use the `NOT IN` Clause:
 
+```sql
+SELECT 
+    ProductID, 
+    ProductName, 
+    UnitPrice
+FROM Products
+WHERE Discontinued = false
+    AND CategoryID NOT IN (98, 99, ?)
+```
 **NOTE:** The IN Clause as shown will not work with the deno_mysql driver. See issue [#70](https://github.com/manyuanrong/deno_mysql/issues/70) in the deno_mysql repository. 
