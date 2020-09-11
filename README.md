@@ -78,6 +78,8 @@ const updateResult = await updateProduct(...
 # Examples
 [Query scaffolding](/docs/query_scaffolding.md)
 
+[INSERT](/docs/insert.md)
+
 [IN/NOT IN Clause](/docs/in_clause.md)
 
 [Order by and limit clauses](/docs/orderBy_limit.md)
