@@ -22,7 +22,7 @@ deno syntax:
 
 ## Some features:
 
-- **Do not limit the power and expressiveness of SQL.** You dont need to learn any new query language.
+- **Do not restrict the use of SQL** You dont need to learn any new query language, you can use SQL with all its power and expressiveness.
 
 - **Infer parameters and columns types.** `SELECT DATEDIFF(:date1, :date2) as days_stayed` will resolve the `date1` and `date2` parameters to the type `Date` and the function return type as `number`. 
 
@@ -84,6 +84,6 @@ const updateResult = await updateProduct(...
 
 # Project status
 
-**WARNING:** This is a WIP experimental project. It is under active development and its API can change. 
+**WARNING:** This is a WIP experimental project. It is under active development and its API might change. 
 
 Issues reports and feature requests are welcome.
