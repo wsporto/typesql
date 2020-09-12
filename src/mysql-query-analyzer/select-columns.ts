@@ -1,17 +1,16 @@
 import { ParserRuleContext, RuleContext } from "antlr4ts";
-import { TerminalNode, ParseTree } from "antlr4ts/tree";
+import { ParseTree } from "antlr4ts/tree";
 import { Interval } from "antlr4ts/misc/Interval";
 
 import { QuerySpecificationContext, TableReferenceContext, TableFactorContext, TableReferenceListParensContext, SingleTableParensContext, 
-    JoinedTableContext, SingleTableContext, SimpleExprLiteralContext, SimpleExprColumnRefContext, SimpleExprListContext, SelectItemContext, 
-    PredicateContext, BitExprContext, SimpleExprVariableContext, SimpleExprRuntimeFunctionContext, SimpleExprFunctionContext, 
-    SimpleExprCollateContext, SimpleExprParamMarkerContext, SimpleExprSumContext, SimpleExprGroupingOperationContext, SimpleExprWindowingFunctionContext, 
-    SimpleExprConcatContext, SimpleExprUnaryContext, SimpleExprNotContext, SimpleExprSubQueryContext, SimpleExprOdbcContext, SimpleExprMatchContext, 
-    SimpleExprBinaryContext, SimpleExprCastContext, SimpleExprCaseContext, SimpleExprConvertContext, SimpleExprConvertUsingContext, 
-    SimpleExprDefaultContext, SimpleExprValuesContext, SimpleExprIntervalContext } from "ts-mysql-parser";
+    JoinedTableContext, SingleTableContext, SimpleExprLiteralContext, SimpleExprColumnRefContext, SimpleExprListContext, SimpleExprVariableContext, 
+    SimpleExprRuntimeFunctionContext, SimpleExprFunctionContext, SimpleExprCollateContext, SimpleExprParamMarkerContext, SimpleExprSumContext, 
+    SimpleExprGroupingOperationContext, SimpleExprWindowingFunctionContext, SimpleExprConcatContext, SimpleExprUnaryContext, SimpleExprNotContext, 
+    SimpleExprSubQueryContext, SimpleExprOdbcContext, SimpleExprMatchContext, SimpleExprBinaryContext, SimpleExprCastContext, SimpleExprCaseContext, 
+    SimpleExprConvertContext, SimpleExprConvertUsingContext, SimpleExprDefaultContext, SimpleExprValuesContext, SimpleExprIntervalContext } from "ts-mysql-parser";
 
 import { ColumnSchema, ColumnDef, FieldName } from "./types";
-import { extractQueryInfoFromQuerySpecification } from "./parse";
+import { analiseQuery, getQuerySpecificationsFromSelectStatement } from "./parse";
 import { possibleNull } from "./infer-column-nullability";
 
 export function filterColumns(dbSchema: ColumnSchema[], tablePrefix: string | undefined, table: FieldName) {
@@ -214,11 +213,12 @@ function extractFieldsFromTableFactor(tableFactor: TableFactorContext, dbSchema:
     if (derivadTable) {
         //walkQueryExpressionParens(queryExpressionParens, namedNodes, constraints, dbSchema);
         //TODO - WALKSUBQUERY
-        const subQuery = derivadTable.subquery().queryExpressionParens().queryExpression()?.queryExpressionBody()?.querySpecification();
+        const subQuery = derivadTable.subquery()
         if(subQuery) {
             //subquery=true only for select (subquery); not for from(subquery)
             // const fromColumns
-            const queryResult = extractQueryInfoFromQuerySpecification(subQuery, dbSchema, []); //TODO - WHY []?
+            const queries = getQuerySpecificationsFromSelectStatement(subQuery);
+            const queryResult = analiseQuery(queries, dbSchema, []); //TODO - WHY []?
             // console.log("queryResult=", queryResult);
             const tableAlias = derivadTable.tableAlias()?.text;
             return queryResult.columns.map( col => {

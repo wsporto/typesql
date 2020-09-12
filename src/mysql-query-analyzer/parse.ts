@@ -7,7 +7,7 @@ import { ColumnSchema, TypeInferenceResult, QueryInfoResult, ColumnDef, InsertIn
 import { getColumnsFrom, getColumnNames } from './select-columns';
 import { inferParamNullability, inferParamNullabilityQuery } from './infer-param-nullability';
 import { inferNotNull } from './infer-column-nullability';
-import { verifyNotInferred } from '../describe-query';
+import { preprocessSql, verifyNotInferred } from '../describe-query';
 import { verifyMultipleResult } from './verify-multiple-result';
 
 
@@ -31,8 +31,8 @@ export type SubstitutionHash = {
 
 
 
-export function infer(queryContext: QueryContext, dbSchema: ColumnSchema[]) : TypeInferenceResult {
-    const typeInferenceResult =  analiseTree(queryContext, dbSchema);
+export function infer(queryContext: QueryContext, dbSchema: ColumnSchema[], namedParameters: string[]) : TypeInferenceResult {
+    const typeInferenceResult =  analiseTree(queryContext, dbSchema, namedParameters);
     // const newTypeInference : TypeInferenceResult = {
     //     columns: typeInferenceResult.columns.map( col => verifyNotInferred(col)),
     //     parameters: typeInferenceResult.parameters.map(paramType => verifyNotInferred(paramType))
@@ -41,7 +41,8 @@ export function infer(queryContext: QueryContext, dbSchema: ColumnSchema[]) : Ty
 }
 
 export function parseAndInfer(sql: string, dbSchema: ColumnSchema[]) : TypeInferenceResult {
-    return infer(parse(sql), dbSchema); 
+    const {sql: processedSql, namedParameters} = preprocessSql(sql);
+    return infer(parse(processedSql), dbSchema, namedParameters); 
 }
 
 export function parseAndInferParamNullability(sql: string) : boolean[] {
@@ -49,9 +50,9 @@ export function parseAndInferParamNullability(sql: string) : boolean[] {
     return inferParamNullabilityQuery(queryContext); 
 }
 
-export function extractQueryInfoFromQuerySpecification(querySpec: QuerySpecificationContext, dbSchema: ColumnSchema[], parentFromColumns: ColumnDef[]) : TypeAndNullInferResult {
-    const fromColumns = getColumnsFrom(querySpec, dbSchema).concat(parentFromColumns);
-    const inferResult = analiseQuerySpecification(querySpec, dbSchema, fromColumns);
+export function extractQueryInfoFromQuerySpecification(querySpec: QuerySpecificationContext, dbSchema: ColumnSchema[], namedParameters: string[]) : TypeAndNullInferResult {
+    const fromColumns = getColumnsFrom(querySpec, dbSchema);
+    const inferResult = analiseQuerySpecification(querySpec, dbSchema, namedParameters, fromColumns);
     // console.log("inferResult=", inferResult);
     const columnNullability = inferNotNull(querySpec, dbSchema);
     const selectedColumns = getColumnNames(querySpec, fromColumns);
@@ -134,13 +135,14 @@ function getLimitOptions(selectStatement: SelectStatementContext) {
 
 export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[]): QueryInfoResult | InsertInfoResult | UpdateInfoResult | DeleteInfoResult {
 
-    const tree = parse(sql);
+    const {sql: processedSql, namedParameters} = preprocessSql(sql);
+    const tree = parse(processedSql);
     if (tree instanceof QueryContext) {
         const selectStatement = tree.simpleStatement()?.selectStatement();
         if(selectStatement) {
             
             const querySpec = getQuerySpecificationsFromSelectStatement(selectStatement);
-            const mainQueryResult = analiseQuery(querySpec, dbSchema, []);
+            const mainQueryResult = analiseQuery(querySpec, dbSchema, namedParameters);
             
             const orderByParameters = extractOrderByParameters(selectStatement);
             const limitParameters = extractLimitParameters(selectStatement);
@@ -149,7 +151,7 @@ export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[]): QueryIn
                 .map( param => ({type: verifyNotInferred(param.type),  notNull: param.notNull}))
                 .concat(limitParameters);
 
-            const fromColumns = getColumnsFrom(querySpec[0], dbSchema); //TODO - UNION multipleRows=true
+            const fromColumns = getColumnsFrom(querySpec[0], dbSchema);
             const multipleRowsResult = isMultipleRowResult(selectStatement, fromColumns);
             
             const resultWithoutOrderBy: QueryInfoResult = {
@@ -159,7 +161,7 @@ export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[]): QueryIn
                 parameters: allParameters,
             }
             
-            const orderByColumns = orderByParameters.length > 0? getOrderByColumns(querySpec[0], dbSchema, mainQueryResult.columns) : undefined;
+            const orderByColumns = orderByParameters.length > 0? getOrderByColumns(fromColumns, mainQueryResult.columns) : undefined;
             if(orderByColumns) {
                 resultWithoutOrderBy.orderByColumns = orderByColumns;
             }
@@ -187,19 +189,19 @@ export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[]): QueryIn
     throw Error('Not supported');
 }
 
-function getOrderByColumns(querySpec: QuerySpecificationContext, dbSchema: ColumnSchema[], selectColumns: TypeAndNullInfer[]) {
-    const fromColumns = getColumnsFrom(querySpec, dbSchema).map( col => col.columnName); //TODO - loading twice
+function getOrderByColumns(fromColumns: ColumnDef[], selectColumns: TypeAndNullInfer[]) {
+    const fromColumnsNames = fromColumns.map( col => col.columnName); //TODO - loading twice
     const selectColumnsNames = selectColumns.map( col => col.name);
-    const allOrderByColumns = Array.from(new Set(fromColumns.concat(selectColumnsNames)));
+    const allOrderByColumns = Array.from(new Set(fromColumnsNames.concat(selectColumnsNames)));
     return allOrderByColumns;
 }
 
-export function analiseQuery(querySpec: QuerySpecificationContext[], dbSchema: ColumnSchema[], parentFromColumns: ColumnDef[]) : TypeAndNullInferResult {
+export function analiseQuery(querySpec: QuerySpecificationContext[], dbSchema: ColumnSchema[], namedParameters: string[]) : TypeAndNullInferResult {
 
-    const mainQueryResult = extractQueryInfoFromQuerySpecification(querySpec[0], dbSchema, parentFromColumns);
+    const mainQueryResult = extractQueryInfoFromQuerySpecification(querySpec[0], dbSchema, namedParameters);
             
     for (let queryIndex = 1; queryIndex < querySpec.length; queryIndex++) { //union (if have any)
-        const unionResult = extractQueryInfoFromQuerySpecification(querySpec[queryIndex], dbSchema, parentFromColumns);
+        const unionResult = extractQueryInfoFromQuerySpecification(querySpec[queryIndex], dbSchema, namedParameters);
 
         mainQueryResult.columns.forEach( (field, fieldIndex) => {
             const unionField = unionResult.columns[fieldIndex];

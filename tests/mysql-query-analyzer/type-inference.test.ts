@@ -1500,6 +1500,20 @@ describe('type-inference test', () => {
         assert.deepEqual(actual, expected);
     });
 
+    it('reuse of named paramters', async () => {
+        const sql = `
+        SELECT :startDate, ADDDATE(:startDate, 31) as deadline
+        `
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            parameters: ['datetime', 'datetime'],
+            columns: ['datetime', 'datetime']
+        }
+
+        assert.deepEqual(actual, expected);
+    });
+
 });
 
 //select `id+id` from (select id+id from mytable1) t;
