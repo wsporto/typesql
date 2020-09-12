@@ -79,5 +79,59 @@ WHERE id = :id`
         assert.deepStrictEqual(actual, expected);
 
     })
+
+    it('test tablename with whitespace', () => {
+
+        const actual = generateSelectStatment("my table", columns);
+        const expected = 
+`SELECT
+    id,
+    value
+FROM \`my table\``
+
+        assert.deepStrictEqual(actual, expected);
+
+    })
+
+    it('test scaffolding insert stmt with space in table name', () => {
+
+        const actual = generateInsertStatment('my table', columns);
+        const expected = 
+`INSERT INTO \`my table\`
+(
+    value
+)
+VALUES
+(
+    :value
+)`        
+        assert.deepStrictEqual(actual, expected);
+
+    })
+
+    it('test scaffolding update stmt with space in table name', () => {
+
+        const actual = generateUpdateStatment('my table', columns);
+        const expected = 
+`UPDATE \`my table\`
+SET
+    value = :value
+WHERE
+    id = :id`      
+
+        assert.deepStrictEqual(actual, expected);
+
+    })
+
+    it('test scaffolding delete stmt with space in table name', () => {
+
+        const actual = generateDeleteStatment('my table', columns);
+        const expected = 
+`DELETE FROM \`my table\`
+WHERE id = :id`
+
+        assert.deepStrictEqual(actual, expected);
+
+    })
     
 });

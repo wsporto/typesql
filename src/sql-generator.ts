@@ -16,7 +16,7 @@ export function generateSelectStatment(tableName: string, columns: ColumnSchema2
         writer.newLine();
     })
     
-    writer.write(`FROM ${tableName}`);
+    writer.write(`FROM ${escapeTableName(tableName)}`);
     
     return writer.toString();
 }
@@ -26,7 +26,7 @@ export function generateInsertStatment(tableName: string, dbSchema: ColumnSchema
 
     const writer = new CodeBlockWriter();
 
-    writer.writeLine(`INSERT INTO ${tableName}`);
+    writer.writeLine(`INSERT INTO ${escapeTableName(tableName)}`);
     writer.writeLine("(")
     columns.forEach( (col, columnIndex) => {
         writer.indent().write(col.column);
@@ -56,7 +56,7 @@ export function generateUpdateStatment(tableName: string, dbSchema: ColumnSchema
 
     const writer = new CodeBlockWriter();
 
-    writer.writeLine(`UPDATE ${tableName}`);
+    writer.writeLine(`UPDATE ${escapeTableName(tableName)}`);
     writer.writeLine("SET")
     columns.forEach( (col, columnIndex) => {
         writer.indent().write(`${col.column} = :${col.column}`);
@@ -79,10 +79,19 @@ export function generateDeleteStatment(tableName: string, dbSchema: ColumnSchema
 
     const writer = new CodeBlockWriter();
 
-    writer.writeLine(`DELETE FROM ${tableName}`);
+    writer.writeLine(`DELETE FROM ${escapeTableName(tableName)}`);
     writer.write('WHERE ');
     if(keys.length > 0) {
         writer.write(`${keys[0].column} = :${keys[0].column}`);
     }
     return writer.toString();
+}
+
+//Permitted characters in unquoted identifiers: ASCII: [0-9,a-z,A-Z$_]
+function escapeTableName(tableName: string) {
+    const validPattern = /^[a-zA-Z0-9_$]+$/g;
+    if(!validPattern.test(tableName)) {
+        return `\`${tableName}\``;
+    }
+    return tableName;
 }
