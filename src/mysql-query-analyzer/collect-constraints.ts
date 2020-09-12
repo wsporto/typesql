@@ -15,7 +15,7 @@ import { ColumnSchema, ColumnDef, TypeInferenceResult, InsertInfoResult, UpdateI
 import { getColumnsFrom, findColumn, splitName, selectAllColumns, findColumn2 } from "./select-columns";
 import {
     SubstitutionHash, getQuerySpecificationsFromSelectStatement as getQuerySpecificationsFromQuery,
-    getQuerySpecificationsFromSelectStatement
+    getQuerySpecificationsFromSelectStatement 
 } from "./parse";
 import { MySqlType, InferType } from "../mysql-mapping";
 import { ParameterDef } from "../types";
@@ -23,6 +23,7 @@ import { unify } from "./unify";
 import { inferParamNullability } from "./infer-param-nullability";
 import { verifyNotInferred } from "../describe-query";
 import { TerminalNode } from "antlr4ts/tree";
+import { getPairWise, getParameterIndexes } from "./util";
 
 export type TypeVar = {
     kind: 'TypeVar';
@@ -80,13 +81,13 @@ export type NamedNodes = {
     [key: string]: Type;
 }
 
-export function analiseTree(tree: RuleContext, dbSchema: ColumnSchema[]): TypeInferenceResult {
+export function analiseTree(tree: RuleContext, dbSchema: ColumnSchema[], namedParameters: string[]): TypeInferenceResult {
 
     if (tree instanceof QueryContext) {
 
         const selectStatement = tree.simpleStatement()?.selectStatement();
         if (selectStatement) {
-            return analiseSelectStatement(selectStatement, dbSchema);
+            return analiseSelectStatement(selectStatement, dbSchema, namedParameters);
         }
         const insertStatement = tree.simpleStatement()?.insertStatement();
         if (insertStatement) {
@@ -335,14 +336,14 @@ export function getDeleteColumns(deleteStatement: DeleteStatementContext, dbSche
 }
 
 
-function analiseSelectStatement(selectStatement: SelectStatementContext, dbSchema: ColumnSchema[]): TypeInferenceResult {
+export function analiseSelectStatement(selectStatement: SelectStatementContext| SubqueryContext, dbSchema: ColumnSchema[], namedParameters: string[]): TypeInferenceResult {
     const querySpec = getQuerySpecificationsFromSelectStatement(selectStatement);
     const fromColumns = getColumnsFrom(querySpec[0], dbSchema);
-    let result = analiseQuerySpecification(querySpec[0], dbSchema, fromColumns);
+    let result = analiseQuerySpecification(querySpec[0], dbSchema, namedParameters, fromColumns);
     for (let index = 1; index < querySpec.length; index++) {
         const unionQuery = querySpec[index];
         const fromColumns2 = getColumnsFrom(unionQuery, dbSchema);
-        const result2 = analiseQuerySpecification(unionQuery, dbSchema, fromColumns2);
+        const result2 = analiseQuerySpecification(unionQuery, dbSchema, namedParameters, fromColumns2);
         result = unionResult(result, result2);
 
     }
@@ -370,7 +371,7 @@ export function unionTypeResult(type1: InferType, type2: InferType) {
     return typeOrder[max];
 }
 
-export function analiseQuerySpecification(querySpec: QuerySpecificationContext, dbSchema: ColumnSchema[], fromColumns: ColumnDef[]): TypeInferenceResult {
+export function analiseQuerySpecification(querySpec: QuerySpecificationContext, dbSchema: ColumnSchema[], namedParameters: string[], fromColumns: ColumnDef[]): TypeInferenceResult {
 
     const context : InferenceContext = {
         dbSchema,
@@ -379,7 +380,17 @@ export function analiseQuerySpecification(querySpec: QuerySpecificationContext, 
         fromColumns: fromColumns
     }
 
-    const queryTypes = walkQuerySpecification(context, querySpec) as TypeOperator;
+    const queryTypes = walkQuerySpecification(context, querySpec);
+    const paramIndexes = getParameterIndexes(namedParameters); //for [a, a, b, a] will return a: [0, 1, 3]; b: [2]
+    paramIndexes.forEach( paramIndex => {
+        getPairWise(paramIndex.indexes, (cur, next) => { //for [0, 1, 3] will return [0, 1], [1, 3]
+            context.constraints.push({
+                expression: paramIndex.paramName,
+                type1: context.parameters[cur],
+                type2: context.parameters[next]
+            })
+        });
+    })
     // console.log("namedNodes");
     // console.dir(namedNodes, { depth: null });
     // console.log("constraints2=");
@@ -423,7 +434,7 @@ function getVarType(substitutions: SubstitutionHash, typeVar: Type) {
 }
 
 
-function walkQuerySpecification(context: InferenceContext, querySpec: QuerySpecificationContext): TypeOperator {
+export function walkQuerySpecification(context: InferenceContext, querySpec: QuerySpecificationContext): TypeOperator {
 
     const listType: TypeVar[] = [];
 

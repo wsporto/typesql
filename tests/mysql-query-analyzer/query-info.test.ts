@@ -690,4 +690,40 @@ describe('Test parse parameters', () => {
         const actual = extractQueryInfo(sql, dbSchema) as QueryInfoResult;
         assert.deepEqual(actual.multipleRowsResult, true);
     });
+
+    it('reuse of named paramters', async () => {
+        const sql = `
+        SELECT :startDate, ADDDATE(:startDate, 31) as deadline
+        `
+        const actual = extractQueryInfo(sql, dbSchema);
+
+        const expected : QueryInfoResult = {
+            kind: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: '?', //TODO: Should be dateName?
+                    type: 'datetime',
+                    notNull: true
+                },
+                {
+                    columnName: 'deadline',
+                    type: 'datetime',
+                    notNull: true
+                }
+            ],
+            parameters: [
+                {
+                    type: 'datetime',
+                    notNull: true
+                },
+                {
+                    type: 'datetime',
+                    notNull: true
+                }
+            ]
+        }
+
+        assert.deepEqual(actual, expected);
+    });
 });

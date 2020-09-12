@@ -4,6 +4,7 @@ import { dbSchema } from "./create-schema";
 import { ColumnDef, FieldInfo, ColumnSchema } from "../../src/mysql-query-analyzer/types";
 import { getColumnsFrom, getColumnNames, findColumn, splitName, findColumn2 } from "../../src/mysql-query-analyzer/select-columns";
 import { unionTypeResult } from "../../src/mysql-query-analyzer/collect-constraints";
+import { getParameterIndexes } from "../../src/mysql-query-analyzer/util";
 
 describe('Utility functions tests', () => {
 
@@ -124,5 +125,29 @@ describe('Utility functions tests', () => {
         assert.deepEqual(unionTypeResult('bigint', 'mediumint'), 'bigint');
         assert.deepEqual(unionTypeResult('bigint', 'int'), 'bigint');
         assert.deepEqual(unionTypeResult('bigint', 'bigint'), 'bigint');
+    })
+
+    it('test getIndex', () => {
+        const namedParameters = ['a', 'b', 'b', 'c', 'c', 'd'];
+        const actual = getParameterIndexes(namedParameters);
+        const expected = [
+            {
+                paramName: 'a',
+                indexes: [0] 
+            },
+            {
+                paramName: 'b',
+                indexes: [1, 2] 
+            },
+            {
+                paramName: 'c',
+                indexes: [3, 4] 
+            },
+            {
+                paramName: 'd',
+                indexes: [5] 
+            }
+        ]
+        assert.deepStrictEqual(actual, expected);
     })
 })
