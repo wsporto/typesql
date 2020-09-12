@@ -5,7 +5,8 @@ import { Either, isLeft, right, left } from "fp-ts/lib/Either";
 import { ColumnSchema } from "./mysql-query-analyzer/types";
 import { MySqlType, InferType } from "./mysql-mapping";
 
-export function describeSql(dbSchema: ColumnSchema[], sql: string, namedParameters?: string[]) : SchemaDef {
+export function describeSql(dbSchema: ColumnSchema[], sql: string) : SchemaDef {
+    const {sql: processedSql, namedParameters} = preprocessSql(sql);
     const queryInfo = extractQueryInfo(sql, dbSchema);
     if(queryInfo.kind == 'Select') {
         const columnDef = queryInfo.columns.map( colInfo => {
@@ -27,7 +28,7 @@ export function describeSql(dbSchema: ColumnSchema[], sql: string, namedParamete
         })
     
         const schemaDef: SchemaDef = {
-            sql,
+            sql: processedSql,
             queryType: 'Select',
             multipleRowsResult: queryInfo.multipleRowsResult,
             columns: columnDef,
@@ -56,7 +57,7 @@ export function describeSql(dbSchema: ColumnSchema[], sql: string, namedParamete
         const parameters = namedParameters? addParameterNames(queryInfo.parameters, namedParameters) : queryInfo.parameters;
         const verifiedParameters = parameters.map( param => ({...param, columnType: verifyNotInferred(param.columnType)}))
         const schemaDef: SchemaDef = {
-            sql: sql,
+            sql: processedSql,
             queryType: 'Insert',
             multipleRowsResult: false,
             columns: resultColumns,
@@ -80,7 +81,7 @@ export function describeSql(dbSchema: ColumnSchema[], sql: string, namedParamete
         const whereParametersNames = namedParameters? namedParameters.slice(queryInfo.data.length) : [];
 
         const schemaDef: SchemaDef = {
-            sql: sql,
+            sql: processedSql,
             queryType: 'Update',
             multipleRowsResult: false,
             columns: resultColumns,
@@ -99,7 +100,7 @@ export function describeSql(dbSchema: ColumnSchema[], sql: string, namedParamete
         ]
         const parameters = namedParameters? addParameterNames(queryInfo.parameters, namedParameters) : queryInfo.parameters;
         const schemaDef: SchemaDef = {
-            sql: sql,
+            sql: processedSql,
             queryType: 'Delete',
             multipleRowsResult: false,
             columns: resultColumns,
@@ -129,7 +130,7 @@ export function verifyNotInferred(type: InferType) : MySqlType {
 }
 
 export async function parseSql(client: DbClient, sql: string) : Promise<Either<TypeSqlError, SchemaDef>> {
-    const {sql: processedSql, namedParameters} = preprocessSql(sql);
+    const {sql: processedSql} = preprocessSql(sql);
     const explainResult = await client.explainSql(processedSql);
         if(isLeft(explainResult)) {
         return explainResult;
@@ -139,7 +140,7 @@ export async function parseSql(client: DbClient, sql: string) : Promise<Either<T
         return left(dbSchema.left);
     } 
     try {
-        const result = describeSql(dbSchema.right, processedSql, namedParameters);
+        const result = describeSql(dbSchema.right, sql);
         return right(result);
     }
     catch(e) {

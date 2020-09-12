@@ -65,7 +65,7 @@ describe('Test parse parameters', () => {
             },
             {
                 name: 'value',
-                columnType: 'varchar',
+                columnType: 'double',
                 notNull: true
             }
         ]
