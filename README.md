@@ -82,7 +82,9 @@ const updateResult = await updateProduct(...
 
 [IN/NOT IN Clause](/docs/in_clause.md)
 
-[Order by and limit clauses](/docs/orderBy_limit.md)
+[MySQL FUNCTIONS](/docs/functions.md)
+
+[ORDER BY and LIMIT clauses](/docs/orderBy_limit.md)
 
 # Project status
 
