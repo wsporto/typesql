@@ -43,7 +43,7 @@ describe('parse delete statements', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('delete from mytable1 where value = 0 or value is null', async () => {
@@ -67,7 +67,7 @@ describe('parse delete statements', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     /**
@@ -104,7 +104,7 @@ describe('parse delete statements', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
 });

@@ -11,20 +11,20 @@ describe('rename invalid names', () => {
         const actual = renameInvalidNames(columnNames);
         const expected = ['id', 'id_2', 'name', 'id_3'];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('test escape properties', async () => {
 
-        assert.deepEqual(escapeInvalidTsField('id'), 'id');
-        assert.deepEqual(escapeInvalidTsField('id_id'), 'id_id'); //valid name
-        assert.deepEqual(escapeInvalidTsField('1'), '1'); //valid name
-        assert.deepEqual(escapeInvalidTsField('_'), '_'); //valid name
-        assert.deepEqual(escapeInvalidTsField('$'), '$'); //valid name
+        assert.deepStrictEqual(escapeInvalidTsField('id'), 'id');
+        assert.deepStrictEqual(escapeInvalidTsField('id_id'), 'id_id'); //valid name
+        assert.deepStrictEqual(escapeInvalidTsField('1'), '1'); //valid name
+        assert.deepStrictEqual(escapeInvalidTsField('_'), '_'); //valid name
+        assert.deepStrictEqual(escapeInvalidTsField('$'), '$'); //valid name
 
-        assert.deepEqual(escapeInvalidTsField('id+id'), '"id+id"'); //escaped
-        assert.deepEqual(escapeInvalidTsField('id + id'), '"id + id"'); //escaped
-        assert.deepEqual(escapeInvalidTsField('count(*)'), '"count(*)"'); //escaped
+        assert.deepStrictEqual(escapeInvalidTsField('id+id'), '"id+id"'); //escaped
+        assert.deepStrictEqual(escapeInvalidTsField('id + id'), '"id + id"'); //escaped
+        assert.deepStrictEqual(escapeInvalidTsField('count(*)'), '"count(*)"'); //escaped
     })
 
     it('rename/escape column names', async () => {
@@ -34,7 +34,7 @@ describe('rename invalid names', () => {
         const actual = renameInvalidNames(columnNames);
         const expected = ['id', 'id_2', '"id+id"', '"id+id_2"', 'id_3'];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('rename/escape column from TsDescriptor', async () => {
@@ -83,10 +83,10 @@ describe('rename invalid names', () => {
         }
         const actual = generateTsDescriptor(schema);
 
-        assert.deepEqual(actual.columns.map(col => col.name), ['id', 'id_2', '"count(*)"']);
-        assert.deepEqual(actual.data!.map(col => col.name), ['"id+id"']);
-        assert.deepEqual(actual.parameters.map(col => col.name), ['name']); //remove duplicated parameters
-        assert.deepEqual(actual.orderByColumns, ['id', 'count(*)', `concat(name, ' ', name)`]);
+        assert.deepStrictEqual(actual.columns.map(col => col.name), ['id', 'id_2', '"count(*)"']);
+        assert.deepStrictEqual(actual.data!.map(col => col.name), ['"id+id"']);
+        assert.deepStrictEqual(actual.parameters.map(col => col.name), ['name']); //remove duplicated parameters
+        assert.deepStrictEqual(actual.orderByColumns, ['id', 'count(*)', `concat(name, ' ', name)`]);
     })
 
 });

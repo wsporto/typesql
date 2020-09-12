@@ -58,7 +58,7 @@ describe('Test parse complex queries', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     //https://www.mysqltutorial.org/mysql-subquery/
@@ -89,7 +89,7 @@ describe('Test parse complex queries', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('parse a select with UNION', async () => {
@@ -122,7 +122,7 @@ describe('Test parse complex queries', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('parse a select with UNION with multiples fields', async () => {
@@ -156,7 +156,7 @@ describe('Test parse complex queries', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('subselect in column', async () => {
@@ -182,7 +182,7 @@ describe('Test parse complex queries', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('subselect in column (with parameter)', async () => {
@@ -212,6 +212,6 @@ describe('Test parse complex queries', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 });

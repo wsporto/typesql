@@ -63,7 +63,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it('select value from mytable1', () => {
@@ -72,7 +72,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it('select value from mytable1 where value is not null', () => {
@@ -81,7 +81,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it('select * from mytable1 where value is not null', () => {
@@ -90,7 +90,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true, true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it('select t1.* from mytable1 t1 where value is not null', () => {
@@ -99,7 +99,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true, true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it('select value+10 from mytable1 where value is not null', () => {
@@ -108,7 +108,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it(`select *, 'desc' as description`, () => {
@@ -117,7 +117,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true, true, true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it('select value+10+? from mytable1 where value is not null', () => {
@@ -126,7 +126,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true]; //changed at v0.0.2
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it('select t1.value from mytable1 t1 where t1.value is not null', () => {
@@ -135,7 +135,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it('select t1.value from mytable1 t1 where value is not null', () => {
@@ -144,7 +144,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it('select value from mytable1 t1 where t1.value is not null', async () => {
@@ -157,7 +157,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('select t1.value + value from mytable1 t1 where t1.value is not null', async () => {
@@ -170,7 +170,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
     it('select value as alias from mytable1 t1 where t1.value is not null', async () => {
 
@@ -182,7 +182,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
     
     it('select t1.value from mytable1 t1 where id is not null', async () => {
@@ -195,7 +195,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('select value from mytable1 where 10 > value', async () => {
@@ -208,7 +208,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('select value from mytable1 where value is not null or (id > 0 or value is not null)', async () => {
@@ -221,7 +221,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('select value from mytable1 where value is not null and (id > 0 or value is not null)', async () => {
@@ -234,7 +234,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('select value from mytable1 where value is not null or (id > 0 and (id < 10 and value is not null))', async () => {
@@ -247,7 +247,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('select value from mytable1 where id > 0 and id < 10 and value > 1', async () => {
@@ -260,7 +260,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
     
     it('select value from mytable1 where value is not null and (value > 1 or value is null)', async () => {
@@ -273,7 +273,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
     
     it('select value from mytable1 where value is not null or (value > 1 and value is null)', async () => {
@@ -286,7 +286,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('select value from mytable1 where value > 1 and value is null', async () => {
@@ -299,7 +299,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('select value + value from mytable1 where value > 1', async () => {
@@ -312,7 +312,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('select value + value from mytable1 where id > 1', async () => {
@@ -325,7 +325,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
     
     it('select value + id from mytable1 where value > 1', async () => {
@@ -338,7 +338,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('select value+id from mytable1 where id > 10', async () => {
@@ -351,7 +351,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('select id+id, value from mytable1 where value > 10', async () => {
@@ -364,7 +364,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true, true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
     
     it('select sum(value) from mytable1 where value > 10', async () => {
@@ -377,7 +377,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('select sum(value) from mytable1 where value is not null', async () => {
@@ -390,7 +390,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('UNION 1', async () => {
@@ -407,7 +407,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('UNION 2', async () => {
@@ -424,7 +424,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('UNION 3', async () => {
@@ -441,7 +441,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('UNION 4', async () => {
@@ -458,7 +458,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('UNION 5', async () => {
@@ -473,7 +473,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true, true, false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('UNION 6', async () => {
@@ -490,7 +490,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('UNION 7', async () => {
@@ -507,7 +507,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('select (select id from mytable1 where id = 10), name, name as name2 from mytable2 where name = abc', async () => {
@@ -520,7 +520,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [false, true, true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('select with subquery 1', async () => {
@@ -533,7 +533,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [false, true, true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('select with subquery', async () => {
@@ -546,7 +546,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [false, false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
     
     it('select value + subquery', async () => {
@@ -559,7 +559,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('select name from (select name from mytable2 where name is not null) t1', async () => {
@@ -572,7 +572,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('select name from (select id as name from mytable2) t1', async () => {
@@ -585,7 +585,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('select id from (select * from mytable2) t1', async () => {
@@ -598,7 +598,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('select * from (select * from mytable2 where name is not null and id is not null) t1', async () => {
@@ -611,7 +611,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true, true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('select * from (select * from mytable2 where name is not null or id is not null) t1', async () => {
@@ -624,7 +624,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true, false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('select * from mytable1', () => {
@@ -633,7 +633,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true, false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it('select value+value from mytable1 where value is not null', () => {
@@ -642,7 +642,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it('select value+value from mytable1 where value is not null', () => {
@@ -651,7 +651,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it('select * from (select * from (select * from mytable2 where name is not null) t1) t2', () => {
@@ -659,7 +659,7 @@ describe('infer-not-null-experimental', () => {
         const actual = parseAndInferNotNull(sql, dbSchema);
         const expected = [true, true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it('select * from (select * from (select * from mytable2 where id > 10) t1) t2', () => {
@@ -668,7 +668,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true, false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it('3 levels of subselects on from  - where name is not null on the 2nd level', () => {
@@ -677,7 +677,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true, true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it('select with left join', () => {
@@ -690,7 +690,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true, false, false, false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it('select with inner join after left join', () => {
@@ -704,7 +704,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true, true, true, false, false, false];
 
-        assert.deepEqual(actualInnerJoin, expected);
+        assert.deepStrictEqual(actualInnerJoin, expected);
 
         //USE JOIN instead of INNER JOIN. The same result is expected
         const sqlJoin = `
@@ -715,7 +715,7 @@ describe('infer-not-null-experimental', () => {
         `;
         const actualJoin = parseAndInferNotNull(sqlJoin, dbSchema);
 
-        assert.deepEqual(actualJoin, expected);
+        assert.deepStrictEqual(actualJoin, expected);
     });
 
     it('select with left join after inner join', () => {
@@ -729,7 +729,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true, true, false, false, false, false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it('select with left join after left join', () => {
@@ -743,7 +743,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true, false, false, false, false, false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it('select with left join and internal inner join', () => {
@@ -758,7 +758,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true, false, false, false, false, false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it('select with left join and internal inner join (using parentheses)', () => {
@@ -773,7 +773,7 @@ describe('infer-not-null-experimental', () => {
 
         const expected = [true, false, false, false, false, false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it('select t1.*, t2.* from inner join', () => {
@@ -786,7 +786,7 @@ describe('infer-not-null-experimental', () => {
         
         const expected = [true, false, true, false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it('select * with left join and internal inner join (using parentheses)', () => {
@@ -801,7 +801,7 @@ describe('infer-not-null-experimental', () => {
         
         const expected = [true, false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it('select * with left join and internal inner join (using parentheses) 2', () => {
@@ -816,7 +816,7 @@ describe('infer-not-null-experimental', () => {
         
         const expected = [false, true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it('select * from (union)', () => {
@@ -832,7 +832,7 @@ describe('infer-not-null-experimental', () => {
         
         const expected = [true, true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it('select * from (union) multiple subselect', () => {
@@ -846,7 +846,7 @@ describe('infer-not-null-experimental', () => {
         
         const expected = [true, false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it('select * from (union)', () => {
@@ -860,7 +860,7 @@ describe('infer-not-null-experimental', () => {
         
         const expected = [true, false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it('inner join on t1.name = t2.name', () => {
@@ -873,7 +873,7 @@ describe('infer-not-null-experimental', () => {
         
         const expected = [true, true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it('inner join on t1.name = t2.name or t1.name is null', () => {
@@ -886,7 +886,7 @@ describe('infer-not-null-experimental', () => {
         
         const expected = [false, false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
 

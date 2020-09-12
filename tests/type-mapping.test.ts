@@ -157,7 +157,7 @@ describe('type-mapping', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.columns, expected);
+        assert.deepStrictEqual(actual.right.columns, expected);
     });
 
     it('compare type names from schema with convertion from code', async () => {
@@ -192,7 +192,7 @@ describe('type-mapping', () => {
                 return nameAndType;
             });
 
-        assert.deepEqual(actualColumns, expected);
+        assert.deepStrictEqual(actualColumns, expected);
         
     });
 });

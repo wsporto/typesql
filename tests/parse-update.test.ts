@@ -58,7 +58,7 @@ describe('parse update statements', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('update mytable1 set value = :value where id > :min and id < :max', async () => {
@@ -99,7 +99,7 @@ describe('parse update statements', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('update mytable1 set value = :value where id > :value or id < :value', async () => {
@@ -141,6 +141,6 @@ describe('parse update statements', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 })

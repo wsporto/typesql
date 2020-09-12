@@ -14,7 +14,7 @@ describe('preprocess-sql', () => {
             namedParameters: ['id', 'id', 'param1', 'PARAM', 'PARAM1']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('preprocess sql with undescore and dollar in the param name', async () => {
@@ -27,7 +27,7 @@ describe('preprocess-sql', () => {
             namedParameters: ['emp_id', '$1']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('preprocess sql without parameters', async () => {
@@ -40,7 +40,7 @@ describe('preprocess-sql', () => {
             namedParameters: []
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('preprocess with string literal', async () => {
@@ -53,7 +53,7 @@ describe('preprocess-sql', () => {
             namedParameters: []
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('preprocess with string literal', async () => {
@@ -66,7 +66,7 @@ describe('preprocess-sql', () => {
             namedParameters: []
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it.skip('preprocess sql with invalid parameter names', async () => {
@@ -79,7 +79,7 @@ describe('preprocess-sql', () => {
             namedParameters: []
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
 

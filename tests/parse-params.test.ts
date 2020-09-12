@@ -31,7 +31,7 @@ describe('Test parse parameters', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.parameters, expected);
+        assert.deepStrictEqual(actual.right.parameters, expected);
     })
 
     it('SELECT ?+id from mytable1', async () => {
@@ -49,7 +49,7 @@ describe('Test parse parameters', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.parameters, expected);
+        assert.deepStrictEqual(actual.right.parameters, expected);
     })
 
     it('SELECT :value+id from mytable1 where :value is not null', async () => {
@@ -72,7 +72,7 @@ describe('Test parse parameters', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.parameters, expected);
+        assert.deepStrictEqual(actual.right.parameters, expected);
     })
 
     it('SELECT ? > 1 from mytable1', async () => {
@@ -90,7 +90,7 @@ describe('Test parse parameters', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.parameters, expected);
+        assert.deepStrictEqual(actual.right.parameters, expected);
     })
 
     it(`SELECT ? > 'a' from mytable1`, async () => {
@@ -108,7 +108,7 @@ describe('Test parse parameters', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.parameters, expected);
+        assert.deepStrictEqual(actual.right.parameters, expected);
     })
 
     it('SELECT (select ? from mytable2) from mytable1', async () => {
@@ -126,7 +126,7 @@ describe('Test parse parameters', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.parameters, expected);
+        assert.deepStrictEqual(actual.right.parameters, expected);
     })
 
     it('SELECT (select id from mytable2 where name = ?) from mytable1', async () => {
@@ -144,7 +144,7 @@ describe('Test parse parameters', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.parameters, expected);
+        assert.deepStrictEqual(actual.right.parameters, expected);
     })
 
     it('SELECT * from mytable1 where id > ?', async () => {
@@ -162,7 +162,7 @@ describe('Test parse parameters', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.parameters, expected);
+        assert.deepStrictEqual(actual.right.parameters, expected);
     })
 
     it('SELECT * from mytable1 where ? > id', async () => {
@@ -180,7 +180,7 @@ describe('Test parse parameters', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.parameters, expected);
+        assert.deepStrictEqual(actual.right.parameters, expected);
     })
 
     it.skip(`SELECT * from mytable1 where concat_ws('/', ?) < id`, async () => {
@@ -198,7 +198,7 @@ describe('Test parse parameters', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.parameters, expected);
+        assert.deepStrictEqual(actual.right.parameters, expected);
     })
 
     it(`SELECT * from mytable1 where concat_ws('/', ?) is null`, async () => {
@@ -216,7 +216,7 @@ describe('Test parse parameters', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.parameters, expected);
+        assert.deepStrictEqual(actual.right.parameters, expected);
     })
 
     it.skip(`SELECT * from mytable1 where id > concat_ws('/', ?)`, async () => {
@@ -234,7 +234,7 @@ describe('Test parse parameters', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.parameters, expected);
+        assert.deepStrictEqual(actual.right.parameters, expected);
     })
 
     it('SELECT * from mytable1 where ? > (select id from mytable2 where id = 1)', async () => {
@@ -252,7 +252,7 @@ describe('Test parse parameters', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error:`, actual.left);
         }
-        assert.deepEqual(actual.right.parameters, expected);
+        assert.deepStrictEqual(actual.right.parameters, expected);
     })
 
     it('SELECT * from mytable1 where (select id from mytable2 where id = 1) < ?', async () => {
@@ -270,7 +270,7 @@ describe('Test parse parameters', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.parameters, expected);
+        assert.deepStrictEqual(actual.right.parameters, expected);
     })
 
     it(`SELECT * from mytable2 where ? is null or id = ?`, async () => {
@@ -293,7 +293,7 @@ describe('Test parse parameters', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.parameters, expected);
+        assert.deepStrictEqual(actual.right.parameters, expected);
     })
 
     it(`SELECT * from mytable2 where id = ? or id > ?`, async () => {
@@ -316,7 +316,7 @@ describe('Test parse parameters', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.parameters, expected);
+        assert.deepStrictEqual(actual.right.parameters, expected);
     })
 
     it.skip(`select name from mytable2 where concat('/', id) > :p or id = :p`, async () => {
@@ -339,7 +339,7 @@ describe('Test parse parameters', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.parameters, expected);
+        assert.deepStrictEqual(actual.right.parameters, expected);
     })
 
     it(`select concat(?, ?) from mytable2`, async () => {
@@ -362,7 +362,7 @@ describe('Test parse parameters', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.parameters, expected);
+        assert.deepStrictEqual(actual.right.parameters, expected);
     })
 
 
@@ -382,7 +382,7 @@ describe('Test parse parameters', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.parameters, expected);
+        assert.deepStrictEqual(actual.right.parameters, expected);
     })
 
     it(`SELECT * FROM mytable1 t WHERE ? in (select name from mytable2 m2 )`, async () => {
@@ -400,7 +400,7 @@ describe('Test parse parameters', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.parameters, expected);
+        assert.deepStrictEqual(actual.right.parameters, expected);
     })
 
     //type mismatch
@@ -423,7 +423,7 @@ describe('Test parse parameters', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.parameters, expected);
+        assert.deepStrictEqual(actual.right.parameters, expected);
     })
 
     it(`SELECT * FROM mytable1 t WHERE ? in (UNION)`, async () => {
@@ -445,7 +445,7 @@ describe('Test parse parameters', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.parameters, expected);
+        assert.deepStrictEqual(actual.right.parameters, expected);
     })
 
     it(`SELECT * FROM mytable1 WHERE id in (?)`, async () => {
@@ -462,7 +462,7 @@ describe('Test parse parameters', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.parameters, expected);
+        assert.deepStrictEqual(actual.right.parameters, expected);
     })
 
     it(`SELECT * FROM mytable1 WHERE id = :param or value = :param`, async () => {
@@ -486,7 +486,7 @@ describe('Test parse parameters', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.parameters, expectedParameters);
+        assert.deepStrictEqual(actual.right.parameters, expectedParameters);
     })
 
     it(`SELECT CASE WHEN id = 1 THEN ? ELSE id END from mytable1`, async () => {
@@ -504,7 +504,7 @@ describe('Test parse parameters', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.parameters, expectedParameters);
+        assert.deepStrictEqual(actual.right.parameters, expectedParameters);
     })
 
     it(`SELECT CASE WHEN id = 1 THEN id ELSE ? END from mytable1`, async () => {
@@ -522,7 +522,7 @@ describe('Test parse parameters', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.parameters, expectedParameters);
+        assert.deepStrictEqual(actual.right.parameters, expectedParameters);
     })
 
     it(`parse select with case when expression (multiple parameters)`, async () => {
@@ -552,7 +552,7 @@ describe('Test parse parameters', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.parameters, expectedParameters);
+        assert.deepStrictEqual(actual.right.parameters, expectedParameters);
     })
 
     it(`parse select with case when expression  (id+id)`, async () => {
@@ -580,7 +580,7 @@ describe('Test parse parameters', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.parameters, expectedParameters);
+        assert.deepStrictEqual(actual.right.parameters, expectedParameters);
     })
 
     it(`parse select with case when expression (? in  not null)`, async () => {
@@ -608,7 +608,7 @@ describe('Test parse parameters', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.parameters, expectedParameters);
+        assert.deepStrictEqual(actual.right.parameters, expectedParameters);
     })
 
     it(`parse select with case when expression 2`, async () => {
@@ -631,7 +631,7 @@ describe('Test parse parameters', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.parameters, expectedParameters);
+        assert.deepStrictEqual(actual.right.parameters, expectedParameters);
     })
 
     it(`parse select with case when expression 3`, async () => {
@@ -661,7 +661,7 @@ describe('Test parse parameters', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.parameters, expectedParameters);
+        assert.deepStrictEqual(actual.right.parameters, expectedParameters);
     })
     it(`select id from mytable2 where (name, id) = (select ?, ? from mytable2 where id = ?)`, async () => {
         const sql = `
@@ -688,7 +688,7 @@ describe('Test parse parameters', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.parameters, expectedParameters);
+        assert.deepStrictEqual(actual.right.parameters, expectedParameters);
     })
 
     it(`SELECT id FROM mytable2 WHERE ? = CASE WHEN id = 1 THEN id ELSE ? END`, async () => {
@@ -711,6 +711,6 @@ describe('Test parse parameters', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.parameters, expectedParameters);
+        assert.deepStrictEqual(actual.right.parameters, expectedParameters);
     })
 });

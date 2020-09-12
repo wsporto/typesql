@@ -47,7 +47,7 @@ describe('parse insert statements', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('insert into mydb.mytable1 (value) values (?)', async () => {
@@ -67,7 +67,7 @@ describe('parse insert statements', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.parameters, expected);
+        assert.deepStrictEqual(actual.right.parameters, expected);
     })
 
     it('insert into mytable3 (name, double_value) values (?, ?)', async () => {
@@ -92,7 +92,7 @@ describe('parse insert statements', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.parameters, expected);
+        assert.deepStrictEqual(actual.right.parameters, expected);
     })
 
     it('insert into mytable3 (double_value, name) values (?, ?)', async () => {
@@ -117,7 +117,7 @@ describe('parse insert statements', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.parameters, expected);
+        assert.deepStrictEqual(actual.right.parameters, expected);
     })
 
     it('insert into mytable3 (name, double_value) values (:fullname, :value)', async () => {
@@ -142,7 +142,7 @@ describe('parse insert statements', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.parameters, expected);
+        assert.deepStrictEqual(actual.right.parameters, expected);
     })
 
     it('insert same parameter into two fields', async () => {
@@ -167,7 +167,7 @@ describe('parse insert statements', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right.parameters, expected);
+        assert.deepStrictEqual(actual.right.parameters, expected);
     })
 
     it('insert with inexistent columns names', async () => {
@@ -181,7 +181,7 @@ describe('parse insert statements', () => {
             assert.fail(`Should return an error`);
         }
         const expectedError = `Unknown column 'name' in 'field list'`;
-        assert.deepEqual(actual.left.description, expectedError);
+        assert.deepStrictEqual(actual.left.description, expectedError);
     })
 
     it('insert into all_types (int_column) values (?+?)', async () => {
@@ -222,7 +222,7 @@ describe('parse insert statements', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
     
     it('insert into all_types (varchar_column, int_column) values (concat(?, ?), ?+?)', async () => {
@@ -273,7 +273,7 @@ describe('parse insert statements', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
 });
