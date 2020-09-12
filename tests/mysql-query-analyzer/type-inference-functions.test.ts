@@ -14,7 +14,7 @@ describe('type-inference - functions', () => {
             parameters: []   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     //The YEAR Type: As the result of functions that return a value that is acceptable in YEAR context, such as NOW().
@@ -29,7 +29,7 @@ describe('type-inference - functions', () => {
             parameters: []   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT MONTH(NOW()), MONTH(CURDATE())`, () => {
@@ -41,7 +41,7 @@ describe('type-inference - functions', () => {
             parameters: []   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT DAY(NOW()), DAY(CURDATE())`, () => {
@@ -53,7 +53,7 @@ describe('type-inference - functions', () => {
             parameters: []   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT YEAR(CURTIME())`, () => {
@@ -64,7 +64,7 @@ describe('type-inference - functions', () => {
         }
         catch(e) {
             const expectedMessage = 'Type mismatch: time and date';
-            assert.deepEqual(e.message, expectedMessage);
+            assert.deepStrictEqual(e.message, expectedMessage);
         }
     })
 
@@ -76,7 +76,7 @@ describe('type-inference - functions', () => {
         }
         catch(e) {
             const expectedMessage = 'Type mismatch: time and date';
-            assert.deepEqual(e.message, expectedMessage);
+            assert.deepStrictEqual(e.message, expectedMessage);
         }
     })
 
@@ -88,7 +88,7 @@ describe('type-inference - functions', () => {
         }
         catch(e) {
             const expectedMessage = 'Type mismatch: time and date';
-            assert.deepEqual(e.message, expectedMessage);
+            assert.deepStrictEqual(e.message, expectedMessage);
         }
     })
 
@@ -101,7 +101,7 @@ describe('type-inference - functions', () => {
             parameters: ['date', 'date', 'date']   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT HOUR(?), MINUTE(?), SECOND(?)`, () => {
@@ -113,7 +113,7 @@ describe('type-inference - functions', () => {
             parameters: ['time', 'time', 'time']   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('SELECT HOUR, MINUTE and SECOND with literal', () => {
@@ -129,7 +129,7 @@ describe('type-inference - functions', () => {
             parameters: []
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT HOUR('2017-06-20')`, () => {
@@ -140,7 +140,7 @@ describe('type-inference - functions', () => {
         }
         catch(e) {
             const expectedMessage = 'Type mismatch: date and time';
-            assert.deepEqual(e.message, expectedMessage);
+            assert.deepStrictEqual(e.message, expectedMessage);
         }
     })
     it(`SELECT MINUTE('2017-06-20')`, () => {
@@ -151,7 +151,7 @@ describe('type-inference - functions', () => {
         }
         catch(e) {
             const expectedMessage = 'Type mismatch: date and time';
-            assert.deepEqual(e.message, expectedMessage);
+            assert.deepStrictEqual(e.message, expectedMessage);
         }
     })
     it(`SELECT SECOND('2017-06-20')`, () => {
@@ -162,7 +162,7 @@ describe('type-inference - functions', () => {
         }
         catch(e) {
             const expectedMessage = 'Type mismatch: date and time';
-            assert.deepEqual(e.message, expectedMessage);
+            assert.deepStrictEqual(e.message, expectedMessage);
         }
     })
 
@@ -178,7 +178,7 @@ describe('type-inference - functions', () => {
             parameters: []
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT LPAD('hi',4,'??')`, () => {
@@ -190,7 +190,7 @@ describe('type-inference - functions', () => {
             parameters: []   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT LPAD(?, ?, ?), RPAD(?, ?, ?)`, () => {
@@ -202,7 +202,7 @@ describe('type-inference - functions', () => {
             parameters: ['varchar', 'int', 'varchar', 'varchar', 'int', 'varchar']   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT LOWER(?), LCASE(?), UPPER(?), UCASE(?), LTRIM(?), RTRIM(?)`, () => {
@@ -214,7 +214,7 @@ describe('type-inference - functions', () => {
             parameters: ['varchar', 'varchar', 'varchar', 'varchar', 'varchar', 'varchar']   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT TRIM(' x '), TRIM(' ? '), TRIM(?)`, () => {
@@ -226,7 +226,7 @@ describe('type-inference - functions', () => {
             parameters: ['varchar']   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT TRIM(LEADING ? FROM ?), TRIM(TRAILING ? FROM ?), TRIM(BOTH ? FROM ?)`, () => {
@@ -238,7 +238,7 @@ describe('type-inference - functions', () => {
             parameters: ['varchar', 'varchar', 'varchar', 'varchar', 'varchar', 'varchar']   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`TRIM varchar - table column`, () => {
@@ -250,7 +250,7 @@ describe('type-inference - functions', () => {
             parameters: []   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT TRIM(concat(?, ?, name)) FROM mytable2`, () => {
@@ -262,7 +262,7 @@ describe('type-inference - functions', () => {
             parameters: ['?', '?']   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT LENGTH(?)`, () => {
@@ -274,7 +274,7 @@ describe('type-inference - functions', () => {
             parameters: ['varchar']   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT LENGTH(concat(name, ?)) FROM mytable2`, () => {
@@ -286,7 +286,7 @@ describe('type-inference - functions', () => {
             parameters: ['?']   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT SUBSTRING(?, ?), SUBSTRING(?, ?, ?)`, () => {
@@ -298,7 +298,7 @@ describe('type-inference - functions', () => {
             parameters: ['varchar', 'int', 'varchar', 'int', 'int']   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT COALESCE (VALUE, ID) FROM mytable1`, () => {
@@ -310,7 +310,7 @@ describe('type-inference - functions', () => {
             parameters: []   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT COALESCE (double_column, int_column, ?) FROM all_types`, () => {
@@ -333,7 +333,7 @@ describe('type-inference - functions', () => {
         //     parameters: ['?']   
         // }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT COALESCE (varchar_column, ?) FROM all_types`, () => {
@@ -345,7 +345,7 @@ describe('type-inference - functions', () => {
             parameters: ['?', '?']   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT DATEDIFF('2003-02-01','2003-05-01 12:05:55')`, () => {
@@ -357,7 +357,7 @@ describe('type-inference - functions', () => {
             parameters: []   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     //unit: MICROSECOND (microseconds), SECOND, MINUTE, HOUR, DAY, WEEK, MONTH, QUARTER, or YEAR
@@ -380,7 +380,7 @@ describe('type-inference - functions', () => {
             'datetime', 'datetime', 'datetime', 'datetime', 'datetime', 'datetime', 'datetime', 'datetime', 'datetime', 'datetime']   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT TIMESTAMPDIFF(SECOND, CURTIME(), CURTIME())`, () => {
@@ -390,7 +390,7 @@ describe('type-inference - functions', () => {
             columns: ['int'],
             parameters: []   
         }
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT TIMESTAMPDIFF(SECOND, CURDATE(), CURDATE())`, () => {
@@ -402,7 +402,7 @@ describe('type-inference - functions', () => {
             parameters: []   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT TIMESTAMPDIFF(MINUTE,'2003-02-01','2003-05-01 12:05:55')`, () => {
@@ -414,7 +414,7 @@ describe('type-inference - functions', () => {
             parameters: []   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT TIMESTAMPDIFF(SECOND, name, name) FROM mytable2`, () => {
@@ -425,7 +425,7 @@ describe('type-inference - functions', () => {
         }
         catch(e) {
             const expectedMessage = 'Type mismatch: varchar and datetime';
-            assert.deepEqual(e.message, expectedMessage);
+            assert.deepStrictEqual(e.message, expectedMessage);
         }
     })
 
@@ -439,7 +439,7 @@ describe('type-inference - functions', () => {
             parameters: []   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     //INTERVAL expr unit is permitted on either side of the + operator if the expression on the other side is a date or datetime value. 
@@ -453,7 +453,7 @@ describe('type-inference - functions', () => {
             parameters: []   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT ? - INTERVAL 1 DAY`, () => {
@@ -465,7 +465,7 @@ describe('type-inference - functions', () => {
             parameters: ['datetime']   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
     
     it(`SELECT INTERVAL 1 DAY + '2018-12-31'`, () => {
@@ -477,7 +477,7 @@ describe('type-inference - functions', () => {
             parameters: []   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT INTERVAL 1 DAY + '2018-12-31'`, () => {
@@ -489,7 +489,7 @@ describe('type-inference - functions', () => {
             parameters: ['bigint']   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT INTERVAL ? MONTH + '2018-12-31 13:01:02'`, () => {
@@ -501,7 +501,7 @@ describe('type-inference - functions', () => {
             parameters: ['bigint']   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`INTERVAL expression with invalid date`, () => {
@@ -513,7 +513,7 @@ describe('type-inference - functions', () => {
         }
         catch (e) {
             const expected = 'Type mismatch: varchar and datetime';
-            assert.deepEqual(e.message, expected);
+            assert.deepStrictEqual(e.message, expected);
         }
     })
 
@@ -530,7 +530,7 @@ describe('type-inference - functions', () => {
             parameters: []   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`test ADDDATE, DATE_ADD, SUBDATE and DATE_SUB with parameters`, () => {
@@ -546,7 +546,7 @@ describe('type-inference - functions', () => {
             parameters: ['datetime', 'bigint', 'datetime', 'bigint', 'datetime', 'bigint', 'datetime', 'bigint']   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT ADDDATE and SUBDATE without INTERVAL (with literal)`, () => {
@@ -560,7 +560,7 @@ describe('type-inference - functions', () => {
             parameters: []   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT ADDDATE(?, ?), SUBDATE(?, ?)`, () => {
@@ -572,7 +572,7 @@ describe('type-inference - functions', () => {
             parameters: ['datetime', 'bigint', 'datetime', 'bigint']   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`Pass invalid date to ADDDATE function`, () => {
@@ -584,7 +584,7 @@ describe('type-inference - functions', () => {
         }
         catch(e) {
             const expected = 'Type mismatch: varchar and datetime';
-            assert.deepEqual(e.message, expected);
+            assert.deepStrictEqual(e.message, expected);
         }
     })
 
@@ -597,7 +597,7 @@ describe('type-inference - functions', () => {
         }
         catch(e) {
             const expected = 'Type mismatch: varchar and datetime';
-            assert.deepEqual(e.message, expected);
+            assert.deepStrictEqual(e.message, expected);
         }
     })
 
@@ -610,7 +610,7 @@ describe('type-inference - functions', () => {
         }
         catch(e) {
             const expected = 'Type mismatch: varchar and datetime';
-            assert.deepEqual(e.message, expected);
+            assert.deepStrictEqual(e.message, expected);
         }
     })
 
@@ -623,7 +623,7 @@ describe('type-inference - functions', () => {
         }
         catch(e) {
             const expected = 'Type mismatch: varchar and datetime';
-            assert.deepEqual(e.message, expected);
+            assert.deepStrictEqual(e.message, expected);
         }
     })
 })

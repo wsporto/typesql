@@ -21,11 +21,11 @@ describe('Utility functions tests', () => {
         ]
         const fieldName = splitName('name');
         const actual = findColumn(fieldName, colDef);
-        assert.deepEqual(actual, colDef[0]);
+        assert.deepStrictEqual(actual, colDef[0]);
 
         const fieldNameUperCase = splitName('NAME');
         const actualUpperCase = findColumn(fieldNameUperCase, colDef);
-        assert.deepEqual(actualUpperCase, colDef[0]);
+        assert.deepStrictEqual(actualUpperCase, colDef[0]);
     })
 
     it('findColumn2 should be case insensitive', () => {
@@ -41,11 +41,11 @@ describe('Utility functions tests', () => {
         ]
         const fieldName = splitName('name');
         const actual = findColumn2(fieldName, 'mytable2', colDef);
-        assert.deepEqual(actual, colDef[0]);
+        assert.deepStrictEqual(actual, colDef[0]);
 
         const fieldNameUperCase = splitName('NAME');
         const actualUpperCase = findColumn2(fieldNameUperCase, 'mytable2', colDef);
-        assert.deepEqual(actualUpperCase, colDef[0]);
+        assert.deepStrictEqual(actualUpperCase, colDef[0]);
     })
 
     it.skip(`test selectColumns`, () => {
@@ -81,7 +81,7 @@ describe('Utility functions tests', () => {
             }
         ]
 
-        assert.deepEqual(fromColumns, expectedColumns);
+        assert.deepStrictEqual(fromColumns, expectedColumns);
 
         const selectedColumns = getColumnNames(querySpec, fromColumns);
         const expectedSelectedColumns : FieldInfo[] = [
@@ -91,40 +91,40 @@ describe('Utility functions tests', () => {
             }
         ]
 
-        assert.deepEqual(selectedColumns, expectedSelectedColumns);
+        assert.deepStrictEqual(selectedColumns, expectedSelectedColumns);
 
     })
 
     it('test unionTypeResult', () => {
-        assert.deepEqual(unionTypeResult('tinyint', 'tinyint'), 'tinyint');
-        assert.deepEqual(unionTypeResult('tinyint', 'smallint'), 'smallint');
-        assert.deepEqual(unionTypeResult('tinyint', 'mediumint'), 'mediumint');
-        assert.deepEqual(unionTypeResult('tinyint', 'int'), 'int');
-        assert.deepEqual(unionTypeResult('tinyint', 'bigint'), 'bigint');
+        assert.deepStrictEqual(unionTypeResult('tinyint', 'tinyint'), 'tinyint');
+        assert.deepStrictEqual(unionTypeResult('tinyint', 'smallint'), 'smallint');
+        assert.deepStrictEqual(unionTypeResult('tinyint', 'mediumint'), 'mediumint');
+        assert.deepStrictEqual(unionTypeResult('tinyint', 'int'), 'int');
+        assert.deepStrictEqual(unionTypeResult('tinyint', 'bigint'), 'bigint');
         
-        assert.deepEqual(unionTypeResult('smallint', 'tinyint'), 'smallint');
-        assert.deepEqual(unionTypeResult('smallint', 'smallint'), 'smallint');
-        assert.deepEqual(unionTypeResult('smallint', 'mediumint'), 'mediumint');
-        assert.deepEqual(unionTypeResult('smallint', 'int'), 'int');
-        assert.deepEqual(unionTypeResult('smallint', 'bigint'), 'bigint');
+        assert.deepStrictEqual(unionTypeResult('smallint', 'tinyint'), 'smallint');
+        assert.deepStrictEqual(unionTypeResult('smallint', 'smallint'), 'smallint');
+        assert.deepStrictEqual(unionTypeResult('smallint', 'mediumint'), 'mediumint');
+        assert.deepStrictEqual(unionTypeResult('smallint', 'int'), 'int');
+        assert.deepStrictEqual(unionTypeResult('smallint', 'bigint'), 'bigint');
 
-        assert.deepEqual(unionTypeResult('mediumint', 'tinyint'), 'mediumint');
-        assert.deepEqual(unionTypeResult('mediumint', 'smallint'), 'mediumint');
-        assert.deepEqual(unionTypeResult('mediumint', 'mediumint'), 'mediumint');
-        assert.deepEqual(unionTypeResult('mediumint', 'int'), 'int');
-        assert.deepEqual(unionTypeResult('mediumint', 'bigint'), 'bigint');
+        assert.deepStrictEqual(unionTypeResult('mediumint', 'tinyint'), 'mediumint');
+        assert.deepStrictEqual(unionTypeResult('mediumint', 'smallint'), 'mediumint');
+        assert.deepStrictEqual(unionTypeResult('mediumint', 'mediumint'), 'mediumint');
+        assert.deepStrictEqual(unionTypeResult('mediumint', 'int'), 'int');
+        assert.deepStrictEqual(unionTypeResult('mediumint', 'bigint'), 'bigint');
 
-        assert.deepEqual(unionTypeResult('int', 'tinyint'), 'int');
-        assert.deepEqual(unionTypeResult('int', 'smallint'), 'int');
-        assert.deepEqual(unionTypeResult('int', 'mediumint'), 'int');
-        assert.deepEqual(unionTypeResult('int', 'int'), 'int');
-        assert.deepEqual(unionTypeResult('int', 'bigint'), 'bigint');
+        assert.deepStrictEqual(unionTypeResult('int', 'tinyint'), 'int');
+        assert.deepStrictEqual(unionTypeResult('int', 'smallint'), 'int');
+        assert.deepStrictEqual(unionTypeResult('int', 'mediumint'), 'int');
+        assert.deepStrictEqual(unionTypeResult('int', 'int'), 'int');
+        assert.deepStrictEqual(unionTypeResult('int', 'bigint'), 'bigint');
 
-        assert.deepEqual(unionTypeResult('bigint', 'tinyint'), 'bigint');
-        assert.deepEqual(unionTypeResult('bigint', 'smallint'), 'bigint');
-        assert.deepEqual(unionTypeResult('bigint', 'mediumint'), 'bigint');
-        assert.deepEqual(unionTypeResult('bigint', 'int'), 'bigint');
-        assert.deepEqual(unionTypeResult('bigint', 'bigint'), 'bigint');
+        assert.deepStrictEqual(unionTypeResult('bigint', 'tinyint'), 'bigint');
+        assert.deepStrictEqual(unionTypeResult('bigint', 'smallint'), 'bigint');
+        assert.deepStrictEqual(unionTypeResult('bigint', 'mediumint'), 'bigint');
+        assert.deepStrictEqual(unionTypeResult('bigint', 'int'), 'bigint');
+        assert.deepStrictEqual(unionTypeResult('bigint', 'bigint'), 'bigint');
     })
 
     it('test getIndex', () => {

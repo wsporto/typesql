@@ -47,7 +47,7 @@ describe.skip('Substitution tests', () => {
 
         const expected = type1;
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('substitute 2', () => {
@@ -60,13 +60,13 @@ describe.skip('Substitution tests', () => {
         }
 
         const actual = substitute(newInt, substitutions);
-        assert.deepEqual(actual, newInt, "substitution 1");
+        assert.deepStrictEqual(actual, newInt, "substitution 1");
 
         const actual2 = substitute(u1, substitutions);
-        assert.deepEqual(actual2, u1, "substitution 2");
+        assert.deepStrictEqual(actual2, u1, "substitution 2");
 
         const actual3 = substitute(u3, substitutions);
-        assert.deepEqual(actual3, u1, "substitution 3");
+        assert.deepStrictEqual(actual3, u1, "substitution 3");
     })
 
 
@@ -206,7 +206,7 @@ describe.skip('Substitution tests', () => {
             }
         }
 
-        assert.deepEqual(substitutions, expected);
+        assert.deepStrictEqual(substitutions, expected);
     })
 
     it('int+int', () => {
@@ -301,9 +301,9 @@ describe.skip('Substitution tests', () => {
         unify(constraints, substitutions);
 
         console.log("unify===", substitutions);
-        assert.deepEqual(substitutions[2].type, 'bigint');
-        assert.deepEqual(substitutions[3].type, 'bigint');
-        assert.deepEqual(substitutions[4].type, 'bigint');
+        assert.deepStrictEqual(substitutions[2].type, 'bigint');
+        assert.deepStrictEqual(substitutions[3].type, 'bigint');
+        assert.deepStrictEqual(substitutions[4].type, 'bigint');
     })
 
     it('int+double', () => {
@@ -405,9 +405,9 @@ describe.skip('Substitution tests', () => {
         unify(constraints, substitutions);
 
         console.log("unify===", substitutions);
-        assert.deepEqual(substitutions[2].type, 'double');
-        assert.deepEqual(substitutions[3].type, 'double');
-        assert.deepEqual(substitutions[4].type, 'double');
+        assert.deepStrictEqual(substitutions[2].type, 'double');
+        assert.deepStrictEqual(substitutions[3].type, 'double');
+        assert.deepStrictEqual(substitutions[4].type, 'double');
     })
 
     it('int+?', () => {
@@ -509,9 +509,9 @@ describe.skip('Substitution tests', () => {
         unify(constraints, substitutions);
 
         console.log("unify===", substitutions);
-        assert.deepEqual(substitutions[2].type, 'number');
-        assert.deepEqual(substitutions[3].type, 'number');
-        assert.deepEqual(substitutions[4].type, 'number');
+        assert.deepStrictEqual(substitutions[2].type, 'number');
+        assert.deepStrictEqual(substitutions[3].type, 'number');
+        assert.deepStrictEqual(substitutions[4].type, 'number');
     })
 
     it('bigint+?', () => {
@@ -613,8 +613,8 @@ describe.skip('Substitution tests', () => {
         unify(constraints, substitutions);
 
         console.log("unify===", substitutions);
-        assert.deepEqual(substitutions[2].type, 'number');
-        assert.deepEqual(substitutions[3].type, 'number');
-        assert.deepEqual(substitutions[4].type, 'number');
+        assert.deepStrictEqual(substitutions[2].type, 'number');
+        assert.deepStrictEqual(substitutions[3].type, 'number');
+        assert.deepStrictEqual(substitutions[4].type, 'number');
     })
 });

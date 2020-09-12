@@ -10,7 +10,7 @@ describe('Infer column nullability', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT value FROM mytable1`, () => {
@@ -19,7 +19,7 @@ describe('Infer column nullability', () => {
 
         const expected = [false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT value FROM mytable1 WHERE value is not null`, () => {
@@ -28,7 +28,7 @@ describe('Infer column nullability', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT * FROM mytable1 WHERE value is not null`, () => {
@@ -37,7 +37,7 @@ describe('Infer column nullability', () => {
 
         const expected = [true, true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT id+id FROM mytable1`, () => {
@@ -46,7 +46,7 @@ describe('Infer column nullability', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT id+value FROM mytable1`, () => {
@@ -55,7 +55,7 @@ describe('Infer column nullability', () => {
 
         const expected = [false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT id+null FROM mytable1`, () => {
@@ -64,7 +64,7 @@ describe('Infer column nullability', () => {
 
         const expected = [false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT id*2.5 FROM mytable1`, () => {
@@ -73,7 +73,7 @@ describe('Infer column nullability', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT id+value FROM mytable1 where value is not null`, () => {
@@ -82,7 +82,7 @@ describe('Infer column nullability', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT count(*) FROM mytable1`, () => {
@@ -91,7 +91,7 @@ describe('Infer column nullability', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT count(name) FROM mytable1`, () => {
@@ -100,7 +100,7 @@ describe('Infer column nullability', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT concat(id, id, id) FROM mytable1`, () => {
@@ -109,7 +109,7 @@ describe('Infer column nullability', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT concat(id, '---', id) FROM mytable1`, () => {
@@ -118,7 +118,7 @@ describe('Infer column nullability', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT concat(id, null, id) FROM mytable1`, () => {
@@ -127,7 +127,7 @@ describe('Infer column nullability', () => {
 
         const expected = [false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT concat(id, id, value) FROM mytable1`, () => {
@@ -136,7 +136,7 @@ describe('Infer column nullability', () => {
 
         const expected = [false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT concat(id, id, value) FROM mytable1`, () => {
@@ -145,7 +145,7 @@ describe('Infer column nullability', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT concat(?, ?) FROM mytable1`, () => {
@@ -154,7 +154,7 @@ describe('Infer column nullability', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT concat(?, ifnull(?, null)) FROM mytable1`, () => {
@@ -163,7 +163,7 @@ describe('Infer column nullability', () => {
 
         const expected = [false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT case when id = 1 then id else id end FROM mytable1`, () => {
@@ -172,7 +172,7 @@ describe('Infer column nullability', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT case when id = 1 then id else value end FROM mytable1`, () => {
@@ -181,7 +181,7 @@ describe('Infer column nullability', () => {
 
         const expected = [false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT case when id = 1 then id else value end FROM mytable1 WHERE value is not null`, () => {
@@ -190,7 +190,7 @@ describe('Infer column nullability', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     //verify not null on from ( where value is  not null)
@@ -200,7 +200,7 @@ describe('Infer column nullability', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     //TODO - consulta inválida; pq passou nos testes?
@@ -210,7 +210,7 @@ describe('Infer column nullability', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     //TODO - pq passou nos testes
@@ -220,7 +220,7 @@ describe('Infer column nullability', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT name from (SELECT name from mytable2) t WHERE name is not null`, () => {
@@ -229,7 +229,7 @@ describe('Infer column nullability', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT lpad(?, ?, ?)`, () => {
@@ -238,7 +238,7 @@ describe('Infer column nullability', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT lpad(name, ?, ?) FROM mytable2`, () => {
@@ -247,7 +247,7 @@ describe('Infer column nullability', () => {
 
         const expected = [false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT TRIM(LEADING ? FROM ?), TRIM(TRAILING ? FROM ?), TRIM(BOTH ? FROM ?)`, () => {
@@ -256,7 +256,7 @@ describe('Infer column nullability', () => {
 
         const expected = [true, true, true, true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT TRIM(LEADING ? FROM null), TRIM(LEADING null FROM ?)`, () => {
@@ -269,7 +269,7 @@ describe('Infer column nullability', () => {
 
         const expected = [false, false, false, false, false, false, false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT SUBSTRING(?, ?), SUBSTRING(?, ?, ?)`, () => {
@@ -278,7 +278,7 @@ describe('Infer column nullability', () => {
 
         const expected = [true, true]
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT YEAR(?), MONTH(?), DAY(?), HOUR(?), MINUTE(?), SECOND(?)`, () => {
@@ -287,7 +287,7 @@ describe('Infer column nullability', () => {
 
         const expected = [true, true, true, true, true, true]
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT YEAR(?), MONTH(?), DAY(?), HOUR(?), MINUTE(?), SECOND(?)`, () => {
@@ -296,7 +296,7 @@ describe('Infer column nullability', () => {
 
         const expected = [true, false]
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT TIMESTAMPDIFF(MONTH, ?, ?)`, () => {
@@ -314,7 +314,7 @@ describe('Infer column nullability', () => {
 
         const expected = [true, false, true, true, true, true, true, true, true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT INTERVAL ? MONTH + ?`, () => {
@@ -323,7 +323,7 @@ describe('Infer column nullability', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT INTERVAL ? MONTH + STR_TO_DATE(?,'%d,%m,%Y')`, () => {
@@ -332,7 +332,7 @@ describe('Infer column nullability', () => {
 
         const expected = [false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT INTERVAL ? MONTH + '2018-05-01'`, () => {
@@ -341,7 +341,7 @@ describe('Infer column nullability', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT INTERVAL ? MONTH + ?`, () => {
@@ -350,7 +350,7 @@ describe('Infer column nullability', () => {
 
         const expected = [false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`test ADDDATE, SUBDATE, DATE_ADD and DATE_SUB nullability with date literal`, () => {
@@ -363,7 +363,7 @@ describe('Infer column nullability', () => {
 
         const expected = [true, true, true, true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`test ADDDATE, SUBDATE, DATE_ADD and and DATE_SUB nullability with parameters`, () => {
@@ -376,7 +376,7 @@ describe('Infer column nullability', () => {
 
         const expected = [true, true, true, true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`test ADDDATE, SUBDATE, DATE_ADD and DATE_SUB nullability with null paramters`, () => {
@@ -389,6 +389,6 @@ describe('Infer column nullability', () => {
 
         const expected = [false, false, false, false, false, false, false, false];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 });

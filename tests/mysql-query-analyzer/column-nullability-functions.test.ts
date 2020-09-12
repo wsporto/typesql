@@ -10,6 +10,6 @@ describe('column-nullability - functions', () => {
 
         const expected = [true, true, true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 })

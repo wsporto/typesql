@@ -42,7 +42,7 @@ export class DbClient {
             return this.connection.execute(sql)
             .then( res => {
                 const columns = res[0] as ColumnSchema[];
-                return right(columns);
+                return right(columns.map( col => ({...col, notNull: !!+col.notNull}))); //convert 1 to true, 0 to false
             });
         }
         return left(connectionNotOpenError);

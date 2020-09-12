@@ -22,7 +22,7 @@ describe('Test parse parameters', () => {
             parameters: []
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT id as value FROM mytable1`, () => {
@@ -42,7 +42,7 @@ describe('Test parse parameters', () => {
             parameters: []
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT id, name FROM mytable2`, () => {
@@ -67,7 +67,7 @@ describe('Test parse parameters', () => {
             parameters: []
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT id+id FROM mytable1`, () => {
@@ -87,7 +87,7 @@ describe('Test parse parameters', () => {
             parameters: []
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT id+double_value FROM mytable3`, () => {
@@ -107,7 +107,7 @@ describe('Test parse parameters', () => {
             parameters: []
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT datetime_column FROM all_types`, () => {
@@ -132,7 +132,7 @@ describe('Test parse parameters', () => {
             ]
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT ? FROM mytable3`, () => {
@@ -157,7 +157,7 @@ describe('Test parse parameters', () => {
             ]
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('SELECT CASE WHEN id = 1 then ? else id END from mytable1', () => {
@@ -183,7 +183,7 @@ describe('Test parse parameters', () => {
             ]
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('SELECT CASE WHEN id = 1 then ? else id END from mytable1', () => {
@@ -209,7 +209,7 @@ describe('Test parse parameters', () => {
             ]
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('SELECT ?+id from mytable1', () => {
@@ -235,7 +235,7 @@ describe('Test parse parameters', () => {
             ]
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('infer case with subselect', () => {
@@ -261,7 +261,7 @@ describe('Test parse parameters', () => {
             ]
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT concat_ws('/', ?, ?, ?) FROM mytable1`, () => {
@@ -295,7 +295,7 @@ describe('Test parse parameters', () => {
             ]
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT * FROM mytable1`, () => {
@@ -320,7 +320,7 @@ describe('Test parse parameters', () => {
             parameters: []
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('SELECT (SELECT ? FROM mytable2) FROM mytable1', () => {
@@ -341,7 +341,7 @@ describe('Test parse parameters', () => {
         }
 
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT ?=id, ?=name FROM (SELECT id, name FROM mytable2) t`, () => {
@@ -376,7 +376,7 @@ describe('Test parse parameters', () => {
             ]
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it(`parse a select with 3-levels nested select (with alias)`, () => {
@@ -402,7 +402,7 @@ describe('Test parse parameters', () => {
             parameters: []
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`select * from subquery`, () => {
@@ -441,7 +441,7 @@ describe('Test parse parameters', () => {
             ]
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('parse a select with UNION and parameters', async () => {
@@ -486,7 +486,7 @@ describe('Test parse parameters', () => {
             ]
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it('SELECT id FROM mytable1 ORDER BY ?', async () => {
@@ -509,7 +509,7 @@ describe('Test parse parameters', () => {
             orderByColumns: ['id', 'value']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it('SELECT id FROM mytable1 LIMIT ?', async () => {
@@ -536,7 +536,7 @@ describe('Test parse parameters', () => {
             ]
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it('SELECT id FROM mytable1 LIMIT ?, ?', async () => {
@@ -567,7 +567,7 @@ describe('Test parse parameters', () => {
             ]
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it('SELECT id FROM mytable1 LIMIT 1', async () => {
@@ -575,7 +575,7 @@ describe('Test parse parameters', () => {
         SELECT id FROM mytable1 LIMIT 1
         `
         const actual = extractQueryInfo(sql, dbSchema) as QueryInfoResult;
-        assert.deepEqual(actual.multipleRowsResult, false);
+        assert.deepStrictEqual(actual.multipleRowsResult, false);
     });
 
     it('SELECT id FROM mytable1 LIMIT 1,10', async () => {
@@ -583,7 +583,7 @@ describe('Test parse parameters', () => {
         SELECT id FROM mytable1 LIMIT 1,10
         `
         const actual = extractQueryInfo(sql, dbSchema) as QueryInfoResult;
-        assert.deepEqual(actual.multipleRowsResult, true);
+        assert.deepStrictEqual(actual.multipleRowsResult, true);
     });
 
     it('SELECT id FROM mytable1 LIMIT 10,1', async () => {
@@ -591,7 +591,7 @@ describe('Test parse parameters', () => {
         SELECT id FROM mytable1 LIMIT 10,1
         `
         const actual = extractQueryInfo(sql, dbSchema) as QueryInfoResult;
-        assert.deepEqual(actual.multipleRowsResult, false);
+        assert.deepStrictEqual(actual.multipleRowsResult, false);
     });
 
     it('SELECT id FROM mytable1 WHERE id = 1 LIMIT 10', async () => {
@@ -599,7 +599,7 @@ describe('Test parse parameters', () => {
         SELECT id FROM mytable1 WHERE id = 1 LIMIT 10
         `
         const actual = extractQueryInfo(sql, dbSchema) as QueryInfoResult;
-        assert.deepEqual(actual.multipleRowsResult, false);
+        assert.deepStrictEqual(actual.multipleRowsResult, false);
     });
 
     it('SELECT id FROM mytable1 WHERE id+id = 1', async () => {
@@ -607,7 +607,7 @@ describe('Test parse parameters', () => {
         SELECT id FROM mytable1 WHERE id+id = 1
         `
         const actual = extractQueryInfo(sql, dbSchema) as QueryInfoResult;
-        assert.deepEqual(actual.multipleRowsResult, true);
+        assert.deepStrictEqual(actual.multipleRowsResult, true);
     });
 
     it('SELECT id FROM mytable1 WHERE 1 = id LIMIT 10', async () => {
@@ -615,7 +615,7 @@ describe('Test parse parameters', () => {
         SELECT id FROM mytable1 WHERE 1 = id LIMIT 10
         `
         const actual = extractQueryInfo(sql, dbSchema) as QueryInfoResult;
-        assert.deepEqual(actual.multipleRowsResult, false);
+        assert.deepStrictEqual(actual.multipleRowsResult, false);
     });
 
     it('SELECT id FROM mytable1 WHERE 1 = id LIMIT 10', async () => {
@@ -623,7 +623,7 @@ describe('Test parse parameters', () => {
         SELECT id FROM mytable1 WHERE 1 = id+id
         `
         const actual = extractQueryInfo(sql, dbSchema) as QueryInfoResult;
-        assert.deepEqual(actual.multipleRowsResult, true);
+        assert.deepStrictEqual(actual.multipleRowsResult, true);
     });
 
     it('SELECT id FROM mytable1 WHERE id > 10', async () => {
@@ -631,7 +631,7 @@ describe('Test parse parameters', () => {
         SELECT id FROM mytable1 WHERE id > 10
         `
         const actual = extractQueryInfo(sql, dbSchema) as QueryInfoResult;
-        assert.deepEqual(actual.multipleRowsResult, true);
+        assert.deepStrictEqual(actual.multipleRowsResult, true);
     });
 
     it('SELECT id FROM mytable1 WHERE id > 10 and id = 11', async () => {
@@ -639,7 +639,7 @@ describe('Test parse parameters', () => {
         SELECT id FROM mytable1 WHERE id > 10 and id = 11
         `
         const actual = extractQueryInfo(sql, dbSchema) as QueryInfoResult;
-        assert.deepEqual(actual.multipleRowsResult, false);
+        assert.deepStrictEqual(actual.multipleRowsResult, false);
     });
 
     it('SELECT id FROM mytable1 WHERE id > 10 or id = 5', async () => {
@@ -647,7 +647,7 @@ describe('Test parse parameters', () => {
         SELECT id FROM mytable1 WHERE id > 10 or id = 5
         `
         const actual = extractQueryInfo(sql, dbSchema) as QueryInfoResult;
-        assert.deepEqual(actual.multipleRowsResult, true);
+        assert.deepStrictEqual(actual.multipleRowsResult, true);
     });
 
     it('SELECT id FROM mytable1 WHERE id > 10 or (id = 5 or id = 6)', async () => {
@@ -655,7 +655,7 @@ describe('Test parse parameters', () => {
         SELECT id FROM mytable1 WHERE id > 10 or (id = 5 or id = 6)
         `
         const actual = extractQueryInfo(sql, dbSchema) as QueryInfoResult;
-        assert.deepEqual(actual.multipleRowsResult, true);
+        assert.deepStrictEqual(actual.multipleRowsResult, true);
     });
 
     it('SELECT id FROM mytable1 WHERE (id = 5 or id = 6) and id = 10', async () => {
@@ -663,7 +663,7 @@ describe('Test parse parameters', () => {
         SELECT id FROM mytable1 WHERE (id = 5 or id = 6) and id = 10
         `
         const actual = extractQueryInfo(sql, dbSchema) as QueryInfoResult;
-        assert.deepEqual(actual.multipleRowsResult, false);
+        assert.deepStrictEqual(actual.multipleRowsResult, false);
     });
 
     it('SELECT id FROM mytable1 WHERE value = 1 LIMIT 10', async () => {
@@ -671,7 +671,7 @@ describe('Test parse parameters', () => {
         SELECT id FROM mytable1 WHERE value = 1 LIMIT 10
         `
         const actual = extractQueryInfo(sql, dbSchema) as QueryInfoResult;
-        assert.deepEqual(actual.multipleRowsResult, true);
+        assert.deepStrictEqual(actual.multipleRowsResult, true);
     });
 
     it('SELECT id FROM mytable1 UNION...', async () => {
@@ -681,14 +681,14 @@ describe('Test parse parameters', () => {
         SELECT id FROM mytable2 WHERE id=1
         `
         const actual = extractQueryInfo(sql, dbSchema) as QueryInfoResult;
-        assert.deepEqual(actual.multipleRowsResult, true);
+        assert.deepStrictEqual(actual.multipleRowsResult, true);
     });
 
     it('SELECT value FROM mytable1 WHERE value > 1 and value is null', async () => {
         const sql = 'SELECT value FROM mytable1 WHERE value > 1 and value is null'
         
         const actual = extractQueryInfo(sql, dbSchema) as QueryInfoResult;
-        assert.deepEqual(actual.multipleRowsResult, true);
+        assert.deepStrictEqual(actual.multipleRowsResult, true);
     });
 
     it('reuse of named paramters', async () => {
@@ -724,6 +724,6 @@ describe('Test parse parameters', () => {
             ]
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 });

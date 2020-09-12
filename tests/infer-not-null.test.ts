@@ -39,7 +39,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('select * from mytable1 where value is not null', async () => {
@@ -71,7 +71,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('select value+10 from mytable1 where value is not null', async () => {
@@ -98,7 +98,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('select value+10+? from mytable1 where value is not null', async () => {
@@ -131,7 +131,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('select t1.value from mytable1 t1 where t1.value is not null', async () => {
@@ -158,7 +158,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('select t1.value from mytable1 t1 where value is not null', async () => {
@@ -185,7 +185,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('select value from mytable1 t1 where t1.value is not null', async () => {
@@ -212,7 +212,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('select t1.value + value from mytable1 t1 where t1.value is not null', async () => {
@@ -239,7 +239,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('select value as alias from mytable1 t1 where t1.value is not null', async () => {
@@ -266,7 +266,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('select t1.value from mytable1 t1 where id is not null', async () => {
@@ -293,7 +293,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('select value from mytable1 where value is not null or (id > 0 or value is not null)', async () => {
@@ -320,7 +320,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('select value from mytable1 where value is not null and (id > 0 or value is not null)', async () => {
@@ -347,7 +347,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('select value from mytable1 where value is not null or (id > 0 and (id < 10 and value is not null)) ', async () => {
@@ -374,7 +374,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('select value from mytable1 where id > 0 and id < 10 and value > 1', async () => {
@@ -401,7 +401,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('select value from mytable1 where value is not null and (value > 1 or value is null)', async () => {
@@ -428,7 +428,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('select value from mytable1 where value is not null or (value > 1 and value is null)', async () => {
@@ -455,7 +455,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('select value from mytable1 where value > 1 and value is null', async () => {
@@ -482,7 +482,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('select value + value from mytable1 where value > 1', async () => {
@@ -509,7 +509,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('select value + value from mytable1 where id > 1', async () => {
@@ -536,7 +536,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('select value + id from mytable1 where value > 1', async () => {
@@ -563,7 +563,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('select value+id from mytable1 where id > 10', async () => {
@@ -590,7 +590,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('select id+id from mytable1 where value > 10', async () => {
@@ -617,7 +617,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('select sum(value) from mytable1 where value > 10', async () => {
@@ -644,7 +644,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('select sum(value) from mytable1 where value is not null', async () => {
@@ -671,7 +671,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('UNION 1', async () => {
@@ -702,7 +702,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('UNION 2', async () => {
@@ -733,7 +733,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('UNION 3', async () => {
@@ -764,7 +764,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('UNION 4', async () => {
@@ -795,7 +795,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('UNION 5 - using select *', async () => {
@@ -834,7 +834,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('UNION 6', async () => {
@@ -865,7 +865,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('UNION 7', async () => {
@@ -896,7 +896,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('select with alias', async () => {
@@ -933,7 +933,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('select with subquery', async () => {
@@ -965,7 +965,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('select value + subquery', async () => {
@@ -992,7 +992,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('select name from (select name from mytable2 where name is not null) t1', async () => {
@@ -1019,7 +1019,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('select name from (select id as name from mytable2) t1', async () => {
@@ -1046,7 +1046,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('select name from (select id as name from mytable2) t1', async () => {
@@ -1073,7 +1073,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('select * from (select * from mytable2 where name is not null and descr is not null) t1', async () => {
@@ -1110,7 +1110,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('select * from (select * from mytable2 where name is not null or descr is not null) t1', async () => {
@@ -1147,7 +1147,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('select * from (select * from (select * from mytable2 where name is not null and descr is not null) t1) t2', async () => {
@@ -1184,7 +1184,7 @@ describe('infer-not-null', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
 });

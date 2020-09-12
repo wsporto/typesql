@@ -17,7 +17,7 @@ describe('type-inference test', () => {
             parameters: []   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT id+id FROM mytable1`, () => {
@@ -29,7 +29,7 @@ describe('type-inference test', () => {
             parameters: []   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT id as alias FROM mytable1`, () => {
@@ -41,7 +41,7 @@ describe('type-inference test', () => {
             parameters: []   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
     
 
@@ -55,7 +55,7 @@ describe('type-inference test', () => {
             parameters: ['?']   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it.skip(`SELECT 2 as intValue, 200000000000 as longVallue, false as falseValue, true as trueValue  FROM mytable1`, () => {
@@ -67,7 +67,7 @@ describe('type-inference test', () => {
             parameters: []   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT ? FROM mytable1`, () => {
@@ -79,7 +79,7 @@ describe('type-inference test', () => {
             parameters: ['?']   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT ?, ?+2, ? FROM mytable1`, () => {
@@ -91,7 +91,7 @@ describe('type-inference test', () => {
             parameters: ['?', 'bigint', '?']  
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('SELECT id + id + ? FROM mytable1', () => {
@@ -103,7 +103,7 @@ describe('type-inference test', () => {
             parameters: ['double']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT ?+?`, () => {
@@ -115,7 +115,7 @@ describe('type-inference test', () => {
             parameters: ['double', 'double']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it(`SELECT t1.* FROM mytable2 t1`, () => {
@@ -127,7 +127,7 @@ describe('type-inference test', () => {
             parameters: []  
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT t1.id+t1.id+? FROM mytable2 t1`, () => {
@@ -139,7 +139,7 @@ describe('type-inference test', () => {
             parameters: ['double']  
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('infer case 1', () => {
@@ -151,7 +151,7 @@ describe('type-inference test', () => {
             parameters: ['int']  
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     //SELECT double_column+int_column from all_types;
@@ -164,7 +164,7 @@ describe('type-inference test', () => {
             parameters: ['double']  
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('infer case 2.2', () => {
@@ -176,7 +176,7 @@ describe('type-inference test', () => {
             parameters: ['double']  
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('infer case 3', () => {
@@ -188,7 +188,7 @@ describe('type-inference test', () => {
             parameters: ['bigint', 'int']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('infer case 4', () => {
@@ -200,7 +200,7 @@ describe('type-inference test', () => {
             parameters:  ['bigint', 'bigint']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('infer case with subselect', () => {
@@ -212,7 +212,7 @@ describe('type-inference test', () => {
             parameters:  ['int']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('SELECT ? > 1 FROM mytable1', () => {
@@ -224,7 +224,7 @@ describe('type-inference test', () => {
             parameters:  ['bigint']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('SELECT 1 < ? FROM mytable1', () => {
@@ -236,7 +236,7 @@ describe('type-inference test', () => {
             parameters:  ['bigint']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT ? > 'a' FROM mytable1`, () => {
@@ -248,7 +248,7 @@ describe('type-inference test', () => {
             parameters:  ['varchar']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT 'a' < ? FROM mytable1`, () => {
@@ -260,7 +260,7 @@ describe('type-inference test', () => {
             parameters:  ['varchar']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT id < ? FROM mytable1`, () => {
@@ -272,7 +272,7 @@ describe('type-inference test', () => {
             parameters:  ['int']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT ? > id FROM mytable1`, () => {
@@ -284,7 +284,7 @@ describe('type-inference test', () => {
             parameters:  ['int']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT id FROM mytable2 WHERE name like ?`, () => {
@@ -296,7 +296,7 @@ describe('type-inference test', () => {
             parameters:  ['varchar']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     //.only
@@ -309,7 +309,7 @@ describe('type-inference test', () => {
             parameters:  ['varchar', 'varchar', 'int']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`select without from clause`, () => {
@@ -321,7 +321,7 @@ describe('type-inference test', () => {
             parameters:  ['?']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
 
@@ -336,7 +336,7 @@ describe('type-inference test', () => {
             parameters:  ['varchar']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT concat(id, name, ?) FROM mytable2`, () => {
@@ -348,7 +348,7 @@ describe('type-inference test', () => {
             parameters:  ['?']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT concat(id, name, ?+?) FROM mytable2`, () => {
@@ -360,7 +360,7 @@ describe('type-inference test', () => {
             parameters:  ['double', 'double']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT id FROM mytable2 WHERE ? like name`, () => {
@@ -372,7 +372,7 @@ describe('type-inference test', () => {
             parameters:  ['varchar']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT concat_ws('/', ?, ?, ?) FROM mytable1`, () => {
@@ -384,7 +384,7 @@ describe('type-inference test', () => {
             parameters:  ['?', '?', '?']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT concat(name, ?, ?) FROM mytable2`, () => {
@@ -396,7 +396,7 @@ describe('type-inference test', () => {
             parameters:  ['?', '?']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('update mytable1 set id = ?', () => {
@@ -409,7 +409,7 @@ describe('type-inference test', () => {
         }
 
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('update mytable1 set id = ?+id', () => {
@@ -421,7 +421,7 @@ describe('type-inference test', () => {
             parameters:  ['int']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('update mytable1 set id = floor(?+?)', () => {
@@ -433,7 +433,7 @@ describe('type-inference test', () => {
             parameters:  ['double', 'double']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('SELECT id FROM mytable1 WHERE id in (?)', () => {
@@ -445,7 +445,7 @@ describe('type-inference test', () => {
             parameters:  ['int[]']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('SELECT id FROM mytable1 WHERE ? in (1, 2, 3)', () => {
@@ -457,7 +457,7 @@ describe('type-inference test', () => {
             parameters:  ['bigint']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('SELECT id FROM mytable3 WHERE double_value in (1, 2, 3, ?)', () => {
@@ -469,7 +469,7 @@ describe('type-inference test', () => {
             parameters:  ['double[]']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT id FROM mytable1 WHERE ? in ('a', 'b', 'c')`, () => {
@@ -481,7 +481,7 @@ describe('type-inference test', () => {
             parameters:  ['varchar']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it.skip(`SELECT id FROM mytable1 WHERE ? in (1, 2, 'a', 'b')`, () => {
@@ -493,7 +493,7 @@ describe('type-inference test', () => {
             parameters:  ['varchar']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT id FROM mytable1 WHERE ? in (id+id, id-id)`, () => {
@@ -505,7 +505,7 @@ describe('type-inference test', () => {
             parameters:  ['bigint']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT id FROM mytable1 WHERE id+id in (?)`, () => {
@@ -517,7 +517,7 @@ describe('type-inference test', () => {
             parameters:  ['bigint[]']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     }),
 
     it(`SELECT id FROM mytable1 WHERE id+id in (?, ?)`, () => {
@@ -529,7 +529,7 @@ describe('type-inference test', () => {
             parameters:  ['bigint[]', 'bigint[]']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT id FROM mytable1 WHERE id in (((?)))`, () => {
@@ -541,7 +541,7 @@ describe('type-inference test', () => {
             parameters:  ['int[]']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`select CURRENT_DATE > ?`, () => {
@@ -553,7 +553,7 @@ describe('type-inference test', () => {
             parameters:  []
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT id FROM mytable1 WHERE ? is not null OR id=?`, () => {
@@ -565,7 +565,7 @@ describe('type-inference test', () => {
             parameters:  ['?', 'int']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT * FROM mytable1`, () => {
@@ -577,7 +577,7 @@ describe('type-inference test', () => {
             parameters:  []
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT id FROM mytable1 t1 WHERE t1.id = ?`, () => {
@@ -589,7 +589,7 @@ describe('type-inference test', () => {
             parameters:  ['int']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`parse a select with 3-levels nested select (with alias)`, () => {
@@ -607,7 +607,7 @@ describe('type-inference test', () => {
             parameters:  []
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`parse a select with 3-levels nested select (with alias) and expression`, () => {
@@ -625,7 +625,7 @@ describe('type-inference test', () => {
             parameters:  []
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`parse a select with nested select2`, () => {
@@ -642,7 +642,7 @@ describe('type-inference test', () => {
             parameters:  ['bigint', 'varchar']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
 
@@ -658,7 +658,7 @@ describe('type-inference test', () => {
             parameters:  []
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
     
     it(`select name from mytable1, (select count(*) as name from mytable2) t2`, () => {
@@ -672,7 +672,7 @@ describe('type-inference test', () => {
             parameters:  []
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('SELECT max(?) FROM mytable1', () => {
@@ -684,7 +684,7 @@ describe('type-inference test', () => {
             parameters:  ['?']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('SELECT max(id)=? FROM mytable1', () => {
@@ -696,7 +696,7 @@ describe('type-inference test', () => {
             parameters:  ['int']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('SELECT max(name)=? FROM mytable2', () => {
@@ -708,7 +708,7 @@ describe('type-inference test', () => {
             parameters:  ['varchar']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('SELECT min(id)=? FROM mytable1', () => {
@@ -720,7 +720,7 @@ describe('type-inference test', () => {
             parameters:  ['int']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('SELECT min(id+id)=? FROM mytable1', () => {
@@ -732,7 +732,7 @@ describe('type-inference test', () => {
             parameters:  ['bigint']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('SELECT count(id)=? FROM mytable1', () => {
@@ -744,7 +744,7 @@ describe('type-inference test', () => {
             parameters:  ['bigint']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('SELECT id+double_value FROM mytable3 WHERE double_value = ?', () => {
@@ -756,7 +756,7 @@ describe('type-inference test', () => {
             parameters:  ['double']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     //The SUM() and AVG() functions return a DECIMAL value for exact-value arguments (integer or DECIMAL), 
@@ -771,7 +771,7 @@ describe('type-inference test', () => {
             parameters:  ['decimal', 'double', 'decimal', 'double']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('SELECT sum(double_column) FROM all_types', () => {
@@ -783,7 +783,7 @@ describe('type-inference test', () => {
             parameters:  []
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('SELECT sum(float_column) FROM all_types', () => {
@@ -795,7 +795,7 @@ describe('type-inference test', () => {
             parameters:  []
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('SELECT sum(bigint_column) FROM all_types', () => {
@@ -807,7 +807,7 @@ describe('type-inference test', () => {
             parameters:  []
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('SELECT sum(int_column) FROM all_types', () => {
@@ -819,7 +819,7 @@ describe('type-inference test', () => {
             parameters:  []
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('SELECT sum(int_column+?) FROM all_types', () => {
@@ -831,7 +831,7 @@ describe('type-inference test', () => {
             parameters:  ['double']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     //select sum(int_column + (int_column + 2) * double_column) from all_types; return type double
@@ -844,7 +844,7 @@ describe('type-inference test', () => {
             parameters: ['double']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     //SELECT sum(t1.int_column + (t1.int_column + 2) + t1.double_column ) FROM all_types t1
@@ -857,7 +857,7 @@ describe('type-inference test', () => {
             parameters: ['double']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     //The return value has the same type as the first argument (assuming that it is integer, double, or decimal).
@@ -870,7 +870,7 @@ describe('type-inference test', () => {
             parameters: ['int', 'double', 'bigint']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     //select int_column + (int_column + double_column) * double_column from all_types; return type double
@@ -883,7 +883,7 @@ describe('type-inference test', () => {
             parameters: ['double', 'double']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('SELECT (SELECT ? FROM mytable2) FROM mytable1', () => {
@@ -896,7 +896,7 @@ describe('type-inference test', () => {
         }
 
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('SELECT (SELECT ? FROM mytable2 WHERE id = ?) FROM mytable1', () => {
@@ -908,7 +908,7 @@ describe('type-inference test', () => {
             parameters: ['?', 'int']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('SELECT (SELECT id=? FROM mytable2 WHERE name = ?) FROM mytable1', () => {
@@ -920,7 +920,7 @@ describe('type-inference test', () => {
             parameters: ['int', 'varchar']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('SELECT * FROM mytable1 WHERE ? > (SELECT id FROM mytable2)', () => {
@@ -932,7 +932,7 @@ describe('type-inference test', () => {
             parameters: ['int']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('SELECT * FROM mytable1 WHERE (SELECT id FROM mytable2) < ?', () => {
@@ -944,7 +944,7 @@ describe('type-inference test', () => {
             parameters: ['int']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('SELECT id FROM mytable2 WHERE (?, ?) = (SELECT name, id FROM mytable2 WHERE id = ?)', () => {
@@ -956,7 +956,7 @@ describe('type-inference test', () => {
             parameters: ['varchar', 'int', 'int']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('SELECT id FROM mytable2 WHERE (?, ?) in (SELECT name, id FROM mytable2 WHERE id = ?)', () => {
@@ -968,7 +968,7 @@ describe('type-inference test', () => {
             parameters: ['varchar', 'int', 'int']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('in with subexpression', () => {
@@ -993,7 +993,7 @@ describe('type-inference test', () => {
             parameters: ['int', 'int', 'varchar']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('in with case expression and subquery', () => {
@@ -1006,7 +1006,7 @@ describe('type-inference test', () => {
             parameters: ['int', 'int']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('in with case expression and subquery 2', () => {
@@ -1022,7 +1022,7 @@ describe('type-inference test', () => {
             parameters: ['bigint', 'bigint', 'int', 'int']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('SELECT id FROM mytable2 WHERE ? = CASE WHEN id = 1 THEN id ELSE ? END', () => {
@@ -1034,7 +1034,7 @@ describe('type-inference test', () => {
             parameters: ['int', 'int']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('parse select with case when expression (multiple parameters)', () => {
@@ -1055,7 +1055,7 @@ describe('type-inference test', () => {
             parameters: ['int', 'int']
         }
         
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('parse select with case when expression (multiple parameters) with alias', () => {
@@ -1076,7 +1076,7 @@ describe('type-inference test', () => {
             parameters: ['int', 'int']
         }
         
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('parse select with case when expression (multiple parameters) 2', () => {
@@ -1097,7 +1097,7 @@ describe('type-inference test', () => {
             parameters: ['bigint', 'bigint']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('parse select with case when expression (multiple parameters) 3', () => {
@@ -1118,7 +1118,7 @@ describe('type-inference test', () => {
             parameters: ['varchar', 'varchar']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
     
     it('parse select with case when expression  (id+id)', () => {
@@ -1137,7 +1137,7 @@ describe('type-inference test', () => {
             parameters: ['int', 'bigint']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`parse select with case when expression (? in  not null)`, () => {
@@ -1156,7 +1156,7 @@ describe('type-inference test', () => {
             parameters: ['?', 'varchar']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it(`SELECT id FROM mytable2 WHERE ? = CASE WHEN id = 1 THEN id ELSE ? END`, () => {
@@ -1168,7 +1168,7 @@ describe('type-inference test', () => {
             parameters: ['int', 'int']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT * FROM mytable1 t WHERE ? in (SELECT id FROM mytable2 m2 )`, () => {
@@ -1181,7 +1181,7 @@ describe('type-inference test', () => {
             parameters: ['int']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it(`SELECT ?=id FROM (SELECT id FROM mytable2) t`, () => {
@@ -1194,7 +1194,7 @@ describe('type-inference test', () => {
             parameters: ['int']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
     
 
@@ -1208,7 +1208,7 @@ describe('type-inference test', () => {
             parameters: ['bigint']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     //similar to select 3 + ? from...
@@ -1221,7 +1221,7 @@ describe('type-inference test', () => {
             parameters: ['double']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it(`select floor(?+?)`, () => {
@@ -1233,7 +1233,7 @@ describe('type-inference test', () => {
             parameters: ['double', 'double']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
 
@@ -1246,7 +1246,7 @@ describe('type-inference test', () => {
             parameters: ['int']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it(`SELECT t1.value from mytable1 t1 where t1.id = ?`, () => {
@@ -1262,7 +1262,7 @@ describe('type-inference test', () => {
             parameters: ['int', 'varchar']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it(`SELECT * FROM mytable1 t1 INNER JOIN mytable2`, () => {
@@ -1277,7 +1277,7 @@ describe('type-inference test', () => {
             parameters: []
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it(`SELECT t2.*, t1.* FROM mytable1 t1 INNER JOIN mytable2`, () => {
@@ -1294,7 +1294,7 @@ describe('type-inference test', () => {
             parameters: ['int']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it(`parse a select with tablelist`, () => {
@@ -1310,7 +1310,7 @@ describe('type-inference test', () => {
             parameters: ['int', 'varchar']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it(`parse a select with tablelist (not ambiguous)`, () => {
@@ -1324,7 +1324,7 @@ describe('type-inference test', () => {
             parameters: ['varchar']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it(`parse a select with tablelist (unreferenced alias)`, () => {
@@ -1338,7 +1338,7 @@ describe('type-inference test', () => {
             parameters: []
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it(`parse a select with tablelist and subquery`, () => {
@@ -1352,7 +1352,7 @@ describe('type-inference test', () => {
             parameters: []
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it(`parse a select with tablelist and subquery`, () => {
@@ -1366,7 +1366,7 @@ describe('type-inference test', () => {
             parameters: []
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
     
     it('select name from mytable2 where exists ( select id from mytable1 where value = ?)', async () => {
@@ -1380,7 +1380,7 @@ describe('type-inference test', () => {
             parameters: ['int']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
 
@@ -1399,7 +1399,7 @@ describe('type-inference test', () => {
             parameters: []
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it('parse a select with UNION', async () => {
@@ -1417,7 +1417,7 @@ describe('type-inference test', () => {
             parameters: []
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it('parse a select with UNION and parameters', async () => {
@@ -1435,7 +1435,7 @@ describe('type-inference test', () => {
             parameters: ['int', 'varchar', 'double']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it('teste', async () => {
@@ -1449,7 +1449,7 @@ describe('type-inference test', () => {
             parameters: ['varchar']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it('teste', async () => {
@@ -1463,7 +1463,7 @@ describe('type-inference test', () => {
             parameters: ['varchar']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     
@@ -1480,7 +1480,7 @@ describe('type-inference test', () => {
             parameters: ['int', 'varchar']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     //TODO - id is ambigue
@@ -1497,7 +1497,7 @@ describe('type-inference test', () => {
             parameters: ['int', 'varchar']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
     it('reuse of named paramters', async () => {
@@ -1511,7 +1511,7 @@ describe('type-inference test', () => {
             columns: ['datetime', 'datetime']
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     });
 
 });

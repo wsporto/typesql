@@ -22,7 +22,7 @@ describe('query-executor tests', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, true);
+        assert.deepStrictEqual(actual.right, true);
     })
 
 });

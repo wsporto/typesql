@@ -15,7 +15,7 @@ describe('type-inference test', () => {
             parameters: ['int']   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`INSERT INTO mydb.mytable1 (value) VALUES (?)`, () => {
@@ -27,7 +27,7 @@ describe('type-inference test', () => {
             parameters: ['int']   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`INSERT INTO alltypes (double_column, int_column, varchar_column) VALUES (?, ?, ?)`, () => {
@@ -39,7 +39,7 @@ describe('type-inference test', () => {
             parameters: ['double', 'int', 'varchar']   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`INSERT INTO mytable1 VALUES (DEFAULT, ?, ?, DEFAULT)`, () => {
@@ -71,7 +71,7 @@ describe('type-inference test', () => {
             parameters: ['int', 'double']   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`INSERT INTO all_types (double_column) VALUE (subquery)`, () => {
@@ -86,7 +86,7 @@ describe('type-inference test', () => {
             parameters: ['int']   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`INSERT INTO alltypes (double_column, int_column) VALUES (?, ?)`, () => {
@@ -101,7 +101,7 @@ describe('type-inference test', () => {
             parameters: ['bigint']   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`INSERT INTO alltypes (double_column, int_column) VALUES (?, ?)`, () => {
@@ -117,7 +117,7 @@ describe('type-inference test', () => {
             parameters: ['double', 'int', 'bigint', 'varchar']   
         }
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
     
 

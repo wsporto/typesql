@@ -35,7 +35,7 @@ describe('code-generator', () => {
     value
 FROM mytable1`
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
 
     })
 
@@ -51,7 +51,7 @@ VALUES
 (
     :value
 )`        
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
 
     })
 
@@ -65,7 +65,7 @@ SET
 WHERE
     id = :id`      
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
 
     })
 
@@ -76,7 +76,7 @@ WHERE
 `DELETE FROM mytable1
 WHERE id = :id`
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
 
     })
     

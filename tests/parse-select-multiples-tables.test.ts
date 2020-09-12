@@ -61,7 +61,7 @@ describe('Test select with multiples tables', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('select t1.* from inner join', async () => {
@@ -94,7 +94,7 @@ describe('Test select with multiples tables', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('select t2.* from inner join', async () => {
@@ -132,7 +132,7 @@ describe('Test select with multiples tables', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('select t2.*, t1.* from inner join', async () => {
@@ -180,7 +180,7 @@ describe('Test select with multiples tables', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('parse select with param', async () => {
@@ -215,7 +215,7 @@ describe('Test select with multiples tables', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('parse select with param 2', async () => {
@@ -285,7 +285,7 @@ describe('Test select with multiples tables', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('parse select with param (tablelist)', async () => {
@@ -349,7 +349,7 @@ describe('Test select with multiples tables', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('parse a select with tablelist', async () => {
@@ -381,7 +381,7 @@ describe('Test select with multiples tables', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('parse a select with tablelist (not ambiguous)', async () => {
@@ -408,7 +408,7 @@ describe('Test select with multiples tables', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('parse a select with tablelist (ambiguous)', async () => {
@@ -427,7 +427,7 @@ describe('Test select with multiples tables', () => {
             assert.fail(`Should return an error`);
         }
         
-        assert.deepEqual(actual.left, expected);
+        assert.deepStrictEqual(actual.left, expected);
     })
 
     it('parse a select with tablelist (unreferenced alias)', async () => {
@@ -454,7 +454,7 @@ describe('Test select with multiples tables', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('parse a select with tablelist and subquery', async () => {
@@ -481,7 +481,7 @@ describe('Test select with multiples tables', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('parse a query with extras parenteses', async () => {
@@ -506,7 +506,7 @@ describe('Test select with multiples tables', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
 
     })
 
@@ -560,7 +560,7 @@ describe('Test select with multiples tables', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
 
     })
 
@@ -605,7 +605,7 @@ describe('Test select with multiples tables', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('select * from inner join using (id) and table alias', async () => {
@@ -649,7 +649,7 @@ describe('Test select with multiples tables', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('select * from inner join using (id, name)', async () => {
@@ -692,7 +692,7 @@ describe('Test select with multiples tables', () => {
         if(isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
-        assert.deepEqual(actual.right, expected);
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it.skip('subquery in joined tables', () => {

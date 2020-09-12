@@ -9,7 +9,7 @@ describe('Infer param nullability', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT ? + id FROM mytable1`, () => {
@@ -18,7 +18,7 @@ describe('Infer param nullability', () => {
 
         const expected = [true, true, true, true, true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT ? > 1, 1 < ?, ? > 'a', 'a' > ?, ? from mytable1`, () => {
@@ -27,7 +27,7 @@ describe('Infer param nullability', () => {
 
         const expected = [true, true, true, true, true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
     
     it(`SELECT (select ? from mytable2) from mytable1`, () => {
@@ -36,7 +36,7 @@ describe('Infer param nullability', () => {
 
         const expected = [true, true, true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT (select ? from mytable2) from mytable1`, () => {
@@ -45,7 +45,7 @@ describe('Infer param nullability', () => {
 
         const expected = [true, true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
     
     it(`SELECT * from mytable1 where id > ?`, () => {
@@ -54,7 +54,7 @@ describe('Infer param nullability', () => {
 
         const expected = [true, true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT * FROM mytable2 where name like ?`, () => {
@@ -63,7 +63,7 @@ describe('Infer param nullability', () => {
 
         const expected = [true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT concat(?, ?) from mytable1 where concat_ws('/', ?) < id`, () => {
@@ -72,7 +72,7 @@ describe('Infer param nullability', () => {
 
         const expected = [true, true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT concat(nullif(?, null), ?) from mytable1`, () => {
@@ -81,7 +81,7 @@ describe('Infer param nullability', () => {
 
         const expected = [false, true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT concat(nullif(?, null), ?) from mytable1`, () => {
@@ -90,7 +90,7 @@ describe('Infer param nullability', () => {
 
         const expected = [true, true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT year(?), month(?), day(?)`, () => {
@@ -99,7 +99,7 @@ describe('Infer param nullability', () => {
 
         const expected = [true, true, true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT lpad(?, ?, ?)`, () => {
@@ -108,7 +108,7 @@ describe('Infer param nullability', () => {
 
         const expected = [true, true, true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it(`SELECT INTERVAL ? MONTH + ?`, () => {
@@ -117,6 +117,6 @@ describe('Infer param nullability', () => {
 
         const expected = [true, true];
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 });

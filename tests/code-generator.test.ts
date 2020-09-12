@@ -54,7 +54,7 @@ export async function getPerson(connection: Connection, params: GetPersonParams)
         .then( res => res[0] as GetPersonResult[] );
 }`
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('generate main function with data and parameters', () => {
@@ -111,7 +111,7 @@ export async function updatePerson(connection: Connection, data: UpdatePersonDat
         .then( res => res[0] as UpdatePersonResult );
 }`
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('generate main function only with order by parameter', () => {
@@ -163,7 +163,7 @@ function escapeOrderBy(orderBy: SelectPersonOrderBy[]) : string {
     return orderBy.map( order => \`\\\`\${order.column}\\\` \${order.direction == 'desc' ? 'desc' : 'asc' }\`).join(', ');
 }`
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('test replace order by parameter', () => {
@@ -179,7 +179,7 @@ function escapeOrderBy(orderBy: SelectPersonOrderBy[]) : string {
         FROM mytable1
         ORDER BY \${escapeOrderBy(params.orderBy)}`;
         
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
 
     })
 
@@ -196,7 +196,7 @@ function escapeOrderBy(orderBy: SelectPersonOrderBy[]) : string {
         FROM mytable1
         ORDER BY \${escapeOrderBy(params.orderBy)} LIMIT 10`;
         
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
 
     })
 
@@ -217,7 +217,7 @@ function escapeOrderBy(orderBy: SelectPersonOrderBy[]) : string {
         
         `;
         
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
 
     })
 
@@ -243,7 +243,7 @@ export async function selectId(client: Client) : Promise<SelectIdResult[]> {
         .then( res => res );
 }`
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('test generateTsDescriptor - select with parameters', () => {
@@ -272,7 +272,7 @@ export async function selectId(client: Client, params: SelectIdParams) : Promise
         .then( res => res[0] );
 }`
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('test generateTsDescriptor - update', () => {
@@ -301,7 +301,7 @@ export async function updateValue(client: Client, data: UpdateValueData) : Promi
         .then( res => res );
 }`
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('test generateTsDescriptor - update with parameters', () => {
@@ -335,7 +335,7 @@ export async function updateValue(client: Client, data: UpdateValueData, params:
         .then( res => res );
 }`
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 
     it('test generateTsDescriptor - select with order by', () => {
@@ -372,6 +372,6 @@ function escapeOrderBy(orderBy: SelectIdOrderBy[]) : string {
     return orderBy.map( order => \`\\\`\${order.column}\\\` \${order.direction == 'desc' ? 'desc' : 'asc' }\`).join(', ');
 }`
 
-        assert.deepEqual(actual, expected);
+        assert.deepStrictEqual(actual, expected);
     })
 })
