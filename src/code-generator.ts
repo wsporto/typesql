@@ -128,8 +128,9 @@ export function generateTsDescriptor(queryInfo: SchemaDef) : TsDescriptor {
         return tsDesc;
     })
 
-    const escapedParametersNames = renameInvalidNames(queryInfo.parameters.map( col => col.name));
-    const parameters = queryInfo.parameters.map( (col, paramIndex) => {
+    const uniqueParams = removeDuplicatedParameters(queryInfo.parameters);
+    const escapedParametersNames = renameInvalidNames(uniqueParams.map( col => col.name));
+    const parameters = uniqueParams.map( (col, paramIndex) => {
         const arraySymbol = col.list? '[]' : '';
 
         const tsDesc : TsFieldDescriptor = {
@@ -160,6 +161,16 @@ export function generateTsDescriptor(queryInfo: SchemaDef) : TsDescriptor {
         parameters,
         data
     };
+}
+
+function removeDuplicatedParameters(parameters: ParameterDef[]) : ParameterDef[] {
+    const columnsCount: Map<string, boolean> = new Map();
+    return parameters.filter( param => {
+        if(!columnsCount.has(param.name)) {
+            columnsCount.set(param.name, true);
+            return param;
+        }
+    })
 }
 
 export function renameInvalidNames(columnNames: string[]) : string[] {

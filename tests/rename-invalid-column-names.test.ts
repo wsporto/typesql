@@ -85,7 +85,7 @@ describe('rename invalid names', () => {
 
         assert.deepEqual(actual.columns.map(col => col.name), ['id', 'id_2', '"count(*)"']);
         assert.deepEqual(actual.data!.map(col => col.name), ['"id+id"']);
-        assert.deepEqual(actual.parameters.map(col => col.name), ['name', 'name_2']);
+        assert.deepEqual(actual.parameters.map(col => col.name), ['name']); //remove duplicated parameters
         assert.deepEqual(actual.orderByColumns, ['id', 'count(*)', `concat(name, ' ', name)`]);
     })
 
