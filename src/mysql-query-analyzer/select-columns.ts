@@ -267,10 +267,17 @@ export function splitName(fieldName: string) : FieldName {
     const result : FieldName = {
         name: fieldNameSplit.length == 2? fieldNameSplit[1] : fieldNameSplit[0],
         prefix: fieldNameSplit.length == 2? fieldNameSplit[0] : ''
-
     }
-    return result;
+    const withoutStick : FieldName = {
+        name: removeBackStick(result.name),
+        prefix: result.prefix
+    } 
+    return withoutStick;
+}
 
+function removeBackStick(name: string) {
+    const withoutBackStick = name.startsWith("`") && name.endsWith("`")? name.slice(1, -1) : name;
+    return withoutBackStick;
 }
 
 const functionAlias : ColumnSchema[] = [

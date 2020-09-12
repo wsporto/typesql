@@ -104,5 +104,21 @@ export const dbSchema : ColumnSchema[] = [
         table: 'all_types',
         schema: 'mydb',
         notNull: false
-    }
+    },
+    {
+        column: 'id',
+        column_type: 'int',
+        columnKey: 'PRI',
+        table: 'my table',
+        schema: 'mydb',
+        notNull: true
+    },
+    {
+        column: 'name',
+        column_type: 'varchar',
+        columnKey: '',
+        table: 'my table',
+        schema: 'mydb',
+        notNull: false
+    },
 ]

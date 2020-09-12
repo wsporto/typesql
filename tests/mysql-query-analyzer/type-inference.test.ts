@@ -1514,6 +1514,32 @@ describe('type-inference test', () => {
         assert.deepStrictEqual(actual, expected);
     });
 
+    it('select from table name with space', async () => {
+        const sql = 'SELECT * from `my table`'
+        
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            parameters: [],
+            columns: ['int', 'varchar']
+        }
+
+        assert.deepStrictEqual(actual, expected);
+    });
+
+    it('select from table name with space and schema', async () => {
+        const sql = 'SELECT * from mydb.`my table`'
+        
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            parameters: [],
+            columns: ['int', 'varchar']
+        }
+
+        assert.deepStrictEqual(actual, expected);
+    });
+
 });
 
 //select `id+id` from (select id+id from mytable1) t;
