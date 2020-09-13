@@ -375,3 +375,28 @@ function escapeOrderBy(orderBy: SelectIdOrderBy[]) : string {
         assert.deepStrictEqual(actual, expected);
     })
 })
+
+it('test code generation with escaped table name', () => {
+    let sql = 'SELECT id FROM `my table`';
+    
+    const schemaDef = describeSql(dbSchema, sql);
+    const tsDescriptor = generateTsDescriptor(schemaDef);
+    const actual = generateTsCode(tsDescriptor, 'select-id', 'deno');
+    const expected = 
+`import { Client } from "https://deno.land/x/mysql/mod.ts";
+
+export type SelectIdResult = {
+    id: number;
+}
+
+export async function selectId(client: Client) : Promise<SelectIdResult[]> {
+    const sql = \`
+    SELECT id FROM \\\`my table\\\`
+    \`
+
+    return client.query(sql)
+        .then( res => res );
+}`
+
+    assert.deepStrictEqual(actual, expected);
+})
