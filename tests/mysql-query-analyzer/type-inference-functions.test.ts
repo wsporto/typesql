@@ -301,6 +301,30 @@ describe('type-inference - functions', () => {
         assert.deepStrictEqual(actual, expected);
     })
 
+    it(`Test SUBSTRING(?, ?) function with literal`, () => {
+        const sql = `SELECT SUBSTRING('Quadratically', ?), SUBSTRING('Quadratically', ?, ?)`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['varchar', 'varchar'],
+            parameters: ['int', 'int', 'int']   
+        }
+
+        assert.deepStrictEqual(actual, expected);
+    })
+
+    it(`Test SUBSTRING function with FROM and FOR operators`, () => {
+        const sql = `SELECT SUBSTRING(? FROM ?), SUBSTRING(? FROM ? FOR ?);`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['varchar', 'varchar'],
+            parameters: ['varchar', 'int', 'varchar', 'int', 'int']   
+        }
+
+        assert.deepStrictEqual(actual, expected);
+    })
+
     it(`SELECT COALESCE (VALUE, ID) FROM mytable1`, () => {
         const sql = `SELECT COALESCE (VALUE, ID) FROM mytable1`;
         const actual = parseAndInfer(sql, dbSchema);

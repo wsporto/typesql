@@ -281,6 +281,23 @@ describe('Infer column nullability', () => {
         assert.deepStrictEqual(actual, expected);
     })
 
+    it(`Test nullabilility infernece for SUBSTRING function with FROM and FOR operators`, () => {
+        const sql = `SELECT 
+            SUBSTRING(? FROM ?), 
+            SUBSTRING(? FROM ? FOR ?),
+            SUBSTRING(null FROM ?), 
+            SUBSTRING(null FROM null), 
+            SUBSTRING(null FROM ? FOR ?),
+            SUBSTRING(? FROM null FOR ?),
+            SUBSTRING(? FROM ? FOR null)
+            `;
+        const actual = parseAndInferNotNull(sql, dbSchema);
+
+        const expected = [true, true, false, false, false, false, false]
+
+        assert.deepStrictEqual(actual, expected);
+    })
+
     it(`SELECT YEAR(?), MONTH(?), DAY(?), HOUR(?), MINUTE(?), SECOND(?)`, () => {
         const sql = `SELECT YEAR(?), MONTH(?), DAY(?), HOUR(?), MINUTE(?), SECOND(?)`;
         const actual = parseAndInferNotNull(sql, dbSchema);
