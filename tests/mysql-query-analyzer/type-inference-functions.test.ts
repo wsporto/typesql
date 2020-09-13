@@ -265,25 +265,25 @@ describe('type-inference - functions', () => {
         assert.deepStrictEqual(actual, expected);
     })
 
-    it(`SELECT LENGTH(?)`, () => {
-        const sql = `SELECT LENGTH(?)`;
+    it(`SELECT CHAR_LENGTH(?), LENGTH(?)`, () => {
+        const sql = `SELECT CHAR_LENGTH(?), LENGTH(?)`;
         const actual = parseAndInfer(sql, dbSchema);
 
         const expected : TypeInferenceResult = {
-            columns: ['int'],
-            parameters: ['varchar']   
+            columns: ['int', 'int'],
+            parameters: ['varchar', 'varchar']   
         }
 
         assert.deepStrictEqual(actual, expected);
     })
 
-    it(`SELECT LENGTH(concat(name, ?)) FROM mytable2`, () => {
-        const sql = `SELECT LENGTH(concat(name, ?)) FROM mytable2`;
+    it(`SELECT LENGTH(concat(name, ?)), CHAR_LENGTH(concat(name, ?)) FROM mytable2`, () => {
+        const sql = `SELECT LENGTH(concat(name, ?)), CHAR_LENGTH(concat(name, ?)) FROM mytable2`;
         const actual = parseAndInfer(sql, dbSchema);
 
         const expected : TypeInferenceResult = {
-            columns: ['int'],
-            parameters: ['?']   
+            columns: ['int', 'int'],
+            parameters: ['?', '?']   
         }
 
         assert.deepStrictEqual(actual, expected);

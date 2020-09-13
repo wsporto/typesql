@@ -981,7 +981,7 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
             return varcharParam;
         }
 
-        if (functionIdentifier === 'length') {
+        if (functionIdentifier === 'length' || functionIdentifier == 'char_length') {
             const varcharParam = freshVar('varchar', 'varchar');
             const params : FixedLengthParams = {
                 kind: 'FixedLengthParams',
