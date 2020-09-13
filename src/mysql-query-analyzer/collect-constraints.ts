@@ -719,6 +719,18 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
         if (runtimeFunctionCall.CURTIME_SYMBOL()) {
             return freshVar(simpleExpr.text, 'time');
         }
+        if( runtimeFunctionCall.REPLACE_SYMBOL()) {
+            const exprList = runtimeFunctionCall.expr();
+            exprList.forEach( expr => {
+                const exprType = walkExpr(context, expr);
+                context.constraints.push({
+                    expression: expr.text,
+                    type1: exprType,
+                    type2: freshVar('varchar', 'varchar')
+                })
+            })
+            return freshVar('varchar', 'varchar');
+        }
         if (runtimeFunctionCall.YEAR_SYMBOL() || runtimeFunctionCall.MONTH_SYMBOL() || runtimeFunctionCall.DAY_SYMBOL()) {
             const expr = runtimeFunctionCall.exprWithParentheses()?.expr();
             if(expr) {

@@ -190,6 +190,10 @@ function inferNotNullRuntimeFunctionCall(simpleExprRuntimeFunction: SimpleExprRu
     if(functionCall.NOW_SYMBOL() || functionCall.CURDATE_SYMBOL() || functionCall.CURTIME_SYMBOL()) {
         return true;
     }
+    if(functionCall.REPLACE_SYMBOL()) {
+        const exprList = functionCall.expr();
+        return exprList.every( expr => inferNotNullExpr(expr, dbSchema, fromColumns));
+    }
     const trimFunction = functionCall.trimFunction();
     if(trimFunction) {
         const exprList = trimFunction.expr();

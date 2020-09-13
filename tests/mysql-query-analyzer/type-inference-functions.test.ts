@@ -626,4 +626,34 @@ describe('type-inference - functions', () => {
             assert.deepStrictEqual(e.message, expected);
         }
     })
+
+    it(`SELECT REPLACE(?, ?, ?)`, () => {
+        const sql = `SELECT 
+            REPLACE('www.mysql.com', 'w', 'Ww'),
+            REPLACE(?, ?, ?)`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['varchar', 'varchar'],
+            parameters: ['varchar', 'varchar', 'varchar']   
+        }
+
+        assert.deepStrictEqual(actual, expected);
+    })
+
+    it(`test ADDDATE, DATE_ADD, SUBDATE and DATE_SUB with parameters`, () => {
+        const sql = `SELECT 
+            ADDDATE(?, INTERVAL ? DAY), 
+            SUBDATE(?, INTERVAL ? DAY), 
+            DATE_ADD(?, INTERVAL ? DAY),
+            DATE_SUB(?, INTERVAL ? DAY)`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['datetime', 'datetime', 'datetime', 'datetime'],
+            parameters: ['datetime', 'bigint', 'datetime', 'bigint', 'datetime', 'bigint', 'datetime', 'bigint']   
+        }
+
+        assert.deepStrictEqual(actual, expected);
+    })
 })
