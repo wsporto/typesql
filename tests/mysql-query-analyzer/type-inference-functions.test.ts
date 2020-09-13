@@ -290,36 +290,39 @@ describe('type-inference - functions', () => {
     })
 
     it(`SELECT SUBSTRING(?, ?), SUBSTRING(?, ?, ?)`, () => {
-        const sql = `SELECT SUBSTRING(?, ?), SUBSTRING(?, ?, ?)`;
+        const sql = `SELECT SUBSTRING(?, ?), SUBSTRING(?, ?, ?), SUBSTR(?, ?), SUBSTR(?, ?, ?)`;
         const actual = parseAndInfer(sql, dbSchema);
 
         const expected : TypeInferenceResult = {
-            columns: ['varchar', 'varchar'],
-            parameters: ['varchar', 'int', 'varchar', 'int', 'int']   
+            columns: ['varchar', 'varchar', 'varchar', 'varchar'],
+            parameters: ['varchar', 'int', 'varchar', 'int', 'int',
+            'varchar', 'int', 'varchar', 'int', 'int']   
         }
 
         assert.deepStrictEqual(actual, expected);
     })
 
     it(`Test SUBSTRING(?, ?) function with literal`, () => {
-        const sql = `SELECT SUBSTRING('Quadratically', ?), SUBSTRING('Quadratically', ?, ?)`;
+        const sql = `SELECT SUBSTRING('Quadratically', ?), SUBSTRING('Quadratically', ?, ?), SUBSTR('Quadratically', ?), SUBSTR('Quadratically', ?, ?)`;
         const actual = parseAndInfer(sql, dbSchema);
 
         const expected : TypeInferenceResult = {
-            columns: ['varchar', 'varchar'],
-            parameters: ['int', 'int', 'int']   
+            columns: ['varchar', 'varchar', 'varchar', 'varchar'],
+            parameters: ['int', 'int', 'int',
+            'int', 'int', 'int']   
         }
 
         assert.deepStrictEqual(actual, expected);
     })
 
     it(`Test SUBSTRING function with FROM and FOR operators`, () => {
-        const sql = `SELECT SUBSTRING(? FROM ?), SUBSTRING(? FROM ? FOR ?);`;
+        const sql = `SELECT SUBSTRING(? FROM ?), SUBSTRING(? FROM ? FOR ?), SUBSTR(? FROM ?), SUBSTR(? FROM ? FOR ?)`;
         const actual = parseAndInfer(sql, dbSchema);
 
         const expected : TypeInferenceResult = {
-            columns: ['varchar', 'varchar'],
-            parameters: ['varchar', 'int', 'varchar', 'int', 'int']   
+            columns: ['varchar', 'varchar', 'varchar', 'varchar'],
+            parameters: ['varchar', 'int', 'varchar', 'int', 'int',
+            'varchar', 'int', 'varchar', 'int', 'int']   
         }
 
         assert.deepStrictEqual(actual, expected);

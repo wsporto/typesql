@@ -287,10 +287,10 @@ describe('Infer column nullability', () => {
     })
 
     it(`SELECT SUBSTRING(?, ?), SUBSTRING(?, ?, ?)`, () => {
-        const sql = `SELECT SUBSTRING(?, ?), SUBSTRING(?, ?, ?)`;
+        const sql = `SELECT SUBSTRING(?, ?), SUBSTRING(?, ?, ?), SUBSTR(?, ?), SUBSTR(?, ?, ?)`;
         const actual = parseAndInferNotNull(sql, dbSchema);
 
-        const expected = [true, true]
+        const expected = [true, true, true, true]
 
         assert.deepStrictEqual(actual, expected);
     })
@@ -303,11 +303,19 @@ describe('Infer column nullability', () => {
             SUBSTRING(null FROM null), 
             SUBSTRING(null FROM ? FOR ?),
             SUBSTRING(? FROM null FOR ?),
-            SUBSTRING(? FROM ? FOR null)
+            SUBSTRING(? FROM ? FOR null),
+            SUBSTR(? FROM ?), 
+            SUBSTR(? FROM ? FOR ?),
+            SUBSTR(null FROM ?), 
+            SUBSTR(null FROM null), 
+            SUBSTR(null FROM ? FOR ?),
+            SUBSTR(? FROM null FOR ?),
+            SUBSTR(? FROM ? FOR null)
             `;
         const actual = parseAndInferNotNull(sql, dbSchema);
 
-        const expected = [true, true, false, false, false, false, false]
+        const expected = [true, true, false, false, false, false, false,
+            true, true, false, false, false, false, false]
 
         assert.deepStrictEqual(actual, expected);
     })
