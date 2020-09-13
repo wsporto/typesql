@@ -50,7 +50,8 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
 
     const queryParams = allParameters.length > 0? ', [' + allParameters.join(', ') + ']' : '';
   
-    const processedSql = replaceOrderByParam(tsDescriptor.sql);
+    const escapedBackstick = scapeBackStick(tsDescriptor.sql);
+    const processedSql = replaceOrderByParam(escapedBackstick);
     const sqlSplit = processedSql.split('\n');
 
     writer.write(`export async function ${camelCaseName}(${functionArguments}) : Promise<${functionReturnType}>`).block( () => {
@@ -188,6 +189,11 @@ export function renameInvalidNames(columnNames: string[]) : string[] {
             return escapeInvalidTsField(columnName);
         }
     })
+}
+
+function scapeBackStick(sql: string) {
+    const pattern = /`/g;
+    return sql.replace(pattern, "\\`");
 }
 
 export function escapeInvalidTsField(columnName: string) {
