@@ -391,4 +391,19 @@ describe('Infer column nullability', () => {
 
         assert.deepStrictEqual(actual, expected);
     })
+
+    it(`test REPLACE nullability inference`, () => {
+        const sql = `SELECT 
+            REPLACE('www.mysql.com', 'w', 'Ww'),
+            REPLACE(?, ?, ?),
+            REPLACE(null, ?, ?),
+            REPLACE(?, null, ?),
+            REPLACE(?, ?, null)`
+
+        const actual = parseAndInferNotNull(sql, dbSchema);
+
+        const expected = [true, true, false, false, false];
+
+        assert.deepStrictEqual(actual, expected);
+    })
 });
