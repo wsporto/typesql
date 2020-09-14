@@ -158,8 +158,11 @@ function inferNotNullSimpleExpr(simpleExpr: SimpleExprContext, dbSchema: ColumnS
         if(inSumExpr) {
             return false;
         }
-        
+    }
 
+    if( simpleExpr instanceof SimpleExprListContext) {
+        const exprList = simpleExpr.exprList().expr();
+        return exprList.every( expr => inferNotNullExpr(expr, dbSchema, fromColumns));
     }
 
     if(simpleExpr instanceof SimpleExprSubQueryContext) {

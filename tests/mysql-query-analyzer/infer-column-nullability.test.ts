@@ -85,6 +85,15 @@ describe('Infer column nullability', () => {
         assert.deepStrictEqual(actual, expected);
     })
 
+    it(`SELECT (3 + ?)`, () => {
+        const sql = `SELECT (3 + ?), ((2+2))`;
+        const actual = parseAndInferNotNull(sql, dbSchema);
+
+        const expected = [true, true];
+
+        assert.deepStrictEqual(actual, expected);
+    })
+
     it(`SELECT count(*) FROM mytable1`, () => {
         const sql = `SELECT count(*) FROM mytable1`;
         const actual = parseAndInferNotNull(sql, dbSchema);
