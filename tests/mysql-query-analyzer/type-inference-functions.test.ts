@@ -683,4 +683,50 @@ describe('type-inference - functions', () => {
 
         assert.deepStrictEqual(actual, expected);
     })
+    
+    it(`SELECT MOD(?, ?)`, () => {
+        const sql = `SELECT MOD(?, ?)`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['number'],
+            parameters: ['number', 'number'] 
+        }
+
+        assert.deepStrictEqual(actual, expected);
+    })
+
+    it(`SELECT MOD(?+?, ?+?)`, () => {
+        const sql = `SELECT MOD(?+?, ?+?)`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['double'],
+            parameters: ['double', 'double', 'double', 'double'] 
+        }
+
+        assert.deepStrictEqual(actual, expected);
+    })
+
+    
+    it(`SELECT MOD function with several input types`, () => {
+        const sql = `SELECT 
+            MOD(int_column, int_column), -- int
+            MOD(int_column, 10), -- bigint
+            MOD(bigint_column, int_column), -- bigint
+            MOD(int_column, bigint_column), -- bigint
+            MOD(float_column, int_column), -- float
+            MOD(double_column, int_column), -- double
+            MOD(int_column, float_column), -- float
+            MOD(int_column, decimal_column) -- decimal (newdecimal(246))
+            FROM all_types`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['int', 'bigint', 'bigint', 'bigint', 'float', 'double', 'float', 'decimal'],
+            parameters: []   
+        }
+
+        assert.deepStrictEqual(actual, expected);
+    })
 })

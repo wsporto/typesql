@@ -90,6 +90,14 @@ export const dbSchema : ColumnSchema[] = [
         notNull: false
     },
     {
+        column: 'decimal_column',
+        column_type: 'decimal',
+        columnKey: '',
+        table: 'all_types',
+        schema: 'mydb',
+        notNull: false
+    },
+    {
         column: 'datetime_column',
         column_type: 'datetime',
         columnKey: '',
