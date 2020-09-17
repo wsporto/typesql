@@ -866,7 +866,26 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
                 })
                 return paramType;
             }
-            
+        }
+        //MOD (number, number): number
+        if(runtimeFunctionCall.MOD_SYMBOL()) {
+            const functionType = freshVar('number', 'number');
+            const exprList = runtimeFunctionCall.expr();
+            const param1 = walkExpr(context, exprList[0]);
+            const param2 = walkExpr(context, exprList[1]);
+            context.constraints.push({
+                expression: simpleExpr.text,
+                type1: functionType,
+                type2: param1,
+                mostGeneralType: true
+            })
+            context.constraints.push({
+                expression: simpleExpr.text,
+                type1: functionType,
+                type2: param2,
+                mostGeneralType: true
+            })
+            return functionType;
         }
         throw Error('Function not supported: ' + runtimeFunctionCall.text);
     }

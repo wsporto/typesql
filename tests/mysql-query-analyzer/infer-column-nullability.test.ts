@@ -454,4 +454,21 @@ describe('Infer column nullability', () => {
 
         assert.deepStrictEqual(actual, expected);
     })
+
+    it(`test MOD function nullability`, () => {
+        const sql = `SELECT 
+            MOD(10, 1), -- The only that is not null
+            MOD(?, ?),
+            MOD(int_column, int_column),
+            MOD(?+?, ?+?),
+            MOD(null, ?),
+            MOD(?, null)
+            FROM all_types`
+
+        const actual = parseAndInferNotNull(sql, dbSchema);
+
+        const expected = [false, false, false, false, false, false];
+
+        assert.deepStrictEqual(actual, expected);
+    })
 });
