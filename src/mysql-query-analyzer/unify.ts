@@ -104,13 +104,16 @@ function setSubstitution(ty1: TypeVar, ty2: TypeVar, substitutions: Substitution
     }
 }
 
-function getBestPossibleType(type1: InferType, type2: InferType, max?:boolean, coercionType?: 'Sum' | 'Irrestrict' | 'SumFunction') : InferType {
+function getBestPossibleType(type1: InferType, type2: InferType, max?:boolean, coercionType?: 'Sum' | 'Coalesce' | 'SumFunction' | 'Ceiling') : InferType {
 
+    if(coercionType == 'Ceiling' && (type2 == 'decimal' || type1 == 'decimal')) { //ceiling(decimal) returns bigint
+        return 'bigint';
+    }
     if(type1 == 'any') {
-        return coercionType == 'Irrestrict'? 'any': type2;
+        return coercionType == 'Coalesce'? 'any': type2;
     }
     if(type2 == 'any') {
-        return coercionType == 'Irrestrict'? 'any': type1;
+        return coercionType == 'Coalesce'? 'any': type1;
     }
     if(coercionType != 'Sum' && type1 === type2) return type1;
     if( coercionType == 'Sum' && max && type1 == 'number' && type2 == 'int' ||  type1 == 'int' && type2 == 'number') return 'double';
