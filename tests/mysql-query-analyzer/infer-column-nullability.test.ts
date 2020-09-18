@@ -486,4 +486,19 @@ describe('Infer column nullability', () => {
 
         assert.deepStrictEqual(actual, expected);
     })
+
+    it(`test CEILING/CEIL functions nullability`, () => {
+        const sql = `SELECT 
+            CEILING(?), CEIL(?), -- true
+            CEILING(10), CEIL(10), -- true
+            CEILING(int_column), CEIL(int_column), -- false
+            ceiling(null), ceil(null) -- false
+            FROM all_types`
+
+        const actual = parseAndInferNotNull(sql, dbSchema);
+
+        const expected = [true, true, true, true, false, false, false, false];
+
+        assert.deepStrictEqual(actual, expected);
+    })
 });

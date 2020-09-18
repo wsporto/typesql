@@ -47,7 +47,7 @@ export type Constraint = {
     type2: Type;
     expression: string;
     mostGeneralType?: true;
-    coercionType?: 'Sum' | 'Irrestrict' | 'SumFunction'
+    coercionType?: 'Sum' | 'Coalesce' | 'SumFunction' | 'Ceiling';
     list?: true;
 }
 
@@ -861,7 +861,7 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
                         type1: paramType,
                         type2: typeVar,
                         mostGeneralType: true,
-                        coercionType: 'Irrestrict'
+                        coercionType: 'Coalesce'
                     })
                 })
                 return paramType;
@@ -1031,6 +1031,22 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
                     type1: functionType,
                     type2: param1,
                     mostGeneralType: true
+                })
+            })
+            
+            return functionType;
+        }
+        if(functionIdentifier == 'ceiling' || functionIdentifier == 'ceil') {
+            const functionType = freshVar('number', 'number');
+            const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr();
+            udfExprList?.forEach( expr => {
+                const param1 = walkExpr(context, expr.expr());
+                context.constraints.push({
+                    expression: simpleExpr.text,
+                    type1: functionType,
+                    type2: param1,
+                    mostGeneralType: true,
+                    coercionType: 'Ceiling'
                 })
             })
             

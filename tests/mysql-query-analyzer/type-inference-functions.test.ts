@@ -808,4 +808,24 @@ describe('type-inference - functions', () => {
         }
 
     })
+
+    it(`Test CEILING function with several input types`, () => {
+        const sql = `SELECT 
+            CEILING(?), CEIL(?), -- number,
+            CEILING(int_column), CEIL(int_column), -- int
+            CEILING(bigint_column), CEIL(bigint_column), -- bigint
+            CEILING(float_column), CEIL(float_column), -- float
+            CEILING(double_column), CEIL(double_column),-- double
+            CEILING(decimal_column), CEIL(decimal_column) -- bigint
+            FROM all_types`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['number', 'number', 'int', 'int', 'bigint', 'bigint', 'float', 'float', 'double', 'double', 'bigint', 'bigint'
+        ],
+            parameters: ['number', 'number']   
+        }
+
+        assert.deepStrictEqual(actual, expected);
+    })
 })
