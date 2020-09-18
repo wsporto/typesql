@@ -713,7 +713,7 @@ describe('type-inference - functions', () => {
         const sql = `SELECT 
             MOD(int_column, int_column), -- int
             MOD(int_column, 10), -- bigint
-            MOD(bigint_column, int_column), -- bigint
+            MOD(bigint_column, int_column), -- bigint 
             MOD(int_column, bigint_column), -- bigint
             MOD(float_column, int_column), -- float
             MOD(double_column, int_column), -- double
@@ -728,6 +728,36 @@ describe('type-inference - functions', () => {
         }
 
         assert.deepStrictEqual(actual, expected);
+    })
+
+    it(`Test MOD function with string param`, () => {
+        const sql = `SELECT 
+            MOD('abs', 10)
+            FROM all_types`;
+        try {
+            parseAndInfer(sql, dbSchema);
+            assert.fail("Should thrown an exception.");
+        }
+        catch(e) {
+            const expected = 'Type mismatch: number and varchar';
+            assert.deepStrictEqual(e.message, expected);
+        }
+
+    })
+
+    it(`Test MOD function with string param`, () => {
+        const sql = `SELECT 
+            MOD(10, 'a')
+            FROM all_types`;
+        try {
+            parseAndInfer(sql, dbSchema);
+            assert.fail("Should thrown an exception.");
+        }
+        catch(e) {
+            const expected = 'Type mismatch: number and varchar';
+            assert.deepStrictEqual(e.message, expected);
+        }
+
     })
 
     it(`Test ABS function with several input types`, () => {

@@ -875,6 +875,18 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
             const param2 = walkExpr(context, exprList[1]);
             context.constraints.push({
                 expression: simpleExpr.text,
+                type1: freshVar('number', 'number'),
+                type2: param1,
+                mostGeneralType: true
+            })
+            context.constraints.push({
+                expression: simpleExpr.text,
+                type1: freshVar('number', 'number'),
+                type2: param2,
+                mostGeneralType: true
+            })
+            context.constraints.push({
+                expression: simpleExpr.text,
                 type1: functionType,
                 type2: param1,
                 mostGeneralType: true
