@@ -828,4 +828,18 @@ describe('type-inference - functions', () => {
 
         assert.deepStrictEqual(actual, expected);
     })
+
+    it(`Test CEILING function with datetime param`, () => {
+        const sql = `SELECT 
+            CEILING(datetime_column)
+            FROM all_types`;
+        try {
+            parseAndInfer(sql, dbSchema);
+            assert.fail("Should thrown an exception.");
+        }
+        catch(e) {
+            const expected = 'Type mismatch: number and datetime';
+            assert.deepStrictEqual(e.message, expected);
+        }
+    })
 })
