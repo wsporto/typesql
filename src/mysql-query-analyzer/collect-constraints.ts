@@ -1009,6 +1009,21 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
             walkFunctionParameters(context, simpleExpr, params);
             return freshVar('int', 'int');
         }
+        if(functionIdentifier === 'abs') {
+            const functionType = freshVar('number', 'number');
+            const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr();
+            udfExprList?.forEach( expr => {
+                const param1 = walkExpr(context, expr.expr());
+                context.constraints.push({
+                    expression: simpleExpr.text,
+                    type1: functionType,
+                    type2: param1,
+                    mostGeneralType: true
+                })
+            })
+            
+            return functionType;
+        }
         if(functionIdentifier == 'timestampdiff') {
            
             const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr();

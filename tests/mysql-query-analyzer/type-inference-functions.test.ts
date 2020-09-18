@@ -729,4 +729,53 @@ describe('type-inference - functions', () => {
 
         assert.deepStrictEqual(actual, expected);
     })
+
+    it(`Test ABS function with several input types`, () => {
+        const sql = `SELECT 
+            ABS(?), -- number
+            ABS(int_column), -- int
+            ABS(bigint_column), -- bigint
+            ABS(float_column), -- float
+            ABS(double_column), -- double
+            ABS(decimal_column) -- decimal
+            FROM all_types`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected : TypeInferenceResult = {
+            columns: ['number', 'int', 'bigint', 'float', 'double', 'decimal'],
+            parameters: ['number']   
+        }
+
+        assert.deepStrictEqual(actual, expected);
+    })
+
+    it(`Test ABS function with string param`, () => {
+        const sql = `SELECT 
+            ABS('abs')
+            FROM all_types`;
+        try {
+            parseAndInfer(sql, dbSchema);
+            assert.fail("Should thrown an exception.");
+        }
+        catch(e) {
+            const expected = 'Type mismatch: number and varchar';
+            assert.deepStrictEqual(e.message, expected);
+        }
+
+    })
+
+    it(`Test ABS function with datetime param`, () => {
+        const sql = `SELECT 
+            ABS(datetime_column)
+            FROM all_types`;
+        try {
+            parseAndInfer(sql, dbSchema);
+            assert.fail("Should thrown an exception.");
+        }
+        catch(e) {
+            const expected = 'Type mismatch: number and datetime';
+            assert.deepStrictEqual(e.message, expected);
+        }
+
+    })
 })
