@@ -462,12 +462,27 @@ describe('Infer column nullability', () => {
             MOD(int_column, int_column),
             MOD(?+?, ?+?),
             MOD(null, ?),
-            MOD(?, null)
+            mod(?, null)
             FROM all_types`
 
         const actual = parseAndInferNotNull(sql, dbSchema);
 
         const expected = [false, false, false, false, false, false];
+
+        assert.deepStrictEqual(actual, expected);
+    })
+
+    it(`test ABS function nullability`, () => {
+        const sql = `SELECT 
+            ABS(?), -- true
+            ABS(10), -- true
+            ABS(int_column), -- false
+            abs(null) -- false
+            FROM all_types`
+
+        const actual = parseAndInferNotNull(sql, dbSchema);
+
+        const expected = [true, true, false, false];
 
         assert.deepStrictEqual(actual, expected);
     })
