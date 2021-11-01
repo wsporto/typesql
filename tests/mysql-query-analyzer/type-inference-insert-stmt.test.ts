@@ -10,9 +10,9 @@ describe('type-inference test', () => {
         const sql = `INSERT INTO mytable1 (value) VALUES (?)`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: [],
-            parameters: ['int']   
+            parameters: ['int']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -22,9 +22,9 @@ describe('type-inference test', () => {
         const sql = `INSERT INTO mydb.mytable1 (value) VALUES (?)`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: [],
-            parameters: ['int']   
+            parameters: ['int']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -34,9 +34,9 @@ describe('type-inference test', () => {
         const sql = `INSERT INTO all_types (double_column, int_column, varchar_column) VALUES (?, ?, ?)`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: [],
-            parameters: ['double', 'int', 'varchar']   
+            parameters: ['double', 'int', 'varchar']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -45,7 +45,7 @@ describe('type-inference test', () => {
     it(`INSERT INTO mytable1 VALUES (DEFAULT, ?, ?, DEFAULT)`, () => {
         //values(int, int, double, bigint)
         const sql = `INSERT INTO mytable1 VALUES (DEFAULT, ?, ?, DEFAULT)`;
-        const newSchema : ColumnSchema [] = [
+        const newSchema: ColumnSchema[] = [
             ...dbSchema,
             {
                 column: 'column3',
@@ -66,9 +66,9 @@ describe('type-inference test', () => {
         ]
         const actual = parseAndInfer(sql, newSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: [],
-            parameters: ['int', 'double']   
+            parameters: ['int', 'double']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -81,9 +81,9 @@ describe('type-inference test', () => {
                     )`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: [],
-            parameters: ['int']   
+            parameters: ['int']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -96,9 +96,9 @@ describe('type-inference test', () => {
                     )`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: [],
-            parameters: ['bigint']   
+            parameters: ['bigint']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -112,13 +112,13 @@ describe('type-inference test', () => {
                     )`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: [],
-            parameters: ['double', 'int', 'bigint', 'varchar']   
+            parameters: ['double', 'int', 'bigint', 'varchar']
         }
 
         assert.deepStrictEqual(actual, expected);
     })
-    
+
 
 });

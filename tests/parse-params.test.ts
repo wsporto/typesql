@@ -8,11 +8,11 @@ import { isLeft } from "fp-ts/lib/Either";
 describe('Test parse parameters', () => {
 
     let client: DbClient = new DbClient();
-    before(async () =>   {
+    before(async () => {
         await client.connect('mysql://root:password@localhost/mydb');
     })
 
-    after(async () =>   {
+    after(async () => {
         await client.closeConnection();
     })
 
@@ -21,14 +21,14 @@ describe('Test parse parameters', () => {
         SELECT ? from mytable1
         `
         const actual = await parseSql(client, sql);
-        const expected : ParameterDef[] = [
+        const expected: ParameterDef[] = [
             {
                 name: 'param1',
                 columnType: 'varchar',
                 notNull: true //changed at v0.0.2
             }
         ]
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right.parameters, expected);
@@ -39,14 +39,14 @@ describe('Test parse parameters', () => {
         SELECT ?+id from mytable1
         `
         const actual = await parseSql(client, sql);
-        const expected : ParameterDef[] = [
+        const expected: ParameterDef[] = [
             {
                 name: 'param1',
                 columnType: 'double',
                 notNull: true //changed at v0.0.2
             }
         ]
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right.parameters, expected);
@@ -57,7 +57,7 @@ describe('Test parse parameters', () => {
         SELECT :value+id from mytable1 where :value is not null
         `
         const actual = await parseSql(client, sql);
-        const expected : ParameterDef[] = [
+        const expected: ParameterDef[] = [
             {
                 name: 'value',
                 columnType: 'double',
@@ -69,7 +69,7 @@ describe('Test parse parameters', () => {
                 notNull: true
             }
         ]
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right.parameters, expected);
@@ -80,14 +80,14 @@ describe('Test parse parameters', () => {
         SELECT ? > 1 from mytable1
         `
         const actual = await parseSql(client, sql);
-        const expected : ParameterDef[] = [
+        const expected: ParameterDef[] = [
             {
                 name: 'param1',
                 columnType: 'bigint',
                 notNull: true
             }
         ]
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right.parameters, expected);
@@ -98,14 +98,14 @@ describe('Test parse parameters', () => {
         SELECT ? > 'a' from mytable1
         `
         const actual = await parseSql(client, sql);
-        const expected : ParameterDef[] = [
+        const expected: ParameterDef[] = [
             {
                 name: 'param1',
                 columnType: 'varchar',
                 notNull: true
             }
         ]
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right.parameters, expected);
@@ -116,14 +116,14 @@ describe('Test parse parameters', () => {
         SELECT (select ? from mytable2) from mytable1
         `
         const actual = await parseSql(client, sql);
-        const expected : ParameterDef[] = [
+        const expected: ParameterDef[] = [
             {
                 name: 'param1',
                 columnType: 'varchar',
                 notNull: true //changed at v0.0.2
             }
         ]
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right.parameters, expected);
@@ -134,14 +134,14 @@ describe('Test parse parameters', () => {
         SELECT (select id from mytable2 where name = ?) from mytable1
         `
         const actual = await parseSql(client, sql);
-        const expected : ParameterDef[] = [
+        const expected: ParameterDef[] = [
             {
                 name: 'param1',
                 columnType: 'varchar',
                 notNull: true
             }
         ]
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right.parameters, expected);
@@ -152,14 +152,14 @@ describe('Test parse parameters', () => {
         SELECT * from mytable1 where id > ?
         `
         const actual = await parseSql(client, sql);
-        const expected : ParameterDef[] = [
+        const expected: ParameterDef[] = [
             {
                 name: 'param1',
                 columnType: 'int',
                 notNull: true
             }
         ]
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right.parameters, expected);
@@ -170,14 +170,14 @@ describe('Test parse parameters', () => {
         SELECT * from mytable1 where ? > id
         `
         const actual = await parseSql(client, sql);
-        const expected : ParameterDef[] = [
+        const expected: ParameterDef[] = [
             {
                 name: 'param1',
                 columnType: 'int',
                 notNull: true
             }
         ]
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right.parameters, expected);
@@ -188,14 +188,14 @@ describe('Test parse parameters', () => {
         SELECT * from mytable1 where concat_ws('/', ?) < id 
         `
         const actual = await parseSql(client, sql);
-        const expected : ParameterDef[] = [
+        const expected: ParameterDef[] = [
             {
                 name: 'param1',
                 columnType: 'varchar',
                 notNull: false
             }
         ]
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right.parameters, expected);
@@ -206,14 +206,14 @@ describe('Test parse parameters', () => {
         SELECT * from mytable1 where concat_ws('/', ?) is null 
         `
         const actual = await parseSql(client, sql);
-        const expected : ParameterDef[] = [
+        const expected: ParameterDef[] = [
             {
                 name: 'param1',
                 columnType: 'varchar',
                 notNull: false
             }
         ]
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right.parameters, expected);
@@ -224,14 +224,14 @@ describe('Test parse parameters', () => {
         SELECT * from mytable1 where id > concat_ws('/', ?)
         `
         const actual = await parseSql(client, sql);
-        const expected : ParameterDef[] = [
+        const expected: ParameterDef[] = [
             {
                 name: 'param1',
                 columnType: 'varchar',
                 notNull: true //changed at v0.0.2
             }
         ]
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right.parameters, expected);
@@ -242,14 +242,14 @@ describe('Test parse parameters', () => {
         SELECT * from mytable1 where ? > (select id from mytable2 where id = 1)
         `
         const actual = await parseSql(client, sql);
-        const expected : ParameterDef[] = [
+        const expected: ParameterDef[] = [
             {
                 name: 'param1',
                 columnType: 'int',
                 notNull: true
             }
         ]
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error:`, actual.left);
         }
         assert.deepStrictEqual(actual.right.parameters, expected);
@@ -260,14 +260,14 @@ describe('Test parse parameters', () => {
         SELECT * from mytable1 where (select id from mytable2 where id = 1) < ?
         `
         const actual = await parseSql(client, sql);
-        const expected : ParameterDef[] = [
+        const expected: ParameterDef[] = [
             {
                 name: 'param1',
                 columnType: 'int',
                 notNull: true
             }
         ]
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right.parameters, expected);
@@ -278,7 +278,7 @@ describe('Test parse parameters', () => {
         SELECT * from mytable2 where ? is null or id = ?
         `
         const actual = await parseSql(client, sql);
-        const expected : ParameterDef[] = [
+        const expected: ParameterDef[] = [
             {
                 name: 'param1',
                 columnType: 'varchar',
@@ -290,7 +290,7 @@ describe('Test parse parameters', () => {
                 notNull: true
             }
         ]
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right.parameters, expected);
@@ -301,7 +301,7 @@ describe('Test parse parameters', () => {
         SELECT * from mytable2 where id = ? or id > ?
         `
         const actual = await parseSql(client, sql);
-        const expected : ParameterDef[] = [
+        const expected: ParameterDef[] = [
             {
                 name: 'param1',
                 columnType: 'int',
@@ -313,7 +313,7 @@ describe('Test parse parameters', () => {
                 notNull: true
             }
         ]
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right.parameters, expected);
@@ -324,7 +324,7 @@ describe('Test parse parameters', () => {
         select name from mytable2 where concat('/', id) > ? or id = ?
         `
         const actual = await parseSql(client, sql);
-        const expected : ParameterDef[] = [
+        const expected: ParameterDef[] = [
             {
                 name: 'param1',
                 columnType: 'varchar',
@@ -336,7 +336,7 @@ describe('Test parse parameters', () => {
                 notNull: true
             }
         ]
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right.parameters, expected);
@@ -347,7 +347,7 @@ describe('Test parse parameters', () => {
         select concat(?, ?) from mytable2
         `
         const actual = await parseSql(client, sql);
-        const expected : ParameterDef[] = [
+        const expected: ParameterDef[] = [
             {
                 name: 'param1',
                 columnType: 'varchar',
@@ -359,7 +359,7 @@ describe('Test parse parameters', () => {
                 notNull: true
             }
         ]
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right.parameters, expected);
@@ -372,14 +372,14 @@ describe('Test parse parameters', () => {
         SELECT * FROM mytable1 t WHERE ? in (select id from mytable1 m2 )
         `
         const actual = await parseSql(client, sql);
-        const expected : ParameterDef[] = [
+        const expected: ParameterDef[] = [
             {
                 name: 'param1',
                 columnType: 'int',
                 notNull: true
             }
         ]
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right.parameters, expected);
@@ -390,14 +390,14 @@ describe('Test parse parameters', () => {
         SELECT * FROM mytable1 t WHERE ? in (select name from mytable2 m2 )
         `
         const actual = await parseSql(client, sql);
-        const expected : ParameterDef[] = [
+        const expected: ParameterDef[] = [
             {
                 name: 'param1',
                 columnType: 'varchar',
                 notNull: true
             }
         ]
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right.parameters, expected);
@@ -413,14 +413,14 @@ describe('Test parse parameters', () => {
         )
         `
         const actual = await parseSql(client, sql);
-        const expected : ParameterDef[] = [
+        const expected: ParameterDef[] = [
             {
                 name: 'param1',
                 columnType: 'varchar',
                 notNull: true
             }
         ]
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right.parameters, expected);
@@ -435,14 +435,14 @@ describe('Test parse parameters', () => {
         )
         `
         const actual = await parseSql(client, sql);
-        const expected : ParameterDef[] = [
+        const expected: ParameterDef[] = [
             {
                 name: 'param1',
                 columnType: 'bigint',
                 notNull: true
             }
         ]
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right.parameters, expected);
@@ -452,14 +452,14 @@ describe('Test parse parameters', () => {
         const sql = `
         SELECT id FROM mytable1 WHERE id in (?)`
         const actual = await parseSql(client, sql);
-        const expected : ParameterDef[] = [
+        const expected: ParameterDef[] = [
             {
                 name: 'param1',
                 columnType: 'int[]',
                 notNull: true
             }
         ]
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right.parameters, expected);
@@ -469,21 +469,21 @@ describe('Test parse parameters', () => {
         const sql = `
         SELECT * FROM mytable1 WHERE id = :param or value = :param`
         const actual = await parseSql(client, sql);
-        const expectedParameters : ParameterDef[] = [
+        const expectedParameters: ParameterDef[] = [
             {
                 name: 'param',
                 columnType: 'int',
                 notNull: true
             },
             {
-                
+
                 name: 'param',
                 columnType: 'int',
                 notNull: true
             }
         ]
-        
-        if(isLeft(actual)) {
+
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right.parameters, expectedParameters);
@@ -493,15 +493,15 @@ describe('Test parse parameters', () => {
         const sql = `
         SELECT CASE WHEN id = 1 THEN ? ELSE id END from mytable1`
         const actual = await parseSql(client, sql);
-        const expectedParameters : ParameterDef[] = [
+        const expectedParameters: ParameterDef[] = [
             {
                 name: 'param1',
                 columnType: 'int',
                 notNull: true //changed at v0.0.2
             }
         ]
-        
-        if(isLeft(actual)) {
+
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right.parameters, expectedParameters);
@@ -511,15 +511,15 @@ describe('Test parse parameters', () => {
         const sql = `
         SELECT CASE WHEN id = 1 THEN id ELSE ? END from mytable1`
         const actual = await parseSql(client, sql);
-        const expectedParameters : ParameterDef[] = [
+        const expectedParameters: ParameterDef[] = [
             {
                 name: 'param1',
                 columnType: 'int',
                 notNull: true //changed at v0.0.2
             }
         ]
-        
-        if(isLeft(actual)) {
+
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right.parameters, expectedParameters);
@@ -536,7 +536,7 @@ describe('Test parse parameters', () => {
             END 
         FROM mytable1`
         const actual = await parseSql(client, sql);
-        const expectedParameters : ParameterDef[] = [
+        const expectedParameters: ParameterDef[] = [
             {
                 name: 'param1',
                 columnType: 'bigint',
@@ -549,7 +549,7 @@ describe('Test parse parameters', () => {
             }
         ]
 
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right.parameters, expectedParameters);
@@ -564,7 +564,7 @@ describe('Test parse parameters', () => {
             END 
         FROM mytable1`
         const actual = await parseSql(client, sql);
-        const expectedParameters : ParameterDef[] = [
+        const expectedParameters: ParameterDef[] = [
             {
                 name: 'param1',
                 columnType: 'int',
@@ -577,7 +577,7 @@ describe('Test parse parameters', () => {
             }
         ]
 
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right.parameters, expectedParameters);
@@ -592,7 +592,7 @@ describe('Test parse parameters', () => {
             END
         FROM mytable2`
         const actual = await parseSql(client, sql);
-        const expectedParameters : ParameterDef[] = [
+        const expectedParameters: ParameterDef[] = [
             {
                 name: 'param1',
                 columnType: 'varchar', //changed at v0.0.2
@@ -604,8 +604,8 @@ describe('Test parse parameters', () => {
                 notNull: true ////changed at v0.0.2
             }
         ]
-        
-        if(isLeft(actual)) {
+
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right.parameters, expectedParameters);
@@ -620,15 +620,15 @@ describe('Test parse parameters', () => {
             END
         FROM mytable2`
         const actual = await parseSql(client, sql);
-        const expectedParameters : ParameterDef[] = [
+        const expectedParameters: ParameterDef[] = [
             {
                 name: 'param1',
                 columnType: 'double',
                 notNull: true //changed at v0.0.2
             }
         ]
-        
-        if(isLeft(actual)) {
+
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right.parameters, expectedParameters);
@@ -645,7 +645,7 @@ describe('Test parse parameters', () => {
             END as result
         FROM mytable1`
         const actual = await parseSql(client, sql);
-        const expectedParameters : ParameterDef[] = [
+        const expectedParameters: ParameterDef[] = [
             {
                 name: 'param1',
                 columnType: 'double',
@@ -657,8 +657,8 @@ describe('Test parse parameters', () => {
                 notNull: true //changed at v0.0.2
             }
         ]
-        
-        if(isLeft(actual)) {
+
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right.parameters, expectedParameters);
@@ -667,7 +667,7 @@ describe('Test parse parameters', () => {
         const sql = `
         SELECT id FROM mytable2 WHERE (?, ?) = (select name, id from mytable2 where id = ?)`
         const actual = await parseSql(client, sql);
-        const expectedParameters : ParameterDef[] = [
+        const expectedParameters: ParameterDef[] = [
             {
                 name: 'param1',
                 columnType: 'varchar',
@@ -684,8 +684,8 @@ describe('Test parse parameters', () => {
                 notNull: true
             }
         ]
-        
-        if(isLeft(actual)) {
+
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right.parameters, expectedParameters);
@@ -695,7 +695,7 @@ describe('Test parse parameters', () => {
         const sql = `
         SELECT id FROM mytable2 WHERE ? = CASE WHEN id = 1 THEN id ELSE ? END`
         const actual = await parseSql(client, sql);
-        const expectedParameters : ParameterDef[] = [
+        const expectedParameters: ParameterDef[] = [
             {
                 name: 'param1',
                 columnType: 'int',
@@ -707,8 +707,8 @@ describe('Test parse parameters', () => {
                 notNull: true
             }
         ]
-        
-        if(isLeft(actual)) {
+
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right.parameters, expectedParameters);

@@ -15,11 +15,11 @@ describe('type-mapping', () => {
         await client.closeConnection();
     })
 
-    it('select table with all types', async () => {
+    it.only('select table with all types', async () => {
 
         const sql = 'select * from all_types';
         const actual = await parseSql(client, sql);
-        
+
         const expected: ColumnDef[] = [
             {
                 name: 'decimal_column',
@@ -151,10 +151,10 @@ describe('type-mapping', () => {
                 dbtype: 'geometry',
                 notNull: false
             }
-            
+
         ]
 
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right.columns, expected);
@@ -164,13 +164,13 @@ describe('type-mapping', () => {
 
         const sql = 'select * from all_types';
         const actual = await parseSql(client, sql);
-        
 
-        if(isLeft(actual)) {
+
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
 
-        const actualColumns = actual.right.columns.map( col => {
+        const actualColumns = actual.right.columns.map(col => {
             const nameAndType = {
                 name: col.name,
                 type: col.dbtype
@@ -179,12 +179,12 @@ describe('type-mapping', () => {
         });
 
         const schema = await client.loadDbSchema();
-        if(isLeft(schema)) {
+        if (isLeft(schema)) {
             assert.fail(`Shouldn't return an error`);
         }
         const expected = schema.right
-            .filter( colInfo => actualColumns.find(col => col.name == colInfo.column))
-            .map( col => {
+            .filter(colInfo => actualColumns.find(col => col.name == colInfo.column))
+            .map(col => {
                 const nameAndType = {
                     name: col.column,
                     type: col.column_type
@@ -193,6 +193,6 @@ describe('type-mapping', () => {
             });
 
         assert.deepStrictEqual(actualColumns, expected);
-        
+
     });
 });

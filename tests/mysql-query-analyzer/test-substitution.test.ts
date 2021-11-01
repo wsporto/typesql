@@ -211,42 +211,42 @@ describe.skip('Substitution tests', () => {
 
     it('int+int', () => {
 
-        const typeInt : TypeVar = {
+        const typeInt: TypeVar = {
             kind: 'TypeVar',
             id: 0,
             name: 'id',
             type: 'int'
         }
 
-        const typeNumber : TypeVar = {
+        const typeNumber: TypeVar = {
             kind: 'TypeVar',
             id: 1,
             name: 'id',
             type: 'number'
         }
 
-        const typeVarLeft : TypeVar = {
+        const typeVarLeft: TypeVar = {
             kind: 'TypeVar',
             id: 2,
             name: '?',
             type: '?'
         }
 
-        const typeVarRight : TypeVar = {
+        const typeVarRight: TypeVar = {
             kind: 'TypeVar',
             id: 3,
             name: '?',
             type: '?'
         }
 
-        const typeVarResult : TypeVar = {
+        const typeVarResult: TypeVar = {
             kind: 'TypeVar',
             id: 4,
             name: '?',
             type: '?'
         }
 
-        const constraints : Constraint[] = [
+        const constraints: Constraint[] = [
             {
                 expression: 'id+id',
                 type1: typeVarResult,
@@ -263,31 +263,31 @@ describe.skip('Substitution tests', () => {
                 expression: 'value',
                 type1: typeVarRight,
                 type2: typeNumber,
-                mostGeneralType: true 
+                mostGeneralType: true
             },
             {
                 expression: 'id',
                 type1: typeVarLeft,
                 type2: typeInt,
-                mostGeneralType: true 
+                mostGeneralType: true
             },
             {
                 expression: 'value',
                 type1: typeVarRight,
                 type2: typeInt,
-                mostGeneralType: true 
+                mostGeneralType: true
             },
             {
                 expression: 'value',
                 type1: typeVarLeft,
                 type2: typeVarRight,
-                mostGeneralType: true 
+                mostGeneralType: true
             },
             {
                 expression: 'value',
                 type1: typeVarResult,
                 type2: typeVarRight,
-                mostGeneralType: true 
+                mostGeneralType: true
             },
             {
                 expression: 'value',
@@ -297,7 +297,7 @@ describe.skip('Substitution tests', () => {
             }
         ]
 
-        const substitutions : SubstitutionHash = {};
+        const substitutions: SubstitutionHash = {};
         unify(constraints, substitutions);
 
         console.log("unify===", substitutions);
@@ -308,49 +308,49 @@ describe.skip('Substitution tests', () => {
 
     it('int+double', () => {
 
-        const typeInt : TypeVar = {
+        const typeInt: TypeVar = {
             kind: 'TypeVar',
             id: 0,
             name: 'id',
             type: 'int'
         }
 
-        const typeDouble : TypeVar = {
+        const typeDouble: TypeVar = {
             kind: 'TypeVar',
             id: 10,
             name: 'id',
             type: 'double'
         }
 
-        const typeNumber : TypeVar = {
+        const typeNumber: TypeVar = {
             kind: 'TypeVar',
             id: 1,
             name: 'id',
             type: 'number'
         }
 
-        const typeVarLeft : TypeVar = {
+        const typeVarLeft: TypeVar = {
             kind: 'TypeVar',
             id: 2,
             name: '?',
             type: '?'
         }
 
-        const typeVarRight : TypeVar = {
+        const typeVarRight: TypeVar = {
             kind: 'TypeVar',
             id: 3,
             name: '?',
             type: '?'
         }
 
-        const typeVarResult : TypeVar = {
+        const typeVarResult: TypeVar = {
             kind: 'TypeVar',
             id: 4,
             name: '?',
             type: '?'
         }
 
-        const constraints : Constraint[] = [
+        const constraints: Constraint[] = [
             {
                 expression: 'id+double_value',
                 type1: typeVarResult,
@@ -367,31 +367,31 @@ describe.skip('Substitution tests', () => {
                 expression: 'value',
                 type1: typeVarRight,
                 type2: typeNumber,
-                mostGeneralType: true 
+                mostGeneralType: true
             },
             {
                 expression: 'id',
                 type1: typeVarLeft,
                 type2: typeInt,
-                mostGeneralType: true 
+                mostGeneralType: true
             },
             {
                 expression: 'value',
                 type1: typeVarRight,
                 type2: typeDouble,
-                mostGeneralType: true 
+                mostGeneralType: true
             },
             {
                 expression: 'value',
                 type1: typeVarLeft,
                 type2: typeVarRight,
-                mostGeneralType: true 
+                mostGeneralType: true
             },
             {
                 expression: 'value',
                 type1: typeVarResult,
                 type2: typeVarRight,
-                mostGeneralType: true 
+                mostGeneralType: true
             },
             {
                 expression: 'value',
@@ -401,7 +401,7 @@ describe.skip('Substitution tests', () => {
             }
         ]
 
-        const substitutions : SubstitutionHash = {};
+        const substitutions: SubstitutionHash = {};
         unify(constraints, substitutions);
 
         console.log("unify===", substitutions);
@@ -412,49 +412,49 @@ describe.skip('Substitution tests', () => {
 
     it('int+?', () => {
 
-        const typeInt : TypeVar = {
+        const typeInt: TypeVar = {
             kind: 'TypeVar',
             id: 0,
             name: 'id',
             type: 'int'
         }
 
-        const typeParam : TypeVar = {
+        const typeParam: TypeVar = {
             kind: 'TypeVar',
             id: 10,
             name: '?',
             type: '?'
         }
 
-        const typeNumber : TypeVar = {
+        const typeNumber: TypeVar = {
             kind: 'TypeVar',
             id: 1,
             name: 'id',
             type: 'number'
         }
 
-        const typeVarLeft : TypeVar = {
+        const typeVarLeft: TypeVar = {
             kind: 'TypeVar',
             id: 2,
             name: '?',
             type: '?'
         }
 
-        const typeVarRight : TypeVar = {
+        const typeVarRight: TypeVar = {
             kind: 'TypeVar',
             id: 3,
             name: '?',
             type: '?'
         }
 
-        const typeVarResult : TypeVar = {
+        const typeVarResult: TypeVar = {
             kind: 'TypeVar',
             id: 4,
             name: '?',
             type: '?'
         }
 
-        const constraints : Constraint[] = [
+        const constraints: Constraint[] = [
             {
                 expression: 'id+double_value',
                 type1: typeVarResult,
@@ -471,31 +471,31 @@ describe.skip('Substitution tests', () => {
                 expression: 'value',
                 type1: typeVarRight,
                 type2: typeNumber,
-                mostGeneralType: true 
+                mostGeneralType: true
             },
             {
                 expression: 'id',
                 type1: typeVarLeft,
                 type2: typeInt,
-                mostGeneralType: true 
+                mostGeneralType: true
             },
             {
                 expression: 'value',
                 type1: typeVarRight,
                 type2: typeParam,
-                mostGeneralType: true 
+                mostGeneralType: true
             },
             {
                 expression: 'value',
                 type1: typeVarLeft,
                 type2: typeVarRight,
-                mostGeneralType: true 
+                mostGeneralType: true
             },
             {
                 expression: 'value',
                 type1: typeVarResult,
                 type2: typeVarRight,
-                mostGeneralType: true 
+                mostGeneralType: true
             },
             {
                 expression: 'value',
@@ -505,7 +505,7 @@ describe.skip('Substitution tests', () => {
             }
         ]
 
-        const substitutions : SubstitutionHash = {};
+        const substitutions: SubstitutionHash = {};
         unify(constraints, substitutions);
 
         console.log("unify===", substitutions);
@@ -516,49 +516,49 @@ describe.skip('Substitution tests', () => {
 
     it('bigint+?', () => {
 
-        const typeInt : TypeVar = {
+        const typeInt: TypeVar = {
             kind: 'TypeVar',
             id: 0,
             name: 'id',
             type: 'bigint'
         }
 
-        const typeParam : TypeVar = {
+        const typeParam: TypeVar = {
             kind: 'TypeVar',
             id: 10,
             name: '?',
             type: '?'
         }
 
-        const typeNumber : TypeVar = {
+        const typeNumber: TypeVar = {
             kind: 'TypeVar',
             id: 1,
             name: 'id',
             type: 'number'
         }
 
-        const typeVarLeft : TypeVar = {
+        const typeVarLeft: TypeVar = {
             kind: 'TypeVar',
             id: 2,
             name: '?',
             type: '?'
         }
 
-        const typeVarRight : TypeVar = {
+        const typeVarRight: TypeVar = {
             kind: 'TypeVar',
             id: 3,
             name: '?',
             type: '?'
         }
 
-        const typeVarResult : TypeVar = {
+        const typeVarResult: TypeVar = {
             kind: 'TypeVar',
             id: 4,
             name: '?',
             type: '?'
         }
 
-        const constraints : Constraint[] = [
+        const constraints: Constraint[] = [
             {
                 expression: 'id+double_value',
                 type1: typeVarResult,
@@ -575,31 +575,31 @@ describe.skip('Substitution tests', () => {
                 expression: 'value',
                 type1: typeVarRight,
                 type2: typeNumber,
-                mostGeneralType: true 
+                mostGeneralType: true
             },
             {
                 expression: 'id',
                 type1: typeVarLeft,
                 type2: typeInt,
-                mostGeneralType: true 
+                mostGeneralType: true
             },
             {
                 expression: 'value',
                 type1: typeVarRight,
                 type2: typeParam,
-                mostGeneralType: true 
+                mostGeneralType: true
             },
             {
                 expression: 'value',
                 type1: typeVarLeft,
                 type2: typeVarRight,
-                mostGeneralType: true 
+                mostGeneralType: true
             },
             {
                 expression: 'value',
                 type1: typeVarResult,
                 type2: typeVarRight,
-                mostGeneralType: true 
+                mostGeneralType: true
             },
             {
                 expression: 'value',
@@ -609,7 +609,7 @@ describe.skip('Substitution tests', () => {
             }
         ]
 
-        const substitutions : SubstitutionHash = {};
+        const substitutions: SubstitutionHash = {};
         unify(constraints, substitutions);
 
         console.log("unify===", substitutions);

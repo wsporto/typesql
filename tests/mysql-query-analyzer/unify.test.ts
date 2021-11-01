@@ -25,7 +25,7 @@ describe('Unification tests', () => {
     })
 
     it('unify2', () => {
-        const constraints : Constraint[] = [
+        const constraints: Constraint[] = [
             {
                 expression: 'then?',
                 type1: { kind: 'TypeVar', id: 1, name: 'CASEWHENid=1then?elseidEND', type: '?' },
@@ -42,7 +42,7 @@ describe('Unification tests', () => {
                 type2: { kind: 'TypeVar', id: 8, name: 'id', type: 'int' }
             }
         ]
-        
+
         const substitutions: SubstitutionHash = {};
         unify(constraints, substitutions);
 

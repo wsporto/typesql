@@ -9,7 +9,7 @@ import { getParameterIndexes } from "../../src/mysql-query-analyzer/util";
 describe('Utility functions tests', () => {
 
     it('findColumn should be case insensitive', () => {
-        const colDef : ColumnDef[] = [
+        const colDef: ColumnDef[] = [
             {
                 column: 'name',
                 columnName: 'name',
@@ -29,7 +29,7 @@ describe('Utility functions tests', () => {
     })
 
     it('findColumn2 should be case insensitive', () => {
-        const colDef : ColumnSchema[] = [
+        const colDef: ColumnSchema[] = [
             {
                 column: 'name',
                 column_type: 'varchar',
@@ -84,7 +84,7 @@ describe('Utility functions tests', () => {
         assert.deepStrictEqual(fromColumns, expectedColumns);
 
         const selectedColumns = getColumnNames(querySpec, fromColumns);
-        const expectedSelectedColumns : FieldInfo[] = [
+        const expectedSelectedColumns: FieldInfo[] = [
             {
                 name: 'count(*)',
                 notNull: true
@@ -101,7 +101,7 @@ describe('Utility functions tests', () => {
         assert.deepStrictEqual(unionTypeResult('tinyint', 'mediumint'), 'mediumint');
         assert.deepStrictEqual(unionTypeResult('tinyint', 'int'), 'int');
         assert.deepStrictEqual(unionTypeResult('tinyint', 'bigint'), 'bigint');
-        
+
         assert.deepStrictEqual(unionTypeResult('smallint', 'tinyint'), 'smallint');
         assert.deepStrictEqual(unionTypeResult('smallint', 'smallint'), 'smallint');
         assert.deepStrictEqual(unionTypeResult('smallint', 'mediumint'), 'mediumint');
@@ -133,19 +133,19 @@ describe('Utility functions tests', () => {
         const expected = [
             {
                 paramName: 'a',
-                indexes: [0] 
+                indexes: [0]
             },
             {
                 paramName: 'b',
-                indexes: [1, 2] 
+                indexes: [1, 2]
             },
             {
                 paramName: 'c',
-                indexes: [3, 4] 
+                indexes: [3, 4]
             },
             {
                 paramName: 'd',
-                indexes: [5] 
+                indexes: [5]
             }
         ]
         assert.deepStrictEqual(actual, expected);

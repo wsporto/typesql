@@ -15,7 +15,7 @@ describe('parse update statements', () => {
         await client.closeConnection();
     })
 
-    const columns : ColumnDef[] = [
+    const columns: ColumnDef[] = [
         {
             name: 'affectedRows',
             dbtype: 'int',
@@ -55,7 +55,7 @@ describe('parse update statements', () => {
             ]
         }
 
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -96,7 +96,7 @@ describe('parse update statements', () => {
             ]
         }
 
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -138,7 +138,7 @@ describe('parse update statements', () => {
             ]
         }
 
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);

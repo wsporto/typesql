@@ -9,8 +9,8 @@ export enum FlagEnum {
 export type InferType = MySqlType | '?' | 'number' | 'any';
 
 
-export type MySqlType = 
-    | 'decimal' | 'decimal[]' 
+export type MySqlType =
+    | 'decimal' | 'decimal[]'
     | 'tinyint' | 'tinyint[]'
     | 'smallint' | 'smallint[]'
     | 'int' | 'int[]'
@@ -53,9 +53,9 @@ export type TsType =
     | 'null'
 
 
-export function converToTsType(mySqlType: MySqlType) : TsType {
+export function converToTsType(mySqlType: MySqlType): TsType {
     switch (mySqlType) {
-        case 'decimal': 
+        case 'decimal':
         case 'tinyint':
         case 'smallint':
         case 'int':
@@ -66,7 +66,7 @@ export function converToTsType(mySqlType: MySqlType) : TsType {
         case 'year':
             return 'number';
 
-        case 'decimal[]': 
+        case 'decimal[]':
         case 'tinyint[]':
         case 'smallint[]':
         case 'int[]':
@@ -112,43 +112,43 @@ export function converToTsType(mySqlType: MySqlType) : TsType {
         case 'enum':
         case 'set':
             return 'any'
-        default: 
-            const exaustive : never = mySqlType;
+        default:
+            const exaustive: never = mySqlType;
             return exaustive;
     }
-        
+
 }
 
 export function checkFlag(flags: number, flag: FlagEnum) {
     return (flags & flag) != 0;
 }
 
-export function convertTypeCodeToMysqlType(typeCode: number, flags: FlagEnum, columnLength: number) : MySqlType {
-    
-    if(flags & FlagEnum.SET_FLAG) {
+export function convertTypeCodeToMysqlType(typeCode: number, flags: FlagEnum, columnLength: number): MySqlType {
+
+    if (flags & FlagEnum.SET_FLAG) {
         return 'set'
     }
-    if(flags & FlagEnum.ENUM_FLAG) {
+    if (flags & FlagEnum.ENUM_FLAG) {
         return 'enum'
     }
     const mappedType = typesMapping[typeCode];
-    if(mappedType == 'varchar' && (flags & FlagEnum.BINARY_FLAG)) {
+    if (mappedType == 'varchar' && (flags & FlagEnum.BINARY_FLAG)) {
         return 'varbinary';
     }
     //max column lenght = 255 but the mysql driver return columnLenght=262140 (octet lenght?)
-    if(mappedType == 'text' && columnLength == 255 * 4) { 
+    if (mappedType == 'text' && columnLength == 255 * 4) {
         return 'tinytext';
     }
     //max column lenght = 65535 but the mysql driver return columnLenght=65535 * 4 (octet lenght?)
-    if(mappedType == 'text' && columnLength == 65535 * 4) {
+    if (mappedType == 'text' && columnLength == 65535 * 4) {
         return 'text';
     }
     //max column lenght = 16777215 but the mysql driver return columnLenght=16777215 * 4 (octet lenght?)
-    if(mappedType == 'text' && columnLength == 16777215 * 4) {
+    if (mappedType == 'text' && columnLength == 16777215 * 4) {
         return 'mediumtext';
     }
     //max column lenght = 4294967295
-    if(mappedType == 'text' && columnLength == 4294967295) {
+    if (mappedType == 'text' && columnLength == 4294967295) {
         return 'longtext';
     }
     return mappedType;

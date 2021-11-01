@@ -1,5 +1,5 @@
 import assert from "assert";
-import { renameInvalidNames, escapeInvalidTsField, generateTsDescriptor} from "../src/code-generator";
+import { renameInvalidNames, escapeInvalidTsField, generateTsDescriptor } from "../src/code-generator";
 import { SchemaDef } from "../src/types";
 
 describe('rename invalid names', () => {
@@ -39,7 +39,7 @@ describe('rename invalid names', () => {
 
     it('rename/escape column from TsDescriptor', async () => {
 
-        const schema : SchemaDef = {
+        const schema: SchemaDef = {
             sql: 'UPDATE ...',
             queryType: 'Update',
             multipleRowsResult: true,

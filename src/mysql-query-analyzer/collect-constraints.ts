@@ -8,14 +8,15 @@ import {
     SimpleExprListContext, ExprListContext, PrimaryExprIsNullContext, ExprContext, ExprIsContext, BoolPriContext,
     PrimaryExprPredicateContext, SimpleExprContext, PredicateOperationsContext, ExprNotContext, ExprAndContext,
     ExprOrContext, ExprXorContext, PredicateExprLikeContext, SelectStatementContext, SimpleExprRuntimeFunctionContext,
-    SubqueryContext, InsertStatementContext, UpdateStatementContext, DeleteStatementContext, PrimaryExprAllAnyContext, 
-    FromClauseContext, SimpleExprIntervalContext } from "ts-mysql-parser";
+    SubqueryContext, InsertStatementContext, UpdateStatementContext, DeleteStatementContext, PrimaryExprAllAnyContext,
+    FromClauseContext, SimpleExprIntervalContext
+} from "ts-mysql-parser";
 
 import { ColumnSchema, ColumnDef, TypeInferenceResult, InsertInfoResult, UpdateInfoResult, DeleteInfoResult } from "./types";
 import { getColumnsFrom, findColumn, splitName, selectAllColumns, findColumn2 } from "./select-columns";
 import {
     SubstitutionHash, getQuerySpecificationsFromSelectStatement as getQuerySpecificationsFromQuery,
-    getQuerySpecificationsFromSelectStatement 
+    getQuerySpecificationsFromSelectStatement
 } from "./parse";
 import { MySqlType, InferType } from "../mysql-mapping";
 import { ParameterDef } from "../types";
@@ -121,16 +122,16 @@ export function analiseInsertStatement(insertStatement: InsertStatementContext, 
     const insertColumns = getInsertColumns(insertStatement, dbSchema);
     const allParameters: ParameterDef[] = [];
 
-    const exprOrDefaultList : ExprOrDefault[] = [];
-    valuesContext.DEFAULT_SYMBOL().forEach( terminalNode => {
+    const exprOrDefaultList: ExprOrDefault[] = [];
+    valuesContext.DEFAULT_SYMBOL().forEach(terminalNode => {
         exprOrDefaultList.push(terminalNode);
     })
-    valuesContext.expr().forEach( expr => {
+    valuesContext.expr().forEach(expr => {
         exprOrDefaultList.push(expr);
     })
 
     //order the tokens based on sql position
-    exprOrDefaultList.sort( (token1, token2) => token1.sourceInterval.a - token2.sourceInterval.a)
+    exprOrDefaultList.sort((token1, token2) => token1.sourceInterval.a - token2.sourceInterval.a)
 
     exprOrDefaultList.forEach((expr, index) => {
         const context: InferenceContext = {
@@ -142,12 +143,12 @@ export function analiseInsertStatement(insertStatement: InsertStatementContext, 
 
         const column = insertColumns[index];
 
-        if(expr instanceof ExprContext) {
+        if (expr instanceof ExprContext) {
             const exprType = walkExpr(context, expr);
             context.constraints.push({
                 expression: expr.text,
                 type1: freshVar(column.column, column.column_type),
-                type2: exprType.kind == 'TypeOperator'? exprType.types[0] : exprType
+                type2: exprType.kind == 'TypeOperator' ? exprType.types[0] : exprType
             })
         }
 
@@ -289,8 +290,8 @@ export function getInsertColumns(insertStatement: InsertStatementContext, dbSche
     });
 
     //check insert stmt without fields (only values). Ex.: insert into mytable values()
-    if(!fields) {
-        return dbSchema.filter( column => column.table == insertIntoTable);
+    if (!fields) {
+        return dbSchema.filter(column => column.table == insertIntoTable);
     }
     return fields;
 }
@@ -336,7 +337,7 @@ export function getDeleteColumns(deleteStatement: DeleteStatementContext, dbSche
 }
 
 
-export function analiseSelectStatement(selectStatement: SelectStatementContext| SubqueryContext, dbSchema: ColumnSchema[], namedParameters: string[]): TypeInferenceResult {
+export function analiseSelectStatement(selectStatement: SelectStatementContext | SubqueryContext, dbSchema: ColumnSchema[], namedParameters: string[]): TypeInferenceResult {
     const querySpec = getQuerySpecificationsFromSelectStatement(selectStatement);
     const fromColumns = getColumnsFrom(querySpec[0], dbSchema);
     let result = analiseQuerySpecification(querySpec[0], dbSchema, namedParameters, fromColumns);
@@ -373,7 +374,7 @@ export function unionTypeResult(type1: InferType, type2: InferType) {
 
 export function analiseQuerySpecification(querySpec: QuerySpecificationContext, dbSchema: ColumnSchema[], namedParameters: string[], fromColumns: ColumnDef[]): TypeInferenceResult {
 
-    const context : InferenceContext = {
+    const context: InferenceContext = {
         dbSchema,
         parameters: [],
         constraints: [],
@@ -382,7 +383,7 @@ export function analiseQuerySpecification(querySpec: QuerySpecificationContext, 
 
     const queryTypes = walkQuerySpecification(context, querySpec);
     const paramIndexes = getParameterIndexes(namedParameters); //for [a, a, b, a] will return a: [0, 1, 3]; b: [2]
-    paramIndexes.forEach( paramIndex => {
+    paramIndexes.forEach(paramIndex => {
         getPairWise(paramIndex.indexes, (cur, next) => { //for [0, 1, 3] will return [0, 1], [1, 3]
             context.constraints.push({
                 expression: paramIndex.paramName,
@@ -482,7 +483,7 @@ export function walkQuerySpecification(context: InferenceContext, querySpec: Que
     }
 
     const fromClause = querySpec.fromClause();
-    if(fromClause) {
+    if (fromClause) {
         walkFromClause(context, fromClause);
     }
 
@@ -498,9 +499,9 @@ export function walkQuerySpecification(context: InferenceContext, querySpec: Que
 function walkFromClause(context: InferenceContext, fromClause: FromClauseContext) {
     const tableReferences = fromClause.tableReferenceList()?.tableReference();
     tableReferences?.forEach(tabeRef => {
-        tabeRef.joinedTable().forEach( joinedTable => {
+        tabeRef.joinedTable().forEach(joinedTable => {
             const onExpr = joinedTable.expr();
-            if(onExpr) {
+            if (onExpr) {
                 walkExpr(context, onExpr);
             }
         })
@@ -556,7 +557,7 @@ function walkBoolPri(context: InferenceContext, boolPri: BoolPriContext): Type {
         return freshVar(boolPri.text, 'tinyint');
     }
 
-    if(boolPri instanceof PrimaryExprAllAnyContext) {
+    if (boolPri instanceof PrimaryExprAllAnyContext) {
         const compareLeft = boolPri.boolPri();
         const compareRight = boolPri.subquery();
         const typeLeft = walkBoolPri(context, compareLeft);
@@ -624,7 +625,7 @@ function walkpredicateOperations(context: InferenceContext, parentType: Type, pr
 
 }
 
-function walkExprList(context:InferenceContext, exprList: ExprListContext): Type {
+function walkExprList(context: InferenceContext, exprList: ExprListContext): Type {
 
     const listType = exprList.expr().map(item => {
         const exprType = walkExpr(context, item);
@@ -683,7 +684,7 @@ function walkBitExpr(context: InferenceContext, bitExpr: BitExprContext): Type {
         })
         return bitExprType;
     }
-    
+
     if (bitExpr.INTERVAL_SYMBOL()) {
         const bitExpr2 = bitExpr.bitExpr()[0];
         const leftType = walkBitExpr(context, bitExpr2);
@@ -719,9 +720,9 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
         if (runtimeFunctionCall.CURTIME_SYMBOL()) {
             return freshVar(simpleExpr.text, 'time');
         }
-        if( runtimeFunctionCall.REPLACE_SYMBOL()) {
+        if (runtimeFunctionCall.REPLACE_SYMBOL()) {
             const exprList = runtimeFunctionCall.expr();
-            exprList.forEach( expr => {
+            exprList.forEach(expr => {
                 const exprType = walkExpr(context, expr);
                 context.constraints.push({
                     expression: expr.text,
@@ -733,12 +734,12 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
         }
         if (runtimeFunctionCall.YEAR_SYMBOL() || runtimeFunctionCall.MONTH_SYMBOL() || runtimeFunctionCall.DAY_SYMBOL()) {
             const expr = runtimeFunctionCall.exprWithParentheses()?.expr();
-            if(expr) {
+            if (expr) {
                 const paramType = walkExpr(context, expr);
-                if(paramType.kind == 'TypeVar' && isDateTimeLiteral(paramType.name)) {
+                if (paramType.kind == 'TypeVar' && isDateTimeLiteral(paramType.name)) {
                     paramType.type = 'datetime'
                 }
-                if(paramType.kind == 'TypeVar' && isDateLiteral(paramType.name)) {
+                if (paramType.kind == 'TypeVar' && isDateLiteral(paramType.name)) {
                     paramType.type = 'date'
                 }
                 context.constraints.push({
@@ -747,20 +748,20 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
                     type2: freshVar(simpleExpr.text, 'date')
                 })
             }
-            const returnType = runtimeFunctionCall.YEAR_SYMBOL()? 'year' : 'tinyint';
+            const returnType = runtimeFunctionCall.YEAR_SYMBOL() ? 'year' : 'tinyint';
             return freshVar(simpleExpr.text, returnType);
         }
-        if(runtimeFunctionCall.HOUR_SYMBOL() || runtimeFunctionCall.MINUTE_SYMBOL() || runtimeFunctionCall.SECOND_SYMBOL()) {
+        if (runtimeFunctionCall.HOUR_SYMBOL() || runtimeFunctionCall.MINUTE_SYMBOL() || runtimeFunctionCall.SECOND_SYMBOL()) {
             const expr = runtimeFunctionCall.exprWithParentheses()?.expr();
-            if(expr) {
+            if (expr) {
                 const paramType = walkExpr(context, expr);
-                if(paramType.kind == 'TypeVar' && isTimeLiteral(paramType.name)) {
+                if (paramType.kind == 'TypeVar' && isTimeLiteral(paramType.name)) {
                     paramType.type = 'time';
                 }
-                if(paramType.kind == 'TypeVar' && isDateLiteral(paramType.name)) {
+                if (paramType.kind == 'TypeVar' && isDateLiteral(paramType.name)) {
                     paramType.type = 'date';
                 }
-                if(paramType.kind == 'TypeVar' && isDateTimeLiteral(paramType.name)) {
+                if (paramType.kind == 'TypeVar' && isDateTimeLiteral(paramType.name)) {
                     paramType.type = 'datetime';
                 }
 
@@ -772,38 +773,38 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
             }
             //HOUR can return values greater than 23. Ex.: SELECT HOUR('272:59:59');
             //https://dev.mysql.com/doc/refman/8.0/en/date-and-time-functions.html#function_hour
-            const returnType = runtimeFunctionCall.HOUR_SYMBOL()? 'int' : 'tinyint';
+            const returnType = runtimeFunctionCall.HOUR_SYMBOL() ? 'int' : 'tinyint';
             return freshVar(simpleExpr.text, returnType);
         }
         const trimFunction = runtimeFunctionCall.trimFunction();
-        if(trimFunction) {
+        if (trimFunction) {
             const exprList = trimFunction.expr();
-                if(exprList.length == 1) {
-                    const exprType = walkExpr(context, exprList[0]);
-                    context.constraints.push({
-                        expression: exprList[0].text,
-                        type1: exprType,
-                        type2: freshVar('varchar', 'varchar')
-                    })
-                }
-                if(exprList.length == 2) {
-                    const exprType = walkExpr(context, exprList[0]);
-                    const expr2Type = walkExpr(context, exprList[1]);
-                    context.constraints.push({
-                        expression: exprList[0].text,
-                        type1: exprType,
-                        type2: freshVar('varchar', 'varchar')
-                    })
-                    context.constraints.push({
-                        expression: exprList[1].text,
-                        type1: expr2Type,
-                        type2: freshVar('varchar', 'varchar')
-                    })
-                }
+            if (exprList.length == 1) {
+                const exprType = walkExpr(context, exprList[0]);
+                context.constraints.push({
+                    expression: exprList[0].text,
+                    type1: exprType,
+                    type2: freshVar('varchar', 'varchar')
+                })
+            }
+            if (exprList.length == 2) {
+                const exprType = walkExpr(context, exprList[0]);
+                const expr2Type = walkExpr(context, exprList[1]);
+                context.constraints.push({
+                    expression: exprList[0].text,
+                    type1: exprType,
+                    type2: freshVar('varchar', 'varchar')
+                })
+                context.constraints.push({
+                    expression: exprList[1].text,
+                    type1: expr2Type,
+                    type2: freshVar('varchar', 'varchar')
+                })
+            }
             return freshVar('varchar', 'varchar');
         }
         const substringFunction = runtimeFunctionCall.substringFunction();
-        if(substringFunction) {
+        if (substringFunction) {
             const exprList = substringFunction.expr();
             const varcharParam = freshVar('varchar', 'varchar');
             const intParam = freshVar('int', 'int');
@@ -815,7 +816,7 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
             return varcharParam;
         }
 
-        if(runtimeFunctionCall.ADDDATE_SYMBOL() 
+        if (runtimeFunctionCall.ADDDATE_SYMBOL()
             || runtimeFunctionCall.DATE_ADD_SYMBOL()
             || runtimeFunctionCall.SUBDATE_SYMBOL()
             || runtimeFunctionCall.DATE_SUB_SYMBOL()) {
@@ -827,17 +828,17 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
             const typeExpr1 = walkExpr(context, expr1);
             const typeExpr2 = walkExpr(context, expr2);
 
-            if(typeExpr1.kind == 'TypeVar' && (isDateLiteral(typeExpr1.name) || isDateTimeLiteral(typeExpr1.name))) {
+            if (typeExpr1.kind == 'TypeVar' && (isDateLiteral(typeExpr1.name) || isDateTimeLiteral(typeExpr1.name))) {
                 typeExpr1.type = 'datetime';
             }
-            
-            context.constraints.push( {
+
+            context.constraints.push({
                 expression: expr1.text,
                 type1: typeExpr1,
                 type2: freshVar('datetime', 'datetime')
             })
 
-            context.constraints.push( {
+            context.constraints.push({
                 expression: expr2.text,
                 type1: typeExpr2,
                 type2: freshVar('bigint', 'bigint')
@@ -846,18 +847,18 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
             return freshVar('datetime', 'datetime');
         }
 
-        if(runtimeFunctionCall.COALESCE_SYMBOL()) {
+        if (runtimeFunctionCall.COALESCE_SYMBOL()) {
             const exprList = runtimeFunctionCall.exprListWithParentheses()?.exprList().expr();
-            if(exprList) {
+            if (exprList) {
                 const paramType = freshVar('?', '?');
                 const params: FunctionParams = {
                     kind: 'VariableLengthParams',
                     paramType: 'any'
                 }
                 const paramsTypeList = walkExprListParameters(context, exprList, params);
-                paramsTypeList.forEach( (typeVar, paramIndex) => {
+                paramsTypeList.forEach((typeVar, paramIndex) => {
                     context.constraints.push({
-                        expression: runtimeFunctionCall.text + '_param' + (paramIndex+1),
+                        expression: runtimeFunctionCall.text + '_param' + (paramIndex + 1),
                         type1: paramType,
                         type2: typeVar,
                         mostGeneralType: true,
@@ -868,7 +869,7 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
             }
         }
         //MOD (number, number): number
-        if(runtimeFunctionCall.MOD_SYMBOL()) {
+        if (runtimeFunctionCall.MOD_SYMBOL()) {
             const functionType = freshVar('number', 'number');
             const exprList = runtimeFunctionCall.expr();
             const param1 = walkExpr(context, exprList[0]);
@@ -907,7 +908,7 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
 
         if (functionIdentifier === 'concat_ws' || functionIdentifier?.toLowerCase() === 'concat') {
             const varcharType = freshVar(simpleExpr.text, 'varchar');
-            const params : VariableLengthParams = {
+            const params: VariableLengthParams = {
                 kind: 'VariableLengthParams',
                 paramType: '?'
             }
@@ -923,7 +924,7 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
                 type2: freshVar('decimal', 'decimal'),
                 mostGeneralType: true
             })
-            const params : FixedLengthParams = {
+            const params: FixedLengthParams = {
                 kind: 'FixedLengthParams',
                 paramsType: [functionType]
             }
@@ -933,7 +934,7 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
 
         if (functionIdentifier === 'round') {
             const functionType = freshVar(simpleExpr.text, '?');
-            const params : FixedLengthParams = {
+            const params: FixedLengthParams = {
                 kind: 'FixedLengthParams',
                 paramsType: [functionType]
             }
@@ -950,7 +951,7 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
 
         if (functionIdentifier === 'floor') {
             const doubleParam = freshVar('double', 'double');
-            const params : FixedLengthParams = {
+            const params: FixedLengthParams = {
                 kind: 'FixedLengthParams',
                 paramsType: [doubleParam, doubleParam]
             }
@@ -960,7 +961,7 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
 
         if (functionIdentifier === 'str_to_date') {
             const varcharParam = freshVar('varchar', 'varchar');
-            const params : FixedLengthParams = {
+            const params: FixedLengthParams = {
                 kind: 'FixedLengthParams',
                 paramsType: [varcharParam, varcharParam]
             }
@@ -970,12 +971,12 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
 
         if (functionIdentifier === 'datediff') {
             const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr();
-            if(udfExprList) {
-                udfExprList.forEach( (inExpr) => {
+            if (udfExprList) {
+                udfExprList.forEach((inExpr) => {
                     const expr = inExpr.expr();
                     const exprType = walkExpr(context, expr);
                     const newType = verifyDateTypesCoercion(exprType);
-    
+
                     context.constraints.push({
                         expression: expr.text,
                         type1: newType,
@@ -989,7 +990,7 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
         if (functionIdentifier === 'lpad' || functionIdentifier == 'rpad') {
             const varcharParam = freshVar('varchar', 'varchar');
             const intParam = freshVar('int', 'int');
-            const params : FixedLengthParams = {
+            const params: FixedLengthParams = {
                 kind: 'FixedLengthParams',
                 paramsType: [varcharParam, intParam, varcharParam]
             }
@@ -997,14 +998,14 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
             return varcharParam;
         }
 
-        if (functionIdentifier === 'lower' 
-            || functionIdentifier === 'lcase' 
-            || functionIdentifier === 'upper' 
+        if (functionIdentifier === 'lower'
+            || functionIdentifier === 'lcase'
+            || functionIdentifier === 'upper'
             || functionIdentifier === 'ucase'
             || functionIdentifier === 'ltrim'
             || functionIdentifier === 'rtrim') {
             const varcharParam = freshVar('varchar', 'varchar');
-            const params : FixedLengthParams = {
+            const params: FixedLengthParams = {
                 kind: 'FixedLengthParams',
                 paramsType: [varcharParam]
             }
@@ -1014,17 +1015,17 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
 
         if (functionIdentifier === 'length' || functionIdentifier == 'char_length') {
             const varcharParam = freshVar('varchar', 'varchar');
-            const params : FixedLengthParams = {
+            const params: FixedLengthParams = {
                 kind: 'FixedLengthParams',
                 paramsType: [varcharParam]
             }
             walkFunctionParameters(context, simpleExpr, params);
             return freshVar('int', 'int');
         }
-        if(functionIdentifier === 'abs') {
+        if (functionIdentifier === 'abs') {
             const functionType = freshVar('number', 'number');
             const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr();
-            udfExprList?.forEach( expr => {
+            udfExprList?.forEach(expr => {
                 const param1 = walkExpr(context, expr.expr());
                 context.constraints.push({
                     expression: simpleExpr.text,
@@ -1033,13 +1034,13 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
                     mostGeneralType: true
                 })
             })
-            
+
             return functionType;
         }
-        if(functionIdentifier == 'ceiling' || functionIdentifier == 'ceil') {
+        if (functionIdentifier == 'ceiling' || functionIdentifier == 'ceil') {
             const functionType = freshVar('number', 'number');
             const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr();
-            udfExprList?.forEach( expr => {
+            udfExprList?.forEach(expr => {
                 const param1 = walkExpr(context, expr.expr());
                 context.constraints.push({
                     expression: simpleExpr.text,
@@ -1049,16 +1050,16 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
                     coercionType: 'Ceiling'
                 })
             })
-            
+
             return functionType;
         }
-        if(functionIdentifier == 'timestampdiff') {
-           
+        if (functionIdentifier == 'timestampdiff') {
+
             const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr();
-            if(udfExprList) {
+            if (udfExprList) {
                 const [first, ...rest] = udfExprList;
                 const unit = first.text.trim().toLowerCase();
-                rest.forEach( (inExpr, paramIndex) => {
+                rest.forEach((inExpr, paramIndex) => {
                     const expr = inExpr.expr();
                     const exprType = walkExpr(context, expr);
                     const newType = verifyDateTypesCoercion(exprType);
@@ -1153,7 +1154,7 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
             ;
         }
         const boolLiteral = literal.boolLiteral();
-        if(boolLiteral) {
+        if (boolLiteral) {
             return freshVar(boolLiteral.text, 'bit');
         }
         throw Error('SimpleExprLiteralContext');
@@ -1204,7 +1205,7 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
             context.constraints.push({
                 expression: thenExprCtx.text,
                 type1: caseType,
-                type2: thenType.kind == 'TypeOperator'? thenType.types[0] : thenType,
+                type2: thenType.kind == 'TypeOperator' ? thenType.types[0] : thenType,
                 mostGeneralType: true,
             })
             return thenType;
@@ -1218,14 +1219,14 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
             context.constraints.push({
                 expression: simpleExpr.elseExpression()?.text!,
                 type1: caseType,
-                type2: elseType.kind == 'TypeOperator'? elseType.types[0] : elseType,
+                type2: elseType.kind == 'TypeOperator' ? elseType.types[0] : elseType,
                 mostGeneralType: true
             })
             thenTypes.forEach(thenType => {
                 context.constraints.push({
                     expression: simpleExpr.elseExpression()?.text!,
                     type1: thenType,
-                    type2: elseType.kind == 'TypeOperator'? elseType.types[0] : elseType,
+                    type2: elseType.kind == 'TypeOperator' ? elseType.types[0] : elseType,
                     mostGeneralType: true
                 })
 
@@ -1233,10 +1234,10 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
         }
         return caseType;
     }
-    if( simpleExpr instanceof SimpleExprIntervalContext ) {
+    if (simpleExpr instanceof SimpleExprIntervalContext) {
         const exprList = simpleExpr.expr();
         const exprLeft = exprList[0];
-        const exprRight =  exprList[1];
+        const exprRight = exprList[1];
         const typeLeft = walkExpr(context, exprLeft);
         const typeRight = walkExpr(context, exprRight);
         context.constraints.push({
@@ -1244,7 +1245,7 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
             type1: typeLeft,
             type2: freshVar('bigint', 'bigint')
         })
-        if(typeRight.kind == 'TypeVar' && (isDateLiteral(typeRight.name) || isDateTimeLiteral(typeRight.name))) {
+        if (typeRight.kind == 'TypeVar' && (isDateLiteral(typeRight.name) || isDateTimeLiteral(typeRight.name))) {
             typeRight.type = 'datetime';
         }
         context.constraints.push({
@@ -1260,13 +1261,13 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
 
 function verifyDateTypesCoercion(type: Type) {
 
-    if(type.kind == 'TypeVar' && isDateTimeLiteral(type.name)) {
+    if (type.kind == 'TypeVar' && isDateTimeLiteral(type.name)) {
         type.type = 'datetime';
     }
-    if(type.kind == 'TypeVar' && isDateLiteral(type.name)) {
+    if (type.kind == 'TypeVar' && isDateLiteral(type.name)) {
         type.type = 'date';
     }
-    if(type.kind == 'TypeVar' && isTimeLiteral(type.name)) {
+    if (type.kind == 'TypeVar' && isTimeLiteral(type.name)) {
         type.type = 'time';
     }
     return type;
@@ -1282,12 +1283,12 @@ function isDateTimeLiteral(literal: string) {
 }
 
 function isDateLiteral(literal: string) {
-    return moment(literal,"YYYY-MM-DD", true).isValid();
+    return moment(literal, "YYYY-MM-DD", true).isValid();
 }
 
 function getFunctionName(simpleExprFunction: SimpleExprFunctionContext) {
-    return simpleExprFunction.functionCall().pureIdentifier()?.text.toLowerCase() 
-            || simpleExprFunction.functionCall().qualifiedIdentifier()?.text.toLowerCase();
+    return simpleExprFunction.functionCall().pureIdentifier()?.text.toLowerCase()
+        || simpleExprFunction.functionCall().qualifiedIdentifier()?.text.toLowerCase();
 }
 
 type VariableLengthParams = {
@@ -1303,9 +1304,9 @@ type FixedLengthParams = {
 type FunctionParams = VariableLengthParams | FixedLengthParams;
 
 function walkExprListParameters(context: InferenceContext, exprList: ExprContext[], params: FunctionParams) {
-    return exprList.map( (expr, paramIndex) => {
+    return exprList.map((expr, paramIndex) => {
         const exprType = walkExpr(context, expr);
-        const paramType = params.kind == 'FixedLengthParams'? params.paramsType[paramIndex] : freshVar(params.paramType, params.paramType);
+        const paramType = params.kind == 'FixedLengthParams' ? params.paramsType[paramIndex] : freshVar(params.paramType, params.paramType);
         context.constraints.push({
             expression: expr.text,
             type1: exprType,
@@ -1319,31 +1320,31 @@ function walkExprListParameters(context: InferenceContext, exprList: ExprContext
 function walkFunctionParameters(context: InferenceContext, simpleExprFunction: SimpleExprFunctionContext, params: FunctionParams) {
     const functionName = getFunctionName(simpleExprFunction);
     const udfExprList = simpleExprFunction.functionCall().udfExprList()?.udfExpr();
-    if(udfExprList) {
+    if (udfExprList) {
         const paramTypes = udfExprList
-        .filter( (undefined, paramIndex) => {
-            return functionName == 'timestampdiff'? paramIndex != 0 : true; //filter the first parameter of timestampdiff function
-        })
-        .map( (inExpr, paramIndex) => {
-            const expr = inExpr.expr();
-            const exprType = walkExpr(context, expr);
-            context.constraints.push({
-                expression: expr.text,
-                type1: exprType,
-                type2: params.kind == 'FixedLengthParams'? params.paramsType[paramIndex] : freshVar(params.paramType, params.paramType),
-                mostGeneralType: true
+            .filter((undefined, paramIndex) => {
+                return functionName == 'timestampdiff' ? paramIndex != 0 : true; //filter the first parameter of timestampdiff function
             })
-            return exprType;
-        })
+            .map((inExpr, paramIndex) => {
+                const expr = inExpr.expr();
+                const exprType = walkExpr(context, expr);
+                context.constraints.push({
+                    expression: expr.text,
+                    type1: exprType,
+                    type2: params.kind == 'FixedLengthParams' ? params.paramsType[paramIndex] : freshVar(params.paramType, params.paramType),
+                    mostGeneralType: true
+                })
+                return exprType;
+            })
         return paramTypes;
     }
     const exprList = simpleExprFunction.functionCall().exprList()?.expr();
-    if(exprList) {
-        const paramTypes = exprList.map( (inExpr, paramIndex) => {
+    if (exprList) {
+        const paramTypes = exprList.map((inExpr, paramIndex) => {
             const inSumExprType = walkExpr(context, inExpr);
             context.constraints.push({
                 expression: inExpr.text,
-                type1: params.kind == 'FixedLengthParams'? params.paramsType[paramIndex] : freshVar(params.paramType, params.paramType),
+                type1: params.kind == 'FixedLengthParams' ? params.paramsType[paramIndex] : freshVar(params.paramType, params.paramType),
                 type2: inSumExprType,
                 mostGeneralType: true
             })
@@ -1358,28 +1359,28 @@ export function walkSubquery(context: InferenceContext, queryExpressionParens: S
 
     const querySpec = getQuerySpecificationsFromQuery(queryExpressionParens);
     const subqueryColumns = getColumnsFrom(querySpec[0], context.dbSchema);
-    const newContext : InferenceContext = {
+    const newContext: InferenceContext = {
         ...context,
         fromColumns: context.fromColumns.concat(subqueryColumns)
     }
     const typeInferResult = walkQuerySpecification(newContext, querySpec[0]) as TypeOperator;
-    
+
     for (let queryIndex = 1; queryIndex < querySpec.length; queryIndex++) { //union (if have any)
         const unionColumns = getColumnsFrom(querySpec[queryIndex], context.dbSchema);
-        const unionNewContext : InferenceContext = {
+        const unionNewContext: InferenceContext = {
             ...context,
             fromColumns: context.fromColumns.concat(unionColumns)
         }
         const unionResult = walkQuerySpecification(unionNewContext, querySpec[queryIndex]);
 
-        typeInferResult.types.forEach( (field, fieldIndex) => {
+        typeInferResult.types.forEach((field, fieldIndex) => {
             context.constraints.push({
                 expression: querySpec[queryIndex].text,
                 type1: typeInferResult.types[fieldIndex],
                 type2: unionResult.types[fieldIndex],
                 mostGeneralType: true
             })
-        }) 
+        })
     }
     //Should retrun the union result type, not the first query from result
     return typeInferResult;

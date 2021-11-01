@@ -7,14 +7,14 @@ import { isLeft } from "fp-ts/lib/Either";
 describe('Test parse select with functions', () => {
 
     let client: DbClient = new DbClient();
-    before(async () =>   {
+    before(async () => {
         await client.connect('mysql://root:password@localhost/mydb');
     })
 
-    after(async () =>   {
+    after(async () => {
         await client.closeConnection();
     })
-    
+
     //TODO = column sum?
     it('parse a select with SUM function', async () => {
         const sql = `
@@ -35,7 +35,7 @@ describe('Test parse select with functions', () => {
             parameters: []
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -60,7 +60,7 @@ describe('Test parse select with functions', () => {
             parameters: []
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -85,7 +85,7 @@ describe('Test parse select with functions', () => {
             parameters: []
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -109,7 +109,7 @@ describe('Test parse select with functions', () => {
             ],
             parameters: []
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -133,7 +133,7 @@ describe('Test parse select with functions', () => {
             ],
             parameters: []
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -159,7 +159,7 @@ describe('Test parse select with functions', () => {
             parameters: []
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -184,7 +184,7 @@ describe('Test parse select with functions', () => {
             parameters: []
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -209,7 +209,7 @@ describe('Test parse select with functions', () => {
             parameters: []
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -234,7 +234,7 @@ describe('Test parse select with functions', () => {
             parameters: []
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -259,7 +259,7 @@ describe('Test parse select with functions', () => {
             parameters: []
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -285,7 +285,7 @@ describe('Test parse select with functions', () => {
             parameters: []
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -310,7 +310,7 @@ describe('Test parse select with functions', () => {
             parameters: []
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -352,7 +352,7 @@ describe('Test parse select with functions', () => {
             ]
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -386,7 +386,7 @@ describe('Test parse select with functions', () => {
             ]
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -427,7 +427,7 @@ describe('Test parse select with functions', () => {
             ]
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);

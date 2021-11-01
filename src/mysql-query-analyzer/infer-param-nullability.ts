@@ -3,7 +3,7 @@ import { RuleContext } from "antlr4ts";
 import { ParseTree } from "antlr4ts/tree";
 import { getQuerySpecificationsFromSelectStatement } from "./parse";
 
-export function inferParamNullabilityQuery(queryContext: QueryContext) : boolean[] {
+export function inferParamNullabilityQuery(queryContext: QueryContext): boolean[] {
 
     const selectStatement = queryContext.simpleStatement()?.selectStatement();
     if (selectStatement) {
@@ -14,7 +14,7 @@ export function inferParamNullabilityQuery(queryContext: QueryContext) : boolean
     throw Error('invalid tree');
 }
 
-export function inferParamNullability(exprContext: ExprContext) : boolean[] {
+export function inferParamNullability(exprContext: ExprContext): boolean[] {
     const parameters = getAllParameters(exprContext);
     return parameters.map(param => inferParameterNotNull(param));
 }
@@ -23,7 +23,7 @@ export function inferParameterNotNull(param: SimpleExprParamMarkerContext): bool
     return inferParameterNotNullRule(param);
 }
 
-function inferParameterNotNullRule(rule: RuleContext) : boolean {
+function inferParameterNotNullRule(rule: RuleContext): boolean {
     const isNullContext = <PrimaryExprIsNullContext>getParentContext(rule, PrimaryExprIsNullContext);
     if (isNullContext) {
         if (isNullContext.notRule()) {

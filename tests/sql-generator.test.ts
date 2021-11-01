@@ -29,8 +29,8 @@ describe('code-generator', () => {
     it('test scaffolding select stmt', () => {
 
         const actual = generateSelectStatment('mytable1', columns);
-        const expected = 
-`SELECT
+        const expected =
+            `SELECT
     id,
     value
 FROM mytable1`
@@ -42,15 +42,15 @@ FROM mytable1`
     it('test scaffolding insert stmt', () => {
 
         const actual = generateInsertStatment('mytable1', columns);
-        const expected = 
-`INSERT INTO mytable1
+        const expected =
+            `INSERT INTO mytable1
 (
     value
 )
 VALUES
 (
     :value
-)`        
+)`
         assert.deepStrictEqual(actual, expected);
 
     })
@@ -58,12 +58,12 @@ VALUES
     it('test scaffolding update stmt', () => {
 
         const actual = generateUpdateStatment('mytable1', columns);
-        const expected = 
-`UPDATE mytable1
+        const expected =
+            `UPDATE mytable1
 SET
     value = :value
 WHERE
-    id = :id`      
+    id = :id`
 
         assert.deepStrictEqual(actual, expected);
 
@@ -72,8 +72,8 @@ WHERE
     it('test scaffolding delete stmt', () => {
 
         const actual = generateDeleteStatment('mytable1', columns);
-        const expected = 
-`DELETE FROM mytable1
+        const expected =
+            `DELETE FROM mytable1
 WHERE id = :id`
 
         assert.deepStrictEqual(actual, expected);
@@ -83,8 +83,8 @@ WHERE id = :id`
     it('test tablename with whitespace', () => {
 
         const actual = generateSelectStatment("my table", columns);
-        const expected = 
-`SELECT
+        const expected =
+            `SELECT
     id,
     value
 FROM \`my table\``
@@ -96,15 +96,15 @@ FROM \`my table\``
     it('test scaffolding insert stmt with space in table name', () => {
 
         const actual = generateInsertStatment('my table', columns);
-        const expected = 
-`INSERT INTO \`my table\`
+        const expected =
+            `INSERT INTO \`my table\`
 (
     value
 )
 VALUES
 (
     :value
-)`        
+)`
         assert.deepStrictEqual(actual, expected);
 
     })
@@ -112,12 +112,12 @@ VALUES
     it('test scaffolding update stmt with space in table name', () => {
 
         const actual = generateUpdateStatment('my table', columns);
-        const expected = 
-`UPDATE \`my table\`
+        const expected =
+            `UPDATE \`my table\`
 SET
     value = :value
 WHERE
-    id = :id`      
+    id = :id`
 
         assert.deepStrictEqual(actual, expected);
 
@@ -126,12 +126,12 @@ WHERE
     it('test scaffolding delete stmt with space in table name', () => {
 
         const actual = generateDeleteStatment('my table', columns);
-        const expected = 
-`DELETE FROM \`my table\`
+        const expected =
+            `DELETE FROM \`my table\`
 WHERE id = :id`
 
         assert.deepStrictEqual(actual, expected);
 
     })
-    
+
 });

@@ -20,14 +20,14 @@ describe('Test simple select statements', () => {
 
         const actual = await parseSql(client, sql);
         const expected = 'Invalid sql';
-       
-        if(isLeft(actual)) {
+
+        if (isLeft(actual)) {
             assert.deepStrictEqual(actual.left.name, expected);
         }
         else {
             assert.fail('should return an InvalidSqlError');
         }
-        
+
     })
 
     it('parse a basic select', async () => {
@@ -48,8 +48,8 @@ describe('Test simple select statements', () => {
             parameters: []
 
         }
-        
-        if(isLeft(actual)) {
+
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -73,11 +73,11 @@ describe('Test simple select statements', () => {
 
         }
 
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
-        
+
     })
 
     it('parse select * from mytable', async () => {
@@ -103,7 +103,7 @@ describe('Test simple select statements', () => {
             parameters: []
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -132,7 +132,7 @@ describe('Test simple select statements', () => {
             parameters: []
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -161,7 +161,7 @@ describe('Test simple select statements', () => {
             parameters: []
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -198,7 +198,7 @@ describe('Test simple select statements', () => {
 
         }
 
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -228,7 +228,7 @@ describe('Test simple select statements', () => {
 
         }
 
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -258,7 +258,7 @@ describe('Test simple select statements', () => {
 
         }
 
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -283,7 +283,7 @@ describe('Test simple select statements', () => {
 
         }
 
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -317,7 +317,7 @@ describe('Test simple select statements', () => {
                 }
             ]
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -346,7 +346,7 @@ describe('Test simple select statements', () => {
                 }
             ]
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -380,7 +380,7 @@ describe('Test simple select statements', () => {
                 }
             ]
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -409,7 +409,7 @@ describe('Test simple select statements', () => {
                 }
             ]
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -439,7 +439,7 @@ describe('Test simple select statements', () => {
                 }
             ]
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -497,7 +497,7 @@ describe('Test simple select statements', () => {
                 }
             ]
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -522,7 +522,7 @@ describe('Test simple select statements', () => {
             ],
             parameters: []
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -558,7 +558,7 @@ describe('Test simple select statements', () => {
                 }
             ]
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -588,7 +588,7 @@ describe('Test simple select statements', () => {
             ],
             parameters: []
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -618,7 +618,7 @@ describe('Test simple select statements', () => {
             ],
             parameters: []
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -648,7 +648,7 @@ describe('Test simple select statements', () => {
             ],
             parameters: []
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -684,7 +684,7 @@ describe('Test simple select statements', () => {
                 }
             ]
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -715,7 +715,7 @@ describe('Test simple select statements', () => {
                 }
             ]
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -746,7 +746,7 @@ describe('Test simple select statements', () => {
                 }
             ]
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -777,7 +777,7 @@ describe('Test simple select statements', () => {
                 }
             ]
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -813,7 +813,7 @@ describe('Test simple select statements', () => {
                 }
             ]
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -845,7 +845,7 @@ describe('Test simple select statements', () => {
             ],
             parameters: []
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -889,7 +889,7 @@ describe('Test simple select statements', () => {
                 }
             ]
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -913,7 +913,7 @@ describe('Test simple select statements', () => {
             ],
             parameters: []
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -937,7 +937,7 @@ describe('Test simple select statements', () => {
             ],
             parameters: []
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -968,7 +968,7 @@ describe('Test simple select statements', () => {
                 }
             ]
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -999,7 +999,7 @@ describe('Test simple select statements', () => {
                 }
             ]
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -1032,7 +1032,7 @@ describe('Test simple select statements', () => {
 
         }
 
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -1065,7 +1065,7 @@ describe('Test simple select statements', () => {
 
         }
 
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -1105,7 +1105,7 @@ describe('Test simple select statements', () => {
 
         }
 
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -1138,7 +1138,7 @@ describe('Test simple select statements', () => {
 
         }
 
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -1176,7 +1176,7 @@ describe('Test simple select statements', () => {
 
         }
 
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -1204,7 +1204,7 @@ describe('Test simple select statements', () => {
 
         }
 
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -1240,7 +1240,7 @@ describe('Test simple select statements', () => {
 
         }
 
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -1264,10 +1264,10 @@ describe('Test simple select statements', () => {
             ],
             orderByColumns: ['id', 'value'],
             parameters: []
-        
+
         }
 
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -1292,10 +1292,10 @@ describe('Test simple select statements', () => {
             //shouldn't include order by columns because there is no parameters on the order by clause
             //orderByColumns: ['id', 'value'], 
             parameters: []
-        
+
         }
 
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -1325,10 +1325,10 @@ describe('Test simple select statements', () => {
             ],
             orderByColumns: ['id', 'value', 'ordering'],
             parameters: []
-        
+
         }
 
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -1354,10 +1354,10 @@ describe('Test simple select statements', () => {
             ],
             orderByColumns: ['id', 'value', 'ordering'],
             parameters: []
-        
+
         }
 
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -1383,10 +1383,10 @@ describe('Test simple select statements', () => {
             ],
             orderByColumns: ['id', 'value', 'case when value = 1 then 1 else 2 end'],
             parameters: []
-        
+
         }
 
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -1394,7 +1394,7 @@ describe('Test simple select statements', () => {
 
     it('SELECT id FROM mytable1 LIMIT ?, ?', async () => {
         const sql = 'SELECT id FROM mytable1 LIMIT ?, ?'
-        
+
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,
@@ -1421,7 +1421,7 @@ describe('Test simple select statements', () => {
             ]
         }
 
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -1429,10 +1429,10 @@ describe('Test simple select statements', () => {
 
     it('SELECT id FROM mytable1 LIMIT ?, ?', async () => {
         const sql = `SELECT id FROM mytable1 LIMIT 'a', ?`
-        
+
         const actual = await parseSql(client, sql);
 
-        if(isRight(actual)) {
+        if (isRight(actual)) {
             assert.fail(`Should return an error`);
         }
         const expectedMessage = `Invalid sql`;
@@ -1444,14 +1444,14 @@ describe('Test simple select statements', () => {
 
         const actual = await parseSql(client, sql);
         const expected = 'Type mismatch: varchar and date';
-       
-        if(isLeft(actual)) {
+
+        if (isLeft(actual)) {
             assert.deepStrictEqual(actual.left.description, expected);
         }
         else {
             assert.fail('should return an InvalidSqlError');
         }
-        
+
     })
 
 

@@ -19,7 +19,7 @@ describe('query-executor tests', () => {
         `
         const actual = await client.explainSql(sql);
 
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, true);

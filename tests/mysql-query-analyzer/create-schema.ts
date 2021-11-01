@@ -1,6 +1,6 @@
 import { ColumnSchema } from "../../src/mysql-query-analyzer/types";
 
-export const dbSchema : ColumnSchema[] = [
+export const dbSchema: ColumnSchema[] = [
     {
         column: 'id',
         column_type: 'int',
