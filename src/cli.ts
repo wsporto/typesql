@@ -20,7 +20,7 @@ function parseArgs() {
             default: 'typesql.json'
         })
         .command('init', 'generate config file', () => {
-            const config : TypeSqlConfig = {
+            const config: TypeSqlConfig = {
                 "databaseUri": "mysql://root:password@localhost/mydb",
                 "sqlDir": "./sqls",
                 "target": "node"
@@ -57,13 +57,13 @@ function parseArgs() {
                     type: 'string',
                     demandOption: true,
                 })
-            .strict()
+                .strict()
         }, args => {
             const config = loadConfig(args.config);
             const genOption = args.option as SqlGenOption
             writeSql(genOption, args.table, args["sql-name"], config);
         })
-        
+
         .demand(1, 'Please specify one of the commands!')
         .wrap(null)
         .strict()
@@ -72,19 +72,19 @@ function parseArgs() {
 
 
 
-function loadConfig(configPath: string) : TypeSqlConfig {
+function loadConfig(configPath: string): TypeSqlConfig {
     let rawdata = fs.readFileSync(configPath, 'utf-8');
     let config = JSON.parse(rawdata);
     return config;
 }
 
 function validateDirectories(dir: string) {
-    if(!fs.statSync(dir).isDirectory()) {
+    if (!fs.statSync(dir).isDirectory()) {
         console.log(`The argument is not a directory: ${dir}`);
     }
 }
 
-function watchDirectories(client:DbClient, dirPath: string, target: 'node' | 'deno') {
+function watchDirectories(client: DbClient, dirPath: string, target: 'node' | 'deno') {
     const dirGlob = `${dirPath}/**/*.sql`;
 
     chokidar.watch(dirGlob)
@@ -102,21 +102,21 @@ async function compile(watch: boolean, config: TypeSqlConfig) {
     validateDirectories(sqlDir);
 
     const sqlFiles = fs.readdirSync(sqlDir)
-        .filter( file => path.extname(file) == '.sql')
-        .map( sqlFileName => path.resolve(sqlDir, sqlFileName));
-    
+        .filter(file => path.extname(file) == '.sql')
+        .map(sqlFileName => path.resolve(sqlDir, sqlFileName));
+
     const client = new DbClient();
     const result = await client.connect(databaseUri);
-    if(isLeft(result)) {
+    if (isLeft(result)) {
         console.error(`Error: ${result.left.description}.`);
         return;
     }
 
-    const filesGeneration = sqlFiles.map( sqlFile => generateTsFile(client, sqlFile, target));
+    const filesGeneration = sqlFiles.map(sqlFile => generateTsFile(client, sqlFile, target));
     await Promise.all(filesGeneration);
 
 
-    if(watch) {
+    if (watch) {
         console.log("watching mode!");
         watchDirectories(client, sqlDir, target);
     }
@@ -125,33 +125,33 @@ async function compile(watch: boolean, config: TypeSqlConfig) {
     }
 }
 
-async function writeSql(stmtType: SqlGenOption, tableName: string, queryName: string, config: TypeSqlConfig) : Promise<boolean> {
+async function writeSql(stmtType: SqlGenOption, tableName: string, queryName: string, config: TypeSqlConfig): Promise<boolean> {
     const { sqlDir, databaseUri } = config;
     const client = new DbClient();
     const connectionResult = await client.connect(databaseUri);
-    if(isLeft(connectionResult)) {
+    if (isLeft(connectionResult)) {
         console.error(connectionResult.left.name);
         return false;
     }
-    
+
 
     const columnsOption = await client.loadTableSchema(tableName);
-    if(isLeft(columnsOption)) {
+    if (isLeft(columnsOption)) {
         console.error(columnsOption.left.description);
         return false;
     }
 
     const columns = columnsOption.right;
 
-    if(columns.length == 0) {
+    if (columns.length == 0) {
         console.error(`Got no columns for table '${tableName}'. Did you type the table name correclty?`);
         client.closeConnection();
         return false;
     }
 
     client.closeConnection();
-    
-    
+
+
     let generatedSql = generateSql(stmtType, tableName, columns);
     const filePath = sqlDir + '/' + queryName;
     writeFile(filePath, generatedSql);
@@ -160,15 +160,15 @@ async function writeSql(stmtType: SqlGenOption, tableName: string, queryName: st
 }
 
 function generateSql(stmtType: SqlGenOption, tableName: string, columns: ColumnSchema2[]) {
-    switch(stmtType) {
-        case 'select' :
+    switch (stmtType) {
+        case 'select':
         case 's':
             return generateSelectStatment(tableName, columns);
-        case 'insert': 
+        case 'insert':
         case 'i':
             return generateInsertStatment(tableName, columns);
         case 'update':
-            case 'u':
+        case 'u':
             return generateUpdateStatment(tableName, columns);
         case 'delete':
         case 'd':
@@ -179,4 +179,4 @@ function generateSql(stmtType: SqlGenOption, tableName: string, columns: ColumnS
     }
 }
 
-main().then( () => console.log("finished!"));
+main().then(() => console.log("finished!"));
