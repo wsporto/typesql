@@ -15,7 +15,7 @@ describe('type-mapping', () => {
         await client.closeConnection();
     })
 
-    it.only('select table with all types', async () => {
+    it('select table with all types', async () => {
 
         const sql = 'select * from all_types';
         const actual = await parseSql(client, sql);
@@ -109,6 +109,26 @@ describe('type-mapping', () => {
             {
                 name: 'set_column',
                 dbtype: 'set',
+                notNull: false
+            },
+            {
+                dbtype: 'tinyblob',
+                name: 'tinyblob_column',
+                notNull: false
+            },
+            {
+                dbtype: 'mediumblob',
+                name: 'mediumblob_column',
+                notNull: false
+            },
+            {
+                dbtype: 'longblob',
+                name: 'longblob_column',
+                notNull: false
+            },
+            {
+                dbtype: 'blob',
+                name: 'blob_column',
                 notNull: false
             },
             {

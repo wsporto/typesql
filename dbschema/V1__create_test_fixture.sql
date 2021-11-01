@@ -37,6 +37,10 @@ CREATE TABLE mydb.all_types (
 	json_column json, -- code: 245
 	enum_column ENUM('x-small', 'small', 'medium', 'large', 'x-large'), -- code: 254 WRONG? flags: 256
 	set_column SET('a', 'b', 'c'), -- code: 254 WRONG? flags: 2048
+	tinyblob_column TINYBLOB, -- code 249
+	mediumblob_column MEDIUMBLOB, -- code 250
+	longblob_column LONGBLOB, -- code 251
+	blob_column BLOB, -- code 252
 	tinytext_column TINYTEXT, -- code: 252 length: 765
 	mediumtext_column MEDIUMTEXT, -- code: 252 length: 50331645
 	longtext_column LONGTEXT, -- code: 252 length: 4294967295

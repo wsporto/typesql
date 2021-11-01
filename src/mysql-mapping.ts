@@ -33,6 +33,10 @@ export type MySqlType =
     | 'json'
     | 'enum'
     | 'set'
+    | 'tinyblob'
+    | 'mediumblob'
+    | 'longblob'
+    | 'blob'
     | 'tinytext'
     | 'mediumtext'
     | 'longtext'
@@ -112,6 +116,11 @@ export function converToTsType(mySqlType: MySqlType): TsType {
         case 'enum':
         case 'set':
             return 'any'
+        case 'tinyblob':
+        case 'mediumblob':
+        case 'longblob':
+        case 'blob':
+            return 'Buffer'
         default:
             const exaustive: never = mySqlType;
             return exaustive;
