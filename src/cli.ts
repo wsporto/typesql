@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import fs from "fs";
-import path from "path";
+import path, { parse } from "path";
 import chokidar from "chokidar";
 import yargs from "yargs";
 import { generateTsFile, writeFile } from "./code-generator";
@@ -9,6 +9,7 @@ import { generateInsertStatment, generateUpdateStatment, generateDeleteStatment,
 import { ColumnSchema2 } from "./mysql-query-analyzer/types";
 import { TypeSqlConfig, SqlGenOption } from "./types";
 import { isLeft } from "fp-ts/lib/Either";
+import CodeBlockWriter from "code-block-writer";
 
 function parseArgs() {
     return yargs
@@ -88,8 +89,14 @@ function watchDirectories(client: DbClient, dirPath: string, target: 'node' | 'd
     const dirGlob = `${dirPath}/**/*.sql`;
 
     chokidar.watch(dirGlob)
-        .on('add', path => generateTsFile(client, path, target))
-        .on('change', path => generateTsFile(client, path, target));
+        .on('add', path => rewiteFiles(client, path, target))
+        .on('change', path => rewiteFiles(client, path, target));
+}
+
+async function rewiteFiles(client: DbClient, path: string, target: 'node' | 'deno') {
+    await generateTsFile(client, path, target);
+    const dirPath = parse(path).dir;
+    await writeIndexFile(dirPath);
 }
 
 async function main() {
@@ -115,6 +122,7 @@ async function compile(watch: boolean, config: TypeSqlConfig) {
     const filesGeneration = sqlFiles.map(sqlFile => generateTsFile(client, sqlFile, target));
     await Promise.all(filesGeneration);
 
+    writeIndexFile(sqlDir);
 
     if (watch) {
         console.log("watching mode!");
@@ -123,6 +131,25 @@ async function compile(watch: boolean, config: TypeSqlConfig) {
     else {
         client.closeConnection();
     }
+}
+
+async function writeIndexFile(sqlDir: string) {
+    const tsFiles = fs.readdirSync(sqlDir)
+        .filter(file => path.basename(file) != "index.ts" && path.extname(file) == '.ts');
+
+    const indexContent = generateIndexContent(tsFiles);
+    const indexFilePath = sqlDir + "/index.ts";
+    writeFile(indexFilePath, indexContent);
+}
+
+//Move to code-generator
+function generateIndexContent(tsFiles: string[]) {
+    const writer = new CodeBlockWriter();
+    tsFiles.forEach(filePath => {
+        const fileName = path.basename(filePath, ".ts"); //remove the ts extension
+        writer.writeLine(`export * from "./${fileName}";`)
+    })
+    return writer.toString();
 }
 
 async function writeSql(stmtType: SqlGenOption, tableName: string, queryName: string, config: TypeSqlConfig): Promise<boolean> {
