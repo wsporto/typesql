@@ -7,11 +7,11 @@ import { isLeft } from "fp-ts/lib/Either";
 describe('Test parse complex queries', () => {
 
     let client: DbClient = new DbClient();
-    before(async () =>   {
+    before(async () => {
         await client.connect('mysql://root:password@localhost/mydb');
     })
 
-    after(async () =>   {
+    after(async () => {
         await client.closeConnection();
     })
 
@@ -55,7 +55,7 @@ describe('Test parse complex queries', () => {
             parameters: []
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -86,7 +86,7 @@ describe('Test parse complex queries', () => {
             parameters: []
         }
 
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -119,7 +119,7 @@ describe('Test parse complex queries', () => {
             parameters: []
         }
 
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -153,7 +153,7 @@ describe('Test parse complex queries', () => {
             parameters: []
         }
 
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -179,7 +179,7 @@ describe('Test parse complex queries', () => {
             parameters: []
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -209,7 +209,7 @@ describe('Test parse complex queries', () => {
             }]
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);

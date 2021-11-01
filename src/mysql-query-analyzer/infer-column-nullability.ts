@@ -1,9 +1,11 @@
 import { parse, getQuerySpecificationsFromSelectStatement } from "./parse";
-import { QuerySpecificationContext, SelectItemContext, ExprContext, ExprIsContext, BoolPriContext, PrimaryExprPredicateContext, 
-    PredicateContext, BitExprContext, SimpleExprContext, FunctionCallContext, SimpleExprFunctionContext, SimpleExprColumnRefContext, 
-    WhereClauseContext, SimpleExprListContext, PrimaryExprIsNullContext, PrimaryExprCompareContext, ExprNotContext, ExprAndContext, 
-    ExprXorContext, ExprOrContext, SimpleExprParamMarkerContext, SimpleExprLiteralContext, SimpleExprCaseContext, SimpleExprSumContext, 
-    SimpleExprSubQueryContext, SimpleExprRuntimeFunctionContext,SimpleExprIntervalContext} from "ts-mysql-parser";
+import {
+    QuerySpecificationContext, SelectItemContext, ExprContext, ExprIsContext, BoolPriContext, PrimaryExprPredicateContext,
+    PredicateContext, BitExprContext, SimpleExprContext, FunctionCallContext, SimpleExprFunctionContext, SimpleExprColumnRefContext,
+    WhereClauseContext, SimpleExprListContext, PrimaryExprIsNullContext, PrimaryExprCompareContext, ExprNotContext, ExprAndContext,
+    ExprXorContext, ExprOrContext, SimpleExprParamMarkerContext, SimpleExprLiteralContext, SimpleExprCaseContext, SimpleExprSumContext,
+    SimpleExprSubQueryContext, SimpleExprRuntimeFunctionContext, SimpleExprIntervalContext
+} from "ts-mysql-parser";
 import { ColumnSchema, ColumnDef, FieldName } from "./types";
 import { getColumnsFrom, findColumn, splitName, selectAllColumns } from "./select-columns";
 import { getParentContext, inferParameterNotNull } from "./infer-param-nullability";
@@ -11,43 +13,43 @@ import { getParentContext, inferParameterNotNull } from "./infer-param-nullabili
 export function parseAndInferNotNull(sql: string, dbSchema: ColumnSchema[]) {
     const queryTree = parse(sql);
     const selectStatement = queryTree.simpleStatement()?.selectStatement();
-    if(selectStatement) {
+    if (selectStatement) {
         const queries = getQuerySpecificationsFromSelectStatement(selectStatement);
-        const notNullAllQueries = queries.map( query => inferNotNull(query, dbSchema)); //TODO - UNION
-        const result = zip(notNullAllQueries).map( notNullColumn => notNullColumn.every(notNull => notNull == true));
+        const notNullAllQueries = queries.map(query => inferNotNull(query, dbSchema)); //TODO - UNION
+        const result = zip(notNullAllQueries).map(notNullColumn => notNullColumn.every(notNull => notNull == true));
         return result;
 
     }
 }
 
 function zip(arrays: boolean[][]): boolean[][] {
-    return arrays[0].map(function(_,i){
-        return arrays.map(function(array){return array[i]})
+    return arrays[0].map(function (_, i) {
+        return arrays.map(function (array) { return array[i] })
     });
 }
 
 export function inferNotNull(querySpec: QuerySpecificationContext, dbSchema: ColumnSchema[]) {
     const fromColumns = getColumnsFrom(querySpec, dbSchema); //TODO - called twice
 
-    const notNullInference : boolean[] = [];
+    const notNullInference: boolean[] = [];
     const whereClause = querySpec.whereClause();
 
-    if(querySpec.selectItemList().MULT_OPERATOR()) {
-        fromColumns.forEach( col => {
+    if (querySpec.selectItemList().MULT_OPERATOR()) {
+        fromColumns.forEach(col => {
             const field = splitName(col.columnName);
             const notNull = col.notNull || (whereClause && !possibleNullWhere(field, whereClause)) || false;
             notNullInference.push(notNull); //TODO infernot null in where?
         })
     }
 
-    querySpec.selectItemList().selectItem().forEach( selectItem => {
+    querySpec.selectItemList().selectItem().forEach(selectItem => {
         notNullInference.push(...inferNotNullSelectItem(selectItem, dbSchema, fromColumns, whereClause));
     })
     return notNullInference;
 }
 
-function inferNotNullSelectItem(selectItem: SelectItemContext, dbSchema: ColumnSchema[], fromColumns: ColumnDef[], whereClause: WhereClauseContext | undefined) : boolean[] {
-    const notNullItems : boolean[] = [];
+function inferNotNullSelectItem(selectItem: SelectItemContext, dbSchema: ColumnSchema[], fromColumns: ColumnDef[], whereClause: WhereClauseContext | undefined): boolean[] {
+    const notNullItems: boolean[] = [];
     const tableWild = selectItem.tableWild();
     if (tableWild?.MULT_OPERATOR()) { //TODO: DUPLICATED CODE FROM WALKER
         tableWild.identifier().forEach(tabWild => {
@@ -63,7 +65,7 @@ function inferNotNullSelectItem(selectItem: SelectItemContext, dbSchema: ColumnS
 
     }
     const expr = selectItem.expr();
-    if(expr) {
+    if (expr) {
         const notNull = inferNotNullExpr(expr, dbSchema, fromColumns);
         return [notNull];
     }
@@ -71,23 +73,23 @@ function inferNotNullSelectItem(selectItem: SelectItemContext, dbSchema: ColumnS
 }
 
 function inferNotNullExpr(expr: ExprContext, dbSchema: ColumnSchema[], fromColumns: ColumnDef[]): boolean {
-    if(expr instanceof ExprIsContext) {
+    if (expr instanceof ExprIsContext) {
         return inferNotNullExprIs(expr, dbSchema, fromColumns);
     }
     throw Error('Error during column null inference');
 }
 
-function inferNotNullExprIs(exprIs: ExprIsContext, dbSchema: ColumnSchema[], fromColumns: ColumnDef[]) : boolean {
+function inferNotNullExprIs(exprIs: ExprIsContext, dbSchema: ColumnSchema[], fromColumns: ColumnDef[]): boolean {
     const boolPri = exprIs.boolPri();
     return inferNotNullBoolPri(boolPri, dbSchema, fromColumns)
 }
 
-function inferNotNullBoolPri(boolPri: BoolPriContext, dbSchema: ColumnSchema[], fromColumns: ColumnDef[]) : boolean {
-    if(boolPri instanceof PrimaryExprPredicateContext) {
+function inferNotNullBoolPri(boolPri: BoolPriContext, dbSchema: ColumnSchema[], fromColumns: ColumnDef[]): boolean {
+    if (boolPri instanceof PrimaryExprPredicateContext) {
         const predicate = boolPri.predicate();
         return inferNotNullPredicate(predicate, dbSchema, fromColumns);
     }
-    if(boolPri instanceof PrimaryExprCompareContext) {
+    if (boolPri instanceof PrimaryExprCompareContext) {
         const compareLeft = boolPri.boolPri();
         const compareRight = boolPri.predicate();
         const notNullLeft = inferNotNullBoolPri(compareLeft, dbSchema, fromColumns);
@@ -97,46 +99,46 @@ function inferNotNullBoolPri(boolPri: BoolPriContext, dbSchema: ColumnSchema[], 
     throw Error('Error during column null inference');
 }
 
-function inferNotNullPredicate(predicate: PredicateContext, dbSchema: ColumnSchema[], fromColumns: ColumnDef[]) : boolean {
+function inferNotNullPredicate(predicate: PredicateContext, dbSchema: ColumnSchema[], fromColumns: ColumnDef[]): boolean {
     const bitExpr = predicate.bitExpr();
-    if(bitExpr.length == 1) {
+    if (bitExpr.length == 1) {
         return inferNotNullBitExpr(bitExpr[0], dbSchema, fromColumns);
     }
     throw Error('Error during column null inference');
 }
 
-function inferNotNullBitExpr(bitExpr: BitExprContext, dbSchema: ColumnSchema[], fromColumns: ColumnDef[]) : boolean {
+function inferNotNullBitExpr(bitExpr: BitExprContext, dbSchema: ColumnSchema[], fromColumns: ColumnDef[]): boolean {
     const simpleExpr = bitExpr.simpleExpr();
-    if(simpleExpr) {
+    if (simpleExpr) {
         return inferNotNullSimpleExpr(simpleExpr, dbSchema, fromColumns);
     }
     const bitExpr2 = bitExpr.bitExpr();
-    if(bitExpr2.length == 2) {
+    if (bitExpr2.length == 2) {
         return inferNotNullBitExpr(bitExpr2[0], dbSchema, fromColumns) && inferNotNullBitExpr(bitExpr2[1], dbSchema, fromColumns);
     }
     throw Error('Error during column null inference');
 }
 
-function inferNotNullSimpleExpr(simpleExpr: SimpleExprContext, dbSchema: ColumnSchema[], fromColumns: ColumnDef[]) : boolean {
+function inferNotNullSimpleExpr(simpleExpr: SimpleExprContext, dbSchema: ColumnSchema[], fromColumns: ColumnDef[]): boolean {
 
     const querySpec = <QuerySpecificationContext>getParentContext(simpleExpr, QuerySpecificationContext);
     const whereClause = querySpec.whereClause();
 
-    if(simpleExpr instanceof SimpleExprColumnRefContext) {
+    if (simpleExpr instanceof SimpleExprColumnRefContext) {
         const columnName = simpleExpr.columnRef().fieldIdentifier().text;
         const fieldName = splitName(columnName);
         const column = findColumn(fieldName, fromColumns);
         return column.notNull || (whereClause && !possibleNullWhere(fieldName, whereClause) || false);
     }
-    if(simpleExpr instanceof SimpleExprRuntimeFunctionContext) {
+    if (simpleExpr instanceof SimpleExprRuntimeFunctionContext) {
         return inferNotNullRuntimeFunctionCall(simpleExpr, dbSchema, fromColumns);
     }
-    if(simpleExpr instanceof SimpleExprFunctionContext) {
+    if (simpleExpr instanceof SimpleExprFunctionContext) {
         const functionCall = simpleExpr.functionCall();
         return inferNotNullFunctionCall(functionCall, dbSchema, fromColumns);
     }
 
-    if(simpleExpr instanceof SimpleExprLiteralContext) {
+    if (simpleExpr instanceof SimpleExprLiteralContext) {
         const nullLiteral = simpleExpr.literal().nullLiteral();
         if (nullLiteral) {
             return false;
@@ -144,36 +146,36 @@ function inferNotNullSimpleExpr(simpleExpr: SimpleExprContext, dbSchema: ColumnS
         return true;
     }
 
-    if(simpleExpr instanceof SimpleExprParamMarkerContext) {
+    if (simpleExpr instanceof SimpleExprParamMarkerContext) {
         const inferParam = inferParameterNotNull(simpleExpr);
         return inferParam;
     }
 
-    if(simpleExpr instanceof SimpleExprSumContext) {
+    if (simpleExpr instanceof SimpleExprSumContext) {
         const sumExpr = simpleExpr.sumExpr();
-        if(sumExpr.COUNT_SYMBOL()) {
+        if (sumExpr.COUNT_SYMBOL()) {
             return true;
         }
         const inSumExpr = sumExpr.inSumExpr();
-        if(inSumExpr) {
+        if (inSumExpr) {
             return false;
         }
     }
 
-    if( simpleExpr instanceof SimpleExprListContext) {
+    if (simpleExpr instanceof SimpleExprListContext) {
         const exprList = simpleExpr.exprList().expr();
-        return exprList.every( expr => inferNotNullExpr(expr, dbSchema, fromColumns));
+        return exprList.every(expr => inferNotNullExpr(expr, dbSchema, fromColumns));
     }
 
-    if(simpleExpr instanceof SimpleExprSubQueryContext) {
+    if (simpleExpr instanceof SimpleExprSubQueryContext) {
         return false;
     }
 
-    if(simpleExpr instanceof SimpleExprCaseContext) {
+    if (simpleExpr instanceof SimpleExprCaseContext) {
         const thenExprList = simpleExpr.thenExpression();
         const elseExpr = simpleExpr.elseExpression();
-        if(elseExpr) {
-            let caseNotNull = thenExprList.every( thenExpr => inferNotNullExpr(thenExpr.expr(), dbSchema, fromColumns ));
+        if (elseExpr) {
+            let caseNotNull = thenExprList.every(thenExpr => inferNotNullExpr(thenExpr.expr(), dbSchema, fromColumns));
             return caseNotNull && inferNotNullExpr(elseExpr.expr(), dbSchema, fromColumns);
         }
         else {
@@ -182,7 +184,7 @@ function inferNotNullSimpleExpr(simpleExpr: SimpleExprContext, dbSchema: ColumnS
     }
     if (simpleExpr instanceof SimpleExprIntervalContext) {
         const exprList = simpleExpr.expr();
-        return exprList.every( expr => inferNotNullExpr(expr, dbSchema, fromColumns ));
+        return exprList.every(expr => inferNotNullExpr(expr, dbSchema, fromColumns));
 
     }
     throw Error('Error during column null inference');
@@ -190,69 +192,69 @@ function inferNotNullSimpleExpr(simpleExpr: SimpleExprContext, dbSchema: ColumnS
 
 function inferNotNullRuntimeFunctionCall(simpleExprRuntimeFunction: SimpleExprRuntimeFunctionContext, dbSchema: ColumnSchema[], fromColumns: ColumnDef[]) {
     const functionCall = simpleExprRuntimeFunction.runtimeFunctionCall();
-    if(functionCall.NOW_SYMBOL() || functionCall.CURDATE_SYMBOL() || functionCall.CURTIME_SYMBOL()) {
+    if (functionCall.NOW_SYMBOL() || functionCall.CURDATE_SYMBOL() || functionCall.CURTIME_SYMBOL()) {
         return true;
     }
-    if(functionCall.MOD_SYMBOL()) {
+    if (functionCall.MOD_SYMBOL()) {
         return false; //MOD(N,0) returns NULL.
     }
-    if(functionCall.REPLACE_SYMBOL()) {
+    if (functionCall.REPLACE_SYMBOL()) {
         const exprList = functionCall.expr();
-        return exprList.every( expr => inferNotNullExpr(expr, dbSchema, fromColumns));
+        return exprList.every(expr => inferNotNullExpr(expr, dbSchema, fromColumns));
     }
     const trimFunction = functionCall.trimFunction();
-    if(trimFunction) {
+    if (trimFunction) {
         const exprList = trimFunction.expr();
-        return exprList.every( expr => inferNotNullExpr(expr, dbSchema, fromColumns));
+        return exprList.every(expr => inferNotNullExpr(expr, dbSchema, fromColumns));
     }
     const substringFunction = functionCall.substringFunction();
-    if(substringFunction) {
+    if (substringFunction) {
         const exprList = substringFunction.expr();
-        return exprList.every( expr => inferNotNullExpr(expr, dbSchema, fromColumns));
+        return exprList.every(expr => inferNotNullExpr(expr, dbSchema, fromColumns));
     }
-    if(functionCall.YEAR_SYMBOL() || functionCall.MONTH_SYMBOL() || functionCall.DAY_SYMBOL() 
-    || functionCall.HOUR_SYMBOL() || functionCall.MINUTE_SYMBOL() || functionCall.SECOND_SYMBOL()) {
+    if (functionCall.YEAR_SYMBOL() || functionCall.MONTH_SYMBOL() || functionCall.DAY_SYMBOL()
+        || functionCall.HOUR_SYMBOL() || functionCall.MINUTE_SYMBOL() || functionCall.SECOND_SYMBOL()) {
         const expr = functionCall.exprWithParentheses()?.expr()!;
         return inferNotNullExpr(expr, dbSchema, fromColumns);
     }
-    if(functionCall.ADDDATE_SYMBOL() 
+    if (functionCall.ADDDATE_SYMBOL()
         || functionCall.SUBDATE_SYMBOL()
         || functionCall.DATE_ADD_SYMBOL()
         || functionCall.DATE_SUB_SYMBOL()) {
         const exprList = functionCall.expr();
-        return exprList.every( expr => inferNotNullExpr(expr, dbSchema, fromColumns));
+        return exprList.every(expr => inferNotNullExpr(expr, dbSchema, fromColumns));
     }
-    if(functionCall.COALESCE_SYMBOL()) {
+    if (functionCall.COALESCE_SYMBOL()) {
         const exprList = functionCall.exprListWithParentheses()?.exprList().expr()!;
-        return exprList.every( expr => inferNotNullExpr(expr, dbSchema, fromColumns));
+        return exprList.every(expr => inferNotNullExpr(expr, dbSchema, fromColumns));
     }
-    throw Error ('Function not supported: ' + functionCall.text);
+    throw Error('Function not supported: ' + functionCall.text);
 
 }
 
 function inferNotNullFunctionCall(functionCall: FunctionCallContext, dbSchema: ColumnSchema[], fromColumns: ColumnDef[]): boolean {
     const functionName = functionCall.pureIdentifier()?.text.toLowerCase() || functionCall.qualifiedIdentifier()?.text.toLowerCase();
-    if(functionName == 'ifnull') {
+    if (functionName == 'ifnull') {
         return false;
     }
-    if(functionName == 'avg') {
+    if (functionName == 'avg') {
         return false;
     }
-    if(functionName == 'str_to_date') {
+    if (functionName == 'str_to_date') {
         return false; //invalid date
     }
     const udfExprList = functionCall.udfExprList()?.udfExpr();
-    if(udfExprList) {
-        return udfExprList.filter( (expr, paramIndex) => {
-            return functionName == 'timestampdiff'? paramIndex != 0 : true //filter the first parameter of timestampdiff function
-        }).every( (udfExpr) => {
+    if (udfExprList) {
+        return udfExprList.filter((expr, paramIndex) => {
+            return functionName == 'timestampdiff' ? paramIndex != 0 : true //filter the first parameter of timestampdiff function
+        }).every((udfExpr) => {
             const expr = udfExpr.expr();
             return inferNotNullExpr(expr, dbSchema, fromColumns);
         });
     }
     const exprList = functionCall.exprList()?.expr();
-    if(exprList) {
-        return exprList.every( expr => {
+    if (exprList) {
+        return exprList.every(expr => {
             return inferNotNullExpr(expr, dbSchema, fromColumns);
         });
     }
@@ -261,12 +263,12 @@ function inferNotNullFunctionCall(functionCall: FunctionCallContext, dbSchema: C
 }
 
 
-function possibleNullWhere(field: FieldName, whereClause: WhereClauseContext) : boolean {
+function possibleNullWhere(field: FieldName, whereClause: WhereClauseContext): boolean {
     const expr = whereClause.expr();
     return possibleNull(field, expr);
 }
 
-export function possibleNull(field: FieldName, exprContext: ExprContext) : boolean {
+export function possibleNull(field: FieldName, exprContext: ExprContext): boolean {
     if (exprContext instanceof ExprIsContext) {
 
         const boolPri = exprContext.boolPri();

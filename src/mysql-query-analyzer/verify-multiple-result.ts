@@ -1,23 +1,25 @@
-import { ExprContext, ExprIsContext, SimpleExprListContext, PrimaryExprPredicateContext, PrimaryExprIsNullContext, PrimaryExprCompareContext, 
-    ExprAndContext, SimpleExprColumnRefContext, ExprNotContext, ExprOrContext, BoolPriContext, PredicateContext } from "ts-mysql-parser";
+import {
+    ExprContext, ExprIsContext, SimpleExprListContext, PrimaryExprPredicateContext, PrimaryExprIsNullContext, PrimaryExprCompareContext,
+    ExprAndContext, SimpleExprColumnRefContext, ExprNotContext, ExprOrContext, BoolPriContext, PredicateContext
+} from "ts-mysql-parser";
 import { getSimpleExpressions, splitName, findColumn } from "./select-columns";
 import { ColumnDef } from "./types";
 
-export function verifyMultipleResult(exprContext: ExprContext, fromColumns: ColumnDef[]) : boolean {
+export function verifyMultipleResult(exprContext: ExprContext, fromColumns: ColumnDef[]): boolean {
     if (exprContext instanceof ExprIsContext) {
 
         const boolPri = exprContext.boolPri();
 
         if (boolPri instanceof PrimaryExprCompareContext) {
-            if(boolPri.compOp().EQUAL_OPERATOR()) {
+            if (boolPri.compOp().EQUAL_OPERATOR()) {
                 let compareLeft = boolPri.boolPri();
                 let compareRight = boolPri.predicate();
-                if(isUniqueKeyComparation(compareLeft, fromColumns) || isUniqueKeyComparation(compareRight, fromColumns)) {
+                if (isUniqueKeyComparation(compareLeft, fromColumns) || isUniqueKeyComparation(compareRight, fromColumns)) {
                     return false; //multipleRow = false
                 }
             }
             return true; //multipleRow = true
-            
+
         }
         return true; //multipleRow
 
@@ -41,10 +43,10 @@ export function verifyMultipleResult(exprContext: ExprContext, fromColumns: Colu
 
 function isUniqueKeyComparation(compare: BoolPriContext | PredicateContext, fromColumns: ColumnDef[]) {
     const tokens = getSimpleExpressions(compare);
-    if(tokens.length == 1 && tokens[0] instanceof SimpleExprColumnRefContext) {
+    if (tokens.length == 1 && tokens[0] instanceof SimpleExprColumnRefContext) {
         const fieldName = splitName(tokens[0].text);
         const col = findColumn(fieldName, fromColumns);
-        if(col.columnKey == 'PRI' || col.columnKey == 'UNI') {
+        if (col.columnKey == 'PRI' || col.columnKey == 'UNI') {
             return true; //isUniqueKeyComparation = true
         }
     }

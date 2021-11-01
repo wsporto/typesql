@@ -9,9 +9,9 @@ describe('type-inference - functions', () => {
         const sql = `SELECT NOW(), CURDATE(), CURTIME()`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['datetime', 'date', 'time'],
-            parameters: []   
+            parameters: []
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -24,9 +24,9 @@ describe('type-inference - functions', () => {
         const sql = `SELECT YEAR(NOW()), YEAR(CURDATE())`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['year', 'year'],
-            parameters: []   
+            parameters: []
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -36,9 +36,9 @@ describe('type-inference - functions', () => {
         const sql = `SELECT MONTH(NOW()), MONTH(CURDATE())`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['tinyint', 'tinyint'],
-            parameters: []   
+            parameters: []
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -48,9 +48,9 @@ describe('type-inference - functions', () => {
         const sql = `SELECT DAY(NOW()), DAY(CURDATE())`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['tinyint', 'tinyint'],
-            parameters: []   
+            parameters: []
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -62,7 +62,7 @@ describe('type-inference - functions', () => {
             parseAndInfer(sql, dbSchema);
             assert.fail('Should throw an exception');
         }
-        catch(e) {
+        catch (e) {
             const expectedMessage = 'Type mismatch: time and date';
             assert.deepStrictEqual(e.message, expectedMessage);
         }
@@ -74,7 +74,7 @@ describe('type-inference - functions', () => {
             parseAndInfer(sql, dbSchema);
             assert.fail('Should throw an exception');
         }
-        catch(e) {
+        catch (e) {
             const expectedMessage = 'Type mismatch: time and date';
             assert.deepStrictEqual(e.message, expectedMessage);
         }
@@ -86,7 +86,7 @@ describe('type-inference - functions', () => {
             parseAndInfer(sql, dbSchema);
             assert.fail('Should throw an exception');
         }
-        catch(e) {
+        catch (e) {
             const expectedMessage = 'Type mismatch: time and date';
             assert.deepStrictEqual(e.message, expectedMessage);
         }
@@ -96,9 +96,9 @@ describe('type-inference - functions', () => {
         const sql = `SELECT YEAR(?), MONTH(?), DAY(?)`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['year', 'tinyint', 'tinyint'],
-            parameters: ['date', 'date', 'date']   
+            parameters: ['date', 'date', 'date']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -108,9 +108,9 @@ describe('type-inference - functions', () => {
         const sql = `SELECT HOUR(?), MINUTE(?), SECOND(?)`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int', 'tinyint', 'tinyint'],
-            parameters: ['time', 'time', 'time']   
+            parameters: ['time', 'time', 'time']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -124,7 +124,7 @@ describe('type-inference - functions', () => {
         `
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int', 'tinyint', 'tinyint', 'int', 'tinyint', 'tinyint', 'int', 'tinyint', 'tinyint'],
             parameters: []
         }
@@ -138,7 +138,7 @@ describe('type-inference - functions', () => {
             parseAndInfer(sql, dbSchema);
             assert.fail('Should throw an exception'); //Only DATE and DATETIME are allowed
         }
-        catch(e) {
+        catch (e) {
             const expectedMessage = 'Type mismatch: date and time';
             assert.deepStrictEqual(e.message, expectedMessage);
         }
@@ -149,7 +149,7 @@ describe('type-inference - functions', () => {
             parseAndInfer(sql, dbSchema);
             assert.fail('Should throw an exception'); //Only DATE and DATETIME are allowed
         }
-        catch(e) {
+        catch (e) {
             const expectedMessage = 'Type mismatch: date and time';
             assert.deepStrictEqual(e.message, expectedMessage);
         }
@@ -160,7 +160,7 @@ describe('type-inference - functions', () => {
             parseAndInfer(sql, dbSchema);
             assert.fail('Should throw an exception'); //Only DATE and DATETIME are allowed
         }
-        catch(e) {
+        catch (e) {
             const expectedMessage = 'Type mismatch: date and time';
             assert.deepStrictEqual(e.message, expectedMessage);
         }
@@ -173,7 +173,7 @@ describe('type-inference - functions', () => {
         `
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['year', 'tinyint', 'tinyint', 'year', 'tinyint', 'tinyint'],
             parameters: []
         }
@@ -185,9 +185,9 @@ describe('type-inference - functions', () => {
         const sql = `SELECT LPAD('hi',4,'??')`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['varchar'],
-            parameters: []   
+            parameters: []
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -197,9 +197,9 @@ describe('type-inference - functions', () => {
         const sql = `SELECT LPAD(?, ?, ?), RPAD(?, ?, ?)`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['varchar', 'varchar'],
-            parameters: ['varchar', 'int', 'varchar', 'varchar', 'int', 'varchar']   
+            parameters: ['varchar', 'int', 'varchar', 'varchar', 'int', 'varchar']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -209,9 +209,9 @@ describe('type-inference - functions', () => {
         const sql = `SELECT LOWER(?), LCASE(?), UPPER(?), UCASE(?), LTRIM(?), RTRIM(?)`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['varchar', 'varchar', 'varchar', 'varchar', 'varchar', 'varchar'],
-            parameters: ['varchar', 'varchar', 'varchar', 'varchar', 'varchar', 'varchar']   
+            parameters: ['varchar', 'varchar', 'varchar', 'varchar', 'varchar', 'varchar']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -221,9 +221,9 @@ describe('type-inference - functions', () => {
         const sql = `SELECT TRIM(' x '), TRIM(' ? '), TRIM(?)`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['varchar', 'varchar', 'varchar'],
-            parameters: ['varchar']   
+            parameters: ['varchar']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -233,9 +233,9 @@ describe('type-inference - functions', () => {
         const sql = `SELECT TRIM(LEADING ? FROM ?), TRIM(TRAILING ? FROM ?), TRIM(BOTH ? FROM ?)`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['varchar', 'varchar', 'varchar'],
-            parameters: ['varchar', 'varchar', 'varchar', 'varchar', 'varchar', 'varchar']   
+            parameters: ['varchar', 'varchar', 'varchar', 'varchar', 'varchar', 'varchar']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -245,9 +245,9 @@ describe('type-inference - functions', () => {
         const sql = `SELECT TRIM(name), TRIM(LEADING 'x' FROM name), TRIM(TRAILING 'x' FROM t1.name), TRIM(BOTH 'x' FROM t1.name) FROM mytable2 t1`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['varchar', 'varchar', 'varchar', 'varchar'],
-            parameters: []   
+            parameters: []
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -257,9 +257,9 @@ describe('type-inference - functions', () => {
         const sql = `SELECT TRIM(concat(?, ?, name)) FROM mytable2`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['varchar'],
-            parameters: ['?', '?']   
+            parameters: ['?', '?']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -269,9 +269,9 @@ describe('type-inference - functions', () => {
         const sql = `SELECT CHAR_LENGTH(?), LENGTH(?)`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int', 'int'],
-            parameters: ['varchar', 'varchar']   
+            parameters: ['varchar', 'varchar']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -281,9 +281,9 @@ describe('type-inference - functions', () => {
         const sql = `SELECT LENGTH(concat(name, ?)), CHAR_LENGTH(concat(name, ?)) FROM mytable2`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int', 'int'],
-            parameters: ['?', '?']   
+            parameters: ['?', '?']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -293,10 +293,10 @@ describe('type-inference - functions', () => {
         const sql = `SELECT SUBSTRING(?, ?), SUBSTRING(?, ?, ?), SUBSTR(?, ?), SUBSTR(?, ?, ?)`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['varchar', 'varchar', 'varchar', 'varchar'],
             parameters: ['varchar', 'int', 'varchar', 'int', 'int',
-            'varchar', 'int', 'varchar', 'int', 'int']   
+                'varchar', 'int', 'varchar', 'int', 'int']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -306,10 +306,10 @@ describe('type-inference - functions', () => {
         const sql = `SELECT SUBSTRING('Quadratically', ?), SUBSTRING('Quadratically', ?, ?), SUBSTR('Quadratically', ?), SUBSTR('Quadratically', ?, ?)`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['varchar', 'varchar', 'varchar', 'varchar'],
             parameters: ['int', 'int', 'int',
-            'int', 'int', 'int']   
+                'int', 'int', 'int']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -319,10 +319,10 @@ describe('type-inference - functions', () => {
         const sql = `SELECT SUBSTRING(? FROM ?), SUBSTRING(? FROM ? FOR ?), SUBSTR(? FROM ?), SUBSTR(? FROM ? FOR ?)`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['varchar', 'varchar', 'varchar', 'varchar'],
             parameters: ['varchar', 'int', 'varchar', 'int', 'int',
-            'varchar', 'int', 'varchar', 'int', 'int']   
+                'varchar', 'int', 'varchar', 'int', 'int']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -332,9 +332,9 @@ describe('type-inference - functions', () => {
         const sql = `SELECT COALESCE (VALUE, ID) FROM mytable1`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int'],
-            parameters: []   
+            parameters: []
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -348,12 +348,12 @@ describe('type-inference - functions', () => {
             COALESCE (int_column, bigint_column, smallint_column, ?) 
         FROM all_types`;
         // const sql = 'SELECT COALESCE (double_column, int_column, ?) from all_types';
-        
+
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['double', 'any', 'any'],
-            parameters: ['any', 'any']   
+            parameters: ['any', 'any']
         }
         // const expected : TypeInferenceResult = {
         //     columns: ['?'],
@@ -367,9 +367,9 @@ describe('type-inference - functions', () => {
         const sql = `SELECT COALESCE (varchar_column, CONCAT(?, ?)) FROM all_types`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['varchar'],
-            parameters: ['?', '?']   
+            parameters: ['?', '?']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -379,9 +379,9 @@ describe('type-inference - functions', () => {
         const sql = `SELECT DATEDIFF('2003-02-01','2003-05-01 12:05:55')`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['bigint'],
-            parameters: []   
+            parameters: []
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -401,10 +401,10 @@ describe('type-inference - functions', () => {
             TIMESTAMPDIFF(year, ?, ?)`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int', 'int', 'int', 'int', 'int', 'int', 'int', 'int', 'int'],
-            parameters: ['datetime', 'datetime', 'datetime', 'datetime', 'datetime', 'datetime', 'datetime', 'datetime', 
-            'datetime', 'datetime', 'datetime', 'datetime', 'datetime', 'datetime', 'datetime', 'datetime', 'datetime', 'datetime']   
+            parameters: ['datetime', 'datetime', 'datetime', 'datetime', 'datetime', 'datetime', 'datetime', 'datetime',
+                'datetime', 'datetime', 'datetime', 'datetime', 'datetime', 'datetime', 'datetime', 'datetime', 'datetime', 'datetime']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -412,10 +412,10 @@ describe('type-inference - functions', () => {
 
     it(`SELECT TIMESTAMPDIFF(SECOND, CURTIME(), CURTIME())`, () => {
         const sql = `SELECT TIMESTAMPDIFF(SECOND, CURTIME(), CURTIME())`;
-        const actual =  parseAndInfer(sql, dbSchema);
-        const expected : TypeInferenceResult = {
+        const actual = parseAndInfer(sql, dbSchema);
+        const expected: TypeInferenceResult = {
             columns: ['int'],
-            parameters: []   
+            parameters: []
         }
         assert.deepStrictEqual(actual, expected);
     })
@@ -424,9 +424,9 @@ describe('type-inference - functions', () => {
         const sql = `SELECT TIMESTAMPDIFF(SECOND, CURDATE(), CURDATE())`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int'],
-            parameters: []   
+            parameters: []
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -436,9 +436,9 @@ describe('type-inference - functions', () => {
         const sql = `SELECT TIMESTAMPDIFF(MINUTE,'2003-02-01','2003-05-01 12:05:55')`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int'],
-            parameters: []   
+            parameters: []
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -450,7 +450,7 @@ describe('type-inference - functions', () => {
             parseAndInfer(sql, dbSchema);
             assert.fail('Should throw an exception'); //Only DATE and DATETIME are allowed
         }
-        catch(e) {
+        catch (e) {
             const expectedMessage = 'Type mismatch: varchar and datetime';
             assert.deepStrictEqual(e.message, expectedMessage);
         }
@@ -461,9 +461,9 @@ describe('type-inference - functions', () => {
         const sql = `SELECT str_to_date('2015-01-12', '%Y-%m-%d') - str_to_date('2014-01-01', '%Y-%m-%d') AS days`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['bigint'],
-            parameters: []   
+            parameters: []
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -475,9 +475,9 @@ describe('type-inference - functions', () => {
         const sql = `select current_date - INTERVAL 1 DAY`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['datetime'],
-            parameters: []   
+            parameters: []
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -487,21 +487,21 @@ describe('type-inference - functions', () => {
         const sql = `SELECT ? - INTERVAL 1 DAY`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['datetime'],
-            parameters: ['datetime']   
+            parameters: ['datetime']
         }
 
         assert.deepStrictEqual(actual, expected);
     })
-    
+
     it(`SELECT INTERVAL 1 DAY + '2018-12-31'`, () => {
         const sql = `SELECT INTERVAL 1 DAY + '2018-12-31'`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['datetime'],
-            parameters: []   
+            parameters: []
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -511,9 +511,9 @@ describe('type-inference - functions', () => {
         const sql = `SELECT INTERVAL ? DAY + '2018-12-31'`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['datetime'],
-            parameters: ['bigint']   
+            parameters: ['bigint']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -523,9 +523,9 @@ describe('type-inference - functions', () => {
         const sql = `SELECT INTERVAL ? MONTH + '2018-12-31 13:01:02'`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['datetime'],
-            parameters: ['bigint']   
+            parameters: ['bigint']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -552,9 +552,9 @@ describe('type-inference - functions', () => {
             DATE_SUB('2008-01-02', INTERVAL 31 DAY)`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['datetime', 'datetime', 'datetime', 'datetime'],
-            parameters: []   
+            parameters: []
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -568,9 +568,9 @@ describe('type-inference - functions', () => {
             DATE_SUB(?, INTERVAL ? DAY)`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['datetime', 'datetime', 'datetime', 'datetime'],
-            parameters: ['datetime', 'bigint', 'datetime', 'bigint', 'datetime', 'bigint', 'datetime', 'bigint']   
+            parameters: ['datetime', 'bigint', 'datetime', 'bigint', 'datetime', 'bigint', 'datetime', 'bigint']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -582,9 +582,9 @@ describe('type-inference - functions', () => {
             SUBDATE('2008-01-02', 31)`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['datetime', 'datetime'],
-            parameters: []   
+            parameters: []
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -594,9 +594,9 @@ describe('type-inference - functions', () => {
         const sql = `SELECT ADDDATE(?, ?), SUBDATE(?, ?)`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['datetime', 'datetime'],
-            parameters: ['datetime', 'bigint', 'datetime', 'bigint']   
+            parameters: ['datetime', 'bigint', 'datetime', 'bigint']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -609,7 +609,7 @@ describe('type-inference - functions', () => {
             parseAndInfer(sql, dbSchema);
             assert.fail("Should thrown an exception.");
         }
-        catch(e) {
+        catch (e) {
             const expected = 'Type mismatch: varchar and datetime';
             assert.deepStrictEqual(e.message, expected);
         }
@@ -622,7 +622,7 @@ describe('type-inference - functions', () => {
             parseAndInfer(sql, dbSchema);
             assert.fail("Should thrown an exception.");
         }
-        catch(e) {
+        catch (e) {
             const expected = 'Type mismatch: varchar and datetime';
             assert.deepStrictEqual(e.message, expected);
         }
@@ -635,7 +635,7 @@ describe('type-inference - functions', () => {
             parseAndInfer(sql, dbSchema);
             assert.fail("Should thrown an exception.");
         }
-        catch(e) {
+        catch (e) {
             const expected = 'Type mismatch: varchar and datetime';
             assert.deepStrictEqual(e.message, expected);
         }
@@ -648,7 +648,7 @@ describe('type-inference - functions', () => {
             parseAndInfer(sql, dbSchema);
             assert.fail("Should thrown an exception.");
         }
-        catch(e) {
+        catch (e) {
             const expected = 'Type mismatch: varchar and datetime';
             assert.deepStrictEqual(e.message, expected);
         }
@@ -660,9 +660,9 @@ describe('type-inference - functions', () => {
             REPLACE(?, ?, ?)`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['varchar', 'varchar'],
-            parameters: ['varchar', 'varchar', 'varchar']   
+            parameters: ['varchar', 'varchar', 'varchar']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -676,21 +676,21 @@ describe('type-inference - functions', () => {
             DATE_SUB(?, INTERVAL ? DAY)`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['datetime', 'datetime', 'datetime', 'datetime'],
-            parameters: ['datetime', 'bigint', 'datetime', 'bigint', 'datetime', 'bigint', 'datetime', 'bigint']   
+            parameters: ['datetime', 'bigint', 'datetime', 'bigint', 'datetime', 'bigint', 'datetime', 'bigint']
         }
 
         assert.deepStrictEqual(actual, expected);
     })
-    
+
     it(`SELECT MOD(?, ?)`, () => {
         const sql = `SELECT MOD(?, ?)`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['number'],
-            parameters: ['number', 'number'] 
+            parameters: ['number', 'number']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -700,15 +700,15 @@ describe('type-inference - functions', () => {
         const sql = `SELECT MOD(?+?, ?+?)`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['double'],
-            parameters: ['double', 'double', 'double', 'double'] 
+            parameters: ['double', 'double', 'double', 'double']
         }
 
         assert.deepStrictEqual(actual, expected);
     })
 
-    
+
     it(`SELECT MOD function with several input types`, () => {
         const sql = `SELECT 
             MOD(int_column, int_column), -- int
@@ -722,9 +722,9 @@ describe('type-inference - functions', () => {
             FROM all_types`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int', 'bigint', 'bigint', 'bigint', 'float', 'double', 'float', 'decimal'],
-            parameters: []   
+            parameters: []
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -738,7 +738,7 @@ describe('type-inference - functions', () => {
             parseAndInfer(sql, dbSchema);
             assert.fail("Should thrown an exception.");
         }
-        catch(e) {
+        catch (e) {
             const expected = 'Type mismatch: number and varchar';
             assert.deepStrictEqual(e.message, expected);
         }
@@ -753,7 +753,7 @@ describe('type-inference - functions', () => {
             parseAndInfer(sql, dbSchema);
             assert.fail("Should thrown an exception.");
         }
-        catch(e) {
+        catch (e) {
             const expected = 'Type mismatch: number and varchar';
             assert.deepStrictEqual(e.message, expected);
         }
@@ -771,9 +771,9 @@ describe('type-inference - functions', () => {
             FROM all_types`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['number', 'int', 'bigint', 'float', 'double', 'decimal'],
-            parameters: ['number']   
+            parameters: ['number']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -787,7 +787,7 @@ describe('type-inference - functions', () => {
             parseAndInfer(sql, dbSchema);
             assert.fail("Should thrown an exception.");
         }
-        catch(e) {
+        catch (e) {
             const expected = 'Type mismatch: number and varchar';
             assert.deepStrictEqual(e.message, expected);
         }
@@ -802,7 +802,7 @@ describe('type-inference - functions', () => {
             parseAndInfer(sql, dbSchema);
             assert.fail("Should thrown an exception.");
         }
-        catch(e) {
+        catch (e) {
             const expected = 'Type mismatch: number and datetime';
             assert.deepStrictEqual(e.message, expected);
         }
@@ -820,10 +820,10 @@ describe('type-inference - functions', () => {
             FROM all_types`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['number', 'number', 'int', 'int', 'bigint', 'bigint', 'float', 'float', 'double', 'double', 'bigint', 'bigint'
-        ],
-            parameters: ['number', 'number']   
+            ],
+            parameters: ['number', 'number']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -837,7 +837,7 @@ describe('type-inference - functions', () => {
             parseAndInfer(sql, dbSchema);
             assert.fail("Should thrown an exception.");
         }
-        catch(e) {
+        catch (e) {
             const expected = 'Type mismatch: number and datetime';
             assert.deepStrictEqual(e.message, expected);
         }

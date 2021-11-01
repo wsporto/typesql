@@ -44,7 +44,7 @@ describe('parse insert statements', () => {
             ]
         }
 
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -64,7 +64,7 @@ describe('parse insert statements', () => {
             }
         ]
 
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right.parameters, expected);
@@ -89,7 +89,7 @@ describe('parse insert statements', () => {
             }
         ]
 
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right.parameters, expected);
@@ -114,7 +114,7 @@ describe('parse insert statements', () => {
             }
         ]
 
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right.parameters, expected);
@@ -139,7 +139,7 @@ describe('parse insert statements', () => {
             }
         ]
 
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right.parameters, expected);
@@ -164,7 +164,7 @@ describe('parse insert statements', () => {
             }
         ]
 
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right.parameters, expected);
@@ -176,8 +176,8 @@ describe('parse insert statements', () => {
         insert into mytable1 (name) values (?)
             `;
         const actual = await parseSql(client, sql);
-        
-        if(isRight(actual)) {
+
+        if (isRight(actual)) {
             assert.fail(`Should return an error`);
         }
         const expectedError = `Unknown column 'name' in 'field list'`;
@@ -217,14 +217,14 @@ describe('parse insert statements', () => {
                 }
             ]
         }
-            
-        
-        if(isLeft(actual)) {
+
+
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
     })
-    
+
     it('insert into all_types (varchar_column, int_column) values (concat(?, ?), ?+?)', async () => {
 
         const sql = `insert into all_types (varchar_column, int_column) values (concat(?, ?), ?+?)`;
@@ -268,9 +268,9 @@ describe('parse insert statements', () => {
                 }
             ]
         }
-            
-        
-        if(isLeft(actual)) {
+
+
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);

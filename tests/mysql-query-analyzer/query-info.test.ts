@@ -9,7 +9,7 @@ describe('Test parse parameters', () => {
         const sql = `SELECT id FROM mytable1`;
         const actual = extractQueryInfo(sql, dbSchema);
 
-         const expected: QueryInfoResult = {
+        const expected: QueryInfoResult = {
             kind: 'Select',
             multipleRowsResult: true,
             columns: [
@@ -29,7 +29,7 @@ describe('Test parse parameters', () => {
         const sql = `SELECT id as value FROM mytable1`;
         const actual = extractQueryInfo(sql, dbSchema);
 
-         const expected: QueryInfoResult = {
+        const expected: QueryInfoResult = {
             kind: 'Select',
             multipleRowsResult: true,
             columns: [
@@ -49,7 +49,7 @@ describe('Test parse parameters', () => {
         const sql = `SELECT id, name FROM mytable2`;
         const actual = extractQueryInfo(sql, dbSchema);
 
-         const expected: QueryInfoResult = {
+        const expected: QueryInfoResult = {
             kind: 'Select',
             multipleRowsResult: true,
             columns: [
@@ -74,7 +74,7 @@ describe('Test parse parameters', () => {
         const sql = `SELECT id+id FROM mytable1`;
         const actual = extractQueryInfo(sql, dbSchema);
 
-         const expected: QueryInfoResult = {
+        const expected: QueryInfoResult = {
             kind: 'Select',
             multipleRowsResult: true,
             columns: [
@@ -94,7 +94,7 @@ describe('Test parse parameters', () => {
         const sql = `SELECT id+double_value FROM mytable3`;
         const actual = extractQueryInfo(sql, dbSchema);
 
-         const expected: QueryInfoResult = {
+        const expected: QueryInfoResult = {
             kind: 'Select',
             multipleRowsResult: true,
             columns: [
@@ -114,7 +114,7 @@ describe('Test parse parameters', () => {
         const sql = `SELECT datetime_column FROM all_types e WHERE datetime_column >= ?`;
         const actual = extractQueryInfo(sql, dbSchema);
 
-         const expected: QueryInfoResult = {
+        const expected: QueryInfoResult = {
             kind: 'Select',
             multipleRowsResult: true,
             columns: [
@@ -139,7 +139,7 @@ describe('Test parse parameters', () => {
         const sql = `SELECT ? FROM mytable3`;
         const actual = extractQueryInfo(sql, dbSchema);
 
-         const expected: QueryInfoResult = {
+        const expected: QueryInfoResult = {
             kind: 'Select',
             multipleRowsResult: true,
             columns: [
@@ -164,7 +164,7 @@ describe('Test parse parameters', () => {
         const sql = `SELECT CASE WHEN id = 1 then ? else id END from mytable1`;
         const actual = extractQueryInfo(sql, dbSchema);
 
-         const expected: QueryInfoResult = {
+        const expected: QueryInfoResult = {
             kind: 'Select',
             multipleRowsResult: true,
             columns: [
@@ -190,7 +190,7 @@ describe('Test parse parameters', () => {
         const sql = `SELECT CASE WHEN id = 1 then ? else id END from mytable1`;
         const actual = extractQueryInfo(sql, dbSchema);
 
-         const expected: QueryInfoResult = {
+        const expected: QueryInfoResult = {
             kind: 'Select',
             multipleRowsResult: true,
             columns: [
@@ -216,7 +216,7 @@ describe('Test parse parameters', () => {
         const sql = `SELECT ?+id from mytable1`;
         const actual = extractQueryInfo(sql, dbSchema);
 
-         const expected: QueryInfoResult = {
+        const expected: QueryInfoResult = {
             kind: 'Select',
             multipleRowsResult: true,
             columns: [
@@ -242,7 +242,7 @@ describe('Test parse parameters', () => {
         const sql = `SELECT case when id=1 then ? else (select id from mytable1 where id = 1) end from mytable1`;
         const actual = extractQueryInfo(sql, dbSchema);
 
-         const expected: QueryInfoResult = {
+        const expected: QueryInfoResult = {
             kind: 'Select',
             multipleRowsResult: true,
             columns: [
@@ -268,7 +268,7 @@ describe('Test parse parameters', () => {
         const sql = `SELECT concat_ws('/', ?, ?, ?) FROM mytable1`;
         const actual = extractQueryInfo(sql, dbSchema);
 
-         const expected: QueryInfoResult = {
+        const expected: QueryInfoResult = {
             kind: 'Select',
             multipleRowsResult: true,
             columns: [
@@ -276,7 +276,7 @@ describe('Test parse parameters', () => {
                     columnName: `concat_ws('/', ?, ?, ?)`,
                     type: 'varchar',
                     notNull: true
-                    
+
                 }
             ],
             parameters: [
@@ -302,7 +302,7 @@ describe('Test parse parameters', () => {
         const sql = `SELECT * FROM mytable1`;
         const actual = extractQueryInfo(sql, dbSchema);
 
-         const expected: QueryInfoResult = {
+        const expected: QueryInfoResult = {
             kind: 'Select',
             multipleRowsResult: true,
             columns: [
@@ -327,7 +327,7 @@ describe('Test parse parameters', () => {
         const sql = `SELECT (SELECT id FROM mytable2) FROM mytable1`;
         const actual = extractQueryInfo(sql, dbSchema);
 
-         const expected: QueryInfoResult = {
+        const expected: QueryInfoResult = {
             kind: 'Select',
             multipleRowsResult: true,
             columns: [
@@ -349,7 +349,7 @@ describe('Test parse parameters', () => {
 
         const actual = extractQueryInfo(sql, dbSchema);
 
-         const expected: QueryInfoResult = {
+        const expected: QueryInfoResult = {
             kind: 'Select',
             multipleRowsResult: true,
             columns: [
@@ -389,7 +389,7 @@ describe('Test parse parameters', () => {
         `;
         const actual = extractQueryInfo(sql, dbSchema);
 
-         const expected: QueryInfoResult = {
+        const expected: QueryInfoResult = {
             kind: 'Select',
             multipleRowsResult: true,
             columns: [
@@ -454,7 +454,7 @@ describe('Test parse parameters', () => {
         `
         const actual = extractQueryInfo(sql, dbSchema);
 
-        const expected : QueryInfoResult = {
+        const expected: QueryInfoResult = {
             kind: 'Select',
             multipleRowsResult: true,
             columns: [
@@ -495,7 +495,7 @@ describe('Test parse parameters', () => {
         `
         const actual = extractQueryInfo(sql, dbSchema);
 
-        const expected : QueryInfoResult = {
+        const expected: QueryInfoResult = {
             kind: 'Select',
             multipleRowsResult: true,
             columns: [
@@ -518,7 +518,7 @@ describe('Test parse parameters', () => {
         `
         const actual = extractQueryInfo(sql, dbSchema);
 
-        const expected : QueryInfoResult = {
+        const expected: QueryInfoResult = {
             kind: 'Select',
             multipleRowsResult: true,
             columns: [
@@ -545,7 +545,7 @@ describe('Test parse parameters', () => {
         `
         const actual = extractQueryInfo(sql, dbSchema);
 
-        const expected : QueryInfoResult = {
+        const expected: QueryInfoResult = {
             kind: 'Select',
             multipleRowsResult: true,
             columns: [
@@ -686,7 +686,7 @@ describe('Test parse parameters', () => {
 
     it('SELECT value FROM mytable1 WHERE value > 1 and value is null', async () => {
         const sql = 'SELECT value FROM mytable1 WHERE value > 1 and value is null'
-        
+
         const actual = extractQueryInfo(sql, dbSchema) as QueryInfoResult;
         assert.deepStrictEqual(actual.multipleRowsResult, true);
     });
@@ -697,7 +697,7 @@ describe('Test parse parameters', () => {
         `
         const actual = extractQueryInfo(sql, dbSchema);
 
-        const expected : QueryInfoResult = {
+        const expected: QueryInfoResult = {
             kind: 'Select',
             multipleRowsResult: true,
             columns: [

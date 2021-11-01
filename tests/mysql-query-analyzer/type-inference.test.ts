@@ -12,9 +12,9 @@ describe('type-inference test', () => {
         const sql = `SELECT id FROM mytable1`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int'],
-            parameters: []   
+            parameters: []
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -24,9 +24,9 @@ describe('type-inference test', () => {
         const sql = `SELECT id+id FROM mytable1`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['bigint'],
-            parameters: []   
+            parameters: []
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -36,23 +36,23 @@ describe('type-inference test', () => {
         const sql = `SELECT id as alias FROM mytable1`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int'],
-            parameters: []   
+            parameters: []
         }
 
         assert.deepStrictEqual(actual, expected);
     })
-    
 
-    
+
+
     it(`SELECT ? as name FROM mytable1`, () => {
         const sql = `SELECT ? as name FROM mytable1`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['?'],
-            parameters: ['?']   
+            parameters: ['?']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -62,9 +62,9 @@ describe('type-inference test', () => {
         const sql = `SELECT 2 as intValue, 2.0 as decimalValue, 2.0123123123 as decimalValue, false as falseValue, true as trueValue FROM mytable1`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int', 'decimal', 'decimal', 'decimal', 'bit', 'bit'],
-            parameters: []   
+            parameters: []
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -74,9 +74,9 @@ describe('type-inference test', () => {
         const sql = `SELECT ? FROM mytable1`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['?'],
-            parameters: ['?']   
+            parameters: ['?']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -86,9 +86,9 @@ describe('type-inference test', () => {
         const sql = `SELECT ?, ?+2, ? FROM mytable1`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['?', 'bigint', '?'],
-            parameters: ['?', 'bigint', '?']  
+            parameters: ['?', 'bigint', '?']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -98,7 +98,7 @@ describe('type-inference test', () => {
         const sql = `SELECT id + id + ? FROM mytable1`
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['double'],
             parameters: ['double']
         }
@@ -110,7 +110,7 @@ describe('type-inference test', () => {
         const sql = `SELECT ?+?`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['double'],
             parameters: ['double', 'double']
         }
@@ -122,9 +122,9 @@ describe('type-inference test', () => {
         const sql = `SELECT t1.* FROM mytable2 t1`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int', 'varchar'],
-            parameters: []  
+            parameters: []
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -134,9 +134,9 @@ describe('type-inference test', () => {
         const sql = `SELECT t1.id+t1.id+? FROM mytable2 t1`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['double'],
-            parameters: ['double']  
+            parameters: ['double']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -146,9 +146,9 @@ describe('type-inference test', () => {
         const sql = `SELECT CASE WHEN id = 1 then ? else id END from mytable1`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int'],
-            parameters: ['int']  
+            parameters: ['int']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -159,9 +159,9 @@ describe('type-inference test', () => {
         const sql = `SELECT ?+id from mytable1`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['double'],
-            parameters: ['double']  
+            parameters: ['double']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -171,9 +171,9 @@ describe('type-inference test', () => {
         const sql = `SELECT id+?+id+2 from mytable1`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['double'],
-            parameters: ['double']  
+            parameters: ['double']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -183,7 +183,7 @@ describe('type-inference test', () => {
         const sql = `SELECT case when id+2=? then id else ? end from mytable1`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int'],
             parameters: ['bigint', 'int']
         }
@@ -195,9 +195,9 @@ describe('type-inference test', () => {
         const sql = `SELECT case when id+2=? then id+id else ? end from mytable1`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['bigint'],
-            parameters:  ['bigint', 'bigint']
+            parameters: ['bigint', 'bigint']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -207,9 +207,9 @@ describe('type-inference test', () => {
         const sql = `SELECT case when id=1 then ? else (select id from mytable1 where id = 1) end from mytable1`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int'],
-            parameters:  ['int']
+            parameters: ['int']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -219,9 +219,9 @@ describe('type-inference test', () => {
         const sql = `SELECT ? > 1 FROM mytable1`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['tinyint'],
-            parameters:  ['bigint']
+            parameters: ['bigint']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -231,9 +231,9 @@ describe('type-inference test', () => {
         const sql = `SELECT 1 < ? FROM mytable1`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['tinyint'],
-            parameters:  ['bigint']
+            parameters: ['bigint']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -243,9 +243,9 @@ describe('type-inference test', () => {
         const sql = `SELECT ? > 'a' FROM mytable1`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['tinyint'],
-            parameters:  ['varchar']
+            parameters: ['varchar']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -255,9 +255,9 @@ describe('type-inference test', () => {
         const sql = `SELECT ? > 'a' FROM mytable1`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['tinyint'],
-            parameters:  ['varchar']
+            parameters: ['varchar']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -267,9 +267,9 @@ describe('type-inference test', () => {
         const sql = `SELECT id < ? FROM mytable1`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['tinyint'],
-            parameters:  ['int']
+            parameters: ['int']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -279,9 +279,9 @@ describe('type-inference test', () => {
         const sql = `SELECT ? > id FROM mytable1`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['tinyint'],
-            parameters:  ['int']
+            parameters: ['int']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -291,9 +291,9 @@ describe('type-inference test', () => {
         const sql = `SELECT id FROM mytable2 WHERE name like ?`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int'],
-            parameters:  ['varchar']
+            parameters: ['varchar']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -304,9 +304,9 @@ describe('type-inference test', () => {
         const sql = `SELECT id FROM mytable2 WHERE (name = ? or name = ?) and id > ?`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int'],
-            parameters:  ['varchar', 'varchar', 'int']
+            parameters: ['varchar', 'varchar', 'int']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -316,9 +316,9 @@ describe('type-inference test', () => {
         const sql = `select 10, CONCAT_WS('a', ?), 'a' as name`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['bigint', 'varchar', 'varchar'],
-            parameters:  ['?']
+            parameters: ['?']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -331,9 +331,9 @@ describe('type-inference test', () => {
         const sql = `SELECT concat(name, name) FROM mytable2 WHERE concat(name, name) like ?`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['varchar'],
-            parameters:  ['varchar']
+            parameters: ['varchar']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -343,9 +343,9 @@ describe('type-inference test', () => {
         const sql = `SELECT concat(id, name, ?) FROM mytable2`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['varchar'],
-            parameters:  ['?']
+            parameters: ['?']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -355,9 +355,9 @@ describe('type-inference test', () => {
         const sql = `SELECT concat(id, name, ?+?) FROM mytable2`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['varchar'],
-            parameters:  ['double', 'double']
+            parameters: ['double', 'double']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -367,9 +367,9 @@ describe('type-inference test', () => {
         const sql = `SELECT id FROM mytable2 WHERE ? like name`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int'],
-            parameters:  ['varchar']
+            parameters: ['varchar']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -379,9 +379,9 @@ describe('type-inference test', () => {
         const sql = `SELECT concat_ws('/', ?, ?, ?) FROM mytable1`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['varchar'],
-            parameters:  ['?', '?', '?']
+            parameters: ['?', '?', '?']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -391,9 +391,9 @@ describe('type-inference test', () => {
         const sql = `SELECT concat(name, ?, ?) FROM mytable2`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['varchar'],
-            parameters:  ['?', '?']
+            parameters: ['?', '?']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -403,9 +403,9 @@ describe('type-inference test', () => {
         const sql = `update mytable1 set id = ?`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: [],
-            parameters:  ['int']
+            parameters: ['int']
         }
 
 
@@ -416,9 +416,9 @@ describe('type-inference test', () => {
         const sql = `update mytable1 set id = ?+id`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: [],
-            parameters:  ['int']
+            parameters: ['int']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -428,9 +428,9 @@ describe('type-inference test', () => {
         const sql = `update mytable1 set id = floor(?+?)`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: [],
-            parameters:  ['double', 'double']
+            parameters: ['double', 'double']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -440,9 +440,9 @@ describe('type-inference test', () => {
         const sql = `SELECT name FROM mytable2 WHERE id in (?)`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['varchar'],
-            parameters:  ['int[]']
+            parameters: ['int[]']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -452,9 +452,9 @@ describe('type-inference test', () => {
         const sql = `SELECT id FROM mytable1 WHERE ? in (1, 2, 3)`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int'],
-            parameters:  ['bigint']
+            parameters: ['bigint']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -464,9 +464,9 @@ describe('type-inference test', () => {
         const sql = `SELECT id FROM mytable3 WHERE double_value in (1, 2, 3, ?)`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int'],
-            parameters:  ['double[]']
+            parameters: ['double[]']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -476,9 +476,9 @@ describe('type-inference test', () => {
         const sql = `SELECT id FROM mytable1 WHERE ? in ('a', 'b', 'c')`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int'],
-            parameters:  ['varchar']
+            parameters: ['varchar']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -488,9 +488,9 @@ describe('type-inference test', () => {
         const sql = `SELECT id FROM mytable1 WHERE ? in (1, 2, 'a', 'b')`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int'],
-            parameters:  ['varchar']
+            parameters: ['varchar']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -500,9 +500,9 @@ describe('type-inference test', () => {
         const sql = `SELECT id FROM mytable1 WHERE ? in (id+id, id-id)`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int'],
-            parameters:  ['bigint']
+            parameters: ['bigint']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -512,33 +512,33 @@ describe('type-inference test', () => {
         const sql = `SELECT id FROM mytable1 WHERE id+id in (?)`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int'],
-            parameters:  ['bigint[]']
+            parameters: ['bigint[]']
         }
 
         assert.deepStrictEqual(actual, expected);
     }),
 
-    it(`SELECT id FROM mytable1 WHERE id+id in (?, ?)`, () => {
-        const sql = `SELECT id FROM mytable1 WHERE id+id in (?, ?)`;
-        const actual = parseAndInfer(sql, dbSchema);
+        it(`SELECT id FROM mytable1 WHERE id+id in (?, ?)`, () => {
+            const sql = `SELECT id FROM mytable1 WHERE id+id in (?, ?)`;
+            const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
-            columns: ['int'],
-            parameters:  ['bigint[]', 'bigint[]']
-        }
+            const expected: TypeInferenceResult = {
+                columns: ['int'],
+                parameters: ['bigint[]', 'bigint[]']
+            }
 
-        assert.deepStrictEqual(actual, expected);
-    })
+            assert.deepStrictEqual(actual, expected);
+        })
 
     it(`SELECT id FROM mytable1 WHERE id in (((?)))`, () => {
         const sql = `SELECT id FROM mytable1 WHERE id in (((?)))`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int'],
-            parameters:  ['int[]']
+            parameters: ['int[]']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -548,9 +548,9 @@ describe('type-inference test', () => {
         const sql = `select CURRENT_DATE, CURRENT_TIME, CURRENT_TIMESTAMP, LOCALTIME, LOCALTIMESTAMP`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['date', 'time', 'datetime', 'datetime', 'datetime'],
-            parameters:  []
+            parameters: []
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -560,9 +560,9 @@ describe('type-inference test', () => {
         const sql = `SELECT id FROM mytable1 WHERE ? is not null OR id=?`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int'],
-            parameters:  ['?', 'int']
+            parameters: ['?', 'int']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -572,9 +572,9 @@ describe('type-inference test', () => {
         const sql = `SELECT * FROM mytable1`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int', 'int'],
-            parameters:  []
+            parameters: []
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -584,9 +584,9 @@ describe('type-inference test', () => {
         const sql = `SELECT id FROM mytable1 t1 WHERE t1.id = ?`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int'],
-            parameters:  ['int']
+            parameters: ['int']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -602,9 +602,9 @@ describe('type-inference test', () => {
         `;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['varchar'],
-            parameters:  []
+            parameters: []
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -620,9 +620,9 @@ describe('type-inference test', () => {
         `;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['bigint'],
-            parameters:  []
+            parameters: []
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -637,39 +637,39 @@ describe('type-inference test', () => {
         `;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int', 'varchar'],
-            parameters:  ['bigint', 'varchar']
+            parameters: ['bigint', 'varchar']
         }
 
         assert.deepStrictEqual(actual, expected);
     })
 
 
- 
+
     it(`nested with *`, () => {
         const sql = `
         SELECT * from (select * from (select name, id from mytable2) t1) t2
         `;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['varchar', 'int'],
-            parameters:  []
+            parameters: []
         }
 
         assert.deepStrictEqual(actual, expected);
     })
-    
+
     it(`select name from mytable1, (select count(*) as name from mytable2) t2`, () => {
         const sql = `
         select name from mytable1, (select count(*) as name from mytable2) t2
         `;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['bigint'],
-            parameters:  []
+            parameters: []
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -679,9 +679,9 @@ describe('type-inference test', () => {
         const sql = `SELECT max(?) FROM mytable1`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['?'],
-            parameters:  ['?']
+            parameters: ['?']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -691,9 +691,9 @@ describe('type-inference test', () => {
         const sql = `SELECT max(id)=? FROM mytable1`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['tinyint'],
-            parameters:  ['int']
+            parameters: ['int']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -703,9 +703,9 @@ describe('type-inference test', () => {
         const sql = `SELECT max(name)=? FROM mytable2`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['tinyint'],
-            parameters:  ['varchar']
+            parameters: ['varchar']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -715,9 +715,9 @@ describe('type-inference test', () => {
         const sql = `SELECT min(id)=? FROM mytable1`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['tinyint'],
-            parameters:  ['int']
+            parameters: ['int']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -727,9 +727,9 @@ describe('type-inference test', () => {
         const sql = `SELECT min(id+id)=? FROM mytable1`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['tinyint'],
-            parameters:  ['bigint']
+            parameters: ['bigint']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -739,9 +739,9 @@ describe('type-inference test', () => {
         const sql = `SELECT count(id)=? FROM mytable1`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['tinyint'],
-            parameters:  ['bigint']
+            parameters: ['bigint']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -751,9 +751,9 @@ describe('type-inference test', () => {
         const sql = `SELECT id+double_value FROM mytable3 WHERE double_value = ?`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['double'],
-            parameters:  ['double']
+            parameters: ['double']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -766,9 +766,9 @@ describe('type-inference test', () => {
         const sql = `SELECT sum(id)=?, sum(double_value)=?, avg(id)=?, avg(double_value)=? FROM mytable3`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['tinyint', 'tinyint', 'tinyint', 'tinyint'],
-            parameters:  ['decimal', 'double', 'decimal', 'double']
+            parameters: ['decimal', 'double', 'decimal', 'double']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -778,9 +778,9 @@ describe('type-inference test', () => {
         const sql = `SELECT sum(double_column) FROM all_types`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['double'],
-            parameters:  []
+            parameters: []
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -790,9 +790,9 @@ describe('type-inference test', () => {
         const sql = `SELECT sum(float_column) FROM all_types`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['double'],
-            parameters:  []
+            parameters: []
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -802,9 +802,9 @@ describe('type-inference test', () => {
         const sql = `SELECT sum(bigint_column) FROM all_types`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['decimal'],
-            parameters:  []
+            parameters: []
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -814,9 +814,9 @@ describe('type-inference test', () => {
         const sql = `SELECT sum(int_column) FROM all_types`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['decimal'],
-            parameters:  []
+            parameters: []
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -826,9 +826,9 @@ describe('type-inference test', () => {
         const sql = `SELECT sum(int_column+?) FROM all_types`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['double'],
-            parameters:  ['double']
+            parameters: ['double']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -839,7 +839,7 @@ describe('type-inference test', () => {
         const sql = `SELECT sum(id + (value + 2) + ?) FROM mytable1`
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['double'],
             parameters: ['double']
         }
@@ -852,7 +852,7 @@ describe('type-inference test', () => {
         const sql = `SELECT sum(t1.id + (t1.value + 2) + ?) FROM mytable1 t1`
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['double'],
             parameters: ['double']
         }
@@ -865,7 +865,7 @@ describe('type-inference test', () => {
         const sql = `SELECT round(id)=?, round(double_value)=?, round(1)=? FROM mytable3`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['tinyint', 'tinyint', 'tinyint'],
             parameters: ['int', 'double', 'bigint']
         }
@@ -878,7 +878,7 @@ describe('type-inference test', () => {
         const sql = `SELECT avg(value + (value + ?) * ?) FROM mytable1`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['double'],
             parameters: ['double', 'double']
         }
@@ -890,7 +890,7 @@ describe('type-inference test', () => {
         const sql = `SELECT (SELECT ? FROM mytable2) FROM mytable1`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['?'],
             parameters: ['?']
         }
@@ -903,7 +903,7 @@ describe('type-inference test', () => {
         const sql = `SELECT (SELECT ? FROM mytable2 WHERE id = ?) FROM mytable1`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['?'],
             parameters: ['?', 'int']
         }
@@ -915,7 +915,7 @@ describe('type-inference test', () => {
         const sql = `SELECT (SELECT id=? FROM mytable2 WHERE name = ?) FROM mytable1`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['tinyint'],
             parameters: ['int', 'varchar']
         }
@@ -927,7 +927,7 @@ describe('type-inference test', () => {
         const sql = `SELECT * FROM mytable1 WHERE ? > (SELECT id FROM mytable2)`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int', 'int'],
             parameters: ['int']
         }
@@ -939,7 +939,7 @@ describe('type-inference test', () => {
         const sql = `SELECT * FROM mytable2 WHERE (SELECT id FROM mytable2) < ?`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int', 'varchar'],
             parameters: ['int']
         }
@@ -951,7 +951,7 @@ describe('type-inference test', () => {
         const sql = `SELECT id FROM mytable2 WHERE (?, ?) = (SELECT name, id FROM mytable2 WHERE id = ?)`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int'],
             parameters: ['varchar', 'int', 'int']
         }
@@ -963,7 +963,7 @@ describe('type-inference test', () => {
         const sql = `SELECT id FROM mytable2 WHERE (?, ?) in (SELECT name, id FROM mytable2 WHERE id = ?)`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int'],
             parameters: ['varchar', 'int', 'int']
         }
@@ -988,7 +988,7 @@ describe('type-inference test', () => {
         `;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int'],
             parameters: ['int', 'int', 'varchar']
         }
@@ -1001,7 +1001,7 @@ describe('type-inference test', () => {
         `;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int'],
             parameters: ['int', 'int']
         }
@@ -1017,7 +1017,7 @@ describe('type-inference test', () => {
         `;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int'],
             parameters: ['bigint', 'bigint', 'int', 'int']
         }
@@ -1029,7 +1029,7 @@ describe('type-inference test', () => {
         const sql = `SELECT id FROM mytable2 WHERE ? = CASE WHEN id = 1 THEN id ELSE ? END`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int'],
             parameters: ['int', 'int']
         }
@@ -1050,11 +1050,11 @@ describe('type-inference test', () => {
         `;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int'],
             parameters: ['int', 'int']
         }
-        
+
         assert.deepStrictEqual(actual, expected);
     })
 
@@ -1071,11 +1071,11 @@ describe('type-inference test', () => {
         `;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int'],
             parameters: ['int', 'int']
         }
-        
+
         assert.deepStrictEqual(actual, expected);
     })
 
@@ -1092,7 +1092,7 @@ describe('type-inference test', () => {
         `;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['bigint'],
             parameters: ['bigint', 'bigint']
         }
@@ -1113,14 +1113,14 @@ describe('type-inference test', () => {
         `;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['varchar'],
             parameters: ['varchar', 'varchar']
         }
 
         assert.deepStrictEqual(actual, expected);
     })
-    
+
     it('parse select with case when expression  (id+id)', () => {
         const sql = `
         SELECT 
@@ -1132,7 +1132,7 @@ describe('type-inference test', () => {
         `;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['bigint'],
             parameters: ['int', 'bigint']
         }
@@ -1151,7 +1151,7 @@ describe('type-inference test', () => {
 
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['varchar'],
             parameters: ['?', 'varchar']
         }
@@ -1163,7 +1163,7 @@ describe('type-inference test', () => {
         const sql = `SELECT id FROM mytable2 WHERE ? = CASE WHEN id = 1 THEN id ELSE ? END`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int'],
             parameters: ['int', 'int']
         }
@@ -1176,7 +1176,7 @@ describe('type-inference test', () => {
 
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int', 'int'],
             parameters: ['int']
         }
@@ -1189,21 +1189,21 @@ describe('type-inference test', () => {
 
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['tinyint'],
             parameters: ['int']
         }
 
         assert.deepStrictEqual(actual, expected);
     });
-    
+
 
     it(`SELECT total FROM (SELECT id+id as total FROM mytable2) t where total > ?`, () => {
         const sql = `SELECT total FROM (SELECT id+id as total FROM mytable2) t where total > ?`;
 
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['bigint'],
             parameters: ['bigint']
         }
@@ -1216,7 +1216,7 @@ describe('type-inference test', () => {
         const sql = `select 3 + case when id=4 then ? end from mytable1`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['double'],
             parameters: ['double']
         }
@@ -1228,7 +1228,7 @@ describe('type-inference test', () => {
         const sql = `select floor(?+?)`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['bigint'],
             parameters: ['double', 'double']
         }
@@ -1241,7 +1241,7 @@ describe('type-inference test', () => {
         const sql = `SELECT t1.value from mytable1 t1 where t1.id = ?`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int'],
             parameters: ['int']
         }
@@ -1257,7 +1257,7 @@ describe('type-inference test', () => {
         WHERE t1.id = ? and t2.name = ?`;
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int', 'int', 'varchar'],
             parameters: ['int', 'varchar']
         }
@@ -1272,7 +1272,7 @@ describe('type-inference test', () => {
         `
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int', 'int', 'int', 'varchar'],
             parameters: []
         }
@@ -1289,7 +1289,7 @@ describe('type-inference test', () => {
         `
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int', 'varchar', 'int', 'int'],
             parameters: ['int']
         }
@@ -1305,7 +1305,7 @@ describe('type-inference test', () => {
         `
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int', 'varchar'],
             parameters: ['int', 'varchar']
         }
@@ -1319,7 +1319,7 @@ describe('type-inference test', () => {
         `
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['varchar'],
             parameters: ['varchar']
         }
@@ -1333,7 +1333,7 @@ describe('type-inference test', () => {
         `
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['varchar'],
             parameters: []
         }
@@ -1347,7 +1347,7 @@ describe('type-inference test', () => {
         `
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['varchar', 'int'],
             parameters: []
         }
@@ -1361,21 +1361,21 @@ describe('type-inference test', () => {
         `
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int'],
             parameters: []
         }
 
         assert.deepStrictEqual(actual, expected);
     });
-    
+
     it('select name from mytable2 where exists ( select id from mytable1 where value = ?)', async () => {
         const sql = `
         select name from mytable2 where exists ( select id from mytable1 where value = ?)
         `
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['varchar'],
             parameters: ['int']
         }
@@ -1394,7 +1394,7 @@ describe('type-inference test', () => {
         `
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int'],
             parameters: []
         }
@@ -1412,7 +1412,7 @@ describe('type-inference test', () => {
         `
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int', 'varchar'],
             parameters: []
         }
@@ -1430,7 +1430,7 @@ describe('type-inference test', () => {
         `
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int', 'varchar'],
             parameters: ['int', 'varchar', 'double']
         }
@@ -1444,7 +1444,7 @@ describe('type-inference test', () => {
         `
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int', 'varchar'],
             parameters: ['varchar']
         }
@@ -1458,7 +1458,7 @@ describe('type-inference test', () => {
         `
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int', 'varchar'],
             parameters: ['varchar']
         }
@@ -1466,7 +1466,7 @@ describe('type-inference test', () => {
         assert.deepStrictEqual(actual, expected);
     });
 
-    
+
     it('inner join with parameters in the ON clause', async () => {
         const sql = `
         SELECT id
@@ -1475,7 +1475,7 @@ describe('type-inference test', () => {
         `
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int'],
             parameters: ['int', 'varchar']
         }
@@ -1492,7 +1492,7 @@ describe('type-inference test', () => {
         `
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             columns: ['int'],
             parameters: ['int', 'varchar']
         }
@@ -1506,7 +1506,7 @@ describe('type-inference test', () => {
         `
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             parameters: ['datetime', 'datetime'],
             columns: ['datetime', 'datetime']
         }
@@ -1516,10 +1516,10 @@ describe('type-inference test', () => {
 
     it('select from table name with space', async () => {
         const sql = 'SELECT * from `my table`'
-        
+
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             parameters: [],
             columns: ['int', 'varchar']
         }
@@ -1529,10 +1529,10 @@ describe('type-inference test', () => {
 
     it('select from table name with space and schema', async () => {
         const sql = 'SELECT * from mydb.`my table`'
-        
+
         const actual = parseAndInfer(sql, dbSchema);
 
-        const expected : TypeInferenceResult = {
+        const expected: TypeInferenceResult = {
             parameters: [],
             columns: ['int', 'varchar']
         }
@@ -1545,36 +1545,36 @@ describe('type-inference test', () => {
 //select `id+id` from (select id+id from mytable1) t;
 
 describe('unify array', () => {
-        
-    const inClause : TypeVar = {
+
+    const inClause: TypeVar = {
         kind: 'TypeVar',
         id: 0,
         name: 'inClause',
         type: '?'
     }
 
-    const idPlusid : TypeVar = {
+    const idPlusid: TypeVar = {
         kind: 'TypeVar',
         id: 1,
         name: 'id+id',
         type: 'bigint'
     }
 
-    const id1 : TypeVar = {
+    const id1: TypeVar = {
         kind: 'TypeVar',
         id: 2,
         name: 'id',
         type: 'int'
     }
 
-    const id2 : TypeVar = {
+    const id2: TypeVar = {
         kind: 'TypeVar',
         id: 3,
         name: 'id',
         type: 'int'
     }
 
-    const listType : TypeVar = {
+    const listType: TypeVar = {
         kind: 'TypeVar',
         id: 4,
         name: '(?, ?)',
@@ -1660,6 +1660,6 @@ describe('unify array', () => {
         const substitutions: SubstitutionHash = {};
         unify(constraints, substitutions);
         // console.log("substitutionsActual=", substitutions);
-        
+
     })
 });

@@ -2,12 +2,14 @@ import { ParserRuleContext, RuleContext } from "antlr4ts";
 import { ParseTree } from "antlr4ts/tree";
 import { Interval } from "antlr4ts/misc/Interval";
 
-import { QuerySpecificationContext, TableReferenceContext, TableFactorContext, TableReferenceListParensContext, SingleTableParensContext, 
-    JoinedTableContext, SingleTableContext, SimpleExprLiteralContext, SimpleExprColumnRefContext, SimpleExprListContext, SimpleExprVariableContext, 
-    SimpleExprRuntimeFunctionContext, SimpleExprFunctionContext, SimpleExprCollateContext, SimpleExprParamMarkerContext, SimpleExprSumContext, 
-    SimpleExprGroupingOperationContext, SimpleExprWindowingFunctionContext, SimpleExprConcatContext, SimpleExprUnaryContext, SimpleExprNotContext, 
-    SimpleExprSubQueryContext, SimpleExprOdbcContext, SimpleExprMatchContext, SimpleExprBinaryContext, SimpleExprCastContext, SimpleExprCaseContext, 
-    SimpleExprConvertContext, SimpleExprConvertUsingContext, SimpleExprDefaultContext, SimpleExprValuesContext, SimpleExprIntervalContext } from "ts-mysql-parser";
+import {
+    QuerySpecificationContext, TableReferenceContext, TableFactorContext, TableReferenceListParensContext, SingleTableParensContext,
+    JoinedTableContext, SingleTableContext, SimpleExprLiteralContext, SimpleExprColumnRefContext, SimpleExprListContext, SimpleExprVariableContext,
+    SimpleExprRuntimeFunctionContext, SimpleExprFunctionContext, SimpleExprCollateContext, SimpleExprParamMarkerContext, SimpleExprSumContext,
+    SimpleExprGroupingOperationContext, SimpleExprWindowingFunctionContext, SimpleExprConcatContext, SimpleExprUnaryContext, SimpleExprNotContext,
+    SimpleExprSubQueryContext, SimpleExprOdbcContext, SimpleExprMatchContext, SimpleExprBinaryContext, SimpleExprCastContext, SimpleExprCaseContext,
+    SimpleExprConvertContext, SimpleExprConvertUsingContext, SimpleExprDefaultContext, SimpleExprValuesContext, SimpleExprIntervalContext
+} from "ts-mysql-parser";
 
 import { ColumnSchema, ColumnDef, FieldName } from "./types";
 import { analiseQuery, getQuerySpecificationsFromSelectStatement } from "./parse";
@@ -18,58 +20,60 @@ export function filterColumns(dbSchema: ColumnSchema[], tablePrefix: string | un
     return tableColumns.map(tableColumn => {
 
         //name and colum are the same on the leaf table
-        const r: ColumnDef = { columnName: tableColumn.column, column: tableColumn.column, columnType: tableColumn.column_type,
-            notNull: tableColumn.notNull,  table: table.name, tableAlias: tablePrefix || '', columnKey: tableColumn.columnKey}
+        const r: ColumnDef = {
+            columnName: tableColumn.column, column: tableColumn.column, columnType: tableColumn.column_type,
+            notNull: tableColumn.notNull, table: table.name, tableAlias: tablePrefix || '', columnKey: tableColumn.columnKey
+        }
         return r;
 
     })
 }
 
 export function selectAllColumns(tablePrefix: string, fromColumns: ColumnDef[]) {
-    const allColumns : ColumnDef[] = [];
-    fromColumns.forEach( column=> {
-        if(tablePrefix == '' || tablePrefix == column.tableAlias) {
+    const allColumns: ColumnDef[] = [];
+    fromColumns.forEach(column => {
+        if (tablePrefix == '' || tablePrefix == column.tableAlias) {
             allColumns.push(column);
         }
-        
+
     });
     return allColumns;
 }
 
-export function getColumnNames(querySpec: QuerySpecificationContext, fromColumns: ColumnDef[]) : string[] {
-    const allColumns : string[] = [];
+export function getColumnNames(querySpec: QuerySpecificationContext, fromColumns: ColumnDef[]): string[] {
+    const allColumns: string[] = [];
 
-    if(querySpec.selectItemList().MULT_OPERATOR()) {
-        allColumns.push(...selectAllColumns('', fromColumns).map( col => col.columnName));
+    if (querySpec.selectItemList().MULT_OPERATOR()) {
+        allColumns.push(...selectAllColumns('', fromColumns).map(col => col.columnName));
     }
     const ctx = querySpec.selectItemList();
-    ctx.selectItem().forEach( selectItem => {
+    ctx.selectItem().forEach(selectItem => {
 
         const tableWild = selectItem.tableWild();
-        if(tableWild) {
-            if(tableWild.MULT_OPERATOR()) {
+        if (tableWild) {
+            if (tableWild.MULT_OPERATOR()) {
                 const itemName = splitName(selectItem.text);
-                allColumns.push(...selectAllColumns(itemName.prefix, fromColumns).map( col => col.columnName));
+                allColumns.push(...selectAllColumns(itemName.prefix, fromColumns).map(col => col.columnName));
             }
-            
+
         }
         else {
             const alias = selectItem.selectAlias()?.identifier()?.text;
             const tokens = getSimpleExpressions(selectItem);
             let columnName = extractOriginalSql(selectItem.expr()!)!; //TODO VERIFICAR NULL
-            if(tokens.length == 1 && tokens[0] instanceof SimpleExprColumnRefContext) {
+            if (tokens.length == 1 && tokens[0] instanceof SimpleExprColumnRefContext) {
                 columnName = splitName(tokens[0].text).name;
             }
             allColumns.push(alias || columnName)
         }
-        
+
     })
     return allColumns;
 }
 
 export function getColumnsFrom(ctx: QuerySpecificationContext, dbSchema: ColumnSchema[]) {
     const tableReferences = ctx.fromClause()?.tableReferenceList()?.tableReference();
-    const fromColumns = tableReferences? extractColumnsFromTableReferences(tableReferences, dbSchema) : [];
+    const fromColumns = tableReferences ? extractColumnsFromTableReferences(tableReferences, dbSchema) : [];
     return fromColumns;
 }
 
@@ -81,39 +85,39 @@ function extractColumnsFromTableReferences(tablesReferences: TableReferenceConte
 
         const tableFactor = tab.tableFactor();
         if (tableFactor) {
-            const fields = extractFieldsFromTableFactor(tableFactor,dbSchema);
+            const fields = extractFieldsFromTableFactor(tableFactor, dbSchema);
             result.push(...fields);
         }
 
-        const allJoinedColumns : ColumnDef[][] = [];
+        const allJoinedColumns: ColumnDef[][] = [];
         let firstLeftJoinIndex = -1;
-        tab.joinedTable().forEach( (joined, index) => {
-            if(joined.innerJoinType()?.INNER_SYMBOL() || joined.innerJoinType()?.JOIN_SYMBOL()) {
+        tab.joinedTable().forEach((joined, index) => {
+            if (joined.innerJoinType()?.INNER_SYMBOL() || joined.innerJoinType()?.JOIN_SYMBOL()) {
                 firstLeftJoinIndex = -1; //dont need to add notNull = false to joins
             }
-            else if(firstLeftJoinIndex == -1) {
+            else if (firstLeftJoinIndex == -1) {
                 firstLeftJoinIndex = index; //add notNull = false to all joins after the first left join
             }
-            
+
             const tableReferences = joined.tableReference();
             const onClause = joined.expr(); //ON expr
-            
-            if(tableReferences) {
+
+            if (tableReferences) {
                 const usingFields = extractFieldsFromUsingClause(joined);
                 const joinedFields = extractColumnsFromTableReferences([tableReferences], dbSchema);
                 //doesn't duplicate the fields of the USING clause. Ex. INNER JOIN mytable2 USING(id);
-                const joinedFieldsFiltered = usingFields.length > 0? filterUsingFields(joinedFields, usingFields) : joinedFields;
-                if(onClause) {
+                const joinedFieldsFiltered = usingFields.length > 0 ? filterUsingFields(joinedFields, usingFields) : joinedFields;
+                if (onClause) {
                     joinedFieldsFiltered.forEach(field => {
-                        const fieldName : FieldName = {
+                        const fieldName: FieldName = {
                             name: field.columnName,
                             prefix: field.tableAlias || ''
                         }
                         field.notNull = field.notNull || !possibleNull(fieldName, onClause);
                     })
                     //apply inference to the parent join too
-                    result.forEach( field => {
-                        const fieldName : FieldName = {
+                    result.forEach(field => {
+                        const fieldName: FieldName = {
                             name: field.columnName,
                             prefix: field.tableAlias || ''
                         }
@@ -124,12 +128,12 @@ function extractColumnsFromTableReferences(tablesReferences: TableReferenceConte
                 allJoinedColumns.push(joinedFieldsFiltered);
             }
         })
-        
-        allJoinedColumns.forEach( (joinedColumns, index) => {
-            joinedColumns.forEach(field => {
-                if(firstLeftJoinIndex != -1 && index >= firstLeftJoinIndex) {
 
-                    const newField : ColumnDef = {
+        allJoinedColumns.forEach((joinedColumns, index) => {
+            joinedColumns.forEach(field => {
+                if (firstLeftJoinIndex != -1 && index >= firstLeftJoinIndex) {
+
+                    const newField: ColumnDef = {
                         ...field,
                         notNull: false
                     }
@@ -138,27 +142,27 @@ function extractColumnsFromTableReferences(tablesReferences: TableReferenceConte
                 else {
                     result.push(field);
                 }
-                
+
             })
-            
+
         });
 
     })
     return result;
 }
 
-function extractFieldsFromUsingClause(joinedTableContext: JoinedTableContext) : string[] {
+function extractFieldsFromUsingClause(joinedTableContext: JoinedTableContext): string[] {
     const usingFieldsClause = joinedTableContext.identifierListWithParentheses()?.identifierList();
-    if(usingFieldsClause) {
-        return usingFieldsClause.text.split(',').map( field => field.trim());
+    if (usingFieldsClause) {
+        return usingFieldsClause.text.split(',').map(field => field.trim());
     }
     return [];
 }
 
-function filterUsingFields(joinedFields: ColumnDef[],  usingFields: string[]) {
-    return joinedFields.filter( joinedField => {
+function filterUsingFields(joinedFields: ColumnDef[], usingFields: string[]) {
+    return joinedFields.filter(joinedField => {
         const isUsing = usingFields.includes(joinedField.columnName);
-        if(!isUsing) {
+        if (!isUsing) {
             return joinedField;
         }
     })
@@ -174,16 +178,16 @@ function extractFieldsFromSingleTable(dbSchema: ColumnSchema[], ctx: SingleTable
 }
 
 //rule: singleTableParens
-function extractFieldsFromSingleTableParens(dbSchema: ColumnSchema[], ctx: SingleTableParensContext) : ColumnDef []{
-    let fields :ColumnDef[] = [];
+function extractFieldsFromSingleTableParens(dbSchema: ColumnSchema[], ctx: SingleTableParensContext): ColumnDef[] {
+    let fields: ColumnDef[] = [];
     //singleTable | singleTableParens
     const singleTable = ctx.singleTable();
-    if(singleTable) {
-       fields = extractFieldsFromSingleTable(dbSchema, singleTable);
+    if (singleTable) {
+        fields = extractFieldsFromSingleTable(dbSchema, singleTable);
     }
 
     const singleTableParens = ctx.singleTableParens();
-    if(singleTableParens) {
+    if (singleTableParens) {
         fields = extractFieldsFromSingleTableParens(dbSchema, singleTableParens);
     }
     return fields;
@@ -205,7 +209,7 @@ function extractFieldsFromTableFactor(tableFactor: TableFactorContext, dbSchema:
     }
 
     const singleTableParens = tableFactor.singleTableParens();
-    if( singleTableParens ) {
+    if (singleTableParens) {
         return extractFieldsFromSingleTableParens(dbSchema, singleTableParens);
     }
 
@@ -214,15 +218,15 @@ function extractFieldsFromTableFactor(tableFactor: TableFactorContext, dbSchema:
         //walkQueryExpressionParens(queryExpressionParens, namedNodes, constraints, dbSchema);
         //TODO - WALKSUBQUERY
         const subQuery = derivadTable.subquery()
-        if(subQuery) {
+        if (subQuery) {
             //subquery=true only for select (subquery); not for from(subquery)
             // const fromColumns
             const queries = getQuerySpecificationsFromSelectStatement(subQuery);
             const queryResult = analiseQuery(queries, dbSchema, []); //TODO - WHY []?
             // console.log("queryResult=", queryResult);
             const tableAlias = derivadTable.tableAlias()?.text;
-            return queryResult.columns.map( col => {
-                const newCol : ColumnDef = {
+            return queryResult.columns.map(col => {
+                const newCol: ColumnDef = {
                     column: col.name,
                     columnName: col.name,
                     columnType: col.type,
@@ -254,7 +258,7 @@ function extractColumnsFromTableListParens(ctx: TableReferenceListParensContext,
     }
 
     const tableReferenceListParens = ctx.tableReferenceListParens();
-    
+
     if (tableReferenceListParens) {
         return extractColumnsFromTableListParens(tableReferenceListParens, dbSchema);
     }
@@ -262,25 +266,25 @@ function extractColumnsFromTableListParens(ctx: TableReferenceListParensContext,
     return [];
 }
 
-export function splitName(fieldName: string) : FieldName {
+export function splitName(fieldName: string): FieldName {
     const fieldNameSplit = fieldName.split('.');
-    const result : FieldName = {
-        name: fieldNameSplit.length == 2? fieldNameSplit[1] : fieldNameSplit[0],
-        prefix: fieldNameSplit.length == 2? fieldNameSplit[0] : ''
+    const result: FieldName = {
+        name: fieldNameSplit.length == 2 ? fieldNameSplit[1] : fieldNameSplit[0],
+        prefix: fieldNameSplit.length == 2 ? fieldNameSplit[0] : ''
     }
-    const withoutStick : FieldName = {
+    const withoutStick: FieldName = {
         name: removeBackStick(result.name),
         prefix: result.prefix
-    } 
+    }
     return withoutStick;
 }
 
 function removeBackStick(name: string) {
-    const withoutBackStick = name.startsWith("`") && name.endsWith("`")? name.slice(1, -1) : name;
+    const withoutBackStick = name.startsWith("`") && name.endsWith("`") ? name.slice(1, -1) : name;
     return withoutBackStick;
 }
 
-const functionAlias : ColumnSchema[] = [
+const functionAlias: ColumnSchema[] = [
     {
         column: 'CURRENT_DATE',
         column_type: 'date',
@@ -329,9 +333,9 @@ const functionAlias : ColumnSchema[] = [
 
 export function findColumn(fieldName: FieldName, columns: ColumnDef[]): ColumnDef {
     //TODO - Put tableAlias always ''
-    const functionType = functionAlias.find( col => col.column.toLowerCase() == fieldName.name.toLowerCase());
-    if(functionType) {
-        const colDef : ColumnDef = {
+    const functionType = functionAlias.find(col => col.column.toLowerCase() == fieldName.name.toLowerCase());
+    if (functionType) {
+        const colDef: ColumnDef = {
             column: functionType.column,
             columnName: functionType.column,
             columnType: functionType.column_type,
@@ -341,9 +345,9 @@ export function findColumn(fieldName: FieldName, columns: ColumnDef[]): ColumnDe
         }
         return colDef;
     }
-    const found = columns.find(col => col.columnName.toLowerCase() == fieldName.name.toLowerCase() && 
+    const found = columns.find(col => col.columnName.toLowerCase() == fieldName.name.toLowerCase() &&
         (fieldName.prefix == '' || fieldName.prefix == col.tableAlias || fieldName.prefix == col.table));
-    if(!found) {
+    if (!found) {
         throw Error('column not found:' + JSON.stringify(fieldName));
     }
     return found;
@@ -351,12 +355,12 @@ export function findColumn(fieldName: FieldName, columns: ColumnDef[]): ColumnDe
 
 export function findColumn2(fieldName: FieldName, table: string, columns: ColumnSchema[]): ColumnSchema {
     //TODO - Put tableAlias always ''
-    const functionType = functionAlias.find( col => col.column == fieldName.name);
-    if(functionType) {
+    const functionType = functionAlias.find(col => col.column == fieldName.name);
+    if (functionType) {
         return functionType;
     }
     const found = columns.find(col => col.column.toLowerCase() === fieldName.name.toLowerCase() && table === col.table);
-    if(!found) {
+    if (!found) {
         throw Error('column not found:' + JSON.stringify(fieldName));
     }
     return found;
@@ -372,7 +376,7 @@ function extractOriginalSql(rule: ParserRuleContext) {
 }
 
 export function getSimpleExpressions(ctx: RuleContext): ParseTree[] {
-    
+
     const tokens: RuleContext[] = [];
     collectSimpleExpr(tokens, ctx);
     return tokens;
@@ -380,13 +384,13 @@ export function getSimpleExpressions(ctx: RuleContext): ParseTree[] {
 
 function collectSimpleExpr(tokens: RuleContext[], parent: RuleContext) {
 
-    if(isSimpleExpression(parent)) {
+    if (isSimpleExpression(parent)) {
         tokens.push(parent);
     }
-    
+
     for (let i = 0; i < parent.childCount; i++) {
         const child = parent.getChild(i);
-        if(child instanceof RuleContext) {
+        if (child instanceof RuleContext) {
             collectSimpleExpr(tokens, child);
         }
     }

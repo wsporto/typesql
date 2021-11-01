@@ -29,7 +29,7 @@ describe('Infer param nullability', () => {
 
         assert.deepStrictEqual(actual, expected);
     })
-    
+
     it(`SELECT (select ? from mytable2) from mytable1`, () => {
         const sql = `SELECT (select ?, ?+? from mytable2) from mytable1`;
         const actual = parseAndInferParamNullability(sql);
@@ -47,7 +47,7 @@ describe('Infer param nullability', () => {
 
         assert.deepStrictEqual(actual, expected);
     })
-    
+
     it(`SELECT * from mytable1 where id > ?`, () => {
         const sql = `SELECT * from mytable1 WHERE id > ? OR id < ?`;
         const actual = parseAndInferParamNullability(sql);

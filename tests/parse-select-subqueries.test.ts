@@ -36,7 +36,7 @@ describe('Test parse select with subqueries', () => {
             parameters: []
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -70,7 +70,7 @@ describe('Test parse select with subqueries', () => {
             parameters: []
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -97,7 +97,7 @@ describe('Test parse select with subqueries', () => {
             parameters: []
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -124,7 +124,7 @@ describe('Test parse select with subqueries', () => {
             parameters: []
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -153,7 +153,7 @@ describe('Test parse select with subqueries', () => {
             parameters: []
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -182,7 +182,7 @@ describe('Test parse select with subqueries', () => {
             parameters: []
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -213,7 +213,7 @@ describe('Test parse select with subqueries', () => {
             parameters: []
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -242,7 +242,7 @@ describe('Test parse select with subqueries', () => {
             parameters: []
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -275,7 +275,7 @@ describe('Test parse select with subqueries', () => {
             parameters: []
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -300,7 +300,7 @@ describe('Test parse select with subqueries', () => {
             parameters: []
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -332,7 +332,7 @@ describe('Test parse select with subqueries', () => {
             ]
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);

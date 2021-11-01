@@ -58,7 +58,7 @@ describe('Test select with multiples tables', () => {
             parameters: []
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -91,7 +91,7 @@ describe('Test select with multiples tables', () => {
             parameters: []
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -129,7 +129,7 @@ describe('Test select with multiples tables', () => {
             parameters: []
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -177,7 +177,7 @@ describe('Test select with multiples tables', () => {
             parameters: []
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -212,7 +212,7 @@ describe('Test select with multiples tables', () => {
             ]
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -282,7 +282,7 @@ describe('Test select with multiples tables', () => {
             ]
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -346,7 +346,7 @@ describe('Test select with multiples tables', () => {
             ]
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -378,7 +378,7 @@ describe('Test select with multiples tables', () => {
             parameters: []
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -405,7 +405,7 @@ describe('Test select with multiples tables', () => {
             parameters: []
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -418,15 +418,15 @@ describe('Test select with multiples tables', () => {
         SELECT id FROM mytable1, mytable2
         `
         const actual = await parseSql(client, sql);
-        const expected : TypeSqlError = {
+        const expected: TypeSqlError = {
             name: 'Invalid sql',
             description: `Column \'id\' in field list is ambiguous`
         }
 
-        if(isRight(actual)) {
+        if (isRight(actual)) {
             assert.fail(`Should return an error`);
         }
-        
+
         assert.deepStrictEqual(actual.left, expected);
     })
 
@@ -451,7 +451,7 @@ describe('Test select with multiples tables', () => {
             parameters: []
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -478,7 +478,7 @@ describe('Test select with multiples tables', () => {
             parameters: []
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -503,7 +503,7 @@ describe('Test select with multiples tables', () => {
             ],
             parameters: []
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -557,7 +557,7 @@ describe('Test select with multiples tables', () => {
             ],
             parameters: []
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -602,7 +602,7 @@ describe('Test select with multiples tables', () => {
             parameters: []
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -646,7 +646,7 @@ describe('Test select with multiples tables', () => {
             parameters: []
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
@@ -689,7 +689,7 @@ describe('Test select with multiples tables', () => {
             parameters: []
 
         }
-        if(isLeft(actual)) {
+        if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);

@@ -12,7 +12,7 @@ export type SchemaDef = {
     multipleRowsResult: boolean;
     columns: ColumnDef[]; //TODO - ColumnDef and ParamterDef should be the same
     orderByColumns?: string[];
-    parameters: ParameterDef[]; 
+    parameters: ParameterDef[];
     data?: ParameterDef[];
 }
 

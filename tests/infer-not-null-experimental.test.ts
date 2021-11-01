@@ -55,7 +55,7 @@ describe('infer-not-null-experimental', () => {
             notNull: false
         }
     ]
-    
+
 
     it('select id from mytable1', () => {
         const sql = 'select id from mytable1';
@@ -152,7 +152,7 @@ describe('infer-not-null-experimental', () => {
         const sql = `
         select value from mytable1 t1 where t1.value is not null
             `;
-        
+
         const actual = parseAndInferNotNull(sql, dbSchema);
 
         const expected = [true];
@@ -165,7 +165,7 @@ describe('infer-not-null-experimental', () => {
         const sql = `
         select t1.value + value from mytable1 t1 where t1.value is not null
             `;
-        
+
         const actual = parseAndInferNotNull(sql, dbSchema);
 
         const expected = [true];
@@ -177,20 +177,20 @@ describe('infer-not-null-experimental', () => {
         const sql = `
         select value as alias from mytable1 t1 where t1.value is not null
             `;
-        
+
         const actual = parseAndInferNotNull(sql, dbSchema);
 
         const expected = [true];
 
         assert.deepStrictEqual(actual, expected);
     })
-    
+
     it('select t1.value from mytable1 t1 where id is not null', async () => {
 
         const sql = `
         select t1.value from mytable1 t1 where id is not null
             `;
-        
+
         const actual = parseAndInferNotNull(sql, dbSchema);
 
         const expected = [false];
@@ -203,7 +203,7 @@ describe('infer-not-null-experimental', () => {
         const sql = `
         select value from mytable1 where 10 > value
             `;
-        
+
         const actual = parseAndInferNotNull(sql, dbSchema);
 
         const expected = [true];
@@ -216,7 +216,7 @@ describe('infer-not-null-experimental', () => {
         const sql = `
         select value from mytable1 where value is not null or (id > 0 or value is not null)
             `;
-        
+
         const actual = parseAndInferNotNull(sql, dbSchema);
 
         const expected = [false];
@@ -229,7 +229,7 @@ describe('infer-not-null-experimental', () => {
         const sql = `
         select value from mytable1 where value is not null and (id > 0 or value is not null)
             `;
-        
+
         const actual = parseAndInferNotNull(sql, dbSchema);
 
         const expected = [true];
@@ -242,7 +242,7 @@ describe('infer-not-null-experimental', () => {
         const sql = `
         select value from mytable1 where value is not null or (id > 0 and (id < 10 and value is not null))
             `;
-        
+
         const actual = parseAndInferNotNull(sql, dbSchema);
 
         const expected = [true];
@@ -255,33 +255,33 @@ describe('infer-not-null-experimental', () => {
         const sql = `
         select value from mytable1 where id > 0 and id < 10 and value > 1
             `;
-        
+
         const actual = parseAndInferNotNull(sql, dbSchema);
 
         const expected = [true];
 
         assert.deepStrictEqual(actual, expected);
     })
-    
+
     it('select value from mytable1 where value is not null and (value > 1 or value is null)', async () => {
 
         const sql = `
         select value from mytable1 where value is not null and (value > 1 or value is null)
             `;
-        
+
         const actual = parseAndInferNotNull(sql, dbSchema);
 
         const expected = [true];
 
         assert.deepStrictEqual(actual, expected);
     })
-    
+
     it('select value from mytable1 where value is not null or (value > 1 and value is null)', async () => {
 
         const sql = `
         select value from mytable1 where value is not null or (value > 1 and value is null)
             `;
-        
+
         const actual = parseAndInferNotNull(sql, dbSchema);
 
         const expected = [true];
@@ -294,7 +294,7 @@ describe('infer-not-null-experimental', () => {
         const sql = `
         select value from mytable1 where value > 1 and value is null
             `;
-        
+
         const actual = parseAndInferNotNull(sql, dbSchema);
 
         const expected = [true];
@@ -307,7 +307,7 @@ describe('infer-not-null-experimental', () => {
         const sql = `
         select value + value from mytable1 where value > 1
             `;
-        
+
         const actual = parseAndInferNotNull(sql, dbSchema);
 
         const expected = [true];
@@ -320,20 +320,20 @@ describe('infer-not-null-experimental', () => {
         const sql = `
         select value + value from mytable1 where id > 1
             `;
-        
+
         const actual = parseAndInferNotNull(sql, dbSchema);
 
         const expected = [false];
 
         assert.deepStrictEqual(actual, expected);
     })
-    
+
     it('select value + id from mytable1 where value > 1', async () => {
 
         const sql = `
         select value + id from mytable1 where value > 1
             `;
-        
+
         const actual = parseAndInferNotNull(sql, dbSchema);
 
         const expected = [true];
@@ -346,7 +346,7 @@ describe('infer-not-null-experimental', () => {
         const sql = `
         select value+id from mytable1 where id > 10
             `;
-        
+
         const actual = parseAndInferNotNull(sql, dbSchema);
 
         const expected = [false];
@@ -359,20 +359,20 @@ describe('infer-not-null-experimental', () => {
         const sql = `
         select id+id, value from mytable1 where value > 10
             `;
-        
+
         const actual = parseAndInferNotNull(sql, dbSchema);
 
         const expected = [true, true];
 
         assert.deepStrictEqual(actual, expected);
     })
-    
+
     it('select sum(value) from mytable1 where value > 10', async () => {
 
         const sql = `
         select sum(value) from mytable1 where value > 10
             `;
-        
+
         const actual = parseAndInferNotNull(sql, dbSchema);
 
         const expected = [false];
@@ -385,7 +385,7 @@ describe('infer-not-null-experimental', () => {
         const sql = `
         select sum(value) from mytable1 where value is not null
             `;
-        
+
         const actual = parseAndInferNotNull(sql, dbSchema);
 
         const expected = [false];
@@ -402,7 +402,7 @@ describe('infer-not-null-experimental', () => {
         UNION
         select value from mytable1 where value is not null
             `;
-        
+
         const actual = parseAndInferNotNull(sql, dbSchema);
 
         const expected = [true];
@@ -419,7 +419,7 @@ describe('infer-not-null-experimental', () => {
         UNION
         select value from mytable1
             `;
-        
+
         const actual = parseAndInferNotNull(sql, dbSchema);
 
         const expected = [false];
@@ -436,7 +436,7 @@ describe('infer-not-null-experimental', () => {
         UNION
         select value from mytable1 where value is not null
             `;
-        
+
         const actual = parseAndInferNotNull(sql, dbSchema);
 
         const expected = [false];
@@ -453,7 +453,7 @@ describe('infer-not-null-experimental', () => {
         UNION
         select value from mytable1
             `;
-        
+
         const actual = parseAndInferNotNull(sql, dbSchema);
 
         const expected = [false];
@@ -468,7 +468,7 @@ describe('infer-not-null-experimental', () => {
         UNION 
         select *, 'description' as description from mytable2 where name is not null
             `;
-        
+
         const actual = parseAndInferNotNull(sql, dbSchema);
 
         const expected = [true, true, false];
@@ -485,7 +485,7 @@ describe('infer-not-null-experimental', () => {
         UNION
         select value+id from mytable1
             `;
-        
+
         const actual = parseAndInferNotNull(sql, dbSchema);
 
         const expected = [false];
@@ -502,7 +502,7 @@ describe('infer-not-null-experimental', () => {
         UNION
         select value+id from mytable1 where value is not null
             `;
-        
+
         const actual = parseAndInferNotNull(sql, dbSchema);
 
         const expected = [true];
@@ -515,7 +515,7 @@ describe('infer-not-null-experimental', () => {
         const sql = `
         select (select id from mytable1 where id = 10), name, name as name2 from mytable2 where name = 'abc'
             `;
-        
+
         const actual = parseAndInferNotNull(sql, dbSchema);
 
         const expected = [false, true, true];
@@ -528,7 +528,7 @@ describe('infer-not-null-experimental', () => {
         const sql = `
         select (select id from mytable1 where id = 10) as name1, name, name as name2 from mytable2 where name = 'abc'
             `;
-        
+
         const actual = parseAndInferNotNull(sql, dbSchema);
 
         const expected = [false, true, true];
@@ -541,20 +541,20 @@ describe('infer-not-null-experimental', () => {
         const sql = `
         select name, (select id from mytable1 where id = 10) from mytable2 where id is not null
             `;
-        
+
         const actual = parseAndInferNotNull(sql, dbSchema);
 
         const expected = [false, false];
 
         assert.deepStrictEqual(actual, expected);
     })
-    
+
     it('select value + subquery', async () => {
 
         const sql = `
         select id + (select id from mytable2 where id = 10 and id is not null) from mytable1 m1 where id is not null
             `;
-        
+
         const actual = parseAndInferNotNull(sql, dbSchema);
 
         const expected = [false];
@@ -567,7 +567,7 @@ describe('infer-not-null-experimental', () => {
         const sql = `
         select name from (select name from mytable2 where name is not null) t1
             `;
-        
+
         const actual = parseAndInferNotNull(sql, dbSchema);
 
         const expected = [true];
@@ -580,7 +580,7 @@ describe('infer-not-null-experimental', () => {
         const sql = `
         select name from (select id as name from mytable2) t1
             `;
-        
+
         const actual = parseAndInferNotNull(sql, dbSchema);
 
         const expected = [true];
@@ -593,7 +593,7 @@ describe('infer-not-null-experimental', () => {
         const sql = `
         select id from (select * from mytable2) t1
             `;
-        
+
         const actual = parseAndInferNotNull(sql, dbSchema);
 
         const expected = [true];
@@ -606,7 +606,7 @@ describe('infer-not-null-experimental', () => {
         const sql = `
         select * from (select * from mytable2 where name is not null and id is not null) t1
             `;
-        
+
         const actual = parseAndInferNotNull(sql, dbSchema);
 
         const expected = [true, true];
@@ -619,7 +619,7 @@ describe('infer-not-null-experimental', () => {
         const sql = `
         select * from (select * from mytable2 where name is not null or id is not null) t1
             `;
-        
+
         const actual = parseAndInferNotNull(sql, dbSchema);
 
         const expected = [true, false];
@@ -783,7 +783,7 @@ describe('infer-not-null-experimental', () => {
         inner join mytable2 t2 on t1.id = t2.id
         `;
         const actual = parseAndInferNotNull(sql, dbSchema);
-        
+
         const expected = [true, false, true, false];
 
         assert.deepStrictEqual(actual, expected);
@@ -798,7 +798,7 @@ describe('infer-not-null-experimental', () => {
         on t1.id = t2.id
         `;
         const actual = parseAndInferNotNull(sql, dbSchema);
-        
+
         const expected = [true, false];
 
         assert.deepStrictEqual(actual, expected);
@@ -813,7 +813,7 @@ describe('infer-not-null-experimental', () => {
         where t2.name is not null
         `;
         const actual = parseAndInferNotNull(sql, dbSchema);
-        
+
         const expected = [false, true];
 
         assert.deepStrictEqual(actual, expected);
@@ -829,7 +829,7 @@ describe('infer-not-null-experimental', () => {
         where t.value > 10
         `;
         const actual = parseAndInferNotNull(sql, dbSchema);
-        
+
         const expected = [true, true];
 
         assert.deepStrictEqual(actual, expected);
@@ -843,7 +843,7 @@ describe('infer-not-null-experimental', () => {
         where t1.value is not null
         `;
         const actual = parseAndInferNotNull(sql, dbSchema);
-        
+
         const expected = [true, false];
 
         assert.deepStrictEqual(actual, expected);
@@ -857,7 +857,7 @@ describe('infer-not-null-experimental', () => {
         where t1.value is not null
         `;
         const actual = parseAndInferNotNull(sql, dbSchema);
-        
+
         const expected = [true, false];
 
         assert.deepStrictEqual(actual, expected);
@@ -870,7 +870,7 @@ describe('infer-not-null-experimental', () => {
         INNER JOIN mytable2 t2 on t1.name = t2.name
         `;
         const actual = parseAndInferNotNull(sql, dbSchema);
-        
+
         const expected = [true, true];
 
         assert.deepStrictEqual(actual, expected);
@@ -883,7 +883,7 @@ describe('infer-not-null-experimental', () => {
         INNER JOIN mytable2 t2 on t1.name = t2.name or t1.name is null
         `;
         const actual = parseAndInferNotNull(sql, dbSchema);
-        
+
         const expected = [false, false];
 
         assert.deepStrictEqual(actual, expected);
