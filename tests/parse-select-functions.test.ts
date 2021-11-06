@@ -432,4 +432,61 @@ describe('Test parse select with functions', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     })
+
+    it(`SELECT IFNULL(NULL, 'yes') as result`, async () => {
+        const sql = `
+        SELECT IFNULL(NULL, 'yes') as result1, IFNULL(10, 'yes') as result2
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true, //TODO - ONLY FUNCTION, SHOULD BE FALSE
+            columns: [
+                {
+                    name: 'result1',
+                    dbtype: 'varchar',
+                    notNull: true
+                },
+                {
+                    name: 'result2',
+                    dbtype: 'varchar',
+                    notNull: true
+                }
+            ],
+            parameters: []
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    });
+
+    it(`SELECT IFNULL(value, id) as result from mytable1`, async () => {
+        const sql = `
+        SELECT IFNULL(value, id) as result from mytable1
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'result',
+                    dbtype: 'int',
+                    notNull: true
+                }
+            ],
+            parameters: []
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    });
 });

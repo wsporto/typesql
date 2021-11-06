@@ -166,6 +166,51 @@ describe('Infer column nullability', () => {
         assert.deepStrictEqual(actual, expected);
     })
 
+    it(`SELECT ifnull(value, 'yes') FROM mytable1`, () => {
+        const sql = `SELECT ifnull(value, 'yes') FROM mytable1`;
+        const actual = parseAndInferNotNull(sql, dbSchema);
+
+        const expected = [true];
+
+        assert.deepStrictEqual(actual, expected);
+    })
+
+    it(`SELECT ifnull(value, value) FROM mytable1`, () => {
+        const sql = `SELECT ifnull(value, value) FROM mytable1`;
+        const actual = parseAndInferNotNull(sql, dbSchema);
+
+        const expected = [false];
+
+        assert.deepStrictEqual(actual, expected);
+    })
+
+    it(`SELECT ifnull(id, value) FROM mytable1`, () => {
+        const sql = `SELECT ifnull(id, value) FROM mytable1`;
+        const actual = parseAndInferNotNull(sql, dbSchema);
+
+        const expected = [true];
+
+        assert.deepStrictEqual(actual, expected);
+    })
+
+    it(`SELECT ifnull(value, id) FROM mytable1`, () => {
+        const sql = `SELECT ifnull(value, id) FROM mytable1`;
+        const actual = parseAndInferNotNull(sql, dbSchema);
+
+        const expected = [true];
+
+        assert.deepStrictEqual(actual, expected);
+    })
+
+    it(`SELECT ifnull('yes', value) FROM mytable1`, () => {
+        const sql = `SELECT ifnull('yes', value) FROM mytable1`;
+        const actual = parseAndInferNotNull(sql, dbSchema);
+
+        const expected = [true];
+
+        assert.deepStrictEqual(actual, expected);
+    })
+
     it(`SELECT concat(?, ifnull(?, null)) FROM mytable1`, () => {
         const sql = `SELECT concat(?, ifnull(?, null)) FROM mytable1`;
         const actual = parseAndInferNotNull(sql, dbSchema);

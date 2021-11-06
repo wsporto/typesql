@@ -234,7 +234,14 @@ function inferNotNullRuntimeFunctionCall(simpleExprRuntimeFunction: SimpleExprRu
 
 function inferNotNullFunctionCall(functionCall: FunctionCallContext, dbSchema: ColumnSchema[], fromColumns: ColumnDef[]): boolean {
     const functionName = functionCall.pureIdentifier()?.text.toLowerCase() || functionCall.qualifiedIdentifier()?.text.toLowerCase();
+    const udfExprList = functionCall.udfExprList()?.udfExpr();
     if (functionName == 'ifnull') {
+        if (udfExprList) {
+            const [expr1, expr2] = udfExprList;
+            const notNull = inferNotNullExpr(expr1.expr(), dbSchema, fromColumns) || inferNotNullExpr(expr2.expr(), dbSchema, fromColumns);
+            return notNull;
+        }
+
         return false;
     }
     if (functionName == 'avg') {
@@ -243,7 +250,7 @@ function inferNotNullFunctionCall(functionCall: FunctionCallContext, dbSchema: C
     if (functionName == 'str_to_date') {
         return false; //invalid date
     }
-    const udfExprList = functionCall.udfExprList()?.udfExpr();
+
     if (udfExprList) {
         return udfExprList.filter((expr, paramIndex) => {
             return functionName == 'timestampdiff' ? paramIndex != 0 : true //filter the first parameter of timestampdiff function
