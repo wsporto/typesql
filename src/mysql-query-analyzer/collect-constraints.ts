@@ -1077,7 +1077,26 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
             return freshVar('int', 'int');
         }
 
-        throw Error('Function not supported: ' + functionIdentifier);
+        if (functionIdentifier == 'ifnull') {
+            const functionType = freshVar(simpleExpr.text, '?');
+            const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr();
+            if (udfExprList) {
+                const [expr1, expr2] = udfExprList;
+
+                walkExpr(context, expr1.expr());
+
+                const expr2Type = walkExpr(context, expr2.expr());
+                context.constraints.push({
+                    expression: simpleExpr.text,
+                    type1: functionType,
+                    type2: expr2Type
+                })
+
+            }
+            return functionType;
+        }
+
+        throw Error('Function not supported: ' + functionIdentifier); //TODO ifnull
     }
 
     if (simpleExpr instanceof SimpleExprParamMarkerContext) {
@@ -1157,7 +1176,11 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
         if (boolLiteral) {
             return freshVar(boolLiteral.text, 'bit');
         }
-        throw Error('SimpleExprLiteralContext');
+        const nullLiteral = literal.nullLiteral();
+        if (nullLiteral) {
+            return freshVar(nullLiteral.text, '?');
+        }
+        throw Error('literal not supported:' + literal.text);
         //...
     }
 
