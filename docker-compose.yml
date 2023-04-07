@@ -1,15 +1,16 @@
 version: '3'
 services:
   mysql-dev: 
-    image: "mysql:8.0.20"
+    image: "mysql:5.7.41"
     container_name: "mysql-dev"
     ports:
       - "3306:3306"
+    command: --default-authentication-plugin=mysql_native_password
     environment:
       MYSQL_ROOT_PASSWORD: "password"
       MYSQL_DATABASE: "mydb"
   flyway:
-    image: flyway/flyway
+    image: flyway/flyway:7.15
     container_name: "flyway"
     command: -url=jdbc:mysql://root:password@host.docker.internal:3306/mydb -connectRetries=60 migrate
     volumes:
