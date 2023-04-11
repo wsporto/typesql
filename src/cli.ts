@@ -88,7 +88,11 @@ function validateDirectories(dir: string) {
 function watchDirectories(client: DbClient, dirPath: string, target: 'node' | 'deno') {
     const dirGlob = `${dirPath}/**/*.sql`;
 
-    chokidar.watch(dirGlob)
+    chokidar.watch(dirGlob, {
+        awaitWriteFinish: {
+            stabilityThreshold: 100
+        }
+    })
         .on('add', path => rewiteFiles(client, path, target))
         .on('change', path => rewiteFiles(client, path, target));
 }
