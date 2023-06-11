@@ -25,7 +25,7 @@ CREATE TABLE mydb.all_types (
 	int_column INT, -- code: 3
 	float_column FLOAT, -- code: 4
 	double_column DOUBLE, -- code: 5
-	timestamp_column TIMESTAMP, -- code: 7
+	timestamp_column TIMESTAMP NULL, -- code: 7
 	bigint_column BIGINT, -- code: 8
 	mediumint_column MEDIUMINT, -- code: 9
 	date_column DATE, -- code: 10
