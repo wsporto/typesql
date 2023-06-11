@@ -77,7 +77,13 @@ describe('parse delete statements', () => {
         })
         //tableRef ({serverVersion >= 80017}? tableAlias)?
      */
-    it('delete from mytable1 t1 where t1.id = ?', async () => {
+
+    //in order to use this in mocha, don't use arrow function. 
+    it('delete from mytable1 t1 where t1.id = ?', async function (done) {
+
+        if (!client.isVersion8()) {
+            this.skip();
+        }
 
         const sql = 'delete from mytable1 t1 where t1.id = ?';
         const actual = await parseSql(client, sql);
@@ -105,6 +111,7 @@ describe('parse delete statements', () => {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
+        done()
     })
 
 });

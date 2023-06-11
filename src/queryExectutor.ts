@@ -11,9 +11,12 @@ const connectionNotOpenError: TypeSqlError = {
 export class DbClient {
 
     private connection: Connection | null;
+    mySqlVersion: string;
     async connect(connectionUri: string): Promise<Either<TypeSqlError, true>> {
         try {
             this.connection = await mysql2.createConnection(connectionUri);
+            const [rows] = await this.connection.execute("select @@version as version");
+            this.mySqlVersion = (rows as any[])[0].version;
             return right(true);
         }
         catch (e) {
@@ -101,5 +104,9 @@ export class DbClient {
             description: err.message
         }
         return left(error);
+    }
+
+    isVersion8() {
+        return this.mySqlVersion.startsWith("8.");
     }
 }
