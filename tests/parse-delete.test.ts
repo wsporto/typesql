@@ -79,7 +79,7 @@ describe('parse delete statements', () => {
      */
 
     //in order to use this in mocha, don't use arrow function. 
-    it('delete from mytable1 t1 where t1.id = ?', async function (done) {
+    it('delete from mytable1 t1 where t1.id = ?', async function () {
 
         if (!client.isVersion8()) {
             this.skip();
@@ -111,7 +111,6 @@ describe('parse delete statements', () => {
             assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
-        done()
     })
 
 });
