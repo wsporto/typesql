@@ -143,7 +143,7 @@ export async function parseSql(client: DbClient, sql: string): Promise<Either<Ty
         const result = describeSql(dbSchema.right, sql);
         return right(result);
     }
-    catch (e) {
+    catch (e: any) {
         const InvalidSqlError: TypeSqlError = {
             name: 'Invalid SQL',
             description: e.message,

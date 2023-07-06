@@ -62,7 +62,7 @@ describe('type-inference - functions', () => {
             parseAndInfer(sql, dbSchema);
             assert.fail('Should throw an exception');
         }
-        catch (e) {
+        catch (e: any) {
             const expectedMessage = 'Type mismatch: time and date';
             assert.deepStrictEqual(e.message, expectedMessage);
         }
@@ -74,7 +74,7 @@ describe('type-inference - functions', () => {
             parseAndInfer(sql, dbSchema);
             assert.fail('Should throw an exception');
         }
-        catch (e) {
+        catch (e: any) {
             const expectedMessage = 'Type mismatch: time and date';
             assert.deepStrictEqual(e.message, expectedMessage);
         }
@@ -86,7 +86,7 @@ describe('type-inference - functions', () => {
             parseAndInfer(sql, dbSchema);
             assert.fail('Should throw an exception');
         }
-        catch (e) {
+        catch (e: any) {
             const expectedMessage = 'Type mismatch: time and date';
             assert.deepStrictEqual(e.message, expectedMessage);
         }
@@ -138,7 +138,7 @@ describe('type-inference - functions', () => {
             parseAndInfer(sql, dbSchema);
             assert.fail('Should throw an exception'); //Only DATE and DATETIME are allowed
         }
-        catch (e) {
+        catch (e: any) {
             const expectedMessage = 'Type mismatch: date and time';
             assert.deepStrictEqual(e.message, expectedMessage);
         }
@@ -149,7 +149,7 @@ describe('type-inference - functions', () => {
             parseAndInfer(sql, dbSchema);
             assert.fail('Should throw an exception'); //Only DATE and DATETIME are allowed
         }
-        catch (e) {
+        catch (e: any) {
             const expectedMessage = 'Type mismatch: date and time';
             assert.deepStrictEqual(e.message, expectedMessage);
         }
@@ -160,7 +160,7 @@ describe('type-inference - functions', () => {
             parseAndInfer(sql, dbSchema);
             assert.fail('Should throw an exception'); //Only DATE and DATETIME are allowed
         }
-        catch (e) {
+        catch (e: any) {
             const expectedMessage = 'Type mismatch: date and time';
             assert.deepStrictEqual(e.message, expectedMessage);
         }
@@ -450,7 +450,7 @@ describe('type-inference - functions', () => {
             parseAndInfer(sql, dbSchema);
             assert.fail('Should throw an exception'); //Only DATE and DATETIME are allowed
         }
-        catch (e) {
+        catch (e: any) {
             const expectedMessage = 'Type mismatch: varchar and datetime';
             assert.deepStrictEqual(e.message, expectedMessage);
         }
@@ -538,7 +538,7 @@ describe('type-inference - functions', () => {
             parseAndInfer(sql, dbSchema);
             assert.fail("Should thrown an exception.");
         }
-        catch (e) {
+        catch (e: any) {
             const expected = 'Type mismatch: varchar and datetime';
             assert.deepStrictEqual(e.message, expected);
         }
@@ -609,7 +609,7 @@ describe('type-inference - functions', () => {
             parseAndInfer(sql, dbSchema);
             assert.fail("Should thrown an exception.");
         }
-        catch (e) {
+        catch (e: any) {
             const expected = 'Type mismatch: varchar and datetime';
             assert.deepStrictEqual(e.message, expected);
         }
@@ -622,7 +622,7 @@ describe('type-inference - functions', () => {
             parseAndInfer(sql, dbSchema);
             assert.fail("Should thrown an exception.");
         }
-        catch (e) {
+        catch (e: any) {
             const expected = 'Type mismatch: varchar and datetime';
             assert.deepStrictEqual(e.message, expected);
         }
@@ -635,7 +635,7 @@ describe('type-inference - functions', () => {
             parseAndInfer(sql, dbSchema);
             assert.fail("Should thrown an exception.");
         }
-        catch (e) {
+        catch (e: any) {
             const expected = 'Type mismatch: varchar and datetime';
             assert.deepStrictEqual(e.message, expected);
         }
@@ -648,7 +648,7 @@ describe('type-inference - functions', () => {
             parseAndInfer(sql, dbSchema);
             assert.fail("Should thrown an exception.");
         }
-        catch (e) {
+        catch (e: any) {
             const expected = 'Type mismatch: varchar and datetime';
             assert.deepStrictEqual(e.message, expected);
         }
@@ -738,7 +738,7 @@ describe('type-inference - functions', () => {
             parseAndInfer(sql, dbSchema);
             assert.fail("Should thrown an exception.");
         }
-        catch (e) {
+        catch (e: any) {
             const expected = 'Type mismatch: number and varchar';
             assert.deepStrictEqual(e.message, expected);
         }
@@ -753,7 +753,7 @@ describe('type-inference - functions', () => {
             parseAndInfer(sql, dbSchema);
             assert.fail("Should thrown an exception.");
         }
-        catch (e) {
+        catch (e: any) {
             const expected = 'Type mismatch: number and varchar';
             assert.deepStrictEqual(e.message, expected);
         }
@@ -787,7 +787,7 @@ describe('type-inference - functions', () => {
             parseAndInfer(sql, dbSchema);
             assert.fail("Should thrown an exception.");
         }
-        catch (e) {
+        catch (e: any) {
             const expected = 'Type mismatch: number and varchar';
             assert.deepStrictEqual(e.message, expected);
         }
@@ -802,7 +802,7 @@ describe('type-inference - functions', () => {
             parseAndInfer(sql, dbSchema);
             assert.fail("Should thrown an exception.");
         }
-        catch (e) {
+        catch (e: any) {
             const expected = 'Type mismatch: number and datetime';
             assert.deepStrictEqual(e.message, expected);
         }
@@ -837,7 +837,7 @@ describe('type-inference - functions', () => {
             parseAndInfer(sql, dbSchema);
             assert.fail("Should thrown an exception.");
         }
-        catch (e) {
+        catch (e: any) {
             const expected = 'Type mismatch: number and datetime';
             assert.deepStrictEqual(e.message, expected);
         }

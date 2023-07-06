@@ -1,4 +1,4 @@
-import mysql2, { Connection } from "mysql2/promise";
+import { Connection, createConnection } from "mysql2/promise";
 import { Either, right, left } from "fp-ts/lib/Either";
 import { TypeSqlError } from "./types";
 import { ColumnSchema, ColumnSchema2 } from "./mysql-query-analyzer/types";
@@ -14,12 +14,12 @@ export class DbClient {
     mySqlVersion: string;
     async connect(connectionUri: string): Promise<Either<TypeSqlError, true>> {
         try {
-            this.connection = await mysql2.createConnection(connectionUri);
+            this.connection = await createConnection(connectionUri);
             const [rows] = await this.connection.execute("select @@version as version");
             this.mySqlVersion = (rows as any[])[0].version;
             return right(true);
         }
-        catch (e) {
+        catch (e: any) {
             const connError: TypeSqlError = {
                 name: 'Connection error',
                 description: e.message
