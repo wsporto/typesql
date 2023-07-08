@@ -35,13 +35,15 @@ export class DbClient {
     }
 
     async loadDbSchema(): Promise<Either<TypeSqlError, ColumnSchema[]>> {
-        const sql = `
-        SELECT TABLE_SCHEMA as "schema", TABLE_NAME as "table", COLUMN_NAME as "column", DATA_TYPE as "column_type", if(IS_NULLABLE='NO', true, false) as "notNull",
-            COLUMN_KEY as "columnKey"
-        FROM INFORMATION_SCHEMA.COLUMNS 
-        ORDER BY TABLE_NAME, ORDINAL_POSITION
-        `
+
         if (this.connection != null) {
+            const sql = `
+                SELECT TABLE_SCHEMA as "schema", TABLE_NAME as "table", COLUMN_NAME as "column", DATA_TYPE as "column_type", if(IS_NULLABLE='NO', true, false) as "notNull",
+                    COLUMN_KEY as "columnKey"
+                FROM INFORMATION_SCHEMA.COLUMNS 
+                WHERE TABLE_SCHEMA = "${this.connection.config.database}"
+                ORDER BY TABLE_NAME, ORDINAL_POSITION
+            `
             return this.connection.execute(sql)
                 .then(res => {
                     const columns = res[0] as ColumnSchema[];
