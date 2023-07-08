@@ -13,7 +13,7 @@ describe('load-schema', () => {
         await client.closeConnection();
     })
 
-    it.only('filter schema', async () => {
+    it('filter schema', async () => {
 
         const actual = await client.loadDbSchema();
         if (isLeft(actual)) {
