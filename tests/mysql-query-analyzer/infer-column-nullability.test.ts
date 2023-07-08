@@ -383,11 +383,19 @@ describe('Infer column nullability', () => {
         assert.deepStrictEqual(actual, expected);
     })
 
-    it(`SELECT YEAR(?), MONTH(?), DAY(?), HOUR(?), MINUTE(?), SECOND(?)`, () => {
-        const sql = `SELECT COALESCE(id, id, id+id), COALESCE(id, value, id+id) from mytable1`;
+    it(`SELECT COALESCE(id, id, id+id), COALESCE(value, id+value), COALESCE(value, id+value, id+id) from mytable1`, () => {
+        const sql = `SELECT COALESCE(id, id, id+id), COALESCE(value, id+value), COALESCE(value, id+value, id+id) from mytable1`;
         const actual = parseAndInferNotNull(sql, dbSchema);
 
-        const expected = [true, false]
+        const expected = [true, false, true]
+
+        assert.deepStrictEqual(actual, expected);
+    })
+
+    it(`SELECT COALESCE(SUM(value), 0) as total from mytable1`, () => {
+        const sql = `SELECT COALESCE(SUM(value), 0) as total from mytable1`;
+        const actual = parseAndInferNotNull(sql, dbSchema);
+        const expected = [true]
 
         assert.deepStrictEqual(actual, expected);
     })

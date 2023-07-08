@@ -226,7 +226,8 @@ function inferNotNullRuntimeFunctionCall(simpleExprRuntimeFunction: SimpleExprRu
     }
     if (functionCall.COALESCE_SYMBOL()) {
         const exprList = functionCall.exprListWithParentheses()?.exprList().expr()!;
-        return exprList.every(expr => inferNotNullExpr(expr, dbSchema, fromColumns));
+        //COALEST: Return the first non-null value in a list
+        return exprList.some(expr => inferNotNullExpr(expr, dbSchema, fromColumns));
     }
     throw Error('Function not supported: ' + functionCall.text);
 
