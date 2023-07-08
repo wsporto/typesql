@@ -1,6 +1,6 @@
 import assert from "assert";
-import { renameInvalidNames, escapeInvalidTsField, generateTsDescriptor } from "../src/code-generator";
-import { SchemaDef } from "../src/types";
+import { renameInvalidNames, escapeInvalidTsField, generateTsDescriptor, removeDuplicatedParameters } from "../src/code-generator";
+import { ParameterDef, SchemaDef } from "../src/types";
 
 describe('rename invalid names', () => {
 
@@ -87,6 +87,103 @@ describe('rename invalid names', () => {
         assert.deepStrictEqual(actual.data!.map(col => col.name), ['"id+id"']);
         assert.deepStrictEqual(actual.parameters.map(col => col.name), ['name']); //remove duplicated parameters
         assert.deepStrictEqual(actual.orderByColumns, ['id', 'count(*)', `concat(name, ' ', name)`]);
+    })
+
+    it('removeDuplicatedParameters: notNull (true) and notNull (false)', async () => {
+
+        const parameters: ParameterDef[] = [
+            {
+                name: 'name',
+                columnType: 'varchar',
+                notNull: true,
+            },
+            {
+                name: 'name',
+                columnType: 'varchar',
+                notNull: false,
+            }
+        ]
+
+        const expected: ParameterDef[] = [{
+            name: 'name',
+            columnType: 'varchar',
+            notNull: false,
+        }]
+
+        const actual = removeDuplicatedParameters(parameters);
+        assert.deepStrictEqual(actual, expected);
+    })
+
+    it('removeDuplicatedParameters: notNull (false) and notNull (true)', async () => {
+
+        const parameters: ParameterDef[] = [
+            {
+                name: 'name',
+                columnType: 'varchar',
+                notNull: false,
+            },
+            {
+                name: 'name',
+                columnType: 'varchar',
+                notNull: true,
+            }
+        ]
+
+        const expected: ParameterDef[] = [{
+            name: 'name',
+            columnType: 'varchar',
+            notNull: false,
+        }]
+
+        const actual = removeDuplicatedParameters(parameters);
+        assert.deepStrictEqual(actual, expected);
+    })
+
+    it('removeDuplicatedParameters: notNull (true), notNull (true), notNull(false) ', async () => {
+
+        const parameters: ParameterDef[] = [
+            {
+                name: 'name',
+                columnType: 'varchar',
+                notNull: true,
+            },
+            {
+                name: 'id',
+                columnType: 'varchar',
+                notNull: true,
+            },
+            {
+                name: 'name',
+                columnType: 'varchar',
+                notNull: true,
+            },
+            {
+                name: 'name',
+                columnType: 'varchar',
+                notNull: false,
+            },
+            {
+                name: 'id',
+                columnType: 'varchar',
+                notNull: false,
+            }
+        ]
+
+        const expected: ParameterDef[] = [
+            {
+                name: 'name',
+                columnType: 'varchar',
+                notNull: false
+            },
+            {
+                columnType: "varchar",
+                name: "id",
+                notNull: false
+            }
+        ]
+
+        const actual = removeDuplicatedParameters(parameters);
+        assert.deepStrictEqual(actual, expected);
     })
 
 });

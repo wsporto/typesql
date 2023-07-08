@@ -164,14 +164,21 @@ export function generateTsDescriptor(queryInfo: SchemaDef): TsDescriptor {
     };
 }
 
-function removeDuplicatedParameters(parameters: ParameterDef[]): ParameterDef[] {
-    const columnsCount: Map<string, boolean> = new Map();
-    return parameters.filter(param => {
-        if (!columnsCount.has(param.name)) {
-            columnsCount.set(param.name, true);
+export function removeDuplicatedParameters(parameters: ParameterDef[]): ParameterDef[] {
+    const columnsCount: Map<string, ParameterDef> = new Map();
+    parameters.forEach(param => {
+        const dupParam = columnsCount.get(param.name);
+        if (dupParam != null) { //duplicated - two parameter null and notNull, resturn the null param (notNull == false)
+            if (param.notNull == false) {
+                columnsCount.set(param.name, param);
+            }
             return param;
         }
+        else {
+            columnsCount.set(param.name, param);
+        }
     })
+    return [...columnsCount.values()];
 }
 
 export function renameInvalidNames(columnNames: string[]): string[] {
