@@ -1,8 +1,8 @@
 version: '3'
 services:
   mysql-dev: 
-    image: "mysql:5.7.41"
-    # image: "mysql:8.0.33"
+    # image: "mysql:5.7.41"
+    image: "mysql:8.0.33"
     container_name: "mysql-dev"
     ports:
       - "3306:3306"

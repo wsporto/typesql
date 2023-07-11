@@ -10,12 +10,13 @@ import { ColumnSchema, ColumnDef, FieldName } from "./types";
 import { getColumnsFrom, findColumn, splitName, selectAllColumns } from "./select-columns";
 import { getParentContext, inferParameterNotNull } from "./infer-param-nullability";
 
-export function parseAndInferNotNull(sql: string, dbSchema: ColumnSchema[]) {
+//TODO - COLUMN SCHEMA DEFAULT = []
+export function parseAndInferNotNull(sql: string, dbSchema: ColumnSchema[], withSchema: ColumnSchema[] = []) {
     const queryTree = parse(sql);
     const selectStatement = queryTree.simpleStatement()?.selectStatement();
     if (selectStatement) {
         const queries = getQuerySpecificationsFromSelectStatement(selectStatement);
-        const notNullAllQueries = queries.map(query => inferNotNull(query, dbSchema)); //TODO - UNION
+        const notNullAllQueries = queries.map(query => inferNotNull(query, dbSchema, withSchema)); //TODO - UNION
         const result = zip(notNullAllQueries).map(notNullColumn => notNullColumn.every(notNull => notNull == true));
         return result;
 
@@ -28,8 +29,8 @@ function zip(arrays: boolean[][]): boolean[][] {
     });
 }
 
-export function inferNotNull(querySpec: QuerySpecificationContext, dbSchema: ColumnSchema[]) {
-    const fromColumns = getColumnsFrom(querySpec, dbSchema); //TODO - called twice
+export function inferNotNull(querySpec: QuerySpecificationContext, dbSchema: ColumnSchema[], withSchema: ColumnSchema[]) {
+    const fromColumns = getColumnsFrom(querySpec, dbSchema, withSchema); //TODO - called twice
 
     const notNullInference: boolean[] = [];
     const whereClause = querySpec.whereClause();

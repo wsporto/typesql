@@ -54,6 +54,7 @@ export type Constraint = {
 
 export type InferenceContext = {
     dbSchema: ColumnSchema[];
+    withSchema: ColumnSchema[];
     parameters: TypeVar[];
     constraints: Constraint[];
     fromColumns: ColumnDef[];
@@ -82,17 +83,17 @@ export type NamedNodes = {
     [key: string]: Type;
 }
 
-export function analiseTree(tree: RuleContext, dbSchema: ColumnSchema[], namedParameters: string[]): TypeInferenceResult {
+export function analiseTree(tree: RuleContext, dbSchema: ColumnSchema[], withSchema: ColumnSchema[], namedParameters: string[]): TypeInferenceResult {
 
     if (tree instanceof QueryContext) {
 
         const selectStatement = tree.simpleStatement()?.selectStatement();
         if (selectStatement) {
-            return analiseSelectStatement(selectStatement, dbSchema, namedParameters);
+            return analiseSelectStatement(selectStatement, dbSchema, withSchema, namedParameters);
         }
         const insertStatement = tree.simpleStatement()?.insertStatement();
         if (insertStatement) {
-            const insertStmt = analiseInsertStatement(insertStatement, dbSchema);
+            const insertStmt = analiseInsertStatement(insertStatement, dbSchema, withSchema);
             const TypeInfer: TypeInferenceResult = {
                 columns: [],
                 parameters: insertStmt.parameters.map(param => param.columnType)
@@ -101,7 +102,7 @@ export function analiseTree(tree: RuleContext, dbSchema: ColumnSchema[], namedPa
         }
         const updateStatement = tree.simpleStatement()?.updateStatement();
         if (updateStatement) {
-            const updateStmt = analiseUpdateStatement(updateStatement, dbSchema);
+            const updateStmt = analiseUpdateStatement(updateStatement, dbSchema, withSchema);
             const TypeInfer: TypeInferenceResult = {
                 columns: [],
                 parameters: updateStmt.data.map(param => param.columnType)
@@ -116,7 +117,7 @@ export function analiseTree(tree: RuleContext, dbSchema: ColumnSchema[], namedPa
 
 type ExprOrDefault = ExprContext | TerminalNode;
 
-export function analiseInsertStatement(insertStatement: InsertStatementContext, dbSchema: ColumnSchema[]): InsertInfoResult {
+export function analiseInsertStatement(insertStatement: InsertStatementContext, dbSchema: ColumnSchema[], withSchema: ColumnSchema[]): InsertInfoResult {
 
     const valuesContext = insertStatement.insertFromConstructor()!.insertValues().valueList().values()[0];
     const insertColumns = getInsertColumns(insertStatement, dbSchema);
@@ -136,6 +137,7 @@ export function analiseInsertStatement(insertStatement: InsertStatementContext, 
     exprOrDefaultList.forEach((expr, index) => {
         const context: InferenceContext = {
             dbSchema,
+            withSchema,
             constraints: [],
             parameters: [],
             fromColumns: []
@@ -171,7 +173,7 @@ export function analiseInsertStatement(insertStatement: InsertStatementContext, 
     return typeInferenceResult;
 }
 
-export function analiseDeleteStatement(deleteStatement: DeleteStatementContext, dbSchema: ColumnSchema[]): DeleteInfoResult {
+export function analiseDeleteStatement(deleteStatement: DeleteStatementContext, dbSchema: ColumnSchema[], withSchema: ColumnSchema[]): DeleteInfoResult {
 
     const whereExpr = deleteStatement.whereClause()?.expr();
     const deleteColumns = getDeleteColumns(deleteStatement, dbSchema);
@@ -182,7 +184,8 @@ export function analiseDeleteStatement(deleteStatement: DeleteStatementContext, 
             fromColumns: deleteColumns,
             parameters: [],
             constraints: [],
-            dbSchema
+            dbSchema,
+            withSchema
         }
         walkExpr(context, whereExpr);
         const typeInfo = generateTypeInfo(context.parameters, context.constraints);
@@ -205,7 +208,7 @@ export function analiseDeleteStatement(deleteStatement: DeleteStatementContext, 
     return typeInferenceResult;
 }
 
-export function analiseUpdateStatement(updateStatement: UpdateStatementContext, dbSchema: ColumnSchema[]): UpdateInfoResult {
+export function analiseUpdateStatement(updateStatement: UpdateStatementContext, dbSchema: ColumnSchema[], withSchema: ColumnSchema[]): UpdateInfoResult {
 
     const updateElement = updateStatement.updateList().updateElement();
     const updateColumns = getUpdateColumns(updateStatement, dbSchema);
@@ -217,6 +220,7 @@ export function analiseUpdateStatement(updateStatement: UpdateStatementContext, 
         if (expr) {
             const context: InferenceContext = {
                 dbSchema,
+                withSchema,
                 parameters: [],
                 constraints: [],
                 fromColumns: updateColumns
@@ -247,6 +251,7 @@ export function analiseUpdateStatement(updateStatement: UpdateStatementContext, 
     if (whereExpr) {
         const context: InferenceContext = {
             dbSchema,
+            withSchema,
             parameters: [],
             constraints: [],
             fromColumns: updateColumns
@@ -337,14 +342,14 @@ export function getDeleteColumns(deleteStatement: DeleteStatementContext, dbSche
 }
 
 
-export function analiseSelectStatement(selectStatement: SelectStatementContext | SubqueryContext, dbSchema: ColumnSchema[], namedParameters: string[]): TypeInferenceResult {
+export function analiseSelectStatement(selectStatement: SelectStatementContext | SubqueryContext, dbSchema: ColumnSchema[], withSchema: ColumnSchema[], namedParameters: string[]): TypeInferenceResult {
     const querySpec = getQuerySpecificationsFromSelectStatement(selectStatement);
-    const fromColumns = getColumnsFrom(querySpec[0], dbSchema);
-    let result = analiseQuerySpecification(querySpec[0], dbSchema, namedParameters, fromColumns);
+    const fromColumns = getColumnsFrom(querySpec[0], dbSchema, withSchema);
+    let result = analiseQuerySpecification(querySpec[0], dbSchema, dbSchema, namedParameters, fromColumns);
     for (let index = 1; index < querySpec.length; index++) {
         const unionQuery = querySpec[index];
-        const fromColumns2 = getColumnsFrom(unionQuery, dbSchema);
-        const result2 = analiseQuerySpecification(unionQuery, dbSchema, namedParameters, fromColumns2);
+        const fromColumns2 = getColumnsFrom(unionQuery, dbSchema, withSchema);
+        const result2 = analiseQuerySpecification(unionQuery, dbSchema, dbSchema, namedParameters, fromColumns2);
         result = unionResult(result, result2);
 
     }
@@ -372,10 +377,11 @@ export function unionTypeResult(type1: InferType, type2: InferType) {
     return typeOrder[max];
 }
 
-export function analiseQuerySpecification(querySpec: QuerySpecificationContext, dbSchema: ColumnSchema[], namedParameters: string[], fromColumns: ColumnDef[]): TypeInferenceResult {
+export function analiseQuerySpecification(querySpec: QuerySpecificationContext, dbSchema: ColumnSchema[], withSchema: ColumnSchema[], namedParameters: string[], fromColumns: ColumnDef[]): TypeInferenceResult {
 
     const context: InferenceContext = {
         dbSchema,
+        withSchema,
         parameters: [],
         constraints: [],
         fromColumns: fromColumns
@@ -1381,7 +1387,7 @@ function walkFunctionParameters(context: InferenceContext, simpleExprFunction: S
 export function walkSubquery(context: InferenceContext, queryExpressionParens: SubqueryContext): Type {
 
     const querySpec = getQuerySpecificationsFromQuery(queryExpressionParens);
-    const subqueryColumns = getColumnsFrom(querySpec[0], context.dbSchema);
+    const subqueryColumns = getColumnsFrom(querySpec[0], context.dbSchema, context.withSchema);
     const newContext: InferenceContext = {
         ...context,
         fromColumns: context.fromColumns.concat(subqueryColumns)
@@ -1389,7 +1395,7 @@ export function walkSubquery(context: InferenceContext, queryExpressionParens: S
     const typeInferResult = walkQuerySpecification(newContext, querySpec[0]) as TypeOperator;
 
     for (let queryIndex = 1; queryIndex < querySpec.length; queryIndex++) { //union (if have any)
-        const unionColumns = getColumnsFrom(querySpec[queryIndex], context.dbSchema);
+        const unionColumns = getColumnsFrom(querySpec[queryIndex], context.dbSchema, context.withSchema);
         const unionNewContext: InferenceContext = {
             ...context,
             fromColumns: context.fromColumns.concat(unionColumns)
