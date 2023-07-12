@@ -92,6 +92,33 @@ describe('Test parse complex queries', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('parse a select with UNION (int_column + text_column)', async () => {
+        const sql = `
+            SELECT int_column as col FROM all_types
+            UNION
+            SELECT text_column as col FROM all_types
+            `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'col',
+                    dbtype: 'text',
+                    notNull: false
+                }
+            ],
+            parameters: []
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it('parse a select with UNION', async () => {
         const sql = `
         SELECT id, value FROM mytable1
