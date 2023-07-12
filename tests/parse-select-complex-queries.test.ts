@@ -346,6 +346,38 @@ describe('Test parse complex queries', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('WITH result AS (query1 UNION query2)', async () => {
+        const sql = `
+        WITH result AS (
+            SELECT id as id FROM mytable1
+            UNION
+            SELECT id as id FROM mytable2
+        )
+        SELECT *
+        FROM result
+        `
+        // const sql = `SELECT name from mytable2`
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'id',
+                    dbtype: 'int',
+                    notNull: true
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it('WITH (query with inner join and parameters)', async () => {
         const sql = `
         WITH t1 AS
