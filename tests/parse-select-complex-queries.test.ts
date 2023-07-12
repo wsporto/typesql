@@ -284,4 +284,38 @@ describe('Test parse complex queries', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     })
+
+    it('WITH names AS (query1) SELECT names.*', async () => {
+        const sql = `
+        WITH 
+            names AS (SELECT id, name FROM mytable2)
+        SELECT names.*
+        FROM names
+        `
+        // const sql = `SELECT name from mytable2`
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'id',
+                    dbtype: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'name',
+                    dbtype: 'varchar',
+                    notNull: false
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
 });
