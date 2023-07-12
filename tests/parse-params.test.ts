@@ -713,4 +713,25 @@ describe('Test parse parameters', () => {
         }
         assert.deepStrictEqual(actual.right.parameters, expectedParameters);
     })
+
+    it(`Param within WITH clause`, async () => {
+        const sql = `
+        WITH 
+            names AS (SELECT id, name FROM mytable2 where id = ?)
+        SELECT id
+        FROM names`
+        const actual = await parseSql(client, sql);
+        const expectedParameters: ParameterDef[] = [
+            {
+                name: 'param1',
+                columnType: 'int',
+                notNull: true
+            }
+        ]
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right.parameters, expectedParameters);
+    })
 });

@@ -61,6 +61,11 @@ export type TypeAndNullInferResult = {
     parameters: TypeAndNullInfer[];
 }
 
+export type TypeAndNullInferResultWithIdentifier = {
+    queryResult: TypeAndNullInferResult;
+    identifier: string;
+}
+
 export type QueryInfoResult = {
     kind: 'Select'
     columns: ColumnInfo[];

@@ -234,11 +234,16 @@ function extractFieldsFromTableFactor(tableFactor: TableFactorContext, dbSchema:
     return [];
 }
 
-export function extractFieldsFromSubquery(subQuery: SubqueryContext, dbSchema: ColumnSchema[], tableAlias: string | undefined) {
-    //subquery=true only for select (subquery); not for from(subquery)
-    // const fromColumns
+export function analyzeSubQuery(subQuery: SubqueryContext, dbSchema: ColumnSchema[]) {
     const queries = getQuerySpecificationsFromSelectStatement(subQuery);
     const queryResult = analiseQuery(queries, dbSchema, [], []); //TODO - WHY []?
+    return queryResult;
+}
+
+function extractFieldsFromSubquery(subQuery: SubqueryContext, dbSchema: ColumnSchema[], tableAlias: string | undefined) {
+    //subquery=true only for select (subquery); not for from(subquery)
+    // const fromColumns
+    const queryResult = analyzeSubQuery(subQuery, dbSchema);
     // console.log("queryResult=", queryResult);
     // const tableAlias = derivadTable.tableAlias()?.text;
     return queryResult.columns.map(col => {

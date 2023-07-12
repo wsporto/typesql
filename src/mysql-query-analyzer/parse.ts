@@ -6,9 +6,9 @@ import {
 } from './collect-constraints';
 import {
     ColumnSchema, TypeInferenceResult, QueryInfoResult, ColumnDef, InsertInfoResult, UpdateInfoResult, DeleteInfoResult,
-    TypeAndNullInferResult, TypeAndNullInfer, ParameterInfo
+    TypeAndNullInferResult, TypeAndNullInfer, ParameterInfo, TypeAndNullInferResultWithIdentifier
 } from './types';
-import { getColumnsFrom, getColumnNames, extractFieldsFromSubquery } from './select-columns';
+import { getColumnsFrom, getColumnNames, analyzeSubQuery } from './select-columns';
 import { inferParamNullability, inferParamNullabilityQuery } from './infer-param-nullability';
 import { inferNotNull } from './infer-column-nullability';
 import { preprocessSql, verifyNotInferred } from '../describe-query';
@@ -154,30 +154,38 @@ export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[], withSche
             if (queryExpression) {
                 //queryExpression
                 const withClause = queryExpression.withClause();
-                const withSchema: ColumnSchema[] = withClause ?
-                    analyseWithClause(withClause, dbSchema)
-                        .map(colDef => ({
+                const allWithSchema: ColumnSchema[] = [];
+                const withClauseParameters: TypeAndNullInfer[] = [];
+                if (withClause) {
+                    const withClauseResults = analyseWithClause(withClause, dbSchema);
+                    withClauseResults.forEach(withClauseResult => {
+                        const withSchema = withClauseResult.queryResult.columns.map(colDef => ({
                             schema: '',
-                            table: colDef.table,
-                            column: colDef.column,
-                            column_type: colDef.columnType,
-                            columnKey: colDef.columnKey,
+                            table: withClauseResult.identifier,
+                            column: colDef.name,
+                            column_type: colDef.type,
+                            columnKey: '',
                             notNull: colDef.notNull
                         } as ColumnSchema))
-                    : [];
+                        allWithSchema.push(...withSchema);
+                        withClauseParameters.push(...withClauseResult.queryResult.parameters);
+                    })
+                }
+
                 const queryExpressionBody = queryExpression.queryExpressionBody() || queryExpression.queryExpressionParens();
                 if (queryExpressionBody) {
                     const querySpec = getQuerySpecificationsFromSelectStatement(queryExpressionBody);
-                    const mainQueryResult = analiseQuery(querySpec, dbSchema, withSchema, namedParameters);
+                    const mainQueryResult = analiseQuery(querySpec, dbSchema, allWithSchema, namedParameters);
 
                     const orderByParameters = extractOrderByParameters(selectStatement);
                     const limitParameters = extractLimitParameters(selectStatement);
 
                     const allParameters = mainQueryResult.parameters
+                        .concat(withClauseParameters)
                         .map(param => ({ type: verifyNotInferred(param.type), notNull: param.notNull }))
                         .concat(limitParameters);
 
-                    const fromColumns = getColumnsFrom(querySpec[0], dbSchema, withSchema);
+                    const fromColumns = getColumnsFrom(querySpec[0], dbSchema, allWithSchema);
                     const multipleRowsResult = isMultipleRowResult(selectStatement, fromColumns);
 
                     const resultWithoutOrderBy: QueryInfoResult = {
@@ -263,14 +271,15 @@ function collectQuerySpecifications(tree: ParseTree, result: QuerySpecificationC
     }
 }
 
-function analyseWithClause(withClause: WithClauseContext, dbSchema: ColumnSchema[]) {
-    const allFields: ColumnDef[] = [];
-    withClause.commonTableExpression().forEach(commonTableExpression => {
+function analyseWithClause(withClause: WithClauseContext, dbSchema: ColumnSchema[]): TypeAndNullInferResultWithIdentifier[] {
+    return withClause.commonTableExpression().map(commonTableExpression => {
         const identifier = commonTableExpression.identifier().text;
         const subQuery = commonTableExpression.subquery();
-        const withSchema = extractFieldsFromSubquery(subQuery, dbSchema, identifier);
-        allFields.push(...withSchema);
+        const queryResult = analyzeSubQuery(subQuery, dbSchema);
+        return {
+            identifier,
+            queryResult
+        };
     });
-    return allFields;
 }
 
