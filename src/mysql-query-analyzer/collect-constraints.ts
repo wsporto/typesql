@@ -455,16 +455,17 @@ export function walkQuerySpecification(context: InferenceContext, querySpec: Que
 
     querySpec.selectItemList().selectItem().forEach(selectItem => {
         const tableWild = selectItem.tableWild(); //ex. t1.*
-        if (tableWild?.MULT_OPERATOR()) {
+        if (tableWild) {
             tableWild.identifier().forEach(tabWild => {
-                const prefix = tabWild.text;
-                const columns = selectAllColumns(prefix, context.fromColumns);
-                columns.forEach(col => {
-                    const colType = freshVar(col.columnName, col.columnType);
-                    listType.push(colType);
-                })
+                if (tableWild.MULT_OPERATOR()) {
+                    const prefix = tabWild.text;
+                    const columns = selectAllColumns(prefix, context.fromColumns);
+                    columns.forEach(col => {
+                        const colType = freshVar(col.columnName, col.columnType);
+                        listType.push(colType);
+                    })
+                }
             });
-
         }
         else {
             const expr = selectItem.expr();

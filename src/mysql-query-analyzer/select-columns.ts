@@ -33,7 +33,7 @@ export function filterColumns(dbSchema: ColumnSchema[], withSchema: ColumnSchema
 export function selectAllColumns(tablePrefix: string, fromColumns: ColumnDef[]) {
     const allColumns: ColumnDef[] = [];
     fromColumns.forEach(column => {
-        if (tablePrefix == '' || tablePrefix == column.tableAlias) {
+        if (tablePrefix == '' || tablePrefix == column.tableAlias || tablePrefix == column.table) {
             allColumns.push(column);
         }
 
