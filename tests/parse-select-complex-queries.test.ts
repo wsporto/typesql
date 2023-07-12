@@ -318,4 +318,60 @@ describe('Test parse complex queries', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     })
+
+    it('WITH (query with inner join and parameters)', async () => {
+        const sql = `
+        WITH t1 AS
+        (
+            SELECT mytable1.*, mytable2.name
+            FROM mytable1
+            INNER JOIN mytable2 ON mytable1.id = mytable2.id
+            WHERE mytable1.value > ? and mytable2.name  = ?
+        )
+        SELECT t1.*
+        FROM t1
+        ORDER BY t1.value DESC
+        LIMIT 10
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'id',
+                    dbtype: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'value',
+                    dbtype: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'name',
+                    dbtype: 'varchar',
+                    notNull: true
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'param2',
+                    columnType: 'varchar',
+                    notNull: true
+                }
+            ]
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
 });
