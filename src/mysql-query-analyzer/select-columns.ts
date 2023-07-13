@@ -222,7 +222,7 @@ function extractFieldsFromTableFactor(tableFactor: TableFactorContext, dbSchema:
         //TODO - WALKSUBQUERY
         const subQuery = derivadTable.subquery()
         if (subQuery) {
-            const tableAlias = derivadTable.tableAlias()?.text;
+            const tableAlias = derivadTable.tableAlias()?.identifier().text;
             return extractFieldsFromSubquery(subQuery, dbSchema, withSchema, tableAlias)
         }
     }

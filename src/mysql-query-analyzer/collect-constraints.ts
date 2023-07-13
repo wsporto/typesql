@@ -883,6 +883,16 @@ export function walkQuerySpecification(context: InferenceContext, querySpec: Que
 
     const listType: TypeVar[] = [];
 
+    const fromClause = querySpec.fromClause();
+    if (fromClause) {
+        const subqueryColumns = getColumnsFrom(querySpec, context.dbSchema, context.withSchema);
+        const newContext: InferenceContext = {
+            ...context,
+            fromColumns: subqueryColumns
+        }
+        walkFromClause(newContext, fromClause);
+    }
+
     if (querySpec.selectItemList().MULT_OPERATOR()) {
 
         context.fromColumns.forEach(col => {
@@ -925,11 +935,6 @@ export function walkQuerySpecification(context: InferenceContext, querySpec: Que
         kind: 'TypeOperator',
         selectItem: true,
         types: listType
-    }
-
-    const fromClause = querySpec.fromClause();
-    if (fromClause) {
-        walkFromClause(context, fromClause);
     }
 
     const whereClause = querySpec.whereClause();

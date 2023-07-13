@@ -337,4 +337,36 @@ describe('Test parse select with subqueries', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     })
+
+    it('SELECT * from (SELECT * FROM mytable1) as t1 WHERE t1.id > ?', async () => {
+        const sql = `
+        SELECT id from (SELECT * FROM mytable1) as t1 WHERE t1.id > ?
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'id',
+                    dbtype: 'int',
+                    notNull: true
+
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'int',
+                    notNull: true
+                }
+            ]
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error:`, actual.left);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
 });
