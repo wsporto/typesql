@@ -58,15 +58,7 @@ describe('Utility functions tests', () => {
             ?.queryExpressionBody()
             ?.querySpecification()!;
 
-        const context: InferenceContext = {
-            dbSchema,
-            withSchema: [],
-            parameters: [],
-            constraints: [],
-            fromColumns: []
-        }
-
-        const fromColumns = getColumnsFrom(querySpec, context);
+        const fromColumns = getColumnsFrom(querySpec, dbSchema, []);
 
         const expectedColumns: ColumnDef[] = [
             {

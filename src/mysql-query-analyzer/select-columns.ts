@@ -74,21 +74,21 @@ export function getColumnNames(querySpec: QuerySpecificationContext, fromColumns
 }
 
 // TODO - withSchema: ColumnSchema[] DEFAULT VALUE []
-export function getColumnsFrom(ctx: QuerySpecificationContext, context: InferenceContext) {
+export function getColumnsFrom(ctx: QuerySpecificationContext, dbSchema: ColumnSchema[], withSchema: ColumnSchema[]) {
     const tableReferences = ctx.fromClause()?.tableReferenceList()?.tableReference();
-    const fromColumns = tableReferences ? extractColumnsFromTableReferences(tableReferences, context) : [];
+    const fromColumns = tableReferences ? extractColumnsFromTableReferences(tableReferences, dbSchema, withSchema) : [];
     return fromColumns;
 }
 
 //rule: tableReference
-function extractColumnsFromTableReferences(tablesReferences: TableReferenceContext[], context: InferenceContext): ColumnDef[] {
+function extractColumnsFromTableReferences(tablesReferences: TableReferenceContext[], dbSchema: ColumnSchema[], withSchema: ColumnSchema[]): ColumnDef[] {
     const result: ColumnDef[] = [];
 
     tablesReferences.forEach(tab => {
 
         const tableFactor = tab.tableFactor();
         if (tableFactor) {
-            const fields = extractFieldsFromTableFactor(tableFactor, context);
+            const fields = extractFieldsFromTableFactor(tableFactor, dbSchema, withSchema);
             result.push(...fields);
         }
 
@@ -107,7 +107,7 @@ function extractColumnsFromTableReferences(tablesReferences: TableReferenceConte
 
             if (tableReferences) {
                 const usingFields = extractFieldsFromUsingClause(joined);
-                const joinedFields = extractColumnsFromTableReferences([tableReferences], context);
+                const joinedFields = extractColumnsFromTableReferences([tableReferences], dbSchema, withSchema);
                 //doesn't duplicate the fields of the USING clause. Ex. INNER JOIN mytable2 USING(id);
                 const joinedFieldsFiltered = usingFields.length > 0 ? filterUsingFields(joinedFields, usingFields) : joinedFields;
                 if (onClause) {
@@ -205,15 +205,15 @@ tableFactor:
     | tableReferenceListParens
     | {serverVersion >= 80004}? tableFunction 
 */
-function extractFieldsFromTableFactor(tableFactor: TableFactorContext, context: InferenceContext): ColumnDef[] { //tableFactor: rule
+function extractFieldsFromTableFactor(tableFactor: TableFactorContext, dbSchema: ColumnSchema[], withSchema: ColumnSchema[]): ColumnDef[] { //tableFactor: rule
     const singleTable = tableFactor.singleTable();
     if (singleTable) {
-        return extractFieldsFromSingleTable(context.dbSchema, context.withSchema, singleTable);
+        return extractFieldsFromSingleTable(dbSchema, withSchema, singleTable);
     }
 
     const singleTableParens = tableFactor.singleTableParens();
     if (singleTableParens) {
-        return extractFieldsFromSingleTableParens(context.dbSchema, context.withSchema, singleTableParens);
+        return extractFieldsFromSingleTableParens(dbSchema, withSchema, singleTableParens);
     }
 
     const derivadTable = tableFactor.derivedTable();
@@ -223,28 +223,28 @@ function extractFieldsFromTableFactor(tableFactor: TableFactorContext, context: 
         const subQuery = derivadTable.subquery()
         if (subQuery) {
             const tableAlias = derivadTable.tableAlias()?.text;
-            return extractFieldsFromSubquery(subQuery, context, tableAlias)
+            return extractFieldsFromSubquery(subQuery, dbSchema, withSchema, tableAlias)
         }
     }
     const tableReferenceListParens = tableFactor.tableReferenceListParens();
     if (tableReferenceListParens) {
-        const listParens = extractColumnsFromTableListParens(tableReferenceListParens, context);
+        const listParens = extractColumnsFromTableListParens(tableReferenceListParens, dbSchema, withSchema);
         return listParens;
     }
 
     return [];
 }
 
-export function analyzeSubQuery(subQuery: SubqueryContext, context: InferenceContext) {
+export function analyzeSubQuery(subQuery: SubqueryContext, dbSchema: ColumnSchema[], withSchema: ColumnSchema[]) {
     const queries = getQuerySpecificationsFromSelectStatement(subQuery);
-    const queryResult = analiseQuery(queries, context, []); //TODO - WHY []?
+    const queryResult = analiseQuery(queries, dbSchema, withSchema, []); //TODO - WHY []?
     return queryResult;
 }
 
-function extractFieldsFromSubquery(subQuery: SubqueryContext, context: InferenceContext, tableAlias: string | undefined) {
+function extractFieldsFromSubquery(subQuery: SubqueryContext, dbSchema: ColumnSchema[], withSchema: ColumnSchema[], tableAlias: string | undefined) {
     //subquery=true only for select (subquery); not for from(subquery)
     // const fromColumns
-    const queryResult = analyzeSubQuery(subQuery, context);
+    const queryResult = analyzeSubQuery(subQuery, dbSchema, withSchema);
     // console.log("queryResult=", queryResult);
     // const tableAlias = derivadTable.tableAlias()?.text;
     return queryResult.columns.map(col => {
@@ -263,17 +263,17 @@ function extractFieldsFromSubquery(subQuery: SubqueryContext, context: Inference
 
 
 //tableReferenceList | tableReferenceListParens
-function extractColumnsFromTableListParens(ctx: TableReferenceListParensContext, context: InferenceContext): ColumnDef[] {
+function extractColumnsFromTableListParens(ctx: TableReferenceListParensContext, dbSchema: ColumnSchema[], withSchema: ColumnSchema[]): ColumnDef[] {
 
     const tableReferenceList = ctx.tableReferenceList();
     if (tableReferenceList) {
-        return extractColumnsFromTableReferences(tableReferenceList.tableReference(), context);
+        return extractColumnsFromTableReferences(tableReferenceList.tableReference(), dbSchema, withSchema);
     }
 
     const tableReferenceListParens = ctx.tableReferenceListParens();
 
     if (tableReferenceListParens) {
-        return extractColumnsFromTableListParens(tableReferenceListParens, context);
+        return extractColumnsFromTableListParens(tableReferenceListParens, dbSchema, withSchema);
     }
 
     return [];

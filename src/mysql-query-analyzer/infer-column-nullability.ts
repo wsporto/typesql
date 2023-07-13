@@ -25,7 +25,7 @@ export function parseAndInferNotNull(sql: string, dbSchema: ColumnSchema[], with
     const selectStatement = queryTree.simpleStatement()?.selectStatement();
     if (selectStatement) {
         const queries = getQuerySpecificationsFromSelectStatement(selectStatement);
-        const notNullAllQueries = queries.map(query => inferNotNull(query, context)); //TODO - UNION
+        const notNullAllQueries = queries.map(query => inferNotNull(query, dbSchema, withSchema)); //TODO - UNION
         const result = zip(notNullAllQueries).map(notNullColumn => notNullColumn.every(notNull => notNull == true));
         return result;
 
@@ -38,8 +38,8 @@ function zip(arrays: boolean[][]): boolean[][] {
     });
 }
 
-export function inferNotNull(querySpec: QuerySpecificationContext, context: InferenceContext) {
-    const fromColumns = getColumnsFrom(querySpec, context); //TODO - called twice
+export function inferNotNull(querySpec: QuerySpecificationContext, dbSchema: ColumnSchema[], withSchema: ColumnSchema[]) {
+    const fromColumns = getColumnsFrom(querySpec, dbSchema, withSchema); //TODO - called twice
 
     const notNullInference: boolean[] = [];
     const whereClause = querySpec.whereClause();
@@ -53,7 +53,7 @@ export function inferNotNull(querySpec: QuerySpecificationContext, context: Infe
     }
 
     querySpec.selectItemList().selectItem().forEach(selectItem => {
-        notNullInference.push(...inferNotNullSelectItem(selectItem, context.dbSchema, fromColumns, whereClause));
+        notNullInference.push(...inferNotNullSelectItem(selectItem, dbSchema, fromColumns, whereClause));
     })
     return notNullInference;
 }
