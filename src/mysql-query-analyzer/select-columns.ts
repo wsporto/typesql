@@ -14,6 +14,7 @@ import {
 import { ColumnSchema, ColumnDef, FieldName } from "./types";
 import { analiseQuery, getQuerySpecificationsFromSelectStatement } from "./parse";
 import { possibleNull } from "./infer-column-nullability";
+import { InferenceContext } from "./collect-constraints";
 
 export function filterColumns(dbSchema: ColumnSchema[], withSchema: ColumnSchema[], tableAlias: string | undefined, table: FieldName) {
     const tableColumns1 = dbSchema.filter(schema => schema.table.toLowerCase() == table.name.toLowerCase() && (schema.schema == table.prefix || table.prefix == ''));
@@ -73,21 +74,21 @@ export function getColumnNames(querySpec: QuerySpecificationContext, fromColumns
 }
 
 // TODO - withSchema: ColumnSchema[] DEFAULT VALUE []
-export function getColumnsFrom(ctx: QuerySpecificationContext, dbSchema: ColumnSchema[], withSchema: ColumnSchema[] = []) {
+export function getColumnsFrom(ctx: QuerySpecificationContext, context: InferenceContext) {
     const tableReferences = ctx.fromClause()?.tableReferenceList()?.tableReference();
-    const fromColumns = tableReferences ? extractColumnsFromTableReferences(tableReferences, dbSchema, withSchema) : [];
+    const fromColumns = tableReferences ? extractColumnsFromTableReferences(tableReferences, context) : [];
     return fromColumns;
 }
 
 //rule: tableReference
-function extractColumnsFromTableReferences(tablesReferences: TableReferenceContext[], dbSchema: ColumnSchema[], withSchema: ColumnSchema[]): ColumnDef[] {
+function extractColumnsFromTableReferences(tablesReferences: TableReferenceContext[], context: InferenceContext): ColumnDef[] {
     const result: ColumnDef[] = [];
 
     tablesReferences.forEach(tab => {
 
         const tableFactor = tab.tableFactor();
         if (tableFactor) {
-            const fields = extractFieldsFromTableFactor(tableFactor, dbSchema, withSchema);
+            const fields = extractFieldsFromTableFactor(tableFactor, context);
             result.push(...fields);
         }
 
@@ -106,7 +107,7 @@ function extractColumnsFromTableReferences(tablesReferences: TableReferenceConte
 
             if (tableReferences) {
                 const usingFields = extractFieldsFromUsingClause(joined);
-                const joinedFields = extractColumnsFromTableReferences([tableReferences], dbSchema, withSchema);
+                const joinedFields = extractColumnsFromTableReferences([tableReferences], context);
                 //doesn't duplicate the fields of the USING clause. Ex. INNER JOIN mytable2 USING(id);
                 const joinedFieldsFiltered = usingFields.length > 0 ? filterUsingFields(joinedFields, usingFields) : joinedFields;
                 if (onClause) {
@@ -204,15 +205,15 @@ tableFactor:
     | tableReferenceListParens
     | {serverVersion >= 80004}? tableFunction 
 */
-function extractFieldsFromTableFactor(tableFactor: TableFactorContext, dbSchema: ColumnSchema[], withSchema: ColumnSchema[]): ColumnDef[] { //tableFactor: rule
+function extractFieldsFromTableFactor(tableFactor: TableFactorContext, context: InferenceContext): ColumnDef[] { //tableFactor: rule
     const singleTable = tableFactor.singleTable();
     if (singleTable) {
-        return extractFieldsFromSingleTable(dbSchema, withSchema, singleTable);
+        return extractFieldsFromSingleTable(context.dbSchema, context.withSchema, singleTable);
     }
 
     const singleTableParens = tableFactor.singleTableParens();
     if (singleTableParens) {
-        return extractFieldsFromSingleTableParens(dbSchema, withSchema, singleTableParens);
+        return extractFieldsFromSingleTableParens(context.dbSchema, context.withSchema, singleTableParens);
     }
 
     const derivadTable = tableFactor.derivedTable();
@@ -222,28 +223,28 @@ function extractFieldsFromTableFactor(tableFactor: TableFactorContext, dbSchema:
         const subQuery = derivadTable.subquery()
         if (subQuery) {
             const tableAlias = derivadTable.tableAlias()?.text;
-            return extractFieldsFromSubquery(subQuery, dbSchema, tableAlias)
+            return extractFieldsFromSubquery(subQuery, context, tableAlias)
         }
     }
     const tableReferenceListParens = tableFactor.tableReferenceListParens();
     if (tableReferenceListParens) {
-        const listParens = extractColumnsFromTableListParens(tableReferenceListParens, dbSchema, withSchema);
+        const listParens = extractColumnsFromTableListParens(tableReferenceListParens, context);
         return listParens;
     }
 
     return [];
 }
 
-export function analyzeSubQuery(subQuery: SubqueryContext, dbSchema: ColumnSchema[]) {
+export function analyzeSubQuery(subQuery: SubqueryContext, context: InferenceContext) {
     const queries = getQuerySpecificationsFromSelectStatement(subQuery);
-    const queryResult = analiseQuery(queries, dbSchema, [], []); //TODO - WHY []?
+    const queryResult = analiseQuery(queries, context, []); //TODO - WHY []?
     return queryResult;
 }
 
-function extractFieldsFromSubquery(subQuery: SubqueryContext, dbSchema: ColumnSchema[], tableAlias: string | undefined) {
+function extractFieldsFromSubquery(subQuery: SubqueryContext, context: InferenceContext, tableAlias: string | undefined) {
     //subquery=true only for select (subquery); not for from(subquery)
     // const fromColumns
-    const queryResult = analyzeSubQuery(subQuery, dbSchema);
+    const queryResult = analyzeSubQuery(subQuery, context);
     // console.log("queryResult=", queryResult);
     // const tableAlias = derivadTable.tableAlias()?.text;
     return queryResult.columns.map(col => {
@@ -262,17 +263,17 @@ function extractFieldsFromSubquery(subQuery: SubqueryContext, dbSchema: ColumnSc
 
 
 //tableReferenceList | tableReferenceListParens
-function extractColumnsFromTableListParens(ctx: TableReferenceListParensContext, dbSchema: ColumnSchema[], withSchema: ColumnSchema[]): ColumnDef[] {
+function extractColumnsFromTableListParens(ctx: TableReferenceListParensContext, context: InferenceContext): ColumnDef[] {
 
     const tableReferenceList = ctx.tableReferenceList();
     if (tableReferenceList) {
-        return extractColumnsFromTableReferences(tableReferenceList.tableReference(), dbSchema, withSchema);
+        return extractColumnsFromTableReferences(tableReferenceList.tableReference(), context);
     }
 
     const tableReferenceListParens = ctx.tableReferenceListParens();
 
     if (tableReferenceListParens) {
-        return extractColumnsFromTableListParens(tableReferenceListParens, dbSchema, withSchema);
+        return extractColumnsFromTableListParens(tableReferenceListParens, context);
     }
 
     return [];

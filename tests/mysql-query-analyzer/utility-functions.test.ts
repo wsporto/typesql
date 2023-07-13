@@ -3,7 +3,7 @@ import { parse } from "../../src/mysql-query-analyzer/parse";
 import { dbSchema } from "./create-schema";
 import { ColumnDef, FieldInfo, ColumnSchema } from "../../src/mysql-query-analyzer/types";
 import { getColumnsFrom, getColumnNames, findColumn, splitName, findColumn2 } from "../../src/mysql-query-analyzer/select-columns";
-import { unionTypeResult } from "../../src/mysql-query-analyzer/collect-constraints";
+import { InferenceContext, unionTypeResult } from "../../src/mysql-query-analyzer/collect-constraints";
 import { getParameterIndexes } from "../../src/mysql-query-analyzer/util";
 
 describe('Utility functions tests', () => {
@@ -58,7 +58,15 @@ describe('Utility functions tests', () => {
             ?.queryExpressionBody()
             ?.querySpecification()!;
 
-        const fromColumns = getColumnsFrom(querySpec, dbSchema);
+        const context: InferenceContext = {
+            dbSchema,
+            withSchema: [],
+            parameters: [],
+            constraints: [],
+            fromColumns: []
+        }
+
+        const fromColumns = getColumnsFrom(querySpec, context);
 
         const expectedColumns: ColumnDef[] = [
             {

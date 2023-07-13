@@ -2,7 +2,7 @@ import MySQLParser, { SqlMode, QueryContext, QuerySpecificationContext, SelectSt
 import { ParseTree } from "antlr4ts/tree";
 import {
     analiseTree, TypeVar, analiseQuerySpecification, unionTypeResult, getInsertColumns, analiseInsertStatement,
-    analiseUpdateStatement, analiseDeleteStatement
+    analiseUpdateStatement, analiseDeleteStatement, InferenceContext
 } from './collect-constraints';
 import {
     ColumnSchema, TypeInferenceResult, QueryInfoResult, ColumnDef, InsertInfoResult, UpdateInfoResult, DeleteInfoResult,
@@ -36,7 +36,16 @@ export type SubstitutionHash = {
 
 
 export function infer(queryContext: QueryContext, dbSchema: ColumnSchema[], withSchema: ColumnSchema[], namedParameters: string[]): TypeInferenceResult {
-    const typeInferenceResult = analiseTree(queryContext, dbSchema, withSchema, namedParameters);
+
+    const context: InferenceContext = {
+        dbSchema,
+        withSchema,
+        parameters: [],
+        constraints: [],
+        fromColumns: []
+    }
+
+    const typeInferenceResult = analiseTree(queryContext, context, namedParameters);
     // const newTypeInference : TypeInferenceResult = {
     //     columns: typeInferenceResult.columns.map( col => verifyNotInferred(col)),
     //     parameters: typeInferenceResult.parameters.map(paramType => verifyNotInferred(paramType))
@@ -55,11 +64,15 @@ export function parseAndInferParamNullability(sql: string): boolean[] {
     return inferParamNullabilityQuery(queryContext);
 }
 
-export function extractQueryInfoFromQuerySpecification(querySpec: QuerySpecificationContext, dbSchema: ColumnSchema[], withSchema: ColumnSchema[], namedParameters: string[]): TypeAndNullInferResult {
-    const fromColumns = getColumnsFrom(querySpec, dbSchema, withSchema);
-    const inferResult = analiseQuerySpecification(querySpec, dbSchema, withSchema, namedParameters, fromColumns);
+export function extractQueryInfoFromQuerySpecification(querySpec: QuerySpecificationContext, context: InferenceContext, namedParameters: string[]): TypeAndNullInferResult {
+    const fromColumns = getColumnsFrom(querySpec, context);
+    const newContext: InferenceContext = {
+        ...context,
+        fromColumns
+    }
+    const inferResult = analiseQuerySpecification(querySpec, newContext, namedParameters);
     // console.log("inferResult=", inferResult);
-    const columnNullability = inferNotNull(querySpec, dbSchema, withSchema);
+    const columnNullability = inferNotNull(querySpec, newContext);
     const selectedColumns = getColumnNames(querySpec, fromColumns);
     const columnResult = selectedColumns.map((col, index) => {
         const columnType = inferResult.columns[index];
@@ -139,10 +152,20 @@ function getLimitOptions(selectStatement: SelectStatementContext) {
 }
 
 //TODO - withSchema: ColumnSchema[] DEFAULT VALUE
-export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[], withSchema: ColumnSchema[] = []): QueryInfoResult | InsertInfoResult | UpdateInfoResult | DeleteInfoResult {
+export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[]): QueryInfoResult | InsertInfoResult | UpdateInfoResult | DeleteInfoResult {
 
     const { sql: processedSql, namedParameters } = preprocessSql(sql);
+
     const tree = parse(processedSql);
+
+    const context: InferenceContext = {
+        dbSchema,
+        withSchema: [],
+        parameters: [],
+        constraints: [],
+        fromColumns: []
+    }
+
     if (tree instanceof QueryContext) {
         const selectStatement = tree.simpleStatement()?.selectStatement();
         if (selectStatement) {
@@ -157,7 +180,7 @@ export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[], withSche
                 const allWithSchema: ColumnSchema[] = [];
                 const withClauseParameters: TypeAndNullInfer[] = [];
                 if (withClause) {
-                    const withClauseResults = analyseWithClause(withClause, dbSchema);
+                    const withClauseResults = analyseWithClause(withClause, context);
                     withClauseResults.forEach(withClauseResult => {
                         const withSchema = withClauseResult.queryResult.columns.map(colDef => ({
                             schema: '',
@@ -171,11 +194,12 @@ export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[], withSche
                         withClauseParameters.push(...withClauseResult.queryResult.parameters);
                     })
                 }
+                context.withSchema = allWithSchema;
 
                 const queryExpressionBody = queryExpression.queryExpressionBody() || queryExpression.queryExpressionParens();
                 if (queryExpressionBody) {
                     const querySpec = getQuerySpecificationsFromSelectStatement(queryExpressionBody);
-                    const mainQueryResult = analiseQuery(querySpec, dbSchema, allWithSchema, namedParameters);
+                    const mainQueryResult = analiseQuery(querySpec, context, namedParameters);
 
                     const orderByParameters = extractOrderByParameters(selectStatement);
                     const limitParameters = extractLimitParameters(selectStatement);
@@ -185,7 +209,7 @@ export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[], withSche
                         .map(param => ({ type: verifyNotInferred(param.type), notNull: param.notNull }))
                         .concat(limitParameters);
 
-                    const fromColumns = getColumnsFrom(querySpec[0], dbSchema, allWithSchema);
+                    const fromColumns = getColumnsFrom(querySpec[0], context);
                     const multipleRowsResult = isMultipleRowResult(selectStatement, fromColumns);
 
                     const resultWithoutOrderBy: QueryInfoResult = {
@@ -208,18 +232,18 @@ export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[], withSche
         }
         const insertStatement = tree.simpleStatement()?.insertStatement();
         if (insertStatement) {
-            const insertColumns = getInsertColumns(insertStatement, dbSchema);
-            const typeInfer = analiseInsertStatement(insertStatement, insertColumns, withSchema);
+            const insertColumns = getInsertColumns(insertStatement, context.dbSchema);
+            const typeInfer = analiseInsertStatement(insertStatement, insertColumns, context.withSchema);
             return typeInfer;
         }
         const updateStatement = tree.simpleStatement()?.updateStatement();
         if (updateStatement) {
-            const typeInfer = analiseUpdateStatement(updateStatement, dbSchema, withSchema);
+            const typeInfer = analiseUpdateStatement(updateStatement, context.dbSchema, context.withSchema);
             return typeInfer;
         }
         const deleteStatement = tree.simpleStatement()?.deleteStatement();
         if (deleteStatement) {
-            const typeInfer = analiseDeleteStatement(deleteStatement, dbSchema, withSchema);
+            const typeInfer = analiseDeleteStatement(deleteStatement, context.dbSchema, context.withSchema);
             return typeInfer;
         }
 
@@ -234,12 +258,23 @@ function getOrderByColumns(fromColumns: ColumnDef[], selectColumns: TypeAndNullI
     return allOrderByColumns;
 }
 
-export function analiseQuery(querySpec: QuerySpecificationContext[], dbSchema: ColumnSchema[], withSchema: ColumnSchema[], namedParameters: string[]): TypeAndNullInferResult {
+export function analiseQuery(querySpec: QuerySpecificationContext[], context: InferenceContext, namedParameters: string[]): TypeAndNullInferResult {
 
-    const mainQueryResult = extractQueryInfoFromQuerySpecification(querySpec[0], dbSchema, withSchema, namedParameters);
+    const newContext: InferenceContext = {
+        ...context,
+        parameters: []
+    }
+
+    const mainQueryResult = extractQueryInfoFromQuerySpecification(querySpec[0], newContext, namedParameters);
 
     for (let queryIndex = 1; queryIndex < querySpec.length; queryIndex++) { //union (if have any)
-        const unionResult = extractQueryInfoFromQuerySpecification(querySpec[queryIndex], dbSchema, withSchema, namedParameters);
+
+        const newContext2: InferenceContext = {
+            ...context,
+            parameters: []
+        }
+
+        const unionResult = extractQueryInfoFromQuerySpecification(querySpec[queryIndex], newContext2, namedParameters);
 
         mainQueryResult.columns.forEach((field, fieldIndex) => {
             const unionField = unionResult.columns[fieldIndex];
@@ -271,11 +306,11 @@ function collectQuerySpecifications(tree: ParseTree, result: QuerySpecificationC
     }
 }
 
-function analyseWithClause(withClause: WithClauseContext, dbSchema: ColumnSchema[]): TypeAndNullInferResultWithIdentifier[] {
+function analyseWithClause(withClause: WithClauseContext, context: InferenceContext): TypeAndNullInferResultWithIdentifier[] {
     return withClause.commonTableExpression().map(commonTableExpression => {
         const identifier = commonTableExpression.identifier().text;
         const subQuery = commonTableExpression.subquery();
-        const queryResult = analyzeSubQuery(subQuery, dbSchema);
+        const queryResult = analyzeSubQuery(subQuery, context);
         return {
             identifier,
             queryResult

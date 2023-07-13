@@ -734,4 +734,57 @@ describe('Test parse parameters', () => {
         }
         assert.deepStrictEqual(actual.right.parameters, expectedParameters);
     })
+
+    it(`WITH result AS (query1 UNION query2) with parameters`, async () => {
+        const sql = `
+        SELECT id from mytable1 where mytable1.id = :a1
+        UNION
+        SELECT id from mytable2 where mytable2.id = :a1
+        `
+        const actual = await parseSql(client, sql);
+        const expected: ParameterDef[] = [
+            {
+                name: 'a1',
+                columnType: 'int',
+                notNull: true
+            },
+            {
+                name: 'a1',
+                columnType: 'int',
+                notNull: true
+            }
+        ]
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right.parameters, expected);
+    })
+
+    it(`WITH result AS (query1 UNION query2) with parameters`, async () => {
+        const sql = `
+        WITH result AS (
+            SELECT id from mytable1 where mytable1.id = :a1
+            UNION
+            SELECT id from mytable2 where mytable2.id = :a1
+        )
+        SELECT * FROM result
+        `
+        const actual = await parseSql(client, sql);
+        const expected: ParameterDef[] = [
+            {
+                name: 'a1',
+                columnType: 'int',
+                notNull: true
+            },
+            {
+                name: 'a1',
+                columnType: 'int',
+                notNull: true
+            }
+        ]
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right.parameters, expected);
+    })
 });
