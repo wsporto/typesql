@@ -9,7 +9,7 @@ import {
     PrimaryExprPredicateContext, SimpleExprContext, PredicateOperationsContext, ExprNotContext, ExprAndContext,
     ExprOrContext, ExprXorContext, PredicateExprLikeContext, SelectStatementContext, SimpleExprRuntimeFunctionContext,
     SubqueryContext, InsertStatementContext, UpdateStatementContext, DeleteStatementContext, PrimaryExprAllAnyContext,
-    FromClauseContext, SimpleExprIntervalContext
+    FromClauseContext, SimpleExprIntervalContext, HavingClauseContext
 } from "ts-mysql-parser";
 
 import { ColumnSchema, ColumnDef, TypeInferenceResult, InsertInfoResult, UpdateInfoResult, DeleteInfoResult } from "./types";
@@ -21,7 +21,7 @@ import {
 import { MySqlType, InferType } from "../mysql-mapping";
 import { ParameterDef } from "../types";
 import { unify } from "./unify";
-import { inferParamNullability } from "./infer-param-nullability";
+import { getParentContext, inferParamNullability } from "./infer-param-nullability";
 import { verifyNotInferred } from "../describe-query";
 import { TerminalNode } from "antlr4ts/tree";
 import { getPairWise, getParameterIndexes } from "./util";
@@ -47,6 +47,7 @@ export type Constraint = {
     type1: Type;
     type2: Type;
     expression: string;
+    aliasConstraint?: true;
     mostGeneralType?: true;
     coercionType?: 'Sum' | 'Coalesce' | 'SumFunction' | 'Ceiling';
     list?: true;
@@ -58,6 +59,7 @@ export type InferenceContext = {
     parameters: TypeVar[];
     constraints: Constraint[];
     fromColumns: ColumnDef[];
+    havingExpr?: boolean;
 }
 
 let counter = 0;
@@ -925,17 +927,22 @@ export function walkQuerySpecification(context: InferenceContext, querySpec: Que
                 }
                 else {
                     listType.push(exprType);
+                    const subQueryContext = getParentContext(expr, SubqueryContext);
+                    const alias = selectItem.selectAlias()?.identifier()?.text || undefined;
+                    if (alias && !subQueryContext) {
+                        //IF NOT A SUBQUERY THIS ALIAS CAN BE USED IN THE HAVING CLAUSE
+                        context.constraints.push({
+                            expression: expr.text,
+                            mostGeneralType: true,
+                            aliasConstraint: true,
+                            type1: exprType,
+                            type2: freshVar(alias, exprType.type)
+                        })
+                    }
                 }
-
             }
         }
-
     })
-    const typeOperator: TypeOperator = {
-        kind: 'TypeOperator',
-        selectItem: true,
-        types: listType
-    }
 
     const whereClause = querySpec.whereClause();
     //TODO - HAVING, BLAH
@@ -943,6 +950,20 @@ export function walkQuerySpecification(context: InferenceContext, querySpec: Que
         const whereExpr = whereClause?.expr();
         walkExpr(context, whereExpr);
     }
+
+    const havingClause = querySpec.havingClause();
+    if (havingClause) {
+        context.havingExpr = true;
+        walkHavingClause(havingClause, context);
+        context.havingExpr = false;
+    }
+
+    const typeOperator: TypeOperator = {
+        kind: 'TypeOperator',
+        selectItem: true,
+        types: listType
+    }
+
     return typeOperator;
 }
 
@@ -956,6 +977,11 @@ function walkFromClause(context: InferenceContext, fromClause: FromClauseContext
             }
         })
     })
+}
+
+function walkHavingClause(havingClause: HavingClauseContext, context: InferenceContext) {
+    const havingExpr = havingClause.expr();
+    walkExpr(context, havingExpr);
 }
 
 function walkExpr(context: InferenceContext, expr: ExprContext): Type {
@@ -1154,9 +1180,27 @@ function walkBitExpr(context: InferenceContext, bitExpr: BitExprContext): Type {
 function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext): Type {
     if (simpleExpr instanceof SimpleExprColumnRefContext) {
         const fieldName = splitName(simpleExpr.text);
-        const columnType = findColumn(fieldName, context.fromColumns).columnType;
-        const type = freshVar(simpleExpr.text, columnType);
-        return type;
+        if (context.havingExpr) {
+            let foundType: TypeVar | null = null;
+            context.constraints.forEach(p => {
+                if (p.type1.kind == 'TypeVar' && p.aliasConstraint && p.type1.name == simpleExpr.text) {
+                    foundType = p.type1;
+                }
+                if (p.type2.kind == 'TypeVar' && p.aliasConstraint && p.type2.name == simpleExpr.text) {
+                    foundType = p.type2;
+                }
+            })
+            if (foundType) {
+                return foundType;
+            }
+            const type = freshVar(simpleExpr.text, '?');
+            return type;
+        } else {
+
+            const columnType = findColumn(fieldName, context.fromColumns).columnType;
+            const type = freshVar(simpleExpr.text, columnType);
+            return type;
+        }
     }
 
     if (simpleExpr instanceof SimpleExprRuntimeFunctionContext) {

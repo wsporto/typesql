@@ -61,6 +61,117 @@ describe('Test parse complex queries', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('HAVING value > ?', async () => {
+        const sql = `
+        SELECT
+            name, 
+            SUM(double_value) as value
+        FROM mytable3
+        GROUP BY 
+            name
+        HAVING 
+            value > ?
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'name',
+                    dbtype: 'varchar',
+                    notNull: true
+                },
+                {
+                    name: 'value',
+                    dbtype: 'double',
+                    notNull: false
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'double',
+                    notNull: true
+                }
+            ]
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('HAVING value > ? and ? < ', async () => {
+        const sql = `
+        SELECT
+            name, 
+            SUM(double_value) as value,
+            SUM(double_value * 0.01) as id
+        FROM mytable3
+        WHERE id > ? -- this id is from mytable3 column
+        GROUP BY 
+            name
+        HAVING 
+            value > ? 
+            and id < ? -- this id is from the SELECT alias
+            AND SUM(double_value) = ?
+
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'name',
+                    dbtype: 'varchar',
+                    notNull: true
+                },
+                {
+                    name: 'value',
+                    dbtype: 'double',
+                    notNull: false
+                },
+                {
+                    name: 'id',
+                    dbtype: 'double',
+                    notNull: false
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'param2',
+                    columnType: 'double',
+                    notNull: true
+                },
+                {
+                    name: 'param3',
+                    columnType: 'double',
+                    notNull: true
+                },
+                {
+                    name: 'param4',
+                    columnType: 'double',
+                    notNull: true
+                }
+            ]
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     //https://www.mysqltutorial.org/mysql-subquery/
 
     it('parse a select with UNION', async () => {
