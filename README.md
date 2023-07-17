@@ -86,7 +86,7 @@ const updateResult = await updateProduct(...
 
 [ORDER BY and LIMIT clauses](/docs/orderBy_limit.md)
 
-[LIKE] (/docs/like.md)
+[LIKE](/docs/like.md)
 
 # Project status
 
