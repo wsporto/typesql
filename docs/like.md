@@ -16,9 +16,9 @@ WHERE
 Can be executed using the generated code:
 
 ```ts
-    //...
-    const result = await selectEmployees(conn);
-    console.log("result=", result);
+//...
+const result = await selectEmployees(conn);
+console.log("result=", result);
 
 ```
 
@@ -36,11 +36,11 @@ WHERE
 ```
 
 ```ts
-    //...
-    const result = await selectEmployees(conn, {
-        nameLike: 'a%'
-    });
-    console.log("result=", result);
+//...
+const result = await selectEmployees(conn, {
+    nameLike: 'a%'
+});
+console.log("result=", result);
 ```
 
 ```js
