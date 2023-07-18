@@ -1601,9 +1601,10 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
 
     if (simpleExpr instanceof SimpleExprSumContext) {
 
-        if (simpleExpr.sumExpr().MAX_SYMBOL() || simpleExpr.sumExpr().MIN_SYMBOL()) {
+        const sumExpr = simpleExpr.sumExpr();
+        if (sumExpr.MAX_SYMBOL() || sumExpr.MIN_SYMBOL()) {
             const functionType = freshVar(simpleExpr.text, '?');
-            const inSumExpr = simpleExpr.sumExpr().inSumExpr()?.expr();
+            const inSumExpr = sumExpr.inSumExpr()?.expr();
             if (inSumExpr) {
                 const inSumExprType = walkExpr(context, inSumExpr);
                 context.constraints.push({
@@ -1615,18 +1616,18 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
             }
             return functionType;
         }
-        if (simpleExpr.sumExpr().COUNT_SYMBOL()) {
+        if (sumExpr.COUNT_SYMBOL()) {
             const functionType = freshVar(simpleExpr.text, 'bigint');
-            const inSumExpr = simpleExpr.sumExpr().inSumExpr()?.expr();
+            const inSumExpr = sumExpr.inSumExpr()?.expr();
             if (inSumExpr) {
                 walkExpr(context, inSumExpr);
             }
             return functionType;
         }
 
-        if (simpleExpr.sumExpr().SUM_SYMBOL() || simpleExpr.sumExpr().AVG_SYMBOL()) {
+        if (sumExpr.SUM_SYMBOL() || sumExpr.AVG_SYMBOL()) {
             const functionType = freshVar(simpleExpr.text, '?');
-            const inSumExpr = simpleExpr.sumExpr().inSumExpr()?.expr();
+            const inSumExpr = sumExpr.inSumExpr()?.expr();
             if (inSumExpr) {
                 const inSumExprType = walkExpr(context, inSumExpr);
                 context.constraints.push({
