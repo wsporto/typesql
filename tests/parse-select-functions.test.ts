@@ -568,4 +568,140 @@ describe('Test parse select with functions', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     });
+
+    it(`SELECT IF(1>2,2,3) as result`, async () => {
+        const sql = `
+        SELECT IF(1>2,2,3) as result
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'result',
+                    dbtype: 'bigint',
+                    notNull: true
+                }
+            ],
+            parameters: []
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    });
+
+    it(`SELECT IF(1>2,'a','b') as result`, async () => {
+        const sql = `
+        SELECT IF(1>2,'a','b') as result
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'result',
+                    dbtype: 'varchar',
+                    notNull: true
+                }
+            ],
+            parameters: []
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    });
+
+    it(`SELECT IF(1>2, NULL,'b') as result`, async () => {
+        const sql = `
+        SELECT IF(1>2, NULL,'b') as result
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'result',
+                    dbtype: 'varchar',
+                    notNull: false
+                }
+            ],
+            parameters: []
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    });
+
+    it(`SELECT IF(1>2,'a',NULL) as result`, async () => {
+        const sql = `
+        SELECT IF(1>2,'a',NULL) as result
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'result',
+                    dbtype: 'varchar',
+                    notNull: false
+                }
+            ],
+            parameters: []
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    });
+
+    it(`SELECT IF(1>2, id, ?) as result FROM mytable1`, async () => {
+        const sql = `
+        SELECT IF(1>2, id, ?) as result FROM mytable1
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'result',
+                    dbtype: 'int',
+                    notNull: true
+                }
+            ],
+            parameters: [
+                {
+                    columnType: 'int',
+                    name: 'param1',
+                    notNull: true
+                }
+            ]
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    });
 });

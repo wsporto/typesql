@@ -1394,6 +1394,22 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
             })
             return functionType;
         }
+        if (runtimeFunctionCall.IF_SYMBOL()) {
+            const exprList = runtimeFunctionCall.expr();
+            const expr1 = exprList[0];
+            const expr2 = exprList[1];
+            const expr3 = exprList[2];
+            walkExpr(context, expr1);
+            const expr2Type = walkExpr(context, expr2);
+            const expr3Type = walkExpr(context, expr3);
+            context.constraints.push({
+                expression: runtimeFunctionCall.text,
+                type1: expr2Type,
+                type2: expr3Type,
+                mostGeneralType: true
+            })
+            return expr2Type;
+        }
         throw Error('Function not supported: ' + runtimeFunctionCall.text);
     }
 
