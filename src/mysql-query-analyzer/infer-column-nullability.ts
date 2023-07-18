@@ -166,10 +166,19 @@ function inferNotNullSimpleExpr(simpleExpr: SimpleExprContext, dbSchema: ColumnS
         if (sumExpr.COUNT_SYMBOL()) {
             return true;
         }
+        if (sumExpr.GROUP_CONCAT_SYMBOL()) {
+            const exprList = sumExpr.exprList()?.expr();
+            if (exprList) {
+                return exprList.every(expr => inferNotNullExpr(expr, dbSchema, fromColumns));
+            }
+            //IF has not exprList, GROUP_CONCAT will concat all the fields from select
+            return false; //TODO - INFER NULLABILITY
+        }
         const inSumExpr = sumExpr.inSumExpr();
         if (inSumExpr) {
             return false;
         }
+
     }
 
     if (simpleExpr instanceof SimpleExprListContext) {

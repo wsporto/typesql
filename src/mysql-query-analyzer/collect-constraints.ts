@@ -1640,6 +1640,22 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
             }
             return functionType;
         }
+        if (sumExpr.GROUP_CONCAT_SYMBOL()) {
+            const exprList = sumExpr.exprList();
+            if (exprList) {
+                exprList.expr().map(item => {
+                    const exprType = walkExpr(context, item);
+                    return exprType;
+                })
+                /*
+                The result type is TEXT or BLOB unless group_concat_max_len is less than or equal to 512, 
+                in which case the result type is VARCHAR or VARBINARY.
+                */
+                //TODO - Infer TEXT/BLOB or VARCHAR/VARBINARY
+                return freshVar(sumExpr.text, 'varchar');;
+            }
+        }
+        throw Error('Expression not supported: ' + sumExpr.text);
     }
 
     if (simpleExpr instanceof SimpleExprLiteralContext) {

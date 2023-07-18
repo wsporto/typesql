@@ -489,4 +489,83 @@ describe('Test parse select with functions', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     });
+
+    it(`SELECT GROUP_CONCAT(name) FROM mytable2`, async () => {
+        const sql = `
+        SELECT GROUP_CONCAT(name) FROM mytable2
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'GROUP_CONCAT(name)',
+                    dbtype: 'varchar',
+                    notNull: false
+                }
+            ],
+            parameters: []
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    });
+
+    it(`SELECT GROUP_CONCAT(id) FROM mytable2`, async () => {
+        const sql = `
+        SELECT GROUP_CONCAT(id) FROM mytable2
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'GROUP_CONCAT(id)',
+                    dbtype: 'varchar',
+                    notNull: true
+                }
+            ],
+            parameters: []
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    });
+
+    it(`SELECT GROUP_CONCAT(DISTINCT name ORDER BY id DESC SEPARATOR ';') FROM mytable2`, async () => {
+        const sql = `
+        SELECT GROUP_CONCAT(DISTINCT name ORDER BY id DESC SEPARATOR ';') as result
+        FROM mytable2
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'result',
+                    dbtype: 'varchar',
+                    notNull: false
+                }
+            ],
+            parameters: []
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    });
 });
