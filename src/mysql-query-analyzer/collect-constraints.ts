@@ -9,7 +9,7 @@ import {
     PrimaryExprPredicateContext, SimpleExprContext, PredicateOperationsContext, ExprNotContext, ExprAndContext,
     ExprOrContext, ExprXorContext, PredicateExprLikeContext, SelectStatementContext, SimpleExprRuntimeFunctionContext,
     SubqueryContext, InsertStatementContext, UpdateStatementContext, DeleteStatementContext, PrimaryExprAllAnyContext,
-    FromClauseContext, SimpleExprIntervalContext, HavingClauseContext
+    FromClauseContext, SimpleExprIntervalContext, HavingClauseContext, QueryExpressionOrParensContext, QueryExpressionContext, QueryExpressionParensContext, QueryExpressionBodyContext
 } from "ts-mysql-parser";
 
 import { ColumnSchema, ColumnDef, TypeInferenceResult, InsertInfoResult, UpdateInfoResult, DeleteInfoResult } from "./types";
@@ -85,17 +85,17 @@ export type NamedNodes = {
     [key: string]: Type;
 }
 
-export function analiseTree(tree: RuleContext, dbSchema: ColumnSchema[], withSchema: ColumnSchema[], namedParameters: string[]): TypeInferenceResult {
+export function analiseTree(tree: RuleContext, context: InferenceContext, namedParameters: string[]): TypeInferenceResult {
 
     if (tree instanceof QueryContext) {
 
         const selectStatement = tree.simpleStatement()?.selectStatement();
         if (selectStatement) {
-            return analiseSelectStatement(selectStatement, dbSchema, withSchema, namedParameters);
+            return analiseSelectStatement(selectStatement, context.dbSchema, context.withSchema, namedParameters);
         }
         const insertStatement = tree.simpleStatement()?.insertStatement();
         if (insertStatement) {
-            const insertStmt = analiseInsertStatement(insertStatement, dbSchema, withSchema);
+            const insertStmt = analiseInsertStatement(insertStatement, context);
             const TypeInfer: TypeInferenceResult = {
                 columns: [],
                 parameters: insertStmt.parameters.map(param => param.columnType)
@@ -104,7 +104,7 @@ export function analiseTree(tree: RuleContext, dbSchema: ColumnSchema[], withSch
         }
         const updateStatement = tree.simpleStatement()?.updateStatement();
         if (updateStatement) {
-            const updateStmt = analiseUpdateStatement(updateStatement, dbSchema, withSchema);
+            const updateStmt = analiseUpdateStatement(updateStatement, context.dbSchema, context.withSchema);
             const TypeInfer: TypeInferenceResult = {
                 columns: [],
                 parameters: updateStmt.data.map(param => param.columnType)
@@ -119,27 +119,29 @@ export function analiseTree(tree: RuleContext, dbSchema: ColumnSchema[], withSch
 
 type ExprOrDefault = ExprContext | TerminalNode;
 
-export function analiseInsertStatement(insertStatement: InsertStatementContext, dbSchema: ColumnSchema[], withSchema: ColumnSchema[]): InsertInfoResult {
+export function analiseInsertStatement(insertStatement: InsertStatementContext, context: InferenceContext): InsertInfoResult {
 
-    const valuesContext = insertStatement.insertFromConstructor()!.insertValues().valueList().values()[0];
-    const insertColumns = getInsertColumns(insertStatement, dbSchema);
+    const insertColumns = getInsertColumns(insertStatement, context.dbSchema);
     const allParameters: ParameterDef[] = [];
-    const paramsNullability: boolean[] = [];
+    const paramsNullability: { [paramId: number]: boolean } = {};
 
     const exprOrDefaultList: ExprOrDefault[] = [];
-    valuesContext.DEFAULT_SYMBOL().forEach(terminalNode => {
-        exprOrDefaultList.push(terminalNode);
-    })
-    valuesContext.expr().forEach(expr => {
-        exprOrDefaultList.push(expr);
-    })
+    const valuesContext = insertStatement.insertFromConstructor()?.insertValues().valueList().values()[0];
+    if (valuesContext) {
+        valuesContext.DEFAULT_SYMBOL().forEach(terminalNode => {
+            exprOrDefaultList.push(terminalNode);
+        })
+        valuesContext.expr().forEach(expr => {
+            exprOrDefaultList.push(expr);
+        })
+    }
 
     //order the tokens based on sql position
     exprOrDefaultList.sort((token1, token2) => token1.sourceInterval.a - token2.sourceInterval.a);
 
     const insertIntoTable = getInsertIntoTable(insertStatement);
 
-    const fromColumns = dbSchema
+    const fromColumns = context.dbSchema
         .filter(c => c.table == insertIntoTable)
         .map(c => {
             const col: ColumnDef = {
@@ -153,22 +155,17 @@ export function analiseInsertStatement(insertStatement: InsertStatementContext, 
             return col;
         })
 
-    const context: InferenceContext = {
-        dbSchema,
-        withSchema,
-        constraints: [],
-        parameters: [],
-        fromColumns
-    }
+    context.fromColumns = fromColumns;
 
     exprOrDefaultList.forEach((expr, index) => {
         const column = insertColumns[index];
 
         if (expr instanceof ExprContext) {
+            const numberParamsBefore = context.parameters.length;
             const exprType = walkExpr(context, expr);
-            while (paramsNullability.length < context.parameters.length) {
-                paramsNullability.push(column.notNull);
-            }
+            context.parameters.slice(numberParamsBefore).forEach(param => {
+                paramsNullability[param.id] = column.notNull;
+            })
             context.constraints.push({
                 expression: expr.text,
                 type1: freshVar(column.column, column.column_type),
@@ -183,11 +180,12 @@ export function analiseInsertStatement(insertStatement: InsertStatementContext, 
         const field = splitName(columnName);
         const expr = updateElement.expr();
         if (expr) {
+            const numberParamsBefore = context.parameters.length;
             const exprType = walkExpr(context, expr);
-            const column = findColumn2(field, insertIntoTable, dbSchema);
-            while (paramsNullability.length < context.parameters.length) {
-                paramsNullability.push(column.notNull);
-            }
+            const column = findColumn2(field, insertIntoTable, context.dbSchema);
+            context.parameters.slice(numberParamsBefore).forEach(param => {
+                paramsNullability[param.id] = column.notNull;
+            })
             context.constraints.push({
                 expression: expr.text,
                 type1: exprType,
@@ -197,12 +195,29 @@ export function analiseInsertStatement(insertStatement: InsertStatementContext, 
         }
     });
 
+    const queryExpressionOrParens = insertStatement.insertQueryExpression()?.queryExpressionOrParens();
+    if (queryExpressionOrParens) {
+        const exprTypes = walkQueryExpressionOrParens(queryExpressionOrParens, context);
+        exprTypes.types.forEach((type, index) => {
+            const column = insertColumns[index];
+            if (type.kind == 'TypeVar') {
+                paramsNullability[type.id] = column.notNull;
+            }
+            context.constraints.push({
+                expression: queryExpressionOrParens.text,
+                type1: type,
+                type2: freshVar(column.column, column.column_type)
+            })
+        })
+    }
+
     const typeInfo = generateTypeInfo(context.parameters, context.constraints);
     typeInfo.forEach((param, index) => {
+        const paramId = context.parameters[index].id;
         allParameters.push({
             name: 'param' + (allParameters.length + 1),
             columnType: verifyNotInferred(param),
-            notNull: paramsNullability[index]
+            notNull: paramsNullability[paramId]
         })
     })
 
@@ -211,6 +226,51 @@ export function analiseInsertStatement(insertStatement: InsertStatementContext, 
         parameters: allParameters
     }
     return typeInferenceResult;
+}
+
+function walkQueryExpressionOrParens(queryExpressionOrParens: QueryExpressionOrParensContext, context: InferenceContext): TypeOperator {
+    const queryExpression = queryExpressionOrParens.queryExpression();
+    if (queryExpression) {
+        return walkQueryExpression(queryExpression, context);
+    }
+    const queryEpressionParens = queryExpressionOrParens.queryExpressionParens();
+    if (queryEpressionParens) {
+        return walkQueryExpressionParens(queryEpressionParens);
+    }
+    throw Error("walkQueryExpressionOrParens");
+}
+
+function walkQueryExpression(queryExpression: QueryExpressionContext, context: InferenceContext): TypeOperator {
+    const queryExpressionBody = queryExpression.queryExpressionBody();
+    if (queryExpressionBody) {
+        return walkQueryExpressionBody(queryExpressionBody, context)
+    }
+    const queryExpressionParens = queryExpression.queryExpressionParens();
+    if (queryExpressionParens) {
+        return walkQueryExpressionParens(queryExpressionParens);
+    }
+    throw Error("walkQueryExpression");
+}
+
+function walkQueryExpressionParens(queryExpressionParens: QueryExpressionParensContext): TypeOperator {
+    throw Error("walkQueryExpressionParens not implemented:" + queryExpressionParens.text);
+}
+
+function walkQueryExpressionBody(queryExpressionBody: QueryExpressionBodyContext, context: InferenceContext): TypeOperator {
+    const childQueryExpressionBody = queryExpressionBody.queryExpressionBody();
+    if (childQueryExpressionBody) {
+        return walkQueryExpressionBody(childQueryExpressionBody, context);
+    }
+    const queryExpressionParensList = queryExpressionBody.queryExpressionParens();
+    queryExpressionParensList.forEach(queryExpressionParens => {
+        return walkQueryExpressionParens(queryExpressionParens);
+    })
+
+    const querySpecification = queryExpressionBody.querySpecification();
+    if (querySpecification) {
+        return walkQuerySpecification(context, querySpecification);
+    }
+    throw Error("walkQueryExpressionBody");
 }
 
 export function analiseDeleteStatement(deleteStatement: DeleteStatementContext, dbSchema: ColumnSchema[], withSchema: ColumnSchema[]): DeleteInfoResult {

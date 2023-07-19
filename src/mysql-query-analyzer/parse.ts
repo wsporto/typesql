@@ -1,7 +1,7 @@
-import MySQLParser, { SqlMode, QueryContext, QuerySpecificationContext, SelectStatementContext, SubqueryContext, WithClauseContext, QueryExpressionParensContext } from 'ts-mysql-parser';
+import MySQLParser, { SqlMode, QueryContext, QuerySpecificationContext, SelectStatementContext, SubqueryContext, WithClauseContext, QueryExpressionParensContext, QueryExpressionBodyContext } from 'ts-mysql-parser';
 import { ParseTree } from "antlr4ts/tree";
 import {
-    analiseTree, TypeVar, analiseQuerySpecification, unionTypeResult, getInsertColumns, analiseInsertStatement,
+    analiseTree, TypeVar, analiseQuerySpecification, unionTypeResult, analiseInsertStatement,
     analiseUpdateStatement, analiseDeleteStatement, InferenceContext
 } from './collect-constraints';
 import {
@@ -37,7 +37,15 @@ export type SubstitutionHash = {
 
 export function infer(queryContext: QueryContext, dbSchema: ColumnSchema[], withSchema: ColumnSchema[], namedParameters: string[]): TypeInferenceResult {
 
-    const typeInferenceResult = analiseTree(queryContext, dbSchema, withSchema, namedParameters);
+    const context: InferenceContext = {
+        dbSchema,
+        withSchema,
+        constraints: [],
+        parameters: [],
+        fromColumns: []
+    }
+
+    const typeInferenceResult = analiseTree(queryContext, context, namedParameters);
     // const newTypeInference : TypeInferenceResult = {
     //     columns: typeInferenceResult.columns.map( col => verifyNotInferred(col)),
     //     parameters: typeInferenceResult.parameters.map(paramType => verifyNotInferred(paramType))
@@ -220,8 +228,7 @@ export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[]): QueryIn
         }
         const insertStatement = tree.simpleStatement()?.insertStatement();
         if (insertStatement) {
-            const insertColumns = getInsertColumns(insertStatement, context.dbSchema);
-            const typeInfer = analiseInsertStatement(insertStatement, insertColumns, context.withSchema);
+            const typeInfer = analiseInsertStatement(insertStatement, context);
             return typeInfer;
         }
         const updateStatement = tree.simpleStatement()?.updateStatement();
@@ -264,7 +271,7 @@ export function analiseQuery(querySpec: QuerySpecificationContext[], dbSchema: C
     return mainQueryResult;
 }
 
-export function getQuerySpecificationsFromSelectStatement(selectStatement: any | QueryExpressionParensContext | SubqueryContext): QuerySpecificationContext[] {
+export function getQuerySpecificationsFromSelectStatement(selectStatement: SelectStatementContext | QueryExpressionBodyContext | QueryExpressionParensContext | SubqueryContext): QuerySpecificationContext[] {
     const result: QuerySpecificationContext[] = [];
 
     collectQuerySpecifications(selectStatement, result);

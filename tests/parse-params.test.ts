@@ -787,4 +787,27 @@ describe('Test parse parameters', () => {
         }
         assert.deepStrictEqual(actual.right.parameters, expected);
     })
+
+    it(`SELECT ?, ?`, async () => {
+        const sql = `
+        SELECT ?, ?
+        `
+        const actual = await parseSql(client, sql);
+        const expected: ParameterDef[] = [
+            {
+                name: 'param1',
+                columnType: 'varchar',
+                notNull: true
+            },
+            {
+                name: 'param2',
+                columnType: 'varchar',
+                notNull: true
+            }
+        ]
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right.parameters, expected);
+    })
 });
