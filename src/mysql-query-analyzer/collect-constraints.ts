@@ -1630,7 +1630,7 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
             return freshVar('int', 'int');
         }
 
-        if (functionIdentifier == 'ifnull') {
+        if (functionIdentifier == 'ifnull' || functionIdentifier == 'nullif') {
             const functionType = freshVar(simpleExpr.text, '?');
             const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr();
             if (udfExprList) {
@@ -1649,7 +1649,7 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
             return functionType;
         }
 
-        throw Error('Function not supported: ' + functionIdentifier); //TODO ifnull
+        throw Error('Function not supported: ' + functionIdentifier);
     }
 
     if (simpleExpr instanceof SimpleExprParamMarkerContext) {

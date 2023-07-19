@@ -704,4 +704,36 @@ describe('Test parse select with functions', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     });
+
+    it(`SELECT NULLIF(?, 'a') FROM mytable1`, async () => {
+        const sql = `
+        SELECT NULLIF(?, 'a') FROM mytable1
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: `NULLIF(?, 'a')`,
+                    dbtype: 'varchar',
+                    notNull: true
+                }
+            ],
+            parameters: [
+                {
+                    columnType: 'varchar',
+                    name: 'param1',
+                    notNull: true
+                }
+            ]
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    });
 });
