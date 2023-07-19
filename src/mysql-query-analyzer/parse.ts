@@ -1,4 +1,4 @@
-import MySQLParser, { SqlMode, QueryContext, QuerySpecificationContext, SelectStatementContext, SubqueryContext, WithClauseContext, QueryExpressionParensContext, QueryExpressionBodyContext } from 'ts-mysql-parser';
+import MySQLParser, { SqlMode, QueryContext, QuerySpecificationContext, SelectStatementContext, SubqueryContext, WithClauseContext, QueryExpressionParensContext, QueryExpressionBodyContext, InsertQueryExpressionContext } from 'ts-mysql-parser';
 import { ParseTree } from "antlr4ts/tree";
 import {
     analiseTree, TypeVar, analiseQuerySpecification, unionTypeResult, analiseInsertStatement,
@@ -61,7 +61,8 @@ export function parseAndInfer(sql: string, dbSchema: ColumnSchema[], withSchema:
 
 export function parseAndInferParamNullability(sql: string): boolean[] {
     const queryContext = parse(sql);
-    return inferParamNullabilityQuery(queryContext);
+    const selectStatement = queryContext.simpleStatement()?.selectStatement()!;
+    return inferParamNullabilityQuery(selectStatement);
 }
 
 export function extractQueryInfoFromQuerySpecification(querySpec: QuerySpecificationContext, dbSchema: ColumnSchema[], withSchema: ColumnSchema[], namedParameters: string[]): TypeAndNullInferResult {
@@ -271,7 +272,12 @@ export function analiseQuery(querySpec: QuerySpecificationContext[], dbSchema: C
     return mainQueryResult;
 }
 
-export function getQuerySpecificationsFromSelectStatement(selectStatement: SelectStatementContext | QueryExpressionBodyContext | QueryExpressionParensContext | SubqueryContext): QuerySpecificationContext[] {
+export function getQuerySpecificationsFromSelectStatement(
+    selectStatement: SelectStatementContext
+        | InsertQueryExpressionContext
+        | QueryExpressionBodyContext
+        | QueryExpressionParensContext
+        | SubqueryContext): QuerySpecificationContext[] {
     const result: QuerySpecificationContext[] = [];
 
     collectQuerySpecifications(selectStatement, result);

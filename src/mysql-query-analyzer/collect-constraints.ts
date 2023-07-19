@@ -9,7 +9,7 @@ import {
     PrimaryExprPredicateContext, SimpleExprContext, PredicateOperationsContext, ExprNotContext, ExprAndContext,
     ExprOrContext, ExprXorContext, PredicateExprLikeContext, SelectStatementContext, SimpleExprRuntimeFunctionContext,
     SubqueryContext, InsertStatementContext, UpdateStatementContext, DeleteStatementContext, PrimaryExprAllAnyContext,
-    FromClauseContext, SimpleExprIntervalContext, HavingClauseContext, QueryExpressionOrParensContext, QueryExpressionContext, QueryExpressionParensContext, QueryExpressionBodyContext
+    FromClauseContext, SimpleExprIntervalContext, HavingClauseContext, QueryExpressionOrParensContext, QueryExpressionContext, QueryExpressionParensContext, QueryExpressionBodyContext, InsertQueryExpressionContext
 } from "ts-mysql-parser";
 
 import { ColumnSchema, ColumnDef, TypeInferenceResult, InsertInfoResult, UpdateInfoResult, DeleteInfoResult } from "./types";
@@ -21,7 +21,7 @@ import {
 import { MySqlType, InferType } from "../mysql-mapping";
 import { ParameterDef } from "../types";
 import { unify } from "./unify";
-import { getParentContext, inferParamNullability } from "./infer-param-nullability";
+import { getParentContext, inferParamNullability, inferParamNullabilityQuery } from "./infer-param-nullability";
 import { verifyNotInferred } from "../describe-query";
 import { TerminalNode } from "antlr4ts/tree";
 import { getPairWise, getParameterIndexes } from "./util";
@@ -195,20 +195,30 @@ export function analiseInsertStatement(insertStatement: InsertStatementContext, 
         }
     });
 
-    const queryExpressionOrParens = insertStatement.insertQueryExpression()?.queryExpressionOrParens();
-    if (queryExpressionOrParens) {
-        const exprTypes = walkQueryExpressionOrParens(queryExpressionOrParens, context);
+    const insertQueryExpression = insertStatement.insertQueryExpression();
+    if (insertQueryExpression) {
+        const numberParamsBefore = context.parameters.length;
+        const exprTypes = walkInsertQueryExpression(insertQueryExpression, context);
+
         exprTypes.types.forEach((type, index) => {
             const column = insertColumns[index];
             if (type.kind == 'TypeVar') {
                 paramsNullability[type.id] = column.notNull;
             }
             context.constraints.push({
-                expression: queryExpressionOrParens.text,
+                expression: insertQueryExpression.text,
                 type1: type,
                 type2: freshVar(column.column, column.column_type)
             })
+
         })
+        const paramNullabilityExpr = inferParamNullabilityQuery(insertQueryExpression);
+        context.parameters.slice(numberParamsBefore).forEach((param, index) => {
+            if (paramsNullability[param.id] == null) {
+                paramsNullability[param.id] = paramNullabilityExpr[index];
+            }
+        })
+
     }
 
     const typeInfo = generateTypeInfo(context.parameters, context.constraints);
@@ -226,6 +236,11 @@ export function analiseInsertStatement(insertStatement: InsertStatementContext, 
         parameters: allParameters
     }
     return typeInferenceResult;
+}
+
+function walkInsertQueryExpression(insertQueryExpression: InsertQueryExpressionContext, context: InferenceContext): TypeOperator {
+    const queryExpressionOrParens = insertQueryExpression.queryExpressionOrParens();
+    return walkQueryExpressionOrParens(queryExpressionOrParens, context);
 }
 
 function walkQueryExpressionOrParens(queryExpressionOrParens: QueryExpressionOrParensContext, context: InferenceContext): TypeOperator {
@@ -387,7 +402,10 @@ function getInsertIntoTable(insertStatement: InsertStatementContext) {
 export function getInsertColumns(insertStatement: InsertStatementContext, dbSchema: ColumnSchema[]) {
     const insertIntoTable = getInsertIntoTable(insertStatement);
 
-    const fields = insertStatement.insertFromConstructor()?.fields()?.insertIdentifier().map(insertIdentifier => {
+    const insertFields = insertStatement.insertFromConstructor() ||
+        insertStatement.insertQueryExpression();
+
+    const fields = insertFields?.fields()?.insertIdentifier().map(insertIdentifier => {
         const colRef = insertIdentifier.columnRef();
         if (colRef) {
             const fieldName = splitName(colRef.text);

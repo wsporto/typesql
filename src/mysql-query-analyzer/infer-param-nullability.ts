@@ -1,17 +1,12 @@
-import { QuerySpecificationContext, SimpleExprParamMarkerContext, QueryContext, PrimaryExprIsNullContext, FunctionCallContext, ExprContext } from "ts-mysql-parser";
+import { SimpleExprParamMarkerContext, PrimaryExprIsNullContext, FunctionCallContext, ExprContext, InsertQueryExpressionContext, SelectStatementContext } from "ts-mysql-parser";
 import { RuleContext } from "antlr4ts";
 import { ParseTree } from "antlr4ts/tree";
 import { getQuerySpecificationsFromSelectStatement } from "./parse";
 
-export function inferParamNullabilityQuery(queryContext: QueryContext): boolean[] {
-
-    const selectStatement = queryContext.simpleStatement()?.selectStatement();
-    if (selectStatement) {
-        const queriesSpecification = getQuerySpecificationsFromSelectStatement(selectStatement);
-        const parameters = getAllParameters(queriesSpecification[0]);
-        return parameters.map(param => inferParameterNotNull(param));
-    }
-    throw Error('invalid tree');
+export function inferParamNullabilityQuery(queryContext: SelectStatementContext | InsertQueryExpressionContext): boolean[] {
+    const queriesSpecification = getQuerySpecificationsFromSelectStatement(queryContext);
+    const parameters = getAllParameters(queriesSpecification[0]);
+    return parameters.map(param => inferParameterNotNull(param));
 }
 
 export function inferParamNullability(exprContext: ExprContext): boolean[] {

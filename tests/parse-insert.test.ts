@@ -481,6 +481,50 @@ describe('parse insert statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it(`INSERT INTO mytable2 (id, name) SELECT id, descr FROM mytable2 WHERE name = ? AND id > ?`, async () => {
+
+        const sql = `
+        INSERT INTO mytable2 (id, name) 
+        SELECT id, descr 
+        FROM mytable2 WHERE name = ? AND id > ?`;
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql: sql,
+            queryType: 'Insert',
+            multipleRowsResult: false,
+            columns: [
+                {
+                    name: 'affectedRows',
+                    dbtype: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'insertId',
+                    dbtype: 'int',
+                    notNull: true
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'varchar',
+                    notNull: true
+                },
+                {
+                    name: 'param2',
+                    columnType: 'int',
+                    notNull: true
+                }
+            ]
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+
     it('insert into all_types (varchar_column, int_column) values (concat(?, ?), ?+?)', async () => {
 
         const sql = `insert into all_types (varchar_column, int_column) values (concat(?, ?), ?+?)`;
