@@ -385,6 +385,60 @@ describe('parse insert statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it(`ON DUPLICATE KEY UPDATE name = name = IF(? != '', ?, name)`, async () => {
+
+        const sql = `
+        INSERT INTO mytable2 (id, name) 
+        VALUES (?, ?)
+        ON DUPLICATE KEY UPDATE
+        name = IF(? != '', ?, name)`;
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql: sql,
+            queryType: 'Insert',
+            multipleRowsResult: false,
+            columns: [
+                {
+                    name: 'affectedRows',
+                    dbtype: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'insertId',
+                    dbtype: 'int',
+                    notNull: true
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'param2',
+                    columnType: 'varchar',
+                    notNull: false
+                },
+                {
+                    name: 'param3',
+                    columnType: 'varchar',
+                    notNull: false
+                },
+                {
+                    name: 'param4',
+                    columnType: 'varchar',
+                    notNull: false
+                }
+            ]
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it('insert into all_types (varchar_column, int_column) values (concat(?, ?), ?+?)', async () => {
 
         const sql = `insert into all_types (varchar_column, int_column) values (concat(?, ?), ?+?)`;

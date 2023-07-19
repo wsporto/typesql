@@ -135,14 +135,30 @@ export function analiseInsertStatement(insertStatement: InsertStatementContext, 
     })
 
     //order the tokens based on sql position
-    exprOrDefaultList.sort((token1, token2) => token1.sourceInterval.a - token2.sourceInterval.a)
+    exprOrDefaultList.sort((token1, token2) => token1.sourceInterval.a - token2.sourceInterval.a);
+
+    const insertIntoTable = getInsertIntoTable(insertStatement);
+
+    const fromColumns = dbSchema
+        .filter(c => c.table == insertIntoTable)
+        .map(c => {
+            const col: ColumnDef = {
+                table: c.table,
+                column: c.column,
+                columnName: c.column,
+                columnType: c.column_type,
+                columnKey: "",
+                notNull: c.notNull
+            }
+            return col;
+        })
 
     const context: InferenceContext = {
         dbSchema,
         withSchema,
         constraints: [],
         parameters: [],
-        fromColumns: []
+        fromColumns
     }
 
     exprOrDefaultList.forEach((expr, index) => {
@@ -162,7 +178,6 @@ export function analiseInsertStatement(insertStatement: InsertStatementContext, 
     })
 
     const updateList = insertStatement.insertUpdateList()?.updateList().updateElement() || [];
-    const insertIntoTable = getInsertIntoTable(insertStatement);
     updateList.forEach(updateElement => {
         const columnName = updateElement.columnRef().text;
         const field = splitName(columnName);
