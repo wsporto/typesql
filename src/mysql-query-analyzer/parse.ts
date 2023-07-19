@@ -275,8 +275,8 @@ export function analiseQuery(querySpec: QuerySpecificationContext[], dbSchema: C
 export function getQuerySpecificationsFromSelectStatement(
     selectStatement: SelectStatementContext
         | InsertQueryExpressionContext
-        | QueryExpressionBodyContext
-        | QueryExpressionParensContext
+        | QueryExpressionBodyContext //TODO - REMOVE
+        | QueryExpressionParensContext //TODO - REMOVE
         | SubqueryContext): QuerySpecificationContext[] {
     const result: QuerySpecificationContext[] = [];
 
