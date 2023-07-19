@@ -124,6 +124,7 @@ export function analiseInsertStatement(insertStatement: InsertStatementContext, 
     const valuesContext = insertStatement.insertFromConstructor()!.insertValues().valueList().values()[0];
     const insertColumns = getInsertColumns(insertStatement, dbSchema);
     const allParameters: ParameterDef[] = [];
+    const paramsNullability: boolean[] = [];
 
     const exprOrDefaultList: ExprOrDefault[] = [];
     valuesContext.DEFAULT_SYMBOL().forEach(terminalNode => {
@@ -136,37 +137,59 @@ export function analiseInsertStatement(insertStatement: InsertStatementContext, 
     //order the tokens based on sql position
     exprOrDefaultList.sort((token1, token2) => token1.sourceInterval.a - token2.sourceInterval.a)
 
-    exprOrDefaultList.forEach((expr, index) => {
-        const context: InferenceContext = {
-            dbSchema,
-            withSchema,
-            constraints: [],
-            parameters: [],
-            fromColumns: []
-        }
+    const context: InferenceContext = {
+        dbSchema,
+        withSchema,
+        constraints: [],
+        parameters: [],
+        fromColumns: []
+    }
 
+    exprOrDefaultList.forEach((expr, index) => {
         const column = insertColumns[index];
 
         if (expr instanceof ExprContext) {
             const exprType = walkExpr(context, expr);
+            while (paramsNullability.length < context.parameters.length) {
+                paramsNullability.push(column.notNull);
+            }
             context.constraints.push({
                 expression: expr.text,
                 type1: freshVar(column.column, column.column_type),
                 type2: exprType.kind == 'TypeOperator' ? exprType.types[0] : exprType
             })
         }
-
-        const typeInfo = generateTypeInfo(context.parameters, context.constraints);
-        typeInfo.forEach(param => {
-            allParameters.push({
-                name: 'param' + (allParameters.length + 1),
-                columnType: verifyNotInferred(param),
-                notNull: column.notNull
-            })
-        })
-
     })
 
+    const updateList = insertStatement.insertUpdateList()?.updateList().updateElement() || [];
+    const insertIntoTable = getInsertIntoTable(insertStatement);
+    updateList.forEach(updateElement => {
+        const columnName = updateElement.columnRef().text;
+        const field = splitName(columnName);
+        const expr = updateElement.expr();
+        if (expr) {
+            const exprType = walkExpr(context, expr);
+            const column = findColumn2(field, insertIntoTable, dbSchema);
+            while (paramsNullability.length < context.parameters.length) {
+                paramsNullability.push(column.notNull);
+            }
+            context.constraints.push({
+                expression: expr.text,
+                type1: exprType,
+                type2: freshVar(column.column, column.column_type)
+
+            })
+        }
+    });
+
+    const typeInfo = generateTypeInfo(context.parameters, context.constraints);
+    typeInfo.forEach((param, index) => {
+        allParameters.push({
+            name: 'param' + (allParameters.length + 1),
+            columnType: verifyNotInferred(param),
+            notNull: paramsNullability[index]
+        })
+    })
 
     const typeInferenceResult: InsertInfoResult = {
         kind: 'Insert',
@@ -281,8 +304,13 @@ export function analiseUpdateStatement(updateStatement: UpdateStatementContext, 
     return typeInferenceResult;
 }
 
-export function getInsertColumns(insertStatement: InsertStatementContext, dbSchema: ColumnSchema[]) {
+function getInsertIntoTable(insertStatement: InsertStatementContext) {
     const insertIntoTable = splitName(insertStatement.tableRef().text).name;
+    return insertIntoTable;
+}
+
+export function getInsertColumns(insertStatement: InsertStatementContext, dbSchema: ColumnSchema[]) {
+    const insertIntoTable = getInsertIntoTable(insertStatement);
 
     const fields = insertStatement.insertFromConstructor()?.fields()?.insertIdentifier().map(insertIdentifier => {
         const colRef = insertIdentifier.columnRef();

@@ -225,6 +225,166 @@ describe('parse insert statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('ON DUPLICATE KEY UPDATE name = ?', async () => {
+
+        const sql = `
+        INSERT INTO mytable2 (id, name) 
+        VALUES (?, ?)
+        ON DUPLICATE KEY UPDATE
+        name = ?`;
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql: sql,
+            queryType: 'Insert',
+            multipleRowsResult: false,
+            columns: [
+                {
+                    name: 'affectedRows',
+                    dbtype: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'insertId',
+                    dbtype: 'int',
+                    notNull: true
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'param2',
+                    columnType: 'varchar',
+                    notNull: false
+                },
+                {
+                    name: 'param3',
+                    columnType: 'varchar',
+                    notNull: false
+                }
+            ]
+        }
+
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('ON DUPLICATE KEY UPDATE name = concat(?, ?)', async () => {
+
+        const sql = `
+        INSERT INTO mytable2 (id, name) 
+        VALUES (?, ?)
+        ON DUPLICATE KEY UPDATE
+        name = concat(?, ?)`;
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql: sql,
+            queryType: 'Insert',
+            multipleRowsResult: false,
+            columns: [
+                {
+                    name: 'affectedRows',
+                    dbtype: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'insertId',
+                    dbtype: 'int',
+                    notNull: true
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'param2',
+                    columnType: 'varchar',
+                    notNull: false
+                },
+                {
+                    name: 'param3',
+                    columnType: 'varchar',
+                    notNull: false
+                },
+                {
+                    name: 'param4',
+                    columnType: 'varchar',
+                    notNull: false
+                }
+            ]
+        }
+
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it(`ON DUPLICATE KEY UPDATE name = concat(?, 'a', ?)`, async () => {
+
+        const sql = `
+        INSERT INTO mytable2 (id, name) 
+        VALUES (?, concat(?, '-a'))
+        ON DUPLICATE KEY UPDATE
+        name = concat(?, 'a', ?)`;
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql: sql,
+            queryType: 'Insert',
+            multipleRowsResult: false,
+            columns: [
+                {
+                    name: 'affectedRows',
+                    dbtype: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'insertId',
+                    dbtype: 'int',
+                    notNull: true
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'param2',
+                    columnType: 'varchar',
+                    notNull: false
+                },
+                {
+                    name: 'param3',
+                    columnType: 'varchar',
+                    notNull: false
+                },
+                {
+                    name: 'param4',
+                    columnType: 'varchar',
+                    notNull: false
+                }
+            ]
+        }
+
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it('insert into all_types (varchar_column, int_column) values (concat(?, ?), ?+?)', async () => {
 
         const sql = `insert into all_types (varchar_column, int_column) values (concat(?, ?), ?+?)`;
