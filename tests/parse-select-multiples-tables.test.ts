@@ -64,6 +64,54 @@ describe('Test select with multiples tables', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('FROM mytable1 as t1 INNER JOIN mytable2 as t2', async () => {
+
+        const sql = `
+        SELECT * 
+        FROM mytable1 as t1 
+        INNER JOIN mytable2 as t2 on t2.id = t1.id
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'id',
+                    dbtype: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'value',
+                    dbtype: 'int',
+                    notNull: false
+                },
+                {
+                    name: 'id', //TODO - rename fields
+                    dbtype: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'name',
+                    dbtype: 'varchar',
+                    notNull: false
+                },
+                {
+                    name: 'descr',
+                    dbtype: 'varchar',
+                    notNull: false
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it('select t1.* from inner join', async () => {
 
         const sql = `

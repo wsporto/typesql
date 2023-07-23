@@ -174,7 +174,7 @@ function filterUsingFields(joinedFields: ColumnDef[], usingFields: string[]) {
 //rule: singleTable
 function extractFieldsFromSingleTable(dbSchema: ColumnSchema[], withSchema: ColumnSchema[], ctx: SingleTableContext) {
     const table = ctx?.tableRef().text;
-    const tableAlias = ctx?.tableAlias()?.text;
+    const tableAlias = ctx?.tableAlias()?.identifier().text;
     const tableName = splitName(table);
     const fields = filterColumns(dbSchema, withSchema, tableAlias, tableName)
     return fields;
