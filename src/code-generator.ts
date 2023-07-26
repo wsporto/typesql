@@ -26,7 +26,7 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
         writer.writeLine(`import { Client } from "https://deno.land/x/mysql/mod.ts";`);
     }
     else {
-        writer.writeLine(`import { Connection } from 'mysql2/promise';`);
+        writer.writeLine(`import type { Connection } from 'mysql2/promise';`);
     }
     writer.blankLine();
 

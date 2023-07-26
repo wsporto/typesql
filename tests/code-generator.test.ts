@@ -34,7 +34,7 @@ describe('code-generator', () => {
 
         const actual = generateTsCode(tsDescriptor, queryName, 'node');
         const expected =
-            `import { Connection } from 'mysql2/promise';
+            `import type { Connection } from 'mysql2/promise';
 
 export type GetPersonParams = {
     param1: number;
@@ -88,7 +88,7 @@ export async function getPerson(connection: Connection, params: GetPersonParams)
 
         const actual = generateTsCode(tsDescriptor, queryName, 'node');
         const expected =
-            `import { Connection } from 'mysql2/promise';
+            `import type { Connection } from 'mysql2/promise';
 
 export type UpdatePersonData = {
     name: string;
@@ -134,7 +134,7 @@ export async function updatePerson(connection: Connection, data: UpdatePersonDat
 
         const actual = generateTsCode(tsDescriptor, queryName, 'node');
         const expected =
-            `import { Connection } from 'mysql2/promise';
+            `import type { Connection } from 'mysql2/promise';
 
 export type SelectPersonParams = {
     orderBy: [SelectPersonOrderBy, ...SelectPersonOrderBy[]];
