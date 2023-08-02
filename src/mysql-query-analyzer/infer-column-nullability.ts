@@ -4,7 +4,7 @@ import {
     PredicateContext, BitExprContext, SimpleExprContext, FunctionCallContext, SimpleExprFunctionContext, SimpleExprColumnRefContext,
     WhereClauseContext, SimpleExprListContext, PrimaryExprIsNullContext, PrimaryExprCompareContext, ExprNotContext, ExprAndContext,
     ExprXorContext, ExprOrContext, SimpleExprParamMarkerContext, SimpleExprLiteralContext, SimpleExprCaseContext, SimpleExprSumContext,
-    SimpleExprSubQueryContext, SimpleExprRuntimeFunctionContext, SimpleExprIntervalContext
+    SimpleExprSubQueryContext, SimpleExprRuntimeFunctionContext, SimpleExprIntervalContext, SimpleExprWindowingFunctionContext
 } from "ts-mysql-parser";
 import { ColumnSchema, ColumnDef, FieldName } from "./types";
 import { getColumnsFrom, findColumn, splitName, selectAllColumns } from "./select-columns";
@@ -205,6 +205,9 @@ function inferNotNullSimpleExpr(simpleExpr: SimpleExprContext, dbSchema: ColumnS
         const exprList = simpleExpr.expr();
         return exprList.every(expr => inferNotNullExpr(expr, dbSchema, fromColumns));
 
+    }
+    if (simpleExpr instanceof SimpleExprWindowingFunctionContext) {
+        return true;
     }
     throw Error('Error during column null inference');
 }

@@ -9,7 +9,7 @@ import {
     PrimaryExprPredicateContext, SimpleExprContext, PredicateOperationsContext, ExprNotContext, ExprAndContext,
     ExprOrContext, ExprXorContext, PredicateExprLikeContext, SelectStatementContext, SimpleExprRuntimeFunctionContext,
     SubqueryContext, InsertStatementContext, UpdateStatementContext, DeleteStatementContext, PrimaryExprAllAnyContext,
-    FromClauseContext, SimpleExprIntervalContext, HavingClauseContext, QueryExpressionOrParensContext, QueryExpressionContext, QueryExpressionParensContext, QueryExpressionBodyContext, InsertQueryExpressionContext
+    FromClauseContext, SimpleExprIntervalContext, HavingClauseContext, QueryExpressionOrParensContext, QueryExpressionContext, QueryExpressionParensContext, QueryExpressionBodyContext, InsertQueryExpressionContext, SimpleExprWindowingFunctionContext, WindowFunctionCallContext
 } from "ts-mysql-parser";
 
 import { ColumnSchema, ColumnDef, TypeInferenceResult, InsertInfoResult, UpdateInfoResult, DeleteInfoResult } from "./types";
@@ -1927,7 +1927,15 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
         return freshVar('datetime', 'datetime');
 
     }
+    if (simpleExpr instanceof SimpleExprWindowingFunctionContext) {
+        const windowFunctionCall = simpleExpr.windowFunctionCall();
+        return walkWindowFunctionCall(windowFunctionCall, context);
+    }
     throw Error('Invalid expression');
+}
+
+function walkWindowFunctionCall(windowFunctionCall: WindowFunctionCallContext, context: InferenceContext) {
+    return freshVar(windowFunctionCall.text, 'bigint');
 }
 
 function verifyDateTypesCoercion(type: Type) {
