@@ -42,7 +42,7 @@ describe('Parse window functions', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it.only('FIRST_VALUE(id) OVER() as firstId, LAST_VALUE(name) OVER() as lastName', async () => {
+    it('FIRST_VALUE(id) OVER() as firstId, LAST_VALUE(name) OVER() as lastName', async () => {
         const sql = `
         SELECT 
             FIRST_VALUE(id) OVER() as firstId,
