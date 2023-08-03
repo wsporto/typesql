@@ -4,7 +4,7 @@ import {
     PredicateContext, BitExprContext, SimpleExprContext, FunctionCallContext, SimpleExprFunctionContext, SimpleExprColumnRefContext,
     WhereClauseContext, SimpleExprListContext, PrimaryExprIsNullContext, PrimaryExprCompareContext, ExprNotContext, ExprAndContext,
     ExprXorContext, ExprOrContext, SimpleExprParamMarkerContext, SimpleExprLiteralContext, SimpleExprCaseContext, SimpleExprSumContext,
-    SimpleExprSubQueryContext, SimpleExprRuntimeFunctionContext, SimpleExprIntervalContext, SimpleExprWindowingFunctionContext
+    SimpleExprSubQueryContext, SimpleExprRuntimeFunctionContext, SimpleExprIntervalContext, SimpleExprWindowingFunctionContext, WindowFunctionCallContext
 } from "ts-mysql-parser";
 import { ColumnSchema, ColumnDef, FieldName } from "./types";
 import { getColumnsFrom, findColumn, splitName, selectAllColumns } from "./select-columns";
@@ -207,9 +207,25 @@ function inferNotNullSimpleExpr(simpleExpr: SimpleExprContext, dbSchema: ColumnS
 
     }
     if (simpleExpr instanceof SimpleExprWindowingFunctionContext) {
-        return true;
+        return inferNotNullWindowFunctionCall(simpleExpr.windowFunctionCall(), dbSchema, fromColumns);
     }
     throw Error('Error during column null inference');
+}
+
+function inferNotNullWindowFunctionCall(windowFunctionCall: WindowFunctionCallContext, dbSchema: ColumnSchema[], fromColumns: ColumnDef[]) {
+    if (windowFunctionCall.ROW_NUMBER_SYMBOL()
+        || windowFunctionCall.RANK_SYMBOL()
+        || windowFunctionCall.DENSE_RANK_SYMBOL()
+        || windowFunctionCall.CUME_DIST_SYMBOL()
+        || windowFunctionCall.PERCENT_RANK_SYMBOL()) {
+        return true;
+    }
+    const exprWithParentheses = windowFunctionCall.exprWithParentheses()
+    if (exprWithParentheses) {
+        const expr = exprWithParentheses.expr();
+        return inferNotNullExpr(expr, dbSchema, fromColumns);
+    }
+    throw Error('Error during column null inference in WindowFunctionCallContext');
 }
 
 function inferNotNullRuntimeFunctionCall(simpleExprRuntimeFunction: SimpleExprRuntimeFunctionContext, dbSchema: ColumnSchema[], fromColumns: ColumnDef[]) {

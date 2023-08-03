@@ -15,7 +15,7 @@ describe('Parse window functions', () => {
         await client.closeConnection();
     })
 
-    it.only('SELECT ROW_NUMBER() OVER() as num', async () => {
+    it('SELECT ROW_NUMBER() OVER() as num', async () => {
         const sql = `
         SELECT 
             ROW_NUMBER() OVER() as num
@@ -31,6 +31,33 @@ describe('Parse window functions', () => {
                     name: 'num',
                     dbtype: 'bigint',
                     notNull: true
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('FIRST_VALUE(value) OVER() as num', async () => {
+        const sql = `
+        SELECT 
+            FIRST_VALUE(value) OVER() as num
+        FROM mytable1
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'num',
+                    dbtype: 'int',
+                    notNull: false
                 }
             ],
             parameters: []

@@ -1935,7 +1935,19 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
 }
 
 function walkWindowFunctionCall(windowFunctionCall: WindowFunctionCallContext, context: InferenceContext) {
-    return freshVar(windowFunctionCall.text, 'bigint');
+    if (windowFunctionCall.ROW_NUMBER_SYMBOL()
+        || windowFunctionCall.RANK_SYMBOL()
+        || windowFunctionCall.DENSE_RANK_SYMBOL()
+        || windowFunctionCall.CUME_DIST_SYMBOL()
+        || windowFunctionCall.PERCENT_RANK_SYMBOL()) {
+        return freshVar(windowFunctionCall.text, 'bigint');
+    }
+    const exprWithParentheses = windowFunctionCall.exprWithParentheses();
+    if (exprWithParentheses) {
+        const expr = exprWithParentheses.expr();
+        return walkExpr(context, expr);
+    }
+    throw Error('No support for expression' + windowFunctionCall.text);
 }
 
 function verifyDateTypesCoercion(type: Type) {
