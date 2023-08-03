@@ -74,4 +74,31 @@ describe('Parse window functions', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     })
+
+    it('SUM(value) OVER() AS total', async () => {
+        const sql = `
+        SELECT
+            SUM(value) OVER() AS total
+        FROM mytable1
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'total',
+                    dbtype: 'decimal',
+                    notNull: false
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
 });
