@@ -42,11 +42,12 @@ describe('Parse window functions', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('FIRST_VALUE(value) OVER() as num', async () => {
+    it.only('FIRST_VALUE(id) OVER() as firstId, LAST_VALUE(name) OVER() as lastName', async () => {
         const sql = `
         SELECT 
-            FIRST_VALUE(value) OVER() as num
-        FROM mytable1
+            FIRST_VALUE(id) OVER() as firstId,
+            LAST_VALUE(name) OVER() as lastName
+        FROM mytable2
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
@@ -55,8 +56,13 @@ describe('Parse window functions', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'num',
+                    name: 'firstId',
                     dbtype: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'lastName',
+                    dbtype: 'varchar',
                     notNull: false
                 }
             ],
