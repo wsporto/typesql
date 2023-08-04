@@ -42,11 +42,13 @@ describe('Parse window functions', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('FIRST_VALUE(id) OVER() as firstId, LAST_VALUE(name) OVER() as lastName', async () => {
+    it('FIRST_VALUE(id), LAST_VALUE(name), RANK() and DENSE_RANK()', async () => {
         const sql = `
         SELECT 
             FIRST_VALUE(id) OVER() as firstId,
-            LAST_VALUE(name) OVER() as lastName
+            LAST_VALUE(name) OVER() as lastName,
+            RANK() OVER() as rankValue,
+            DENSE_RANK() OVER() as denseRankValue
         FROM mytable2
         `
         const actual = await parseSql(client, sql);
@@ -64,6 +66,16 @@ describe('Parse window functions', () => {
                     name: 'lastName',
                     dbtype: 'varchar',
                     notNull: false
+                },
+                {
+                    name: 'rankValue',
+                    dbtype: 'bigint',
+                    notNull: true
+                },
+                {
+                    name: 'denseRankValue',
+                    dbtype: 'bigint',
+                    notNull: true
                 }
             ],
             parameters: []
