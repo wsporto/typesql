@@ -1942,6 +1942,10 @@ function walkWindowFunctionCall(windowFunctionCall: WindowFunctionCallContext, c
         || windowFunctionCall.PERCENT_RANK_SYMBOL()) {
         return freshVar(windowFunctionCall.text, 'bigint');
     }
+    const expr = windowFunctionCall.expr();
+    if (expr) {
+        return walkExpr(context, expr);
+    }
     const exprWithParentheses = windowFunctionCall.exprWithParentheses();
     if (exprWithParentheses) {
         const expr = exprWithParentheses.expr();

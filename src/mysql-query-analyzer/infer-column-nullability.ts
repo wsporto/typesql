@@ -220,6 +220,10 @@ function inferNotNullWindowFunctionCall(windowFunctionCall: WindowFunctionCallCo
         || windowFunctionCall.PERCENT_RANK_SYMBOL()) {
         return true;
     }
+    if (windowFunctionCall.LEAD_SYMBOL()
+        || windowFunctionCall.LAG_SYMBOL()) {
+        return false;
+    }
     const exprWithParentheses = windowFunctionCall.exprWithParentheses()
     if (exprWithParentheses) {
         const expr = exprWithParentheses.expr();
