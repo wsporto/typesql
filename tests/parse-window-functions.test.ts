@@ -113,4 +113,37 @@ describe('Parse window functions', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     })
+
+    it('LEAD() and LAG()', async () => {
+        const sql = `
+        SELECT 
+            LEAD(id) OVER() as leadValue,
+            LAG(name) OVER() as lagValue
+        FROM mytable2
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'leadValue',
+                    dbtype: 'int',
+                    notNull: false
+                },
+                {
+                    name: 'lagValue',
+                    dbtype: 'varchar',
+                    notNull: false
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
 });
