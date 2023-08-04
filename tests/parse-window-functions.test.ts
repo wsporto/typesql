@@ -42,6 +42,44 @@ describe('Parse window functions', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('SELECT (ROW_NUMBER() OVER()) as num', async () => {
+        const sql = `
+        SELECT 
+            *,
+            (ROW_NUMBER() OVER()) as num
+        FROM mytable1
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'id',
+                    dbtype: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'value',
+                    dbtype: 'int',
+                    notNull: false
+                },
+                {
+                    name: 'num',
+                    dbtype: 'bigint',
+                    notNull: true
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it('FIRST_VALUE(id), LAST_VALUE(name), RANK() and DENSE_RANK()', async () => {
         const sql = `
         SELECT 
