@@ -761,4 +761,30 @@ describe('Test parse select with functions', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     });
+
+    it(`SELECT CAST('a' AS CHAR(5)) as result`, async () => {
+        const sql = `
+        SELECT CAST('a' AS CHAR(5)) as result
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'result',
+                    dbtype: 'char',
+                    notNull: true
+                }
+            ],
+            parameters: []
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    });
 });

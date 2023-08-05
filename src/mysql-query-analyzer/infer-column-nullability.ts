@@ -209,7 +209,11 @@ function inferNotNullSimpleExpr(simpleExpr: SimpleExprContext, dbSchema: ColumnS
     if (simpleExpr instanceof SimpleExprWindowingFunctionContext) {
         return inferNotNullWindowFunctionCall(simpleExpr.windowFunctionCall(), dbSchema, fromColumns);
     }
-    throw Error('Error during column null inference');
+    if (simpleExpr instanceof SimpleExprCastContext) {
+        const expr = simpleExpr.expr();
+        return inferNotNullExpr(expr, dbSchema, fromColumns);
+    }
+    throw Error('Error during column null inference. Expr: ' + simpleExpr.text);
 }
 
 function inferNotNullWindowFunctionCall(windowFunctionCall: WindowFunctionCallContext, dbSchema: ColumnSchema[], fromColumns: ColumnDef[]) {

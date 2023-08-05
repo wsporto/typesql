@@ -1931,7 +1931,13 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
         const windowFunctionCall = simpleExpr.windowFunctionCall();
         return walkWindowFunctionCall(windowFunctionCall, context);
     }
-    throw Error('Invalid expression');
+    if (simpleExpr instanceof SimpleExprCastContext) {
+        const castType = simpleExpr.castType();
+        if (castType.CHAR_SYMBOL()) {
+            return freshVar(castType.text, 'char');
+        }
+    }
+    throw Error('Invalid expression: ' + simpleExpr.text);
 }
 
 function walkWindowFunctionCall(windowFunctionCall: WindowFunctionCallContext, context: InferenceContext) {
