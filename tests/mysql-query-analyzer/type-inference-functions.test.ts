@@ -265,6 +265,18 @@ describe('type-inference - functions', () => {
         assert.deepStrictEqual(actual, expected);
     })
 
+    it(`SELECT concat(char_column, 'a') FROM all_types`, () => {
+        const sql = `SELECT concat(char_column, 'a') FROM all_types`;
+        const actual = parseAndInfer(sql, dbSchema);
+
+        const expected: TypeInferenceResult = {
+            columns: ['varchar'],
+            parameters: []
+        }
+
+        assert.deepStrictEqual(actual, expected);
+    })
+
     it(`SELECT CHAR_LENGTH(?), LENGTH(?)`, () => {
         const sql = `SELECT CHAR_LENGTH(?), LENGTH(?)`;
         const actual = parseAndInfer(sql, dbSchema);

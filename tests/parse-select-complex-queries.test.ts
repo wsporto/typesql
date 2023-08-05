@@ -575,4 +575,35 @@ describe('Test parse complex queries', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     })
+
+    it('WITH RECURSIVE conc (a)', async () => {
+        const sql = `
+        WITH RECURSIVE conc (a) AS
+        (
+            SELECT CAST('a' AS CHAR(5))
+            UNION ALL
+            SELECT concat(a, 'a') FROM conc WHERE LENGTH(a) < 5
+        )
+        SELECT * FROM conc
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'a',
+                    dbtype: 'varchar',
+                    notNull: true
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
 });
