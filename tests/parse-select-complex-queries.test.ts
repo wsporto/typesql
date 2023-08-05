@@ -673,4 +673,36 @@ describe('Test parse complex queries', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     })
+
+    it('WITH RECURSIVE dates (date) AS', async () => {
+        const sql = `
+        WITH RECURSIVE dates (date) AS
+            (
+            SELECT MIN(date_column) FROM all_types
+            UNION ALL
+            SELECT date + INTERVAL 1 DAY FROM dates
+            WHERE date + INTERVAL 1 DAY <= (SELECT MAX(date_column) FROM all_types)
+            )
+        SELECT * FROM dates
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'date',
+                    dbtype: 'datetime',
+                    notNull: false
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
 });

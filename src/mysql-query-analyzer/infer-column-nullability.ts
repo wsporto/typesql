@@ -123,10 +123,8 @@ function inferNotNullBitExpr(bitExpr: BitExprContext, dbSchema: ColumnSchema[], 
         return inferNotNullSimpleExpr(simpleExpr, dbSchema, fromColumns);
     }
     const bitExpr2 = bitExpr.bitExpr();
-    if (bitExpr2.length == 2) {
-        return inferNotNullBitExpr(bitExpr2[0], dbSchema, fromColumns) && inferNotNullBitExpr(bitExpr2[1], dbSchema, fromColumns);
-    }
-    throw Error('Error during column null inference');
+    const notNull = bitExpr2.every(bitExprItem => inferNotNullBitExpr(bitExprItem, dbSchema, fromColumns))
+    return notNull;
 }
 
 function inferNotNullSimpleExpr(simpleExpr: SimpleExprContext, dbSchema: ColumnSchema[], fromColumns: ColumnDef[]): boolean {
