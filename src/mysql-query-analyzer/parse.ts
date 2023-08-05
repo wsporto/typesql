@@ -287,12 +287,15 @@ function getOrderByColumns(fromColumns: ColumnDef[], selectColumns: TypeAndNullI
     return allOrderByColumns;
 }
 
-export function analiseQuery(querySpec: QuerySpecificationContext[], dbSchema: ColumnSchema[], withSchema: TypeAndNullInfer[], namedParameters: string[]): TypeAndNullInferResult {
+export function analiseQuery(querySpec: QuerySpecificationContext[], dbSchema: ColumnSchema[], withSchema: TypeAndNullInfer[], namedParameters: string[], recursive = false): TypeAndNullInferResult {
 
     const mainQueryResult = extractQueryInfoFromQuerySpecification(querySpec[0], dbSchema, withSchema, namedParameters);
 
     for (let queryIndex = 1; queryIndex < querySpec.length; queryIndex++) { //union (if have any)
 
+        if (recursive) {
+            withSchema.push(...mainQueryResult.columns);
+        }
         const unionResult = extractQueryInfoFromQuerySpecification(querySpec[queryIndex], dbSchema, withSchema, namedParameters);
 
         mainQueryResult.columns.forEach((field, fieldIndex) => {
@@ -344,8 +347,9 @@ function analyseWithClause(withClause: WithClauseContext, dbSchema: ColumnSchema
         })
 
         const subQuery = commonTableExpression.subquery();
-        const queryResult = analyzeSubQuery(subQuery, dbSchema, withSchema);
-        if (withClause.RECURSIVE_SYMBOL()) {
+        const recursive = withClause.RECURSIVE_SYMBOL() ? true : false;
+        const queryResult = analyzeSubQuery(subQuery, dbSchema, withSchema, recursive);
+        if (recursive) {
             const newColumnNames = queryResult.columns.map((col, index) => {
                 const newR: TypeAndNullInfer = {
                     ...col,

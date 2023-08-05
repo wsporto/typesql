@@ -606,4 +606,71 @@ describe('Test parse complex queries', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     })
+
+    it('WITH RECURSIVE cte AS (SELECT 1 AS n ...)', async () => {
+        const sql = `
+        WITH RECURSIVE cte AS
+        (
+            SELECT 1 AS n
+            UNION ALL
+            SELECT n + 1 FROM cte WHERE n < 3
+        )
+        SELECT * FROM cte
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'n',
+                    dbtype: 'bigint',
+                    notNull: true
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('WITH RECURSIVE conc (a)', async () => {
+        const sql = `
+        WITH RECURSIVE cte AS
+        (
+        SELECT 1 AS n, CAST('abc' AS CHAR(20)) AS str
+        UNION ALL
+        SELECT n + 1, CONCAT(str, str) FROM cte WHERE n < 3
+        )
+        SELECT * FROM cte
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'n',
+                    dbtype: 'bigint',
+                    notNull: true
+                },
+                {
+                    name: 'str',
+                    dbtype: 'varchar',
+                    notNull: true
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
 });

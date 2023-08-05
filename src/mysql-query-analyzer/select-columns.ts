@@ -248,9 +248,9 @@ function extractFieldsFromTableFactor(tableFactor: TableFactorContext, dbSchema:
     return [];
 }
 
-export function analyzeSubQuery(subQuery: SubqueryContext, dbSchema: ColumnSchema[], withSchema: TypeAndNullInfer[]) {
+export function analyzeSubQuery(subQuery: SubqueryContext, dbSchema: ColumnSchema[], withSchema: TypeAndNullInfer[], recursive = false) {
     const queries = getQuerySpecificationsFromSelectStatement(subQuery);
-    const queryResult = analiseQuery(queries, dbSchema, withSchema, []); //TODO - WHY []?
+    const queryResult = analiseQuery(queries, dbSchema, withSchema, [], recursive); //TODO - WHY []?
     return queryResult;
 }
 
