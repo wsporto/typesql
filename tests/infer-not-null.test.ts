@@ -629,7 +629,7 @@ describe('infer-not-null', () => {
         const expected: SchemaDef = {
             sql,
             queryType: 'Select',
-            multipleRowsResult: true,
+            multipleRowsResult: false,
             columns: [
                 {
                     name: 'sum(value)',
@@ -656,7 +656,7 @@ describe('infer-not-null', () => {
         const expected: SchemaDef = {
             sql,
             queryType: 'Select',
-            multipleRowsResult: true,
+            multipleRowsResult: false,
             columns: [
                 {
                     name: 'sum(value)',

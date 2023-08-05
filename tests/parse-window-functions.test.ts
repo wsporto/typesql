@@ -152,6 +152,31 @@ describe('Parse window functions', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('SELECT AVG(value) OVER() as avgResult FROM mytable1', async () => {
+        const sql = `
+        SELECT AVG(value) OVER() as avgResult FROM mytable1
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'avgResult',
+                    dbtype: 'decimal',
+                    notNull: false
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it('LEAD() and LAG()', async () => {
         const sql = `
         SELECT 

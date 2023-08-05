@@ -1,5 +1,5 @@
-import MySQLParser, { SqlMode, QueryContext, QuerySpecificationContext, SelectStatementContext, SubqueryContext, WithClauseContext, QueryExpressionParensContext, QueryExpressionBodyContext, InsertQueryExpressionContext } from 'ts-mysql-parser';
-import { ParseTree } from "antlr4ts/tree";
+import MySQLParser, { SqlMode, QueryContext, QuerySpecificationContext, SelectStatementContext, SubqueryContext, WithClauseContext, QueryExpressionParensContext, QueryExpressionBodyContext, InsertQueryExpressionContext, SelectItemContext, SumExprContext, SimpleExprWindowingFunctionContext, WindowClauseContext, WindowingClauseContext, FunctionCallContext } from 'ts-mysql-parser';
+import { ParseTree, TerminalNode } from "antlr4ts/tree";
 import {
     analiseTree, TypeVar, analiseQuerySpecification, unionTypeResult, analiseInsertStatement,
     analiseUpdateStatement, analiseDeleteStatement, InferenceContext
@@ -123,6 +123,18 @@ function extractLimitParameters(selectStatement: SelectStatementContext): Parame
 function isMultipleRowResult(selectStatement: SelectStatementContext, fromColumns: ColumnDef[]) {
     const querySpecs = getQuerySpecificationsFromSelectStatement(selectStatement);
     if (querySpecs.length == 1) { //UNION queries are multipleRowsResult = true
+        if (querySpecs[0].selectItemList().childCount == 1) {
+            const selectItem = <SelectItemContext>querySpecs[0].selectItemList().getChild(0);
+            //if selectItem = * (TerminalNode) childCount = 0; selectItem.expr() throws exception
+            const expr = selectItem.childCount > 0 ? selectItem.expr() : null;
+            if (expr) {
+                const isSumExpress = isSumExpressContext(expr); //SUM, MAX... are multipleRowsResult = false
+                if (isSumExpress) {
+                    return false;
+                }
+            }
+        }
+
         const whereClauseExpr = querySpecs[0].whereClause()?.expr();
         const isMultipleRowResult = whereClauseExpr && verifyMultipleResult(whereClauseExpr, fromColumns);
         if (isMultipleRowResult == false) {
@@ -139,6 +151,35 @@ function isMultipleRowResult(selectStatement: SelectStatementContext, fromColumn
     }
 
     return true;
+}
+
+function isSumExpressContext(selectItem: ParseTree) {
+    if (selectItem instanceof SimpleExprWindowingFunctionContext
+        || selectItem instanceof TerminalNode) {
+        return false;
+    }
+
+    if (selectItem instanceof SumExprContext) {
+        if (selectItem.children) {
+            //any of the children is WindowingClauseContext OVER()
+            for (const child of selectItem.children) {
+                if (child instanceof WindowingClauseContext) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+    //https://dev.mysql.com/doc/refman/8.0/en/aggregate-functions.html
+    if (selectItem instanceof FunctionCallContext) {
+        if (selectItem.qualifiedIdentifier()?.text.toLowerCase() == 'avg') {
+            return true;
+        }
+    }
+    if (selectItem.childCount == 1) {
+        return isSumExpressContext(selectItem.getChild(0));
+    }
+    return false;
 }
 
 function getLimitOptions(selectStatement: SelectStatementContext) {

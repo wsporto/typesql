@@ -16,7 +16,7 @@ describe('Test parse select with functions', () => {
     })
 
     //TODO = column sum?
-    it('parse a select with SUM function', async () => {
+    it('select sum(value) from mytable1', async () => {
         const sql = `
         select sum(value) from mytable1
         `
@@ -24,7 +24,7 @@ describe('Test parse select with functions', () => {
         const expected: SchemaDef = {
             sql,
             queryType: 'Select',
-            multipleRowsResult: true,
+            multipleRowsResult: false,
             columns: [
                 {
                     name: 'sum(value)',
@@ -41,7 +41,7 @@ describe('Test parse select with functions', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('parse a select with SUM function and alias', async () => {
+    it('select sum(value) as total from mytable1', async () => {
         const sql = `
         select sum(value) as total from mytable1
         `
@@ -49,7 +49,7 @@ describe('Test parse select with functions', () => {
         const expected: SchemaDef = {
             sql,
             queryType: 'Select',
-            multipleRowsResult: true,
+            multipleRowsResult: false,
             columns: [
                 {
                     name: 'total',
@@ -66,7 +66,7 @@ describe('Test parse select with functions', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('parse a select with SUM function and table alias', async () => {
+    it('select sum(t1.value) as total from mytable1 t1', async () => {
         const sql = `
         select sum(t1.value) as total from mytable1 t1
         `
@@ -74,7 +74,7 @@ describe('Test parse select with functions', () => {
         const expected: SchemaDef = {
             sql,
             queryType: 'Select',
-            multipleRowsResult: true,
+            multipleRowsResult: false,
             columns: [
                 {
                     name: 'total',
@@ -91,7 +91,7 @@ describe('Test parse select with functions', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('parse a select with COUNT(id) function', async () => {
+    it('select count(id) from mytable1', async () => {
         const sql = `
         select count(id) from mytable1
         `
@@ -99,7 +99,7 @@ describe('Test parse select with functions', () => {
         const expected: SchemaDef = {
             sql,
             queryType: 'Select',
-            multipleRowsResult: true,
+            multipleRowsResult: false,
             columns: [
                 {
                     name: 'count(id)',
@@ -115,7 +115,7 @@ describe('Test parse select with functions', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('parse a select with COUNT(*) function', async () => {
+    it('select count(*) from mytable1', async () => {
         const sql = `
         select count(*) from mytable1
         `
@@ -123,7 +123,7 @@ describe('Test parse select with functions', () => {
         const expected: SchemaDef = {
             sql,
             queryType: 'Select',
-            multipleRowsResult: true,
+            multipleRowsResult: false,
             columns: [
                 {
                     name: 'count(*)',
@@ -140,7 +140,7 @@ describe('Test parse select with functions', () => {
     })
 
     //TODO - VALUE/2 result decimal
-    it('parse a select with SUM function', async () => {
+    it('select sum(2*value) from  mytable1', async () => {
         const sql = `
         select sum(2*value) from  mytable1
         `
@@ -148,7 +148,7 @@ describe('Test parse select with functions', () => {
         const expected: SchemaDef = {
             sql,
             queryType: 'Select',
-            multipleRowsResult: true,
+            multipleRowsResult: false,
             columns: [
                 {
                     name: 'sum(2*value)',
@@ -165,7 +165,7 @@ describe('Test parse select with functions', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('parse a select with AVG function', async () => {
+    it('select avg(value) from mytable1', async () => {
         const sql = `
         select avg(value) from mytable1
         `
@@ -173,7 +173,7 @@ describe('Test parse select with functions', () => {
         const expected: SchemaDef = {
             sql,
             queryType: 'Select',
-            multipleRowsResult: true,
+            multipleRowsResult: false,
             columns: [
                 {
                     name: 'avg(value)',
@@ -190,7 +190,7 @@ describe('Test parse select with functions', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('parse a select with AVG with expression', async () => {
+    it('select avg(value + (value + 2)) from mytable1', async () => {
         const sql = `
         select avg(value + (value + 2)) from mytable1
         `
@@ -198,10 +198,35 @@ describe('Test parse select with functions', () => {
         const expected: SchemaDef = {
             sql,
             queryType: 'Select',
-            multipleRowsResult: true,
+            multipleRowsResult: false,
             columns: [
                 {
                     name: 'avg(value + (value + 2))',
+                    dbtype: 'decimal',
+                    notNull: false
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('SELECT AVG(value) as avgResult FROM mytable1', async () => {
+        const sql = `
+        SELECT AVG(value) as avgResult FROM mytable1
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: false,
+            columns: [
+                {
+                    name: 'avgResult',
                     dbtype: 'decimal',
                     notNull: false
                 }
@@ -223,7 +248,7 @@ describe('Test parse select with functions', () => {
         const expected: SchemaDef = {
             sql,
             queryType: 'Select',
-            multipleRowsResult: true,
+            multipleRowsResult: false,
             columns: [
                 {
                     name: 'sum(t2.id + (t1.value + 2))',
@@ -248,7 +273,7 @@ describe('Test parse select with functions', () => {
         const expected: SchemaDef = {
             sql,
             queryType: 'Select',
-            multipleRowsResult: true,
+            multipleRowsResult: false,
             columns: [
                 {
                     name: 'MIN(value)',
@@ -266,7 +291,7 @@ describe('Test parse select with functions', () => {
     })
 
     //TODO EXPRESSION
-    it('parse a select with MIN function', async () => {
+    it('SELECT MIN(name) FROM mytable2', async () => {
         const sql = `
         SELECT MIN(name) FROM mytable2
         `
@@ -274,7 +299,7 @@ describe('Test parse select with functions', () => {
         const expected: SchemaDef = {
             sql,
             queryType: 'Select',
-            multipleRowsResult: true,
+            multipleRowsResult: false,
             columns: [
                 {
                     name: 'MIN(name)',
@@ -498,7 +523,7 @@ describe('Test parse select with functions', () => {
         const expected: SchemaDef = {
             sql,
             queryType: 'Select',
-            multipleRowsResult: true,
+            multipleRowsResult: false,
             columns: [
                 {
                     name: 'GROUP_CONCAT(name)',
@@ -524,7 +549,7 @@ describe('Test parse select with functions', () => {
         const expected: SchemaDef = {
             sql,
             queryType: 'Select',
-            multipleRowsResult: true,
+            multipleRowsResult: false,
             columns: [
                 {
                     name: 'GROUP_CONCAT(id)',
@@ -551,7 +576,7 @@ describe('Test parse select with functions', () => {
         const expected: SchemaDef = {
             sql,
             queryType: 'Select',
-            multipleRowsResult: true,
+            multipleRowsResult: false,
             columns: [
                 {
                     name: 'result',
