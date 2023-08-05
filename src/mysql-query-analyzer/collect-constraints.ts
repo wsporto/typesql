@@ -9,10 +9,10 @@ import {
     PrimaryExprPredicateContext, SimpleExprContext, PredicateOperationsContext, ExprNotContext, ExprAndContext,
     ExprOrContext, ExprXorContext, PredicateExprLikeContext, SelectStatementContext, SimpleExprRuntimeFunctionContext,
     SubqueryContext, InsertStatementContext, UpdateStatementContext, DeleteStatementContext, PrimaryExprAllAnyContext,
-    FromClauseContext, SimpleExprIntervalContext, HavingClauseContext, QueryExpressionOrParensContext, QueryExpressionContext, QueryExpressionParensContext, QueryExpressionBodyContext, InsertQueryExpressionContext, SimpleExprWindowingFunctionContext, WindowFunctionCallContext
+    FromClauseContext, SimpleExprIntervalContext, HavingClauseContext, QueryExpressionOrParensContext, QueryExpressionContext, QueryExpressionParensContext, QueryExpressionBodyContext, InsertQueryExpressionContext, SimpleExprWindowingFunctionContext, WindowFunctionCallContext, SimpleExprCastContext
 } from "ts-mysql-parser";
 
-import { ColumnSchema, ColumnDef, TypeInferenceResult, InsertInfoResult, UpdateInfoResult, DeleteInfoResult } from "./types";
+import { ColumnSchema, ColumnDef, TypeInferenceResult, InsertInfoResult, UpdateInfoResult, DeleteInfoResult, TypeAndNullInfer } from "./types";
 import { getColumnsFrom, findColumn, splitName, selectAllColumns, findColumn2 } from "./select-columns";
 import {
     SubstitutionHash, getQuerySpecificationsFromSelectStatement as getQuerySpecificationsFromQuery,
@@ -55,7 +55,7 @@ export type Constraint = {
 
 export type InferenceContext = {
     dbSchema: ColumnSchema[];
-    withSchema: ColumnSchema[];
+    withSchema: TypeAndNullInfer[];
     parameters: TypeVar[];
     constraints: Constraint[];
     fromColumns: ColumnDef[];
@@ -288,7 +288,7 @@ function walkQueryExpressionBody(queryExpressionBody: QueryExpressionBodyContext
     throw Error("walkQueryExpressionBody");
 }
 
-export function analiseDeleteStatement(deleteStatement: DeleteStatementContext, dbSchema: ColumnSchema[], withSchema: ColumnSchema[]): DeleteInfoResult {
+export function analiseDeleteStatement(deleteStatement: DeleteStatementContext, dbSchema: ColumnSchema[], withSchema: TypeAndNullInfer[]): DeleteInfoResult {
 
     const whereExpr = deleteStatement.whereClause()?.expr();
     const deleteColumns = getDeleteColumns(deleteStatement, dbSchema);
@@ -323,7 +323,7 @@ export function analiseDeleteStatement(deleteStatement: DeleteStatementContext, 
     return typeInferenceResult;
 }
 
-export function analiseUpdateStatement(updateStatement: UpdateStatementContext, dbSchema: ColumnSchema[], withSchema: ColumnSchema[]): UpdateInfoResult {
+export function analiseUpdateStatement(updateStatement: UpdateStatementContext, dbSchema: ColumnSchema[], withSchema: TypeAndNullInfer[]): UpdateInfoResult {
 
     const updateElement = updateStatement.updateList().updateElement();
     const updateColumns = getUpdateColumns(updateStatement, dbSchema);
@@ -465,7 +465,7 @@ export function getDeleteColumns(deleteStatement: DeleteStatementContext, dbSche
 }
 
 
-export function analiseSelectStatement(selectStatement: SelectStatementContext | SubqueryContext, dbSchema: ColumnSchema[], withSchema: ColumnSchema[], namedParameters: string[]): TypeInferenceResult {
+export function analiseSelectStatement(selectStatement: SelectStatementContext | SubqueryContext, dbSchema: ColumnSchema[], withSchema: TypeAndNullInfer[], namedParameters: string[]): TypeInferenceResult {
     const querySpec = getQuerySpecificationsFromSelectStatement(selectStatement);
     const fromColumns = getColumnsFrom(querySpec[0], dbSchema, withSchema);
     let result = analiseQuerySpecification(querySpec[0], dbSchema, withSchema, fromColumns, namedParameters);
@@ -938,7 +938,7 @@ export function unionTypeResult(type1: InferType, type2: InferType) {
     return typeMapping[type1 + "_" + type2] || typeMapping[type2 + "_" + type1];
 }
 
-export function analiseQuerySpecification(querySpec: QuerySpecificationContext, dbSchema: ColumnSchema[], withSchema: ColumnSchema[], fromColumns: ColumnDef[], namedParameters: string[]): TypeInferenceResult {
+export function analiseQuerySpecification(querySpec: QuerySpecificationContext, dbSchema: ColumnSchema[], withSchema: TypeAndNullInfer[], fromColumns: ColumnDef[], namedParameters: string[]): TypeInferenceResult {
 
     const context: InferenceContext = {
         dbSchema,

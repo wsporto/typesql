@@ -544,4 +544,35 @@ describe('Test parse complex queries', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     })
+
+    it('WITH RECURSIVE seq (n)', async () => {
+        const sql = `
+        WITH RECURSIVE seq (n) AS
+        (
+            SELECT 1
+            UNION ALL
+            SELECT n + 1 FROM seq WHERE n < 5
+        )
+        SELECT * FROM seq
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'n',
+                    dbtype: 'bigint',
+                    notNull: true
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
 });

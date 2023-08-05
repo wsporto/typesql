@@ -35,7 +35,7 @@ export type SubstitutionHash = {
 
 
 
-export function infer(queryContext: QueryContext, dbSchema: ColumnSchema[], withSchema: ColumnSchema[], namedParameters: string[]): TypeInferenceResult {
+export function infer(queryContext: QueryContext, dbSchema: ColumnSchema[], withSchema: TypeAndNullInfer[], namedParameters: string[]): TypeInferenceResult {
 
     const context: InferenceContext = {
         dbSchema,
@@ -54,7 +54,7 @@ export function infer(queryContext: QueryContext, dbSchema: ColumnSchema[], with
 }
 
 //TODO - withSchema DEFAULT VALUE []
-export function parseAndInfer(sql: string, dbSchema: ColumnSchema[], withSchema: ColumnSchema[] = []): TypeInferenceResult {
+export function parseAndInfer(sql: string, dbSchema: ColumnSchema[], withSchema: TypeAndNullInfer[] = []): TypeInferenceResult {
     const { sql: processedSql, namedParameters } = preprocessSql(sql);
     return infer(parse(processedSql), dbSchema, withSchema, namedParameters);
 }
@@ -65,7 +65,7 @@ export function parseAndInferParamNullability(sql: string): boolean[] {
     return inferParamNullabilityQuery(selectStatement);
 }
 
-export function extractQueryInfoFromQuerySpecification(querySpec: QuerySpecificationContext, dbSchema: ColumnSchema[], withSchema: ColumnSchema[], namedParameters: string[]): TypeAndNullInferResult {
+export function extractQueryInfoFromQuerySpecification(querySpec: QuerySpecificationContext, dbSchema: ColumnSchema[], withSchema: TypeAndNullInfer[], namedParameters: string[]): TypeAndNullInferResult {
     const fromColumns = getColumnsFrom(querySpec, dbSchema, withSchema);
     const inferResult = analiseQuerySpecification(querySpec, dbSchema, withSchema, fromColumns, namedParameters);
     // console.log("inferResult=", inferResult);
@@ -215,20 +215,12 @@ export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[]): QueryIn
             if (queryExpression) {
                 //queryExpression
                 const withClause = queryExpression.withClause();
-                const allWithSchema: ColumnSchema[] = [];
+                const allWithSchema: TypeAndNullInfer[] = [];
                 const withClauseParameters: TypeAndNullInfer[] = [];
                 if (withClause) {
                     const withClauseResults = analyseWithClause(withClause, dbSchema, []);
                     withClauseResults.forEach(withClauseResult => {
-                        const withSchema = withClauseResult.queryResult.columns.map(colDef => ({
-                            schema: '',
-                            table: withClauseResult.identifier,
-                            column: colDef.name,
-                            column_type: colDef.type,
-                            columnKey: '',
-                            notNull: colDef.notNull
-                        } as ColumnSchema))
-                        allWithSchema.push(...withSchema);
+                        allWithSchema.push(...withClauseResult.queryResult.columns);
                         withClauseParameters.push(...withClauseResult.queryResult.parameters);
                     })
                 }
@@ -295,7 +287,7 @@ function getOrderByColumns(fromColumns: ColumnDef[], selectColumns: TypeAndNullI
     return allOrderByColumns;
 }
 
-export function analiseQuery(querySpec: QuerySpecificationContext[], dbSchema: ColumnSchema[], withSchema: ColumnSchema[], namedParameters: string[]): TypeAndNullInferResult {
+export function analiseQuery(querySpec: QuerySpecificationContext[], dbSchema: ColumnSchema[], withSchema: TypeAndNullInfer[], namedParameters: string[]): TypeAndNullInferResult {
 
     const mainQueryResult = extractQueryInfoFromQuerySpecification(querySpec[0], dbSchema, withSchema, namedParameters);
 
@@ -338,15 +330,43 @@ function collectQuerySpecifications(tree: ParseTree, result: QuerySpecificationC
     }
 }
 
-function analyseWithClause(withClause: WithClauseContext, dbSchema: ColumnSchema[], withSchema: ColumnSchema[]): TypeAndNullInferResultWithIdentifier[] {
-    return withClause.commonTableExpression().map(commonTableExpression => {
+function analyseWithClause(withClause: WithClauseContext, dbSchema: ColumnSchema[], withSchema: TypeAndNullInfer[]): TypeAndNullInferResultWithIdentifier[] {
+    const result = withClause.commonTableExpression().map(commonTableExpression => {
         const identifier = commonTableExpression.identifier().text;
+        const columnInternalRefList = commonTableExpression.columnInternalRefList()?.columnInternalRef() || [];
+        columnInternalRefList.forEach(colRef => {
+            const identifier = colRef.identifier().text;
+            withSchema.push({
+                name: identifier,
+                notNull: true,
+                type: '?'
+            })
+        })
+
         const subQuery = commonTableExpression.subquery();
         const queryResult = analyzeSubQuery(subQuery, dbSchema, withSchema);
+        if (withClause.RECURSIVE_SYMBOL()) {
+            const newColumnNames = queryResult.columns.map((col, index) => {
+                const newR: TypeAndNullInfer = {
+                    ...col,
+                    name: withSchema[index].name,
+                }
+                return newR;
+            })
+            const newQueryResult: TypeAndNullInferResult = {
+                columns: newColumnNames,
+                parameters: queryResult.parameters
+            }
+            return {
+                identifier,
+                queryResult: newQueryResult
+            }
+        }
         return {
             identifier,
             queryResult
         };
     });
+    return result;
 }
 

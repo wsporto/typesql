@@ -11,24 +11,37 @@ import {
     SimpleExprConvertContext, SimpleExprConvertUsingContext, SimpleExprDefaultContext, SimpleExprValuesContext, SimpleExprIntervalContext, SubqueryContext
 } from "ts-mysql-parser";
 
-import { ColumnSchema, ColumnDef, FieldName } from "./types";
+import { ColumnSchema, ColumnDef, FieldName, TypeAndNullInfer } from "./types";
 import { analiseQuery, getQuerySpecificationsFromSelectStatement } from "./parse";
 import { possibleNull } from "./infer-column-nullability";
 import { InferenceContext } from "./collect-constraints";
 
-export function filterColumns(dbSchema: ColumnSchema[], withSchema: ColumnSchema[], tableAlias: string | undefined, table: FieldName) {
-    const tableColumns1 = dbSchema.filter(schema => schema.table.toLowerCase() == table.name.toLowerCase() && (schema.schema == table.prefix || table.prefix == ''));
-    const tableColumns = [...tableColumns1, ...withSchema]
-    return tableColumns.map(tableColumn => {
+export function filterColumns(dbSchema: ColumnSchema[], withSchema: TypeAndNullInfer[], tableAlias: string | undefined, table: FieldName): ColumnDef[] {
+    const tableColumns1 = dbSchema
+        .filter(schema => schema.table.toLowerCase() == table.name.toLowerCase() && (schema.schema == table.prefix || table.prefix == ''))
+        .map(tableColumn => {
 
-        //name and colum are the same on the leaf table
+            //name and colum are the same on the leaf table
+            const r: ColumnDef = {
+                columnName: tableColumn.column, column: tableColumn.column, columnType: tableColumn.column_type,
+                notNull: tableColumn.notNull, table: table.name, tableAlias: tableAlias || '', columnKey: tableColumn.columnKey
+            }
+            return r;
+        });
+    const withColumns = withSchema.map(col => {
         const r: ColumnDef = {
-            columnName: tableColumn.column, column: tableColumn.column, columnType: tableColumn.column_type,
-            notNull: tableColumn.notNull, table: table.name, tableAlias: tableAlias || '', columnKey: tableColumn.columnKey
+            table: table.name,
+            tableAlias: tableAlias || '',
+            column: col.name,
+            columnName: col.name,
+            columnType: col.type,
+            columnKey: "",
+            notNull: col.notNull
         }
         return r;
+    });
+    return [...tableColumns1, ...withColumns];
 
-    })
 }
 
 export function selectAllColumns(tablePrefix: string, fromColumns: ColumnDef[]) {
@@ -73,15 +86,15 @@ export function getColumnNames(querySpec: QuerySpecificationContext, fromColumns
     return allColumns;
 }
 
-// TODO - withSchema: ColumnSchema[] DEFAULT VALUE []
-export function getColumnsFrom(ctx: QuerySpecificationContext, dbSchema: ColumnSchema[], withSchema: ColumnSchema[]) {
+// TODO - withSchema: TypeAndNullInfer[] DEFAULT VALUE []
+export function getColumnsFrom(ctx: QuerySpecificationContext, dbSchema: ColumnSchema[], withSchema: TypeAndNullInfer[]) {
     const tableReferences = ctx.fromClause()?.tableReferenceList()?.tableReference();
     const fromColumns = tableReferences ? extractColumnsFromTableReferences(tableReferences, dbSchema, withSchema) : [];
     return fromColumns;
 }
 
 //rule: tableReference
-function extractColumnsFromTableReferences(tablesReferences: TableReferenceContext[], dbSchema: ColumnSchema[], withSchema: ColumnSchema[]): ColumnDef[] {
+function extractColumnsFromTableReferences(tablesReferences: TableReferenceContext[], dbSchema: ColumnSchema[], withSchema: TypeAndNullInfer[]): ColumnDef[] {
     const result: ColumnDef[] = [];
 
     tablesReferences.forEach(tab => {
@@ -172,7 +185,7 @@ function filterUsingFields(joinedFields: ColumnDef[], usingFields: string[]) {
 }
 
 //rule: singleTable
-function extractFieldsFromSingleTable(dbSchema: ColumnSchema[], withSchema: ColumnSchema[], ctx: SingleTableContext) {
+function extractFieldsFromSingleTable(dbSchema: ColumnSchema[], withSchema: TypeAndNullInfer[], ctx: SingleTableContext) {
     const table = ctx?.tableRef().text;
     const tableAlias = ctx?.tableAlias()?.identifier().text;
     const tableName = splitName(table);
@@ -181,7 +194,7 @@ function extractFieldsFromSingleTable(dbSchema: ColumnSchema[], withSchema: Colu
 }
 
 //rule: singleTableParens
-function extractFieldsFromSingleTableParens(dbSchema: ColumnSchema[], withSchema: ColumnSchema[], ctx: SingleTableParensContext): ColumnDef[] {
+function extractFieldsFromSingleTableParens(dbSchema: ColumnSchema[], withSchema: TypeAndNullInfer[], ctx: SingleTableParensContext): ColumnDef[] {
     let fields: ColumnDef[] = [];
     //singleTable | singleTableParens
     const singleTable = ctx.singleTable();
@@ -205,7 +218,7 @@ tableFactor:
     | tableReferenceListParens
     | {serverVersion >= 80004}? tableFunction 
 */
-function extractFieldsFromTableFactor(tableFactor: TableFactorContext, dbSchema: ColumnSchema[], withSchema: ColumnSchema[]): ColumnDef[] { //tableFactor: rule
+function extractFieldsFromTableFactor(tableFactor: TableFactorContext, dbSchema: ColumnSchema[], withSchema: TypeAndNullInfer[]): ColumnDef[] { //tableFactor: rule
     const singleTable = tableFactor.singleTable();
     if (singleTable) {
         return extractFieldsFromSingleTable(dbSchema, withSchema, singleTable);
@@ -235,13 +248,13 @@ function extractFieldsFromTableFactor(tableFactor: TableFactorContext, dbSchema:
     return [];
 }
 
-export function analyzeSubQuery(subQuery: SubqueryContext, dbSchema: ColumnSchema[], withSchema: ColumnSchema[]) {
+export function analyzeSubQuery(subQuery: SubqueryContext, dbSchema: ColumnSchema[], withSchema: TypeAndNullInfer[]) {
     const queries = getQuerySpecificationsFromSelectStatement(subQuery);
     const queryResult = analiseQuery(queries, dbSchema, withSchema, []); //TODO - WHY []?
     return queryResult;
 }
 
-function extractFieldsFromSubquery(subQuery: SubqueryContext, dbSchema: ColumnSchema[], withSchema: ColumnSchema[], tableAlias: string | undefined) {
+function extractFieldsFromSubquery(subQuery: SubqueryContext, dbSchema: ColumnSchema[], withSchema: TypeAndNullInfer[], tableAlias: string | undefined) {
     //subquery=true only for select (subquery); not for from(subquery)
     // const fromColumns
     const queryResult = analyzeSubQuery(subQuery, dbSchema, withSchema);
@@ -263,7 +276,7 @@ function extractFieldsFromSubquery(subQuery: SubqueryContext, dbSchema: ColumnSc
 
 
 //tableReferenceList | tableReferenceListParens
-function extractColumnsFromTableListParens(ctx: TableReferenceListParensContext, dbSchema: ColumnSchema[], withSchema: ColumnSchema[]): ColumnDef[] {
+function extractColumnsFromTableListParens(ctx: TableReferenceListParensContext, dbSchema: ColumnSchema[], withSchema: TypeAndNullInfer[]): ColumnDef[] {
 
     const tableReferenceList = ctx.tableReferenceList();
     if (tableReferenceList) {

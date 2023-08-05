@@ -4,15 +4,15 @@ import {
     PredicateContext, BitExprContext, SimpleExprContext, FunctionCallContext, SimpleExprFunctionContext, SimpleExprColumnRefContext,
     WhereClauseContext, SimpleExprListContext, PrimaryExprIsNullContext, PrimaryExprCompareContext, ExprNotContext, ExprAndContext,
     ExprXorContext, ExprOrContext, SimpleExprParamMarkerContext, SimpleExprLiteralContext, SimpleExprCaseContext, SimpleExprSumContext,
-    SimpleExprSubQueryContext, SimpleExprRuntimeFunctionContext, SimpleExprIntervalContext, SimpleExprWindowingFunctionContext, WindowFunctionCallContext
+    SimpleExprSubQueryContext, SimpleExprRuntimeFunctionContext, SimpleExprIntervalContext, SimpleExprWindowingFunctionContext, WindowFunctionCallContext, SimpleExprCastContext
 } from "ts-mysql-parser";
-import { ColumnSchema, ColumnDef, FieldName } from "./types";
+import { ColumnSchema, ColumnDef, FieldName, TypeAndNullInfer } from "./types";
 import { getColumnsFrom, findColumn, splitName, selectAllColumns } from "./select-columns";
 import { getParentContext, inferParameterNotNull } from "./infer-param-nullability";
 import { InferenceContext } from "./collect-constraints";
 
 //TODO - COLUMN SCHEMA DEFAULT = []
-export function parseAndInferNotNull(sql: string, dbSchema: ColumnSchema[], withSchema: ColumnSchema[] = []) {
+export function parseAndInferNotNull(sql: string, dbSchema: ColumnSchema[], withSchema: TypeAndNullInfer[] = []) {
     const queryTree = parse(sql);
 
     const context: InferenceContext = {
@@ -38,7 +38,7 @@ function zip(arrays: boolean[][]): boolean[][] {
     });
 }
 
-export function inferNotNull(querySpec: QuerySpecificationContext, dbSchema: ColumnSchema[], withSchema: ColumnSchema[]) {
+export function inferNotNull(querySpec: QuerySpecificationContext, dbSchema: ColumnSchema[], withSchema: TypeAndNullInfer[]) {
     const fromColumns = getColumnsFrom(querySpec, dbSchema, withSchema); //TODO - called twice
 
     const notNullInference: boolean[] = [];
