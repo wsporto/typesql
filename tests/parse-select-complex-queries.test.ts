@@ -674,6 +674,7 @@ describe('Test parse complex queries', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    //Example from: https://dev.mysql.com/doc/refman/8.0/en/with.html
     it('WITH RECURSIVE dates (date) AS', async () => {
         const sql = `
         WITH RECURSIVE dates (date) AS
