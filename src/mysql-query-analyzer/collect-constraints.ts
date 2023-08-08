@@ -1727,6 +1727,16 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
             return functionType;
         }
 
+        if (functionIdentifier == 'md5') {
+            const functionType = freshVar(simpleExpr.text, 'char');
+            const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr();
+            if (udfExprList) {
+                const [expr1] = udfExprList;
+                walkExpr(context, expr1.expr());
+            }
+            return functionType;
+        }
+
         throw Error('Function not supported: ' + functionIdentifier);
     }
 
