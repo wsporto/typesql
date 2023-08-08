@@ -316,7 +316,7 @@ describe('Test parse select with functions', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('parse a select with STR_TO_DATE function', async () => {
+    it(`SELECT STR_TO_DATE('21/5/2013','%d/%m/%Y')`, async () => {
         const sql = `
         SELECT STR_TO_DATE('21/5/2013','%d/%m/%Y')
         `
@@ -324,7 +324,7 @@ describe('Test parse select with functions', () => {
         const expected: SchemaDef = {
             sql,
             queryType: 'Select',
-            multipleRowsResult: true,
+            multipleRowsResult: false,
             columns: [
                 {
                     name: `STR_TO_DATE('21/5/2013','%d/%m/%Y')`,
@@ -349,7 +349,7 @@ describe('Test parse select with functions', () => {
         const expected: SchemaDef = {
             sql,
             queryType: 'Select',
-            multipleRowsResult: true,
+            multipleRowsResult: false,
             columns: [
                 {
                     name: `STR_TO_DATE(CONCAT_WS('/', ?, ?, ?),'%d/%m/%Y')`,
@@ -389,7 +389,7 @@ describe('Test parse select with functions', () => {
         const expected: SchemaDef = {
             sql: 'SELECT datediff(?, ?) as days_stayed',
             queryType: 'Select',
-            multipleRowsResult: true,
+            multipleRowsResult: false,
             columns: [
                 {
                     name: 'days_stayed',
@@ -425,7 +425,7 @@ describe('Test parse select with functions', () => {
         const expected: SchemaDef = {
             sql,
             queryType: 'Select',
-            multipleRowsResult: true,
+            multipleRowsResult: false,
             columns: [
                 {
                     name: 'days_stayed',
@@ -458,7 +458,7 @@ describe('Test parse select with functions', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it(`SELECT IFNULL(NULL, 'yes') as result`, async () => {
+    it(`SELECT IFNULL(NULL, 'yes') as result1, IFNULL(10, 'yes') as result2`, async () => {
         const sql = `
         SELECT IFNULL(NULL, 'yes') as result1, IFNULL(10, 'yes') as result2
         `
@@ -466,7 +466,7 @@ describe('Test parse select with functions', () => {
         const expected: SchemaDef = {
             sql,
             queryType: 'Select',
-            multipleRowsResult: true, //TODO - ONLY FUNCTION, SHOULD BE FALSE
+            multipleRowsResult: false,
             columns: [
                 {
                     name: 'result1',
@@ -602,7 +602,7 @@ describe('Test parse select with functions', () => {
         const expected: SchemaDef = {
             sql,
             queryType: 'Select',
-            multipleRowsResult: true,
+            multipleRowsResult: false,
             columns: [
                 {
                     name: 'result',
@@ -628,7 +628,7 @@ describe('Test parse select with functions', () => {
         const expected: SchemaDef = {
             sql,
             queryType: 'Select',
-            multipleRowsResult: true,
+            multipleRowsResult: false,
             columns: [
                 {
                     name: 'result',
@@ -654,7 +654,7 @@ describe('Test parse select with functions', () => {
         const expected: SchemaDef = {
             sql,
             queryType: 'Select',
-            multipleRowsResult: true,
+            multipleRowsResult: false,
             columns: [
                 {
                     name: 'result',
@@ -680,7 +680,7 @@ describe('Test parse select with functions', () => {
         const expected: SchemaDef = {
             sql,
             queryType: 'Select',
-            multipleRowsResult: true,
+            multipleRowsResult: false,
             columns: [
                 {
                     name: 'result',
@@ -770,7 +770,7 @@ describe('Test parse select with functions', () => {
         const expected: SchemaDef = {
             sql,
             queryType: 'Select',
-            multipleRowsResult: true,
+            multipleRowsResult: false,
             columns: [
                 {
                     name: 'result',

@@ -1247,7 +1247,7 @@ describe('Test simple select statements', () => {
         const expected: SchemaDef = {
             sql,
             queryType: 'Select',
-            multipleRowsResult: true,
+            multipleRowsResult: false,
             columns: [
                 {
                     name: '10',

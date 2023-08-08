@@ -691,7 +691,7 @@ describe('Test parse parameters', () => {
         assert.deepStrictEqual(actual.multipleRowsResult, true);
     });
 
-    it('reuse of named paramters', async () => {
+    it('SELECT :startDate, ADDDATE(:startDate, 31) as deadline', async () => {
         const sql = `
         SELECT :startDate, ADDDATE(:startDate, 31) as deadline
         `
@@ -699,7 +699,7 @@ describe('Test parse parameters', () => {
 
         const expected: QueryInfoResult = {
             kind: 'Select',
-            multipleRowsResult: true,
+            multipleRowsResult: false,
             columns: [
                 {
                     columnName: '?', //TODO: Should be dateName?

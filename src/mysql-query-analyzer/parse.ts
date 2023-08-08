@@ -123,6 +123,9 @@ function extractLimitParameters(selectStatement: SelectStatementContext): Parame
 function isMultipleRowResult(selectStatement: SelectStatementContext, fromColumns: ColumnDef[]) {
     const querySpecs = getQuerySpecificationsFromSelectStatement(selectStatement);
     if (querySpecs.length == 1) { //UNION queries are multipleRowsResult = true
+        if (!querySpecs[0].fromClause()) {
+            return false;
+        }
         if (querySpecs[0].selectItemList().childCount == 1) {
             const selectItem = <SelectItemContext>querySpecs[0].selectItemList().getChild(0);
             //if selectItem = * (TerminalNode) childCount = 0; selectItem.expr() throws exception
