@@ -1727,7 +1727,9 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
             return functionType;
         }
 
-        if (functionIdentifier == 'md5') {
+        if (functionIdentifier == 'md5'
+            || functionIdentifier == 'hex'
+            || functionIdentifier == 'unhex') {
             const functionType = freshVar(simpleExpr.text, 'char');
             const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr();
             if (udfExprList) {

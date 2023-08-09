@@ -845,4 +845,56 @@ describe('Test parse select with functions', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     });
+
+    it(`SELECT hex('a') as r1, unhex(hex('a')) as r2, hex(NULL) as r3, unhex(NULL) as r4, unhex(hex(?)) as r5`, async () => {
+        const sql = `
+        SELECT hex('a') as r1, unhex(hex('a')) as r2, hex(NULL) as r3, unhex(hex(NULL)) as r4, unhex(hex(?)) as r5
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: false,
+            columns: [
+                {
+                    name: 'r1',
+                    dbtype: 'char',
+                    notNull: true
+                },
+                {
+                    name: 'r2',
+                    dbtype: 'char',
+                    notNull: true
+                },
+                {
+                    name: 'r3',
+                    dbtype: 'char',
+                    notNull: false
+                },
+                {
+                    name: 'r4',
+                    dbtype: 'char',
+                    notNull: false
+                },
+                {
+                    name: 'r5',
+                    dbtype: 'char',
+                    notNull: true
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'varchar',
+                    notNull: true
+                }
+            ]
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    });
 });
