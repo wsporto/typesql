@@ -103,7 +103,7 @@ describe('type-mapping', () => {
             },
             {
                 name: 'enum_column',
-                dbtype: 'enum',
+                dbtype: `enum('x-small','small','medium','large','x-large')`,
                 notNull: false
             },
             {

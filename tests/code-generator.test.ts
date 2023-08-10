@@ -400,3 +400,27 @@ export async function selectId(client: Client) : Promise<SelectIdResult[]> {
 
     assert.deepStrictEqual(actual, expected);
 })
+
+it('test generateTsDescriptor for enum column schema', () => {
+    let sql = 'SELECT enum_column FROM all_types';
+
+    const schemaDef = describeSql(dbSchema, sql);
+    const actual = generateTsDescriptor(schemaDef);
+    const expected: TsDescriptor = {
+        sql: "SELECT enum_column FROM all_types",
+        queryType: "Select",
+        multipleRowsResult: true,
+        columns: [
+            {
+                name: 'enum_column',
+                tsType: `'x-small' | 'small' | 'medium' | 'large' | 'x-large'`,
+                notNull: false
+            }
+        ],
+        orderByColumns: undefined,
+        data: undefined,
+        parameters: []
+    }
+
+    assert.deepStrictEqual(actual, expected);
+})

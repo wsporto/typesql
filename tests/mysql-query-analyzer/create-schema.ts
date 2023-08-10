@@ -114,6 +114,14 @@ export const dbSchema: ColumnSchema[] = [
         notNull: false
     },
     {
+        column: 'enum_column',
+        column_type: `enum('x-small', 'small', 'medium', 'large', 'x-large')`,
+        columnKey: '',
+        table: 'all_types',
+        schema: 'mydb',
+        notNull: false
+    },
+    {
         column: 'char_column',
         column_type: 'char',
         columnKey: '',

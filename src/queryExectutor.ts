@@ -36,15 +36,20 @@ export class DbClient {
 
     async loadDbSchema(): Promise<Either<TypeSqlError, ColumnSchema[]>> {
 
-        if (this.connection != null) {
-            const sql = `
-                SELECT TABLE_SCHEMA as "schema", TABLE_NAME as "table", COLUMN_NAME as "column", DATA_TYPE as "column_type", if(IS_NULLABLE='NO', true, false) as "notNull",
-                    COLUMN_KEY as "columnKey"
-                FROM INFORMATION_SCHEMA.COLUMNS 
-                WHERE TABLE_SCHEMA = "${this.connection.config.database}"
-                ORDER BY TABLE_NAME, ORDINAL_POSITION
+        const sql = `
+            SELECT 
+                TABLE_SCHEMA as "schema", TABLE_NAME as "table", 
+                COLUMN_NAME as "column", 
+                IF(data_type = 'enum', COLUMN_TYPE, DATA_TYPE) as "column_type", 
+                if(IS_NULLABLE='NO', true, false) as "notNull",
+                COLUMN_KEY as "columnKey"
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_SCHEMA = ?
+            ORDER BY TABLE_NAME, ORDINAL_POSITION
             `
-            return this.connection.execute(sql)
+
+        if (this.connection != null) {
+            return this.connection.execute(sql, [this.connection.config.database])
                 .then(res => {
                     const columns = res[0] as ColumnSchema[];
                     return right(columns.map(col => ({ ...col, notNull: !!+col.notNull }))); //convert 1 to true, 0 to false
@@ -60,17 +65,18 @@ export class DbClient {
             TABLE_SCHEMA as "schema", 
             TABLE_NAME as "table", 
             COLUMN_NAME as "column", 
-            DATA_TYPE as "column_type", 
+            IF(data_type = 'enum', COLUMN_TYPE, DATA_TYPE) as "column_type",
             IF(IS_NULLABLE='NO', true, false) as "notNull",
             COLUMN_KEY as "columnKey",
             IF(EXTRA = 'auto_increment', true, false) as "autoincrement"
         FROM INFORMATION_SCHEMA.COLUMNS 
-        WHERE TABLE_NAME = ?
+        WHERE TABLE_SCHEMA = ?
+        AND TABLE_NAME = ?
         ORDER BY TABLE_NAME, ORDINAL_POSITION
         `
 
         if (this.connection) {
-            return this.connection.execute(sql, [tableName])
+            return this.connection.execute(sql, [this.connection.config.database, tableName])
                 .then(res => {
                     const columns = res[0] as ColumnSchema2[]
                     return right(columns);

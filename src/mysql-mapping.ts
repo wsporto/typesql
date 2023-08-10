@@ -31,7 +31,7 @@ export type MySqlType =
     | 'datetime2'
     | 'time2'
     | 'json'
-    | 'enum'
+    | `enum(${string})`
     | 'set'
     | 'tinyblob'
     | 'mediumblob'
@@ -57,7 +57,7 @@ export type TsType =
     | 'null'
 
 
-export function converToTsType(mySqlType: MySqlType): TsType {
+export function converToTsType(mySqlType: MySqlType): TsType | string {
     switch (mySqlType) {
         case 'decimal':
         case 'tinyint':
@@ -113,7 +113,6 @@ export function converToTsType(mySqlType: MySqlType): TsType {
             return 'string';
         case 'char[]':
             return 'string[]'
-        case 'enum':
         case 'set':
             return 'any'
         case 'tinyblob':
@@ -122,17 +121,22 @@ export function converToTsType(mySqlType: MySqlType): TsType {
         case 'blob':
             return 'Buffer'
         default:
-            const exaustive: never = mySqlType;
-            return exaustive;
+            if (mySqlType.startsWith("enum(")) {
+                const enumValues = mySqlType.substring(mySqlType.indexOf("(") + 1, mySqlType.indexOf(")"));
+                return enumValues.split(",").join(" |");
+            }
+            return 'any';
     }
 
 }
+
+
 
 export function checkFlag(flags: number, flag: FlagEnum) {
     return (flags & flag) != 0;
 }
 
-export function convertTypeCodeToMysqlType(typeCode: number, flags: FlagEnum, columnLength: number): MySqlType {
+export function convertTypeCodeToMysqlType(typeCode: number, flags: FlagEnum, columnLength: number): MySqlType | string {
 
     if (flags & FlagEnum.SET_FLAG) {
         return 'set'
@@ -166,7 +170,7 @@ export function convertTypeCodeToMysqlType(typeCode: number, flags: FlagEnum, co
 
 
 type MySqlTypeHash = {
-    [a: number]: MySqlType
+    [a: number]: MySqlType | string
 }
 
 export const typesMapping: MySqlTypeHash = {
