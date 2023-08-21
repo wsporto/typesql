@@ -143,4 +143,35 @@ describe('parse update statements', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     })
+
+    it('UPDATE mytable1 SET id = IFNULL(:id, id)', async () => {
+
+        const sql = `
+        UPDATE mytable1 SET id = IFNULL(:id, id)
+            `;
+        const expectedSql = `
+        UPDATE mytable1 SET id = IFNULL(?, id)
+            `;
+
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql: expectedSql,
+            queryType: 'Update',
+            multipleRowsResult: false,
+            columns,
+            data: [
+                {
+                    name: 'id',
+                    columnType: 'int',
+                    notNull: false
+                }
+            ],
+            parameters: []
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
 })

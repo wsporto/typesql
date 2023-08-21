@@ -458,9 +458,9 @@ describe('Test parse select with functions', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it(`SELECT IFNULL(NULL, 'yes') as result1, IFNULL(10, 'yes') as result2`, async () => {
+    it(`SELECT IFNULL(NULL, 'yes') as result1, IFNULL('10', 'yes') as result2`, async () => {
         const sql = `
-        SELECT IFNULL(NULL, 'yes') as result1, IFNULL(10, 'yes') as result2
+        SELECT IFNULL(NULL, 'yes') as result1, IFNULL('10', 'yes') as result2
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {

@@ -28,7 +28,8 @@ function inferParameterNotNullRule(rule: RuleContext): boolean {
     }
 
     const nullIfFunction = <FunctionCallContext>getParentContext(rule, FunctionCallContext);
-    if (nullIfFunction) {
+    const functionIdentifier = nullIfFunction?.pureIdentifier()?.text.toLowerCase();
+    if (functionIdentifier == 'nullif') {
         const expressionList = nullIfFunction.udfExprList()?.udfExpr();
         if (expressionList && expressionList.length == 2) {
             const firstArg = expressionList[0];
@@ -38,7 +39,9 @@ function inferParameterNotNullRule(rule: RuleContext): boolean {
             }
         }
         return true;
-
+    }
+    if (functionIdentifier == 'ifnull') {
+        return false;
     }
 
     const parent = rule.parent;

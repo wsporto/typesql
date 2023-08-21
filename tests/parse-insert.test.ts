@@ -170,6 +170,26 @@ describe('parse insert statements', () => {
         assert.deepStrictEqual(actual.right.parameters, expected);
     })
 
+    it('insert into mytable1 (id) values (IFNULL(:id, id))', async () => {
+
+        const sql = `
+        insert into mytable1 (id) values (IFNULL(:id, id))
+            `;
+        const actual = await parseSql(client, sql);
+        const expected: ParameterDef[] = [
+            {
+                name: 'id',
+                columnType: 'int',
+                notNull: false
+            }
+        ]
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right.parameters, expected);
+    })
+
     it('insert with inexistent columns names', async () => {
 
         const sql = `

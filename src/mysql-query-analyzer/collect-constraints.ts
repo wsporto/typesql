@@ -163,8 +163,9 @@ export function analiseInsertStatement(insertStatement: InsertStatementContext, 
         if (expr instanceof ExprContext) {
             const numberParamsBefore = context.parameters.length;
             const exprType = walkExpr(context, expr);
+            const paramNullabilityExpr = inferParamNullability(expr);
             context.parameters.slice(numberParamsBefore).forEach(param => {
-                paramsNullability[param.id] = column.notNull;
+                paramsNullability[param.id] = paramNullabilityExpr.every(n => n) && column.notNull;
             })
             context.constraints.push({
                 expression: expr.text,
@@ -352,11 +353,12 @@ export function analiseUpdateStatement(updateStatement: UpdateStatementContext, 
 
             })
             const typeInfo = generateTypeInfo(context.parameters, context.constraints);
+            const paramNullabilityExpr = inferParamNullability(expr);
             typeInfo.forEach(param => {
                 dataParameters.push({
                     name: column.columnName,
                     columnType: verifyNotInferred(param),
-                    notNull: column.notNull
+                    notNull: paramNullabilityExpr.every(n => n) && column.notNull
                 })
             })
         }
@@ -1714,7 +1716,12 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
             if (udfExprList) {
                 const [expr1, expr2] = udfExprList;
 
-                walkExpr(context, expr1.expr());
+                const expr1Type = walkExpr(context, expr1.expr());
+                context.constraints.push({
+                    expression: simpleExpr.text,
+                    type1: functionType,
+                    type2: expr1Type
+                })
 
                 const expr2Type = walkExpr(context, expr2.expr());
                 context.constraints.push({
