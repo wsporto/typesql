@@ -169,8 +169,9 @@ export function analiseInsertStatement(insertStatement: InsertStatementContext, 
             })
             context.constraints.push({
                 expression: expr.text,
-                type1: freshVar(column.column, column.column_type),
-                type2: exprType.kind == 'TypeOperator' ? exprType.types[0] : exprType
+                //TODO - CHANGING ORDER SHOULDN'T AFFECT THE TYPE INFERENCE
+                type1: exprType.kind == 'TypeOperator' ? exprType.types[0] : exprType,
+                type2: freshVar(column.column, column.column_type)
             })
         }
     })
@@ -1718,14 +1719,14 @@ function walkSimpleExpr(context: InferenceContext, simpleExpr: SimpleExprContext
 
                 const expr1Type = walkExpr(context, expr1.expr());
                 context.constraints.push({
-                    expression: simpleExpr.text,
+                    expression: expr1.text,
                     type1: functionType,
                     type2: expr1Type
                 })
 
                 const expr2Type = walkExpr(context, expr2.expr());
                 context.constraints.push({
-                    expression: simpleExpr.text,
+                    expression: expr2.text,
                     type1: functionType,
                     type2: expr2Type
                 })
