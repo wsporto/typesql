@@ -23,6 +23,7 @@ describe('code-generator', () => {
                     notNull: false
                 }
             ],
+            parameterNames: ['param1'],
             parameters: [
                 {
                     name: 'param1',
@@ -59,39 +60,15 @@ export async function getPerson(connection: Connection, params: GetPersonParams)
 
     it('generate main function with data and parameters', () => {
         const queryName = convertToCamelCaseName('update-person');
-        const tsDescriptor: TsDescriptor = {
-            sql: 'update person set name=? where id = ?',
-            queryType: 'Update',
-            multipleRowsResult: false,
-            columns: [
-                {
-                    name: 'affectedRows',
-                    tsType: 'number',
-                    notNull: true
-                }
-            ],
-            data: [
-                {
-                    name: 'name',
-                    tsType: 'string',
-                    notNull: true
-                }
-            ],
-            parameters: [
-                {
-                    name: 'param1',
-                    tsType: 'number',
-                    notNull: true
-                }
-            ]
-        }
-
+        const sql = 'update mytable2 set name=? where id = ?';
+        const schemaDef = describeSql(dbSchema, sql);
+        const tsDescriptor = generateTsDescriptor(schemaDef);
         const actual = generateTsCode(tsDescriptor, queryName, 'node');
         const expected =
             `import type { Connection } from 'mysql2/promise';
 
 export type UpdatePersonData = {
-    name: string;
+    name?: string;
 }
 
 export type UpdatePersonParams = {
@@ -104,7 +81,7 @@ export type UpdatePersonResult = {
 
 export async function updatePerson(connection: Connection, data: UpdatePersonData, params: UpdatePersonParams) : Promise<UpdatePersonResult> {
     const sql = \`
-    update person set name=? where id = ?
+    update mytable2 set name=? where id = ?
     \`
 
     return connection.query(sql, [data.name, params.param1])
@@ -128,6 +105,7 @@ export async function updatePerson(connection: Connection, data: UpdatePersonDat
                 }
             ],
             data: [],
+            parameterNames: [],
             parameters: [],
             orderByColumns: ['id', 'name']
         }
@@ -275,6 +253,34 @@ export async function selectId(client: Client, params: SelectIdParams) : Promise
         assert.deepStrictEqual(actual, expected);
     })
 
+    it('test generateTsDescriptor - select with same parameter used twice', () => {
+        const sql = 'SELECT id from mytable1 where id = :id or id = :id';
+        const schemaDef = describeSql(dbSchema, sql);
+        const tsDescriptor = generateTsDescriptor(schemaDef);
+        const actual = generateTsCode(tsDescriptor, 'selectId', 'node');
+        const expected =
+            `import type { Connection } from 'mysql2/promise';
+
+export type SelectIdParams = {
+    id: number;
+}
+
+export type SelectIdResult = {
+    id: number;
+}
+
+export async function selectId(connection: Connection, params: SelectIdParams) : Promise<SelectIdResult[]> {
+    const sql = \`
+    SELECT id from mytable1 where id = ? or id = ?
+    \`
+
+    return connection.query(sql, [params.id, params.id])
+        .then( res => res[0] as SelectIdResult[] );
+}`
+
+        assert.deepStrictEqual(actual, expected);
+    })
+
     it('test generateTsDescriptor - update', () => {
         const sql = 'UPDATE mytable1 SET value = ?';
         const schemaDef = describeSql(dbSchema, sql);
@@ -289,7 +295,6 @@ export type UpdateValueData = {
 
 export type UpdateValueResult = {
     affectedRows: number;
-    insertId: number;
 }
 
 export async function updateValue(client: Client, data: UpdateValueData) : Promise<UpdateValueResult> {
@@ -323,7 +328,6 @@ export type UpdateValueParams = {
 
 export type UpdateValueResult = {
     affectedRows: number;
-    insertId: number;
 }
 
 export async function updateValue(client: Client, data: UpdateValueData, params: UpdateValueParams) : Promise<UpdateValueResult> {
@@ -419,6 +423,7 @@ it('test generateTsDescriptor for enum column schema', () => {
         ],
         orderByColumns: undefined,
         data: undefined,
+        parameterNames: [],
         parameters: []
     }
 

@@ -71,11 +71,6 @@ export function describeSql(dbSchema: ColumnSchema[], sql: string): SchemaDef {
                 name: 'affectedRows',
                 dbtype: 'int',
                 notNull: true
-            },
-            {
-                name: 'insertId',
-                dbtype: 'int',
-                notNull: true
             }
         ]
         const whereParametersNames = namedParameters ? namedParameters.slice(queryInfo.data.length) : [];

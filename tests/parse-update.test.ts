@@ -20,11 +20,6 @@ describe('parse update statements', () => {
             name: 'affectedRows',
             dbtype: 'int',
             notNull: true
-        },
-        {
-            name: 'insertId',
-            dbtype: 'int',
-            notNull: true
         }
     ]
 

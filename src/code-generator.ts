@@ -46,7 +46,7 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
     functionArguments += tsDescriptor.parameters.length > 0 || generateOrderBy ? ', params: ' + paramsTypeName : '';
 
     const allParameters = tsDescriptor.data?.map(field => 'data.' + field.name) || [];
-    allParameters.push(...tsDescriptor.parameters.map(field => 'params.' + field.name));
+    allParameters.push(...tsDescriptor.parameterNames.map(paramName => 'params.' + paramName));
 
     const queryParams = allParameters.length > 0 ? ', [' + allParameters.join(', ') + ']' : '';
 
@@ -128,9 +128,9 @@ export function generateTsDescriptor(queryInfo: SchemaDef): TsDescriptor {
         }
         return tsDesc;
     })
-
+    const parameterNames = queryInfo.parameters.map(p => p.name);
     const uniqueParams = removeDuplicatedParameters(queryInfo.parameters);
-    const escapedParametersNames = renameInvalidNames(uniqueParams.map(col => col.name));
+    const escapedParametersNames = renameInvalidNames(queryInfo.parameters.map(col => col.name));
     const parameters = uniqueParams.map((col, paramIndex) => {
         const arraySymbol = col.list ? '[]' : '';
 
@@ -159,6 +159,7 @@ export function generateTsDescriptor(queryInfo: SchemaDef): TsDescriptor {
         multipleRowsResult: queryInfo.multipleRowsResult,
         columns,
         orderByColumns: queryInfo.orderByColumns,
+        parameterNames,
         parameters,
         data
     };
@@ -274,6 +275,7 @@ export type TsDescriptor = {
     queryType: 'Select' | 'Insert' | 'Update' | 'Delete';
     multipleRowsResult: boolean;
     columns: TsFieldDescriptor[];
+    parameterNames: string[];
     parameters: TsFieldDescriptor[];
     data?: TsFieldDescriptor[];
     orderByColumns?: string[];
