@@ -123,7 +123,8 @@ function extractLimitParameters(selectStatement: SelectStatementContext): Parame
 function isMultipleRowResult(selectStatement: SelectStatementContext, fromColumns: ColumnDef[]) {
     const querySpecs = getQuerySpecificationsFromSelectStatement(selectStatement);
     if (querySpecs.length == 1) { //UNION queries are multipleRowsResult = true
-        if (!querySpecs[0].fromClause()) {
+        const fromClause = querySpecs[0].fromClause();
+        if (!fromClause) {
             return false;
         }
         if (querySpecs[0].selectItemList().childCount == 1) {
@@ -131,11 +132,16 @@ function isMultipleRowResult(selectStatement: SelectStatementContext, fromColumn
             //if selectItem = * (TerminalNode) childCount = 0; selectItem.expr() throws exception
             const expr = selectItem.childCount > 0 ? selectItem.expr() : null;
             if (expr) {
-                const isSumExpress = isSumExpressContext(expr); //SUM, MAX... are multipleRowsResult = false
-                if (isSumExpress) {
+                //SUM, MAX... WITHOUT GROUP BY are multipleRowsResult = false
+                const groupBy = querySpecs[0].groupByClause();
+                if (!groupBy && isSumExpressContext(expr)) {
                     return false;
                 }
             }
+        }
+        const joinedTable = fromClause.tableReferenceList()?.tableReference()[0].joinedTable();
+        if (joinedTable && joinedTable.length > 0) {
+            return true;
         }
 
         const whereClauseExpr = querySpecs[0].whereClause()?.expr();

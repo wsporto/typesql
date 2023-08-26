@@ -243,7 +243,7 @@ describe('Test select with multiples tables', () => {
         const expected: SchemaDef = {
             sql,
             queryType: 'Select',
-            multipleRowsResult: false, //changed at v0.3.0
+            multipleRowsResult: true, //changed at v0.5.13
             columns: [
                 {
                     name: 'id',
@@ -278,7 +278,7 @@ describe('Test select with multiples tables', () => {
         const expected: SchemaDef = {
             sql,
             queryType: 'Select',
-            multipleRowsResult: false, //changed at v0.3.0
+            multipleRowsResult: true, //changed at v0.5.13
             columns: [
                 {
                     name: 'id',
@@ -737,6 +737,69 @@ describe('Test select with multiples tables', () => {
             parameters: []
 
         }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('multipleRowsResult must be false with inner join and t1.id = 1', async () => {
+
+        const sql = `
+        SELECT t1.id, t1.name 
+        FROM mytable2 t1 
+        INNER JOIN mytable2 t2 ON t2.id = t1.id
+        WHERE t1.id = 1
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'id',
+                    dbtype: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'name',
+                    dbtype: 'varchar',
+                    notNull: false
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('SELECT SUM(ID) as sumById FROM mytable1 t1 GROUP BY id', async () => {
+
+        const sql = `
+        SELECT SUM(ID) as sumById
+        FROM mytable1 t1
+        GROUP BY id
+        `;
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'sumById',
+                    dbtype: 'decimal',
+                    notNull: false
+                }
+            ],
+            parameters: []
+
+        }
+
         if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
