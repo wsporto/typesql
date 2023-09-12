@@ -429,3 +429,33 @@ it('test generateTsDescriptor for enum column schema', () => {
 
     assert.deepStrictEqual(actual, expected);
 })
+
+it('test code generation with duplicated parameters', () => {
+    const sql = 'SELECT id from mytable1 where (id = :id or id = :id) and value = :value';
+
+    const schemaDef = describeSql(dbSchema, sql);
+    const tsDescriptor = generateTsDescriptor(schemaDef);
+    const actual = generateTsCode(tsDescriptor, 'select-id', 'node');
+    const expected =
+        `import type { Connection } from 'mysql2/promise';
+
+export type SelectIdParams = {
+    id: number;
+    value: number;
+}
+
+export type SelectIdResult = {
+    id: number;
+}
+
+export async function selectId(connection: Connection, params: SelectIdParams) : Promise<SelectIdResult[]> {
+    const sql = \`
+    SELECT id from mytable1 where (id = ? or id = ?) and value = ?
+    \`
+
+    return connection.query(sql, [params.id, params.id, params.value])
+        .then( res => res[0] as SelectIdResult[] );
+}`
+
+    assert.deepStrictEqual(actual, expected);
+})

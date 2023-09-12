@@ -130,7 +130,7 @@ export function generateTsDescriptor(queryInfo: SchemaDef): TsDescriptor {
     })
     const parameterNames = queryInfo.parameters.map(p => p.name);
     const uniqueParams = removeDuplicatedParameters(queryInfo.parameters);
-    const escapedParametersNames = renameInvalidNames(queryInfo.parameters.map(col => col.name));
+    const escapedParametersNames = renameInvalidNames(uniqueParams.map(col => col.name));
     const parameters = uniqueParams.map((col, paramIndex) => {
         const arraySymbol = col.list ? '[]' : '';
 
