@@ -169,4 +169,50 @@ describe('parse update statements', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     })
+
+    it('UPDATE mytable1 t1 SET t1.value = 10 WHERE t1.id = 1', async () => {
+
+        const sql = `
+            UPDATE mytable1 t1
+            SET t1.value = 10
+            WHERE t1.id = 1`;
+
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql: sql,
+            queryType: 'Update',
+            multipleRowsResult: false,
+            columns,
+            data: [],
+            parameters: []
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('UPDATE mytable2 t2, mytable3 t3 SET t2.name = t3.name WHERE t2.id = t3.id', async () => {
+
+        const sql = `
+            UPDATE mytable2 t2, mytable3 t3
+            SET t2.name = t3.name
+            WHERE t2.id = t3.id`;
+
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql: sql,
+            queryType: 'Update',
+            multipleRowsResult: false,
+            columns,
+            data: [],
+            parameters: []
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
 })

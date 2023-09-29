@@ -94,7 +94,7 @@ export function getColumnsFrom(ctx: QuerySpecificationContext, dbSchema: ColumnS
 }
 
 //rule: tableReference
-function extractColumnsFromTableReferences(tablesReferences: TableReferenceContext[], dbSchema: ColumnSchema[], withSchema: TypeAndNullInfer[]): ColumnDef[] {
+export function extractColumnsFromTableReferences(tablesReferences: TableReferenceContext[], dbSchema: ColumnSchema[], withSchema: TypeAndNullInfer[]): ColumnDef[] {
     const result: ColumnDef[] = [];
 
     tablesReferences.forEach(tab => {

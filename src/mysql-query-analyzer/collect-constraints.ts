@@ -13,7 +13,7 @@ import {
 } from "ts-mysql-parser";
 
 import { ColumnSchema, ColumnDef, TypeInferenceResult, InsertInfoResult, UpdateInfoResult, DeleteInfoResult, TypeAndNullInfer } from "./types";
-import { getColumnsFrom, findColumn, splitName, selectAllColumns, findColumn2 } from "./select-columns";
+import { getColumnsFrom, findColumn, splitName, selectAllColumns, findColumn2, extractColumnsFromTableReferences } from "./select-columns";
 import {
     SubstitutionHash, getQuerySpecificationsFromSelectStatement as getQuerySpecificationsFromQuery,
     getQuerySpecificationsFromSelectStatement
@@ -428,25 +428,13 @@ export function getInsertColumns(insertStatement: InsertStatementContext, dbSche
 }
 
 export function getUpdateColumns(updateStatement: UpdateStatementContext, dbSchema: ColumnSchema[]) {
-    const insertIntoTable = splitName(updateStatement.tableReferenceList().tableReference()[0].text).name;
-    const columns = dbSchema
-        .filter(col => col.table == insertIntoTable)
-        .map(col => {
-            const colDef: ColumnDef = {
-                table: col.table,
-                column: col.column,
-                columnName: col.column,
-                columnType: col.column_type,
-                columnKey: col.columnKey,
-                notNull: col.notNull,
-                tableAlias: ''
-            }
-            return colDef;
-        })
+    const tableReferences = updateStatement.tableReferenceList().tableReference();
+    const columns = extractColumnsFromTableReferences(tableReferences, dbSchema, []);
     return columns;
 }
 
 export function getDeleteColumns(deleteStatement: DeleteStatementContext, dbSchema: ColumnSchema[]) {
+    //TODO - Use extractColumnsFromTableReferences
     const tableNameStr = deleteStatement.tableRef()?.text!
     const tableAlias = deleteStatement.tableAlias()?.text;
     const tableName = splitName(tableNameStr).name;
