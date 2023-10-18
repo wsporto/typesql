@@ -1,5 +1,5 @@
 import {
-    ExprContext, ExprIsContext, SimpleExprListContext, PrimaryExprPredicateContext, PrimaryExprIsNullContext, PrimaryExprCompareContext,
+    ExprContext, ExprIsContext, PrimaryExprCompareContext,
     ExprAndContext, SimpleExprColumnRefContext, ExprNotContext, ExprOrContext, BoolPriContext, PredicateContext
 } from "ts-mysql-parser";
 import { getSimpleExpressions, splitName, findColumn } from "./select-columns";
@@ -46,7 +46,7 @@ function isUniqueKeyComparation(compare: BoolPriContext | PredicateContext, from
     if (tokens.length == 1 && tokens[0] instanceof SimpleExprColumnRefContext) {
         const fieldName = splitName(tokens[0].text);
         const col = findColumn(fieldName, fromColumns);
-        if (col.columnKey == 'PRI' || col.columnKey == 'UNI') {
+        if (col.columnKey == 'PRI' || col.columnKey == 'UNI') { //TODO - UNIQUE
             return true; //isUniqueKeyComparation = true
         }
     }

@@ -118,8 +118,8 @@ function addParameterNames(parameters: ParameterDef[], namedParameters: string[]
     })
 }
 
-export function verifyNotInferred(type: InferType): MySqlType {
-    if (type == '?' || type == 'any') return "varchar";
+export function verifyNotInferred(type: InferType): MySqlType | 'any' {
+    if (type == '?' || type == 'any') return "any";
     if (type == 'number') return "double";
     return type;
 }

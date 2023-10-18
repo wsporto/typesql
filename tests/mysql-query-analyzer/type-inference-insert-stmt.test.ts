@@ -75,7 +75,7 @@ describe('type-inference test', () => {
     })
 
     it(`INSERT INTO all_types (double_column) VALUE (subquery)`, () => {
-        const sql = `INSERT INTO all_types (double_column) 
+        const sql = `INSERT INTO all_types (double_column)
                      VALUES (
                         (SELECT double_value FROM mytable3 WHERE id = ?)
                     )`;
@@ -90,7 +90,7 @@ describe('type-inference test', () => {
     })
 
     it(`INSERT INTO alltypes (double_column, int_column) VALUES (?, ?)`, () => {
-        const sql = `INSERT INTO all_types (bigint_column) 
+        const sql = `INSERT INTO all_types (bigint_column)
                      VALUES (
                         (SELECT ? from mytable2)
                     )`;
@@ -105,7 +105,7 @@ describe('type-inference test', () => {
     })
 
     it(`INSERT INTO alltypes (double_column, int_column) VALUES (?, ?)`, () => {
-        const sql = `INSERT INTO all_types (double_column, bigint_column) 
+        const sql = `INSERT INTO all_types (double_column, bigint_column)
                      VALUES (
                         (SELECT double_column+? FROM all_types WHERE int_column = ?),
                         (SELECT id + id + ? from mytable2 WHERE name = ?)

@@ -259,7 +259,7 @@ describe('type-inference - functions', () => {
 
         const expected: TypeInferenceResult = {
             columns: ['varchar'],
-            parameters: ['?', '?']
+            parameters: ['varchar', 'varchar']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -295,7 +295,7 @@ describe('type-inference - functions', () => {
 
         const expected: TypeInferenceResult = {
             columns: ['int', 'int'],
-            parameters: ['?', '?']
+            parameters: ['varchar', 'varchar']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -381,7 +381,7 @@ describe('type-inference - functions', () => {
 
         const expected: TypeInferenceResult = {
             columns: ['varchar'],
-            parameters: ['?', '?']
+            parameters: ['varchar', 'varchar']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -701,8 +701,8 @@ describe('type-inference - functions', () => {
         const actual = parseAndInfer(sql, dbSchema);
 
         const expected: TypeInferenceResult = {
-            columns: ['number'],
-            parameters: ['number', 'number']
+            columns: ['double'],
+            parameters: ['double', 'double']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -724,7 +724,7 @@ describe('type-inference - functions', () => {
     it(`SELECT MOD function with several input types`, () => {
         const sql = `SELECT 
             MOD(int_column, int_column), -- int
-            MOD(int_column, 10), -- bigint
+            MOD(int_column, 10), -- int
             MOD(bigint_column, int_column), -- bigint 
             MOD(int_column, bigint_column), -- bigint
             MOD(float_column, int_column), -- float
@@ -735,7 +735,7 @@ describe('type-inference - functions', () => {
         const actual = parseAndInfer(sql, dbSchema);
 
         const expected: TypeInferenceResult = {
-            columns: ['int', 'bigint', 'bigint', 'bigint', 'float', 'double', 'float', 'decimal'],
+            columns: ['int', 'int', 'bigint', 'bigint', 'float', 'double', 'float', 'decimal'],
             parameters: []
         }
 
@@ -784,8 +784,8 @@ describe('type-inference - functions', () => {
         const actual = parseAndInfer(sql, dbSchema);
 
         const expected: TypeInferenceResult = {
-            columns: ['number', 'int', 'bigint', 'float', 'double', 'decimal'],
-            parameters: ['number']
+            columns: ['double', 'int', 'bigint', 'float', 'double', 'decimal'],
+            parameters: ['double']
         }
 
         assert.deepStrictEqual(actual, expected);
@@ -833,9 +833,9 @@ describe('type-inference - functions', () => {
         const actual = parseAndInfer(sql, dbSchema);
 
         const expected: TypeInferenceResult = {
-            columns: ['number', 'number', 'int', 'int', 'bigint', 'bigint', 'float', 'float', 'double', 'double', 'bigint', 'bigint'
+            columns: ['double', 'double', 'int', 'int', 'bigint', 'bigint', 'float', 'float', 'double', 'double', 'bigint', 'bigint'
             ],
-            parameters: ['number', 'number']
+            parameters: ['double', 'double']
         }
 
         assert.deepStrictEqual(actual, expected);

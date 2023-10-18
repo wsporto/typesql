@@ -8,21 +8,21 @@ describe.skip('Substitution tests', () => {
 
     const u1: TypeVar = {
         kind: 'TypeVar',
-        id: 0,
+        id: '0',
         name: 'u1',
         type: 'int'
     }
 
     const u2: TypeVar = {
         kind: 'TypeVar',
-        id: 1,
+        id: '1',
         name: 'u2',
         type: 'varchar'
     }
 
     const u3: TypeVar = {
         kind: 'TypeVar',
-        id: 2,
+        id: '2',
         name: 'u3',
         type: '?'
     }
@@ -38,12 +38,12 @@ describe.skip('Substitution tests', () => {
 
         const type1: TypeVar = {
             kind: 'TypeVar',
-            id: 10,
+            id: '10',
             name: 'id',
             type: 'int'
         }
 
-        const actual = substitute(type1, substitutions);
+        const actual = substitute(type1, substitutions, {} as Constraint);
 
         const expected = type1;
 
@@ -54,18 +54,18 @@ describe.skip('Substitution tests', () => {
 
         const newInt: TypeVar = {
             kind: 'TypeVar',
-            id: 10,
+            id: '10',
             name: 'id',
             type: 'int'
         }
 
-        const actual = substitute(newInt, substitutions);
+        const actual = substitute(newInt, substitutions, {} as Constraint);
         assert.deepStrictEqual(actual, newInt, "substitution 1");
 
-        const actual2 = substitute(u1, substitutions);
+        const actual2 = substitute(u1, substitutions, {} as Constraint);
         assert.deepStrictEqual(actual2, u1, "substitution 2");
 
-        const actual3 = substitute(u3, substitutions);
+        const actual3 = substitute(u3, substitutions, {} as Constraint);
         assert.deepStrictEqual(actual3, u1, "substitution 3");
     })
 
@@ -75,20 +75,20 @@ describe.skip('Substitution tests', () => {
         const constraints: Constraint[] = [
             {
                 expression: '?+id',
-                type1: { kind: 'TypeVar', id: 15, name: '?', type: '?' },
-                type2: { kind: 'TypeVar', id: 16, name: 'id', type: 'int' },
+                type1: { kind: 'TypeVar', id: '15', name: '?', type: '?' },
+                type2: { kind: 'TypeVar', id: '16', name: 'id', type: 'int' },
                 mostGeneralType: true
             },
             {
                 expression: '?+id',
-                type1: { kind: 'TypeVar', id: 14, name: '?+id', type: 'double' },
-                type2: { kind: 'TypeVar', id: 15, name: '?', type: '?' },
+                type1: { kind: 'TypeVar', id: '14', name: '?+id', type: 'double' },
+                type2: { kind: 'TypeVar', id: '15', name: '?', type: '?' },
                 mostGeneralType: true
             },
             {
                 expression: '?+id',
-                type1: { kind: 'TypeVar', id: 14, name: '?+id', type: 'double' },
-                type2: { kind: 'TypeVar', id: 16, name: 'id', type: 'int' },
+                type1: { kind: 'TypeVar', id: '14', name: '?+id', type: 'double' },
+                type2: { kind: 'TypeVar', id: '16', name: 'id', type: 'int' },
                 mostGeneralType: true
             },
             {
@@ -96,11 +96,11 @@ describe.skip('Substitution tests', () => {
                 type1:
                 {
                     kind: 'TypeVar',
-                    id: 1,
+                    id: '1',
                     name: 'CASEWHENid=1THEN?+idWHENid=2THEN2WHENid=3then?ELSE1END',
                     type: '?'
                 },
-                type2: { kind: 'TypeVar', id: 14, name: '?+id', type: 'double' },
+                type2: { kind: 'TypeVar', id: '14', name: '?+id', type: 'double' },
                 mostGeneralType: true
             },
             {
@@ -108,11 +108,11 @@ describe.skip('Substitution tests', () => {
                 type1:
                 {
                     kind: 'TypeVar',
-                    id: 1,
+                    id: '1',
                     name: 'CASEWHENid=1THEN?+idWHENid=2THEN2WHENid=3then?ELSE1END',
                     type: '?'
                 },
-                type2: { kind: 'TypeVar', id: 17, name: '2', type: 'int' },
+                type2: { kind: 'TypeVar', id: '17', name: '2', type: 'int' },
                 mostGeneralType: true
             },
             {
@@ -120,11 +120,11 @@ describe.skip('Substitution tests', () => {
                 type1:
                 {
                     kind: 'TypeVar',
-                    id: 1,
+                    id: '1',
                     name: 'CASEWHENid=1THEN?+idWHENid=2THEN2WHENid=3then?ELSE1END',
                     type: '?'
                 },
-                type2: { kind: 'TypeVar', id: 18, name: '?', type: '?' },
+                type2: { kind: 'TypeVar', id: '18', name: '?', type: '?' },
                 mostGeneralType: true
             },
             {
@@ -132,29 +132,29 @@ describe.skip('Substitution tests', () => {
                 type1:
                 {
                     kind: 'TypeVar',
-                    id: 1,
+                    id: '1',
                     name: 'CASEWHENid=1THEN?+idWHENid=2THEN2WHENid=3then?ELSE1END',
                     type: '?'
                 },
-                type2: { kind: 'TypeVar', id: 19, name: '1', type: 'int' },
+                type2: { kind: 'TypeVar', id: '19', name: '1', type: 'int' },
                 mostGeneralType: true
             },
             {
                 expression: 'ELSE1',
-                type1: { kind: 'TypeVar', id: 14, name: '?+id', type: 'double' },
-                type2: { kind: 'TypeVar', id: 19, name: '1', type: 'int' },
+                type1: { kind: 'TypeVar', id: '14', name: '?+id', type: 'double' },
+                type2: { kind: 'TypeVar', id: '19', name: '1', type: 'int' },
                 mostGeneralType: true
             },
             {
                 expression: 'ELSE1',
-                type1: { kind: 'TypeVar', id: 17, name: '2', type: 'int' },
-                type2: { kind: 'TypeVar', id: 19, name: '1', type: 'int' },
+                type1: { kind: 'TypeVar', id: '17', name: '2', type: 'int' },
+                type2: { kind: 'TypeVar', id: '19', name: '1', type: 'int' },
                 mostGeneralType: true
             },
             {
                 expression: 'ELSE1',
-                type1: { kind: 'TypeVar', id: 18, name: '?', type: '?' },
-                type2: { kind: 'TypeVar', id: 19, name: '1', type: 'int' },
+                type1: { kind: 'TypeVar', id: '18', name: '?', type: '?' },
+                type2: { kind: 'TypeVar', id: '19', name: '1', type: 'int' },
                 mostGeneralType: true
             }
         ]
@@ -166,7 +166,7 @@ describe.skip('Substitution tests', () => {
             '1':
             {
                 kind: 'TypeVar',
-                id: 14,
+                id: '14',
                 name: '?+id',
                 type: 'double',
                 list: undefined
@@ -174,16 +174,16 @@ describe.skip('Substitution tests', () => {
             '15':
             {
                 kind: 'TypeVar',
-                id: 16,
+                id: '16',
                 name: 'id',
                 type: 'double',
                 list: undefined
             },
-            '16': { kind: 'TypeVar', id: 14, name: '?+id', type: 'double' },
+            '16': { kind: 'TypeVar', id: '14', name: '?+id', type: 'double' },
             '17':
             {
                 kind: 'TypeVar',
-                id: 14,
+                id: '14',
                 name: '?+id',
                 type: 'double',
                 list: undefined
@@ -191,7 +191,7 @@ describe.skip('Substitution tests', () => {
             '18':
             {
                 kind: 'TypeVar',
-                id: 14,
+                id: '14',
                 name: '?+id',
                 type: 'double',
                 list: undefined
@@ -199,7 +199,7 @@ describe.skip('Substitution tests', () => {
             '19':
             {
                 kind: 'TypeVar',
-                id: 14,
+                id: '14',
                 name: '?+id',
                 type: 'double',
                 list: undefined
@@ -213,35 +213,35 @@ describe.skip('Substitution tests', () => {
 
         const typeInt: TypeVar = {
             kind: 'TypeVar',
-            id: 0,
+            id: '0',
             name: 'id',
             type: 'int'
         }
 
         const typeNumber: TypeVar = {
             kind: 'TypeVar',
-            id: 1,
+            id: '1',
             name: 'id',
             type: 'number'
         }
 
         const typeVarLeft: TypeVar = {
             kind: 'TypeVar',
-            id: 2,
+            id: '2',
             name: '?',
             type: '?'
         }
 
         const typeVarRight: TypeVar = {
             kind: 'TypeVar',
-            id: 3,
+            id: '3',
             name: '?',
             type: '?'
         }
 
         const typeVarResult: TypeVar = {
             kind: 'TypeVar',
-            id: 4,
+            id: '4',
             name: '?',
             type: '?'
         }
@@ -310,42 +310,42 @@ describe.skip('Substitution tests', () => {
 
         const typeInt: TypeVar = {
             kind: 'TypeVar',
-            id: 0,
+            id: '0',
             name: 'id',
             type: 'int'
         }
 
         const typeDouble: TypeVar = {
             kind: 'TypeVar',
-            id: 10,
+            id: '10',
             name: 'id',
             type: 'double'
         }
 
         const typeNumber: TypeVar = {
             kind: 'TypeVar',
-            id: 1,
+            id: '1',
             name: 'id',
             type: 'number'
         }
 
         const typeVarLeft: TypeVar = {
             kind: 'TypeVar',
-            id: 2,
+            id: '2',
             name: '?',
             type: '?'
         }
 
         const typeVarRight: TypeVar = {
             kind: 'TypeVar',
-            id: 3,
+            id: '3',
             name: '?',
             type: '?'
         }
 
         const typeVarResult: TypeVar = {
             kind: 'TypeVar',
-            id: 4,
+            id: '4',
             name: '?',
             type: '?'
         }
@@ -414,42 +414,42 @@ describe.skip('Substitution tests', () => {
 
         const typeInt: TypeVar = {
             kind: 'TypeVar',
-            id: 0,
+            id: '0',
             name: 'id',
             type: 'int'
         }
 
         const typeParam: TypeVar = {
             kind: 'TypeVar',
-            id: 10,
+            id: '10',
             name: '?',
             type: '?'
         }
 
         const typeNumber: TypeVar = {
             kind: 'TypeVar',
-            id: 1,
+            id: '1',
             name: 'id',
             type: 'number'
         }
 
         const typeVarLeft: TypeVar = {
             kind: 'TypeVar',
-            id: 2,
+            id: '2',
             name: '?',
             type: '?'
         }
 
         const typeVarRight: TypeVar = {
             kind: 'TypeVar',
-            id: 3,
+            id: '3',
             name: '?',
             type: '?'
         }
 
         const typeVarResult: TypeVar = {
             kind: 'TypeVar',
-            id: 4,
+            id: '4',
             name: '?',
             type: '?'
         }
@@ -518,42 +518,42 @@ describe.skip('Substitution tests', () => {
 
         const typeInt: TypeVar = {
             kind: 'TypeVar',
-            id: 0,
+            id: '0',
             name: 'id',
             type: 'bigint'
         }
 
         const typeParam: TypeVar = {
             kind: 'TypeVar',
-            id: 10,
+            id: '10',
             name: '?',
             type: '?'
         }
 
         const typeNumber: TypeVar = {
             kind: 'TypeVar',
-            id: 1,
+            id: '1',
             name: 'id',
             type: 'number'
         }
 
         const typeVarLeft: TypeVar = {
             kind: 'TypeVar',
-            id: 2,
+            id: '2',
             name: '?',
             type: '?'
         }
 
         const typeVarRight: TypeVar = {
             kind: 'TypeVar',
-            id: 3,
+            id: '3',
             name: '?',
             type: '?'
         }
 
         const typeVarResult: TypeVar = {
             kind: 'TypeVar',
-            id: 4,
+            id: '4',
             name: '?',
             type: '?'
         }

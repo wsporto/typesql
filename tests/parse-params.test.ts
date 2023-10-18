@@ -24,7 +24,7 @@ describe('Test parse parameters', () => {
         const expected: ParameterDef[] = [
             {
                 name: 'param1',
-                columnType: 'varchar',
+                columnType: 'any',
                 notNull: true //changed at v0.0.2
             }
         ]
@@ -37,6 +37,24 @@ describe('Test parse parameters', () => {
     it('SELECT ?+id from mytable1', async () => {
         const sql = `
         SELECT ?+id from mytable1
+        `
+        const actual = await parseSql(client, sql);
+        const expected: ParameterDef[] = [
+            {
+                name: 'param1',
+                columnType: 'double',
+                notNull: true //changed at v0.0.2
+            }
+        ]
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right.parameters, expected);
+    })
+
+    it('SELECT id+? from mytable1', async () => {
+        const sql = `
+        SELECT id+? from mytable1
         `
         const actual = await parseSql(client, sql);
         const expected: ParameterDef[] = [
@@ -83,7 +101,7 @@ describe('Test parse parameters', () => {
         const expected: ParameterDef[] = [
             {
                 name: 'param1',
-                columnType: 'bigint',
+                columnType: 'int',
                 notNull: true
             }
         ]
@@ -119,7 +137,7 @@ describe('Test parse parameters', () => {
         const expected: ParameterDef[] = [
             {
                 name: 'param1',
-                columnType: 'varchar',
+                columnType: 'any',
                 notNull: true //changed at v0.0.2
             }
         ]
@@ -281,7 +299,7 @@ describe('Test parse parameters', () => {
         const expected: ParameterDef[] = [
             {
                 name: 'param1',
-                columnType: 'varchar',
+                columnType: 'any',
                 notNull: false
             },
             {
@@ -595,7 +613,7 @@ describe('Test parse parameters', () => {
         const expectedParameters: ParameterDef[] = [
             {
                 name: 'param1',
-                columnType: 'varchar', //changed at v0.0.2
+                columnType: 'any', //changed at v0.0.2
                 notNull: true
             },
             {
@@ -796,12 +814,12 @@ describe('Test parse parameters', () => {
         const expected: ParameterDef[] = [
             {
                 name: 'param1',
-                columnType: 'varchar',
+                columnType: 'any',
                 notNull: true
             },
             {
                 name: 'param2',
-                columnType: 'varchar',
+                columnType: 'any',
                 notNull: true
             }
         ]

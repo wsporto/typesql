@@ -1,11 +1,32 @@
-import { SimpleExprParamMarkerContext, PrimaryExprIsNullContext, FunctionCallContext, ExprContext, InsertQueryExpressionContext, SelectStatementContext } from "ts-mysql-parser";
+import { SimpleExprParamMarkerContext, PrimaryExprIsNullContext, FunctionCallContext, ExprContext, InsertQueryExpressionContext, SelectStatementContext, QueryExpressionBodyContext, QuerySpecOptionContext, QuerySpecificationContext, QueryExpressionContext } from "ts-mysql-parser";
 import { RuleContext } from "antlr4ts";
 import { ParseTree } from "antlr4ts/tree";
-import { getQuerySpecificationsFromSelectStatement } from "./parse";
+import { getAllQuerySpecificationsFromSelectStatement, getQuerySpecificationsFromSelectStatement } from "./parse";
 
 export function inferParamNullabilityQuery(queryContext: SelectStatementContext | InsertQueryExpressionContext): boolean[] {
-    const queriesSpecification = getQuerySpecificationsFromSelectStatement(queryContext);
-    const parameters = getAllParameters(queriesSpecification[0]);
+    const queriesSpecification = getAllQuerySpecificationsFromSelectStatement(queryContext);
+    const parameters = queriesSpecification.flatMap(querySpec => getAllParameters(querySpec));
+    return parameters.map(param => inferParameterNotNull(param));
+}
+
+export function inferParamNullabilityQueryExpression(queryExpression: QueryExpressionContext) {
+    const parameters = getAllParameters(queryExpression);
+    return parameters.map(param => inferParameterNotNull(param));
+}
+
+export function inferParamNullabilityQueryBody(queryExpressionBody: QueryExpressionBodyContext) {
+    const querySpecification = queryExpressionBody.querySpecification();
+    if (querySpecification) {
+        return inferParamQuerySpecification(querySpecification);
+    }
+
+
+    //TODO
+    return [false]
+}
+
+function inferParamQuerySpecification(querySpecification: QuerySpecificationContext) {
+    const parameters = getAllParameters(querySpecification);
     return parameters.map(param => inferParameterNotNull(param));
 }
 

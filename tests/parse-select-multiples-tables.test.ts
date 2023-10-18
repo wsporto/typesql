@@ -302,14 +302,14 @@ describe('Test select with multiples tables', () => {
                 },
                 {
                     name: 'param1',
-                    dbtype: 'varchar',
+                    dbtype: 'any',
                     notNull: true
                 }
             ],
             parameters: [
                 {
                     name: 'param1',
-                    columnType: 'varchar',
+                    columnType: 'any',
                     notNull: true //changed at v0.0.2
                 },
                 {
@@ -367,13 +367,13 @@ describe('Test select with multiples tables', () => {
                 {
                     name: 'param1',
                     notNull: true,
-                    dbtype: 'varchar'
+                    dbtype: 'any'
                 }
             ],
             parameters: [
                 {
                     name: 'param1',
-                    columnType: 'varchar',
+                    columnType: 'any',
                     notNull: true //changed at v0.0.2
                 },
                 {

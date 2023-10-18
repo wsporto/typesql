@@ -212,8 +212,8 @@ export function escapeInvalidTsField(columnName: string) {
     return columnName;
 }
 
-function mapColumnType(columnType: MySqlType | MySqlType[] | '?'): string {
-    if (columnType == '?') return '?';
+function mapColumnType(columnType: MySqlType | MySqlType[] | 'any'): string {
+    if (columnType == 'any') return 'any';
     const types = ([] as MySqlType[]).concat(columnType);
     const mappedTypes = types.map(type => converToTsType(type));
     return mappedTypes.join(' | '); // number | string

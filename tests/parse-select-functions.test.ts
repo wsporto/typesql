@@ -606,7 +606,7 @@ describe('Test parse select with functions', () => {
             columns: [
                 {
                     name: 'result',
-                    dbtype: 'bigint',
+                    dbtype: 'int',
                     notNull: true
                 }
             ],
@@ -885,7 +885,7 @@ describe('Test parse select with functions', () => {
             parameters: [
                 {
                     name: 'param1',
-                    columnType: 'varchar',
+                    columnType: 'varchar', //could be varchar | number
                     notNull: true
                 }
             ]

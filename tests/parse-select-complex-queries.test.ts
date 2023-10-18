@@ -230,6 +230,7 @@ describe('Test parse complex queries', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    //.only
     it('parse a select with UNION', async () => {
         const sql = `
         SELECT id, value FROM mytable1
@@ -263,6 +264,7 @@ describe('Test parse complex queries', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    //.only
     it('parse a select with UNION with multiples fields', async () => {
         const sql = `
         SELECT id, value FROM mytable1

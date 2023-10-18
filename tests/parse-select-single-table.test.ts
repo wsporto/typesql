@@ -426,14 +426,14 @@ describe('Test simple select statements', () => {
             columns: [
                 {
                     name: '?', //TODO - PARAM1
-                    dbtype: 'varchar',
+                    dbtype: 'any',
                     notNull: true,
                 }
             ],
             parameters: [
                 {
                     name: 'param1',
-                    columnType: 'varchar',
+                    columnType: 'any',
                     notNull: true //todo - changed v0.0.2
                 }
             ]
@@ -456,14 +456,14 @@ describe('Test simple select statements', () => {
             columns: [
                 {
                     name: 'name',
-                    dbtype: 'varchar',
+                    dbtype: 'any',
                     notNull: true
                 }
             ],
             parameters: [
                 {
                     name: 'param1',
-                    columnType: 'varchar',
+                    columnType: 'any',
                     notNull: true //changed on v0.0.2
                 }
             ]
@@ -488,7 +488,7 @@ describe('Test simple select statements', () => {
             columns: [
                 {
                     name: 'name',
-                    dbtype: 'varchar',
+                    dbtype: 'any',
                     notNull: true
                 },
                 {
@@ -506,7 +506,7 @@ describe('Test simple select statements', () => {
             parameters: [
                 {
                     name: 'param1',
-                    columnType: 'varchar',
+                    columnType: 'any',
                     notNull: true //changed at v0.0.2
                 },
                 {
@@ -708,7 +708,7 @@ describe('Test simple select statements', () => {
             parameters: [
                 {
                     name: 'param1',
-                    columnType: 'bigint[]',
+                    columnType: 'int[]',
                     notNull: true
                 }
             ]
@@ -739,7 +739,7 @@ describe('Test simple select statements', () => {
             parameters: [
                 {
                     name: 'param1',
-                    columnType: 'bigint',
+                    columnType: 'int',
                     notNull: true
                 }
             ]
@@ -1239,6 +1239,7 @@ describe('Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    //TODO - MOVE TO FUNCTIONS TESTS
     it('parse select without from clause', async () => {
         const sql = `
         select 10, CONCAT_WS('a', 'b'), 'a' as name
@@ -1251,7 +1252,7 @@ describe('Test simple select statements', () => {
             columns: [
                 {
                     name: '10',
-                    dbtype: 'bigint',
+                    dbtype: 'int',
                     notNull: true
                 },
                 {
@@ -1348,7 +1349,7 @@ describe('Test simple select statements', () => {
                 },
                 {
                     name: 'ordering',
-                    dbtype: 'bigint',
+                    dbtype: 'int',
                     notNull: true
                 }
             ],

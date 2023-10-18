@@ -258,7 +258,7 @@ describe('Infer column nullability', () => {
     })
 
     //TODO - consulta inválida; pq passou nos testes?
-    it(`SELECT name from mytable1 (SELECT name from mytable2 where name is not null)`, () => {
+    it.skip(`SELECT name from mytable1 (SELECT name from mytable2 where name is not null)`, () => {
         const sql = `SELECT name from mytable1 (SELECT name from mytable2 where name is not null)`;
         const actual = parseAndInferNotNull(sql, dbSchema);
 

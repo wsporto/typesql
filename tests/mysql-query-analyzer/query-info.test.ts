@@ -145,13 +145,13 @@ describe('Test parse parameters', () => {
             columns: [
                 {
                     columnName: '?',
-                    type: 'varchar',
+                    type: 'any',
                     notNull: true
                 }
             ],
             parameters: [
                 {
-                    type: 'varchar',
+                    type: 'any',
                     notNull: true
                 }
             ]

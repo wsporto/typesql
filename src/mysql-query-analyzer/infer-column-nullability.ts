@@ -1,45 +1,26 @@
-import { parse, getQuerySpecificationsFromSelectStatement } from "./parse";
 import {
     QuerySpecificationContext, SelectItemContext, ExprContext, ExprIsContext, BoolPriContext, PrimaryExprPredicateContext,
     PredicateContext, BitExprContext, SimpleExprContext, FunctionCallContext, SimpleExprFunctionContext, SimpleExprColumnRefContext,
     WhereClauseContext, SimpleExprListContext, PrimaryExprIsNullContext, PrimaryExprCompareContext, ExprNotContext, ExprAndContext,
     ExprXorContext, ExprOrContext, SimpleExprParamMarkerContext, SimpleExprLiteralContext, SimpleExprCaseContext, SimpleExprSumContext,
-    SimpleExprSubQueryContext, SimpleExprRuntimeFunctionContext, SimpleExprIntervalContext, SimpleExprWindowingFunctionContext, WindowFunctionCallContext, SimpleExprCastContext
+    SimpleExprSubQueryContext, SimpleExprRuntimeFunctionContext, SimpleExprIntervalContext, SimpleExprWindowingFunctionContext, WindowFunctionCallContext, SimpleExprCastContext, SubqueryContext, QueryExpressionOrParensContext, QueryExpressionContext, QueryExpressionBodyContext
 } from "ts-mysql-parser";
-import { ColumnSchema, ColumnDef, FieldName, TypeAndNullInfer } from "./types";
-import { getColumnsFrom, findColumn, splitName, selectAllColumns } from "./select-columns";
+import { ColumnSchema, FieldName, ColumnDef } from "./types";
+import { findColumn, splitName, selectAllColumns } from "./select-columns";
 import { getParentContext, inferParameterNotNull } from "./infer-param-nullability";
-import { InferenceContext } from "./collect-constraints";
+import { traverseSql } from "./traverse";
 
 //TODO - COLUMN SCHEMA DEFAULT = []
-export function parseAndInferNotNull(sql: string, dbSchema: ColumnSchema[], withSchema: TypeAndNullInfer[] = []) {
-    const queryTree = parse(sql);
-
-    const context: InferenceContext = {
-        dbSchema,
-        withSchema,
-        parameters: [],
-        constraints: [],
-        fromColumns: []
+export function parseAndInferNotNull(sql: string, dbSchema: ColumnSchema[]) {
+    const result = traverseSql(sql, dbSchema);
+    if (result.type == 'Select') {
+        return result.columns.map(col => col.notNull);
     }
-    const selectStatement = queryTree.simpleStatement()?.selectStatement();
-    if (selectStatement) {
-        const queries = getQuerySpecificationsFromSelectStatement(selectStatement);
-        const notNullAllQueries = queries.map(query => inferNotNull(query, dbSchema, withSchema)); //TODO - UNION
-        const result = zip(notNullAllQueries).map(notNullColumn => notNullColumn.every(notNull => notNull == true));
-        return result;
+    return [];
 
-    }
 }
 
-function zip(arrays: boolean[][]): boolean[][] {
-    return arrays[0].map(function (_, i) {
-        return arrays.map(function (array) { return array[i] })
-    });
-}
-
-export function inferNotNull(querySpec: QuerySpecificationContext, dbSchema: ColumnSchema[], withSchema: TypeAndNullInfer[]) {
-    const fromColumns = getColumnsFrom(querySpec, dbSchema, withSchema); //TODO - called twice
+export function inferNotNull2(querySpec: QuerySpecificationContext, dbSchema: ColumnSchema[], fromColumns: ColumnDef[]) {
 
     const notNullInference: boolean[] = [];
     const whereClause = querySpec.whereClause();

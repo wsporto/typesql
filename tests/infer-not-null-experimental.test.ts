@@ -1,61 +1,8 @@
 import assert from "assert";
 import { parseAndInferNotNull } from "../src/mysql-query-analyzer/infer-column-nullability";
-import { ColumnSchema } from "../src/mysql-query-analyzer/types";
+import { dbSchema } from "./mysql-query-analyzer/create-schema";
 
 describe('infer-not-null-experimental', () => {
-
-    //TODO createSchema
-    const dbSchema: ColumnSchema[] = [
-        {
-            column: 'id',
-            column_type: 'int',
-            columnKey: 'PRI',
-            table: 'mytable1',
-            schema: 'mydb',
-            notNull: true
-        },
-        {
-            column: 'value',
-            column_type: 'int',
-            columnKey: '',
-            table: 'mytable1',
-            schema: 'mydb',
-            notNull: false
-        },
-        {
-            column: 'id',
-            column_type: 'int',
-            columnKey: '',
-            table: 'mytable2',
-            schema: 'mydb',
-            notNull: true
-        },
-        {
-            column: 'name',
-            column_type: 'varchar',
-            columnKey: '',
-            table: 'mytable2',
-            schema: 'mydb',
-            notNull: false
-        },
-        {
-            column: 'id',
-            column_type: 'int',
-            columnKey: 'PRI',
-            table: 'mytable3',
-            schema: 'mydb',
-            notNull: true
-        },
-        {
-            column: 'double_value',
-            column_type: 'double',
-            columnKey: '',
-            table: 'mytable3',
-            schema: 'mydb',
-            notNull: false
-        }
-    ]
-
 
     it('select id from mytable1', () => {
         const sql = 'select id from mytable1';
@@ -609,7 +556,7 @@ describe('infer-not-null-experimental', () => {
 
         const actual = parseAndInferNotNull(sql, dbSchema);
 
-        const expected = [true, true];
+        const expected = [true, true, false];
 
         assert.deepStrictEqual(actual, expected);
     })
@@ -622,7 +569,7 @@ describe('infer-not-null-experimental', () => {
 
         const actual = parseAndInferNotNull(sql, dbSchema);
 
-        const expected = [true, false];
+        const expected = [true, false, false];
 
         assert.deepStrictEqual(actual, expected);
     })
@@ -657,7 +604,7 @@ describe('infer-not-null-experimental', () => {
     it('select * from (select * from (select * from mytable2 where name is not null) t1) t2', () => {
         const sql = 'select * from (select * from (select * from mytable2 where name is not null) t1) t2';
         const actual = parseAndInferNotNull(sql, dbSchema);
-        const expected = [true, true];
+        const expected = [true, true, false];
 
         assert.deepStrictEqual(actual, expected);
     });
@@ -666,7 +613,7 @@ describe('infer-not-null-experimental', () => {
         const sql = 'select * from (select * from (select * from mytable2 where id > 10) t1) t2';
         const actual = parseAndInferNotNull(sql, dbSchema);
 
-        const expected = [true, false];
+        const expected = [true, false, false];
 
         assert.deepStrictEqual(actual, expected);
     });
@@ -675,7 +622,7 @@ describe('infer-not-null-experimental', () => {
         const sql = 'select * from (select * from (select * from mytable2 where id > 10) t1 where name is not null) t2';
         const actual = parseAndInferNotNull(sql, dbSchema);
 
-        const expected = [true, true];
+        const expected = [true, true, false];
 
         assert.deepStrictEqual(actual, expected);
     });
@@ -784,7 +731,7 @@ describe('infer-not-null-experimental', () => {
         `;
         const actual = parseAndInferNotNull(sql, dbSchema);
 
-        const expected = [true, false, true, false];
+        const expected = [true, false, true, false, false];
 
         assert.deepStrictEqual(actual, expected);
     });
@@ -814,7 +761,7 @@ describe('infer-not-null-experimental', () => {
         `;
         const actual = parseAndInferNotNull(sql, dbSchema);
 
-        const expected = [false, true];
+        const expected = [false, true, false];
 
         assert.deepStrictEqual(actual, expected);
     });

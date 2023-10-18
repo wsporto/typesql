@@ -215,4 +215,30 @@ describe('parse update statements', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     })
+
+    it(' WITH withTable3 as (...) UPDATE mytable2 t2, withTable3 t3', async () => {
+
+        const sql = `
+        WITH withTable3 as (
+            select * from mytable3
+        )
+        UPDATE mytable2 t2, withTable3 t3
+        SET t2.name = t3.name
+        WHERE t2.id = t3.id`;
+
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql: sql,
+            queryType: 'Update',
+            multipleRowsResult: false,
+            columns,
+            data: [],
+            parameters: []
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
 })

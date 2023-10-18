@@ -1,19 +1,17 @@
 import assert from "assert";
-import { parse } from "../../src/mysql-query-analyzer/parse";
-import { dbSchema } from "./create-schema";
-import { ColumnDef, FieldInfo, ColumnSchema } from "../../src/mysql-query-analyzer/types";
-import { getColumnsFrom, getColumnNames, findColumn, splitName, findColumn2 } from "../../src/mysql-query-analyzer/select-columns";
-import { InferenceContext, unionTypeResult } from "../../src/mysql-query-analyzer/collect-constraints";
+import { ColumnDef } from "../../src/mysql-query-analyzer/types";
+import { splitName, findColumn } from "../../src/mysql-query-analyzer/select-columns";
 import { getParameterIndexes } from "../../src/mysql-query-analyzer/util";
+import { freshVar } from "../../src/mysql-query-analyzer/collect-constraints";
+import { unionTypeResult } from "../../src/mysql-query-analyzer/unify";
 
 describe('Utility functions tests', () => {
 
     it('findColumn should be case insensitive', () => {
         const colDef: ColumnDef[] = [
             {
-                column: 'name',
                 columnName: 'name',
-                columnType: 'varchar',
+                columnType: freshVar('varchar', 'varchar'),
                 columnKey: '',
                 notNull: true,
                 table: 'mytable2'
@@ -26,73 +24,6 @@ describe('Utility functions tests', () => {
         const fieldNameUperCase = splitName('NAME');
         const actualUpperCase = findColumn(fieldNameUperCase, colDef);
         assert.deepStrictEqual(actualUpperCase, colDef[0]);
-    })
-
-    it('findColumn2 should be case insensitive', () => {
-        const colDef: ColumnSchema[] = [
-            {
-                column: 'name',
-                column_type: 'varchar',
-                columnKey: '',
-                notNull: true,
-                table: 'mytable2',
-                schema: 'mydb'
-            }
-        ]
-        const fieldName = splitName('name');
-        const actual = findColumn2(fieldName, 'mytable2', colDef);
-        assert.deepStrictEqual(actual, colDef[0]);
-
-        const fieldNameUperCase = splitName('NAME');
-        const actualUpperCase = findColumn2(fieldNameUperCase, 'mytable2', colDef);
-        assert.deepStrictEqual(actualUpperCase, colDef[0]);
-    })
-
-    it.skip(`test selectColumns`, () => {
-
-        const query = parse('SELECT count(*) FROM mytable1');
-        const querySpec = query
-            .simpleStatement()
-            ?.selectStatement()
-            ?.queryExpression()
-            ?.queryExpressionBody()
-            ?.querySpecification()!;
-
-        const fromColumns = getColumnsFrom(querySpec, dbSchema, []);
-
-        const expectedColumns: ColumnDef[] = [
-            {
-                column: 'id',
-                columnName: 'id',
-                columnType: 'int',
-                columnKey: 'PRI',
-                notNull: true,
-                table: 'mytable1',
-                tableAlias: ''
-            },
-            {
-                column: 'value',
-                columnName: 'value',
-                columnType: 'int',
-                columnKey: '',
-                notNull: false,
-                table: 'mytable1',
-                tableAlias: ''
-            }
-        ]
-
-        assert.deepStrictEqual(fromColumns, expectedColumns);
-
-        const selectedColumns = getColumnNames(querySpec, fromColumns);
-        const expectedSelectedColumns: FieldInfo[] = [
-            {
-                name: 'count(*)',
-                notNull: true
-            }
-        ]
-
-        assert.deepStrictEqual(selectedColumns, expectedSelectedColumns);
-
     })
 
     it('test unionTypeResult', () => {

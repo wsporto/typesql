@@ -15,6 +15,7 @@ describe('Test parse select with subqueries', () => {
         await client.closeConnection();
     })
 
+    //.only
     it('parse a select with nested select', async () => {
         const sql = `
         select id from (
@@ -281,6 +282,39 @@ describe('Test parse select with subqueries', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('parse a select with 3-levels nested select and union int return', async () => {
+        const sql = `
+        select id from (
+            select id from (
+                select id from (
+                    select id from mytable1
+                    union
+                    select id from mytable2
+                ) t1
+            ) t2
+        ) t3
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'id',
+                    dbtype: 'int',
+                    notNull: true
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it('select name from mytable1, (select count(*) as name from mytable2) t2', async () => {
         const sql = `
         select name from mytable1, (select count(*) as name from mytable2) t2
@@ -365,7 +399,7 @@ describe('Test parse select with subqueries', () => {
 
         }
         if (isLeft(actual)) {
-            assert.fail(`Shouldn't return an error:`, actual.left);
+            assert.fail(`Shouldn't return an error`);
         }
         assert.deepStrictEqual(actual.right, expected);
     })

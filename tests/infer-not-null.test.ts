@@ -801,8 +801,10 @@ describe('infer-not-null', () => {
     it('UNION 5 - using select *', async () => {
 
         const sql = `
+        -- id, value, descr
         select *, (select descr from mytable2 where id = 1) from mytable1 where value is not null
         UNION 
+        -- id, name, descr
         select * from mytable2 where name is not null
         `;
         const actual = await parseSql(client, sql);
@@ -842,10 +844,9 @@ describe('infer-not-null', () => {
         const sql = `
         select name from mytable2 where name is not null
         UNION 
-        select value+value from mytable1 where value is not null
+        select value + value from mytable1 where value is not null
         UNION
-        select value+id from mytable1
-        `;
+        select value + id from mytable1`;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
             sql,

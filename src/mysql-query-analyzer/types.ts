@@ -1,5 +1,6 @@
 import { MySqlType, InferType } from "../mysql-mapping"
 import { ParameterDef } from "../types"
+import { TypeVar } from "./collect-constraints";
 
 export type ColumnSchema = {
     schema: string;
@@ -16,9 +17,8 @@ export type ColumnSchema2 = ColumnSchema & {
 
 export type ColumnDef = {
     table: string;
-    column: string;
     columnName: string;
-    columnType: InferType;
+    columnType: TypeVar;
     columnKey: 'PRI' | 'MUL' | 'UNI' | '';
     tableAlias?: string;
     notNull: boolean;
@@ -31,7 +31,7 @@ export type FieldName = {
 
 export type ColumnInfo = {
     columnName: string;
-    type: MySqlType;
+    type: MySqlType | 'any';
     notNull: boolean;
 }
 
@@ -41,18 +41,18 @@ export type FieldInfo = {
 }
 
 export type ParameterInfo = {
-    type: MySqlType
+    type: MySqlType | 'any'
     notNull: boolean;
 }
 
 export type TypeInferenceResult = {
-    columns: InferType[];
-    parameters: InferType[];
+    columns: InferType[]; //TODO - MySqlType
+    parameters: InferType[]; //MySqlType
 }
 
 export type TypeAndNullInfer = {
-    name: string;
-    type: InferType;
+    name: string;  //TODO - need?
+    type: TypeVar;
     notNull: boolean;
 }
 

@@ -18,7 +18,7 @@ export type SchemaDef = {
 
 export type ColumnDef = {
     name: string;
-    dbtype: MySqlType;
+    dbtype: MySqlType | 'any';
     notNull?: boolean;
 }
 
@@ -37,7 +37,7 @@ export type ColumnDef2 = {
 
 export type ParameterDef = {
     name: string,
-    columnType: MySqlType;
+    columnType: MySqlType | 'any';
     notNull: boolean,
     list?: boolean; //id in (?)
 }
