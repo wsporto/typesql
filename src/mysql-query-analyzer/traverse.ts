@@ -30,8 +30,8 @@ export type InsertStatementResult = {
 export type UpdateStatementResult = {
     type: 'Update';
     constraints: Constraint[];
-    data: ParameterDef[];
-    parameters: ParameterDef[];
+    data: TypeAndNullInfer[];
+    parameters: TypeAndNullInfer[];
 }
 
 export type DeleteStatementResult = {
@@ -64,7 +64,7 @@ export function traverseQueryContext(queryContext: QueryContext, dbSchema: Colum
     }
     const updateStatement = queryContext.simpleStatement()?.updateStatement();
     if (updateStatement) {
-        const typeInfer = traverseUpdateStatement(updateStatement, constraints, parameters, dbSchema);
+        const typeInfer = traverseUpdateStatement(updateStatement, constraints, parameters, dbSchema, namedParameters);
         return typeInfer;
     }
     const deleteStatement = queryContext.simpleStatement()?.deleteStatement();
@@ -254,7 +254,7 @@ export function traverseInsertStatement(insertStatement: InsertStatementContext,
     return typeInferenceResult;
 }
 
-function traverseUpdateStatement(updateStatement: UpdateStatementContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[]): UpdateStatementResult {
+function traverseUpdateStatement(updateStatement: UpdateStatementContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], namedParamters: string[]): UpdateStatementResult {
 
     const updateElement = updateStatement.updateList().updateElement();
     const withClause = updateStatement.withClause();
@@ -264,8 +264,11 @@ function traverseUpdateStatement(updateStatement: UpdateStatementContext, constr
     }
     const updateColumns = getUpdateColumns2(updateStatement, constraints, parameters, dbSchema, withSchema, []);
 
-    const dataParameters: ParameterDef[] = [];
-    const whereParameters: ParameterDef[] = [];
+    const dataTypes: TypeAndNullInfer[] = [];
+    const whereParameters: TypeAndNullInfer[] = [];
+    const paramsBefore = parameters.length;
+    const whereExpr = updateStatement.whereClause()?.expr();
+    const paramNullability = inferParamNullability(updateStatement);
 
     updateElement.forEach(updateElement => {
         const expr = updateElement.expr();
@@ -279,41 +282,43 @@ function traverseUpdateStatement(updateStatement: UpdateStatementContext, constr
                 expression: updateStatement.text,
                 type1: result,
                 type2: column.columnType //freshVar(column.columnName, )
-
             })
-            const typeInfo = generateTypeInfo(parameters, constraints);
-            const paramNullabilityExpr = inferParamNullability(expr);
-            typeInfo.forEach(param => {
-                dataParameters.push({
-                    name: column.columnName,
-                    columnType: verifyNotInferred(param),
-                    notNull: paramNullabilityExpr.every(n => n) && column.notNull
+            parameters.slice(paramsBefore, parameters.length).forEach((param, index) => {
+                dataTypes.push({
+                    name: namedParamters[paramsBefore + index] || field.name,
+                    type: param,
+                    notNull: column.notNull && !possibleNull(field, expr)
                 })
             })
+
         }
+    });
 
-    })
-    const whereExpr = updateStatement.whereClause()?.expr();
+    const paramsAfter = parameters.length;
+
     if (whereExpr) {
-
         traverseExpr(whereExpr, constraints, parameters, dbSchema, withSchema, updateColumns);
-        const typeInfo = generateTypeInfo(parameters.slice(dataParameters.length), constraints);
-
-        const paramNullability = inferParamNullability(whereExpr);
-        typeInfo.forEach((param, paramIndex) => {
-            whereParameters.push({
-                name: 'param' + (whereParameters.length + 1),
-                columnType: verifyNotInferred(param),
-                notNull: paramNullability[paramIndex]
-            })
-        })
-
-
     }
+
+    parameters.slice(0, paramsBefore).forEach((param, index) => {
+        whereParameters.push({
+            name: namedParamters[index] || 'param' + (whereParameters.length + 1),
+            type: param,
+            notNull: paramNullability[index]
+        })
+    })
+    parameters.slice(paramsAfter).forEach((param, index) => {
+        whereParameters.push({
+            name: namedParamters[paramsAfter + index] || 'param' + (whereParameters.length + 1),
+            type: param,
+            notNull: paramNullability[paramsAfter + index]
+        })
+    })
+
     const typeInferenceResult: UpdateStatementResult = {
         type: 'Update',
         constraints,
-        data: dataParameters,
+        data: dataTypes,
         parameters: whereParameters
     }
 
@@ -402,7 +407,6 @@ function traverseQueryExpressionBody(queryExpressionBody: QueryExpressionBodyCon
     const allQueries = getAllQuerySpecificationsFromSelectStatement(queryExpressionBody);
     const [first, ...unionQuerySpec] = allQueries;
     const mainQueryResult = traverseQuerySpecification(first, constraints, parameters, dbSchema, withSchema, fromColumns, subQuery);
-    // const columnNullability = inferNotNull(first, dbSchema, withSchema, mainQueryResult.fromColumns);
 
     const resultTypes = mainQueryResult.columns.map((t, index) => unionQuerySpec.length == 0 ? t.type : freshVar(recursiveNames && recursiveNames.length > 0 ? recursiveNames[index] : t.name, t.type.type)); //TODO mover para traversequeryspecificat?
 
@@ -411,8 +415,6 @@ function traverseQueryExpressionBody(queryExpressionBody: QueryExpressionBodyCon
         const newFromColumns = recursiveNames ? renameFromColumns(mainQueryResult.columns, columnNames) : mainQueryResult.fromColumns;
         const unionQuery = unionQuerySpec[queryIndex];
         const unionResult = traverseQuerySpecification(unionQuery, constraints, parameters, dbSchema, withSchema, newFromColumns, subQuery);
-        // const newFromColumns2 = recursiveNames ? renameFromColumns(unionResult.columns, columnNames) : unionResult.fromColumns;
-        // const unionQueryNullability = inferNotNull(unionQuery, dbSchema, [], newFromColumns2); //TODO - REFACTORY
 
         resultTypes.forEach((t2, index) => {
             mainQueryResult.columns[index].notNull = mainQueryResult.columns[index].notNull && unionResult.columns[index].notNull;

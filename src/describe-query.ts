@@ -73,14 +73,12 @@ export function describeSql(dbSchema: ColumnSchema[], sql: string): SchemaDef {
                 notNull: true
             }
         ]
-        const whereParametersNames = namedParameters ? namedParameters.slice(queryInfo.data.length) : [];
-
         const schemaDef: SchemaDef = {
             sql: processedSql,
             queryType: 'Update',
             multipleRowsResult: false,
             columns: resultColumns,
-            parameters: addParameterNames(queryInfo.parameters, whereParametersNames),
+            parameters: queryInfo.parameters,
             data: queryInfo.data,
         }
         return schemaDef;

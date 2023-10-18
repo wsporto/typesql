@@ -13,6 +13,7 @@ import { verifyNotInferred } from '../describe-query';
 import { verifyMultipleResult } from './verify-multiple-result';
 import { unify } from './unify';
 import { SelectStatementResult, traverseSql } from './traverse';
+import { ParameterDef } from '../types';
 
 
 const parser = new MySQLParser({
@@ -190,10 +191,34 @@ export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[]): QueryIn
         return newResult;
     }
     if (traverseResult.type == 'Update') {
+        const substitutions: SubstitutionHash = {} //TODO - DUPLICADO
+        unify(traverseResult.constraints, substitutions);
+        const columnResult = traverseResult.data.map((col) => {
+            const columnType = getVarType(substitutions, col.type);
+            const columnNotNull = col.notNull;
+            const colInfo: ParameterDef = {
+                name: col.name,
+                columnType: verifyNotInferred(columnType),
+                notNull: columnNotNull
+            }
+            return colInfo;
+        })
+
+        const paramResult = traverseResult.parameters.map((col) => {
+            const columnType = getVarType(substitutions, col.type);
+            const columnNotNull = col.notNull;
+            const colInfo: ParameterDef = {
+                name: col.name,
+                columnType: verifyNotInferred(columnType),
+                notNull: columnNotNull
+            }
+            return colInfo;
+        })
+
         const newResult: UpdateInfoResult = {
             kind: 'Update',
-            data: traverseResult.data,
-            parameters: traverseResult.parameters
+            data: columnResult,
+            parameters: paramResult
         }
         return newResult;
     }

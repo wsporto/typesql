@@ -220,7 +220,15 @@ describe('parse update statements', () => {
 
         const sql = `
         WITH withTable3 as (
-            select * from mytable3
+            select * from mytable3 where id = :id
+        )
+        UPDATE mytable2 t2, withTable3 t3
+        SET t2.name = t3.name
+        WHERE t2.id = t3.id`;
+
+        const expectedSql = `
+        WITH withTable3 as (
+            select * from mytable3 where id = ?
         )
         UPDATE mytable2 t2, withTable3 t3
         SET t2.name = t3.name
@@ -228,16 +236,75 @@ describe('parse update statements', () => {
 
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
-            sql: sql,
+            sql: expectedSql,
             queryType: 'Update',
             multipleRowsResult: false,
             columns,
             data: [],
-            parameters: []
+            parameters: [
+                {
+                    name: 'id',
+                    columnType: 'int',
+                    notNull: true
+                }
+            ]
         }
 
         if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it(' WITH withTable3 as (...) UPDATE mytable2 t2, withTable3 t3', async () => {
+
+        const sql = `
+        WITH withTable3 as (
+            select * from mytable3 where id = :id
+        )
+        UPDATE mytable2 t2, withTable3 t3
+        SET t2.name = t3.name, t2.descr = :descr
+        WHERE t2.id = t3.id
+        AND t3.double_value = :value`;
+
+        const expectedSql = `
+        WITH withTable3 as (
+            select * from mytable3 where id = ?
+        )
+        UPDATE mytable2 t2, withTable3 t3
+        SET t2.name = t3.name, t2.descr = ?
+        WHERE t2.id = t3.id
+        AND t3.double_value = ?`;
+
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql: expectedSql,
+            queryType: 'Update',
+            multipleRowsResult: false,
+            columns,
+            data: [
+                {
+                    name: 'descr',
+                    columnType: 'varchar',
+                    notNull: false
+                }
+            ],
+            parameters: [
+                {
+                    name: 'id',
+                    columnType: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'value',
+                    columnType: 'double',
+                    notNull: true
+                }
+            ]
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error:` + actual.left.description);
         }
         assert.deepStrictEqual(actual.right, expected);
     })
