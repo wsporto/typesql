@@ -1,10 +1,8 @@
 
 import assert from "assert";
-import { parseAndInfer, SubstitutionHash } from "../../src/mysql-query-analyzer/parse";
-import { TypeVar, Constraint } from "../../src/mysql-query-analyzer/collect-constraints";
+import { parseAndInfer } from "../../src/mysql-query-analyzer/parse";
 import { dbSchema } from "./create-schema";
 import { TypeInferenceResult } from "../../src/mysql-query-analyzer/types";
-import { unify } from "../../src/mysql-query-analyzer/unify";
 
 describe('type-inference test', () => {
 
@@ -43,8 +41,6 @@ describe('type-inference test', () => {
 
         assert.deepStrictEqual(actual, expected);
     })
-
-
 
     it(`SELECT ? as name FROM mytable1`, () => {
         const sql = `SELECT ? as name FROM mytable1`;

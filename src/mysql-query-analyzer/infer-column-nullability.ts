@@ -20,7 +20,7 @@ export function parseAndInferNotNull(sql: string, dbSchema: ColumnSchema[]) {
 
 }
 
-export function inferNotNull2(querySpec: QuerySpecificationContext, dbSchema: ColumnSchema[], fromColumns: ColumnDef[]) {
+export function inferNotNull(querySpec: QuerySpecificationContext, dbSchema: ColumnSchema[], fromColumns: ColumnDef[]) {
 
     const notNullInference: boolean[] = [];
     const whereClause = querySpec.whereClause();
@@ -42,7 +42,7 @@ export function inferNotNull2(querySpec: QuerySpecificationContext, dbSchema: Co
 function inferNotNullSelectItem(selectItem: SelectItemContext, dbSchema: ColumnSchema[], fromColumns: ColumnDef[], whereClause: WhereClauseContext | undefined): boolean[] {
     const notNullItems: boolean[] = [];
     const tableWild = selectItem.tableWild();
-    if (tableWild?.MULT_OPERATOR()) { //TODO: DUPLICATED CODE FROM WALKER
+    if (tableWild?.MULT_OPERATOR()) {
         tableWild.identifier().forEach(tabWild => {
             const prefix = tabWild.text;
             const columns = selectAllColumns(prefix, fromColumns);

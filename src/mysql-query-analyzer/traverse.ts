@@ -1,10 +1,10 @@
 import { BitExprContext, BoolPriContext, DeleteStatementContext, ExprAndContext, ExprContext, ExprIsContext, ExprListContext, ExprNotContext, ExprOrContext, ExprXorContext, FromClauseContext, HavingClauseContext, InsertQueryExpressionContext, InsertStatementContext, PredicateContext, PredicateExprInContext, PredicateExprLikeContext, PredicateOperationsContext, PrimaryExprAllAnyContext, PrimaryExprCompareContext, PrimaryExprIsNullContext, PrimaryExprPredicateContext, QueryContext, QueryExpressionBodyContext, QueryExpressionContext, QueryExpressionOrParensContext, QueryExpressionParensContext, QuerySpecificationContext, SelectItemContext, SelectItemListContext, SelectStatementContext, SimpleExprCaseContext, SimpleExprCastContext, SimpleExprColumnRefContext, SimpleExprContext, SimpleExprFunctionContext, SimpleExprIntervalContext, SimpleExprListContext, SimpleExprLiteralContext, SimpleExprParamMarkerContext, SimpleExprRuntimeFunctionContext, SimpleExprSubQueryContext, SimpleExprSumContext, SimpleExprWindowingFunctionContext, SingleTableContext, SubqueryContext, TableFactorContext, TableReferenceContext, TableReferenceListParensContext, UpdateStatementContext, WindowFunctionCallContext, WithClauseContext } from "ts-mysql-parser";
 import { preprocessSql, verifyNotInferred } from "../describe-query";
-import { extractLimitParameters2, extractOrderByParameters, getAllQuerySpecificationsFromSelectStatement, getLimitOptions, isSumExpressContext, parse } from "./parse";
-import { ColumnDef, ColumnSchema, FieldName, ParameterInfo, TypeAndNullInfer } from "./types";
-import { Constraint, ExprOrDefault, FixedLengthParams, FunctionParams, Type, TypeOperator, TypeVar, VariableLengthParams, createColumnType, freshVar, generateTypeInfo, getDeleteColumns, getFunctionName, getInsertColumns, getInsertIntoTable, isDateLiteral, isDateTimeLiteral, isTimeLiteral, verifyDateTypesCoercion } from "./collect-constraints";
+import { extractLimitParameters, extractOrderByParameters, getAllQuerySpecificationsFromSelectStatement, getLimitOptions, isSumExpressContext, parse } from "./parse";
+import { ColumnDef, ColumnSchema, Constraint, FieldName, ParameterInfo, Type, TypeAndNullInfer, TypeOperator, TypeVar } from "./types";
+import { ExprOrDefault, FixedLengthParams, FunctionParams, VariableLengthParams, createColumnType, freshVar, generateTypeInfo, getDeleteColumns, getFunctionName, getInsertColumns, getInsertIntoTable, isDateLiteral, isDateTimeLiteral, isTimeLiteral, verifyDateTypesCoercion } from "./collect-constraints";
 import { extractFieldsFromUsingClause, findColumn, getColumnName, getSimpleExpressions, splitName } from "./select-columns";
-import { inferNotNull2, possibleNull } from "./infer-column-nullability";
+import { inferNotNull, possibleNull } from "./infer-column-nullability";
 import { inferParamNullability, inferParamNullabilityQuery, inferParamNullabilityQueryExpression } from "./infer-param-nullability";
 import { ParameterDef } from "../types";
 import { getPairWise, getParameterIndexes } from "./util";
@@ -45,18 +45,8 @@ export function traverseQueryContext(queryContext: QueryContext, dbSchema: Colum
     const parameters: TypeVar[] = [];
     const selectStatement = queryContext.simpleStatement()?.selectStatement();
     if (selectStatement) {
-        const result = traverseSelectStatement(selectStatement, constraints, parameters, dbSchema);
-        const paramIndexes = getParameterIndexes(namedParameters.slice(0, result.parameters.length)); //for [a, a, b, a] will return a: [0, 1, 3]; b: [2]
-        paramIndexes.forEach(paramIndex => {
-            getPairWise(paramIndex.indexes, (cur, next) => { //for [0, 1, 3] will return [0, 1], [1, 3]
-                result.constraints.push({
-                    expression: paramIndex.paramName,
-                    type1: result.parameters[cur].type,
-                    type2: result.parameters[next].type
-                })
-            });
-        })
-        return result;
+        const typeInfer = traverseSelectStatement(selectStatement, constraints, parameters, dbSchema, namedParameters);
+        return typeInfer;
     }
     const insertStatement = queryContext.simpleStatement()?.insertStatement();
     if (insertStatement) {
@@ -81,29 +71,23 @@ export function traverseSql(sql: string, dbSchema: ColumnSchema[]): SelectStatem
     return traverseQueryContext(tree, dbSchema, namedParameters);
 }
 
-function traverseSelectStatement(selectStatement: SelectStatementContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[]): SelectStatementResult {
+function traverseSelectStatement(selectStatement: SelectStatementContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], namedParameters: string[]): SelectStatementResult {
     const queryExpression = selectStatement.queryExpression();
     if (queryExpression) {
         const withClause = queryExpression.withClause();
         const withSchema: ColumnDef[] = [];
         if (withClause) {
-
             traverseWithClause(withClause, constraints, parameters, dbSchema, withSchema);
         }
         const queryExpressionBody = queryExpression.queryExpressionBody();
         if (queryExpressionBody) {
             const result = traverseQueryExpressionBody(queryExpressionBody, constraints, parameters, dbSchema, withSchema, []);
             const orderByParameters = extractOrderByParameters(selectStatement);
-            const limitParameters = extractLimitParameters2(selectStatement);
+            const limitParameters = extractLimitParameters(selectStatement);
 
-            // const substitutions: SubstitutionHash = {} //TODO - REMOVER DAQUI
-            // unify(constraints, substitutions);
-
-            // const parametersResult = parameters.map(param => getVarType(substitutions, param));
             const paramInference = inferParamNullabilityQueryExpression(queryExpression);
 
             const allParameters = parameters
-                // .concat(withClauseParameters)
                 .map((param, index) => {
                     const param2: TypeAndNullInfer = {
                         name: param.name,
@@ -112,8 +96,18 @@ function traverseSelectStatement(selectStatement: SelectStatementContext, constr
                     }
                     return param2;
                 });
-            // .concat(limitParameters);
-            const isMultiRow = isMultipleRowResult2(selectStatement, result.fromColumns);
+            const paramIndexes = getParameterIndexes(namedParameters.slice(0, allParameters.length)); //for [a, a, b, a] will return a: [0, 1, 3]; b: [2]
+            paramIndexes.forEach(paramIndex => {
+                getPairWise(paramIndex.indexes, (cur, next) => { //for [0, 1, 3] will return [0, 1], [1, 3]
+                    constraints.push({
+                        expression: paramIndex.paramName,
+                        type1: allParameters[cur].type,
+                        type2: allParameters[next].type
+                    })
+                });
+            })
+
+            const isMultiRow = isMultipleRowResult(selectStatement, result.fromColumns);
             const traverseResult: SelectStatementResult = {
                 type: 'Select',
                 constraints,
@@ -262,7 +256,7 @@ function traverseUpdateStatement(updateStatement: UpdateStatementContext, constr
     if (withClause) {
         traverseWithClause(withClause, constraints, parameters, dbSchema, withSchema);
     }
-    const updateColumns = getUpdateColumns2(updateStatement, constraints, parameters, dbSchema, withSchema, []);
+    const updateColumns = getUpdateColumns(updateStatement, constraints, parameters, dbSchema, withSchema, []);
 
     const dataTypes: TypeAndNullInfer[] = [];
     const whereParameters: TypeAndNullInfer[] = [];
@@ -355,7 +349,7 @@ export function traverseDeleteStatement(deleteStatement: DeleteStatementContext,
     return typeInferenceResult;
 }
 
-export function getUpdateColumns2(updateStatement: UpdateStatementContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], withSchema: ColumnDef[], fromColumns: ColumnDef[]) {
+export function getUpdateColumns(updateStatement: UpdateStatementContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], withSchema: ColumnDef[], fromColumns: ColumnDef[]) {
     const tableReferences = updateStatement.tableReferenceList().tableReference();
     const columns = traverseTableReferenceList(tableReferences, constraints, parameters, dbSchema, withSchema, fromColumns)
     return columns;
@@ -466,9 +460,6 @@ export function traverseQuerySpecification(querySpec: QuerySpecificationContext,
     const fromColumns = fromClause ? traverseFromClause(fromClause, constraints, parameters, dbSchema, withSchema, fromColumnsParent) : [];
     const allColumns = subQuery ? fromColumnsParent.concat(fromColumns) : fromColumns;     //(... where id = t1.id)
     const selectItemListResult = traverseSelectItemList(querySpec.selectItemList(), constraints, parameters, dbSchema, withSchema, allColumns);
-    selectItemListResult.types.forEach(t => {
-
-    })
 
     const whereClause = querySpec.whereClause();
     //TODO - HAVING, BLAH
@@ -478,7 +469,7 @@ export function traverseQuerySpecification(querySpec: QuerySpecificationContext,
     }
 
 
-    const columnNullability = inferNotNull2(querySpec, dbSchema, allColumns);
+    const columnNullability = inferNotNull(querySpec, dbSchema, allColumns);
 
     const columns = selectItemListResult.types.map((t, index) => {
         const t2 = t as TypeVar;
@@ -1719,7 +1710,7 @@ function filterUsingFields(joinedFields: ColumnDef[], usingFields: string[]) {
     })
 }
 
-export function isMultipleRowResult2(selectStatement: SelectStatementContext, fromColumns: ColumnDef[]) {
+export function isMultipleRowResult(selectStatement: SelectStatementContext, fromColumns: ColumnDef[]) {
     const querySpecs = getAllQuerySpecificationsFromSelectStatement(selectStatement);
     if (querySpecs.length == 1) { //UNION queries are multipleRowsResult = true
         const fromClause = querySpecs[0].fromClause();

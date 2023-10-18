@@ -6,43 +6,11 @@ import {
     InsertStatementContext, DeleteStatementContext
 } from "ts-mysql-parser";
 
-import { ColumnSchema, ColumnDef } from "./types";
+import { ColumnSchema, ColumnDef, TypeVar, Type, Constraint, SubstitutionHash } from "./types";
 import { findColumn, splitName } from "./select-columns";
-import {
-    SubstitutionHash
-} from "./parse";
 import { MySqlType, InferType } from "../mysql-mapping";
 import { unify } from "./unify";
 import { TerminalNode } from "antlr4ts/tree";
-
-export type TypeVar = {
-    kind: 'TypeVar';
-    id: string;
-    name: string;
-    type: InferType;
-    list?: true;
-    selectItem?: true
-}
-
-export type Type = TypeVar | TypeOperator;
-
-export type TypeOperator = {
-    kind: 'TypeOperator';
-    types: Type[];
-    selectItem?: true
-};
-
-export type CoercionType = 'Sum' | 'Coalesce' | 'SumFunction' | 'Ceiling' | 'Union' | 'Numeric'; //Numeric means: Don't convert to string
-
-export type Constraint = {
-    type1: Type;
-    type2: Type;
-    expression: string;
-    aliasConstraint?: true;
-    mostGeneralType?: true;
-    coercionType?: CoercionType;
-    list?: true;
-}
 
 let counter = 0;
 export function freshVar(name: string, typeVar: InferType, selectItem?: true, list?: true): TypeVar {
@@ -70,11 +38,6 @@ export function createColumnType(col: ColumnDef) {
         type: col.columnType.type
     }
     return columnType;
-}
-
-
-export type NamedNodes = {
-    [key: string]: Type;
 }
 
 export type ExprOrDefault = ExprContext | TerminalNode;

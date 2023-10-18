@@ -1,12 +1,9 @@
-import MySQLParser, { SqlMode, QueryContext, QuerySpecificationContext, SelectStatementContext, SubqueryContext, WithClauseContext, QueryExpressionParensContext, QueryExpressionBodyContext, InsertQueryExpressionContext, SelectItemContext, SumExprContext, SimpleExprWindowingFunctionContext, WindowingClauseContext, FunctionCallContext } from 'ts-mysql-parser';
+import MySQLParser, { SqlMode, QueryContext, QuerySpecificationContext, SelectStatementContext, SubqueryContext, QueryExpressionParensContext, QueryExpressionBodyContext, InsertQueryExpressionContext, SelectItemContext, SumExprContext, SimpleExprWindowingFunctionContext, WindowingClauseContext, FunctionCallContext } from 'ts-mysql-parser';
 import { ParseTree, TerminalNode } from "antlr4ts/tree";
-import {
-    TypeVar,
-    getVarType,
-} from './collect-constraints';
+import { getVarType } from './collect-constraints';
 import {
     ColumnSchema, TypeInferenceResult, QueryInfoResult, InsertInfoResult, UpdateInfoResult, DeleteInfoResult,
-    ParameterInfo, ColumnInfo, ColumnDef
+    ParameterInfo, ColumnInfo, ColumnDef, SubstitutionHash
 } from './types';
 import { inferParamNullabilityQuery } from './infer-param-nullability';
 import { verifyNotInferred } from '../describe-query';
@@ -14,7 +11,6 @@ import { verifyMultipleResult } from './verify-multiple-result';
 import { unify } from './unify';
 import { SelectStatementResult, traverseSql } from './traverse';
 import { ParameterDef } from '../types';
-
 
 const parser = new MySQLParser({
     version: '8.0.17',
@@ -29,11 +25,6 @@ export function parse(sql: string): QueryContext {
 
     return parseResult.tree as QueryContext;
 }
-
-export type SubstitutionHash = {
-    [index: string]: TypeVar
-}
-
 
 //TODO - withSchema DEFAULT VALUE []
 export function parseAndInfer(sql: string, dbSchema: ColumnSchema[]): TypeInferenceResult {
@@ -75,20 +66,7 @@ export function extractOrderByParameters(selectStatement: SelectStatementContext
         .map(orderExpr => orderExpr.text) || [];
 }
 
-
 export function extractLimitParameters(selectStatement: SelectStatementContext): ParameterInfo[] {
-    return getLimitOptions(selectStatement)
-        .filter(limit => limit.PARAM_MARKER())
-        .map(() => {
-            const paramInfo: ParameterInfo = {
-                type: 'bigint',
-                notNull: true
-            }
-            return paramInfo;
-        }) || [];
-}
-
-export function extractLimitParameters2(selectStatement: SelectStatementContext): ParameterInfo[] {
     return getLimitOptions(selectStatement)
         .filter(limit => limit.PARAM_MARKER())
         .map(() => {

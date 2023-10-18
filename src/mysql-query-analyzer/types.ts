@@ -1,6 +1,38 @@
 import { MySqlType, InferType } from "../mysql-mapping"
 import { ParameterDef } from "../types"
-import { TypeVar } from "./collect-constraints";
+
+export type TypeVar = {
+    kind: 'TypeVar';
+    id: string;
+    name: string;
+    type: InferType;
+    list?: true;
+    selectItem?: true
+}
+
+export type NamedNodes = {
+    [key: string]: Type;
+}
+
+export type Type = TypeVar | TypeOperator;
+
+export type TypeOperator = {
+    kind: 'TypeOperator';
+    types: Type[];
+    selectItem?: true
+};
+
+export type CoercionType = 'Sum' | 'Coalesce' | 'SumFunction' | 'Ceiling' | 'Union' | 'Numeric'; //Numeric means: Don't convert to string
+
+export type Constraint = {
+    type1: Type;
+    type2: Type;
+    expression: string;
+    aliasConstraint?: true;
+    mostGeneralType?: true;
+    coercionType?: CoercionType;
+    list?: true;
+}
 
 export type ColumnSchema = {
     schema: string;
@@ -45,9 +77,13 @@ export type ParameterInfo = {
     notNull: boolean;
 }
 
+export type SubstitutionHash = {
+    [index: string]: TypeVar
+}
+
 export type TypeInferenceResult = {
-    columns: InferType[]; //TODO - MySqlType
-    parameters: InferType[]; //MySqlType
+    columns: InferType[];
+    parameters: InferType[];
 }
 
 export type TypeAndNullInfer = {

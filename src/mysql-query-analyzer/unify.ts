@@ -1,6 +1,5 @@
-import { SubstitutionHash } from "./parse";
-import { Constraint, TypeVar, Type, CoercionType } from "./collect-constraints";
 import { InferType } from "../mysql-mapping";
+import { CoercionType, Constraint, SubstitutionHash, Type, TypeVar } from "./types";
 
 export function unify(constraints: Constraint[], substitutions: SubstitutionHash) {
     for (const constraint of constraints) {
