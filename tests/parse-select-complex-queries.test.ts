@@ -708,4 +708,99 @@ describe('Test parse complex queries', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     })
+
+    it('select id, :value from (select id from mytable1 t where t.value = :value) t', async () => {
+        const sql = `select id, :value as value from (
+            select id from mytable1 t where t.value = :value
+        ) t`;
+        const expectedSql = `select id, ? as value from (
+            select id from mytable1 t where t.value = ?
+        ) t`;
+
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql: expectedSql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'id',
+                    dbtype: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'value',
+                    dbtype: 'int',
+                    notNull: true
+                }
+            ],
+            parameters: [
+                {
+                    name: 'value',
+                    columnType: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'value',
+                    columnType: 'int',
+                    notNull: true
+                }
+            ]
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('Infer parameter from with clause', async () => {
+        const sql = `WITH names AS ( 
+            SELECT name FROM mytable2 where id = :id
+        )
+        SELECT name, :id as idFilter from names`;
+
+        const expectedSql = `WITH names AS ( 
+            SELECT name FROM mytable2 where id = ?
+        )
+        SELECT name, ? as idFilter from names`;
+
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql: expectedSql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'name',
+                    dbtype: 'varchar',
+                    notNull: false
+                },
+                {
+                    name: 'idFilter',
+                    dbtype: 'int',
+                    notNull: true
+                }
+            ],
+            parameters: [
+                {
+                    name: 'id',
+                    columnType: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'id',
+                    columnType: 'int',
+                    notNull: true
+                }
+            ]
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
 });
