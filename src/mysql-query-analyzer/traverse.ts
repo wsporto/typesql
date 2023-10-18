@@ -131,19 +131,11 @@ export function traverseInsertStatement(insertStatement: InsertStatementContext,
     const allParameters: ParameterDef[] = [];
     const paramsNullability: { [paramId: string]: boolean } = {};
 
-    const exprOrDefaultList: ExprOrDefault[] = [];
-    const valuesContext = insertStatement.insertFromConstructor()?.insertValues().valueList().values()[0];
+    let exprOrDefaultList: ExprOrDefault[][] = [];
+    const valuesContext = insertStatement.insertFromConstructor()?.insertValues().valueList().values();
     if (valuesContext) {
-        valuesContext.DEFAULT_SYMBOL().forEach(terminalNode => {
-            exprOrDefaultList.push(terminalNode);
-        })
-        valuesContext.expr().forEach(expr => {
-            exprOrDefaultList.push(expr);
-        })
+        exprOrDefaultList = valuesContext.map(valueContext => valueContext.children?.filter(valueContext => valueContext instanceof ExprIsContext || valueContext.text == 'DEFAULT') as ExprOrDefault[] || []);
     }
-
-    //order the tokens based on sql position
-    exprOrDefaultList.sort((token1, token2) => token1.sourceInterval.a - token2.sourceInterval.a);
 
     const insertIntoTable = getInsertIntoTable(insertStatement);
 
@@ -161,26 +153,28 @@ export function traverseInsertStatement(insertStatement: InsertStatementContext,
         })
     const insertColumns = getInsertColumns(insertStatement, fromColumns);
 
-    exprOrDefaultList.forEach((expr, index) => {
-        const column = insertColumns[index];
+    exprOrDefaultList.forEach(exprOrDefault => {
+        exprOrDefault.forEach((expr, index) => {
+            const column = insertColumns[index];
 
-        if (expr instanceof ExprContext) {
-            const numberParamsBefore = parameters.length;
-            const exprType = traverseExpr(expr, constraints, parameters, dbSchema, [], fromColumns);
-            const paramNullabilityExpr = inferParamNullability(expr);
-            parameters.slice(numberParamsBefore).forEach(param => {
-                paramsNullability[param.id] = paramNullabilityExpr.every(n => n) && column.notNull;
-            })
-            constraints.push({
-                expression: expr.text,
-                //TODO - CHANGING ORDER SHOULDN'T AFFECT THE TYPE INFERENCE
-                type1: exprType.kind == 'TypeOperator' ? exprType.types[0] : exprType,
-                type2: freshVar(column.columnName, column.columnType.type)
-            })
-        }
-        else {
+            if (expr instanceof ExprContext) {
+                const numberParamsBefore = parameters.length;
+                const exprType = traverseExpr(expr, constraints, parameters, dbSchema, [], fromColumns);
+                const paramNullabilityExpr = inferParamNullability(expr);
+                parameters.slice(numberParamsBefore).forEach(param => {
+                    paramsNullability[param.id] = paramNullabilityExpr.every(n => n) && column.notNull;
+                })
+                constraints.push({
+                    expression: expr.text,
+                    //TODO - CHANGING ORDER SHOULDN'T AFFECT THE TYPE INFERENCE
+                    type1: exprType.kind == 'TypeOperator' ? exprType.types[0] : exprType,
+                    type2: freshVar(column.columnName, column.columnType.type)
+                })
+            }
+            else {
 
-        }
+            }
+        })
     })
 
     const updateList = insertStatement.insertUpdateList()?.updateList().updateElement() || [];

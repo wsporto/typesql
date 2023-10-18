@@ -621,4 +621,122 @@ describe('parse insert statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it(`INSERT INTO mytable3 (double_value, name) VALUES (?, ?), (?, ?), (?, ?)`, async () => {
+
+        const sql = `
+        INSERT INTO mytable3 (double_value, name) 
+        VALUES (?, ?), (?, ?), (?, ?)`;
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql: sql,
+            queryType: 'Insert',
+            multipleRowsResult: false,
+            columns: [
+                {
+                    name: 'affectedRows',
+                    dbtype: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'insertId',
+                    dbtype: 'int',
+                    notNull: true
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'double',
+                    notNull: false
+                },
+                {
+                    name: 'param2',
+                    columnType: 'varchar',
+                    notNull: true
+                },
+                {
+                    name: 'param3',
+                    columnType: 'double',
+                    notNull: false
+                },
+                {
+                    name: 'param4',
+                    columnType: 'varchar',
+                    notNull: true
+                },
+                {
+                    name: 'param5',
+                    columnType: 'double',
+                    notNull: false
+                },
+                {
+                    name: 'param6',
+                    columnType: 'varchar',
+                    notNull: true
+                }
+            ]
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it(`INSERT INTO mytable3 (double_value, name) VALUES (?, ?), (10.5, ?), (?, 'name')`, async () => {
+
+        const sql = `
+        INSERT INTO mytable3 (double_value, name) 
+        VALUES (:value1, :name1), (10.5, :name2), (:value2, 'name')`;
+        const expectedSql = `
+        INSERT INTO mytable3 (double_value, name) 
+        VALUES (?, ?), (10.5, ?), (?, 'name')`;
+
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql: expectedSql,
+            queryType: 'Insert',
+            multipleRowsResult: false,
+            columns: [
+                {
+                    name: 'affectedRows',
+                    dbtype: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'insertId',
+                    dbtype: 'int',
+                    notNull: true
+                }
+            ],
+            parameters: [
+                {
+                    name: 'value1',
+                    columnType: 'double',
+                    notNull: false
+                },
+                {
+                    name: 'name1',
+                    columnType: 'varchar',
+                    notNull: true
+                },
+                {
+                    name: 'name2',
+                    columnType: 'varchar',
+                    notNull: true
+                },
+                {
+                    name: 'value2',
+                    columnType: 'double',
+                    notNull: false
+                }
+            ]
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
 });
