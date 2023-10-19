@@ -13,13 +13,13 @@ import { unify } from "./unify";
 import { TerminalNode } from "antlr4ts/tree";
 
 let counter = 0;
-export function freshVar(name: string, typeVar: InferType, selectItem?: true, list?: true): TypeVar {
+export function freshVar(name: string, typeVar: InferType, table?: string, selectItem?: true, list?: true): TypeVar {
     const param: TypeVar = {
         kind: 'TypeVar',
         id: (++counter).toString(),
         name,
-        type: typeVar
-
+        type: typeVar,
+        table
     }
     if (list) {
         param.list = true;
@@ -35,7 +35,19 @@ export function createColumnType(col: ColumnDef) {
         kind: 'TypeVar',
         id: col.columnType.id,
         name: col.columnName,
-        type: col.columnType.type
+        type: col.columnType.type,
+        table: col.table
+    }
+    return columnType;
+}
+
+export function createColumnTypeFomColumnSchema(col: ColumnSchema) {
+    const columnType: TypeVar = {
+        kind: 'TypeVar',
+        id: col.column,
+        name: col.column,
+        type: col.column_type,
+        table: col.table
     }
     return columnType;
 }
@@ -85,7 +97,7 @@ export function getDeleteColumns(deleteStatement: DeleteStatementContext, dbSche
                 table: tableNameStr,
                 tableAlias: tableAlias,
                 columnName: col.column,
-                columnType: { kind: "TypeVar", id: col.column, name: col.column, type: col.column_type },
+                columnType: createColumnTypeFomColumnSchema(col),
                 columnKey: col.columnKey,
                 notNull: col.notNull
             }

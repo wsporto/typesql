@@ -65,12 +65,11 @@ function unifyOne(constraint: Constraint, substitutions: SubstitutionHash) {
     //todo - remove
     else if (ty1.kind == 'TypeVar' && ty2.kind == 'TypeOperator') {
         ty2.types.forEach(t => {
-            const listType = t as TypeVar;
-            listType.list = true;
+            t.list = true;
             const newContraint: Constraint = {
                 ...constraint,
                 type1: ty1,
-                type2: listType
+                type2: t
             }
             unifyOne(newContraint, substitutions);
         })

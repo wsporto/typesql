@@ -221,7 +221,8 @@ function extractSelectQueryInfo(traverseResult: SelectStatementResult): QueryInf
         const colInfo: ColumnInfo = {
             columnName: col.name,
             type: verifyNotInferred(columnType),
-            notNull: columnNotNull
+            notNull: columnNotNull,
+            table: col.table
         }
         return colInfo;
     })

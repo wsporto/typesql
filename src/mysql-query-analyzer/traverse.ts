@@ -2,7 +2,7 @@ import { BitExprContext, BoolPriContext, DeleteStatementContext, ExprAndContext,
 import { preprocessSql, verifyNotInferred } from "../describe-query";
 import { extractLimitParameters, extractOrderByParameters, getAllQuerySpecificationsFromSelectStatement, getLimitOptions, isSumExpressContext, parse } from "./parse";
 import { ColumnDef, ColumnSchema, Constraint, FieldName, ParameterInfo, Type, TypeAndNullInfer, TypeOperator, TypeVar } from "./types";
-import { ExprOrDefault, FixedLengthParams, FunctionParams, VariableLengthParams, createColumnType, freshVar, generateTypeInfo, getDeleteColumns, getFunctionName, getInsertColumns, getInsertIntoTable, isDateLiteral, isDateTimeLiteral, isTimeLiteral, verifyDateTypesCoercion } from "./collect-constraints";
+import { ExprOrDefault, FixedLengthParams, FunctionParams, VariableLengthParams, createColumnType, createColumnTypeFomColumnSchema, freshVar, generateTypeInfo, getDeleteColumns, getFunctionName, getInsertColumns, getInsertIntoTable, isDateLiteral, isDateTimeLiteral, isTimeLiteral, verifyDateTypesCoercion } from "./collect-constraints";
 import { extractFieldsFromUsingClause, findColumn, getColumnName, getSimpleExpressions, splitName } from "./select-columns";
 import { inferNotNull, possibleNull } from "./infer-column-nullability";
 import { inferParamNullability, inferParamNullabilityQuery, inferParamNullabilityQueryExpression } from "./infer-param-nullability";
@@ -92,7 +92,8 @@ function traverseSelectStatement(selectStatement: SelectStatementContext, constr
                     const param2: TypeAndNullInfer = {
                         name: param.name,
                         type: param,
-                        notNull: paramInference[index]
+                        notNull: paramInference[index],
+                        table: ''
                     }
                     return param2;
                 });
@@ -275,7 +276,8 @@ function traverseUpdateStatement(updateStatement: UpdateStatementContext, constr
                 dataTypes.push({
                     name: namedParamters[paramsBefore + index] || field.name,
                     type: param,
-                    notNull: column.notNull && !possibleNull(field, expr)
+                    notNull: column.notNull && !possibleNull(field, expr),
+                    table: ''
                 })
             })
 
@@ -292,14 +294,16 @@ function traverseUpdateStatement(updateStatement: UpdateStatementContext, constr
         whereParameters.push({
             name: namedParamters[index] || 'param' + (whereParameters.length + 1),
             type: param,
-            notNull: paramNullability[index]
+            notNull: paramNullability[index],
+            table: ''
         })
     })
     parameters.slice(paramsAfter).forEach((param, index) => {
         whereParameters.push({
             name: namedParamters[paramsAfter + index] || 'param' + (whereParameters.length + 1),
             type: param,
-            notNull: paramNullability[paramsAfter + index]
+            notNull: paramNullability[paramsAfter + index],
+            table: ''
         })
     })
 
@@ -420,6 +424,7 @@ function traverseQueryExpressionBody(queryExpressionBody: QueryExpressionBodyCon
             name: resultTypes[index].name,
             type: resultTypes[index],
             notNull: mainQueryResult.columns[index].notNull,
+            table: mainQueryResult.columns[index].table
         }
         return col;
     });
@@ -466,11 +471,11 @@ export function traverseQuerySpecification(querySpec: QuerySpecificationContext,
     const columnNullability = inferNotNull(querySpec, dbSchema, allColumns);
 
     const columns = selectItemListResult.types.map((t, index) => {
-        const t2 = t as TypeVar;
         const resultType: TypeAndNullInfer = {
-            name: t2.name,
-            type: t2,
-            notNull: columnNullability[index]
+            name: t.name,
+            type: t,
+            notNull: columnNullability[index],
+            table: t.table || ''
         }
         return resultType;
 
@@ -616,7 +621,7 @@ function traverseTableFactor(tableFactor: TableFactorContext, constraints: Const
             const subQueryResult = traverseSubquery(subQuery, constraints, parameters, dbSchema, withSchema, fromColumns);
             const result = subQueryResult.columns.map(t => {
                 const colDef: ColumnDef = {
-                    table: "",
+                    table: tableAlias || '',
                     columnName: t.name,
                     columnType: t.type,
                     columnKey: "",
@@ -681,7 +686,8 @@ function traverseSelectItemList(selectItemList: SelectItemListContext, constrain
                 const itemName = splitName(selectItem.text);
                 const allColumns = selectAllColumns(itemName.prefix, fromColumns);
                 allColumns.forEach(col => {
-                    listType.push(createColumnType(col));
+                    const columnType = createColumnType(col);
+                    listType.push(columnType);
                 })
             }
         }
@@ -802,7 +808,7 @@ function traversePredicate(predicate: PredicateContext, constraints: Constraint[
                 constraints.push({
                     expression: predicateOperations.text,
                     type1: bitExprType, // ? array of id+id
-                    type2: { ...t as TypeVar, list: true },
+                    type2: { ...t, list: true },
                     mostGeneralType: true
                 })
 
@@ -821,7 +827,7 @@ function traverseExprList(exprList: ExprListContext, constraints: Constraint[], 
 
     const listType = exprList.expr().map(item => {
         const exprType = traverseExpr(item, constraints, parameters, dbSchema, withSchema, fromColumns);
-        return exprType;
+        return exprType as TypeVar;
 
     })
     const type: TypeOperator = {
@@ -838,20 +844,23 @@ function traverseBitExpr(bitExpr: BitExprContext, constraints: Constraint[], par
     }
     if (bitExpr.bitExpr().length == 2) {
 
-        const bitExprType = freshVar(bitExpr.text, '?');
+
 
         const bitExprLeft = bitExpr.bitExpr()[0];
         const typeLeftTemp = traverseBitExpr(bitExprLeft, constraints, parameters, dbSchema, withSchema, fromColumns);
-        const typeLeft = typeLeftTemp.kind == 'TypeOperator' ? typeLeftTemp.types[0] as TypeVar : typeLeftTemp;
+        const typeLeft = typeLeftTemp.kind == 'TypeOperator' ? typeLeftTemp.types[0] : typeLeftTemp;
         //const newTypeLeft = typeLeft.name == '?'? freshVar('?', 'bigint') : typeLeft;
 
         const bitExprRight = bitExpr.bitExpr()[1]
         const typeRightTemp = traverseBitExpr(bitExprRight, constraints, parameters, dbSchema, withSchema, fromColumns);
 
         //In the expression 'id + (value + 2) + ?' the '(value+2)' is treated as a SimpleExprListContext and return a TypeOperator
-        const typeRight = typeRightTemp.kind == 'TypeOperator' ? typeRightTemp.types[0] as TypeVar : typeRightTemp;
+        const typeRight = typeRightTemp.kind == 'TypeOperator' ? typeRightTemp.types[0] : typeRightTemp;
         //const newTypeRight = typeRight.name == '?'? freshVar('?', 'bigint') : typeRight;
-
+        const bitExprType = freshVar(bitExpr.text, '?');
+        if (typeLeftTemp.kind == 'TypeVar' && typeRightTemp.kind == 'TypeVar' && typeLeftTemp.table == typeRightTemp.table) {
+            bitExprType.table = typeLeftTemp.table;
+        }
         //PRECISA?
         // constraints.push({
         //     expression: bitExpr.text,
@@ -952,7 +961,7 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
     if (simpleExpr instanceof SimpleExprColumnRefContext) {
         const fieldName = splitName(simpleExpr.text);
         const column = findColumn(fieldName, fromColumns.concat(withSchema));
-        const typeVar = freshVar(column.columnName, column.columnType.type);
+        const typeVar = freshVar(column.columnName, column.columnType.type, column.table);
         constraints.push({
             expression: simpleExpr.text,
             type1: typeVar,
@@ -1007,7 +1016,7 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
 
         const listType = exprList.expr().map(item => {
             const exprType = traverseExpr(item, constraints, parameters, dbSchema, withSchema, fromColumns);
-            return exprType;
+            return exprType as TypeVar;
         })
         const resultType: TypeOperator = {
             kind: 'TypeOperator',
@@ -1677,7 +1686,7 @@ export function filterColumns(dbSchema: ColumnSchema[], withSchema: ColumnDef[],
 
             //name and colum are the same on the leaf table
             const r: ColumnDef = {
-                columnName: tableColumn.column, columnType: { kind: 'TypeVar', type: tableColumn.column_type, id: tableColumn.column_type, name: tableColumn.column },
+                columnName: tableColumn.column, columnType: createColumnTypeFomColumnSchema(tableColumn),
                 notNull: tableColumn.notNull, table: table.name, tableAlias: tableAlias || '', columnKey: tableColumn.columnKey
             }
             return r;

@@ -16,7 +16,8 @@ describe('Test parse parameters', () => {
                 {
                     columnName: 'id',
                     type: 'int',
-                    notNull: true
+                    notNull: true,
+                    table: 'mytable1'
                 }
             ],
             parameters: []
@@ -36,7 +37,8 @@ describe('Test parse parameters', () => {
                 {
                     columnName: 'value',
                     type: 'int',
-                    notNull: true
+                    notNull: true,
+                    table: 'mytable1'
                 }
             ],
             parameters: []
@@ -56,12 +58,14 @@ describe('Test parse parameters', () => {
                 {
                     columnName: 'id',
                     type: 'int',
-                    notNull: true
+                    notNull: true,
+                    table: 'mytable2'
                 },
                 {
                     columnName: 'name',
                     type: 'varchar',
-                    notNull: false
+                    notNull: false,
+                    table: 'mytable2'
                 }
             ],
             parameters: []
@@ -81,7 +85,8 @@ describe('Test parse parameters', () => {
                 {
                     columnName: 'id+id',
                     type: 'bigint',
-                    notNull: true
+                    notNull: true,
+                    table: 'mytable1'
                 }
             ],
             parameters: []
@@ -101,7 +106,8 @@ describe('Test parse parameters', () => {
                 {
                     columnName: 'id+double_value',
                     type: 'double',
-                    notNull: false
+                    notNull: false,
+                    table: 'mytable3'
                 }
             ],
             parameters: []
@@ -121,7 +127,8 @@ describe('Test parse parameters', () => {
                 {
                     columnName: 'datetime_column',
                     type: 'datetime',
-                    notNull: true
+                    notNull: true,
+                    table: 'all_types'
                 }
             ],
             parameters: [
@@ -146,7 +153,8 @@ describe('Test parse parameters', () => {
                 {
                     columnName: '?',
                     type: 'any',
-                    notNull: true
+                    notNull: true,
+                    table: ''
                 }
             ],
             parameters: [
@@ -171,7 +179,8 @@ describe('Test parse parameters', () => {
                 {
                     columnName: 'CASE WHEN id = 1 then ? else id END',
                     type: 'int',
-                    notNull: true
+                    notNull: true,
+                    table: ''
 
                 }
             ],
@@ -197,7 +206,8 @@ describe('Test parse parameters', () => {
                 {
                     columnName: 'CASE WHEN id = 1 then ? else id END',
                     type: 'int',
-                    notNull: true
+                    notNull: true,
+                    table: ''
 
                 }
             ],
@@ -223,7 +233,8 @@ describe('Test parse parameters', () => {
                 {
                     columnName: '?+id',
                     type: 'double',
-                    notNull: true
+                    notNull: true,
+                    table: ''
 
                 }
             ],
@@ -249,7 +260,8 @@ describe('Test parse parameters', () => {
                 {
                     columnName: 'case when id=1 then ? else (select id from mytable1 where id = 1) end',
                     type: 'int',
-                    notNull: false
+                    notNull: false,
+                    table: ''
 
                 }
             ],
@@ -275,7 +287,8 @@ describe('Test parse parameters', () => {
                 {
                     columnName: `concat_ws('/', ?, ?, ?)`,
                     type: 'varchar',
-                    notNull: true
+                    notNull: true,
+                    table: ''
 
                 }
             ],
@@ -309,12 +322,14 @@ describe('Test parse parameters', () => {
                 {
                     columnName: 'id',
                     type: 'int',
-                    notNull: true
+                    notNull: true,
+                    table: 'mytable1'
                 },
                 {
                     columnName: 'value',
                     type: 'int',
-                    notNull: false
+                    notNull: false,
+                    table: 'mytable1'
                 }
             ],
             parameters: []
@@ -334,7 +349,8 @@ describe('Test parse parameters', () => {
                 {
                     columnName: '(SELECT id FROM mytable2)',
                     type: 'int',
-                    notNull: false
+                    notNull: false,
+                    table: 'mytable1'
                 }
             ],
             parameters: []
@@ -356,12 +372,14 @@ describe('Test parse parameters', () => {
                 {
                     columnName: '?=id',
                     type: 'tinyint',
-                    notNull: true
+                    notNull: true,
+                    table: ''
                 },
                 {
                     columnName: '?=name',
                     type: 'tinyint',
-                    notNull: false
+                    notNull: false,
+                    table: ''
                 }
             ],
             parameters: [
@@ -396,7 +414,8 @@ describe('Test parse parameters', () => {
                 {
                     columnName: 'id',
                     type: 'varchar',
-                    notNull: false
+                    notNull: false,
+                    table: 't2'
                 }
             ],
             parameters: []
@@ -420,17 +439,20 @@ describe('Test parse parameters', () => {
                 {
                     columnName: 'name',
                     type: 'varchar',
-                    notNull: false
+                    notNull: false,
+                    table: 't2'
                 },
                 {
                     columnName: 'descr',
                     type: 'varchar',
-                    notNull: false
+                    notNull: false,
+                    table: 't2'
                 },
                 {
                     columnName: 'value',
                     type: 'int',
-                    notNull: true
+                    notNull: true,
+                    table: 't2'
                 }
             ],
             parameters: [
@@ -461,12 +483,14 @@ describe('Test parse parameters', () => {
                 {
                     columnName: 'id',
                     type: 'int',
-                    notNull: true
+                    notNull: true,
+                    table: 'mytable1'
                 },
                 {
                     columnName: 'value',
                     type: 'varchar',
-                    notNull: true
+                    notNull: true,
+                    table: 'mytable1'
                 }
             ],
             parameters: [
@@ -502,7 +526,8 @@ describe('Test parse parameters', () => {
                 {
                     columnName: 'id',
                     type: 'int',
-                    notNull: true
+                    notNull: true,
+                    table: 'mytable1'
                 }
             ],
             parameters: [],
@@ -525,7 +550,8 @@ describe('Test parse parameters', () => {
                 {
                     columnName: 'id',
                     type: 'int',
-                    notNull: true
+                    notNull: true,
+                    table: 'mytable1'
                 }
             ],
             parameters: [
@@ -552,7 +578,8 @@ describe('Test parse parameters', () => {
                 {
                     columnName: 'id',
                     type: 'int',
-                    notNull: true
+                    notNull: true,
+                    table: 'mytable1'
                 }
             ],
             parameters: [
@@ -704,12 +731,14 @@ describe('Test parse parameters', () => {
                 {
                     columnName: '?', //TODO: Should be dateName?
                     type: 'datetime',
-                    notNull: true
+                    notNull: true,
+                    table: ''
                 },
                 {
                     columnName: 'deadline',
                     type: 'datetime',
-                    notNull: true
+                    notNull: true,
+                    table: ''
                 }
             ],
             parameters: [

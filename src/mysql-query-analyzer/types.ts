@@ -6,6 +6,7 @@ export type TypeVar = {
     id: string;
     name: string;
     type: InferType;
+    table?: string;
     list?: true;
     selectItem?: true
 }
@@ -18,7 +19,7 @@ export type Type = TypeVar | TypeOperator;
 
 export type TypeOperator = {
     kind: 'TypeOperator';
-    types: Type[];
+    types: TypeVar[];
     selectItem?: true
 };
 
@@ -65,6 +66,7 @@ export type ColumnInfo = {
     columnName: string;
     type: MySqlType | 'any';
     notNull: boolean;
+    table: string;
 }
 
 export type FieldInfo = {
@@ -90,6 +92,7 @@ export type TypeAndNullInfer = {
     name: string;  //TODO - need?
     type: TypeVar;
     notNull: boolean;
+    table: string;
 }
 
 export type TypeAndNullInferResult = {

@@ -11,7 +11,7 @@ import {
 } from "ts-mysql-parser";
 
 import { ColumnDef, ColumnSchema, FieldName } from "./types";
-import { freshVar } from "./collect-constraints";
+import { createColumnTypeFomColumnSchema } from "./collect-constraints";
 
 export function filterColumns(dbSchema: ColumnSchema[], withSchema: ColumnDef[], tableAlias: string | undefined, table: FieldName): ColumnDef[] {
     const tableColumns1 = dbSchema
@@ -20,7 +20,7 @@ export function filterColumns(dbSchema: ColumnSchema[], withSchema: ColumnDef[],
 
             //name and colum are the same on the leaf table
             const r: ColumnDef = {
-                columnName: tableColumn.column, columnType: freshVar(tableColumn.column, tableColumn.column_type),
+                columnName: tableColumn.column, columnType: createColumnTypeFomColumnSchema(tableColumn),
                 notNull: tableColumn.notNull, table: table.name, tableAlias: tableAlias || '', columnKey: tableColumn.columnKey
             }
             return r;
@@ -137,13 +137,19 @@ export const functionAlias: ColumnSchema[] = [
     }
 ]
 
+export function findColumnSchema(tableName: string, columnName: string, dbSchema: ColumnSchema[]) {
+    const found = dbSchema.find(col => col.table.toLowerCase() == tableName.toLowerCase()
+        && col.column.toLowerCase() == columnName.toLowerCase());
+    return found;
+}
+
 export function findColumn(fieldName: FieldName, columns: ColumnDef[]): ColumnDef {
     //TODO - Put tableAlias always ''
     const functionType = functionAlias.find(col => col.column.toLowerCase() == fieldName.name.toLowerCase());
     if (functionType) {
         const colDef: ColumnDef = {
             columnName: functionType.column,
-            columnType: freshVar(functionType.column, functionType.column_type),
+            columnType: createColumnTypeFomColumnSchema(functionType),
             columnKey: functionType.columnKey,
             notNull: functionType.notNull,
             table: ''
