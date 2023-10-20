@@ -1,5 +1,5 @@
 import assert from "assert";
-import { preprocessSql } from "../src/describe-query";
+import { generateNestedQueryResult, preprocessSql } from "../src/describe-query";
 import { PreprocessedSql } from "../src/types";
 
 describe('preprocess-sql', () => {
@@ -81,6 +81,37 @@ describe('preprocess-sql', () => {
 
         assert.deepStrictEqual(actual, expected);
     })
+
+    it('verify @nested comment', async () => {
+
+        const sql = `
+        -- @nested
+        `;
+        const actual = generateNestedQueryResult(sql);
+
+        assert.deepStrictEqual(actual, true);
+    })
+
+    it('verify without @nested comment', async () => {
+
+        const sql = `
+        SELECT * FROM mytable1
+        `;
+        const actual = generateNestedQueryResult(sql);
+
+        assert.deepStrictEqual(actual, false);
+    })
+
+    it('verify without @nested not int comment', async () => {
+
+        const sql = `
+        SELECT id as @nested FROM mytable1
+        `;
+        const actual = generateNestedQueryResult(sql);
+
+        assert.deepStrictEqual(actual, false);
+    })
+
 
 
 });

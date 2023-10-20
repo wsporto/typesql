@@ -154,3 +154,8 @@ export function preprocessSql(sql: string) {
     }
     return processedSql;
 }
+
+export function generateNestedQueryResult(sql: string) {
+    const regex = /-- @nested/g;
+    return sql.match(regex) != null;
+}

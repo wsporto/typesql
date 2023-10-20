@@ -1,5 +1,5 @@
 import { BitExprContext, BoolPriContext, DeleteStatementContext, ExprAndContext, ExprContext, ExprIsContext, ExprListContext, ExprNotContext, ExprOrContext, ExprXorContext, FromClauseContext, HavingClauseContext, InsertQueryExpressionContext, InsertStatementContext, PredicateContext, PredicateExprInContext, PredicateExprLikeContext, PredicateOperationsContext, PrimaryExprAllAnyContext, PrimaryExprCompareContext, PrimaryExprIsNullContext, PrimaryExprPredicateContext, QueryContext, QueryExpressionBodyContext, QueryExpressionContext, QueryExpressionOrParensContext, QueryExpressionParensContext, QuerySpecificationContext, SelectItemContext, SelectItemListContext, SelectStatementContext, SimpleExprCaseContext, SimpleExprCastContext, SimpleExprColumnRefContext, SimpleExprContext, SimpleExprFunctionContext, SimpleExprIntervalContext, SimpleExprListContext, SimpleExprLiteralContext, SimpleExprParamMarkerContext, SimpleExprRuntimeFunctionContext, SimpleExprSubQueryContext, SimpleExprSumContext, SimpleExprWindowingFunctionContext, SingleTableContext, SubqueryContext, TableFactorContext, TableReferenceContext, TableReferenceListParensContext, UpdateStatementContext, WindowFunctionCallContext, WithClauseContext } from "ts-mysql-parser";
-import { preprocessSql, verifyNotInferred } from "../describe-query";
+import { verifyNotInferred } from "../describe-query";
 import { extractLimitParameters, extractOrderByParameters, getAllQuerySpecificationsFromSelectStatement, getLimitOptions, isSumExpressContext, parse } from "./parse";
 import { ColumnDef, ColumnSchema, Constraint, FieldName, ParameterInfo, Type, TypeAndNullInfer, TypeOperator, TypeVar } from "./types";
 import { ExprOrDefault, FixedLengthParams, FunctionParams, VariableLengthParams, createColumnType, createColumnTypeFomColumnSchema, freshVar, generateTypeInfo, getDeleteColumns, getFunctionName, getInsertColumns, getInsertIntoTable, isDateLiteral, isDateTimeLiteral, isTimeLiteral, verifyDateTypesCoercion } from "./collect-constraints";
@@ -65,11 +65,6 @@ export function traverseQueryContext(queryContext: QueryContext, dbSchema: Colum
     throw Error('traverseSql - not supported: ' + queryContext.constructor.name);
 }
 
-export function traverseSql(sql: string, dbSchema: ColumnSchema[]): SelectStatementResult | InsertStatementResult | UpdateStatementResult | DeleteStatementResult {
-    const { sql: processedSql, namedParameters } = preprocessSql(sql);
-    const tree = parse(processedSql);
-    return traverseQueryContext(tree, dbSchema, namedParameters);
-}
 
 function traverseSelectStatement(selectStatement: SelectStatementContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], namedParameters: string[]): SelectStatementResult {
     const queryExpression = selectStatement.queryExpression();

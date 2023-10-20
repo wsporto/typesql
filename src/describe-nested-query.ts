@@ -1,4 +1,4 @@
-import { ExprContext, JoinedTableContext, SimpleExprColumnRefContext, TableFactorContext, TableReferenceContext } from "ts-mysql-parser";
+import { ExprContext, JoinedTableContext, QueryContext, SimpleExprColumnRefContext, TableFactorContext, TableReferenceContext } from "ts-mysql-parser";
 import { extractQueryInfo, parse } from "./mysql-query-analyzer/parse";
 import { findColumnSchema, getSimpleExpressions, splitName } from "./mysql-query-analyzer/select-columns";
 import { ColumnInfo, ColumnSchema } from "./mysql-query-analyzer/types";
@@ -28,15 +28,16 @@ export type TableName = {
     alias: string | '';
 }
 
+//utility for tests
 export function describeNestedQuery(sql: string, dbSchema: ColumnSchema[]): Model {
-
+    const queryContext = parse(sql);
     const queryInfo = extractQueryInfo(sql, dbSchema);
     const columns = queryInfo.kind == 'Select' ? queryInfo.columns : [];
-    return extractTableReferenceInfo(sql, dbSchema, columns);
+    return generateNestedInfo(queryContext, dbSchema, columns);
 }
 
-export function extractTableReferenceInfo(sql: string, dbSchema: ColumnSchema[], columns: ColumnInfo[]) {
-    const queryContext = parse(sql);
+export function generateNestedInfo(queryContext: QueryContext, dbSchema: ColumnSchema[], columns: ColumnInfo[]) {
+
     const selectStatement = queryContext.simpleStatement()?.selectStatement();
     if (selectStatement) {
         const queryExpression = selectStatement.queryExpression();

@@ -8,11 +8,16 @@ import {
 import { ColumnSchema, FieldName, ColumnDef } from "./types";
 import { findColumn, splitName, selectAllColumns } from "./select-columns";
 import { getParentContext, inferParameterNotNull } from "./infer-param-nullability";
-import { traverseSql } from "./traverse";
+import { traverseQueryContext } from "./traverse";
+import { parse } from "./parse";
+import { preprocessSql } from "../describe-query";
 
 //TODO - COLUMN SCHEMA DEFAULT = []
+//utility for tests
 export function parseAndInferNotNull(sql: string, dbSchema: ColumnSchema[]) {
-    const result = traverseSql(sql, dbSchema);
+    const { sql: processedSql, namedParameters } = preprocessSql(sql);
+    const tree = parse(processedSql);
+    const result = traverseQueryContext(tree, dbSchema, namedParameters);
     if (result.type == 'Select') {
         return result.columns.map(col => col.notNull);
     }

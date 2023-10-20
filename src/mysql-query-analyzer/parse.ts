@@ -6,11 +6,12 @@ import {
     ParameterInfo, ColumnInfo, ColumnDef, SubstitutionHash
 } from './types';
 import { inferParamNullabilityQuery } from './infer-param-nullability';
-import { verifyNotInferred } from '../describe-query';
+import { generateNestedQueryResult, preprocessSql, verifyNotInferred } from '../describe-query';
 import { verifyMultipleResult } from './verify-multiple-result';
 import { unify } from './unify';
-import { SelectStatementResult, traverseSql } from './traverse';
+import { SelectStatementResult, traverseQueryContext } from './traverse';
 import { ParameterDef } from '../types';
+import { generateNestedInfo } from '../describe-nested-query';
 
 const parser = new MySQLParser({
     version: '8.0.17',
@@ -157,9 +158,18 @@ export function getLimitOptions(selectStatement: SelectStatementContext) {
 }
 
 export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[]): QueryInfoResult | InsertInfoResult | UpdateInfoResult | DeleteInfoResult {
-    const traverseResult = traverseSql(sql, dbSchema);
+    const { sql: processedSql, namedParameters } = preprocessSql(sql);
+    const gererateNested = generateNestedQueryResult(sql);
+    const tree = parse(processedSql);
+
+    const traverseResult = traverseQueryContext(tree, dbSchema, namedParameters);
     if (traverseResult.type == 'Select') {
-        return extractSelectQueryInfo(traverseResult);
+        const queryInfoResult = extractSelectQueryInfo(traverseResult);
+        if (gererateNested) {
+            const nested = generateNestedInfo(tree, dbSchema, queryInfoResult.columns)
+            queryInfoResult.model = nested;
+        }
+        return queryInfoResult;
     }
     if (traverseResult.type == 'Insert') {
         const newResult: InsertInfoResult = {
