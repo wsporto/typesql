@@ -26,8 +26,8 @@ describe('parse delete statements', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: 'affectedRows',
-                    dbtype: 'int',
+                    columnName: 'affectedRows',
+                    type: 'int',
                     notNull: true
                 }
             ],
@@ -56,8 +56,8 @@ describe('parse delete statements', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: 'affectedRows',
-                    dbtype: 'int',
+                    columnName: 'affectedRows',
+                    type: 'int',
                     notNull: true
                 }
             ],
@@ -93,8 +93,8 @@ describe('parse delete statements', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: 'affectedRows',
-                    dbtype: 'int',
+                    columnName: 'affectedRows',
+                    type: 'int',
                     notNull: true
                 }
             ],

@@ -1,8 +1,8 @@
 import assert from "assert";
-import { ColumnDef } from "../src/types";
 import { DbClient } from "../src/queryExectutor";
 import { isLeft } from "fp-ts/lib/Either";
 import { parseSql } from "../src/describe-query";
+import { ColumnInfo } from "../src/mysql-query-analyzer/types";
 
 describe('type-mapping', () => {
 
@@ -20,156 +20,186 @@ describe('type-mapping', () => {
         const sql = 'select * from all_types';
         const actual = await parseSql(client, sql);
 
-        const expected: ColumnDef[] = [
+        const expected: ColumnInfo[] = [
             {
-                name: 'decimal_column',
-                dbtype: 'decimal',
-                notNull: false
+                columnName: 'decimal_column',
+                type: 'decimal',
+                notNull: false,
+                table: 'all_types'
             },
             {
-                name: 'tinyint_column',
-                dbtype: 'tinyint',
-                notNull: false
+                columnName: 'tinyint_column',
+                type: 'tinyint',
+                notNull: false,
+                table: 'all_types'
             },
             {
-                name: 'smallint_column',
-                dbtype: 'smallint',
-                notNull: false
+                columnName: 'smallint_column',
+                type: 'smallint',
+                notNull: false,
+                table: 'all_types'
             },
             {
-                name: 'int_column',
-                dbtype: 'int',
-                notNull: false
+                columnName: 'int_column',
+                type: 'int',
+                notNull: false,
+                table: 'all_types'
             },
             {
-                name: 'float_column',
-                dbtype: 'float',
-                notNull: false
+                columnName: 'float_column',
+                type: 'float',
+                notNull: false,
+                table: 'all_types'
             },
             {
-                name: 'double_column',
-                dbtype: 'double',
-                notNull: false
+                columnName: 'double_column',
+                type: 'double',
+                notNull: false,
+                table: 'all_types'
             },
             {
-                name: 'timestamp_column',
-                dbtype: 'timestamp',
-                notNull: false
+                columnName: 'timestamp_column',
+                type: 'timestamp',
+                notNull: false,
+                table: 'all_types'
             },
             {
-                name: 'bigint_column',
-                dbtype: 'bigint',
-                notNull: false
+                columnName: 'bigint_column',
+                type: 'bigint',
+                notNull: false,
+                table: 'all_types'
             },
             {
-                name: 'mediumint_column',
-                dbtype: 'mediumint',
-                notNull: false
+                columnName: 'mediumint_column',
+                type: 'mediumint',
+                notNull: false,
+                table: 'all_types'
             },
             {
-                name: 'date_column',
-                dbtype: 'date',
-                notNull: false
+                columnName: 'date_column',
+                type: 'date',
+                notNull: false,
+                table: 'all_types'
             },
             {
-                name: 'time_column',
-                dbtype: 'time',
-                notNull: false
+                columnName: 'time_column',
+                type: 'time',
+                notNull: false,
+                table: 'all_types'
             },
             {
-                name: 'datetime_column',
-                dbtype: 'datetime',
-                notNull: false
+                columnName: 'datetime_column',
+                type: 'datetime',
+                notNull: false,
+                table: 'all_types'
             },
             {
-                name: 'year_column',
-                dbtype: 'year',
-                notNull: false
+                columnName: 'year_column',
+                type: 'year',
+                notNull: false,
+                table: 'all_types'
             },
             {
-                name: 'varchar_column',
-                dbtype: 'varchar',
-                notNull: false
+                columnName: 'varchar_column',
+                type: 'varchar',
+                notNull: false,
+                table: 'all_types'
             },
             {
-                name: 'bit_column',
-                dbtype: 'bit',
-                notNull: false
+                columnName: 'bit_column',
+                type: 'bit',
+                notNull: false,
+                table: 'all_types'
             },
             {
-                name: 'json_column',
-                dbtype: 'json',
-                notNull: false
+                columnName: 'json_column',
+                type: 'json',
+                notNull: false,
+                table: 'all_types'
             },
             {
-                name: 'enum_column',
-                dbtype: `enum('x-small','small','medium','large','x-large')`,
-                notNull: false
+                columnName: 'enum_column',
+                type: `enum('x-small','small','medium','large','x-large')`,
+                notNull: false,
+                table: 'all_types'
             },
             {
-                name: 'set_column',
-                dbtype: 'set',
-                notNull: false
+                columnName: 'set_column',
+                type: 'set',
+                notNull: false,
+                table: 'all_types'
             },
             {
-                dbtype: 'tinyblob',
-                name: 'tinyblob_column',
-                notNull: false
+                type: 'tinyblob',
+                columnName: 'tinyblob_column',
+                notNull: false,
+                table: 'all_types'
             },
             {
-                dbtype: 'mediumblob',
-                name: 'mediumblob_column',
-                notNull: false
+                type: 'mediumblob',
+                columnName: 'mediumblob_column',
+                notNull: false,
+                table: 'all_types'
             },
             {
-                dbtype: 'longblob',
-                name: 'longblob_column',
-                notNull: false
+                type: 'longblob',
+                columnName: 'longblob_column',
+                notNull: false,
+                table: 'all_types'
             },
             {
-                dbtype: 'blob',
-                name: 'blob_column',
-                notNull: false
+                type: 'blob',
+                columnName: 'blob_column',
+                notNull: false,
+                table: 'all_types'
             },
             {
-                name: 'tinytext_column',
-                dbtype: 'tinytext',
-                notNull: false
+                columnName: 'tinytext_column',
+                type: 'tinytext',
+                notNull: false,
+                table: 'all_types'
             },
             {
-                name: 'mediumtext_column',
-                dbtype: 'mediumtext',
-                notNull: false
+                columnName: 'mediumtext_column',
+                type: 'mediumtext',
+                notNull: false,
+                table: 'all_types'
             },
             {
-                name: 'longtext_column',
-                dbtype: 'longtext',
-                notNull: false
+                columnName: 'longtext_column',
+                type: 'longtext',
+                notNull: false,
+                table: 'all_types'
             },
             {
-                name: 'text_column',
-                dbtype: 'text',
-                notNull: false
+                columnName: 'text_column',
+                type: 'text',
+                notNull: false,
+                table: 'all_types'
             },
             {
-                name: 'varbinary_column',
-                dbtype: 'varbinary',
-                notNull: false
+                columnName: 'varbinary_column',
+                type: 'varbinary',
+                notNull: false,
+                table: 'all_types'
             },
             {
-                name: 'binary_column',
-                dbtype: 'binary',
-                notNull: false
+                columnName: 'binary_column',
+                type: 'binary',
+                notNull: false,
+                table: 'all_types'
             },
             {
-                name: 'char_column',
-                dbtype: 'char',
-                notNull: false
+                columnName: 'char_column',
+                type: 'char',
+                notNull: false,
+                table: 'all_types'
             },
             {
-                name: 'geometry_column',
-                dbtype: 'geometry',
-                notNull: false
+                columnName: 'geometry_column',
+                type: 'geometry',
+                notNull: false,
+                table: 'all_types'
             }
 
         ]
@@ -192,8 +222,8 @@ describe('type-mapping', () => {
 
         const actualColumns = actual.right.columns.map(col => {
             const nameAndType = {
-                name: col.name,
-                type: col.dbtype
+                name: col.columnName,
+                type: col.type
             }
             return nameAndType;
         });

@@ -29,9 +29,10 @@ describe('Test parse select with subqueries', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 't'
                 }
             ],
             parameters: []
@@ -58,14 +59,16 @@ describe('Test parse select with subqueries', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 't'
                 },
                 {
-                    name: 'name',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'name',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 't'
                 }
             ],
             parameters: []
@@ -90,9 +93,10 @@ describe('Test parse select with subqueries', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: false
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: false,
+                    table: 't1'
                 }
             ],
             parameters: []
@@ -117,9 +121,10 @@ describe('Test parse select with subqueries', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'code',
-                    dbtype: 'int',
-                    notNull: false
+                    columnName: 'code',
+                    type: 'int',
+                    notNull: false,
+                    table: 't1'
                 }
             ],
             parameters: []
@@ -146,9 +151,10 @@ describe('Test parse select with subqueries', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 't2'
                 }
             ],
             parameters: []
@@ -175,9 +181,10 @@ describe('Test parse select with subqueries', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'bigint',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'bigint',
+                    notNull: true,
+                    table: 't2'
                 }
             ],
             parameters: []
@@ -201,14 +208,16 @@ describe('Test parse select with subqueries', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 't2'
                 },
                 {
-                    name: 'name',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'name',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 't2'
                 }
             ],
             parameters: []
@@ -235,9 +244,10 @@ describe('Test parse select with subqueries', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'id',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 't2'
                 }
             ],
             parameters: []
@@ -268,9 +278,10 @@ describe('Test parse select with subqueries', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'id',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 't3'
                 }
             ],
             parameters: []
@@ -301,9 +312,10 @@ describe('Test parse select with subqueries', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 't3'
                 }
             ],
             parameters: []
@@ -326,9 +338,10 @@ describe('Test parse select with subqueries', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'name',
-                    dbtype: 'bigint',
-                    notNull: true
+                    columnName: 'name',
+                    type: 'bigint',
+                    notNull: true,
+                    table: 't2'
                 }
             ],
             parameters: []
@@ -351,9 +364,10 @@ describe('Test parse select with subqueries', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'name',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'name',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 'mytable2'
 
                 }
             ],
@@ -383,9 +397,10 @@ describe('Test parse select with subqueries', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 't1'
 
                 }
             ],

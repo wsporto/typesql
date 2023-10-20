@@ -1,22 +1,14 @@
-import { ColumnDef, SchemaDef, ParameterDef, TypeSqlError, PreprocessedSql } from "./types";
+import { SchemaDef, ParameterDef, TypeSqlError, PreprocessedSql } from "./types";
 import { extractQueryInfo } from "./mysql-query-analyzer/parse";
 import { DbClient } from "./queryExectutor";
 import { Either, isLeft, right, left } from "fp-ts/lib/Either";
-import { ColumnSchema } from "./mysql-query-analyzer/types";
+import { ColumnInfo, ColumnSchema } from "./mysql-query-analyzer/types";
 import { MySqlType, InferType } from "./mysql-mapping";
 
 export function describeSql(dbSchema: ColumnSchema[], sql: string): SchemaDef {
     const { sql: processedSql, namedParameters } = preprocessSql(sql);
     const queryInfo = extractQueryInfo(sql, dbSchema);
     if (queryInfo.kind == 'Select') {
-        const columnDef = queryInfo.columns.map(colInfo => {
-            const colDef: ColumnDef = {
-                name: colInfo.columnName,
-                dbtype: colInfo.type,
-                notNull: colInfo.notNull
-            }
-            return colDef;
-        })
 
         const parametersDef = queryInfo.parameters.map((paramInfo, paramIndex) => {
             const paramDef: ParameterDef = {
@@ -31,25 +23,28 @@ export function describeSql(dbSchema: ColumnSchema[], sql: string): SchemaDef {
             sql: processedSql,
             queryType: 'Select',
             multipleRowsResult: queryInfo.multipleRowsResult,
-            columns: columnDef,
+            columns: queryInfo.columns,
             parameters: parametersDef,
         }
         if (queryInfo.orderByColumns && queryInfo.orderByColumns.length > 0) {
             schemaDef.orderByColumns = queryInfo.orderByColumns
         }
+        if (queryInfo.model) {
+            schemaDef.model = queryInfo.model;
+        }
         return schemaDef;
 
     }
     if (queryInfo.kind == 'Insert') {
-        const resultColumns: ColumnDef[] = [
+        const resultColumns: ColumnInfo[] = [
             {
-                name: 'affectedRows',
-                dbtype: 'int',
+                columnName: 'affectedRows',
+                type: 'int',
                 notNull: true
             },
             {
-                name: 'insertId',
-                dbtype: 'int',
+                columnName: 'insertId',
+                type: 'int',
                 notNull: true
             }
         ]
@@ -66,10 +61,10 @@ export function describeSql(dbSchema: ColumnSchema[], sql: string): SchemaDef {
         return schemaDef;
     }
     if (queryInfo.kind == 'Update') {
-        const resultColumns: ColumnDef[] = [
+        const resultColumns: ColumnInfo[] = [
             {
-                name: 'affectedRows',
-                dbtype: 'int',
+                columnName: 'affectedRows',
+                type: 'int',
                 notNull: true
             }
         ]
@@ -84,10 +79,10 @@ export function describeSql(dbSchema: ColumnSchema[], sql: string): SchemaDef {
         return schemaDef;
     }
     if (queryInfo.kind == 'Delete') {
-        const resultColumns: ColumnDef[] = [
+        const resultColumns: ColumnInfo[] = [
             {
-                name: 'affectedRows',
-                dbtype: 'int',
+                columnName: 'affectedRows',
+                type: 'int',
                 notNull: true
             }
         ]

@@ -25,13 +25,13 @@ describe('parse insert statements', () => {
             sql: 'insert into mytable1 (value) values (?)',
             columns: [
                 {
-                    name: 'affectedRows',
-                    dbtype: 'int',
+                    columnName: 'affectedRows',
+                    type: 'int',
                     notNull: true
                 },
                 {
-                    name: 'insertId',
-                    dbtype: 'int',
+                    columnName: 'insertId',
+                    type: 'int',
                     notNull: true
                 }
             ],
@@ -239,13 +239,13 @@ describe('parse insert statements', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: 'affectedRows',
-                    dbtype: 'int',
+                    columnName: 'affectedRows',
+                    type: 'int',
                     notNull: true
                 },
                 {
-                    name: 'insertId',
-                    dbtype: 'int',
+                    columnName: 'insertId',
+                    type: 'int',
                     notNull: true
                 }
             ],
@@ -284,13 +284,13 @@ describe('parse insert statements', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: 'affectedRows',
-                    dbtype: 'int',
+                    columnName: 'affectedRows',
+                    type: 'int',
                     notNull: true
                 },
                 {
-                    name: 'insertId',
-                    dbtype: 'int',
+                    columnName: 'insertId',
+                    type: 'int',
                     notNull: true
                 }
             ],
@@ -334,13 +334,13 @@ describe('parse insert statements', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: 'affectedRows',
-                    dbtype: 'int',
+                    columnName: 'affectedRows',
+                    type: 'int',
                     notNull: true
                 },
                 {
-                    name: 'insertId',
-                    dbtype: 'int',
+                    columnName: 'insertId',
+                    type: 'int',
                     notNull: true
                 }
             ],
@@ -389,13 +389,13 @@ describe('parse insert statements', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: 'affectedRows',
-                    dbtype: 'int',
+                    columnName: 'affectedRows',
+                    type: 'int',
                     notNull: true
                 },
                 {
-                    name: 'insertId',
-                    dbtype: 'int',
+                    columnName: 'insertId',
+                    type: 'int',
                     notNull: true
                 }
             ],
@@ -444,13 +444,13 @@ describe('parse insert statements', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: 'affectedRows',
-                    dbtype: 'int',
+                    columnName: 'affectedRows',
+                    type: 'int',
                     notNull: true
                 },
                 {
-                    name: 'insertId',
-                    dbtype: 'int',
+                    columnName: 'insertId',
+                    type: 'int',
                     notNull: true
                 }
             ],
@@ -496,13 +496,13 @@ describe('parse insert statements', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: 'affectedRows',
-                    dbtype: 'int',
+                    columnName: 'affectedRows',
+                    type: 'int',
                     notNull: true
                 },
                 {
-                    name: 'insertId',
-                    dbtype: 'int',
+                    columnName: 'insertId',
+                    type: 'int',
                     notNull: true
                 }
             ],
@@ -539,13 +539,13 @@ describe('parse insert statements', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: 'affectedRows',
-                    dbtype: 'int',
+                    columnName: 'affectedRows',
+                    type: 'int',
                     notNull: true
                 },
                 {
-                    name: 'insertId',
-                    dbtype: 'int',
+                    columnName: 'insertId',
+                    type: 'int',
                     notNull: true
                 }
             ],
@@ -580,13 +580,13 @@ describe('parse insert statements', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: 'affectedRows',
-                    dbtype: 'int',
+                    columnName: 'affectedRows',
+                    type: 'int',
                     notNull: true
                 },
                 {
-                    name: 'insertId',
-                    dbtype: 'int',
+                    columnName: 'insertId',
+                    type: 'int',
                     notNull: true
                 }
             ],
@@ -633,13 +633,13 @@ describe('parse insert statements', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: 'affectedRows',
-                    dbtype: 'int',
+                    columnName: 'affectedRows',
+                    type: 'int',
                     notNull: true
                 },
                 {
-                    name: 'insertId',
-                    dbtype: 'int',
+                    columnName: 'insertId',
+                    type: 'int',
                     notNull: true
                 }
             ],
@@ -699,13 +699,13 @@ describe('parse insert statements', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: 'affectedRows',
-                    dbtype: 'int',
+                    columnName: 'affectedRows',
+                    type: 'int',
                     notNull: true
                 },
                 {
-                    name: 'insertId',
-                    dbtype: 'int',
+                    columnName: 'insertId',
+                    type: 'int',
                     notNull: true
                 }
             ],

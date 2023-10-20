@@ -1,25 +1,29 @@
 import { MySqlType } from "./mysql-mapping"
 import { Brand } from "./utility-types"
-import { ColumnSchema } from "./mysql-query-analyzer/types"
+import { ColumnInfo, ColumnSchema } from "./mysql-query-analyzer/types"
+import { QueryContext } from "ts-mysql-parser";
+import { Model } from "./describe-nested-query";
 
 export type DBSchema = {
     columns: ColumnSchema[];
+}
+
+export type ParseResult = {
+    sql: string;
+    namedParameters: string[];
+    dbSchema: ColumnSchema[];
+    queryContext: QueryContext;
 }
 
 export type SchemaDef = {
     sql: string;
     queryType: 'Select' | 'Insert' | 'Update' | 'Delete'
     multipleRowsResult: boolean;
-    columns: ColumnDef[]; //TODO - ColumnDef and ParamterDef should be the same
+    columns: ColumnInfo[]; //TODO - ColumnDef and ParamterDef should be the same
     orderByColumns?: string[];
     parameters: ParameterDef[];
     data?: ParameterDef[];
-}
-
-export type ColumnDef = {
-    name: string;
-    dbtype: MySqlType | 'any';
-    notNull?: boolean;
+    model?: Model;
 }
 
 export type FieldNullability = {

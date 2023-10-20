@@ -1,3 +1,4 @@
+import { Model } from "../describe-nested-query";
 import { MySqlType, InferType } from "../mysql-mapping"
 import { ParameterDef } from "../types"
 
@@ -66,7 +67,7 @@ export type ColumnInfo = {
     columnName: string;
     type: MySqlType | 'any';
     notNull: boolean;
-    table: string;
+    table?: string;
 }
 
 export type FieldInfo = {
@@ -111,6 +112,7 @@ export type QueryInfoResult = {
     parameters: ParameterInfo[];
     multipleRowsResult: boolean;
     orderByColumns?: string[];
+    model?: Model;
 }
 
 export type InsertInfoResult = {

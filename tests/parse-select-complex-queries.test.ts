@@ -32,24 +32,28 @@ describe('Test parse complex queries', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'value',
-                    dbtype: 'int',
-                    notNull: false
+                    columnName: 'value',
+                    type: 'int',
+                    notNull: false,
+                    table: 't1'
                 },
                 {
-                    name: 'name',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'name',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 't2'
                 },
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: false
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: false,
+                    table: 't3'
                 },
                 {
-                    name: 'quantity',
+                    columnName: 'quantity',
                     notNull: true,
-                    dbtype: 'bigint'
+                    type: 'bigint',
+                    table: ''
                 }
             ],
             parameters: []
@@ -79,14 +83,16 @@ describe('Test parse complex queries', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'name',
-                    dbtype: 'varchar',
-                    notNull: true
+                    columnName: 'name',
+                    type: 'varchar',
+                    notNull: true,
+                    table: 'mytable3'
                 },
                 {
-                    name: 'value',
-                    dbtype: 'double',
-                    notNull: false
+                    columnName: 'value',
+                    type: 'double',
+                    notNull: false,
+                    table: 'mytable3'
                 }
             ],
             parameters: [
@@ -127,19 +133,22 @@ describe('Test parse complex queries', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'name',
-                    dbtype: 'varchar',
-                    notNull: true
+                    columnName: 'name',
+                    type: 'varchar',
+                    notNull: true,
+                    table: 'mytable3'
                 },
                 {
-                    name: 'value',
-                    dbtype: 'double',
-                    notNull: false
+                    columnName: 'value',
+                    type: 'double',
+                    notNull: false,
+                    table: 'mytable3'
                 },
                 {
-                    name: 'id',
-                    dbtype: 'double',
-                    notNull: false
+                    columnName: 'id',
+                    type: 'double',
+                    notNull: false,
+                    table: '' //TODO - could be mytable3?
                 }
             ],
             parameters: [
@@ -189,9 +198,10 @@ describe('Test parse complex queries', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: ''
                 }
             ],
             parameters: []
@@ -216,9 +226,10 @@ describe('Test parse complex queries', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'col',
-                    dbtype: 'text',
-                    notNull: false
+                    columnName: 'col',
+                    type: 'text',
+                    notNull: false,
+                    table: ''
                 }
             ],
             parameters: []
@@ -245,14 +256,16 @@ describe('Test parse complex queries', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: ''
                 },
                 {
-                    name: 'value',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'value',
+                    type: 'varchar',
+                    notNull: false,
+                    table: ''
                 }
             ],
             parameters: []
@@ -280,14 +293,16 @@ describe('Test parse complex queries', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
+                    columnName: 'id',
+                    type: 'int',
                     notNull: true,
+                    table: ''
                 },
                 {
-                    name: 'value',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'value',
+                    type: 'varchar',
+                    notNull: false,
+                    table: ''
                 }
             ],
             parameters: []
@@ -311,9 +326,10 @@ describe('Test parse complex queries', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'fullname',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'fullname',
+                    type: 'varchar',
+                    notNull: false,
+                    table: ''
                 }
             ],
             parameters: []
@@ -337,9 +353,10 @@ describe('Test parse complex queries', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'fullname',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'fullname',
+                    type: 'varchar',
+                    notNull: false,
+                    table: '' //TODO - subselect table name should be ''
                 }
             ],
             parameters: [{
@@ -370,9 +387,10 @@ describe('Test parse complex queries', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'name',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'name',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 'names'
                 }
             ],
             parameters: []
@@ -401,19 +419,22 @@ describe('Test parse complex queries', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 'n'
                 },
                 {
-                    name: 'name',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'name',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 'n'
                 },
                 {
-                    name: 'value',
-                    dbtype: 'int',
-                    notNull: false
+                    columnName: 'value',
+                    type: 'int',
+                    notNull: false,
+                    table: 'v'
                 }
             ],
             parameters: []
@@ -440,14 +461,16 @@ describe('Test parse complex queries', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 'names'
                 },
                 {
-                    name: 'name',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'name',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 'names'
                 }
             ],
             parameters: []
@@ -477,9 +500,10 @@ describe('Test parse complex queries', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 'result'
                 }
             ],
             parameters: []
@@ -512,19 +536,22 @@ describe('Test parse complex queries', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 't1'
                 },
                 {
-                    name: 'value',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'value',
+                    type: 'int',
+                    notNull: true,
+                    table: 't1'
                 },
                 {
-                    name: 'name',
-                    dbtype: 'varchar',
-                    notNull: true
+                    columnName: 'name',
+                    type: 'varchar',
+                    notNull: true,
+                    table: 't1'
                 }
             ],
             parameters: [
@@ -564,9 +591,10 @@ describe('Test parse complex queries', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'n',
-                    dbtype: 'bigint',
-                    notNull: true
+                    columnName: 'n',
+                    type: 'bigint',
+                    notNull: true,
+                    table: 'seq'
                 }
             ],
             parameters: []
@@ -595,9 +623,10 @@ describe('Test parse complex queries', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'a',
-                    dbtype: 'varchar',
-                    notNull: true
+                    columnName: 'a',
+                    type: 'varchar',
+                    notNull: true,
+                    table: 'conc'
                 }
             ],
             parameters: []
@@ -626,9 +655,10 @@ describe('Test parse complex queries', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'n',
-                    dbtype: 'bigint',
-                    notNull: true
+                    columnName: 'n',
+                    type: 'bigint',
+                    notNull: true,
+                    table: 'cte'
                 }
             ],
             parameters: []
@@ -657,14 +687,16 @@ describe('Test parse complex queries', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'n',
-                    dbtype: 'bigint',
-                    notNull: true
+                    columnName: 'n',
+                    type: 'bigint',
+                    notNull: true,
+                    table: 'cte'
                 },
                 {
-                    name: 'str',
-                    dbtype: 'varchar',
-                    notNull: true
+                    columnName: 'str',
+                    type: 'varchar',
+                    notNull: true,
+                    table: 'cte'
                 }
             ],
             parameters: []
@@ -695,9 +727,10 @@ describe('Test parse complex queries', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'date',
-                    dbtype: 'datetime',
-                    notNull: false
+                    columnName: 'date',
+                    type: 'datetime',
+                    notNull: false,
+                    table: 'dates'
                 }
             ],
             parameters: []
@@ -724,14 +757,16 @@ describe('Test parse complex queries', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 't'
                 },
                 {
-                    name: 'value',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'value',
+                    type: 'int',
+                    notNull: true,
+                    table: ''
                 }
             ],
             parameters: [
@@ -773,14 +808,16 @@ describe('Test parse complex queries', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'name',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'name',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 'names'
                 },
                 {
-                    name: 'idFilter',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'idFilter',
+                    type: 'int',
+                    notNull: true,
+                    table: ''
                 }
             ],
             parameters: [

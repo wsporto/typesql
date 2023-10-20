@@ -16,7 +16,7 @@ describe('Test nested-ts-descriptor', () => {
         await client.closeConnection();
     })
 
-    it.only('SELECT FROM users u INNER JOIN posts p', async () => {
+    it('SELECT FROM users u INNER JOIN posts p', async () => {
         const dbSchema = await client.loadDbSchema();
 
         const sql = `

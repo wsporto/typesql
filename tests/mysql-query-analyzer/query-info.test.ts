@@ -128,7 +128,7 @@ describe('Test parse parameters', () => {
                     columnName: 'datetime_column',
                     type: 'datetime',
                     notNull: true,
-                    table: 'all_types'
+                    table: 'e'
                 }
             ],
             parameters: [
@@ -350,7 +350,7 @@ describe('Test parse parameters', () => {
                     columnName: '(SELECT id FROM mytable2)',
                     type: 'int',
                     notNull: false,
-                    table: 'mytable1'
+                    table: ''
                 }
             ],
             parameters: []
@@ -484,13 +484,13 @@ describe('Test parse parameters', () => {
                     columnName: 'id',
                     type: 'int',
                     notNull: true,
-                    table: 'mytable1'
+                    table: ''
                 },
                 {
                     columnName: 'value',
                     type: 'varchar',
                     notNull: true,
-                    table: 'mytable1'
+                    table: ''
                 }
             ],
             parameters: [

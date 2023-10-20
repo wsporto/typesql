@@ -45,18 +45,18 @@ describe('rename invalid names', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
+                    columnName: 'id',
+                    type: 'int',
                     notNull: true
                 },
                 {
-                    name: 'id',
-                    dbtype: 'int',
+                    columnName: 'id',
+                    type: 'int',
                     notNull: true
                 },
                 {
-                    name: 'count(*)',
-                    dbtype: 'bigint',
+                    columnName: 'count(*)',
+                    type: 'bigint',
                     notNull: true
                 }
             ],

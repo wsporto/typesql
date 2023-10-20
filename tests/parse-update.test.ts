@@ -1,8 +1,9 @@
 import assert from "assert";
 import { parseSql } from "../src/describe-query";
-import { SchemaDef, ColumnDef } from "../src/types";
+import { SchemaDef } from "../src/types";
 import { DbClient } from "../src/queryExectutor";
 import { isLeft } from "fp-ts/lib/Either";
+import { ColumnInfo } from "../src/mysql-query-analyzer/types";
 
 describe('parse update statements', () => {
 
@@ -15,10 +16,10 @@ describe('parse update statements', () => {
         await client.closeConnection();
     })
 
-    const columns: ColumnDef[] = [
+    const columns: ColumnInfo[] = [
         {
-            name: 'affectedRows',
-            dbtype: 'int',
+            columnName: 'affectedRows',
+            type: 'int',
             notNull: true
         }
     ]

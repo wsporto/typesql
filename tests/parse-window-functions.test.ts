@@ -28,9 +28,10 @@ describe('Parse window functions', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'num',
-                    dbtype: 'bigint',
-                    notNull: true
+                    columnName: 'num',
+                    type: 'bigint',
+                    notNull: true,
+                    table: '' //TODO - not implemented
                 }
             ],
             parameters: []
@@ -56,19 +57,22 @@ describe('Parse window functions', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 'mytable1'
                 },
                 {
-                    name: 'value',
-                    dbtype: 'int',
-                    notNull: false
+                    columnName: 'value',
+                    type: 'int',
+                    notNull: false,
+                    table: 'mytable1'
                 },
                 {
-                    name: 'num',
-                    dbtype: 'bigint',
-                    notNull: true
+                    columnName: 'num',
+                    type: 'bigint',
+                    notNull: true,
+                    table: ''
                 }
             ],
             parameters: []
@@ -96,24 +100,28 @@ describe('Parse window functions', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'firstId',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'firstId',
+                    type: 'int',
+                    notNull: true,
+                    table: 'mytable2'
                 },
                 {
-                    name: 'lastName',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'lastName',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 'mytable2'
                 },
                 {
-                    name: 'rankValue',
-                    dbtype: 'bigint',
-                    notNull: true
+                    columnName: 'rankValue',
+                    type: 'bigint',
+                    notNull: true,
+                    table: ''
                 },
                 {
-                    name: 'denseRankValue',
-                    dbtype: 'bigint',
-                    notNull: true
+                    columnName: 'denseRankValue',
+                    type: 'bigint',
+                    notNull: true,
+                    table: ''
                 }
             ],
             parameters: []
@@ -138,9 +146,10 @@ describe('Parse window functions', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'total',
-                    dbtype: 'decimal',
-                    notNull: false
+                    columnName: 'total',
+                    type: 'decimal',
+                    notNull: false,
+                    table: 'mytable1'
                 }
             ],
             parameters: []
@@ -163,9 +172,10 @@ describe('Parse window functions', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'avgResult',
-                    dbtype: 'decimal',
-                    notNull: false
+                    columnName: 'avgResult',
+                    type: 'decimal',
+                    notNull: false,
+                    table: 'mytable1'
                 }
             ],
             parameters: []
@@ -191,14 +201,16 @@ describe('Parse window functions', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'leadValue',
-                    dbtype: 'int',
-                    notNull: false
+                    columnName: 'leadValue',
+                    type: 'int',
+                    notNull: false,
+                    table: 'mytable2'
                 },
                 {
-                    name: 'lagValue',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'lagValue',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 'mytable2'
                 }
             ],
             parameters: []

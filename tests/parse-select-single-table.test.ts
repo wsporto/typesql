@@ -40,9 +40,10 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 'mytable1'
                 }
             ],
             parameters: []
@@ -64,9 +65,10 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'name',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'name',
+                    type: 'int',
+                    notNull: true,
+                    table: 'mytable1'
                 }
             ],
             parameters: []
@@ -90,14 +92,16 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 'mytable1'
                 },
                 {
-                    name: 'value',
-                    dbtype: 'int',
-                    notNull: false
+                    columnName: 'value',
+                    type: 'int',
+                    notNull: false,
+                    table: 'mytable1'
                 }
             ],
             parameters: []
@@ -119,14 +123,16 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 'mytable1'
                 },
                 {
-                    name: 'value',
-                    dbtype: 'int',
-                    notNull: false
+                    columnName: 'value',
+                    type: 'int',
+                    notNull: false,
+                    table: 'mytable1'
                 }
             ],
             parameters: []
@@ -148,14 +154,16 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 't'
                 },
                 {
-                    name: 'value',
-                    dbtype: 'int',
-                    notNull: false
+                    columnName: 'value',
+                    type: 'int',
+                    notNull: false,
+                    table: 't'
                 }
             ],
             parameters: []
@@ -177,14 +185,16 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 'mytable1'
                 },
                 {
-                    name: 'value',
-                    dbtype: 'int',
-                    notNull: false
+                    columnName: 'value',
+                    type: 'int',
+                    notNull: false,
+                    table: 'mytable1'
                 }
             ],
             parameters: []
@@ -208,19 +218,22 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 'mytable2'
                 },
                 {
-                    name: 'name',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'name',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 'mytable2'
                 },
                 {
-                    name: 'description',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'description',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 'mytable2'
                 }
             ],
             parameters: []
@@ -243,14 +256,16 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 'mytable1'
                 },
                 {
-                    name: 'value',
-                    dbtype: 'int',
-                    notNull: false
+                    columnName: 'value',
+                    type: 'int',
+                    notNull: false,
+                    table: 'mytable1'
                 }
             ],
             parameters: []
@@ -273,14 +288,16 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 'mytable1'
                 },
                 {
-                    name: 'value',
-                    dbtype: 'int',
-                    notNull: false
+                    columnName: 'value',
+                    type: 'int',
+                    notNull: false,
+                    table: 'mytable1'
                 }
             ],
             parameters: []
@@ -303,9 +320,10 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 'mytable1'
                 }
             ],
             parameters: []
@@ -328,14 +346,16 @@ describe('Test simple select statements', () => {
             multipleRowsResult: false, //changed at v0.3.0
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 'mytable1'
                 },
                 {
-                    name: 'value',
-                    dbtype: 'int',
-                    notNull: false
+                    columnName: 'value',
+                    type: 'int',
+                    notNull: false,
+                    table: 'mytable1'
                 }
             ],
             parameters: [
@@ -362,9 +382,10 @@ describe('Test simple select statements', () => {
             multipleRowsResult: false, //changed at v.0.3.0
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 'mytable1'
                 }
             ],
             parameters: [
@@ -391,9 +412,10 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'value',
-                    dbtype: 'int',
-                    notNull: false
+                    columnName: 'value',
+                    type: 'int',
+                    notNull: false,
+                    table: 'mytable1'
                 }
             ],
             parameters: [
@@ -425,9 +447,10 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: '?', //TODO - PARAM1
-                    dbtype: 'any',
+                    columnName: '?', //TODO - PARAM1
+                    type: 'any',
                     notNull: true,
+                    table: ''
                 }
             ],
             parameters: [
@@ -455,9 +478,10 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'name',
-                    dbtype: 'any',
-                    notNull: true
+                    columnName: 'name',
+                    type: 'any',
+                    notNull: true,
+                    table: ''
                 }
             ],
             parameters: [
@@ -487,19 +511,22 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'name',
-                    dbtype: 'any',
-                    notNull: true
+                    columnName: 'name',
+                    type: 'any',
+                    notNull: true,
+                    table: ''
                 },
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 'mytable2'
                 },
                 {
-                    name: 'description',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'description',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 'mytable2'
                 }
 
             ],
@@ -544,9 +571,10 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'name',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'name',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 't'
                 }
             ],
             parameters: []
@@ -569,14 +597,16 @@ describe('Test simple select statements', () => {
             multipleRowsResult: false, //changed at v0.3.0
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 't'
                 },
                 {
-                    name: 'value',
-                    dbtype: 'int',
-                    notNull: false
+                    columnName: 'value',
+                    type: 'int',
+                    notNull: false,
+                    table: 't'
                 }
             ],
             parameters: [
@@ -605,14 +635,16 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 'mytable1'
                 },
                 {
-                    name: 'value',
-                    dbtype: 'int',
-                    notNull: false
+                    columnName: 'value',
+                    type: 'int',
+                    notNull: false,
+                    table: 'mytable1'
                 }
             ],
             parameters: []
@@ -635,14 +667,16 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 'mytable1'
                 },
                 {
-                    name: 'value',
-                    dbtype: 'int',
-                    notNull: false
+                    columnName: 'value',
+                    type: 'int',
+                    notNull: false,
+                    table: 'mytable1'
                 }
             ],
             parameters: []
@@ -665,14 +699,16 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 't'
                 },
                 {
-                    name: 'value',
-                    dbtype: 'int',
-                    notNull: false
+                    columnName: 'value',
+                    type: 'int',
+                    notNull: false,
+                    table: 't'
                 }
             ],
             parameters: []
@@ -695,14 +731,16 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 't'
                 },
                 {
-                    name: 'value',
-                    dbtype: 'int',
-                    notNull: false
+                    columnName: 'value',
+                    type: 'int',
+                    notNull: false,
+                    table: 't'
                 }
             ],
             parameters: [
@@ -731,9 +769,10 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 't'
                 }
             ],
             parameters: [
@@ -762,9 +801,10 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 't'
                 }
             ],
             parameters: [
@@ -793,9 +833,10 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 't'
                 }
             ],
             parameters: [
@@ -824,14 +865,16 @@ describe('Test simple select statements', () => {
             multipleRowsResult: false, //changed at v0.3.0
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 'mytable1'
                 },
                 {
-                    name: 'value',
-                    dbtype: 'int',
-                    notNull: false
+                    columnName: 'value',
+                    type: 'int',
+                    notNull: false,
+                    table: 'mytable1'
                 }
             ],
             parameters: [
@@ -862,14 +905,16 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'name',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'name',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 't2'
                 },
                 {
-                    name: 'id',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'id',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 't2'
                 }
             ],
             parameters: []
@@ -895,14 +940,16 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'name',
-                    dbtype: 'varchar',
-                    notNull: true //if pass null on parameters the result query will be empty
+                    columnName: 'name',
+                    type: 'varchar',
+                    notNull: true, //if pass null on parameters the result query will be empty
+                    table: 't2'
                 },
                 {
-                    name: 'id',
-                    dbtype: 'varchar',
-                    notNull: true //if pass null on parameters the result query will be empty
+                    columnName: 'id',
+                    type: 'varchar',
+                    notNull: true, //if pass null on parameters the result query will be empty
+                    table: 't2'
                 }
             ],
             parameters: [
@@ -935,9 +982,10 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'bigger',
-                    dbtype: 'tinyint', //changed at v0.0.2
-                    notNull: true
+                    columnName: 'bigger',
+                    type: 'tinyint', //changed at v0.0.2
+                    notNull: true,
+                    table: ''
                 }
             ],
             parameters: []
@@ -959,9 +1007,10 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'bigger',
-                    dbtype: 'tinyint', //changed at v0.0.2
-                    notNull: false
+                    columnName: 'bigger',
+                    type: 'tinyint', //changed at v0.0.2
+                    notNull: false,
+                    table: ''
                 }
             ],
             parameters: []
@@ -983,9 +1032,10 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 'mytable2'
 
                 }
             ],
@@ -1014,10 +1064,10 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
-
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 'mytable2'
                 }
             ],
             parameters: [
@@ -1052,9 +1102,10 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'varchar',
-                    notNull: false //not null can't be inferred
+                    columnName: 'id',
+                    type: 'varchar',
+                    notNull: false, //not null can't be inferred
+                    table: ''
                 }
             ],
             parameters: []
@@ -1085,9 +1136,10 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'varchar',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'varchar',
+                    notNull: true,
+                    table: ''
                 }
             ],
             parameters: []
@@ -1119,9 +1171,10 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 'mytable2'
                 }
             ],
             parameters: [
@@ -1152,9 +1205,10 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 'mytable1'
                 }
             ],
             parameters: [
@@ -1185,9 +1239,10 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 'mytable1'
                 }
             ],
             parameters: [
@@ -1224,9 +1279,10 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'value',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'value',
+                    type: 'int',
+                    notNull: true,
+                    table: 'mytable1'
                 }
             ],
             parameters: []
@@ -1251,19 +1307,22 @@ describe('Test simple select statements', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: '10',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: '10',
+                    type: 'int',
+                    notNull: true,
+                    table: ''
                 },
                 {
-                    name: `CONCAT_WS('a', 'b')`, //If the separator is NULL, the result is NULL.
-                    dbtype: 'varchar',
-                    notNull: true
+                    columnName: `CONCAT_WS('a', 'b')`, //If the separator is NULL, the result is NULL.
+                    type: 'varchar',
+                    notNull: true,
+                    table: ''
                 },
                 {
-                    name: 'name',
-                    dbtype: 'varchar',
-                    notNull: true
+                    columnName: 'name',
+                    type: 'varchar',
+                    notNull: true,
+                    table: ''
                 }
             ],
             parameters: []
@@ -1287,9 +1346,10 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'value',
-                    dbtype: 'int',
-                    notNull: false
+                    columnName: 'value',
+                    type: 'int',
+                    notNull: false,
+                    table: 'mytable1'
                 }
             ],
             orderByColumns: ['id', 'value'],
@@ -1314,9 +1374,10 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'value',
-                    dbtype: 'int',
-                    notNull: false
+                    columnName: 'value',
+                    type: 'int',
+                    notNull: false,
+                    table: 'mytable1'
                 }
             ],
             //shouldn't include order by columns because there is no parameters on the order by clause
@@ -1343,14 +1404,16 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'value',
-                    dbtype: 'int',
-                    notNull: false
+                    columnName: 'value',
+                    type: 'int',
+                    notNull: false,
+                    table: 'mytable1'
                 },
                 {
-                    name: 'ordering',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'ordering',
+                    type: 'int',
+                    notNull: true,
+                    table: ''
                 }
             ],
             orderByColumns: ['id', 'value', 'ordering'],
@@ -1377,9 +1440,10 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'value',
-                    dbtype: 'int',
-                    notNull: false
+                    columnName: 'value',
+                    type: 'int',
+                    notNull: false,
+                    table: 't'
                 }
             ],
             orderByColumns: ['id', 'value', 'ordering'],
@@ -1406,9 +1470,10 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'value',
-                    dbtype: 'int',
-                    notNull: false
+                    columnName: 'value',
+                    type: 'int',
+                    notNull: false,
+                    table: 't'
                 }
             ],
             orderByColumns: ['id', 'value', 'case when value = 1 then 1 else 2 end'],
@@ -1432,9 +1497,10 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 'mytable1'
                 }
             ],
             parameters: [

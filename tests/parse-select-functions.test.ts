@@ -27,9 +27,10 @@ describe('Test parse select with functions', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: 'sum(value)',
-                    dbtype: 'decimal',
-                    notNull: false
+                    columnName: 'sum(value)',
+                    type: 'decimal',
+                    notNull: false,
+                    table: 'mytable1'
                 }
             ],
             parameters: []
@@ -52,9 +53,10 @@ describe('Test parse select with functions', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: 'total',
-                    dbtype: 'decimal',
-                    notNull: false
+                    columnName: 'total',
+                    type: 'decimal',
+                    notNull: false,
+                    table: 'mytable1'
                 }
             ],
             parameters: []
@@ -77,9 +79,10 @@ describe('Test parse select with functions', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: 'total',
-                    dbtype: 'decimal',
-                    notNull: false
+                    columnName: 'total',
+                    type: 'decimal',
+                    notNull: false,
+                    table: 't1'
                 }
             ],
             parameters: []
@@ -102,9 +105,10 @@ describe('Test parse select with functions', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: 'count(id)',
-                    dbtype: 'bigint',
-                    notNull: true
+                    columnName: 'count(id)',
+                    type: 'bigint',
+                    notNull: true,
+                    table: ''
                 }
             ],
             parameters: []
@@ -126,9 +130,10 @@ describe('Test parse select with functions', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: 'count(*)',
-                    dbtype: 'bigint',
-                    notNull: true
+                    columnName: 'count(*)',
+                    type: 'bigint',
+                    notNull: true,
+                    table: ''
                 }
             ],
             parameters: []
@@ -151,9 +156,10 @@ describe('Test parse select with functions', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: 'sum(2*value)',
-                    dbtype: 'decimal',
-                    notNull: false
+                    columnName: 'sum(2*value)',
+                    type: 'decimal',
+                    notNull: false,
+                    table: ''
                 }
             ],
             parameters: []
@@ -176,9 +182,10 @@ describe('Test parse select with functions', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: 'avg(value)',
-                    dbtype: 'decimal',
-                    notNull: false
+                    columnName: 'avg(value)',
+                    type: 'decimal',
+                    notNull: false,
+                    table: ''
                 }
             ],
             parameters: []
@@ -201,9 +208,10 @@ describe('Test parse select with functions', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: 'avg(value + (value + 2))',
-                    dbtype: 'decimal',
-                    notNull: false
+                    columnName: 'avg(value + (value + 2))',
+                    type: 'decimal',
+                    notNull: false,
+                    table: ''
                 }
             ],
             parameters: []
@@ -226,9 +234,10 @@ describe('Test parse select with functions', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: 'avgResult',
-                    dbtype: 'decimal',
-                    notNull: false
+                    columnName: 'avgResult',
+                    type: 'decimal',
+                    notNull: false,
+                    table: ''
                 }
             ],
             parameters: []
@@ -251,9 +260,10 @@ describe('Test parse select with functions', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: 'sum(t2.id + (t1.value + 2))',
-                    dbtype: 'decimal',
-                    notNull: false
+                    columnName: 'sum(t2.id + (t1.value + 2))',
+                    type: 'decimal',
+                    notNull: false,
+                    table: ''
                 }
             ],
             parameters: []
@@ -276,9 +286,10 @@ describe('Test parse select with functions', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: 'MIN(value)',
-                    dbtype: 'int',
-                    notNull: false
+                    columnName: 'MIN(value)',
+                    type: 'int',
+                    notNull: false,
+                    table: ''
                 }
             ],
             parameters: []
@@ -302,9 +313,10 @@ describe('Test parse select with functions', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: 'MIN(name)',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'MIN(name)',
+                    type: 'varchar',
+                    notNull: false,
+                    table: ''
                 }
             ],
             parameters: []
@@ -327,9 +339,10 @@ describe('Test parse select with functions', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: `STR_TO_DATE('21/5/2013','%d/%m/%Y')`,
-                    dbtype: 'date',
-                    notNull: false //invalid date
+                    columnName: `STR_TO_DATE('21/5/2013','%d/%m/%Y')`,
+                    type: 'date',
+                    notNull: false, //invalid date
+                    table: ''
                 }
             ],
             parameters: []
@@ -352,9 +365,10 @@ describe('Test parse select with functions', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: `STR_TO_DATE(CONCAT_WS('/', ?, ?, ?),'%d/%m/%Y')`,
-                    dbtype: 'date',
-                    notNull: false
+                    columnName: `STR_TO_DATE(CONCAT_WS('/', ?, ?, ?),'%d/%m/%Y')`,
+                    type: 'date',
+                    notNull: false,
+                    table: ''
                 }
             ],
             parameters: [
@@ -392,9 +406,10 @@ describe('Test parse select with functions', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: 'days_stayed',
-                    dbtype: 'bigint',
-                    notNull: true
+                    columnName: 'days_stayed',
+                    type: 'bigint',
+                    notNull: true,
+                    table: ''
                 }
             ],
             parameters: [
@@ -428,9 +443,10 @@ describe('Test parse select with functions', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: 'days_stayed',
-                    dbtype: 'bigint',
-                    notNull: false //STR_TO_DATE will return null if pass an invalid date
+                    columnName: 'days_stayed',
+                    type: 'bigint',
+                    notNull: false, //STR_TO_DATE will return null if pass an invalid date
+                    table: ''
                 }
             ],
             parameters: [
@@ -469,14 +485,16 @@ describe('Test parse select with functions', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: 'result1',
-                    dbtype: 'varchar',
-                    notNull: true
+                    columnName: 'result1',
+                    type: 'varchar',
+                    notNull: true,
+                    table: ''
                 },
                 {
-                    name: 'result2',
-                    dbtype: 'varchar',
-                    notNull: true
+                    columnName: 'result2',
+                    type: 'varchar',
+                    notNull: true,
+                    table: ''
                 }
             ],
             parameters: []
@@ -500,9 +518,10 @@ describe('Test parse select with functions', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'result',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'result',
+                    type: 'int',
+                    notNull: true,
+                    table: ''
                 }
             ],
             parameters: []
@@ -526,9 +545,10 @@ describe('Test parse select with functions', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: 'GROUP_CONCAT(name)',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'GROUP_CONCAT(name)',
+                    type: 'varchar',
+                    notNull: false,
+                    table: ''
                 }
             ],
             parameters: []
@@ -552,9 +572,10 @@ describe('Test parse select with functions', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: 'GROUP_CONCAT(id)',
-                    dbtype: 'varchar',
-                    notNull: true
+                    columnName: 'GROUP_CONCAT(id)',
+                    type: 'varchar',
+                    notNull: true,
+                    table: ''
                 }
             ],
             parameters: []
@@ -579,9 +600,10 @@ describe('Test parse select with functions', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: 'result',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'result',
+                    type: 'varchar',
+                    notNull: false,
+                    table: ''
                 }
             ],
             parameters: []
@@ -605,9 +627,10 @@ describe('Test parse select with functions', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: 'result',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'result',
+                    type: 'int',
+                    notNull: true,
+                    table: ''
                 }
             ],
             parameters: []
@@ -631,9 +654,10 @@ describe('Test parse select with functions', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: 'result',
-                    dbtype: 'varchar',
-                    notNull: true
+                    columnName: 'result',
+                    type: 'varchar',
+                    notNull: true,
+                    table: ''
                 }
             ],
             parameters: []
@@ -657,9 +681,10 @@ describe('Test parse select with functions', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: 'result',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'result',
+                    type: 'varchar',
+                    notNull: false,
+                    table: ''
                 }
             ],
             parameters: []
@@ -683,9 +708,10 @@ describe('Test parse select with functions', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: 'result',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'result',
+                    type: 'varchar',
+                    notNull: false,
+                    table: ''
                 }
             ],
             parameters: []
@@ -709,9 +735,10 @@ describe('Test parse select with functions', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'result',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'result',
+                    type: 'int',
+                    notNull: true,
+                    table: 'mytable1' //correct?
                 }
             ],
             parameters: [
@@ -741,9 +768,10 @@ describe('Test parse select with functions', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: `NULLIF(?, 'a')`,
-                    dbtype: 'varchar',
-                    notNull: true
+                    columnName: `NULLIF(?, 'a')`,
+                    type: 'varchar',
+                    notNull: true,
+                    table: ''
                 }
             ],
             parameters: [
@@ -773,9 +801,10 @@ describe('Test parse select with functions', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: 'result',
-                    dbtype: 'char',
-                    notNull: true
+                    columnName: 'result',
+                    type: 'char',
+                    notNull: true,
+                    table: ''
                 }
             ],
             parameters: []
@@ -799,9 +828,10 @@ describe('Test parse select with functions', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: 'md5',
-                    dbtype: 'char',
-                    notNull: true
+                    columnName: 'md5',
+                    type: 'char',
+                    notNull: true,
+                    table: ''
                 }
             ],
             parameters: []
@@ -825,9 +855,10 @@ describe('Test parse select with functions', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'md5',
-                    dbtype: 'char',
-                    notNull: true
+                    columnName: 'md5',
+                    type: 'char',
+                    notNull: true,
+                    table: ''
                 }
             ],
             parameters: [
@@ -857,29 +888,34 @@ describe('Test parse select with functions', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    name: 'r1',
-                    dbtype: 'char',
-                    notNull: true
+                    columnName: 'r1',
+                    type: 'char',
+                    notNull: true,
+                    table: ''
                 },
                 {
-                    name: 'r2',
-                    dbtype: 'char',
-                    notNull: true
+                    columnName: 'r2',
+                    type: 'char',
+                    notNull: true,
+                    table: ''
                 },
                 {
-                    name: 'r3',
-                    dbtype: 'char',
-                    notNull: false
+                    columnName: 'r3',
+                    type: 'char',
+                    notNull: false,
+                    table: ''
                 },
                 {
-                    name: 'r4',
-                    dbtype: 'char',
-                    notNull: false
+                    columnName: 'r4',
+                    type: 'char',
+                    notNull: false,
+                    table: ''
                 },
                 {
-                    name: 'r5',
-                    dbtype: 'char',
-                    notNull: true
+                    columnName: 'r5',
+                    type: 'char',
+                    notNull: true,
+                    table: ''
                 }
             ],
             parameters: [

@@ -424,7 +424,7 @@ function traverseQueryExpressionBody(queryExpressionBody: QueryExpressionBodyCon
             name: resultTypes[index].name,
             type: resultTypes[index],
             notNull: mainQueryResult.columns[index].notNull,
-            table: mainQueryResult.columns[index].table
+            table: c.table || ''
         }
         return col;
     });
@@ -961,7 +961,7 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
     if (simpleExpr instanceof SimpleExprColumnRefContext) {
         const fieldName = splitName(simpleExpr.text);
         const column = findColumn(fieldName, fromColumns.concat(withSchema));
-        const typeVar = freshVar(column.columnName, column.columnType.type, column.table);
+        const typeVar = freshVar(column.columnName, column.columnType.type, column.tableAlias || column.table);
         constraints.push({
             expression: simpleExpr.text,
             type1: typeVar,
@@ -1029,7 +1029,7 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
         const subqueryResult = traverseSubquery(subquery, constraints, parameters, dbSchema, withSchema, fromColumns);
         return {
             kind: 'TypeOperator',
-            types: subqueryResult.columns.map(t => t.type)
+            types: subqueryResult.columns.map(t => ({ ...t.type, table: '' }))
         }
     }
     if (simpleExpr instanceof SimpleExprCaseContext) {
@@ -1142,6 +1142,9 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
                     mostGeneralType: true,
                     coercionType: 'SumFunction'
                 })
+                if (inSumExprType.kind == 'TypeVar') {
+                    functionType.table = inSumExprType.table
+                }
             }
             return functionType;
         }
@@ -1699,8 +1702,9 @@ export function filterColumns(dbSchema: ColumnSchema[], withSchema: ColumnDef[],
 export function selectAllColumns(tablePrefix: string, fromColumns: ColumnDef[]): ColumnDef[] {
     return fromColumns.filter(column => {
         if (tablePrefix == '' || tablePrefix == column.tableAlias || tablePrefix == column.table) {
-            return column;
+            return true;
         }
+        return false;
     });
 }
 
@@ -1708,8 +1712,9 @@ function filterUsingFields(joinedFields: ColumnDef[], usingFields: string[]) {
     return joinedFields.filter(joinedField => {
         const isUsing = usingFields.includes(joinedField.columnName);
         if (!isUsing) {
-            return joinedField;
+            return true;
         }
+        return false;
     })
 }
 

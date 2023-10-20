@@ -1,4 +1,4 @@
-import { SchemaDef, CamelCaseName, TsFieldDescriptor, ParameterDef, ColumnDef } from "./types";
+import { SchemaDef, CamelCaseName, TsFieldDescriptor, ParameterDef } from "./types";
 import fs from "fs";
 import path, { parse } from "path";
 import { DbClient } from "./queryExectutor";
@@ -8,6 +8,7 @@ import { none, Option, some, isNone } from "fp-ts/lib/Option";
 import { converToTsType, MySqlType } from "./mysql-mapping";
 import { parseSql } from "./describe-query";
 import CodeBlockWriter from "code-block-writer";
+import { NestedTsDescriptor, createNestedTsDescriptor } from "./ts-nested-descriptor";
 
 export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, target: 'node' | 'deno'): string {
     const writer = new CodeBlockWriter();
@@ -119,11 +120,11 @@ function tsFieldToStr(tsField: TsFieldDescriptor) {
 
 export function generateTsDescriptor(queryInfo: SchemaDef): TsDescriptor {
 
-    const escapedColumnsNames = renameInvalidNames(queryInfo.columns.map(col => col.name));
+    const escapedColumnsNames = renameInvalidNames(queryInfo.columns.map(col => col.columnName));
     const columns = queryInfo.columns.map((col, columnIndex) => {
         const tsDesc: TsFieldDescriptor = {
             name: escapedColumnsNames[columnIndex],
-            tsType: mapColumnType(col.dbtype),
+            tsType: mapColumnType(col.type),
             notNull: col.notNull ? col.notNull : false
         }
         return tsDesc;
@@ -153,7 +154,7 @@ export function generateTsDescriptor(queryInfo: SchemaDef): TsDescriptor {
         return tsDesc;
     })
 
-    return {
+    const result: TsDescriptor = {
         sql: queryInfo.sql,
         queryType: queryInfo.queryType,
         multipleRowsResult: queryInfo.multipleRowsResult,
@@ -161,8 +162,13 @@ export function generateTsDescriptor(queryInfo: SchemaDef): TsDescriptor {
         orderByColumns: queryInfo.orderByColumns,
         parameterNames,
         parameters,
-        data
+        data,
     };
+    if (queryInfo.model) {
+        const nestedDescriptor = createNestedTsDescriptor(queryInfo.columns, queryInfo.model);
+        result.nestedDescriptor = nestedDescriptor;
+    }
+    return result;
 }
 
 export function removeDuplicatedParameters(parameters: ParameterDef[]): ParameterDef[] {
@@ -173,7 +179,7 @@ export function removeDuplicatedParameters(parameters: ParameterDef[]): Paramete
             if (param.notNull == false) {
                 columnsCount.set(param.name, param);
             }
-            return param;
+            // return param;
         }
         else {
             columnsCount.set(param.name, param);
@@ -279,4 +285,5 @@ export type TsDescriptor = {
     parameters: TsFieldDescriptor[];
     data?: TsFieldDescriptor[];
     orderByColumns?: string[];
+    nestedDescriptor?: NestedTsDescriptor;
 }

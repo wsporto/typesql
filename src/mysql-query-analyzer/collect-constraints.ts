@@ -36,7 +36,7 @@ export function createColumnType(col: ColumnDef) {
         id: col.columnType.id,
         name: col.columnName,
         type: col.columnType.type,
-        table: col.table
+        table: col.tableAlias || col.table
     }
     return columnType;
 }

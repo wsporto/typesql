@@ -29,9 +29,10 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 'mytable1'
                 }
             ],
             parameters: []
@@ -56,9 +57,10 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 'mytable1'
                 }
             ],
             parameters: []
@@ -83,9 +85,10 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 'mytable1'
                 }
             ],
             parameters: []
@@ -119,9 +122,10 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 'mytable1'
                 }
             ],
             parameters: []

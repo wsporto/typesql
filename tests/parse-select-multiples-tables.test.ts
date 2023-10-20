@@ -30,29 +30,34 @@ describe('Test select with multiples tables', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 't1'
                 },
                 {
-                    name: 'value',
-                    dbtype: 'int',
-                    notNull: false
+                    columnName: 'value',
+                    type: 'int',
+                    notNull: false,
+                    table: 't1'
                 },
                 {
-                    name: 'id', //TODO - rename fields
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id', //TODO - rename fields
+                    type: 'int',
+                    notNull: true,
+                    table: 't2'
                 },
                 {
-                    name: 'name',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'name',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 't2'
                 },
                 {
-                    name: 'descr',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'descr',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 't2'
                 }
             ],
             parameters: []
@@ -78,29 +83,34 @@ describe('Test select with multiples tables', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 't1'
                 },
                 {
-                    name: 'value',
-                    dbtype: 'int',
-                    notNull: false
+                    columnName: 'value',
+                    type: 'int',
+                    notNull: false,
+                    table: 't1'
                 },
                 {
-                    name: 'id', //TODO - rename fields
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id', //TODO - rename fields
+                    type: 'int',
+                    notNull: true,
+                    table: 't2'
                 },
                 {
-                    name: 'name',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'name',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 't2'
                 },
                 {
-                    name: 'descr',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'descr',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 't2'
                 }
             ],
             parameters: []
@@ -126,14 +136,16 @@ describe('Test select with multiples tables', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 't1'
                 },
                 {
-                    name: 'value',
-                    dbtype: 'int',
-                    notNull: false
+                    columnName: 'value',
+                    type: 'int',
+                    notNull: false,
+                    table: 't1'
                 }
             ],
             parameters: []
@@ -159,19 +171,22 @@ describe('Test select with multiples tables', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 't2'
                 },
                 {
-                    name: 'name',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'name',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 't2'
                 },
                 {
-                    name: 'descr',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'descr',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 't2'
                 }
             ],
             parameters: []
@@ -197,29 +212,34 @@ describe('Test select with multiples tables', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 't2'
                 },
                 {
-                    name: 'name',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'name',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 't2'
                 },
                 {
-                    name: 'descr',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'descr',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 't2'
                 },
                 {
-                    name: 'id', //TODO - rename field
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id', //TODO - rename field
+                    type: 'int',
+                    notNull: true,
+                    table: 't1'
                 },
                 {
-                    name: 'value',
-                    dbtype: 'int',
-                    notNull: false
+                    columnName: 'value',
+                    type: 'int',
+                    notNull: false,
+                    table: 't1'
                 },
             ],
             parameters: []
@@ -246,9 +266,10 @@ describe('Test select with multiples tables', () => {
             multipleRowsResult: true, //changed at v0.5.13
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 't1'
                 }
             ],
             parameters: [
@@ -281,29 +302,34 @@ describe('Test select with multiples tables', () => {
             multipleRowsResult: true, //changed at v0.5.13
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 't1'
                 },
                 {
-                    name: 'name',
-                    dbtype: 'varchar',
-                    notNull: true //where t1.name = ?; cannot be null
+                    columnName: 'name',
+                    type: 'varchar',
+                    notNull: true, //where t1.name = ?; cannot be null
+                    table: 't2'
                 },
                 {
-                    name: 'value',
-                    dbtype: 'int',
-                    notNull: true //where t1.value = ?; cannot be null
+                    columnName: 'value',
+                    type: 'int',
+                    notNull: true, //where t1.value = ?; cannot be null
+                    table: 't1'
                 },
                 {
-                    name: 'description',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'description',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 't2'
                 },
                 {
-                    name: 'param1',
-                    dbtype: 'any',
-                    notNull: true
+                    columnName: 'param1',
+                    type: 'any',
+                    notNull: true,
+                    table: ''
                 }
             ],
             parameters: [
@@ -350,24 +376,28 @@ describe('Test select with multiples tables', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
-                },
-                {
-                    name: 'name',
-                    dbtype: 'varchar',
-                    notNull: true //where t2.name = ?; cannot be null
-                },
-                {
-                    name: 'value',
-                    dbtype: 'int',
-                    notNull: true //where t1.value = ?; cannot be null
-                },
-                {
-                    name: 'param1',
+                    columnName: 'id',
+                    type: 'int',
                     notNull: true,
-                    dbtype: 'any'
+                    table: 't3'
+                },
+                {
+                    columnName: 'name',
+                    type: 'varchar',
+                    notNull: true, //where t2.name = ?; cannot be null
+                    table: 't2'
+                },
+                {
+                    columnName: 'value',
+                    type: 'int',
+                    notNull: true, //where t1.value = ?; cannot be null
+                    table: 't1'
+                },
+                {
+                    columnName: 'param1',
+                    notNull: true,
+                    type: 'any',
+                    table: ''
                 }
             ],
             parameters: [
@@ -413,14 +443,16 @@ describe('Test select with multiples tables', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 't1'
                 },
                 {
-                    name: 'name',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'name',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 't2'
                 }
             ],
             parameters: []
@@ -445,9 +477,10 @@ describe('Test select with multiples tables', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'name',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'name',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 'mytable2'
                 }
             ],
             parameters: []
@@ -491,9 +524,10 @@ describe('Test select with multiples tables', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'fullname',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'fullname',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 't2'
                 }
             ],
             parameters: []
@@ -518,9 +552,10 @@ describe('Test select with multiples tables', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'name',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'name',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 't'
                 }
             ],
             parameters: []
@@ -544,9 +579,10 @@ describe('Test select with multiples tables', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'name',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'name',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 't'
                 }
             ],
             parameters: []
@@ -573,34 +609,40 @@ describe('Test select with multiples tables', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 't1'
                 },
                 {
-                    name: 'id', //TODO - rename field
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id', //TODO - rename field
+                    type: 'int',
+                    notNull: true,
+                    table: 't2'
                 },
                 {
-                    name: 'name',
-                    dbtype: 'int',
-                    notNull: false
+                    columnName: 'name',
+                    type: 'int',
+                    notNull: false,
+                    table: 't1'
                 },
                 {
-                    name: 'name', //TODO - rename field
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'name', //TODO - rename field
+                    type: 'varchar',
+                    notNull: false,
+                    table: 't2'
                 },
                 {
-                    name: 'id', //TODO - rename field
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id', //TODO - rename field
+                    type: 'int',
+                    notNull: true,
+                    table: 't1'
                 },
                 {
-                    name: 'descr',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'descr',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 't2'
                 }
             ],
             parameters: []
@@ -627,24 +669,28 @@ describe('Test select with multiples tables', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 't1'
                 },
                 {
-                    name: 'value',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'value',
+                    type: 'int',
+                    notNull: true,
+                    table: 't1'
                 },
                 {
-                    name: 'name',
-                    dbtype: 'varchar',
-                    notNull: true
+                    columnName: 'name',
+                    type: 'varchar',
+                    notNull: true,
+                    table: 't2'
                 },
                 {
-                    name: 'descr',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'descr',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 't2'
                 }
             ],
             parameters: []
@@ -671,24 +717,28 @@ describe('Test select with multiples tables', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 't1'
                 },
                 {
-                    name: 'value',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'value',
+                    type: 'int',
+                    notNull: true,
+                    table: 't1'
                 },
                 {
-                    name: 'name',
-                    dbtype: 'varchar',
-                    notNull: true
+                    columnName: 'name',
+                    type: 'varchar',
+                    notNull: true,
+                    table: 't2'
                 },
                 {
-                    name: 'descr',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'descr',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 't2'
                 }
             ],
             parameters: []
@@ -714,24 +764,28 @@ describe('Test select with multiples tables', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 't1'
                 },
                 {
-                    name: 'name',
-                    dbtype: 'varchar',
-                    notNull: false //TODO - using(id, name) makes the name notNull
+                    columnName: 'name',
+                    type: 'varchar',
+                    notNull: false, //TODO - using(id, name) makes the name notNull
+                    table: 't1'
                 },
                 {
-                    name: 'descr',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'descr',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 't1'
                 },
                 {
-                    name: 'descr', //TODO - must rename
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'descr', //TODO - must rename
+                    type: 'varchar',
+                    notNull: false,
+                    table: 't2'
                 },
             ],
             parameters: []
@@ -758,14 +812,16 @@ describe('Test select with multiples tables', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'id',
-                    dbtype: 'int',
-                    notNull: true
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 't1'
                 },
                 {
-                    name: 'name',
-                    dbtype: 'varchar',
-                    notNull: false
+                    columnName: 'name',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 't1'
                 }
             ],
             parameters: []
@@ -791,9 +847,10 @@ describe('Test select with multiples tables', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    name: 'sumById',
-                    dbtype: 'decimal',
-                    notNull: false
+                    columnName: 'sumById',
+                    type: 'decimal',
+                    notNull: false,
+                    table: 't1'
                 }
             ],
             parameters: []
