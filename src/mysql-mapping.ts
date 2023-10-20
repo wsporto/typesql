@@ -57,7 +57,7 @@ export type TsType =
     | 'null'
 
 
-export function converToTsType(mySqlType: MySqlType): TsType | string {
+export function converToTsType(mySqlType: MySqlType | 'any'): TsType {
     switch (mySqlType) {
         case 'decimal':
         case 'tinyint':
@@ -123,7 +123,7 @@ export function converToTsType(mySqlType: MySqlType): TsType | string {
         default:
             if (mySqlType.startsWith("enum(")) {
                 const enumValues = mySqlType.substring(mySqlType.indexOf("(") + 1, mySqlType.indexOf(")"));
-                return enumValues.split(",").join(" |");
+                return enumValues.split(",").join(" |") as TsType;
             }
             return 'any';
     }
