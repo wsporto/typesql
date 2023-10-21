@@ -123,7 +123,7 @@ export const dbSchema: ColumnSchema[] = [
     },
     {
         column: 'enum_column',
-        column_type: `enum('x-small', 'small', 'medium', 'large', 'x-large')`,
+        column_type: `enum('x-small','small','medium','large','x-large')`,
         columnKey: '',
         table: 'all_types',
         schema: 'mydb',

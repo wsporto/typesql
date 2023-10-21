@@ -123,7 +123,7 @@ export function converToTsType(mySqlType: MySqlType | 'any'): TsType {
         default:
             if (mySqlType.startsWith("enum(")) {
                 const enumValues = mySqlType.substring(mySqlType.indexOf("(") + 1, mySqlType.indexOf(")"));
-                return enumValues.split(",").join(" |") as TsType;
+                return enumValues.split(",").join(" | ") as TsType;
             }
             return 'any';
     }
