@@ -408,7 +408,8 @@ LEFT JOIN roles r on r.fk_user = u.id
 LEFT JOIN comments c on c.fk_post = p.id`
 
         const actual = await generateTsFileFromContent(client, 'select-users.sql', queryName, sql, 'node');
-        const expected = `import type { Connection } from 'mysql2/promise';
+        const expected = `import groupBy from 'lodash.groupby';
+import type { Connection } from 'mysql2/promise';
 
 export type SelectUsersResult = {
     user_id: number;

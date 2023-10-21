@@ -27,6 +27,9 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
         writer.writeLine(`import { Client } from "https://deno.land/x/mysql/mod.ts";`);
     }
     else {
+        if (tsDescriptor.nestedDescriptor) {
+            writer.writeLine(`import groupBy from 'lodash.groupby';`);
+        }
         writer.writeLine(`import type { Connection } from 'mysql2/promise';`);
     }
     writer.blankLine();
