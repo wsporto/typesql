@@ -4,9 +4,11 @@ import { findColumnSchema, getSimpleExpressions, splitName } from "./mysql-query
 import { ColumnInfo, ColumnSchema } from "./mysql-query-analyzer/types";
 import partition from "lodash.partition";
 
+export type NestedResultInfo = {
+    relations: RelationInfo[];
+}
 
-export type Model = {
-    type: 'relation',
+export type RelationInfo = {
     name: string;
     tableName: string;
     tableAlias: string | '';
@@ -16,11 +18,17 @@ export type Model = {
 
 export type Cardinality = 'one' | 'many' | '';
 
-export type ModelColumn = Model | Field;
+export type ModelColumn = Field | RelationField;
 
 export type Field = {
     type: 'field',
     name: string;
+}
+
+export type RelationField = {
+    type: 'relation',
+    name: string;
+    cardinality: Cardinality;
 }
 
 export type TableName = {
@@ -29,14 +37,14 @@ export type TableName = {
 }
 
 //utility for tests
-export function describeNestedQuery(sql: string, dbSchema: ColumnSchema[]): Model {
+export function describeNestedQuery(sql: string, dbSchema: ColumnSchema[]): NestedResultInfo {
     const queryContext = parse(sql);
     const queryInfo = extractQueryInfo(sql, dbSchema);
     const columns = queryInfo.kind == 'Select' ? queryInfo.columns : [];
     return generateNestedInfo(queryContext, dbSchema, columns);
 }
 
-export function generateNestedInfo(queryContext: QueryContext, dbSchema: ColumnSchema[], columns: ColumnInfo[]) {
+export function generateNestedInfo(queryContext: QueryContext, dbSchema: ColumnSchema[], columns: ColumnInfo[]): NestedResultInfo {
 
     const selectStatement = queryContext.simpleStatement()?.selectStatement();
     if (selectStatement) {
@@ -49,9 +57,12 @@ export function generateNestedInfo(queryContext: QueryContext, dbSchema: ColumnS
                     const fromClause = querySpec.fromClause();
                     if (fromClause) {
                         const tableReferences = fromClause.tableReferenceList()?.tableReference() || [];
+                        const nestedResultInfo: NestedResultInfo = {
+                            relations: []
+                        };
                         const modelColumns = tableReferences.map(tableRef => {
-                            const model = createModelFromTabRef(tableRef, dbSchema, columns); //root
-                            return model;
+                            createRelationInfoFromTabRef(tableRef, dbSchema, columns, nestedResultInfo); //root
+                            return nestedResultInfo;
                         })
                         return modelColumns[0];
                     }
@@ -61,25 +72,26 @@ export function generateNestedInfo(queryContext: QueryContext, dbSchema: ColumnS
 
         }
     }
-    return {} as Model;
+    throw Error('generateNestedInfo')
 }
 
-function createModelFromTabRef(tableRef: TableReferenceContext, dbSchema: ColumnSchema[], columns: ColumnInfo[]): Model {
+function createRelationInfoFromTabRef(tableRef: TableReferenceContext, dbSchema: ColumnSchema[], columns: ColumnInfo[], nestedResult: NestedResultInfo): RelationInfo {
 
     const tableFactor = tableRef.tableFactor();
-    const parentModel = tableFactor ? createModelFromTableFactor(tableFactor, columns, 'one') : null; //root;
+    const parentRelationInfo = tableFactor ? createRelationInfoFromTableFactor(tableFactor, columns, 'one') : null; //root;
+
+    if (parentRelationInfo == null) {
+        throw Error('createModelFromTableFactor')
+    }
 
     const joinedTableList = tableRef.joinedTable();
     if (joinedTableList.length > 0) {
-        createModelFromJoinedList(joinedTableList, parentModel, dbSchema, columns);
+        createRelationInfoFromJoinedList(joinedTableList, parentRelationInfo, dbSchema, columns, nestedResult);
     }
-    if (parentModel == null) {
-        throw Error("createModelFromTabRef");
-    }
-    return parentModel;
+    return parentRelationInfo;
 }
 
-function createModelFromTableFactor(tableFactor: TableFactorContext, columns: ColumnInfo[], cardinality: Cardinality): Model {
+function createRelationInfoFromTableFactor(tableFactor: TableFactorContext, columns: ColumnInfo[], cardinality: Cardinality): RelationInfo {
     const singleTable = tableFactor.singleTable();
     if (singleTable) {
         const table = singleTable.tableRef().text;
@@ -93,8 +105,7 @@ function createModelFromTableFactor(tableFactor: TableFactorContext, columns: Co
             }
             return field;
         })
-        const model: Model = {
-            type: 'relation',
+        const model: RelationInfo = {
             cardinality,
             name: tableAlias || tableName.name,
             tableName: tableName.name,
@@ -106,20 +117,26 @@ function createModelFromTableFactor(tableFactor: TableFactorContext, columns: Co
     throw Error('createModelFromTableFactor')
 }
 
-function createModelFromJoinedList(joinedTables: JoinedTableContext[], parentModel: Model | null, dbSchema: ColumnSchema[], columns: ColumnInfo[]) {
+function createRelationInfoFromJoinedList(joinedTables: JoinedTableContext[], parentModel: RelationInfo, dbSchema: ColumnSchema[], columns: ColumnInfo[], nestedResult: NestedResultInfo) {
     const relation: TableName = {
         name: parentModel?.tableName || '',
         alias: parentModel?.tableAlias || '',
     };
+    nestedResult.relations.push(parentModel);
     const { currentLevel, remaining } = getRelationsByLevel(joinedTables, relation);
 
     if (joinedTables.length >= 1) {
         currentLevel.forEach(joined => {
-            const joinedModel = createModelFromJoined(joined, parentModel, dbSchema, columns);
+            const relationInfo = createRelationInfoFromJoined(joined, parentModel, dbSchema, columns, nestedResult);
             if (parentModel) {
-                parentModel.columns.push(joinedModel);
+                parentModel.columns.push({
+                    type: 'relation',
+                    name: relationInfo.name,
+                    cardinality: relationInfo.cardinality
+                });
+
             }
-            createModelFromJoinedList(remaining, joinedModel, dbSchema, columns);
+            createRelationInfoFromJoinedList(remaining, relationInfo, dbSchema, columns, nestedResult);
         })
     }
 }
@@ -160,14 +177,14 @@ function getRelationsByLevel(joinedTables: JoinedTableContext[], relation: Table
     return result;
 }
 
-function createModelFromJoined(joinedTable: JoinedTableContext, parentModel: Model | null, dbSchema: ColumnSchema[], columns: ColumnInfo[]): Model {
+function createRelationInfoFromJoined(joinedTable: JoinedTableContext, parentModel: RelationInfo | null, dbSchema: ColumnSchema[], columns: ColumnInfo[], nestedResult: NestedResultInfo): RelationInfo {
     const onClause = joinedTable.expr();
     const tableRef = joinedTable.tableReference();
     if (tableRef) {
-        const joinedModel = createModelFromTabRef(tableRef, dbSchema, columns);
-        const cardinality = onClause ? verifyCardinality(onClause, dbSchema, joinedModel.tableName) : '';
-        joinedModel.cardinality = cardinality;
-        return joinedModel;
+        const relationInfo = createRelationInfoFromTabRef(tableRef, dbSchema, columns, nestedResult);
+        const cardinality = onClause ? verifyCardinality(onClause, dbSchema, relationInfo.tableName) : '';
+        relationInfo.cardinality = cardinality;
+        return relationInfo;
     }
     throw Error('createModelFromJoined')
 

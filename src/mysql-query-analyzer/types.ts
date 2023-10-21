@@ -1,4 +1,4 @@
-import { Model } from "../describe-nested-query";
+import { NestedResultInfo } from "../describe-nested-query";
 import { MySqlType, InferType } from "../mysql-mapping"
 import { ParameterDef } from "../types"
 
@@ -112,7 +112,7 @@ export type QueryInfoResult = {
     parameters: ParameterInfo[];
     multipleRowsResult: boolean;
     orderByColumns?: string[];
-    model?: Model;
+    nestedResultInfo?: NestedResultInfo;
 }
 
 export type InsertInfoResult = {

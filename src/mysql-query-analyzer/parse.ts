@@ -166,8 +166,8 @@ export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[]): QueryIn
     if (traverseResult.type == 'Select') {
         const queryInfoResult = extractSelectQueryInfo(traverseResult);
         if (gererateNested) {
-            const nested = generateNestedInfo(tree, dbSchema, queryInfoResult.columns)
-            queryInfoResult.model = nested;
+            const nestedInfo = generateNestedInfo(tree, dbSchema, queryInfoResult.columns)
+            queryInfoResult.nestedResultInfo = nestedInfo;
         }
         return queryInfoResult;
     }

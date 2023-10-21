@@ -164,8 +164,8 @@ export function generateTsDescriptor(queryInfo: SchemaDef): TsDescriptor {
         parameters,
         data,
     };
-    if (queryInfo.model) {
-        const nestedDescriptor = createNestedTsDescriptor(queryInfo.columns, queryInfo.model);
+    if (queryInfo.nestedResultInfo) {
+        const nestedDescriptor = createNestedTsDescriptor(queryInfo.columns, queryInfo.nestedResultInfo);
         result.nestedDescriptor = nestedDescriptor;
     }
     return result;

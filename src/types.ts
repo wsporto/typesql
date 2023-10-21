@@ -2,7 +2,7 @@ import { MySqlType } from "./mysql-mapping"
 import { Brand } from "./utility-types"
 import { ColumnInfo, ColumnSchema } from "./mysql-query-analyzer/types"
 import { QueryContext } from "ts-mysql-parser";
-import { Model } from "./describe-nested-query";
+import { NestedResultInfo } from "./describe-nested-query";
 
 export type DBSchema = {
     columns: ColumnSchema[];
@@ -23,7 +23,7 @@ export type SchemaDef = {
     orderByColumns?: string[];
     parameters: ParameterDef[];
     data?: ParameterDef[];
-    model?: Model;
+    nestedResultInfo?: NestedResultInfo;
 }
 
 export type FieldNullability = {

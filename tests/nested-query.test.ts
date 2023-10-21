@@ -1,10 +1,9 @@
 import assert from "assert";
-import { Model, describeNestedQuery } from "../src/describe-nested-query";
-import { parseSql } from "../src/describe-query";
+import { NestedResultInfo, describeNestedQuery } from "../src/describe-nested-query";
 import { DbClient } from "../src/queryExectutor";
 import { isLeft } from "fp-ts/lib/Either";
 
-describe('Test select with multiples tables', () => {
+describe('nested-query', () => {
 
     let client: DbClient = new DbClient();
     before(async () => {
@@ -35,23 +34,30 @@ describe('Test select with multiples tables', () => {
         //     p: Post[];
         // }
 
-        const expectedModel: Model = {
-            type: 'relation',
-            name: 'u',
-            tableName: 'users',
-            tableAlias: 'u',
-            cardinality: 'one',
-            columns: [
+        const expectedModel: NestedResultInfo = {
+            relations: [
                 {
-                    type: 'field',
-                    name: 'user_id'
+                    name: 'u',
+                    tableName: 'users',
+                    tableAlias: 'u',
+                    cardinality: 'one',
+                    columns: [
+                        {
+                            type: 'field',
+                            name: 'user_id'
+                        },
+                        {
+                            type: 'field',
+                            name: 'user_name'
+                        },
+                        {
+                            type: 'relation',
+                            name: 'p',
+                            cardinality: 'many'
+                        }
+                    ]
                 },
                 {
-                    type: 'field',
-                    name: 'user_name'
-                },
-                {
-                    type: 'relation',
                     name: 'p',
                     tableName: 'posts',
                     tableAlias: 'p',
@@ -102,27 +108,34 @@ describe('Test select with multiples tables', () => {
         //     u: User;
         // }
 
-        const expectedModel: Model = {
-            type: 'relation',
-            name: 'p',
-            tableName: 'posts',
-            tableAlias: 'p',
-            cardinality: 'one',
-            columns: [
+        const expectedModel: NestedResultInfo = {
+            relations: [
                 {
-                    type: 'field',
-                    name: 'post_id'
+                    name: 'p',
+                    tableName: 'posts',
+                    tableAlias: 'p',
+                    cardinality: 'one',
+                    columns: [
+                        {
+                            type: 'field',
+                            name: 'post_id'
+                        },
+                        {
+                            type: 'field',
+                            name: 'post_title'
+                        },
+                        {
+                            type: 'field',
+                            name: 'post_body'
+                        },
+                        {
+                            type: 'relation',
+                            name: 'u',
+                            cardinality: 'one'
+                        }
+                    ]
                 },
                 {
-                    type: 'field',
-                    name: 'post_title'
-                },
-                {
-                    type: 'field',
-                    name: 'post_body'
-                },
-                {
-                    type: 'relation',
                     name: 'u',
                     tableName: 'users',
                     tableAlias: 'u',
@@ -137,7 +150,7 @@ describe('Test select with multiples tables', () => {
                             name: 'user_name'
                         }
                     ]
-                }
+                },
             ]
         }
         if (isLeft(dbSchema)) {
@@ -175,25 +188,31 @@ describe('Test select with multiples tables', () => {
         //     post_body: string;
         //     c: Comment[]; 
         // }
-        const schemaDef = await parseSql(client, sql);
 
-        const expectedModel: Model = {
-            type: 'relation',
-            name: 'u',
-            tableName: 'users',
-            tableAlias: 'u',
-            cardinality: 'one',
-            columns: [
+        const expectedModel: NestedResultInfo = {
+            relations: [
                 {
-                    type: 'field',
-                    name: 'user_id'
+                    name: 'u',
+                    tableName: 'users',
+                    tableAlias: 'u',
+                    cardinality: 'one',
+                    columns: [
+                        {
+                            type: 'field',
+                            name: 'user_id'
+                        },
+                        {
+                            type: 'field',
+                            name: 'user_name'
+                        },
+                        {
+                            type: 'relation',
+                            name: 'p',
+                            cardinality: 'many'
+                        }
+                    ]
                 },
                 {
-                    type: 'field',
-                    name: 'user_name'
-                },
-                {
-                    type: 'relation',
                     name: 'p',
                     tableName: 'posts',
                     tableAlias: 'p',
@@ -214,19 +233,24 @@ describe('Test select with multiples tables', () => {
                         {
                             type: 'relation',
                             name: 'c',
-                            tableName: 'comments',
-                            tableAlias: 'c',
-                            cardinality: 'many',
-                            columns: [
-                                {
-                                    type: 'field',
-                                    name: 'comment',
-                                }
-                            ]
+                            cardinality: 'many'
+                        }
+                    ]
+                },
+                {
+                    name: 'c',
+                    tableName: 'comments',
+                    tableAlias: 'c',
+                    cardinality: 'many',
+                    columns: [
+                        {
+                            type: 'field',
+                            name: 'comment',
                         }
                     ]
                 }
             ]
+
         }
         if (isLeft(dbSchema)) {
             assert.fail(`Shouldn't return an error`);
@@ -264,23 +288,35 @@ describe('Test select with multiples tables', () => {
         //     post_body: string;
         // }
 
-        const expectedModel: Model = {
-            type: 'relation',
-            name: 'u',
-            tableName: 'users',
-            tableAlias: 'u',
-            cardinality: 'one',
-            columns: [
+        const expectedModel: NestedResultInfo = {
+            relations: [
                 {
-                    type: 'field',
-                    name: 'user_id'
+                    name: 'u',
+                    tableName: 'users',
+                    tableAlias: 'u',
+                    cardinality: 'one',
+                    columns: [
+                        {
+                            type: 'field',
+                            name: 'user_id'
+                        },
+                        {
+                            type: 'field',
+                            name: 'user_name'
+                        },
+                        {
+                            type: 'relation',
+                            name: 'p',
+                            cardinality: 'many'
+                        },
+                        {
+                            type: 'relation',
+                            name: 'r',
+                            cardinality: 'many'
+                        }
+                    ]
                 },
                 {
-                    type: 'field',
-                    name: 'user_name'
-                },
-                {
-                    type: 'relation',
                     name: 'p',
                     tableName: 'posts',
                     tableAlias: 'p',
@@ -301,7 +337,6 @@ describe('Test select with multiples tables', () => {
                     ]
                 },
                 {
-                    type: 'relation',
                     name: 'r',
                     tableName: 'roles',
                     tableAlias: 'r',
@@ -354,23 +389,37 @@ describe('Test select with multiples tables', () => {
         //     c: Comment[];
         // }
 
-        const expectedModel: Model = {
-            type: 'relation',
-            name: 'u',
-            tableName: 'users',
-            tableAlias: 'u',
-            cardinality: 'one',
-            columns: [
+        const expectedModel: NestedResultInfo = {
+            relations: [
                 {
-                    type: 'field',
-                    name: 'user_id'
+                    name: 'u',
+                    tableName: 'users',
+                    tableAlias: 'u',
+                    cardinality: 'one',
+                    columns: [
+                        {
+                            type: 'field',
+                            name: 'user_id'
+                        },
+                        {
+                            type: 'field',
+                            name: 'user_name'
+                        },
+                        {
+                            type: 'relation',
+                            name: 'p',
+                            cardinality: 'many'
+                        },
+                        {
+                            type: 'relation',
+                            name: 'r',
+                            cardinality: 'many'
+                        }
+
+                    ]
+
                 },
                 {
-                    type: 'field',
-                    name: 'user_name'
-                },
-                {
-                    type: 'relation',
                     name: 'p',
                     tableName: 'posts',
                     tableAlias: 'p',
@@ -391,20 +440,23 @@ describe('Test select with multiples tables', () => {
                         {
                             type: 'relation',
                             name: 'c',
-                            tableName: 'comments',
-                            tableAlias: 'c',
-                            cardinality: 'many',
-                            columns: [
-                                {
-                                    type: 'field',
-                                    name: 'comment',
-                                }
-                            ]
+                            cardinality: 'many'
                         }
                     ]
                 },
                 {
-                    type: 'relation',
+                    name: 'c',
+                    tableName: 'comments',
+                    tableAlias: 'c',
+                    cardinality: 'many',
+                    columns: [
+                        {
+                            type: 'field',
+                            name: 'comment',
+                        }
+                    ]
+                },
+                {
                     name: 'r',
                     tableName: 'roles',
                     tableAlias: 'r',

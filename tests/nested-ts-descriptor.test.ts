@@ -37,30 +37,30 @@ describe('Test nested-ts-descriptor', () => {
         assert(queryInfo.kind == 'Select');
         const actual = createNestedTsDescriptor(queryInfo.columns, model);
         const expected: NestedTsDescriptor = {
-            name: 'u',
-            tsType: 'u',
-            notNull: true,
-            fields: [
-                {
-                    type: 'field',
-                    name: 'user_id',
-                    tsType: 'number',
-                    notNull: true
-                },
-                {
-                    type: 'field',
-                    name: 'user_name',
-                    tsType: 'string',
-                    notNull: true
-                },
-                {
-                    type: 'relation',
-                    name: 'p',
-                    tsType: 'p',
-                    notNull: true,
-                }
-            ],
             relations: [
+                {
+                    name: 'u',
+                    fields: [
+                        {
+                            type: 'field',
+                            name: 'user_id',
+                            tsType: 'number',
+                            notNull: true
+                        },
+                        {
+                            type: 'field',
+                            name: 'user_name',
+                            tsType: 'string',
+                            notNull: true
+                        },
+                        {
+                            type: 'relation',
+                            name: 'p',
+                            tsType: 'p[]',
+                            notNull: true,
+                        }
+                    ]
+                },
                 {
                     name: 'p',
                     fields: [
@@ -78,9 +78,7 @@ describe('Test nested-ts-descriptor', () => {
                         }
                     ]
                 }
-
             ]
-
         }
         assert.deepStrictEqual(actual, expected);
     });

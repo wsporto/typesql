@@ -1,4 +1,4 @@
-import { Field, Model, ModelColumn } from "./describe-nested-query";
+import { Field, RelationInfo, NestedResultInfo, RelationField } from "./describe-nested-query";
 import { TsType, converToTsType } from "./mysql-mapping";
 import { ColumnInfo } from "./mysql-query-analyzer/types";
 
@@ -20,38 +20,38 @@ export type FieldType = TsField | TsRelationField;
 
 export type RelationType = {
     name: string;
-    fields: TsField[];
+    fields: FieldType[];
 }
 
 export type NestedTsDescriptor = {
-    name: string;
-    tsType: string;
-    fields: FieldType[];
-    notNull: boolean;
     relations: RelationType[];
 }
 
-export function createNestedTsDescriptor(columns: ColumnInfo[], model: Model): NestedTsDescriptor {
+export function createNestedTsDescriptor(columns: ColumnInfo[], nestedResultInfo: NestedResultInfo): NestedTsDescriptor {
     const result: NestedTsDescriptor = {
-        name: model.name,
-        notNull: true,
-        tsType: model.name,
-        fields: model.columns.map(col => mapColumnToNestedField(columns, col)),
-        relations: mapToRelationList(columns, model.columns)
+        relations: nestedResultInfo.relations.map(r => mapColumnToNestedField(columns, r))
     }
     return result;
 }
 
-function mapColumnToNestedField(columns: ColumnInfo[], modelColumn: ModelColumn): TsField | TsRelationField {
-    const modelType = modelColumn.type;
+function mapColumnToNestedField(columns: ColumnInfo[], modelColumn: RelationInfo): RelationType {
 
-    if (modelType == 'field') {
-        return mapModelColumnToTsField(columns, modelColumn);
+    const relation: RelationType = {
+        name: modelColumn.name,
+        fields: modelColumn.columns.map(c => mapToField(columns, c))
     }
-    else if (modelType == 'relation') {
-        return mapModelColumnToTsRelation(modelColumn);
+    return relation;
+}
+
+function mapToField(columns: ColumnInfo[], field: Field | RelationField): FieldType {
+    const fieldType = field.type;
+    if (fieldType == 'field') {
+        return mapModelColumnToTsField(columns, field);
     }
-    return modelType satisfies never;
+    if (fieldType == 'relation') {
+        return mapModelColumnToTsRelation(field);
+    }
+    return fieldType satisfies never
 }
 
 function mapModelColumnToTsField(columns: ColumnInfo[], modelColumn: Field): TsField {
@@ -67,38 +67,38 @@ function mapModelColumnToTsField(columns: ColumnInfo[], modelColumn: Field): TsF
     return field;
 }
 
-function mapModelColumnToTsRelation(modelColumn: ModelColumn): TsRelationField {
+function mapModelColumnToTsRelation(modelColumn: RelationField): TsRelationField {
 
     const field: TsRelationField = {
-        type: 'relation',
+        type: "relation",
         name: modelColumn.name,
-        tsType: modelColumn.name,
+        tsType: modelColumn.name + (modelColumn.cardinality == 'many' ? '[]' : ''),
         notNull: true
     }
     return field;
 }
-function mapToRelationList(columnsInfo: ColumnInfo[], columns: ModelColumn[]): RelationType[] {
-    const allRelations = flattenRelations(columns);
+// function mapToRelationList(columnsInfo: ColumnInfo[], columns: ModelColumn[]): RelationType[] {
+//     const allRelations = flattenRelations(columns);
 
-    return allRelations.filter(r => r.columns.length > 0).map(relation => {
-        const type: RelationType = {
-            name: relation.name,
-            //https://stackoverflow.com/a/54317362
-            fields: relation.columns.filter((c): c is Field => c.type == 'field').map(c => {
-                return mapModelColumnToTsField(columnsInfo, c)
-            })
-        }
-        return type;
-    });
-}
+//     return allRelations.filter(r => r.columns.length > 0).map(relation => {
+//         const type: RelationType = {
+//             name: relation.name,
+//             //https://stackoverflow.com/a/54317362
+//             fields: relation.columns.filter((c): c is Field => c.type == 'field').map(c => {
+//                 return mapModelColumnToTsField(columnsInfo, c)
+//             })
+//         }
+//         return type;
+//     });
+// }
 
-//https://stackoverflow.com/a/34757676
-function flattenRelations(columns: ModelColumn[], ret: Model[] = []) {
-    for (const column of columns) {
-        if (column.type == 'relation') {
-            flattenRelations(column.columns, ret);
-            ret.push(column);
-        }
-    }
-    return ret;
-}
+// //https://stackoverflow.com/a/34757676
+// function flattenRelations(columns: ModelColumn[], ret: Model[] = []) {
+//     for (const column of columns) {
+//         if (column.type == 'relation') {
+//             flattenRelations(column.columns, ret);
+//             ret.push(column);
+//         }
+//     }
+//     return ret;
+// }

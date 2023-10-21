@@ -29,8 +29,8 @@ export function describeSql(dbSchema: ColumnSchema[], sql: string): SchemaDef {
         if (queryInfo.orderByColumns && queryInfo.orderByColumns.length > 0) {
             schemaDef.orderByColumns = queryInfo.orderByColumns
         }
-        if (queryInfo.model) {
-            schemaDef.model = queryInfo.model;
+        if (queryInfo.nestedResultInfo) {
+            schemaDef.nestedResultInfo = queryInfo.nestedResultInfo;
         }
         return schemaDef;
 
