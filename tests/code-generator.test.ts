@@ -486,8 +486,8 @@ function collectSelectUsersNestedU(selectResult: SelectUsersResult[]): SelectUse
 function mapToSelectUsersNestedU(selectResult: SelectUsersResult[]): SelectUsersNestedU {
     const firstRow = selectResult[0];
     const result: SelectUsersNestedU = {
-        user_id: firstRow.user_id,
-        user_name: firstRow.user_name,
+        user_id: firstRow.user_id!,
+        user_name: firstRow.user_name!,
         p: collectSelectUsersNestedP(selectResult),
         r: collectSelectUsersNestedR(selectResult)
     }
@@ -502,9 +502,9 @@ function collectSelectUsersNestedP(selectResult: SelectUsersResult[]): SelectUse
 function mapToSelectUsersNestedP(selectResult: SelectUsersResult[]): SelectUsersNestedP {
     const firstRow = selectResult[0];
     const result: SelectUsersNestedP = {
-        post_id: firstRow.post_id,
-        post_title: firstRow.post_title,
-        post_body: firstRow.post_body,
+        post_id: firstRow.post_id!,
+        post_title: firstRow.post_title!,
+        post_body: firstRow.post_body!,
         c: collectSelectUsersNestedC(selectResult)
     }
     return result;
@@ -518,8 +518,8 @@ function collectSelectUsersNestedC(selectResult: SelectUsersResult[]): SelectUse
 function mapToSelectUsersNestedC(selectResult: SelectUsersResult[]): SelectUsersNestedC {
     const firstRow = selectResult[0];
     const result: SelectUsersNestedC = {
-        comment_id: firstRow.comment_id,
-        comment: firstRow.comment
+        comment_id: firstRow.comment_id!,
+        comment: firstRow.comment!
     }
     return result;
 }
@@ -532,8 +532,8 @@ function collectSelectUsersNestedR(selectResult: SelectUsersResult[]): SelectUse
 function mapToSelectUsersNestedR(selectResult: SelectUsersResult[]): SelectUsersNestedR {
     const firstRow = selectResult[0];
     const result: SelectUsersNestedR = {
-        role_id: firstRow.role_id,
-        role: firstRow.role
+        role_id: firstRow.role_id!,
+        role: firstRow.role!
     }
     return result;
 }`

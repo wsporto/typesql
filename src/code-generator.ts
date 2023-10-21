@@ -141,7 +141,7 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
                     relation.fields.forEach((field, index) => {
                         const separator = relation.fields.length > 1 && index != relation.fields.length - 1 ? ',' : '';
                         if (field.type == 'field') {
-                            writer.writeLine(`${field.name}: firstRow.${field.name}` + separator);
+                            writer.writeLine(`${field.name}: firstRow.${field.name}!` + separator);
                         }
                         if (field.type == 'relation') {
                             const nestedRelationType = generateRelationType(capitalizedName, field.name);
