@@ -95,7 +95,68 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
         })
     }
 
+    if (tsDescriptor.nestedDescriptor) {
+        const relations = tsDescriptor.nestedDescriptor.relations;
+        relations.forEach((relation) => {
+            const relationType = generateRelationType(capitalizedName, relation.name);
+            writer.blankLine();
+            writer.write(`export type ${relationType} = `).block(() => {
+                relation.fields.forEach(field => {
+                    if (field.type == 'field') {
+                        writer.writeLine(`${field.name}: ${field.tsType};`);
+                    }
+                    if (field.type == 'relation') {
+                        const nestedRelationType = generateRelationType(capitalizedName, field.tsType);
+                        writer.writeLine(`${field.name}: ${nestedRelationType};`);
+                    }
+                })
+            })
+        })
+        relations.forEach((relation, index) => {
+            const relationType = generateRelationType(capitalizedName, relation.name);
+            if (index == 0) { //first
+                writer.blankLine();
+                writer.write(`export async function ${camelCaseName}Nested(connection: Connection): Promise<${relationType}[]>`).block(() => {
+                    writer.writeLine(`const selectResult = await ${camelCaseName}(connection);`);
+                    writer.write('if (selectResult.length == 0)').block(() => {
+                        writer.writeLine('return [];')
+                    });
+                    writer.writeLine(`return collect${relationType}(selectResult);`)
+                })
+            }
+            const collectFunctionName = `collect${relationType}`;
+            const mapFunctionName = `mapTo${relationType}`;
+            writer.blankLine();
+            writer.write(`function ${collectFunctionName}(selectResult: ${resultTypeName}[]): ${relationType}[]`).block(() => {
+                writer.writeLine(`const grouped = groupBy(selectResult.filter(r => r.${relation.fields[0].name} != null), r => r.${relation.fields[0].name});`)
+                writer.writeLine(`return Object.values(grouped).map(r => ${mapFunctionName}(r))`)
+            })
+            writer.blankLine();
+            writer.write(`function ${mapFunctionName}(selectResult: ${resultTypeName}[]): ${relationType}`).block(() => {
+                writer.writeLine(`const firstRow = selectResult[0];`)
+                writer.write(`const result: ${relationType} = `).block(() => {
+                    relation.fields.forEach((field, index) => {
+                        const separator = relation.fields.length > 1 && index != relation.fields.length - 1 ? ',' : '';
+                        if (field.type == 'field') {
+                            writer.writeLine(`${field.name}: firstRow.${field.name}` + separator);
+                        }
+                        if (field.type == 'relation') {
+                            const nestedRelationType = generateRelationType(capitalizedName, field.name);
+                            writer.writeLine(`${field.name}: collect${nestedRelationType}(selectResult)` + separator);
+                        }
+                    })
+                })
+                writer.writeLine('return result;')
+            })
+        })
+
+    }
+
     return writer.toString();
+}
+
+function generateRelationType(capitalizedName: string, relationName: string) {
+    return capitalizedName + 'Nested' + relationName.toUpperCase();
 }
 
 function writeTypeBlock(writer: CodeBlockWriter, fields: TsFieldDescriptor[], typeName: string, extraField?: string) {
@@ -257,23 +318,30 @@ export function convertToCamelCaseName(name: string): CamelCaseName {
 //TODO - pass dbSchema instead of connection
 export async function generateTsFile(client: DbClient, sqlFile: string, target: 'node' | 'deno') {
 
-    const fileName = parse(sqlFile).name;
-    const dirPath = parse(sqlFile).dir;
-
-    const queryName = convertToCamelCaseName(fileName);
-    const tsFilePath = path.resolve(dirPath, fileName) + ".ts";
-
     const sqlContent = fs.readFileSync(sqlFile, 'utf8');
 
+    const fileName = parse(sqlFile).name;
+    const dirPath = parse(sqlFile).dir;
+    const queryName = convertToCamelCaseName(fileName);
+
+    const tsContent = await generateTsFileFromContent(client, sqlFile, queryName, sqlContent, target);
+
+    const tsFilePath = path.resolve(dirPath, fileName) + ".ts";
+
+    writeFile(tsFilePath, tsContent);
+}
+
+export async function generateTsFileFromContent(client: DbClient, filePath: string, queryName: string, sqlContent: string, target: 'node' | 'deno') {
     const queryInfo = await parseSql(client, sqlContent);
 
     if (isLeft(queryInfo)) {
         console.error('ERROR: ', queryInfo.left.description);
-        console.error('at ', sqlFile);
+        console.error('at ', filePath);
     }
+
     const tsDescriptor = isLeft(queryInfo) ? none : some(generateTsDescriptor(queryInfo.right));
     const tsContent = generateTsContent(tsDescriptor, queryName, target);
-    writeFile(tsFilePath, tsContent);
+    return tsContent;
 }
 
 export type TsDescriptor = {

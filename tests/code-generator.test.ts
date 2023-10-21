@@ -1,9 +1,19 @@
 import assert from "assert";
-import { TsDescriptor, convertToCamelCaseName, replaceOrderByParam, generateTsCode, generateTsDescriptor } from "../src/code-generator";
+import { TsDescriptor, convertToCamelCaseName, replaceOrderByParam, generateTsCode, generateTsDescriptor, generateTsFileFromContent } from "../src/code-generator";
 import { describeSql } from "../src/describe-query";
 import { dbSchema } from "./mysql-query-analyzer/create-schema";
+import { DbClient } from "../src/queryExectutor";
 
 describe('code-generator', () => {
+
+    let client: DbClient = new DbClient();
+    before(async () => {
+        await client.connect('mysql://root:password@localhost/mydb');
+    })
+
+    after(async () => {
+        await client.closeConnection();
+    })
 
     it('generate main function with parameters', () => {
         const queryName = 'get-person';
@@ -378,6 +388,157 @@ function escapeOrderBy(orderBy: SelectIdOrderBy[]) : string {
 
         assert.deepStrictEqual(actual, expected);
     })
+
+    it('generate nested result', async () => {
+        const queryName = 'select-users';
+        const sql = `-- @nested
+SELECT 
+    u.id as user_id, 
+    u.name as user_name,
+    p.id as post_id,
+    p.title as post_title,
+    p.body  as post_body,
+    r.id as role_id,
+    r.role,
+    c.id as comment_id,
+    c.comment 
+FROM users u
+LEFT JOIN posts p on p.fk_user = u.id
+LEFT JOIN roles r on r.fk_user = u.id
+LEFT JOIN comments c on c.fk_post = p.id`
+
+        const actual = await generateTsFileFromContent(client, 'select-users.sql', queryName, sql, 'node');
+        const expected = `import type { Connection } from 'mysql2/promise';
+
+export type SelectUsersResult = {
+    user_id: number;
+    user_name: string;
+    post_id?: number;
+    post_title?: string;
+    post_body?: string;
+    role_id?: number;
+    role?: 'user' | 'admin' | 'guest';
+    comment_id?: number;
+    comment?: string;
+}
+
+export async function selectUsers(connection: Connection) : Promise<SelectUsersResult[]> {
+    const sql = \`
+    -- @nested
+    SELECT 
+        u.id as user_id, 
+        u.name as user_name,
+        p.id as post_id,
+        p.title as post_title,
+        p.body  as post_body,
+        r.id as role_id,
+        r.role,
+        c.id as comment_id,
+        c.comment 
+    FROM users u
+    LEFT JOIN posts p on p.fk_user = u.id
+    LEFT JOIN roles r on r.fk_user = u.id
+    LEFT JOIN comments c on c.fk_post = p.id
+    \`
+
+    return connection.query(sql)
+        .then( res => res[0] as SelectUsersResult[] );
+}
+
+export type SelectUsersNestedU = {
+    user_id: number;
+    user_name: string;
+    p: SelectUsersNestedP[];
+    r: SelectUsersNestedR[];
+}
+
+export type SelectUsersNestedP = {
+    post_id: number;
+    post_title: string;
+    post_body: string;
+    c: SelectUsersNestedC[];
+}
+
+export type SelectUsersNestedC = {
+    comment_id: number;
+    comment: string;
+}
+
+export type SelectUsersNestedR = {
+    role_id: number;
+    role: 'user' | 'admin' | 'guest';
+}
+
+export async function selectUsersNested(connection: Connection): Promise<SelectUsersNestedU[]> {
+    const selectResult = await selectUsers(connection);
+    if (selectResult.length == 0) {
+        return [];
+    }
+    return collectSelectUsersNestedU(selectResult);
+}
+
+function collectSelectUsersNestedU(selectResult: SelectUsersResult[]): SelectUsersNestedU[] {
+    const grouped = groupBy(selectResult.filter(r => r.user_id != null), r => r.user_id);
+    return Object.values(grouped).map(r => mapToSelectUsersNestedU(r))
+}
+
+function mapToSelectUsersNestedU(selectResult: SelectUsersResult[]): SelectUsersNestedU {
+    const firstRow = selectResult[0];
+    const result: SelectUsersNestedU = {
+        user_id: firstRow.user_id,
+        user_name: firstRow.user_name,
+        p: collectSelectUsersNestedP(selectResult),
+        r: collectSelectUsersNestedR(selectResult)
+    }
+    return result;
+}
+
+function collectSelectUsersNestedP(selectResult: SelectUsersResult[]): SelectUsersNestedP[] {
+    const grouped = groupBy(selectResult.filter(r => r.post_id != null), r => r.post_id);
+    return Object.values(grouped).map(r => mapToSelectUsersNestedP(r))
+}
+
+function mapToSelectUsersNestedP(selectResult: SelectUsersResult[]): SelectUsersNestedP {
+    const firstRow = selectResult[0];
+    const result: SelectUsersNestedP = {
+        post_id: firstRow.post_id,
+        post_title: firstRow.post_title,
+        post_body: firstRow.post_body,
+        c: collectSelectUsersNestedC(selectResult)
+    }
+    return result;
+}
+
+function collectSelectUsersNestedC(selectResult: SelectUsersResult[]): SelectUsersNestedC[] {
+    const grouped = groupBy(selectResult.filter(r => r.comment_id != null), r => r.comment_id);
+    return Object.values(grouped).map(r => mapToSelectUsersNestedC(r))
+}
+
+function mapToSelectUsersNestedC(selectResult: SelectUsersResult[]): SelectUsersNestedC {
+    const firstRow = selectResult[0];
+    const result: SelectUsersNestedC = {
+        comment_id: firstRow.comment_id,
+        comment: firstRow.comment
+    }
+    return result;
+}
+
+function collectSelectUsersNestedR(selectResult: SelectUsersResult[]): SelectUsersNestedR[] {
+    const grouped = groupBy(selectResult.filter(r => r.role_id != null), r => r.role_id);
+    return Object.values(grouped).map(r => mapToSelectUsersNestedR(r))
+}
+
+function mapToSelectUsersNestedR(selectResult: SelectUsersResult[]): SelectUsersNestedR {
+    const firstRow = selectResult[0];
+    const result: SelectUsersNestedR = {
+        role_id: firstRow.role_id,
+        role: firstRow.role
+    }
+    return result;
+}`
+
+        assert.deepStrictEqual(actual, expected);
+    })
 })
 
 it('test code generation with escaped table name', () => {
@@ -459,3 +620,4 @@ export async function selectId(connection: Connection, params: SelectIdParams) :
 
     assert.deepStrictEqual(actual, expected);
 })
+
