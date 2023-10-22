@@ -119,8 +119,9 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
             const relationType = generateRelationType(capitalizedName, relation.name);
             if (index == 0) { //first
                 writer.blankLine();
-                writer.write(`export async function ${camelCaseName}Nested(connection: Connection): Promise<${relationType}[]>`).block(() => {
-                    writer.writeLine(`const selectResult = await ${camelCaseName}(connection);`);
+                writer.write(`export async function ${camelCaseName}Nested(${functionArguments}): Promise<${relationType}[]>`).block(() => {
+                    const params = tsDescriptor.parameters.length > 0 ? ', params' : '';
+                    writer.writeLine(`const selectResult = await ${camelCaseName}(connection${params});`);
                     writer.write('if (selectResult.length == 0)').block(() => {
                         writer.writeLine('return [];')
                     });

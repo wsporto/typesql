@@ -620,5 +620,104 @@ function mapToSelectUsersNestedR(selectResult: SelectUsersResult[]): SelectUsers
 
         assert.deepStrictEqual(actual, expected);
     })
+
+    it('generate nested with params', async () => {
+        const queryName = 'select-users';
+        const sql = `-- @nested
+SELECT 
+    u.id as user_id, 
+    u.name as user_name,
+    p.id as post_id,
+    p.title as post_title,
+    p.body  as post_body
+FROM users u
+LEFT JOIN posts p on p.fk_user = u.id
+WHERE u.id = :id`
+
+        const actual = await generateTsFileFromContent(client, 'select-users.sql', queryName, sql, 'node');
+        const expected = `import groupBy from 'lodash.groupby';
+import type { Connection } from 'mysql2/promise';
+
+export type SelectUsersParams = {
+    id: number;
+}
+
+export type SelectUsersResult = {
+    user_id: number;
+    user_name: string;
+    post_id?: number;
+    post_title?: string;
+    post_body?: string;
+}
+
+export async function selectUsers(connection: Connection, params: SelectUsersParams) : Promise<SelectUsersResult[]> {
+    const sql = \`
+    -- @nested
+    SELECT 
+        u.id as user_id, 
+        u.name as user_name,
+        p.id as post_id,
+        p.title as post_title,
+        p.body  as post_body
+    FROM users u
+    LEFT JOIN posts p on p.fk_user = u.id
+    WHERE u.id = ?
+    \`
+
+    return connection.query(sql, [params.id])
+        .then( res => res[0] as SelectUsersResult[] );
+}
+
+export type SelectUsersNestedU = {
+    user_id: number;
+    user_name: string;
+    p: SelectUsersNestedP[];
+}
+
+export type SelectUsersNestedP = {
+    post_id: number;
+    post_title: string;
+    post_body: string;
+}
+
+export async function selectUsersNested(connection: Connection, params: SelectUsersParams): Promise<SelectUsersNestedU[]> {
+    const selectResult = await selectUsers(connection, params);
+    if (selectResult.length == 0) {
+        return [];
+    }
+    return collectSelectUsersNestedU(selectResult);
+}
+
+function collectSelectUsersNestedU(selectResult: SelectUsersResult[]): SelectUsersNestedU[] {
+    const grouped = groupBy(selectResult.filter(r => r.user_id != null), r => r.user_id);
+    return Object.values(grouped).map(r => mapToSelectUsersNestedU(r))
+}
+
+function mapToSelectUsersNestedU(selectResult: SelectUsersResult[]): SelectUsersNestedU {
+    const firstRow = selectResult[0];
+    const result: SelectUsersNestedU = {
+        user_id: firstRow.user_id!,
+        user_name: firstRow.user_name!,
+        p: collectSelectUsersNestedP(selectResult)
+    }
+    return result;
+}
+
+function collectSelectUsersNestedP(selectResult: SelectUsersResult[]): SelectUsersNestedP[] {
+    const grouped = groupBy(selectResult.filter(r => r.post_id != null), r => r.post_id);
+    return Object.values(grouped).map(r => mapToSelectUsersNestedP(r))
+}
+
+function mapToSelectUsersNestedP(selectResult: SelectUsersResult[]): SelectUsersNestedP {
+    const firstRow = selectResult[0];
+    const result: SelectUsersNestedP = {
+        post_id: firstRow.post_id!,
+        post_title: firstRow.post_title!,
+        post_body: firstRow.post_body!
+    }
+    return result;
+}`
+        assert.deepStrictEqual(actual, expected);
+    })
 })
 
