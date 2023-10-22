@@ -4,7 +4,7 @@ import { describeSql } from "../src/describe-query";
 import { dbSchema } from "./mysql-query-analyzer/create-schema";
 import { DbClient } from "../src/queryExectutor";
 
-describe('code-generator', () => {
+describe.only('code-generator', () => {
 
     let client: DbClient = new DbClient();
     before(async () => {
@@ -389,6 +389,86 @@ function escapeOrderBy(orderBy: SelectIdOrderBy[]) : string {
         assert.deepStrictEqual(actual, expected);
     })
 
+    it('test code generation with escaped table name', () => {
+        let sql = 'SELECT id FROM `my table`';
+
+        const schemaDef = describeSql(dbSchema, sql);
+        const tsDescriptor = generateTsDescriptor(schemaDef);
+        const actual = generateTsCode(tsDescriptor, 'select-id', 'deno');
+        const expected =
+            `import { Client } from "https://deno.land/x/mysql/mod.ts";
+
+export type SelectIdResult = {
+    id: number;
+}
+
+export async function selectId(client: Client) : Promise<SelectIdResult[]> {
+    const sql = \`
+    SELECT id FROM \\\`my table\\\`
+    \`
+
+    return client.query(sql)
+        .then( res => res );
+}`
+
+        assert.deepStrictEqual(actual, expected);
+    })
+
+    it('test generateTsDescriptor for enum column schema', () => {
+        let sql = 'SELECT enum_column FROM all_types';
+
+        const schemaDef = describeSql(dbSchema, sql);
+        const actual = generateTsDescriptor(schemaDef);
+        const expected: TsDescriptor = {
+            sql: "SELECT enum_column FROM all_types",
+            queryType: "Select",
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'enum_column',
+                    tsType: `'x-small' | 'small' | 'medium' | 'large' | 'x-large'`,
+                    notNull: false
+                }
+            ],
+            orderByColumns: undefined,
+            data: undefined,
+            parameterNames: [],
+            parameters: []
+        }
+
+        assert.deepStrictEqual(actual, expected);
+    })
+
+    it('test code generation with duplicated parameters', () => {
+        const sql = 'SELECT id from mytable1 where (id = :id or id = :id) and value = :value';
+
+        const schemaDef = describeSql(dbSchema, sql);
+        const tsDescriptor = generateTsDescriptor(schemaDef);
+        const actual = generateTsCode(tsDescriptor, 'select-id', 'node');
+        const expected =
+            `import type { Connection } from 'mysql2/promise';
+
+export type SelectIdParams = {
+    id: number;
+    value: number;
+}
+
+export type SelectIdResult = {
+    id: number;
+}
+
+export async function selectId(connection: Connection, params: SelectIdParams) : Promise<SelectIdResult[]> {
+    const sql = \`
+    SELECT id from mytable1 where (id = ? or id = ?) and value = ?
+    \`
+
+    return connection.query(sql, [params.id, params.id, params.value])
+        .then( res => res[0] as SelectIdResult[] );
+}`
+
+        assert.deepStrictEqual(actual, expected);
+    })
+
     it('generate nested result', async () => {
         const queryName = 'select-users';
         const sql = `-- @nested
@@ -540,85 +620,5 @@ function mapToSelectUsersNestedR(selectResult: SelectUsersResult[]): SelectUsers
 
         assert.deepStrictEqual(actual, expected);
     })
-})
-
-it('test code generation with escaped table name', () => {
-    let sql = 'SELECT id FROM `my table`';
-
-    const schemaDef = describeSql(dbSchema, sql);
-    const tsDescriptor = generateTsDescriptor(schemaDef);
-    const actual = generateTsCode(tsDescriptor, 'select-id', 'deno');
-    const expected =
-        `import { Client } from "https://deno.land/x/mysql/mod.ts";
-
-export type SelectIdResult = {
-    id: number;
-}
-
-export async function selectId(client: Client) : Promise<SelectIdResult[]> {
-    const sql = \`
-    SELECT id FROM \\\`my table\\\`
-    \`
-
-    return client.query(sql)
-        .then( res => res );
-}`
-
-    assert.deepStrictEqual(actual, expected);
-})
-
-it('test generateTsDescriptor for enum column schema', () => {
-    let sql = 'SELECT enum_column FROM all_types';
-
-    const schemaDef = describeSql(dbSchema, sql);
-    const actual = generateTsDescriptor(schemaDef);
-    const expected: TsDescriptor = {
-        sql: "SELECT enum_column FROM all_types",
-        queryType: "Select",
-        multipleRowsResult: true,
-        columns: [
-            {
-                name: 'enum_column',
-                tsType: `'x-small' | 'small' | 'medium' | 'large' | 'x-large'`,
-                notNull: false
-            }
-        ],
-        orderByColumns: undefined,
-        data: undefined,
-        parameterNames: [],
-        parameters: []
-    }
-
-    assert.deepStrictEqual(actual, expected);
-})
-
-it('test code generation with duplicated parameters', () => {
-    const sql = 'SELECT id from mytable1 where (id = :id or id = :id) and value = :value';
-
-    const schemaDef = describeSql(dbSchema, sql);
-    const tsDescriptor = generateTsDescriptor(schemaDef);
-    const actual = generateTsCode(tsDescriptor, 'select-id', 'node');
-    const expected =
-        `import type { Connection } from 'mysql2/promise';
-
-export type SelectIdParams = {
-    id: number;
-    value: number;
-}
-
-export type SelectIdResult = {
-    id: number;
-}
-
-export async function selectId(connection: Connection, params: SelectIdParams) : Promise<SelectIdResult[]> {
-    const sql = \`
-    SELECT id from mytable1 where (id = ? or id = ?) and value = ?
-    \`
-
-    return connection.query(sql, [params.id, params.id, params.value])
-        .then( res => res[0] as SelectIdResult[] );
-}`
-
-    assert.deepStrictEqual(actual, expected);
 })
 
