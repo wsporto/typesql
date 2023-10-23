@@ -27,9 +27,6 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
         writer.writeLine(`import { Client } from "https://deno.land/x/mysql/mod.ts";`);
     }
     else {
-        if (tsDescriptor.nestedDescriptor) {
-            writer.writeLine(`import groupBy from 'lodash.groupby';`);
-        }
         writer.writeLine(`import type { Connection } from 'mysql2/promise';`);
     }
     writer.blankLine();
@@ -133,7 +130,7 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
             writer.blankLine();
             writer.write(`function ${collectFunctionName}(selectResult: ${resultTypeName}[]): ${relationType}[]`).block(() => {
                 writer.writeLine(`const grouped = groupBy(selectResult.filter(r => r.${relation.fields[0].name} != null), r => r.${relation.fields[0].name});`)
-                writer.writeLine(`return Object.values(grouped).map(r => ${mapFunctionName}(r))`)
+                writer.writeLine(`return [...grouped.values()].map(r => ${mapFunctionName}(r))`)
             })
             writer.blankLine();
             writer.write(`function ${mapFunctionName}(selectResult: ${resultTypeName}[]): ${relationType}`).block(() => {
@@ -154,7 +151,14 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
                 writer.writeLine('return result;')
             })
         })
-
+        writer.blankLine();
+        writer.write('const groupBy = <T, Q>(array: T[], predicate: (value: T, index: number, array: T[]) => Q) =>').block(() => {
+            writer.write('return array.reduce((map, value, index, array) => ').inlineBlock(() => {
+                writer.writeLine('const key = predicate(value, index, array);');
+                writer.writeLine('map.get(key)?.push(value) ?? map.set(key, [value]);');
+                writer.writeLine('return map;');
+            }).write(', new Map<Q, T[]>());');
+        })
     }
 
     return writer.toString();

@@ -488,8 +488,7 @@ LEFT JOIN roles r on r.fk_user = u.id
 LEFT JOIN comments c on c.fk_post = p.id`
 
         const actual = await generateTsFileFromContent(client, 'select-users.sql', queryName, sql, 'node');
-        const expected = `import groupBy from 'lodash.groupby';
-import type { Connection } from 'mysql2/promise';
+        const expected = `import type { Connection } from 'mysql2/promise';
 
 export type SelectUsersResult = {
     user_id: number;
@@ -560,7 +559,7 @@ export async function selectUsersNested(connection: Connection): Promise<SelectU
 
 function collectSelectUsersNestedU(selectResult: SelectUsersResult[]): SelectUsersNestedU[] {
     const grouped = groupBy(selectResult.filter(r => r.user_id != null), r => r.user_id);
-    return Object.values(grouped).map(r => mapToSelectUsersNestedU(r))
+    return [...grouped.values()].map(r => mapToSelectUsersNestedU(r))
 }
 
 function mapToSelectUsersNestedU(selectResult: SelectUsersResult[]): SelectUsersNestedU {
@@ -576,7 +575,7 @@ function mapToSelectUsersNestedU(selectResult: SelectUsersResult[]): SelectUsers
 
 function collectSelectUsersNestedP(selectResult: SelectUsersResult[]): SelectUsersNestedP[] {
     const grouped = groupBy(selectResult.filter(r => r.post_id != null), r => r.post_id);
-    return Object.values(grouped).map(r => mapToSelectUsersNestedP(r))
+    return [...grouped.values()].map(r => mapToSelectUsersNestedP(r))
 }
 
 function mapToSelectUsersNestedP(selectResult: SelectUsersResult[]): SelectUsersNestedP {
@@ -592,7 +591,7 @@ function mapToSelectUsersNestedP(selectResult: SelectUsersResult[]): SelectUsers
 
 function collectSelectUsersNestedR(selectResult: SelectUsersResult[]): SelectUsersNestedR[] {
     const grouped = groupBy(selectResult.filter(r => r.role_id != null), r => r.role_id);
-    return Object.values(grouped).map(r => mapToSelectUsersNestedR(r))
+    return [...grouped.values()].map(r => mapToSelectUsersNestedR(r))
 }
 
 function mapToSelectUsersNestedR(selectResult: SelectUsersResult[]): SelectUsersNestedR {
@@ -606,7 +605,7 @@ function mapToSelectUsersNestedR(selectResult: SelectUsersResult[]): SelectUsers
 
 function collectSelectUsersNestedC(selectResult: SelectUsersResult[]): SelectUsersNestedC[] {
     const grouped = groupBy(selectResult.filter(r => r.comment_id != null), r => r.comment_id);
-    return Object.values(grouped).map(r => mapToSelectUsersNestedC(r))
+    return [...grouped.values()].map(r => mapToSelectUsersNestedC(r))
 }
 
 function mapToSelectUsersNestedC(selectResult: SelectUsersResult[]): SelectUsersNestedC {
@@ -616,6 +615,14 @@ function mapToSelectUsersNestedC(selectResult: SelectUsersResult[]): SelectUsers
         comment: firstRow.comment!
     }
     return result;
+}
+
+const groupBy = <T, Q>(array: T[], predicate: (value: T, index: number, array: T[]) => Q) => {
+    return array.reduce((map, value, index, array) => {
+        const key = predicate(value, index, array);
+        map.get(key)?.push(value) ?? map.set(key, [value]);
+        return map;
+    }, new Map<Q, T[]>());
 }`
 
         assert.deepStrictEqual(actual, expected);
@@ -635,8 +642,7 @@ LEFT JOIN posts p on p.fk_user = u.id
 WHERE u.id = :id`
 
         const actual = await generateTsFileFromContent(client, 'select-users.sql', queryName, sql, 'node');
-        const expected = `import groupBy from 'lodash.groupby';
-import type { Connection } from 'mysql2/promise';
+        const expected = `import type { Connection } from 'mysql2/promise';
 
 export type SelectUsersParams = {
     id: number;
@@ -690,7 +696,7 @@ export async function selectUsersNested(connection: Connection, params: SelectUs
 
 function collectSelectUsersNestedU(selectResult: SelectUsersResult[]): SelectUsersNestedU[] {
     const grouped = groupBy(selectResult.filter(r => r.user_id != null), r => r.user_id);
-    return Object.values(grouped).map(r => mapToSelectUsersNestedU(r))
+    return [...grouped.values()].map(r => mapToSelectUsersNestedU(r))
 }
 
 function mapToSelectUsersNestedU(selectResult: SelectUsersResult[]): SelectUsersNestedU {
@@ -705,7 +711,7 @@ function mapToSelectUsersNestedU(selectResult: SelectUsersResult[]): SelectUsers
 
 function collectSelectUsersNestedP(selectResult: SelectUsersResult[]): SelectUsersNestedP[] {
     const grouped = groupBy(selectResult.filter(r => r.post_id != null), r => r.post_id);
-    return Object.values(grouped).map(r => mapToSelectUsersNestedP(r))
+    return [...grouped.values()].map(r => mapToSelectUsersNestedP(r))
 }
 
 function mapToSelectUsersNestedP(selectResult: SelectUsersResult[]): SelectUsersNestedP {
@@ -716,6 +722,14 @@ function mapToSelectUsersNestedP(selectResult: SelectUsersResult[]): SelectUsers
         post_body: firstRow.post_body!
     }
     return result;
+}
+
+const groupBy = <T, Q>(array: T[], predicate: (value: T, index: number, array: T[]) => Q) => {
+    return array.reduce((map, value, index, array) => {
+        const key = predicate(value, index, array);
+        map.get(key)?.push(value) ?? map.set(key, [value]);
+        return map;
+    }, new Map<Q, T[]>());
 }`
         assert.deepStrictEqual(actual, expected);
     })
@@ -734,8 +748,7 @@ INNER JOIN participants p on p.fk_survey = s.id
 INNER JOIN users u on p.fk_user = :user_id`
 
         const actual = await generateTsFileFromContent(client, 'select-answers.sql', queryName, sql, 'node');
-        const expected = `import groupBy from 'lodash.groupby';
-import type { Connection } from 'mysql2/promise';
+        const expected = `import type { Connection } from 'mysql2/promise';
 
 export type SelectAnswersParams = {
     user_id: number;
@@ -793,7 +806,7 @@ export async function selectAnswersNested(connection: Connection, params: Select
 
 function collectSelectAnswersNestedS(selectResult: SelectAnswersResult[]): SelectAnswersNestedS[] {
     const grouped = groupBy(selectResult.filter(r => r.surveyId != null), r => r.surveyId);
-    return Object.values(grouped).map(r => mapToSelectAnswersNestedS(r))
+    return [...grouped.values()].map(r => mapToSelectAnswersNestedS(r))
 }
 
 function mapToSelectAnswersNestedS(selectResult: SelectAnswersResult[]): SelectAnswersNestedS {
@@ -808,7 +821,7 @@ function mapToSelectAnswersNestedS(selectResult: SelectAnswersResult[]): SelectA
 
 function collectSelectAnswersNestedP(selectResult: SelectAnswersResult[]): SelectAnswersNestedP[] {
     const grouped = groupBy(selectResult.filter(r => r.participantId != null), r => r.participantId);
-    return Object.values(grouped).map(r => mapToSelectAnswersNestedP(r))
+    return [...grouped.values()].map(r => mapToSelectAnswersNestedP(r))
 }
 
 function mapToSelectAnswersNestedP(selectResult: SelectAnswersResult[]): SelectAnswersNestedP {
@@ -822,7 +835,7 @@ function mapToSelectAnswersNestedP(selectResult: SelectAnswersResult[]): SelectA
 
 function collectSelectAnswersNestedU(selectResult: SelectAnswersResult[]): SelectAnswersNestedU[] {
     const grouped = groupBy(selectResult.filter(r => r.userId != null), r => r.userId);
-    return Object.values(grouped).map(r => mapToSelectAnswersNestedU(r))
+    return [...grouped.values()].map(r => mapToSelectAnswersNestedU(r))
 }
 
 function mapToSelectAnswersNestedU(selectResult: SelectAnswersResult[]): SelectAnswersNestedU {
@@ -832,6 +845,14 @@ function mapToSelectAnswersNestedU(selectResult: SelectAnswersResult[]): SelectA
         userName: firstRow.userName!
     }
     return result;
+}
+
+const groupBy = <T, Q>(array: T[], predicate: (value: T, index: number, array: T[]) => Q) => {
+    return array.reduce((map, value, index, array) => {
+        const key = predicate(value, index, array);
+        map.get(key)?.push(value) ?? map.set(key, [value]);
+        return map;
+    }, new Map<Q, T[]>());
 }`
 
         assert.deepStrictEqual(actual, expected);
