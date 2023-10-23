@@ -1,6 +1,6 @@
 {
   "name": "typesql-cli",
-  "version": "0.7.0",
+  "version": "0.6.2",
   "description": "",
   "main": "index.js",
   "bin": {
@@ -20,7 +20,6 @@
   },
   "devDependencies": {
     "@types/camelcase": "^5.2.0",
-    "@types/lodash.partition": "^4.6.8",
     "@types/mocha": "^7.0.2",
     "@types/node": "^20.4.0",
     "@types/yargs": "^15.0.5",
@@ -36,7 +35,6 @@
     "chokidar": "^3.4.2",
     "code-block-writer": "^10.1.0",
     "fp-ts": "^2.8.2",
-    "lodash.partition": "^4.6.0",
     "moment": "^2.27.0",
     "mysql2": "^3.4.5",
     "ts-mysql-parser": "^0.2.0",

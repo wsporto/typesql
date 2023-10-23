@@ -40,7 +40,6 @@ describe('nested-query', () => {
                     name: 'u',
                     tableName: 'users',
                     tableAlias: 'u',
-                    cardinality: 'one',
                     columns: [
                         {
                             type: 'field',
@@ -61,7 +60,6 @@ describe('nested-query', () => {
                     name: 'p',
                     tableName: 'posts',
                     tableAlias: 'p',
-                    cardinality: 'many',
                     columns: [
                         {
                             type: 'field',
@@ -114,7 +112,6 @@ describe('nested-query', () => {
                     name: 'p',
                     tableName: 'posts',
                     tableAlias: 'p',
-                    cardinality: 'one',
                     columns: [
                         {
                             type: 'field',
@@ -139,7 +136,6 @@ describe('nested-query', () => {
                     name: 'u',
                     tableName: 'users',
                     tableAlias: 'u',
-                    cardinality: 'one',
                     columns: [
                         {
                             type: 'field',
@@ -195,7 +191,6 @@ describe('nested-query', () => {
                     name: 'u',
                     tableName: 'users',
                     tableAlias: 'u',
-                    cardinality: 'one',
                     columns: [
                         {
                             type: 'field',
@@ -216,7 +211,6 @@ describe('nested-query', () => {
                     name: 'p',
                     tableName: 'posts',
                     tableAlias: 'p',
-                    cardinality: 'many',
                     columns: [
                         {
                             type: 'field',
@@ -241,7 +235,6 @@ describe('nested-query', () => {
                     name: 'c',
                     tableName: 'comments',
                     tableAlias: 'c',
-                    cardinality: 'many',
                     columns: [
                         {
                             type: 'field',
@@ -294,7 +287,6 @@ describe('nested-query', () => {
                     name: 'u',
                     tableName: 'users',
                     tableAlias: 'u',
-                    cardinality: 'one',
                     columns: [
                         {
                             type: 'field',
@@ -320,7 +312,6 @@ describe('nested-query', () => {
                     name: 'p',
                     tableName: 'posts',
                     tableAlias: 'p',
-                    cardinality: 'many',
                     columns: [
                         {
                             type: 'field',
@@ -340,7 +331,6 @@ describe('nested-query', () => {
                     name: 'r',
                     tableName: 'roles',
                     tableAlias: 'r',
-                    cardinality: 'many',
                     columns: [
                         {
                             type: 'field',
@@ -395,7 +385,6 @@ describe('nested-query', () => {
                     name: 'u',
                     tableName: 'users',
                     tableAlias: 'u',
-                    cardinality: 'one',
                     columns: [
                         {
                             type: 'field',
@@ -423,7 +412,6 @@ describe('nested-query', () => {
                     name: 'p',
                     tableName: 'posts',
                     tableAlias: 'p',
-                    cardinality: 'many',
                     columns: [
                         {
                             type: 'field',
@@ -445,26 +433,24 @@ describe('nested-query', () => {
                     ]
                 },
                 {
-                    name: 'c',
-                    tableName: 'comments',
-                    tableAlias: 'c',
-                    cardinality: 'many',
-                    columns: [
-                        {
-                            type: 'field',
-                            name: 'comment',
-                        }
-                    ]
-                },
-                {
                     name: 'r',
                     tableName: 'roles',
                     tableAlias: 'r',
-                    cardinality: 'many',
                     columns: [
                         {
                             type: 'field',
                             name: 'role',
+                        }
+                    ]
+                },
+                {
+                    name: 'c',
+                    tableName: 'comments',
+                    tableAlias: 'c',
+                    columns: [
+                        {
+                            type: 'field',
+                            name: 'comment',
                         }
                     ]
                 }
@@ -478,5 +464,154 @@ describe('nested-query', () => {
         assert.deepStrictEqual(actual, expectedModel);
     })
 
+    it('FROM surveys INNER JOIN participants INNER JOIN users INNER JOIN questions INNER JOIN answers a', async () => {
+        const dbSchema = await client.loadDbSchema();
+
+        const sql = `
+        -- @nested
+        SELECT
+            s.id as surveyId,
+            s.name as surveyName,
+            p.id as participantId,
+            u.id as userId,
+            u.name as userName,
+            q.id as questionId,
+            q.questions as questions,
+            a.id as answerId,
+            a.answer
+        FROM surveys s
+        INNER JOIN participants p on p.fk_survey = s.id
+        INNER JOIN users u on p.fk_user = u.id
+        INNER JOIN questions q ON q.fk_survey = s.id
+        INNER JOIN answers a on a.fk_question = q.id AND a.fk_user = u.id
+        `
+        // Expected types:
+        // type Surveys = {
+        //     surveyId: number;
+        //     surveyName: string;
+        //     p: Participants[];
+        //     q: Questions[];
+        // }
+        // type Participants = {
+        //     participantId: number;
+        //     userId: number;
+        // }
+        // type Questions = {
+        //     questionId: number;
+        //     questionS: string;
+        //     a: Answer;
+        // }
+        // type Answer = {
+        //     answerId: number;
+        //     answer: string;
+        // }
+
+        const expectedModel: NestedResultInfo = {
+            relations: [
+                {
+                    name: "s",
+                    tableName: "surveys",
+                    tableAlias: "s",
+                    columns: [
+                        {
+                            type: "field",
+                            name: "surveyId",
+                        },
+                        {
+                            type: "field",
+                            name: "surveyName",
+                        },
+                        {
+                            type: "relation",
+                            name: "p",
+                            cardinality: "many",
+                        },
+                        {
+                            type: "relation",
+                            name: "q",
+                            cardinality: "many",
+                        },
+                    ],
+                },
+                {
+                    name: "p",
+                    tableName: "participants",
+                    tableAlias: "p",
+                    columns: [
+                        {
+                            type: "field",
+                            name: "participantId",
+                        },
+                        {
+                            type: "relation",
+                            name: "u",
+                            cardinality: "one",
+                        },
+                    ],
+                },
+                {
+                    name: "u",
+                    tableName: "users",
+                    tableAlias: "u",
+                    columns: [
+                        {
+                            type: "field",
+                            name: "userId",
+                        },
+                        {
+                            type: "field",
+                            name: "userName",
+                        },
+                        {
+                            type: "relation",
+                            name: "a",
+                            cardinality: "many",
+                        },
+                    ],
+                },
+                {
+                    name: "q",
+                    tableName: "questions",
+                    tableAlias: "q",
+                    columns: [
+                        {
+                            type: "field",
+                            name: "questionId",
+                        },
+                        {
+                            type: "field",
+                            name: "questions",
+                        },
+                        {
+                            type: "relation",
+                            name: "a",
+                            cardinality: "many",
+                        },
+                    ],
+                },
+                {
+                    name: "a",
+                    tableName: "answers",
+                    tableAlias: "a",
+                    columns: [
+                        {
+                            type: "field",
+                            name: "answerId",
+                        },
+                        {
+                            type: "field",
+                            name: "answer",
+                        },
+                    ],
+                }
+            ],
+        }
+        if (isLeft(dbSchema)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        const actual = describeNestedQuery(sql, dbSchema.right);
+
+        assert.deepStrictEqual(actual, expectedModel);
+    })
 
 });

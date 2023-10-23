@@ -4,7 +4,7 @@ import { describeSql } from "../src/describe-query";
 import { dbSchema } from "./mysql-query-analyzer/create-schema";
 import { DbClient } from "../src/queryExectutor";
 
-describe.only('code-generator', () => {
+describe('code-generator', () => {
 
     let client: DbClient = new DbClient();
     before(async () => {
@@ -540,14 +540,14 @@ export type SelectUsersNestedP = {
     c: SelectUsersNestedC[];
 }
 
-export type SelectUsersNestedC = {
-    comment_id: number;
-    comment: string;
-}
-
 export type SelectUsersNestedR = {
     role_id: number;
     role: 'user' | 'admin' | 'guest';
+}
+
+export type SelectUsersNestedC = {
+    comment_id: number;
+    comment: string;
 }
 
 export async function selectUsersNested(connection: Connection): Promise<SelectUsersNestedU[]> {
@@ -590,20 +590,6 @@ function mapToSelectUsersNestedP(selectResult: SelectUsersResult[]): SelectUsers
     return result;
 }
 
-function collectSelectUsersNestedC(selectResult: SelectUsersResult[]): SelectUsersNestedC[] {
-    const grouped = groupBy(selectResult.filter(r => r.comment_id != null), r => r.comment_id);
-    return Object.values(grouped).map(r => mapToSelectUsersNestedC(r))
-}
-
-function mapToSelectUsersNestedC(selectResult: SelectUsersResult[]): SelectUsersNestedC {
-    const firstRow = selectResult[0];
-    const result: SelectUsersNestedC = {
-        comment_id: firstRow.comment_id!,
-        comment: firstRow.comment!
-    }
-    return result;
-}
-
 function collectSelectUsersNestedR(selectResult: SelectUsersResult[]): SelectUsersNestedR[] {
     const grouped = groupBy(selectResult.filter(r => r.role_id != null), r => r.role_id);
     return Object.values(grouped).map(r => mapToSelectUsersNestedR(r))
@@ -614,6 +600,20 @@ function mapToSelectUsersNestedR(selectResult: SelectUsersResult[]): SelectUsers
     const result: SelectUsersNestedR = {
         role_id: firstRow.role_id!,
         role: firstRow.role!
+    }
+    return result;
+}
+
+function collectSelectUsersNestedC(selectResult: SelectUsersResult[]): SelectUsersNestedC[] {
+    const grouped = groupBy(selectResult.filter(r => r.comment_id != null), r => r.comment_id);
+    return Object.values(grouped).map(r => mapToSelectUsersNestedC(r))
+}
+
+function mapToSelectUsersNestedC(selectResult: SelectUsersResult[]): SelectUsersNestedC {
+    const firstRow = selectResult[0];
+    const result: SelectUsersNestedC = {
+        comment_id: firstRow.comment_id!,
+        comment: firstRow.comment!
     }
     return result;
 }`
