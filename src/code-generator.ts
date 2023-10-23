@@ -146,7 +146,8 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
                         }
                         if (field.type == 'relation') {
                             const nestedRelationType = generateRelationType(capitalizedName, field.name);
-                            writer.writeLine(`${field.name}: collect${nestedRelationType}(selectResult)` + separator);
+                            const cardinality = field.list ? '' : '[0]';
+                            writer.writeLine(`${field.name}: collect${nestedRelationType}(selectResult)${cardinality}` + separator);
                         }
                     })
                 })

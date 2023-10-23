@@ -719,5 +719,122 @@ function mapToSelectUsersNestedP(selectResult: SelectUsersResult[]): SelectUsers
 }`
         assert.deepStrictEqual(actual, expected);
     })
+
+    it('generate nested result with one to one relation', async () => {
+        const queryName = 'select-answers';
+        const sql = `-- @nested
+SELECT
+    s.id as surveyId,
+    s.name as surveyName,
+    p.id as participantId,
+    u.id as userId,
+    u.name as userName
+FROM surveys s
+INNER JOIN participants p on p.fk_survey = s.id
+INNER JOIN users u on p.fk_user = :user_id`
+
+        const actual = await generateTsFileFromContent(client, 'select-answers.sql', queryName, sql, 'node');
+        const expected = `import groupBy from 'lodash.groupby';
+import type { Connection } from 'mysql2/promise';
+
+export type SelectAnswersParams = {
+    user_id: number;
+}
+
+export type SelectAnswersResult = {
+    surveyId: number;
+    surveyName: string;
+    participantId: number;
+    userId: number;
+    userName: string;
+}
+
+export async function selectAnswers(connection: Connection, params: SelectAnswersParams) : Promise<SelectAnswersResult[]> {
+    const sql = \`
+    -- @nested
+    SELECT
+        s.id as surveyId,
+        s.name as surveyName,
+        p.id as participantId,
+        u.id as userId,
+        u.name as userName
+    FROM surveys s
+    INNER JOIN participants p on p.fk_survey = s.id
+    INNER JOIN users u on p.fk_user = ?
+    \`
+
+    return connection.query(sql, [params.user_id])
+        .then( res => res[0] as SelectAnswersResult[] );
+}
+
+export type SelectAnswersNestedS = {
+    surveyId: number;
+    surveyName: string;
+    p: SelectAnswersNestedP[];
+}
+
+export type SelectAnswersNestedP = {
+    participantId: number;
+    u: SelectAnswersNestedU;
+}
+
+export type SelectAnswersNestedU = {
+    userId: number;
+    userName: string;
+}
+
+export async function selectAnswersNested(connection: Connection, params: SelectAnswersParams): Promise<SelectAnswersNestedS[]> {
+    const selectResult = await selectAnswers(connection, params);
+    if (selectResult.length == 0) {
+        return [];
+    }
+    return collectSelectAnswersNestedS(selectResult);
+}
+
+function collectSelectAnswersNestedS(selectResult: SelectAnswersResult[]): SelectAnswersNestedS[] {
+    const grouped = groupBy(selectResult.filter(r => r.surveyId != null), r => r.surveyId);
+    return Object.values(grouped).map(r => mapToSelectAnswersNestedS(r))
+}
+
+function mapToSelectAnswersNestedS(selectResult: SelectAnswersResult[]): SelectAnswersNestedS {
+    const firstRow = selectResult[0];
+    const result: SelectAnswersNestedS = {
+        surveyId: firstRow.surveyId!,
+        surveyName: firstRow.surveyName!,
+        p: collectSelectAnswersNestedP(selectResult)
+    }
+    return result;
+}
+
+function collectSelectAnswersNestedP(selectResult: SelectAnswersResult[]): SelectAnswersNestedP[] {
+    const grouped = groupBy(selectResult.filter(r => r.participantId != null), r => r.participantId);
+    return Object.values(grouped).map(r => mapToSelectAnswersNestedP(r))
+}
+
+function mapToSelectAnswersNestedP(selectResult: SelectAnswersResult[]): SelectAnswersNestedP {
+    const firstRow = selectResult[0];
+    const result: SelectAnswersNestedP = {
+        participantId: firstRow.participantId!,
+        u: collectSelectAnswersNestedU(selectResult)[0]
+    }
+    return result;
+}
+
+function collectSelectAnswersNestedU(selectResult: SelectAnswersResult[]): SelectAnswersNestedU[] {
+    const grouped = groupBy(selectResult.filter(r => r.userId != null), r => r.userId);
+    return Object.values(grouped).map(r => mapToSelectAnswersNestedU(r))
+}
+
+function mapToSelectAnswersNestedU(selectResult: SelectAnswersResult[]): SelectAnswersNestedU {
+    const firstRow = selectResult[0];
+    const result: SelectAnswersNestedU = {
+        userId: firstRow.userId!,
+        userName: firstRow.userName!
+    }
+    return result;
+}`
+
+        assert.deepStrictEqual(actual, expected);
+    })
 })
 

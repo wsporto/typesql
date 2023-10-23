@@ -11,6 +11,7 @@ export type TsField = {
 
 export type TsRelationField = {
     type: 'relation';
+    list: boolean;
     name: string;
     tsType: string;
     notNull: boolean;
@@ -71,6 +72,7 @@ function mapModelColumnToTsRelation(modelColumn: RelationField): TsRelationField
 
     const field: TsRelationField = {
         type: "relation",
+        list: modelColumn.cardinality == 'many' ? true : false,
         name: modelColumn.name,
         tsType: modelColumn.name + (modelColumn.cardinality == 'many' ? '[]' : ''),
         notNull: true

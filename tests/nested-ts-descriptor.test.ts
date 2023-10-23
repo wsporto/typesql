@@ -56,6 +56,7 @@ describe('Test nested-ts-descriptor', () => {
                         {
                             type: 'relation',
                             name: 'p',
+                            list: true,
                             tsType: 'p[]',
                             notNull: true,
                         }
