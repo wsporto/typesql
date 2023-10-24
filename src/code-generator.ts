@@ -63,24 +63,40 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
         });
         writer.indent().write('`');
         writer.blankLine();
+        const singleRowSelect = tsDescriptor.queryType == 'Select' && tsDescriptor.multipleRowsResult === false;
         if (target == 'deno') {
             writer.writeLine(`return client.query(sql${queryParams})`);
-            const singleRowSlect = tsDescriptor.multipleRowsResult === false && tsDescriptor.queryType == 'Select';
-            writer.indent().write(`.then( res => res${singleRowSlect ? '[0]' : ''} );`);
+            writer.indent().write(`.then(res => res${singleRowSelect ? '[0]' : ''});`);
         }
         else {
-            writer.writeLine(`return connection.query(sql${queryParams})`);
-            writer.indent().write(`.then( res => res[0] as ${resultTypeName}${tsDescriptor.multipleRowsResult || tsDescriptor.queryType == 'Select' ? '[]' : ''} )`);
+            if (tsDescriptor.queryType == 'Select') {
+                writer.writeLine(`return connection.query({sql, rowsAsArray: true}${queryParams})`);
+                writer.indent().write(`.then(res => res[0] as any[])`);
+                writer.newLine().indent().write(`.then(res => res.map(data => mapArrayTo${resultTypeName}(data)))`);
+            }
+            else {
+                writer.writeLine(`return connection.query(sql${queryParams})`);
+                writer.indent().write(`.then(res => res[0] as ${resultTypeName})`);
+            }
             if (tsDescriptor.queryType == 'Select' && tsDescriptor.multipleRowsResult == false) {
-                writer.newLine();
-                writer.indent().write(`.then( res => res[0] );`);
+                writer.newLine().indent().write(`.then(res => res[0]);`);
             }
             else {
                 writer.write(';');
             }
         }
-
     })
+    if (target == 'node' && tsDescriptor.queryType == 'Select') {
+        writer.blankLine();
+        writer.write(`function mapArrayTo${resultTypeName}(data: any)`).block(() => {
+            writer.write(`const result: ${resultTypeName} =`).block(() => {
+                tsDescriptor.columns.forEach((tsField, index) => {
+                    writer.writeLine(`${tsField.name}: data[${index}]${commaSeparator(tsDescriptor.columns.length, index)}`);
+                })
+            });
+            writer.write('return result;');
+        })
+    }
 
     if (generateOrderBy) {
         const orderByColumnsType = tsDescriptor.orderByColumns?.map(col => `"${col}"`).join(' | ');
@@ -137,7 +153,7 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
                 writer.writeLine(`const firstRow = selectResult[0];`)
                 writer.write(`const result: ${relationType} = `).block(() => {
                     relation.fields.forEach((field, index) => {
-                        const separator = relation.fields.length > 1 && index != relation.fields.length - 1 ? ',' : '';
+                        const separator = commaSeparator(relation.fields.length, index);
                         if (field.type == 'field') {
                             writer.writeLine(`${field.name}: firstRow.${field.name}!` + separator);
                         }
@@ -363,4 +379,8 @@ export type TsDescriptor = {
     data?: TsFieldDescriptor[];
     orderByColumns?: string[];
     nestedDescriptor?: NestedTsDescriptor;
+}
+
+function commaSeparator(length: number, index: number) {
+    return length > 1 && index != length - 1 ? ',' : '';
 }

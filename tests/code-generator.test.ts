@@ -61,8 +61,17 @@ export async function getPerson(connection: Connection, params: GetPersonParams)
     select id, name from person where id = ?
     \`
 
-    return connection.query(sql, [params.param1])
-        .then( res => res[0] as GetPersonResult[] );
+    return connection.query({sql, rowsAsArray: true}, [params.param1])
+        .then(res => res[0] as any[])
+        .then(res => res.map(data => mapArrayToGetPersonResult(data)));
+}
+
+function mapArrayToGetPersonResult(data: any) {
+    const result: GetPersonResult = {
+        id: data[0],
+        name: data[1]
+    }
+    return result;
 }`
 
         assert.deepStrictEqual(actual, expected);
@@ -95,7 +104,7 @@ export async function updatePerson(connection: Connection, data: UpdatePersonDat
     \`
 
     return connection.query(sql, [data.name, params.param1])
-        .then( res => res[0] as UpdatePersonResult );
+        .then(res => res[0] as UpdatePersonResult);
 }`
 
         assert.deepStrictEqual(actual, expected);
@@ -137,9 +146,17 @@ export async function selectPerson(connection: Connection, params: SelectPersonP
     SELECT id FROM person ORDER BY \${escapeOrderBy(params.orderBy)}
     \`
 
-    return connection.query(sql)
-        .then( res => res[0] as SelectPersonResult[] )
-        .then( res => res[0] );
+    return connection.query({sql, rowsAsArray: true})
+        .then(res => res[0] as any[])
+        .then(res => res.map(data => mapArrayToSelectPersonResult(data)))
+        .then(res => res[0]);
+}
+
+function mapArrayToSelectPersonResult(data: any) {
+    const result: SelectPersonResult = {
+        id: data[0]
+    }
+    return result;
 }
 
 export type SelectPersonOrderBy = {
@@ -228,7 +245,7 @@ export async function selectId(client: Client) : Promise<SelectIdResult[]> {
     \`
 
     return client.query(sql)
-        .then( res => res );
+        .then(res => res);
 }`
 
         assert.deepStrictEqual(actual, expected);
@@ -257,7 +274,7 @@ export async function selectId(client: Client, params: SelectIdParams) : Promise
     \`
 
     return client.query(sql, [params.param1, params.param2])
-        .then( res => res[0] );
+        .then(res => res[0]);
 }`
 
         assert.deepStrictEqual(actual, expected);
@@ -284,8 +301,16 @@ export async function selectId(connection: Connection, params: SelectIdParams) :
     SELECT id from mytable1 where id = ? or id = ?
     \`
 
-    return connection.query(sql, [params.id, params.id])
-        .then( res => res[0] as SelectIdResult[] );
+    return connection.query({sql, rowsAsArray: true}, [params.id, params.id])
+        .then(res => res[0] as any[])
+        .then(res => res.map(data => mapArrayToSelectIdResult(data)));
+}
+
+function mapArrayToSelectIdResult(data: any) {
+    const result: SelectIdResult = {
+        id: data[0]
+    }
+    return result;
 }`
 
         assert.deepStrictEqual(actual, expected);
@@ -313,7 +338,7 @@ export async function updateValue(client: Client, data: UpdateValueData) : Promi
     \`
 
     return client.query(sql, [data.value])
-        .then( res => res );
+        .then(res => res);
 }`
 
         assert.deepStrictEqual(actual, expected);
@@ -346,7 +371,7 @@ export async function updateValue(client: Client, data: UpdateValueData, params:
     \`
 
     return client.query(sql, [data.value, params.param1])
-        .then( res => res );
+        .then(res => res);
 }`
 
         assert.deepStrictEqual(actual, expected);
@@ -374,7 +399,7 @@ export async function selectId(client: Client, params: SelectIdParams) : Promise
     \`
 
     return client.query(sql)
-        .then( res => res );
+        .then(res => res);
 }
 
 export type SelectIdOrderBy = {
@@ -408,7 +433,7 @@ export async function selectId(client: Client) : Promise<SelectIdResult[]> {
     \`
 
     return client.query(sql)
-        .then( res => res );
+        .then(res => res);
 }`
 
         assert.deepStrictEqual(actual, expected);
@@ -462,8 +487,16 @@ export async function selectId(connection: Connection, params: SelectIdParams) :
     SELECT id from mytable1 where (id = ? or id = ?) and value = ?
     \`
 
-    return connection.query(sql, [params.id, params.id, params.value])
-        .then( res => res[0] as SelectIdResult[] );
+    return connection.query({sql, rowsAsArray: true}, [params.id, params.id, params.value])
+        .then(res => res[0] as any[])
+        .then(res => res.map(data => mapArrayToSelectIdResult(data)));
+}
+
+function mapArrayToSelectIdResult(data: any) {
+    const result: SelectIdResult = {
+        id: data[0]
+    }
+    return result;
 }`
 
         assert.deepStrictEqual(actual, expected);
@@ -521,8 +554,24 @@ export async function selectUsers(connection: Connection) : Promise<SelectUsersR
     LEFT JOIN comments c on c.fk_post = p.id
     \`
 
-    return connection.query(sql)
-        .then( res => res[0] as SelectUsersResult[] );
+    return connection.query({sql, rowsAsArray: true})
+        .then(res => res[0] as any[])
+        .then(res => res.map(data => mapArrayToSelectUsersResult(data)));
+}
+
+function mapArrayToSelectUsersResult(data: any) {
+    const result: SelectUsersResult = {
+        user_id: data[0],
+        user_name: data[1],
+        post_id: data[2],
+        post_title: data[3],
+        post_body: data[4],
+        role_id: data[5],
+        role: data[6],
+        comment_id: data[7],
+        comment: data[8]
+    }
+    return result;
 }
 
 export type SelectUsersNestedU = {
@@ -670,8 +719,20 @@ export async function selectUsers(connection: Connection, params: SelectUsersPar
     WHERE u.id = ?
     \`
 
-    return connection.query(sql, [params.id])
-        .then( res => res[0] as SelectUsersResult[] );
+    return connection.query({sql, rowsAsArray: true}, [params.id])
+        .then(res => res[0] as any[])
+        .then(res => res.map(data => mapArrayToSelectUsersResult(data)));
+}
+
+function mapArrayToSelectUsersResult(data: any) {
+    const result: SelectUsersResult = {
+        user_id: data[0],
+        user_name: data[1],
+        post_id: data[2],
+        post_title: data[3],
+        post_body: data[4]
+    }
+    return result;
 }
 
 export type SelectUsersNestedU = {
@@ -776,8 +837,20 @@ export async function selectAnswers(connection: Connection, params: SelectAnswer
     INNER JOIN users u on p.fk_user = ?
     \`
 
-    return connection.query(sql, [params.user_id])
-        .then( res => res[0] as SelectAnswersResult[] );
+    return connection.query({sql, rowsAsArray: true}, [params.user_id])
+        .then(res => res[0] as any[])
+        .then(res => res.map(data => mapArrayToSelectAnswersResult(data)));
+}
+
+function mapArrayToSelectAnswersResult(data: any) {
+    const result: SelectAnswersResult = {
+        surveyId: data[0],
+        surveyName: data[1],
+        participantId: data[2],
+        userId: data[3],
+        userName: data[4]
+    }
+    return result;
 }
 
 export type SelectAnswersNestedS = {
