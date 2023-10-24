@@ -40,14 +40,17 @@ describe('nested-query', () => {
                     name: 'u',
                     tableName: 'users',
                     tableAlias: 'u',
+                    groupKeyIndex: 0,
                     columns: [
                         {
                             type: 'field',
-                            name: 'user_id'
+                            name: 'user_id',
+                            index: 0
                         },
                         {
                             type: 'field',
-                            name: 'user_name'
+                            name: 'user_name',
+                            index: 1
                         },
                         {
                             type: 'relation',
@@ -60,18 +63,22 @@ describe('nested-query', () => {
                     name: 'p',
                     tableName: 'posts',
                     tableAlias: 'p',
+                    groupKeyIndex: 2,
                     columns: [
                         {
                             type: 'field',
                             name: 'post_id',
+                            index: 2
                         },
                         {
                             type: 'field',
-                            name: 'post_title'
+                            name: 'post_title',
+                            index: 3
                         },
                         {
                             type: 'field',
-                            name: 'post_body'
+                            name: 'post_body',
+                            index: 4
                         }
                     ]
                 }
@@ -112,18 +119,22 @@ describe('nested-query', () => {
                     name: 'p',
                     tableName: 'posts',
                     tableAlias: 'p',
+                    groupKeyIndex: 2,
                     columns: [
                         {
                             type: 'field',
-                            name: 'post_id'
+                            name: 'post_id',
+                            index: 2
                         },
                         {
                             type: 'field',
-                            name: 'post_title'
+                            name: 'post_title',
+                            index: 3
                         },
                         {
                             type: 'field',
-                            name: 'post_body'
+                            name: 'post_body',
+                            index: 4
                         },
                         {
                             type: 'relation',
@@ -136,14 +147,17 @@ describe('nested-query', () => {
                     name: 'u',
                     tableName: 'users',
                     tableAlias: 'u',
+                    groupKeyIndex: 0,
                     columns: [
                         {
                             type: 'field',
                             name: 'user_id',
+                            index: 0
                         },
                         {
                             type: 'field',
-                            name: 'user_name'
+                            name: 'user_name',
+                            index: 1
                         }
                     ]
                 },
@@ -191,14 +205,17 @@ describe('nested-query', () => {
                     name: 'u',
                     tableName: 'users',
                     tableAlias: 'u',
+                    groupKeyIndex: 0,
                     columns: [
                         {
                             type: 'field',
-                            name: 'user_id'
+                            name: 'user_id',
+                            index: 0
                         },
                         {
                             type: 'field',
-                            name: 'user_name'
+                            name: 'user_name',
+                            index: 1
                         },
                         {
                             type: 'relation',
@@ -211,18 +228,22 @@ describe('nested-query', () => {
                     name: 'p',
                     tableName: 'posts',
                     tableAlias: 'p',
+                    groupKeyIndex: 2,
                     columns: [
                         {
                             type: 'field',
                             name: 'post_id',
+                            index: 2
                         },
                         {
                             type: 'field',
-                            name: 'post_title'
+                            name: 'post_title',
+                            index: 3
                         },
                         {
                             type: 'field',
-                            name: 'post_body'
+                            name: 'post_body',
+                            index: 4
                         },
                         {
                             type: 'relation',
@@ -235,10 +256,13 @@ describe('nested-query', () => {
                     name: 'c',
                     tableName: 'comments',
                     tableAlias: 'c',
+                    groupKeyIndex: 5,
                     columns: [
                         {
                             type: 'field',
                             name: 'comment',
+                            index: 5
+
                         }
                     ]
                 }
@@ -287,14 +311,17 @@ describe('nested-query', () => {
                     name: 'u',
                     tableName: 'users',
                     tableAlias: 'u',
+                    groupKeyIndex: 0,
                     columns: [
                         {
                             type: 'field',
-                            name: 'user_id'
+                            name: 'user_id',
+                            index: 0
                         },
                         {
                             type: 'field',
-                            name: 'user_name'
+                            name: 'user_name',
+                            index: 1
                         },
                         {
                             type: 'relation',
@@ -312,18 +339,22 @@ describe('nested-query', () => {
                     name: 'p',
                     tableName: 'posts',
                     tableAlias: 'p',
+                    groupKeyIndex: 2,
                     columns: [
                         {
                             type: 'field',
                             name: 'post_id',
+                            index: 2
                         },
                         {
                             type: 'field',
-                            name: 'post_title'
+                            name: 'post_title',
+                            index: 3
                         },
                         {
                             type: 'field',
-                            name: 'post_body'
+                            name: 'post_body',
+                            index: 4
                         }
                     ]
                 },
@@ -331,10 +362,12 @@ describe('nested-query', () => {
                     name: 'r',
                     tableName: 'roles',
                     tableAlias: 'r',
+                    groupKeyIndex: 5,
                     columns: [
                         {
                             type: 'field',
                             name: 'role',
+                            index: 5
                         }
                     ]
                 }
@@ -385,14 +418,17 @@ describe('nested-query', () => {
                     name: 'u',
                     tableName: 'users',
                     tableAlias: 'u',
+                    groupKeyIndex: 0,
                     columns: [
                         {
                             type: 'field',
-                            name: 'user_id'
+                            name: 'user_id',
+                            index: 0
                         },
                         {
                             type: 'field',
-                            name: 'user_name'
+                            name: 'user_name',
+                            index: 1
                         },
                         {
                             type: 'relation',
@@ -412,18 +448,22 @@ describe('nested-query', () => {
                     name: 'p',
                     tableName: 'posts',
                     tableAlias: 'p',
+                    groupKeyIndex: 2,
                     columns: [
                         {
                             type: 'field',
                             name: 'post_id',
+                            index: 2
                         },
                         {
                             type: 'field',
-                            name: 'post_title'
+                            name: 'post_title',
+                            index: 3
                         },
                         {
                             type: 'field',
-                            name: 'post_body'
+                            name: 'post_body',
+                            index: 4
                         },
                         {
                             type: 'relation',
@@ -436,10 +476,12 @@ describe('nested-query', () => {
                     name: 'r',
                     tableName: 'roles',
                     tableAlias: 'r',
+                    groupKeyIndex: 5,
                     columns: [
                         {
                             type: 'field',
                             name: 'role',
+                            index: 5
                         }
                     ]
                 },
@@ -447,10 +489,12 @@ describe('nested-query', () => {
                     name: 'c',
                     tableName: 'comments',
                     tableAlias: 'c',
+                    groupKeyIndex: 6,
                     columns: [
                         {
                             type: 'field',
                             name: 'comment',
+                            index: 6
                         }
                     ]
                 }
@@ -512,14 +556,17 @@ describe('nested-query', () => {
                     name: "s",
                     tableName: "surveys",
                     tableAlias: "s",
+                    groupKeyIndex: 0,
                     columns: [
                         {
                             type: "field",
                             name: "surveyId",
+                            index: 0
                         },
                         {
                             type: "field",
                             name: "surveyName",
+                            index: 1
                         },
                         {
                             type: "relation",
@@ -537,10 +584,12 @@ describe('nested-query', () => {
                     name: "p",
                     tableName: "participants",
                     tableAlias: "p",
+                    groupKeyIndex: 2,
                     columns: [
                         {
                             type: "field",
                             name: "participantId",
+                            index: 2
                         },
                         {
                             type: "relation",
@@ -553,14 +602,17 @@ describe('nested-query', () => {
                     name: "u",
                     tableName: "users",
                     tableAlias: "u",
+                    groupKeyIndex: 3,
                     columns: [
                         {
                             type: "field",
                             name: "userId",
+                            index: 3
                         },
                         {
                             type: "field",
                             name: "userName",
+                            index: 4
                         },
                         {
                             type: "relation",
@@ -573,14 +625,17 @@ describe('nested-query', () => {
                     name: "q",
                     tableName: "questions",
                     tableAlias: "q",
+                    groupKeyIndex: 5,
                     columns: [
                         {
                             type: "field",
                             name: "questionId",
+                            index: 5
                         },
                         {
                             type: "field",
                             name: "questions",
+                            index: 6
                         },
                         {
                             type: "relation",
@@ -593,14 +648,17 @@ describe('nested-query', () => {
                     name: "a",
                     tableName: "answers",
                     tableAlias: "a",
+                    groupKeyIndex: 7,
                     columns: [
                         {
                             type: "field",
                             name: "answerId",
+                            index: 7
                         },
                         {
                             type: "field",
                             name: "answer",
+                            index: 8
                         },
                     ],
                 }
@@ -612,6 +670,81 @@ describe('nested-query', () => {
         const actual = describeNestedQuery(sql, dbSchema.right);
 
         assert.deepStrictEqual(actual, expectedModel);
+    })
+
+    it('SELECT FROM users u INNER JOIN posts p', async () => {
+        const dbSchema = await client.loadDbSchema();
+
+        const sql = `
+        SELECT 
+            *
+        FROM users u
+        INNER JOIN posts p on p.fk_user = u.id
+        `
+
+        //[id(0), name, id(2), title, body]
+        const expectedModel: NestedResultInfo = {
+            relations: [
+                {
+                    name: "u",
+                    tableName: "users",
+                    tableAlias: "u",
+                    groupKeyIndex: 0,
+                    columns: [
+                        {
+                            type: "field",
+                            name: "id",
+                            index: 0,
+                        },
+                        {
+                            type: "field",
+                            name: "name",
+                            index: 1,
+                        },
+                        {
+                            type: "relation",
+                            name: "p",
+                            cardinality: "many",
+                        }
+                    ],
+                },
+                {
+                    name: "p",
+                    tableName: "posts",
+                    tableAlias: "p",
+                    groupKeyIndex: 2,
+                    columns: [
+                        {
+                            type: "field",
+                            name: "id",
+                            index: 2,
+                        },
+                        {
+                            type: "field",
+                            name: "title",
+                            index: 3,
+                        },
+                        {
+                            type: "field",
+                            name: "body",
+                            index: 4,
+                        },
+                        {
+                            type: "field",
+                            name: "fk_user",
+                            index: 5,
+                        }
+                    ],
+                }
+            ],
+        }
+        if (isLeft(dbSchema)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        const actual = describeNestedQuery(sql, dbSchema.right);
+
+        assert.deepStrictEqual(actual, expectedModel);
+
     })
 
 });

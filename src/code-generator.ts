@@ -145,7 +145,8 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
             const mapFunctionName = `mapTo${relationType}`;
             writer.blankLine();
             writer.write(`function ${collectFunctionName}(selectResult: ${resultTypeName}[]): ${relationType}[]`).block(() => {
-                writer.writeLine(`const grouped = groupBy(selectResult.filter(r => r.${relation.fields[0].name} != null), r => r.${relation.fields[0].name});`)
+                const groupKey = tsDescriptor.columns[relation.groupKeyIndex].name;
+                writer.writeLine(`const grouped = groupBy(selectResult.filter(r => r.${groupKey} != null), r => r.${groupKey});`)
                 writer.writeLine(`return [...grouped.values()].map(r => ${mapFunctionName}(r))`)
             })
             writer.blankLine();
@@ -155,7 +156,8 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
                     relation.fields.forEach((field, index) => {
                         const separator = commaSeparator(relation.fields.length, index);
                         if (field.type == 'field') {
-                            writer.writeLine(`${field.name}: firstRow.${field.name}!` + separator);
+                            const fieldName = index == 0 ? tsDescriptor.columns[relation.groupKeyIndex].name : tsDescriptor.columns[field.index].name;
+                            writer.writeLine(`${field.name}: firstRow.${fieldName}!` + separator);
                         }
                         if (field.type == 'relation') {
                             const nestedRelationType = generateRelationType(capitalizedName, field.name);

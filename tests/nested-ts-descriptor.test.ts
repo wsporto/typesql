@@ -40,16 +40,19 @@ describe('Test nested-ts-descriptor', () => {
             relations: [
                 {
                     name: 'u',
+                    groupKeyIndex: 0,
                     fields: [
                         {
                             type: 'field',
                             name: 'user_id',
+                            index: 0,
                             tsType: 'number',
                             notNull: true
                         },
                         {
                             type: 'field',
                             name: 'user_name',
+                            index: 1,
                             tsType: 'string',
                             notNull: true
                         },
@@ -64,16 +67,19 @@ describe('Test nested-ts-descriptor', () => {
                 },
                 {
                     name: 'p',
+                    groupKeyIndex: 2,
                     fields: [
                         {
                             type: 'field',
                             name: 'post_id',
+                            index: 2,
                             tsType: 'number',
                             notNull: true
                         },
                         {
                             type: 'field',
                             name: 'post_title',
+                            index: 3,
                             tsType: 'string',
                             notNull: true
                         }

@@ -11,6 +11,7 @@ export type RelationInfo = {
     name: string;
     tableName: string;
     tableAlias: string | '';
+    groupKeyIndex: number;
     columns: ModelColumn[];
 }
 
@@ -21,6 +22,7 @@ export type ModelColumn = Field | RelationField;
 export type Field = {
     type: 'field',
     name: string;
+    index: number;
 }
 
 export type RelationField = {
@@ -115,17 +117,22 @@ function getRelations(tableRef: TableReferenceContext, dbSchema: ColumnSchema[],
             }
             return field;
         })
-        const fields: ModelColumn[] = columns.filter(field => field.table == r.name || field.table == r.alias).map(c => {
-            const f: ModelColumn = {
-                type: 'field',
-                name: c.columnName
-            }
-            return f;
-        });
+        const fields: ModelColumn[] = columns
+            .map((col, index) => ({ col, index })) //keep index
+            .filter(({ col }) => col.table == r.name || col.table == r.alias)
+            .map(({ col, index }) => {
+                const f: ModelColumn = {
+                    type: 'field',
+                    name: col.columnName,
+                    index: index
+                }
+                return f;
+            });
         const relationInfo: RelationInfo = {
             name: r.alias,
             tableName: r.name,
             tableAlias: r.alias,
+            groupKeyIndex: columns.findIndex(col => col.table == r.name || col.table == r.alias),
             columns: fields.concat(relationFields)
         }
         return relationInfo;

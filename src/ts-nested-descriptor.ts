@@ -5,6 +5,7 @@ import { ColumnInfo } from "./mysql-query-analyzer/types";
 export type TsField = {
     type: 'field';
     name: string;
+    index: number;
     tsType: TsType;
     notNull: boolean;
 }
@@ -21,6 +22,7 @@ export type FieldType = TsField | TsRelationField;
 
 export type RelationType = {
     name: string;
+    groupKeyIndex: number;
     fields: FieldType[];
 }
 
@@ -39,6 +41,7 @@ function mapColumnToNestedField(columns: ColumnInfo[], modelColumn: RelationInfo
 
     const relation: RelationType = {
         name: modelColumn.name,
+        groupKeyIndex: modelColumn.groupKeyIndex,
         fields: modelColumn.columns.map(c => mapToField(columns, c))
     }
     return relation;
@@ -62,6 +65,7 @@ function mapModelColumnToTsField(columns: ColumnInfo[], modelColumn: Field): TsF
     const field: TsField = {
         type: "field",
         name: modelColumn.name,
+        index: modelColumn.index,
         tsType: tsType,
         notNull: column.notNull
     }
