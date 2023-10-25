@@ -840,4 +840,56 @@ describe('Test parse complex queries', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     })
+
+    it('Infer parameter - union inside with clause', async () => {
+        const sql = `
+        WITH 
+            with1 AS (SELECT id FROM mytable1),
+            with2 AS (SELECT :newIndex as id),
+            withUnion AS (
+                SELECT id FROM with1
+                UNION
+                SELECT id FROM with2
+            )
+        SELECT * FROM withUnion`;
+
+        const expectedSql = `
+        WITH 
+            with1 AS (SELECT id FROM mytable1),
+            with2 AS (SELECT ? as id),
+            withUnion AS (
+                SELECT id FROM with1
+                UNION
+                SELECT id FROM with2
+            )
+        SELECT * FROM withUnion`;
+
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql: expectedSql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 'withUnion'
+                }
+            ],
+            parameters: [
+                {
+                    name: 'newIndex',
+                    columnType: 'int',
+                    notNull: true
+                }
+            ]
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
 });

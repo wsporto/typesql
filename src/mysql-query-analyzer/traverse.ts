@@ -399,7 +399,7 @@ function traverseQueryExpressionBody(queryExpressionBody: QueryExpressionBodyCon
 
     for (let queryIndex = 0; queryIndex < unionQuerySpec.length; queryIndex++) {
         const columnNames = recursiveNames && recursiveNames.length > 0 ? recursiveNames : mainQueryResult.columns.map(col => col.name);
-        const newFromColumns = recursiveNames ? renameFromColumns(mainQueryResult.columns, columnNames) : mainQueryResult.fromColumns;
+        const newFromColumns = recursiveNames ? renameFromColumns(mainQueryResult.columns, columnNames) : [];
         const unionQuery = unionQuerySpec[queryIndex];
         const unionResult = traverseQuerySpecification(unionQuery, constraints, parameters, dbSchema, withSchema, newFromColumns, subQuery);
 
@@ -955,7 +955,7 @@ function traversePredicateOperations(predicateOperations: PredicateOperationsCon
 function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], withSchema: ColumnDef[], fromColumns: ColumnDef[]): Type {
     if (simpleExpr instanceof SimpleExprColumnRefContext) {
         const fieldName = splitName(simpleExpr.text);
-        const column = findColumn(fieldName, fromColumns.concat(withSchema));
+        const column = findColumn(fieldName, fromColumns);
         const typeVar = freshVar(column.columnName, column.columnType.type, column.tableAlias || column.table);
         constraints.push({
             expression: simpleExpr.text,
