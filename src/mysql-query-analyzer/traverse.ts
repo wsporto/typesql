@@ -389,13 +389,18 @@ function traverseQueryExpressionParens(queryExpressionParens: QueryExpressionPar
     throw Error("walkQueryExpressionParens");
 }
 
+function createUnionVar(type: TypeVar, name: string) {
+    const newVar: TypeVar = { ...type, name: name, table: '' };
+    return newVar;
+}
+
 function traverseQueryExpressionBody(queryExpressionBody: QueryExpressionBodyContext | SubqueryContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], withSchema: ColumnDef[], fromColumns: ColumnDef[], recursiveNames?: string[]): QuerySpecificationResult {
     const subQuery = queryExpressionBody instanceof SubqueryContext ? true : false;
     const allQueries = getAllQuerySpecificationsFromSelectStatement(queryExpressionBody);
     const [first, ...unionQuerySpec] = allQueries;
     const mainQueryResult = traverseQuerySpecification(first, constraints, parameters, dbSchema, withSchema, fromColumns, subQuery);
 
-    const resultTypes = mainQueryResult.columns.map((t, index) => unionQuerySpec.length == 0 ? t.type : freshVar(recursiveNames && recursiveNames.length > 0 ? recursiveNames[index] : t.name, t.type.type)); //TODO mover para traversequeryspecificat?
+    const resultTypes = mainQueryResult.columns.map((t, index) => unionQuerySpec.length == 0 ? t.type : createUnionVar(t.type, recursiveNames && recursiveNames.length > 0 ? recursiveNames[index] : t.name)); //TODO mover para traversequeryspecificat?
 
     for (let queryIndex = 0; queryIndex < unionQuerySpec.length; queryIndex++) {
         const columnNames = recursiveNames && recursiveNames.length > 0 ? recursiveNames : mainQueryResult.columns.map(col => col.name);

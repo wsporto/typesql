@@ -892,4 +892,45 @@ describe('Test parse complex queries', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     })
+
+    it('SELECT id + 1 FROM mytable1 UNION SELECT ? FROM mytable1', async () => {
+        const sql = `
+        SELECT id + 1 as id FROM mytable1
+        UNION
+        SELECT :newIndex FROM mytable1`;
+
+        const expectedSql = `
+        SELECT id + 1 as id FROM mytable1
+        UNION
+        SELECT ? FROM mytable1`;
+
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql: expectedSql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'bigint',
+                    notNull: true,
+                    table: ''
+                }
+            ],
+            parameters: [
+                {
+                    name: 'newIndex',
+                    columnType: 'bigint',
+                    notNull: true
+                }
+            ]
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
 });
