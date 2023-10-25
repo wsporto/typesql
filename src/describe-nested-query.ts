@@ -9,8 +9,6 @@ export type NestedResultInfo = {
 
 export type RelationInfo = {
     name: string;
-    tableName: string;
-    tableAlias: string | '';
     groupKeyIndex: number;
     columns: ModelColumn[];
 }
@@ -112,7 +110,7 @@ function getRelations(tableRef: TableReferenceContext, dbSchema: ColumnSchema[],
         const relationFields = relations.filter(r2 => r2.parent.name == r.name || r2.parent.alias == r.alias).map(f => {
             const field: ModelColumn = {
                 type: 'relation',
-                name: f.child.alias,
+                name: f.child.name,
                 cardinality: f.cardinality,
             }
             return field;
@@ -129,9 +127,9 @@ function getRelations(tableRef: TableReferenceContext, dbSchema: ColumnSchema[],
                 return f;
             });
         const relationInfo: RelationInfo = {
-            name: r.alias,
-            tableName: r.name,
-            tableAlias: r.alias,
+            name: r.name,
+            // tableName: r.name,
+            // tableAlias: r.alias,
             groupKeyIndex: columns.findIndex(col => col.table == r.name || col.table == r.alias),
             columns: fields.concat(relationFields)
         }

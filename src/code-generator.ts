@@ -183,7 +183,7 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
 }
 
 function generateRelationType(capitalizedName: string, relationName: string) {
-    return capitalizedName + 'Nested' + relationName.toUpperCase();
+    return capitalizedName + 'Nested' + capitalizeStr(relationName);
 }
 
 function writeTypeBlock(writer: CodeBlockWriter, fields: TsFieldDescriptor[], typeName: string, extraField?: string) {
@@ -333,6 +333,10 @@ export function writeFile(filePath: string, tsContent: string) {
 }
 
 function capitalize(name: CamelCaseName) {
+    return capitalizeStr(name);
+}
+
+function capitalizeStr(name: string) {
     if (name.length == 0) return name;
     return name.charAt(0).toUpperCase() + name.slice(1);
 }

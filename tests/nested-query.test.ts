@@ -37,9 +37,7 @@ describe('nested-query', () => {
         const expectedModel: NestedResultInfo = {
             relations: [
                 {
-                    name: 'u',
-                    tableName: 'users',
-                    tableAlias: 'u',
+                    name: 'users',
                     groupKeyIndex: 0,
                     columns: [
                         {
@@ -54,15 +52,13 @@ describe('nested-query', () => {
                         },
                         {
                             type: 'relation',
-                            name: 'p',
+                            name: 'posts',
                             cardinality: 'many'
                         }
                     ]
                 },
                 {
-                    name: 'p',
-                    tableName: 'posts',
-                    tableAlias: 'p',
+                    name: 'posts',
                     groupKeyIndex: 2,
                     columns: [
                         {
@@ -116,9 +112,7 @@ describe('nested-query', () => {
         const expectedModel: NestedResultInfo = {
             relations: [
                 {
-                    name: 'p',
-                    tableName: 'posts',
-                    tableAlias: 'p',
+                    name: 'posts',
                     groupKeyIndex: 2,
                     columns: [
                         {
@@ -138,15 +132,13 @@ describe('nested-query', () => {
                         },
                         {
                             type: 'relation',
-                            name: 'u',
+                            name: 'users',
                             cardinality: 'one'
                         }
                     ]
                 },
                 {
-                    name: 'u',
-                    tableName: 'users',
-                    tableAlias: 'u',
+                    name: 'users',
                     groupKeyIndex: 0,
                     columns: [
                         {
@@ -202,9 +194,7 @@ describe('nested-query', () => {
         const expectedModel: NestedResultInfo = {
             relations: [
                 {
-                    name: 'u',
-                    tableName: 'users',
-                    tableAlias: 'u',
+                    name: 'users',
                     groupKeyIndex: 0,
                     columns: [
                         {
@@ -219,15 +209,13 @@ describe('nested-query', () => {
                         },
                         {
                             type: 'relation',
-                            name: 'p',
+                            name: 'posts',
                             cardinality: 'many'
                         }
                     ]
                 },
                 {
-                    name: 'p',
-                    tableName: 'posts',
-                    tableAlias: 'p',
+                    name: 'posts',
                     groupKeyIndex: 2,
                     columns: [
                         {
@@ -247,15 +235,13 @@ describe('nested-query', () => {
                         },
                         {
                             type: 'relation',
-                            name: 'c',
+                            name: 'comments',
                             cardinality: 'many'
                         }
                     ]
                 },
                 {
-                    name: 'c',
-                    tableName: 'comments',
-                    tableAlias: 'c',
+                    name: 'comments',
                     groupKeyIndex: 5,
                     columns: [
                         {
@@ -308,9 +294,7 @@ describe('nested-query', () => {
         const expectedModel: NestedResultInfo = {
             relations: [
                 {
-                    name: 'u',
-                    tableName: 'users',
-                    tableAlias: 'u',
+                    name: 'users',
                     groupKeyIndex: 0,
                     columns: [
                         {
@@ -325,20 +309,18 @@ describe('nested-query', () => {
                         },
                         {
                             type: 'relation',
-                            name: 'p',
+                            name: 'posts',
                             cardinality: 'many'
                         },
                         {
                             type: 'relation',
-                            name: 'r',
+                            name: 'roles',
                             cardinality: 'many'
                         }
                     ]
                 },
                 {
-                    name: 'p',
-                    tableName: 'posts',
-                    tableAlias: 'p',
+                    name: 'posts',
                     groupKeyIndex: 2,
                     columns: [
                         {
@@ -359,9 +341,7 @@ describe('nested-query', () => {
                     ]
                 },
                 {
-                    name: 'r',
-                    tableName: 'roles',
-                    tableAlias: 'r',
+                    name: 'roles',
                     groupKeyIndex: 5,
                     columns: [
                         {
@@ -415,9 +395,7 @@ describe('nested-query', () => {
         const expectedModel: NestedResultInfo = {
             relations: [
                 {
-                    name: 'u',
-                    tableName: 'users',
-                    tableAlias: 'u',
+                    name: 'users',
                     groupKeyIndex: 0,
                     columns: [
                         {
@@ -432,12 +410,12 @@ describe('nested-query', () => {
                         },
                         {
                             type: 'relation',
-                            name: 'p',
+                            name: 'posts',
                             cardinality: 'many'
                         },
                         {
                             type: 'relation',
-                            name: 'r',
+                            name: 'roles',
                             cardinality: 'many'
                         }
 
@@ -445,9 +423,7 @@ describe('nested-query', () => {
 
                 },
                 {
-                    name: 'p',
-                    tableName: 'posts',
-                    tableAlias: 'p',
+                    name: 'posts',
                     groupKeyIndex: 2,
                     columns: [
                         {
@@ -467,15 +443,13 @@ describe('nested-query', () => {
                         },
                         {
                             type: 'relation',
-                            name: 'c',
+                            name: "comments",
                             cardinality: 'many'
                         }
                     ]
                 },
                 {
-                    name: 'r',
-                    tableName: 'roles',
-                    tableAlias: 'r',
+                    name: 'roles',
                     groupKeyIndex: 5,
                     columns: [
                         {
@@ -486,9 +460,7 @@ describe('nested-query', () => {
                     ]
                 },
                 {
-                    name: 'c',
-                    tableName: 'comments',
-                    tableAlias: 'c',
+                    name: 'comments',
                     groupKeyIndex: 6,
                     columns: [
                         {
@@ -553,9 +525,7 @@ describe('nested-query', () => {
         const expectedModel: NestedResultInfo = {
             relations: [
                 {
-                    name: "s",
-                    tableName: "surveys",
-                    tableAlias: "s",
+                    name: "surveys",
                     groupKeyIndex: 0,
                     columns: [
                         {
@@ -570,20 +540,18 @@ describe('nested-query', () => {
                         },
                         {
                             type: "relation",
-                            name: "p",
+                            name: "participants",
                             cardinality: "many",
                         },
                         {
                             type: "relation",
-                            name: "q",
+                            name: "questions",
                             cardinality: "many",
                         },
                     ],
                 },
                 {
-                    name: "p",
-                    tableName: "participants",
-                    tableAlias: "p",
+                    name: "participants",
                     groupKeyIndex: 2,
                     columns: [
                         {
@@ -593,15 +561,13 @@ describe('nested-query', () => {
                         },
                         {
                             type: "relation",
-                            name: "u",
+                            name: "users",
                             cardinality: "one",
                         },
                     ],
                 },
                 {
-                    name: "u",
-                    tableName: "users",
-                    tableAlias: "u",
+                    name: "users",
                     groupKeyIndex: 3,
                     columns: [
                         {
@@ -616,15 +582,13 @@ describe('nested-query', () => {
                         },
                         {
                             type: "relation",
-                            name: "a",
+                            name: "answers",
                             cardinality: "many",
                         },
                     ],
                 },
                 {
-                    name: "q",
-                    tableName: "questions",
-                    tableAlias: "q",
+                    name: "questions",
                     groupKeyIndex: 5,
                     columns: [
                         {
@@ -639,15 +603,13 @@ describe('nested-query', () => {
                         },
                         {
                             type: "relation",
-                            name: "a",
+                            name: "answers",
                             cardinality: "many",
                         },
                     ],
                 },
                 {
-                    name: "a",
-                    tableName: "answers",
-                    tableAlias: "a",
+                    name: "answers",
                     groupKeyIndex: 7,
                     columns: [
                         {
@@ -686,9 +648,7 @@ describe('nested-query', () => {
         const expectedModel: NestedResultInfo = {
             relations: [
                 {
-                    name: "u",
-                    tableName: "users",
-                    tableAlias: "u",
+                    name: "users",
                     groupKeyIndex: 0,
                     columns: [
                         {
@@ -703,15 +663,13 @@ describe('nested-query', () => {
                         },
                         {
                             type: "relation",
-                            name: "p",
+                            name: "posts",
                             cardinality: "many",
                         }
                     ],
                 },
                 {
-                    name: "p",
-                    tableName: "posts",
-                    tableAlias: "p",
+                    name: "posts",
                     groupKeyIndex: 2,
                     columns: [
                         {

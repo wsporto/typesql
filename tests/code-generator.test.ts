@@ -574,92 +574,92 @@ function mapArrayToSelectUsersResult(data: any) {
     return result;
 }
 
-export type SelectUsersNestedU = {
+export type SelectUsersNestedUsers = {
     user_id: number;
     user_name: string;
-    p: SelectUsersNestedP[];
-    r: SelectUsersNestedR[];
+    posts: SelectUsersNestedPosts[];
+    roles: SelectUsersNestedRoles[];
 }
 
-export type SelectUsersNestedP = {
+export type SelectUsersNestedPosts = {
     post_id: number;
     post_title: string;
     post_body: string;
-    c: SelectUsersNestedC[];
+    comments: SelectUsersNestedComments[];
 }
 
-export type SelectUsersNestedR = {
+export type SelectUsersNestedRoles = {
     role_id: number;
     role: 'user' | 'admin' | 'guest';
 }
 
-export type SelectUsersNestedC = {
+export type SelectUsersNestedComments = {
     comment_id: number;
     comment: string;
 }
 
-export async function selectUsersNested(connection: Connection): Promise<SelectUsersNestedU[]> {
+export async function selectUsersNested(connection: Connection): Promise<SelectUsersNestedUsers[]> {
     const selectResult = await selectUsers(connection);
     if (selectResult.length == 0) {
         return [];
     }
-    return collectSelectUsersNestedU(selectResult);
+    return collectSelectUsersNestedUsers(selectResult);
 }
 
-function collectSelectUsersNestedU(selectResult: SelectUsersResult[]): SelectUsersNestedU[] {
+function collectSelectUsersNestedUsers(selectResult: SelectUsersResult[]): SelectUsersNestedUsers[] {
     const grouped = groupBy(selectResult.filter(r => r.user_id != null), r => r.user_id);
-    return [...grouped.values()].map(r => mapToSelectUsersNestedU(r))
+    return [...grouped.values()].map(r => mapToSelectUsersNestedUsers(r))
 }
 
-function mapToSelectUsersNestedU(selectResult: SelectUsersResult[]): SelectUsersNestedU {
+function mapToSelectUsersNestedUsers(selectResult: SelectUsersResult[]): SelectUsersNestedUsers {
     const firstRow = selectResult[0];
-    const result: SelectUsersNestedU = {
+    const result: SelectUsersNestedUsers = {
         user_id: firstRow.user_id!,
         user_name: firstRow.user_name!,
-        p: collectSelectUsersNestedP(selectResult),
-        r: collectSelectUsersNestedR(selectResult)
+        posts: collectSelectUsersNestedPosts(selectResult),
+        roles: collectSelectUsersNestedRoles(selectResult)
     }
     return result;
 }
 
-function collectSelectUsersNestedP(selectResult: SelectUsersResult[]): SelectUsersNestedP[] {
+function collectSelectUsersNestedPosts(selectResult: SelectUsersResult[]): SelectUsersNestedPosts[] {
     const grouped = groupBy(selectResult.filter(r => r.post_id != null), r => r.post_id);
-    return [...grouped.values()].map(r => mapToSelectUsersNestedP(r))
+    return [...grouped.values()].map(r => mapToSelectUsersNestedPosts(r))
 }
 
-function mapToSelectUsersNestedP(selectResult: SelectUsersResult[]): SelectUsersNestedP {
+function mapToSelectUsersNestedPosts(selectResult: SelectUsersResult[]): SelectUsersNestedPosts {
     const firstRow = selectResult[0];
-    const result: SelectUsersNestedP = {
+    const result: SelectUsersNestedPosts = {
         post_id: firstRow.post_id!,
         post_title: firstRow.post_title!,
         post_body: firstRow.post_body!,
-        c: collectSelectUsersNestedC(selectResult)
+        comments: collectSelectUsersNestedComments(selectResult)
     }
     return result;
 }
 
-function collectSelectUsersNestedR(selectResult: SelectUsersResult[]): SelectUsersNestedR[] {
+function collectSelectUsersNestedRoles(selectResult: SelectUsersResult[]): SelectUsersNestedRoles[] {
     const grouped = groupBy(selectResult.filter(r => r.role_id != null), r => r.role_id);
-    return [...grouped.values()].map(r => mapToSelectUsersNestedR(r))
+    return [...grouped.values()].map(r => mapToSelectUsersNestedRoles(r))
 }
 
-function mapToSelectUsersNestedR(selectResult: SelectUsersResult[]): SelectUsersNestedR {
+function mapToSelectUsersNestedRoles(selectResult: SelectUsersResult[]): SelectUsersNestedRoles {
     const firstRow = selectResult[0];
-    const result: SelectUsersNestedR = {
+    const result: SelectUsersNestedRoles = {
         role_id: firstRow.role_id!,
         role: firstRow.role!
     }
     return result;
 }
 
-function collectSelectUsersNestedC(selectResult: SelectUsersResult[]): SelectUsersNestedC[] {
+function collectSelectUsersNestedComments(selectResult: SelectUsersResult[]): SelectUsersNestedComments[] {
     const grouped = groupBy(selectResult.filter(r => r.comment_id != null), r => r.comment_id);
-    return [...grouped.values()].map(r => mapToSelectUsersNestedC(r))
+    return [...grouped.values()].map(r => mapToSelectUsersNestedComments(r))
 }
 
-function mapToSelectUsersNestedC(selectResult: SelectUsersResult[]): SelectUsersNestedC {
+function mapToSelectUsersNestedComments(selectResult: SelectUsersResult[]): SelectUsersNestedComments {
     const firstRow = selectResult[0];
-    const result: SelectUsersNestedC = {
+    const result: SelectUsersNestedComments = {
         comment_id: firstRow.comment_id!,
         comment: firstRow.comment!
     }
@@ -735,49 +735,49 @@ function mapArrayToSelectUsersResult(data: any) {
     return result;
 }
 
-export type SelectUsersNestedU = {
+export type SelectUsersNestedUsers = {
     user_id: number;
     user_name: string;
-    p: SelectUsersNestedP[];
+    posts: SelectUsersNestedPosts[];
 }
 
-export type SelectUsersNestedP = {
+export type SelectUsersNestedPosts = {
     post_id: number;
     post_title: string;
     post_body: string;
 }
 
-export async function selectUsersNested(connection: Connection, params: SelectUsersParams): Promise<SelectUsersNestedU[]> {
+export async function selectUsersNested(connection: Connection, params: SelectUsersParams): Promise<SelectUsersNestedUsers[]> {
     const selectResult = await selectUsers(connection, params);
     if (selectResult.length == 0) {
         return [];
     }
-    return collectSelectUsersNestedU(selectResult);
+    return collectSelectUsersNestedUsers(selectResult);
 }
 
-function collectSelectUsersNestedU(selectResult: SelectUsersResult[]): SelectUsersNestedU[] {
+function collectSelectUsersNestedUsers(selectResult: SelectUsersResult[]): SelectUsersNestedUsers[] {
     const grouped = groupBy(selectResult.filter(r => r.user_id != null), r => r.user_id);
-    return [...grouped.values()].map(r => mapToSelectUsersNestedU(r))
+    return [...grouped.values()].map(r => mapToSelectUsersNestedUsers(r))
 }
 
-function mapToSelectUsersNestedU(selectResult: SelectUsersResult[]): SelectUsersNestedU {
+function mapToSelectUsersNestedUsers(selectResult: SelectUsersResult[]): SelectUsersNestedUsers {
     const firstRow = selectResult[0];
-    const result: SelectUsersNestedU = {
+    const result: SelectUsersNestedUsers = {
         user_id: firstRow.user_id!,
         user_name: firstRow.user_name!,
-        p: collectSelectUsersNestedP(selectResult)
+        posts: collectSelectUsersNestedPosts(selectResult)
     }
     return result;
 }
 
-function collectSelectUsersNestedP(selectResult: SelectUsersResult[]): SelectUsersNestedP[] {
+function collectSelectUsersNestedPosts(selectResult: SelectUsersResult[]): SelectUsersNestedPosts[] {
     const grouped = groupBy(selectResult.filter(r => r.post_id != null), r => r.post_id);
-    return [...grouped.values()].map(r => mapToSelectUsersNestedP(r))
+    return [...grouped.values()].map(r => mapToSelectUsersNestedPosts(r))
 }
 
-function mapToSelectUsersNestedP(selectResult: SelectUsersResult[]): SelectUsersNestedP {
+function mapToSelectUsersNestedPosts(selectResult: SelectUsersResult[]): SelectUsersNestedPosts {
     const firstRow = selectResult[0];
-    const result: SelectUsersNestedP = {
+    const result: SelectUsersNestedPosts = {
         post_id: firstRow.post_id!,
         post_title: firstRow.post_title!,
         post_body: firstRow.post_body!
@@ -853,67 +853,67 @@ function mapArrayToSelectAnswersResult(data: any) {
     return result;
 }
 
-export type SelectAnswersNestedS = {
+export type SelectAnswersNestedSurveys = {
     surveyId: number;
     surveyName: string;
-    p: SelectAnswersNestedP[];
+    participants: SelectAnswersNestedParticipants[];
 }
 
-export type SelectAnswersNestedP = {
+export type SelectAnswersNestedParticipants = {
     participantId: number;
-    u: SelectAnswersNestedU;
+    users: SelectAnswersNestedUsers;
 }
 
-export type SelectAnswersNestedU = {
+export type SelectAnswersNestedUsers = {
     userId: number;
     userName: string;
 }
 
-export async function selectAnswersNested(connection: Connection, params: SelectAnswersParams): Promise<SelectAnswersNestedS[]> {
+export async function selectAnswersNested(connection: Connection, params: SelectAnswersParams): Promise<SelectAnswersNestedSurveys[]> {
     const selectResult = await selectAnswers(connection, params);
     if (selectResult.length == 0) {
         return [];
     }
-    return collectSelectAnswersNestedS(selectResult);
+    return collectSelectAnswersNestedSurveys(selectResult);
 }
 
-function collectSelectAnswersNestedS(selectResult: SelectAnswersResult[]): SelectAnswersNestedS[] {
+function collectSelectAnswersNestedSurveys(selectResult: SelectAnswersResult[]): SelectAnswersNestedSurveys[] {
     const grouped = groupBy(selectResult.filter(r => r.surveyId != null), r => r.surveyId);
-    return [...grouped.values()].map(r => mapToSelectAnswersNestedS(r))
+    return [...grouped.values()].map(r => mapToSelectAnswersNestedSurveys(r))
 }
 
-function mapToSelectAnswersNestedS(selectResult: SelectAnswersResult[]): SelectAnswersNestedS {
+function mapToSelectAnswersNestedSurveys(selectResult: SelectAnswersResult[]): SelectAnswersNestedSurveys {
     const firstRow = selectResult[0];
-    const result: SelectAnswersNestedS = {
+    const result: SelectAnswersNestedSurveys = {
         surveyId: firstRow.surveyId!,
         surveyName: firstRow.surveyName!,
-        p: collectSelectAnswersNestedP(selectResult)
+        participants: collectSelectAnswersNestedParticipants(selectResult)
     }
     return result;
 }
 
-function collectSelectAnswersNestedP(selectResult: SelectAnswersResult[]): SelectAnswersNestedP[] {
+function collectSelectAnswersNestedParticipants(selectResult: SelectAnswersResult[]): SelectAnswersNestedParticipants[] {
     const grouped = groupBy(selectResult.filter(r => r.participantId != null), r => r.participantId);
-    return [...grouped.values()].map(r => mapToSelectAnswersNestedP(r))
+    return [...grouped.values()].map(r => mapToSelectAnswersNestedParticipants(r))
 }
 
-function mapToSelectAnswersNestedP(selectResult: SelectAnswersResult[]): SelectAnswersNestedP {
+function mapToSelectAnswersNestedParticipants(selectResult: SelectAnswersResult[]): SelectAnswersNestedParticipants {
     const firstRow = selectResult[0];
-    const result: SelectAnswersNestedP = {
+    const result: SelectAnswersNestedParticipants = {
         participantId: firstRow.participantId!,
-        u: collectSelectAnswersNestedU(selectResult)[0]
+        users: collectSelectAnswersNestedUsers(selectResult)[0]
     }
     return result;
 }
 
-function collectSelectAnswersNestedU(selectResult: SelectAnswersResult[]): SelectAnswersNestedU[] {
+function collectSelectAnswersNestedUsers(selectResult: SelectAnswersResult[]): SelectAnswersNestedUsers[] {
     const grouped = groupBy(selectResult.filter(r => r.userId != null), r => r.userId);
-    return [...grouped.values()].map(r => mapToSelectAnswersNestedU(r))
+    return [...grouped.values()].map(r => mapToSelectAnswersNestedUsers(r))
 }
 
-function mapToSelectAnswersNestedU(selectResult: SelectAnswersResult[]): SelectAnswersNestedU {
+function mapToSelectAnswersNestedUsers(selectResult: SelectAnswersResult[]): SelectAnswersNestedUsers {
     const firstRow = selectResult[0];
-    const result: SelectAnswersNestedU = {
+    const result: SelectAnswersNestedUsers = {
         userId: firstRow.userId!,
         userName: firstRow.userName!
     }

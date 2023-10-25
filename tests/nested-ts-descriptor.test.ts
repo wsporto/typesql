@@ -39,7 +39,7 @@ describe('Test nested-ts-descriptor', () => {
         const expected: NestedTsDescriptor = {
             relations: [
                 {
-                    name: 'u',
+                    name: 'users',
                     groupKeyIndex: 0,
                     fields: [
                         {
@@ -58,15 +58,15 @@ describe('Test nested-ts-descriptor', () => {
                         },
                         {
                             type: 'relation',
-                            name: 'p',
+                            name: 'posts',
                             list: true,
-                            tsType: 'p[]',
+                            tsType: 'posts[]',
                             notNull: true,
                         }
                     ]
                 },
                 {
-                    name: 'p',
+                    name: 'posts',
                     groupKeyIndex: 2,
                     fields: [
                         {
