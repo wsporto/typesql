@@ -1,10 +1,11 @@
-TypeSQL: An alternative to access MySQL databases without an ORM. Write your queries in raw SQL and TypeSQL will generate a type-safe API to execute the queries. 
+TypeSQL: An alternative to access MySQL databases without an ORM. Write your queries in raw SQL and TypeSQL will generate a type-safe API to execute the queries.
 
 ## Example
 
 Having the following query in `select-products.sql` file.
+
 ```sql
-SELECT 
+SELECT
   id,
   product_name,
   list_price
@@ -13,7 +14,7 @@ WHERE discontinued = 0
   AND list_price BETWEEN :minPrice AND :maxPrice
 ```
 
-TypeSQL will generate the types and function in the file `select-products.ts`. 
+TypeSQL will generate the types and function in the file `select-products.ts`.
 Then you can import the generate code and execute as following:
 
 deno syntax:
@@ -24,7 +25,7 @@ deno syntax:
 
 - **Do not restrict the use of SQL** You dont need to learn any new query language, you can use SQL with all its power and expressiveness.
 
-- **Infer parameters and columns types.** `SELECT DATEDIFF(:date1, :date2) as days_stayed` will resolve the `date1` and `date2` parameters to the type `Date` and the function return type as `number`. 
+- **Infer parameters and columns types.** `SELECT DATEDIFF(:date1, :date2) as days_stayed` will resolve the `date1` and `date2` parameters to the type `Date` and the function return type as `number`.
 
 - **Infer parameter and column nullability.** The nullable database column `email` will generate a nullable field for the query `SELECT email FROM mytable`, but will generate a non-nullable field for the query `SELECT email FROM mytable WHERE email is not null`;
 
@@ -34,15 +35,15 @@ deno syntax:
 
 ## Usage
 
-1. *npm install -g typesql-cli*
+1. _npm install -g typesql-cli_
 
 2. Add the `typesql.json` configuration file in project root folder. You can generate an template with cli command `typesql init`.
 
 ```json
 {
-    "databaseUri": "mysql://root:password@localhost/mydb",
-    "sqlDir": "./sqls",
-    "target": "node"
+  "databaseUri": "mysql://root:password@localhost/mydb",
+  "sqlDir": "./sqls",
+  "target": "node"
 }
 ```
 
@@ -76,6 +77,7 @@ const updateResult = await updateProduct(...
 ```
 
 # Examples
+
 [Query scaffolding](/docs/query_scaffolding.md)
 
 [INSERT](/docs/insert.md)
@@ -88,8 +90,10 @@ const updateResult = await updateProduct(...
 
 [LIKE](/docs/like.md)
 
+[Nested Query Result](/docs/nested-query-result.md)
+
 # Project status
 
-**WARNING:** This is a WIP experimental project. It is under active development and its API might change. 
+**WARNING:** This is a WIP experimental project. It is under active development and its API might change.
 
 Issues reports and feature requests are welcome.
