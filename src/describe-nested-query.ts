@@ -2,6 +2,7 @@ import { ExprContext, JoinedTableContext, QueryContext, SimpleExprColumnRefConte
 import { extractQueryInfo, parse } from "./mysql-query-analyzer/parse";
 import { findColumnSchema, getSimpleExpressions, splitName } from "./mysql-query-analyzer/select-columns";
 import { ColumnInfo, ColumnSchema } from "./mysql-query-analyzer/types";
+import { preprocessSql } from "./describe-query";
 
 export type NestedResultInfo = {
     relations: RelationInfo[];
@@ -36,7 +37,8 @@ export type TableName = {
 
 //utility for tests
 export function describeNestedQuery(sql: string, dbSchema: ColumnSchema[]): NestedResultInfo {
-    const queryContext = parse(sql);
+    const { sql: processedSql } = preprocessSql(sql);
+    const queryContext = parse(processedSql);
     const queryInfo = extractQueryInfo(sql, dbSchema);
     const columns = queryInfo.kind == 'Select' ? queryInfo.columns : [];
     return generateNestedInfo(queryContext, dbSchema, columns);

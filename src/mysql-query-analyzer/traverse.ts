@@ -269,7 +269,7 @@ function traverseUpdateStatement(updateStatement: UpdateStatementContext, constr
             })
             parameters.slice(paramBeforeExpr, parameters.length).forEach((param, index) => {
                 dataTypes.push({
-                    name: namedParamters[paramsBefore + index] || field.name,
+                    name: namedParamters[paramBeforeExpr + index] || field.name,
                     type: param,
                     notNull: column.notNull && !possibleNull(field, expr),
                     table: ''

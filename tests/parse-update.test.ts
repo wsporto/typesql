@@ -57,10 +57,10 @@ describe('parse update statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('UPDATE mytable2 SET name = ?, descr=? WHERE id = ?', async () => {
+    it('UPDATE mytable2 SET name = :name, descr= :descr WHERE id = :id', async () => {
 
         const sql = `
-        UPDATE mytable2 SET name = ?, descr=? WHERE id = ?
+        UPDATE mytable2 SET name = ?, descr= ? WHERE id = ?
             `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {

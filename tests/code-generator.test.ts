@@ -79,7 +79,7 @@ function mapArrayToGetPersonResult(data: any) {
 
     it('generate main function with data and parameters', () => {
         const queryName = convertToCamelCaseName('update-person');
-        const sql = 'update mytable2 set name=? where id = ?';
+        const sql = 'update mytable2 set name= :name, descr= :descr where id = :id';
         const schemaDef = describeSql(dbSchema, sql);
         const tsDescriptor = generateTsDescriptor(schemaDef);
         const actual = generateTsCode(tsDescriptor, queryName, 'node');
@@ -88,10 +88,11 @@ function mapArrayToGetPersonResult(data: any) {
 
 export type UpdatePersonData = {
     name?: string;
+    descr?: string;
 }
 
 export type UpdatePersonParams = {
-    param1: number;
+    id: number;
 }
 
 export type UpdatePersonResult = {
@@ -100,10 +101,10 @@ export type UpdatePersonResult = {
 
 export async function updatePerson(connection: Connection, data: UpdatePersonData, params: UpdatePersonParams) : Promise<UpdatePersonResult> {
     const sql = \`
-    update mytable2 set name=? where id = ?
+    update mytable2 set name= ?, descr= ? where id = ?
     \`
 
-    return connection.query(sql, [data.name, params.param1])
+    return connection.query(sql, [data.name, data.descr, params.id])
         .then(res => res[0] as UpdatePersonResult);
 }`
 
