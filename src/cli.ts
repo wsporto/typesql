@@ -6,10 +6,11 @@ import yargs from "yargs";
 import { generateTsFile, writeFile } from "./code-generator";
 import { DbClient } from "./queryExectutor";
 import { generateInsertStatment, generateUpdateStatment, generateDeleteStatment, generateSelectStatment } from "./sql-generator";
-import { ColumnSchema2 } from "./mysql-query-analyzer/types";
+import { ColumnSchema } from "./mysql-query-analyzer/types";
 import { TypeSqlConfig, SqlGenOption } from "./types";
 import { isLeft } from "fp-ts/lib/Either";
 import CodeBlockWriter from "code-block-writer";
+import { globSync } from "glob";
 
 function parseArgs() {
     return yargs
@@ -24,7 +25,8 @@ function parseArgs() {
             const config: TypeSqlConfig = {
                 "databaseUri": "mysql://root:password@localhost/mydb",
                 "sqlDir": "./sqls",
-                "target": "node"
+                "target": "node",
+                "includeCrudTables": []
             }
             const configPath = "./typesql.json";
             writeFile(configPath, JSON.stringify(config, null, 4));
@@ -112,16 +114,24 @@ async function compile(watch: boolean, config: TypeSqlConfig) {
     const { sqlDir, databaseUri, target } = config;
     validateDirectories(sqlDir);
 
-    const sqlFiles = fs.readdirSync(sqlDir)
-        .filter(file => path.extname(file) == '.sql')
-        .map(sqlFileName => path.resolve(sqlDir, sqlFileName));
-
     const client = new DbClient();
     const result = await client.connect(databaseUri);
     if (isLeft(result)) {
         console.error(`Error: ${result.left.description}.`);
         return;
     }
+
+    const includeCrudTables = config.includeCrudTables || [];
+    const dbSchema = await client.loadDbSchema();
+    if (isLeft(dbSchema)) {
+        console.error(`Error: ${dbSchema.left.description}.`);
+        return;
+    }
+
+    await generateCrudTables(client, sqlDir, dbSchema.right, includeCrudTables);
+    const dirGlob = `${sqlDir}/**/*.sql`;
+
+    const sqlFiles = globSync(dirGlob);
 
     const filesGeneration = sqlFiles.map(sqlFile => generateTsFile(client, sqlFile, target));
     await Promise.all(filesGeneration);
@@ -173,24 +183,26 @@ async function writeSql(stmtType: SqlGenOption, tableName: string, queryName: st
     }
 
     const columns = columnsOption.right;
+    const filePath = sqlDir + '/' + queryName;
+    await client.closeConnection();
 
+    const generatedOk = checkAndGenerateSql(filePath, stmtType, tableName, columns);
+    return generatedOk;
+}
+
+function checkAndGenerateSql(filePath: string, stmtType: SqlGenOption, tableName: string, columns: ColumnSchema[]) {
     if (columns.length == 0) {
         console.error(`Got no columns for table '${tableName}'. Did you type the table name correclty?`);
-        client.closeConnection();
         return false;
     }
 
-    client.closeConnection();
-
-
     let generatedSql = generateSql(stmtType, tableName, columns);
-    const filePath = sqlDir + '/' + queryName;
     writeFile(filePath, generatedSql);
     console.log("Generated file:", filePath);
     return true;
 }
 
-function generateSql(stmtType: SqlGenOption, tableName: string, columns: ColumnSchema2[]) {
+function generateSql(stmtType: SqlGenOption, tableName: string, columns: ColumnSchema[]) {
     switch (stmtType) {
         case 'select':
         case 's':
@@ -211,3 +223,31 @@ function generateSql(stmtType: SqlGenOption, tableName: string, columns: ColumnS
 }
 
 main().then(() => console.log("finished!"));
+
+async function generateCrudTables(client: DbClient, sqlFolderPath: string, dbSchema: ColumnSchema[], includeCrudTables: string[]) {
+    for (const table of includeCrudTables) {
+        if (table == "*") {
+            const selectTablesResult = await client.selectTablesFromSchema();
+            if (isLeft(selectTablesResult)) {
+                console.error("Error selecting table names:", selectTablesResult.left.description);
+            }
+            else {
+                const allTables = selectTablesResult.right;
+                for (const tableInfo of allTables) {
+                    const tableName = tableInfo.table;
+                    const filePath = sqlFolderPath + "/crud/" + tableName + '/';
+                    if (!fs.existsSync(filePath)) {
+                        fs.mkdirSync(filePath, { recursive: true });
+                    }
+
+                    const columns = dbSchema.filter(col => col.table == tableName);
+                    checkAndGenerateSql(filePath + "select-from-" + tableName + '.sql', 'select', tableName, columns);
+                    checkAndGenerateSql(filePath + "insert-into-" + tableName + '.sql', 'insert', tableName, columns);
+                    checkAndGenerateSql(filePath + "update-" + tableName + '.sql', 'update', tableName, columns);
+                    checkAndGenerateSql(filePath + "delete-from-" + tableName + '.sql', 'delete', tableName, columns);
+                }
+
+            }
+        }
+    }
+}

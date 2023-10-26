@@ -1,7 +1,7 @@
 import { Pool, createPool } from "mysql2/promise";
 import { Either, right, left } from "fp-ts/lib/Either";
 import { TypeSqlError } from "./types";
-import { ColumnSchema, ColumnSchema2 } from "./mysql-query-analyzer/types";
+import { ColumnSchema, Table } from "./mysql-query-analyzer/types";
 
 const connectionNotOpenError: TypeSqlError = {
     name: 'Connection error',
@@ -45,7 +45,8 @@ export class DbClient {
                 COLUMN_NAME as "column", 
                 IF(data_type = 'enum', COLUMN_TYPE, DATA_TYPE) as "column_type", 
                 if(IS_NULLABLE='NO', true, false) as "notNull",
-                COLUMN_KEY as "columnKey"
+                COLUMN_KEY as "columnKey",
+                IF(EXTRA = 'auto_increment', true, false) as "autoincrement"
             FROM INFORMATION_SCHEMA.COLUMNS 
             WHERE TABLE_SCHEMA = ?
             ORDER BY TABLE_NAME, ORDINAL_POSITION
@@ -62,7 +63,7 @@ export class DbClient {
 
     }
 
-    async loadTableSchema(tableName: string): Promise<Either<TypeSqlError, ColumnSchema2[]>> {
+    async loadTableSchema(tableName: string): Promise<Either<TypeSqlError, ColumnSchema[]>> {
         const sql = `
         SELECT 
             TABLE_SCHEMA as "schema", 
@@ -81,7 +82,28 @@ export class DbClient {
         if (this.pool) {
             return this.pool.execute(sql, [this.database, tableName])
                 .then(res => {
-                    const columns = res[0] as ColumnSchema2[]
+                    const columns = res[0] as ColumnSchema[]
+                    return right(columns);
+                });
+        }
+        return left(connectionNotOpenError);
+
+    }
+
+    async selectTablesFromSchema(): Promise<Either<TypeSqlError, Table[]>> {
+        const sql = `
+        SELECT 
+            table_schema as "schema",
+            table_name as "table"
+        FROM information_schema.tables
+        WHERE table_type = 'BASE TABLE' and table_schema = database() 
+        order by "schema", "table"
+        `
+
+        if (this.pool) {
+            return this.pool.execute(sql)
+                .then(res => {
+                    const columns = res[0] as ColumnSchema[]
                     return right(columns);
                 });
         }

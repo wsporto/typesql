@@ -43,10 +43,12 @@ export type ColumnSchema = {
     column_type: MySqlType;
     columnKey: 'PRI' | 'MUL' | 'UNI' | '';
     notNull: boolean;
+    autoincrement?: boolean;
 }
 
-export type ColumnSchema2 = ColumnSchema & {
-    autoincrement: boolean;
+export type Table = {
+    schema: string;
+    table: string;
 }
 
 export type ColumnDef = {

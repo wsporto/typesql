@@ -1,10 +1,10 @@
-import { ColumnSchema2 } from "../src/mysql-query-analyzer/types"
+import { ColumnSchema } from "../src/mysql-query-analyzer/types"
 import { generateInsertStatment, generateSelectStatment, generateUpdateStatment, generateDeleteStatment } from "../src/sql-generator"
 import assert from "assert";
 
 describe('code-generator', () => {
 
-    const columns: ColumnSchema2[] = [
+    const columns: ColumnSchema[] = [
         {
             column: 'id',
             columnKey: 'PRI',

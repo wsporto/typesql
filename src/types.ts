@@ -106,6 +106,7 @@ export type TypeSqlConfig = {
     databaseUri: string;
     sqlDir: string;
     target: 'node' | 'deno';
+    includeCrudTables: string[];
 }
 
 export type SqlGenOption = 'select' | 's' | 'insert' | 'i' | 'update' | 'u' | 'delete' | 'd';

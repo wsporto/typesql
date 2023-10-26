@@ -34,6 +34,7 @@
     "chokidar": "^3.4.2",
     "code-block-writer": "^12.0.0",
     "fp-ts": "^2.16.1",
+    "glob": "^10.3.10",
     "moment": "^2.27.0",
     "mysql2": "^3.6.2",
     "ts-mysql-parser": "^0.2.0",
