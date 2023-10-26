@@ -1,4 +1,4 @@
-import { Connection, createConnection } from "mysql2/promise";
+import { Pool, createPool } from "mysql2/promise";
 import { Either, right, left } from "fp-ts/lib/Either";
 import { TypeSqlError } from "./types";
 import { ColumnSchema, ColumnSchema2 } from "./mysql-query-analyzer/types";
@@ -10,13 +10,16 @@ const connectionNotOpenError: TypeSqlError = {
 
 export class DbClient {
 
-    private connection: Connection | null;
+    private pool: Pool | null;
     mySqlVersion: string;
+    database: string;
     async connect(connectionUri: string): Promise<Either<TypeSqlError, true>> {
         try {
-            this.connection = await createConnection(connectionUri);
-            const [rows] = await this.connection.execute("select @@version as version");
+            this.pool = await createPool(connectionUri);
+            const [rows] = await this.pool.execute("select @@version as version");
             this.mySqlVersion = (rows as any[])[0].version;
+            //@ts-ignore
+            this.database = this.pool.pool.config.connectionConfig.database;
             return right(true);
         }
         catch (e: any) {
@@ -29,8 +32,8 @@ export class DbClient {
     }
 
     async closeConnection() {
-        if (this.connection != null) {
-            this.connection.end();
+        if (this.pool != null) {
+            this.pool.end();
         }
     }
 
@@ -48,8 +51,8 @@ export class DbClient {
             ORDER BY TABLE_NAME, ORDINAL_POSITION
             `
 
-        if (this.connection != null) {
-            return this.connection.execute(sql, [this.connection.config.database])
+        if (this.pool != null) {
+            return this.pool.execute(sql, [this.database])
                 .then(res => {
                     const columns = res[0] as ColumnSchema[];
                     return right(columns.map(col => ({ ...col, notNull: !!+col.notNull }))); //convert 1 to true, 0 to false
@@ -75,8 +78,8 @@ export class DbClient {
         ORDER BY TABLE_NAME, ORDINAL_POSITION
         `
 
-        if (this.connection) {
-            return this.connection.execute(sql, [this.connection.config.database, tableName])
+        if (this.pool) {
+            return this.pool.execute(sql, [this.database, tableName])
                 .then(res => {
                     const columns = res[0] as ColumnSchema2[]
                     return right(columns);
@@ -95,11 +98,13 @@ export class DbClient {
     }
 
     async explainSql(sql: string): Promise<Either<TypeSqlError, boolean>> {
-        if (this.connection) {
-            //@ts-ignore
-            return this.connection.prepare(sql)
+        if (this.pool) {
+            const conn = await this.pool.getConnection();
+            return conn.prepare(sql)
                 .then(() => {
                     return right(true)
+                }).finally(() => {
+                    this.pool?.releaseConnection(conn);
                 }).catch((err: any) => this.createInvalidSqlError(err));
         }
         return left(connectionNotOpenError);
