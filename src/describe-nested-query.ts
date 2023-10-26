@@ -107,14 +107,15 @@ function getRelations(tableRef: TableReferenceContext, dbSchema: ColumnSchema[],
         })
     })
     const result = parentList.map(r => {
-        const relationFields = relations.filter(r2 => r2.parent.name == r.name || r2.parent.alias == r.alias).map(f => {
-            const field: ModelColumn = {
-                type: 'relation',
-                name: f.child.name,
-                cardinality: f.cardinality,
-            }
-            return field;
-        })
+        const relationFields = relations.filter(r2 => r2.parent.name == r.name || (r.alias != '' && r2.parent.alias == r.alias))
+            .map(f => {
+                const field: ModelColumn = {
+                    type: 'relation',
+                    name: f.child.name,
+                    cardinality: f.cardinality,
+                }
+                return field;
+            })
         const fields: ModelColumn[] = columns
             .map((col, index) => ({ col, index })) //keep index
             .filter(({ col }) => col.table == r.name || col.table == r.alias)

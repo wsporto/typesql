@@ -88,6 +88,81 @@ describe('nested-query', () => {
         assert.deepStrictEqual(actual, expectedModel);
     })
 
+    it('SELECT FROM users INNER JOIN posts (without alias)', async () => {
+        const dbSchema = await client.loadDbSchema();
+
+        const sql = `
+        SELECT 
+            *
+        FROM users
+        INNER JOIN posts on fk_user = users.id
+        `
+        // Expected type:
+        // type User = {
+        //     user_id: string;
+        //     user_name: string;
+        //     p: Post[];
+        // }
+
+        const expectedModel: NestedResultInfo = {
+            relations: [
+                {
+                    name: 'users',
+                    groupKeyIndex: 0,
+                    columns: [
+                        {
+                            type: 'field',
+                            name: 'id',
+                            index: 0
+                        },
+                        {
+                            type: 'field',
+                            name: 'name',
+                            index: 1
+                        },
+                        {
+                            type: 'relation',
+                            name: 'posts',
+                            cardinality: 'many'
+                        }
+                    ]
+                },
+                {
+                    name: 'posts',
+                    groupKeyIndex: 2,
+                    columns: [
+                        {
+                            type: 'field',
+                            name: 'id',
+                            index: 2
+                        },
+                        {
+                            type: 'field',
+                            name: 'title',
+                            index: 3
+                        },
+                        {
+                            type: 'field',
+                            name: 'body',
+                            index: 4
+                        },
+                        {
+                            type: 'field',
+                            name: 'fk_user',
+                            index: 5
+                        }
+                    ]
+                }
+            ]
+        }
+        if (isLeft(dbSchema)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        const actual = describeNestedQuery(sql, dbSchema.right);
+
+        assert.deepStrictEqual(actual, expectedModel);
+    })
+
     it('SELECT FROM posts p INNER JOIN users u', async () => {
         const dbSchema = await client.loadDbSchema();
 
