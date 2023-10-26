@@ -16,7 +16,12 @@ export function generateSelectStatment(tableName: string, columns: ColumnSchema[
         writer.newLine();
     })
 
-    writer.write(`FROM ${escapeTableName(tableName)}`);
+    writer.writeLine(`FROM ${escapeTableName(tableName)}`);
+
+    if (keys.length > 0) {
+        writer.write(`WHERE `);
+        writer.write(`${keys[0].column} = :${keys[0].column}`);
+    }
 
     return writer.toString();
 }
@@ -63,8 +68,8 @@ export function generateUpdateStatment(tableName: string, dbSchema: ColumnSchema
         writer.conditionalWrite(columnIndex != columns.length - 1, ',');
         writer.newLine();
     })
-    writer.writeLine('WHERE');
     if (keys.length > 0) {
+        writer.writeLine('WHERE');
         writer.indent().write(`${keys[0].column} = :${keys[0].column}`);
     }
 
@@ -80,8 +85,8 @@ export function generateDeleteStatment(tableName: string, dbSchema: ColumnSchema
     const writer = new CodeBlockWriter();
 
     writer.writeLine(`DELETE FROM ${escapeTableName(tableName)}`);
-    writer.write('WHERE ');
     if (keys.length > 0) {
+        writer.write('WHERE ');
         writer.write(`${keys[0].column} = :${keys[0].column}`);
     }
     return writer.toString();

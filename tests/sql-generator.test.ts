@@ -33,7 +33,8 @@ describe('code-generator', () => {
             `SELECT
     id,
     value
-FROM mytable1`
+FROM mytable1
+WHERE id = :id`
 
         assert.deepStrictEqual(actual, expected);
 
@@ -87,7 +88,8 @@ WHERE id = :id`
             `SELECT
     id,
     value
-FROM \`my table\``
+FROM \`my table\`
+WHERE id = :id`
 
         assert.deepStrictEqual(actual, expected);
 
