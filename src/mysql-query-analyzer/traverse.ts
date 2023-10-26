@@ -257,7 +257,7 @@ function traverseUpdateStatement(updateStatement: UpdateStatementContext, constr
     updateElement.forEach(updateElement => {
         const expr = updateElement.expr();
         if (expr) {
-
+            const paramBeforeExpr = parameters.length;
             const result = traverseExpr(expr, constraints, parameters, dbSchema, withSchema, updateColumns);
             const columnName = updateElement.columnRef().text;
             const field = splitName(columnName);
@@ -267,7 +267,7 @@ function traverseUpdateStatement(updateStatement: UpdateStatementContext, constr
                 type1: result,
                 type2: column.columnType //freshVar(column.columnName, )
             })
-            parameters.slice(paramsBefore, parameters.length).forEach((param, index) => {
+            parameters.slice(paramBeforeExpr, parameters.length).forEach((param, index) => {
                 dataTypes.push({
                     name: namedParamters[paramsBefore + index] || field.name,
                     type: param,

@@ -57,6 +57,44 @@ describe('parse update statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('UPDATE mytable2 SET name = ?, descr=? WHERE id = ?', async () => {
+
+        const sql = `
+        UPDATE mytable2 SET name = ?, descr=? WHERE id = ?
+            `;
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Update',
+            multipleRowsResult: false,
+            columns,
+            data: [
+                {
+                    name: 'name',
+                    columnType: 'varchar',
+                    notNull: false
+                },
+                {
+                    name: 'descr',
+                    columnType: 'varchar',
+                    notNull: false
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'int',
+                    notNull: true
+                }
+            ]
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it('update mytable1 set value = :value where id > :min and id < :max', async () => {
 
         const sql = `
