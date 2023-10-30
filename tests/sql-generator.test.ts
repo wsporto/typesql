@@ -31,10 +31,10 @@ describe('code-generator', () => {
         const actual = generateSelectStatment('mytable1', columns);
         const expected =
             `SELECT
-    id,
-    value
+    \`id\`,
+    \`value\`
 FROM mytable1
-WHERE id = :id`
+WHERE \`id\` = :id`
 
         assert.deepStrictEqual(actual, expected);
 
@@ -46,7 +46,7 @@ WHERE id = :id`
         const expected =
             `INSERT INTO mytable1
 (
-    value
+    \`value\`
 )
 VALUES
 (
@@ -62,9 +62,9 @@ VALUES
         const expected =
             `UPDATE mytable1
 SET
-    value = :value
+    \`value\` = :value
 WHERE
-    id = :id`
+    \`id\` = :id`
 
         assert.deepStrictEqual(actual, expected);
 
@@ -75,7 +75,7 @@ WHERE
         const actual = generateDeleteStatment('mytable1', columns);
         const expected =
             `DELETE FROM mytable1
-WHERE id = :id`
+WHERE \`id\` = :id`
 
         assert.deepStrictEqual(actual, expected);
 
@@ -86,10 +86,10 @@ WHERE id = :id`
         const actual = generateSelectStatment("my table", columns);
         const expected =
             `SELECT
-    id,
-    value
+    \`id\`,
+    \`value\`
 FROM \`my table\`
-WHERE id = :id`
+WHERE \`id\` = :id`
 
         assert.deepStrictEqual(actual, expected);
 
@@ -101,7 +101,7 @@ WHERE id = :id`
         const expected =
             `INSERT INTO \`my table\`
 (
-    value
+    \`value\`
 )
 VALUES
 (
@@ -117,9 +117,9 @@ VALUES
         const expected =
             `UPDATE \`my table\`
 SET
-    value = :value
+    \`value\` = :value
 WHERE
-    id = :id`
+    \`id\` = :id`
 
         assert.deepStrictEqual(actual, expected);
 
@@ -130,7 +130,7 @@ WHERE
         const actual = generateDeleteStatment('my table', columns);
         const expected =
             `DELETE FROM \`my table\`
-WHERE id = :id`
+WHERE \`id\` = :id`
 
         assert.deepStrictEqual(actual, expected);
 

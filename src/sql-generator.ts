@@ -11,7 +11,7 @@ export function generateSelectStatment(tableName: string, columns: ColumnSchema[
 
     writer.writeLine("SELECT");
     columns.forEach((col, columnIndex) => {
-        writer.indent().write(col.column);
+        writer.indent().write(escapeColumn(col.column));
         writer.conditionalWrite(columnIndex < columns.length - 1, ',');
         writer.newLine();
     })
@@ -20,7 +20,7 @@ export function generateSelectStatment(tableName: string, columns: ColumnSchema[
 
     if (keys.length > 0) {
         writer.write(`WHERE `);
-        writer.write(`${keys[0].column} = :${keys[0].column}`);
+        writer.write(`${escapeColumn(keys[0].column)} = :${keys[0].column}`);
     }
 
     return writer.toString();
@@ -34,7 +34,7 @@ export function generateInsertStatment(tableName: string, dbSchema: ColumnSchema
     writer.writeLine(`INSERT INTO ${escapeTableName(tableName)}`);
     writer.writeLine("(")
     columns.forEach((col, columnIndex) => {
-        writer.indent().write(col.column);
+        writer.indent().write(escapeColumn(col.column));
         writer.conditionalWrite(columnIndex != columns.length - 1, ',');
         writer.newLine();
     })
@@ -64,13 +64,13 @@ export function generateUpdateStatment(tableName: string, dbSchema: ColumnSchema
     writer.writeLine(`UPDATE ${escapeTableName(tableName)}`);
     writer.writeLine("SET")
     columns.forEach((col, columnIndex) => {
-        writer.indent().write(`${col.column} = :${col.column}`);
+        writer.indent().write(`${escapeColumn(col.column)} = :${col.column}`);
         writer.conditionalWrite(columnIndex != columns.length - 1, ',');
         writer.newLine();
     })
     if (keys.length > 0) {
         writer.writeLine('WHERE');
-        writer.indent().write(`${keys[0].column} = :${keys[0].column}`);
+        writer.indent().write(`${escapeColumn(keys[0].column)} = :${keys[0].column}`);
     }
 
     return writer.toString();
@@ -87,7 +87,7 @@ export function generateDeleteStatment(tableName: string, dbSchema: ColumnSchema
     writer.writeLine(`DELETE FROM ${escapeTableName(tableName)}`);
     if (keys.length > 0) {
         writer.write('WHERE ');
-        writer.write(`${keys[0].column} = :${keys[0].column}`);
+        writer.write(`${escapeColumn(keys[0].column)} = :${keys[0].column}`);
     }
     return writer.toString();
 }
@@ -99,4 +99,8 @@ function escapeTableName(tableName: string) {
         return `\`${tableName}\``;
     }
     return tableName;
+}
+
+function escapeColumn(column: string) {
+    return `\`${column}\``;
 }
