@@ -271,7 +271,7 @@ function traverseUpdateStatement(updateStatement: UpdateStatementContext, constr
                 dataTypes.push({
                     name: namedParamters[paramBeforeExpr + index] || field.name,
                     type: param,
-                    notNull: column.notNull && !possibleNull(field, expr),
+                    notNull: column.notNull && paramNullability[index],
                     table: ''
                 })
             })

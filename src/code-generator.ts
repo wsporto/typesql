@@ -10,7 +10,7 @@ import { parseSql } from "./describe-query";
 import CodeBlockWriter from "code-block-writer";
 import { NestedTsDescriptor, createNestedTsDescriptor } from "./ts-nested-descriptor";
 
-export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, target: 'node' | 'deno'): string {
+export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, target: 'node' | 'deno', crud: boolean = false): string {
     const writer = new CodeBlockWriter();
 
     const camelCaseName = convertToCamelCaseName(fileName);
@@ -31,13 +31,13 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
     }
     writer.blankLine();
 
-    if (tsDescriptor.data) {
-        writeTypeBlock(writer, tsDescriptor.data, dataTypeName);
+    if (tsDescriptor.data) { //update
+        writeTypeBlock(writer, tsDescriptor.data, dataTypeName, crud);
     }
 
     const orderByField = generateOrderBy ? `orderBy: [${orderByTypeName}, ...${orderByTypeName}[]]` : undefined;
-    writeTypeBlock(writer, tsDescriptor.parameters, paramsTypeName, orderByField);
-    writeTypeBlock(writer, tsDescriptor.columns, resultTypeName)
+    writeTypeBlock(writer, tsDescriptor.parameters, paramsTypeName, false, orderByField);
+    writeTypeBlock(writer, tsDescriptor.columns, resultTypeName, false)
 
     let functionReturnType = resultTypeName;
     functionReturnType += tsDescriptor.multipleRowsResult ? '[]' : tsDescriptor.queryType == 'Select' ? ' | null' : '';
@@ -46,7 +46,14 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
     functionArguments += tsDescriptor.data && tsDescriptor.data.length > 0 ? ', data: ' + dataTypeName : '';
     functionArguments += tsDescriptor.parameters.length > 0 || generateOrderBy ? ', params: ' + paramsTypeName : '';
 
-    const allParameters = tsDescriptor.data?.map(field => 'data.' + field.name) || [];
+    const allParameters = tsDescriptor.data ? tsDescriptor.data.map((field, index) => {
+        //:nameIsSet, :name, :valueIsSet, :value....
+        if (crud && index % 2 == 0) {
+            const nextField = tsDescriptor.data![index + 1];
+            return `data.${nextField.name} !== undefined`;
+        }
+        return 'data.' + field.name;
+    }) : [];
     allParameters.push(...tsDescriptor.parameterNames.map(paramName => 'params.' + paramName));
 
     const queryParams = allParameters.length > 0 ? ', [' + allParameters.join(', ') + ']' : '';
@@ -186,12 +193,18 @@ function generateRelationType(capitalizedName: string, relationName: string) {
     return capitalizedName + 'Nested' + capitalizeStr(relationName);
 }
 
-function writeTypeBlock(writer: CodeBlockWriter, fields: TsFieldDescriptor[], typeName: string, extraField?: string) {
+function writeTypeBlock(writer: CodeBlockWriter, fields: TsFieldDescriptor[], typeName: string, updateCrud: boolean, extraField?: string) {
     const writeBlockCond = fields.length > 0 || extraField != null;
     if (writeBlockCond) {
         writer.write(`export type ${typeName} =`).block(() => {
-            fields.forEach(tsField => {
-                writer.writeLine(tsFieldToStr(tsField) + ';');
+            fields.forEach((tsField, index) => {
+                // :nameSet, :name, valueSet, :value...
+                if (updateCrud && index % 2 != 0) {//only odd fields (:name, :value)
+                    writer.writeLine(tsFieldToStr(tsField, true) + ';');
+                }
+                else if (!updateCrud) {
+                    writer.writeLine(tsFieldToStr(tsField, false) + ';');
+                }
             })
             if (extraField) {
                 writer.write(extraField + ';')
@@ -202,7 +215,11 @@ function writeTypeBlock(writer: CodeBlockWriter, fields: TsFieldDescriptor[], ty
 
 }
 
-function tsFieldToStr(tsField: TsFieldDescriptor) {
+function tsFieldToStr(tsField: TsFieldDescriptor, isCrudUpdate: boolean) {
+    if (isCrudUpdate) {
+        //all fields are optionals
+        return tsField.name + '?: ' + tsField.tsType + (tsField.notNull == false ? ' | null' : '');
+    }
     return tsField.name + (tsField.notNull ? ': ' : '?: ') + tsField.tsType;
 }
 
@@ -314,12 +331,12 @@ function mapColumnType(columnType: MySqlType | MySqlType[] | 'any'): string {
 
 }
 
-function generateTsContent(tsDescriptorOption: Option<TsDescriptor>, queryName: string, target: 'node' | 'deno') {
+function generateTsContent(tsDescriptorOption: Option<TsDescriptor>, queryName: string, target: 'node' | 'deno', crud: boolean) {
 
     if (isNone(tsDescriptorOption)) {
         return '//Invalid sql';
     }
-    return generateTsCode(tsDescriptorOption.value, queryName, target);
+    return generateTsCode(tsDescriptorOption.value, queryName, target, crud);
 }
 
 export function replaceOrderByParam(sql: string) {
@@ -347,7 +364,7 @@ export function convertToCamelCaseName(name: string): CamelCaseName {
 }
 
 //TODO - pass dbSchema instead of connection
-export async function generateTsFile(client: DbClient, sqlFile: string, target: 'node' | 'deno') {
+export async function generateTsFile(client: DbClient, sqlFile: string, target: 'node' | 'deno', isCrudFile: boolean) {
 
     const sqlContent = fs.readFileSync(sqlFile, 'utf8');
 
@@ -355,14 +372,14 @@ export async function generateTsFile(client: DbClient, sqlFile: string, target: 
     const dirPath = parse(sqlFile).dir;
     const queryName = convertToCamelCaseName(fileName);
 
-    const tsContent = await generateTsFileFromContent(client, sqlFile, queryName, sqlContent, target);
+    const tsContent = await generateTsFileFromContent(client, sqlFile, queryName, sqlContent, target, isCrudFile);
 
     const tsFilePath = path.resolve(dirPath, fileName) + ".ts";
 
     writeFile(tsFilePath, tsContent);
 }
 
-export async function generateTsFileFromContent(client: DbClient, filePath: string, queryName: string, sqlContent: string, target: 'node' | 'deno') {
+export async function generateTsFileFromContent(client: DbClient, filePath: string, queryName: string, sqlContent: string, target: 'node' | 'deno', crud: boolean = false) {
     const queryInfo = await parseSql(client, sqlContent);
 
     if (isLeft(queryInfo)) {
@@ -371,7 +388,7 @@ export async function generateTsFileFromContent(client: DbClient, filePath: stri
     }
 
     const tsDescriptor = isLeft(queryInfo) ? none : some(generateTsDescriptor(queryInfo.right));
-    const tsContent = generateTsContent(tsDescriptor, queryName, target);
+    const tsContent = generateTsContent(tsDescriptor, queryName, target, crud);
     return tsContent;
 }
 

@@ -64,7 +64,7 @@ export function generateUpdateStatment(tableName: string, dbSchema: ColumnSchema
     writer.writeLine(`UPDATE ${escapeTableName(tableName)}`);
     writer.writeLine("SET")
     columns.forEach((col, columnIndex) => {
-        writer.indent().write(`${escapeColumn(col.column)} = :${col.column}`);
+        writer.indent().write(`${escapeColumn(col.column)} = IF(:${col.column}Set, :${col.column}, ${escapeColumn(col.column)})`);
         writer.conditionalWrite(columnIndex != columns.length - 1, ',');
         writer.newLine();
     })

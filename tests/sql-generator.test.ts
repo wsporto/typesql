@@ -62,7 +62,7 @@ VALUES
         const expected =
             `UPDATE mytable1
 SET
-    \`value\` = :value
+    \`value\` = IF(:valueSet, :value, \`value\`)
 WHERE
     \`id\` = :id`
 
@@ -117,7 +117,7 @@ VALUES
         const expected =
             `UPDATE \`my table\`
 SET
-    \`value\` = :value
+    \`value\` = IF(:valueSet, :value, \`value\`)
 WHERE
     \`id\` = :id`
 

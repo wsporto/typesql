@@ -12,6 +12,8 @@ import { isLeft } from "fp-ts/lib/Either";
 import CodeBlockWriter from "code-block-writer";
 import { globSync } from "glob";
 
+const CRUD_FOLDER = 'crud';
+
 function parseArgs() {
     return yargs
         .usage('Usage: $0 [options] DIRECTORY')
@@ -95,12 +97,12 @@ function watchDirectories(client: DbClient, dirPath: string, target: 'node' | 'd
             stabilityThreshold: 100
         }
     })
-        .on('add', path => rewiteFiles(client, path, target))
-        .on('change', path => rewiteFiles(client, path, target));
+        .on('add', path => rewiteFiles(client, path, target, isCrudFile(dirPath, path)))
+        .on('change', path => rewiteFiles(client, path, target, isCrudFile(dirPath, path)));
 }
 
-async function rewiteFiles(client: DbClient, path: string, target: 'node' | 'deno') {
-    await generateTsFile(client, path, target);
+async function rewiteFiles(client: DbClient, path: string, target: 'node' | 'deno', isCrudFile: boolean) {
+    await generateTsFile(client, path, target, isCrudFile);
     const dirPath = parse(path).dir;
     await writeIndexFile(dirPath);
 }
@@ -133,7 +135,7 @@ async function compile(watch: boolean, config: TypeSqlConfig) {
 
     const sqlFiles = globSync(dirGlob);
 
-    const filesGeneration = sqlFiles.map(sqlFile => generateTsFile(client, sqlFile, target));
+    const filesGeneration = sqlFiles.map(sqlFile => generateTsFile(client, sqlFile, target, isCrudFile(sqlDir, sqlFile)));
     await Promise.all(filesGeneration);
 
     writeIndexFile(sqlDir);
@@ -235,7 +237,7 @@ async function generateCrudTables(client: DbClient, sqlFolderPath: string, dbSch
                 const allTables = selectTablesResult.right;
                 for (const tableInfo of allTables) {
                     const tableName = tableInfo.table;
-                    const filePath = sqlFolderPath + "/crud/" + tableName + '/';
+                    const filePath = `${sqlFolderPath}/${CRUD_FOLDER}/${tableName}/`;
                     if (!fs.existsSync(filePath)) {
                         fs.mkdirSync(filePath, { recursive: true });
                     }
@@ -250,4 +252,11 @@ async function generateCrudTables(client: DbClient, sqlFolderPath: string, dbSch
             }
         }
     }
+}
+
+//https://stackoverflow.com/a/45242825
+function isCrudFile(sqlDir: string, sqlFile: string): boolean {
+    const relative = path.relative(sqlDir + '/' + CRUD_FOLDER, sqlFile);
+    const result = relative != null && !relative.startsWith('..') && !path.isAbsolute(relative);
+    return result;
 }
