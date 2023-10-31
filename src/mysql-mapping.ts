@@ -59,7 +59,6 @@ export type TsType =
 
 export function converToTsType(mySqlType: MySqlType | 'any'): TsType {
     switch (mySqlType) {
-        case 'decimal':
         case 'tinyint':
         case 'smallint':
         case 'int':
@@ -70,7 +69,6 @@ export function converToTsType(mySqlType: MySqlType | 'any'): TsType {
         case 'year':
             return 'number';
 
-        case 'decimal[]':
         case 'tinyint[]':
         case 'smallint[]':
         case 'int[]':
@@ -83,9 +81,11 @@ export function converToTsType(mySqlType: MySqlType | 'any'): TsType {
 
         case 'varchar':
         case 'varbinary':
+        case 'decimal':
         case 'geometry':
             return 'string';
         case 'varchar[]':
+        case 'decimal[]':
             return 'string[]'
         case 'timestamp':
         case 'timestamp2':
