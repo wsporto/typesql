@@ -273,33 +273,6 @@ export function getAllQuerySpecificationsFromSelectStatement(
     return result;
 }
 
-export function getQuerySpecificationsFromSelectStatement(
-    selectStatement: SelectStatementContext
-        | QuerySpecificationContext
-        | InsertQueryExpressionContext
-        | QueryExpressionBodyContext //TODO - REMOVE
-        | QueryExpressionParensContext //TODO - REMOVE
-        | SubqueryContext): QuerySpecificationContext[] {
-    const result: QuerySpecificationContext[] = [];
-
-    collectQuerySpecifications(selectStatement, result);
-    return result;
-}
-
-//querySpecification
-function collectQuerySpecifications(tree: ParseTree, result: QuerySpecificationContext[]) {
-    for (let i = 0; i < tree.childCount; i++) {
-        const child = tree.getChild(i);
-        //add only first query and unions
-        if (child instanceof QuerySpecificationContext && (result.length == 0 || (child.parent as any).UNION_SYMBOL())) {
-            result.push(child);
-        }
-        else {
-            collectQuerySpecifications(child, result);
-        }
-    }
-}
-
 function collectAllQuerySpecifications(tree: ParseTree, result: QuerySpecificationContext[]) {
     for (let i = 0; i < tree.childCount; i++) {
         const child = tree.getChild(i);
