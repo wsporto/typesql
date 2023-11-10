@@ -571,7 +571,7 @@ describe('nested-query', () => {
             a.id as answerId,
             a.answer
         FROM surveys s
-        INNER JOIN participants p on p.fk_survey = s.id
+        INNER JOIN participants p on p.fk_survey = s.id -- junction table
         INNER JOIN users u on p.fk_user = u.id
         INNER JOIN questions q ON q.fk_survey = s.id
         INNER JOIN answers a on a.fk_question = q.id AND a.fk_user = u.id
@@ -580,12 +580,8 @@ describe('nested-query', () => {
         // type Surveys = {
         //     surveyId: number;
         //     surveyName: string;
-        //     p: Participants[];
+        //     u: Users[];
         //     q: Questions[];
-        // }
-        // type Participants = {
-        //     participantId: number;
-        //     userId: number;
         // }
         // type Questions = {
         //     questionId: number;
@@ -615,29 +611,13 @@ describe('nested-query', () => {
                         },
                         {
                             type: "relation",
-                            name: "participants",
+                            name: "users",
                             cardinality: "many",
                         },
                         {
                             type: "relation",
                             name: "questions",
                             cardinality: "many",
-                        },
-                    ],
-                },
-                {
-                    name: "participants",
-                    groupKeyIndex: 2,
-                    columns: [
-                        {
-                            type: "field",
-                            name: "participantId",
-                            index: 2
-                        },
-                        {
-                            type: "relation",
-                            name: "users",
-                            cardinality: "one",
                         },
                     ],
                 },
@@ -780,4 +760,74 @@ describe('nested-query', () => {
 
     })
 
+    it('many to many - books with authors', async () => {
+        const dbSchema = await client.loadDbSchema();
+
+        const sql = `
+        SELECT *
+        FROM books b
+        INNER JOIN books_authors ba on ba.book_id = b.id
+        INNER JOIN authors a on a.id = ba.author_id
+        `
+
+        //[id(0),title(1),isbn(2),id(3),book_id(4),author_id(5),id(6),fullName(7),shortName(8)]
+        const expectedModel: NestedResultInfo = {
+            relations: [
+                {
+                    name: "books",
+                    groupKeyIndex: 0,
+                    columns: [
+                        {
+                            type: "field",
+                            name: "id",
+                            index: 0,
+                        },
+                        {
+                            type: "field",
+                            name: "title",
+                            index: 1,
+                        },
+                        {
+                            type: "field",
+                            name: "isbn",
+                            index: 2,
+                        },
+                        {
+                            type: "relation",
+                            name: "authors",
+                            cardinality: "many",
+                        }
+                    ],
+                },
+                {
+                    name: "authors",
+                    groupKeyIndex: 6,
+                    columns: [
+                        {
+                            type: "field",
+                            name: "id",
+                            index: 6,
+                        },
+                        {
+                            type: "field",
+                            name: "fullName",
+                            index: 7,
+                        },
+                        {
+                            type: "field",
+                            name: "shortName",
+                            index: 8,
+                        }
+                    ],
+                }
+            ],
+        }
+        if (isLeft(dbSchema)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        const actual = describeNestedQuery(sql, dbSchema.right);
+
+        assert.deepStrictEqual(actual, expectedModel);
+
+    })
 });

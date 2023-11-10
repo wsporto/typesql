@@ -33,6 +33,7 @@ export type RelationField = {
 export type TableName = {
     name: string;
     alias: string | '';
+    isJunctionTable: boolean;
 }
 
 //utility for tests
@@ -78,6 +79,8 @@ type Relation = {
     parent: TableName;
     child: TableName;
     cardinality: Cardinality;
+    isJunctionTable: boolean;
+    junctionChildTable: string;
 }
 
 function getResult(tableRef: TableReferenceContext, dbSchema: ColumnSchema[], columns: ColumnInfo[]) {
@@ -104,17 +107,30 @@ function getRelations(tableRef: TableReferenceContext, dbSchema: ColumnSchema[],
             relations.push({
                 parent: parent,
                 child: tableName,
-                cardinality
+                cardinality,
+                isJunctionTable: false, //will be set later
+                junctionChildTable: '',
             })
         })
     })
-    const result = parentList.map(r => {
+    for (let index = 0; index < relations.length; index++) {
+        const relation = relations[index];
+        const [isJunction, childRelationName] = isJunctionTable(relation, relations);
+        if (isJunction) {
+            relation.isJunctionTable = true;
+            relation.junctionChildTable = childRelationName;
+            const relationItem = parentList.find(r => r.name == relation.child.name)!;
+            relationItem.isJunctionTable = true
+        }
+    }
+
+    const result = parentList.filter(r => r.isJunctionTable == false).map(r => {
         const relationFields = relations.filter(r2 => r2.parent.name == r.name || (r.alias != '' && r2.parent.alias == r.alias))
-            .map(f => {
+            .map(relation => {
                 const field: ModelColumn = {
                     type: 'relation',
-                    name: f.child.name,
-                    cardinality: f.cardinality,
+                    name: relation.isJunctionTable ? relation.junctionChildTable : relation.child.name,
+                    cardinality: relation.cardinality,
                 }
                 return field;
             })
@@ -179,11 +195,20 @@ function getTableInfoFromTableFactor(tableFactor: TableFactorContext): TableName
         const tableName = splitName(table);
         const model: TableName = {
             name: tableName.name,
-            alias: tableAlias
+            alias: tableAlias,
+            isJunctionTable: false //will be checked later
         }
         return model;
     }
     throw Error('createModelFromTableFactor')
+}
+
+function isJunctionTable(relation: Relation, relations: Relation[]): [boolean, string] {
+    const parentRelation = relations.find(r => r.child == relation.parent);
+    const childRelation = relations.find(r => r.parent == relation.child);
+    const childRelationCardinality = childRelation?.cardinality;
+    const isJunctionTable = (parentRelation == null || parentRelation.cardinality == 'one') && childRelationCardinality == 'one';
+    return [isJunctionTable, childRelation?.child.name!]
 }
 
 function verifyCardinality(expr: ExprContext, dbSchema: ColumnSchema[], tableName: string): Cardinality {

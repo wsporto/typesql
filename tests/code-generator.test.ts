@@ -796,7 +796,7 @@ const groupBy = <T, Q>(array: T[], predicate: (value: T, index: number, array: T
         assert.deepStrictEqual(actual, expected);
     })
 
-    it('generate nested result with one to one relation', async () => {
+    it('generate nested result with many to many relation', async () => {
         const queryName = 'select-answers';
         const sql = `-- @nested
 SELECT
@@ -857,12 +857,7 @@ function mapArrayToSelectAnswersResult(data: any) {
 export type SelectAnswersNestedSurveys = {
     surveyId: number;
     surveyName: string;
-    participants: SelectAnswersNestedParticipants[];
-}
-
-export type SelectAnswersNestedParticipants = {
-    participantId: number;
-    users: SelectAnswersNestedUsers;
+    users: SelectAnswersNestedUsers[];
 }
 
 export type SelectAnswersNestedUsers = {
@@ -888,21 +883,7 @@ function mapToSelectAnswersNestedSurveys(selectResult: SelectAnswersResult[]): S
     const result: SelectAnswersNestedSurveys = {
         surveyId: firstRow.surveyId!,
         surveyName: firstRow.surveyName!,
-        participants: collectSelectAnswersNestedParticipants(selectResult)
-    }
-    return result;
-}
-
-function collectSelectAnswersNestedParticipants(selectResult: SelectAnswersResult[]): SelectAnswersNestedParticipants[] {
-    const grouped = groupBy(selectResult.filter(r => r.participantId != null), r => r.participantId);
-    return [...grouped.values()].map(r => mapToSelectAnswersNestedParticipants(r))
-}
-
-function mapToSelectAnswersNestedParticipants(selectResult: SelectAnswersResult[]): SelectAnswersNestedParticipants {
-    const firstRow = selectResult[0];
-    const result: SelectAnswersNestedParticipants = {
-        participantId: firstRow.participantId!,
-        users: collectSelectAnswersNestedUsers(selectResult)[0]
+        users: collectSelectAnswersNestedUsers(selectResult)
     }
     return result;
 }
