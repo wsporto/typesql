@@ -1,4 +1,4 @@
-import { BitExprContext, BoolPriContext, DeleteStatementContext, ExprAndContext, ExprContext, ExprIsContext, ExprListContext, ExprNotContext, ExprOrContext, ExprXorContext, FromClauseContext, HavingClauseContext, InsertQueryExpressionContext, InsertStatementContext, PredicateContext, PredicateExprInContext, PredicateExprLikeContext, PredicateOperationsContext, PrimaryExprAllAnyContext, PrimaryExprCompareContext, PrimaryExprIsNullContext, PrimaryExprPredicateContext, QueryContext, QueryExpressionBodyContext, QueryExpressionContext, QueryExpressionOrParensContext, QueryExpressionParensContext, QuerySpecificationContext, SelectItemContext, SelectItemListContext, SelectStatementContext, SimpleExprCaseContext, SimpleExprCastContext, SimpleExprColumnRefContext, SimpleExprContext, SimpleExprFunctionContext, SimpleExprIntervalContext, SimpleExprListContext, SimpleExprLiteralContext, SimpleExprParamMarkerContext, SimpleExprRuntimeFunctionContext, SimpleExprSubQueryContext, SimpleExprSumContext, SimpleExprWindowingFunctionContext, SingleTableContext, SubqueryContext, TableFactorContext, TableReferenceContext, TableReferenceListParensContext, UpdateStatementContext, WindowFunctionCallContext, WithClauseContext } from "ts-mysql-parser";
+import { BitExprContext, BoolPriContext, DeleteStatementContext, ExprAndContext, ExprContext, ExprIsContext, ExprListContext, ExprNotContext, ExprOrContext, ExprXorContext, FromClauseContext, HavingClauseContext, InsertQueryExpressionContext, InsertStatementContext, PredicateContext, PredicateExprBetweenContext, PredicateExprInContext, PredicateExprLikeContext, PredicateOperationsContext, PrimaryExprAllAnyContext, PrimaryExprCompareContext, PrimaryExprIsNullContext, PrimaryExprPredicateContext, QueryContext, QueryExpressionBodyContext, QueryExpressionContext, QueryExpressionOrParensContext, QueryExpressionParensContext, QuerySpecificationContext, SelectItemContext, SelectItemListContext, SelectStatementContext, SimpleExprCaseContext, SimpleExprCastContext, SimpleExprColumnRefContext, SimpleExprContext, SimpleExprFunctionContext, SimpleExprIntervalContext, SimpleExprListContext, SimpleExprLiteralContext, SimpleExprParamMarkerContext, SimpleExprRuntimeFunctionContext, SimpleExprSubQueryContext, SimpleExprSumContext, SimpleExprWindowingFunctionContext, SingleTableContext, SubqueryContext, TableFactorContext, TableReferenceContext, TableReferenceListParensContext, UpdateStatementContext, WindowFunctionCallContext, WithClauseContext } from "ts-mysql-parser";
 import { verifyNotInferred } from "../describe-query";
 import { extractLimitParameters, extractOrderByParameters, getAllQuerySpecificationsFromSelectStatement, getLimitOptions, isSumExpressContext } from "./parse";
 import { ColumnDef, ColumnSchema, Constraint, FieldName, ParameterInfo, Type, TypeAndNullInfer, TypeOperator, TypeVar } from "./types";
@@ -953,7 +953,29 @@ function traversePredicateOperations(predicateOperations: PredicateOperationsCon
         return rightType;
 
     }
-    throw Error("Not expected");
+    if (predicateOperations instanceof PredicateExprBetweenContext) {
+        const bitExpr = predicateOperations.bitExpr();
+        const predicate = predicateOperations.predicate();
+        const bitExprType = traverseBitExpr(bitExpr, constraints, parameters, dbSchema, withSchema, fromColumns);
+        const predicateType = traversePredicate(predicate, constraints, parameters, dbSchema, withSchema, fromColumns);
+        constraints.push({
+            expression: predicateOperations.text,
+            type1: parentType,
+            type2: bitExprType
+        });
+        constraints.push({
+            expression: predicateOperations.text,
+            type1: parentType,
+            type2: predicateType
+        });
+        constraints.push({
+            expression: predicateOperations.text,
+            type1: bitExprType,
+            type2: predicateType
+        });
+        return bitExprType;
+    }
+    throw Error("Not supported: " + predicateOperations.constructor.name);
 
 }
 

@@ -467,6 +467,42 @@ describe('Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('SELECT id FROM mytable1 where value between :start and :end', async () => {
+        const sql = 'SELECT id FROM mytable1 where value between :start and :end';
+        const expectedSql = 'SELECT id FROM mytable1 where value between ? and ?'
+
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql: expectedSql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 'mytable1'
+                }
+            ],
+            parameters: [
+                {
+                    name: 'start',
+                    columnType: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'end',
+                    columnType: 'int',
+                    notNull: true
+                }
+            ]
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     //TODO - no reference to table.
     it('parse a select with param on column', async () => {
         const sql = 'SELECT ? as name FROM mytable1';
