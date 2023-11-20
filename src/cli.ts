@@ -6,9 +6,9 @@ import yargs from "yargs";
 import { generateTsFile, writeFile } from "./code-generator";
 import { DbClient } from "./queryExectutor";
 import { generateInsertStatment, generateUpdateStatment, generateDeleteStatment, generateSelectStatment } from "./sql-generator";
-import { ColumnSchema } from "./mysql-query-analyzer/types";
+import { ColumnSchema, Table } from "./mysql-query-analyzer/types";
 import { TypeSqlConfig, SqlGenOption } from "./types";
-import { isLeft } from "fp-ts/lib/Either";
+import { Either, isLeft, left } from "fp-ts/lib/Either";
 import CodeBlockWriter from "code-block-writer";
 import { globSync } from "glob";
 
@@ -227,31 +227,39 @@ function generateSql(stmtType: SqlGenOption, tableName: string, columns: ColumnS
 main().then(() => console.log("finished!"));
 
 async function generateCrudTables(client: DbClient, sqlFolderPath: string, dbSchema: ColumnSchema[], includeCrudTables: string[]) {
-    for (const table of includeCrudTables) {
-        if (table == "*") {
-            const selectTablesResult = await client.selectTablesFromSchema();
-            if (isLeft(selectTablesResult)) {
-                console.error("Error selecting table names:", selectTablesResult.left.description);
-            }
-            else {
-                const allTables = selectTablesResult.right;
-                for (const tableInfo of allTables) {
-                    const tableName = tableInfo.table;
-                    const filePath = `${sqlFolderPath}/${CRUD_FOLDER}/${tableName}/`;
-                    if (!fs.existsSync(filePath)) {
-                        fs.mkdirSync(filePath, { recursive: true });
-                    }
-
-                    const columns = dbSchema.filter(col => col.table == tableName);
-                    checkAndGenerateSql(filePath + "select-from-" + tableName + '.sql', 'select', tableName, columns);
-                    checkAndGenerateSql(filePath + "insert-into-" + tableName + '.sql', 'insert', tableName, columns);
-                    checkAndGenerateSql(filePath + "update-" + tableName + '.sql', 'update', tableName, columns);
-                    checkAndGenerateSql(filePath + "delete-from-" + tableName + '.sql', 'delete', tableName, columns);
-                }
-
-            }
-        }
+    const allTables = await selectAllTables(client);
+    if (isLeft(allTables)) {
+        console.error(allTables.left);
+        return;
     }
+    const filteredTables = filterTables(allTables.right, includeCrudTables);
+
+    for (const tableInfo of filteredTables) {
+        const tableName = tableInfo.table;
+        const filePath = `${sqlFolderPath}/${CRUD_FOLDER}/${tableName}/`;
+        if (!fs.existsSync(filePath)) {
+            fs.mkdirSync(filePath, { recursive: true });
+        }
+
+        const columns = dbSchema.filter(col => col.table == tableName);
+        checkAndGenerateSql(filePath + "select-from-" + tableName + '.sql', 'select', tableName, columns);
+        checkAndGenerateSql(filePath + "insert-into-" + tableName + '.sql', 'insert', tableName, columns);
+        checkAndGenerateSql(filePath + "update-" + tableName + '.sql', 'update', tableName, columns);
+        checkAndGenerateSql(filePath + "delete-from-" + tableName + '.sql', 'delete', tableName, columns);
+    }
+}
+
+function filterTables(allTables: Table[], includeCrudTables: string[]) {
+    const selectAll = includeCrudTables.find(filter => filter == '*');
+    return selectAll ? allTables : allTables.filter(t => includeCrudTables.find(t2 => t.table == t2) != null);
+}
+
+async function selectAllTables(client: DbClient): Promise<Either<string, Table[]>> {
+    const selectTablesResult = await client.selectTablesFromSchema();
+    if (isLeft(selectTablesResult)) {
+        return left("Error selecting table names: " + selectTablesResult.left.description);
+    }
+    return selectTablesResult;
 }
 
 //https://stackoverflow.com/a/45242825
