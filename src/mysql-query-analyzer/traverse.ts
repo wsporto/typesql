@@ -365,26 +365,31 @@ function traverseQueryExpressionOrParens(queryExpressionOrParens: QueryExpressio
     throw Error("walkQueryExpressionOrParens");
 }
 
-function traverseQueryExpression(queryExpression: QueryExpressionContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], withSchema: ColumnDef[], fromColumns: ColumnDef[], recursive = false): QuerySpecificationResult {
+function traverseQueryExpression(queryExpression: QueryExpressionContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], withSchema: ColumnDef[], fromColumns: ColumnDef[], subQuery: boolean = false, recursiveNames?: string[]): QuerySpecificationResult {
+    const withClause = queryExpression.withClause();
+    if (withClause) {
+        traverseWithClause(withClause, constraints, parameters, dbSchema, withSchema);
+    }
+
     const queryExpressionBody = queryExpression.queryExpressionBody();
     if (queryExpressionBody) {
-        return traverseQueryExpressionBody(queryExpressionBody, constraints, parameters, dbSchema, withSchema, fromColumns)
+        return traverseQueryExpressionBody(queryExpressionBody, constraints, parameters, dbSchema, withSchema, fromColumns, subQuery, recursiveNames)
     }
     const queryExpressionParens = queryExpression.queryExpressionParens();
     if (queryExpressionParens) {
-        return traverseQueryExpressionParens(queryExpressionParens, constraints, parameters, dbSchema, withSchema, fromColumns, recursive);
+        return traverseQueryExpressionParens(queryExpressionParens, constraints, parameters, dbSchema, withSchema, fromColumns, recursiveNames);
     }
     throw Error("walkQueryExpression");
 }
 
-function traverseQueryExpressionParens(queryExpressionParens: QueryExpressionParensContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], withSchema: ColumnDef[], fromColumns: ColumnDef[], recursive = false): QuerySpecificationResult {
+function traverseQueryExpressionParens(queryExpressionParens: QueryExpressionParensContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], withSchema: ColumnDef[], fromColumns: ColumnDef[], recursiveNames?: string[]): QuerySpecificationResult {
     const queryExpression = queryExpressionParens.queryExpression();
     if (queryExpression) {
-        return traverseQueryExpression(queryExpression, constraints, parameters, dbSchema, withSchema, fromColumns, recursive);
+        return traverseQueryExpression(queryExpression, constraints, parameters, dbSchema, withSchema, fromColumns, false, recursiveNames);
     }
     const queryExpressionParens2 = queryExpressionParens.queryExpressionParens();
     if (queryExpressionParens2) {
-        return traverseQueryExpressionParens(queryExpressionParens, constraints, parameters, dbSchema, withSchema, fromColumns, recursive);
+        return traverseQueryExpressionParens(queryExpressionParens, constraints, parameters, dbSchema, withSchema, fromColumns, recursiveNames);
     }
     throw Error("walkQueryExpressionParens");
 }
@@ -394,8 +399,7 @@ function createUnionVar(type: TypeVar, name: string) {
     return newVar;
 }
 
-function traverseQueryExpressionBody(queryExpressionBody: QueryExpressionBodyContext | SubqueryContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], withSchema: ColumnDef[], fromColumns: ColumnDef[], recursiveNames?: string[]): QuerySpecificationResult {
-    const subQuery = queryExpressionBody instanceof SubqueryContext ? true : false;
+function traverseQueryExpressionBody(queryExpressionBody: QueryExpressionBodyContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], withSchema: ColumnDef[], fromColumns: ColumnDef[], subQuery: boolean = false, recursiveNames?: string[]): QuerySpecificationResult {
     const allQueries = getAllQuerySpecificationsFromSelectStatement(queryExpressionBody);
     const [first, ...unionQuerySpec] = allQueries;
     const mainQueryResult = traverseQuerySpecification(first, constraints, parameters, dbSchema, withSchema, fromColumns, subQuery);
@@ -667,8 +671,16 @@ function traverseSingleTable(singleTable: SingleTableContext, constraints: Const
 }
 
 function traverseSubquery(subQuery: SubqueryContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], fromColumns: ColumnDef[], withSchema: ColumnDef[], recursiveNames?: string[] | undefined): QuerySpecificationResult {
-    const result = traverseQueryExpressionBody(subQuery, constraints, parameters, dbSchema, fromColumns, withSchema, recursiveNames);
-    return result;
+    const queryExpressionParens = subQuery.queryExpressionParens();
+    const queryExpression = queryExpressionParens.queryExpression();
+    if (queryExpression) {
+        return traverseQueryExpression(queryExpression, constraints, parameters, dbSchema, fromColumns, withSchema, true, recursiveNames);
+    }
+    const queryExpressionParens2 = queryExpressionParens.queryExpressionParens();
+    if (queryExpressionParens2) {
+        return traverseQueryExpressionParens(queryExpressionParens2, constraints, parameters, dbSchema, fromColumns, withSchema);
+    }
+    throw Error('traverseSubquery - not expected: ' + subQuery.constructor.name);
 }
 
 function traverseSelectItemList(selectItemList: SelectItemListContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], withSchema: ColumnDef[], fromColumns: ColumnDef[]): TypeOperator {

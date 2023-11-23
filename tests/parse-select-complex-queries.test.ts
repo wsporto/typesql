@@ -933,4 +933,37 @@ describe('Test parse complex queries', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('3-levels with clause', async () => {
+        const sql = `
+        WITH ids AS (
+            WITH ids2 AS (
+                WITH ids3 AS (SELECT id FROM mytable1)
+                SELECT id FROM ids3
+            )
+            SELECT id FROM ids2
+        )
+        SELECT id FROM ids
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 'ids'
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
 });
