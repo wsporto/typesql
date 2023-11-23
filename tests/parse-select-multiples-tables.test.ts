@@ -867,4 +867,59 @@ describe('Test select with multiples tables', () => {
 
     })
 
+    it('multipleRowsResult=false to LIMIT 1', async () => {
+
+        //mytable1 (id, value); mytable2 (id, name, descr)
+        const sql = `
+        SELECT * 
+        FROM mytable1 t1 
+        INNER JOIN mytable2 t2 on t2.id = t1.id
+        LIMIT 1
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: false,
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 't1'
+                },
+                {
+                    columnName: 'value',
+                    type: 'int',
+                    notNull: false,
+                    table: 't1'
+                },
+                {
+                    columnName: 'id', //TODO - rename fields
+                    type: 'int',
+                    notNull: true,
+                    table: 't2'
+                },
+                {
+                    columnName: 'name',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 't2'
+                },
+                {
+                    columnName: 'descr',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 't2'
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
 });

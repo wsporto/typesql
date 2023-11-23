@@ -1746,6 +1746,9 @@ function filterUsingFields(joinedFields: ColumnDef[], usingFields: string[]) {
 }
 
 export function isMultipleRowResult(selectStatement: SelectStatementContext, fromColumns: ColumnDef[]) {
+    if (isLimitOne(selectStatement)) {
+        return false;
+    }
     const querySpecs = getAllQuerySpecificationsFromSelectStatement(selectStatement);
     if (querySpecs.length == 1) { //UNION queries are multipleRowsResult = true
         const fromClause = querySpecs[0].fromClause();
@@ -1776,15 +1779,18 @@ export function isMultipleRowResult(selectStatement: SelectStatementContext, fro
         }
     }
 
+    return true;
+}
+
+function isLimitOne(selectStatement: SelectStatementContext) {
     const limitOptions = getLimitOptions(selectStatement);
     if (limitOptions.length == 1 && limitOptions[0].text == '1') {
-        return false;
+        return true;
     }
     if (limitOptions.length == 2 && limitOptions[1].text == '1') {
-        return false;
+        return true;
     }
-
-    return true;
+    return false;
 }
 
 export function verifyMultipleResult2(exprContext: ExprContext, fromColumns: ColumnDef[]): boolean {
