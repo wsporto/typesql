@@ -1,7 +1,7 @@
 import { ColumnSchema } from "./mysql-query-analyzer/types";
 import CodeBlockWriter from "code-block-writer";
 
-export function generateSelectStatment(tableName: string, columns: ColumnSchema[],) {
+export function generateSelectStatement(tableName: string, columns: ColumnSchema[],) {
     const keys = columns.filter(col => col.columnKey = 'PRI');
     if (keys.length == 0) {
         keys.push(...columns.filter(col => col.columnKey == 'UNI'));
@@ -26,7 +26,7 @@ export function generateSelectStatment(tableName: string, columns: ColumnSchema[
     return writer.toString();
 }
 
-export function generateInsertStatment(tableName: string, dbSchema: ColumnSchema[],) {
+export function generateInsertStatement(tableName: string, dbSchema: ColumnSchema[],) {
     const columns = dbSchema.filter(col => !col.autoincrement);
 
     const writer = new CodeBlockWriter();
@@ -52,7 +52,7 @@ export function generateInsertStatment(tableName: string, dbSchema: ColumnSchema
     return writer.toString();
 }
 
-export function generateUpdateStatment(tableName: string, dbSchema: ColumnSchema[],) {
+export function generateUpdateStatement(tableName: string, dbSchema: ColumnSchema[],) {
     const columns = dbSchema.filter(col => !col.autoincrement);
     const keys = dbSchema.filter(col => col.columnKey = 'PRI');
     if (keys.length == 0) {
@@ -76,7 +76,7 @@ export function generateUpdateStatment(tableName: string, dbSchema: ColumnSchema
     return writer.toString();
 }
 
-export function generateDeleteStatment(tableName: string, dbSchema: ColumnSchema[],) {
+export function generateDeleteStatement(tableName: string, dbSchema: ColumnSchema[],) {
     const keys = dbSchema.filter(col => col.columnKey = 'PRI');
     if (keys.length == 0) {
         keys.push(...dbSchema.filter(col => col.columnKey == 'UNI'));

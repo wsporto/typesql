@@ -5,7 +5,7 @@ import chokidar from "chokidar";
 import yargs from "yargs";
 import { generateTsFile, writeFile } from "./code-generator";
 import { DbClient } from "./queryExectutor";
-import { generateInsertStatment, generateUpdateStatment, generateDeleteStatment, generateSelectStatment } from "./sql-generator";
+import { generateInsertStatement, generateUpdateStatement, generateDeleteStatement, generateSelectStatement } from "./sql-generator";
 import { ColumnSchema, Table } from "./mysql-query-analyzer/types";
 import { TypeSqlConfig, SqlGenOption } from "./types";
 import { Either, isLeft, left } from "fp-ts/lib/Either";
@@ -208,16 +208,16 @@ function generateSql(stmtType: SqlGenOption, tableName: string, columns: ColumnS
     switch (stmtType) {
         case 'select':
         case 's':
-            return generateSelectStatment(tableName, columns);
+            return generateSelectStatement(tableName, columns);
         case 'insert':
         case 'i':
-            return generateInsertStatment(tableName, columns);
+            return generateInsertStatement(tableName, columns);
         case 'update':
         case 'u':
-            return generateUpdateStatment(tableName, columns);
+            return generateUpdateStatement(tableName, columns);
         case 'delete':
         case 'd':
-            return generateDeleteStatment(tableName, columns);
+            return generateDeleteStatement(tableName, columns);
         default:
             const exhaustive: never = stmtType;
             return exhaustive;
