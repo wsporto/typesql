@@ -69,55 +69,48 @@ export function traverseQueryContext(queryContext: QueryContext, dbSchema: Colum
 function traverseSelectStatement(selectStatement: SelectStatementContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], namedParameters: string[]): SelectStatementResult {
     const queryExpression = selectStatement.queryExpression();
     if (queryExpression) {
-        const withClause = queryExpression.withClause();
-        const withSchema: ColumnDef[] = [];
-        if (withClause) {
-            traverseWithClause(withClause, constraints, parameters, dbSchema, withSchema);
+        const result = traverseQueryExpression(queryExpression, constraints, parameters, dbSchema, [], []);
+
+        const orderByParameters = extractOrderByParameters(selectStatement);
+        const limitParameters = extractLimitParameters(selectStatement);
+
+        const paramInference = inferParamNullabilityQueryExpression(queryExpression);
+
+        const allParameters = parameters
+            .map((param, index) => {
+                const param2: TypeAndNullInfer = {
+                    name: param.name,
+                    type: param,
+                    notNull: paramInference[index],
+                    table: ''
+                }
+                return param2;
+            });
+        const paramIndexes = getParameterIndexes(namedParameters.slice(0, allParameters.length)); //for [a, a, b, a] will return a: [0, 1, 3]; b: [2]
+        paramIndexes.forEach(paramIndex => {
+            getPairWise(paramIndex.indexes, (cur, next) => { //for [0, 1, 3] will return [0, 1], [1, 3]
+                constraints.push({
+                    expression: paramIndex.paramName,
+                    type1: allParameters[cur].type,
+                    type2: allParameters[next].type
+                })
+            });
+        })
+
+        const isMultiRow = isMultipleRowResult(selectStatement, result.fromColumns);
+        const traverseResult: SelectStatementResult = {
+            type: 'Select',
+            constraints,
+            columns: result.columns,
+            parameters: allParameters,
+            limitParameters,
+            isMultiRow
+        };
+        const orderByColumns = orderByParameters.length > 0 ? getOrderByColumns(result.fromColumns, result.columns) : undefined;
+        if (orderByColumns) {
+            traverseResult.orderByColumns = orderByColumns;
         }
-        const queryExpressionBody = queryExpression.queryExpressionBody();
-        if (queryExpressionBody) {
-            const result = traverseQueryExpressionBody(queryExpressionBody, constraints, parameters, dbSchema, withSchema, []);
-            const orderByParameters = extractOrderByParameters(selectStatement);
-            const limitParameters = extractLimitParameters(selectStatement);
-
-            const paramInference = inferParamNullabilityQueryExpression(queryExpression);
-
-            const allParameters = parameters
-                .map((param, index) => {
-                    const param2: TypeAndNullInfer = {
-                        name: param.name,
-                        type: param,
-                        notNull: paramInference[index],
-                        table: ''
-                    }
-                    return param2;
-                });
-            const paramIndexes = getParameterIndexes(namedParameters.slice(0, allParameters.length)); //for [a, a, b, a] will return a: [0, 1, 3]; b: [2]
-            paramIndexes.forEach(paramIndex => {
-                getPairWise(paramIndex.indexes, (cur, next) => { //for [0, 1, 3] will return [0, 1], [1, 3]
-                    constraints.push({
-                        expression: paramIndex.paramName,
-                        type1: allParameters[cur].type,
-                        type2: allParameters[next].type
-                    })
-                });
-            })
-
-            const isMultiRow = isMultipleRowResult(selectStatement, result.fromColumns);
-            const traverseResult: SelectStatementResult = {
-                type: 'Select',
-                constraints,
-                columns: result.columns,
-                parameters: allParameters,
-                limitParameters,
-                isMultiRow
-            };
-            const orderByColumns = orderByParameters.length > 0 ? getOrderByColumns(result.fromColumns, result.columns) : undefined;
-            if (orderByColumns) {
-                traverseResult.orderByColumns = orderByColumns;
-            }
-            return traverseResult;
-        }
+        return traverseResult;
     }
     throw Error('traverseSelectStatement - not supported: ' + selectStatement.text);
 }
