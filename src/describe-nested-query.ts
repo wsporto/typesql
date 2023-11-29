@@ -33,6 +33,7 @@ export type RelationField = {
 export type TableName = {
     name: string;
     alias: string | '';
+    asSymbol: boolean;
     isJunctionTable: boolean;
 }
 
@@ -129,7 +130,7 @@ function getRelations(tableRef: TableReferenceContext, dbSchema: ColumnSchema[],
             .map(relation => {
                 const field: ModelColumn = {
                     type: 'relation',
-                    name: relation.isJunctionTable ? relation.junctionChildTable : relation.child.name,
+                    name: getRelationName(relation),
                     cardinality: relation.cardinality,
                 }
                 return field;
@@ -146,7 +147,7 @@ function getRelations(tableRef: TableReferenceContext, dbSchema: ColumnSchema[],
                 return f;
             });
         const relationInfo: RelationInfo = {
-            name: r.name,
+            name: r.asSymbol ? r.alias : r.name,
             // tableName: r.name,
             // tableAlias: r.alias,
             groupKeyIndex: columns.findIndex(col => col.table == r.name || col.table == r.alias),
@@ -155,6 +156,16 @@ function getRelations(tableRef: TableReferenceContext, dbSchema: ColumnSchema[],
         return relationInfo;
     })
     return result;
+}
+
+function getRelationName(relation: Relation) {
+    if (relation.isJunctionTable) {
+        return relation.junctionChildTable;
+    }
+    if (relation.child.asSymbol) {
+        return relation.child.alias;
+    }
+    return relation.child.name;
 }
 
 function getParentRelations(onExpr: ExprContext, currentRelation: TableName, parentList: TableName[]) {
@@ -192,10 +203,12 @@ function getTableInfoFromTableFactor(tableFactor: TableFactorContext): TableName
     if (singleTable) {
         const table = singleTable.tableRef().text;
         const tableAlias = singleTable?.tableAlias()?.identifier().text || '';
+        const asSymbol = singleTable?.tableAlias()?.AS_SYMBOL() != null;
         const tableName = splitName(table);
         const model: TableName = {
             name: tableName.name,
             alias: tableAlias,
+            asSymbol,
             isJunctionTable: false //will be checked later
         }
         return model;
