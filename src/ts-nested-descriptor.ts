@@ -79,7 +79,7 @@ function mapModelColumnToTsRelation(modelColumn: RelationField): TsRelationField
         list: modelColumn.cardinality == 'many' ? true : false,
         name: modelColumn.name,
         tsType: modelColumn.name + (modelColumn.cardinality == 'many' ? '[]' : ''),
-        notNull: true
+        notNull: modelColumn.notNull
     }
     return field;
 }

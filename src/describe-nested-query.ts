@@ -28,6 +28,7 @@ export type RelationField = {
     type: 'relation',
     name: string;
     cardinality: Cardinality;
+    notNull: boolean;
 }
 
 export type TableName = {
@@ -128,10 +129,16 @@ function getRelations(tableRef: TableReferenceContext, dbSchema: ColumnSchema[],
     const result = parentList.filter(r => r.isJunctionTable == false).map(r => {
         const relationFields = relations.filter(r2 => r2.parent.name == r.name || (r.alias != '' && r2.parent.alias == r.alias))
             .map(relation => {
+                //relation many always have not null array (possible empty)
+                const nullable = relation.cardinality == 'one' &&
+                    columns.some(c => (c.table == relation.child.name || c.table == relation.child.alias) && c.notNull == false);
+
                 const field: ModelColumn = {
                     type: 'relation',
                     name: getRelationName(relation),
                     cardinality: relation.cardinality,
+                    notNull: !nullable
+
                 }
                 return field;
             })

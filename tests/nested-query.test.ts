@@ -53,7 +53,8 @@ describe('nested-query', () => {
                         {
                             type: 'relation',
                             name: 'posts',
-                            cardinality: 'many'
+                            cardinality: 'many',
+                            notNull: true
                         }
                     ]
                 },
@@ -123,7 +124,8 @@ describe('nested-query', () => {
                         {
                             type: 'relation',
                             name: 'posts',
-                            cardinality: 'many'
+                            cardinality: 'many',
+                            notNull: true
                         }
                     ]
                 },
@@ -208,7 +210,8 @@ describe('nested-query', () => {
                         {
                             type: 'relation',
                             name: 'users',
-                            cardinality: 'one'
+                            cardinality: 'one',
+                            notNull: true
                         }
                     ]
                 },
@@ -285,7 +288,8 @@ describe('nested-query', () => {
                         {
                             type: 'relation',
                             name: 'posts',
-                            cardinality: 'many'
+                            cardinality: 'many',
+                            notNull: true
                         }
                     ]
                 },
@@ -311,7 +315,8 @@ describe('nested-query', () => {
                         {
                             type: 'relation',
                             name: 'comments',
-                            cardinality: 'many'
+                            cardinality: 'many',
+                            notNull: true
                         }
                     ]
                 },
@@ -385,12 +390,14 @@ describe('nested-query', () => {
                         {
                             type: 'relation',
                             name: 'posts',
-                            cardinality: 'many'
+                            cardinality: 'many',
+                            notNull: true
                         },
                         {
                             type: 'relation',
                             name: 'roles',
-                            cardinality: 'many'
+                            cardinality: 'many',
+                            notNull: true
                         }
                     ]
                 },
@@ -486,12 +493,14 @@ describe('nested-query', () => {
                         {
                             type: 'relation',
                             name: 'posts',
-                            cardinality: 'many'
+                            cardinality: 'many',
+                            notNull: true
                         },
                         {
                             type: 'relation',
                             name: 'roles',
-                            cardinality: 'many'
+                            cardinality: 'many',
+                            notNull: true
                         }
 
                     ]
@@ -519,7 +528,8 @@ describe('nested-query', () => {
                         {
                             type: 'relation',
                             name: "comments",
-                            cardinality: 'many'
+                            cardinality: 'many',
+                            notNull: true
                         }
                     ]
                 },
@@ -613,11 +623,13 @@ describe('nested-query', () => {
                             type: "relation",
                             name: "users",
                             cardinality: "many",
+                            notNull: true
                         },
                         {
                             type: "relation",
                             name: "questions",
                             cardinality: "many",
+                            notNull: true
                         },
                     ],
                 },
@@ -639,6 +651,7 @@ describe('nested-query', () => {
                             type: "relation",
                             name: "answers",
                             cardinality: "many",
+                            notNull: true
                         },
                     ],
                 },
@@ -660,6 +673,7 @@ describe('nested-query', () => {
                             type: "relation",
                             name: "answers",
                             cardinality: "many",
+                            notNull: true
                         },
                     ],
                 },
@@ -720,6 +734,7 @@ describe('nested-query', () => {
                             type: "relation",
                             name: "posts",
                             cardinality: "many",
+                            notNull: true
                         }
                     ],
                 },
@@ -796,6 +811,7 @@ describe('nested-query', () => {
                             type: "relation",
                             name: "authors",
                             cardinality: "many",
+                            notNull: true
                         }
                     ],
                 },
@@ -840,7 +856,7 @@ describe('nested-query', () => {
             a1.*,
             a2.*
         FROM clients as c
-        LEFT JOIN addresses as a1 ON a1.id = c.primaryAddress
+        INNER JOIN addresses as a1 ON a1.id = c.primaryAddress
         LEFT JOIN addresses as a2 ON a2.id = c.secondaryAddress
         WHERE c.id = :clientId
         `
@@ -861,11 +877,13 @@ describe('nested-query', () => {
                             type: "relation",
                             name: "a1",
                             cardinality: "one",
+                            notNull: true,
                         },
                         {
                             type: "relation",
                             name: "a2",
                             cardinality: "one",
+                            notNull: false
                         }
                     ],
                 },
