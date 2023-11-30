@@ -912,5 +912,139 @@ const groupBy = <T, Q>(array: T[], predicate: (value: T, index: number, array: T
 
         assert.deepStrictEqual(actual, expected);
     })
+
+    it('generate nested result with many to many relation', async () => {
+        const queryName = 'select-clients';
+        const sql = `-- @nested
+SELECT
+    c.id,
+    a1.*,
+    a2.*
+FROM clients as c
+INNER JOIN addresses as a1 ON a1.id = c.primaryAddress
+LEFT JOIN addresses as a2 ON a2.id = c.secondaryAddress
+WHERE c.id = :clientId`
+
+        const actual = await generateTsFileFromContent(client, 'select-clients.sql', queryName, sql, 'node');
+        const expected = `import type { Connection } from 'mysql2/promise';
+
+export type SelectClientsParams = {
+    clientId: number;
+}
+
+export type SelectClientsResult = {
+    id: number;
+    id_2: number;
+    address: string;
+    id_3: number;
+    address_2?: string;
+}
+
+export async function selectClients(connection: Connection, params: SelectClientsParams) : Promise<SelectClientsResult[]> {
+    const sql = \`
+    -- @nested
+    SELECT
+        c.id,
+        a1.*,
+        a2.*
+    FROM clients as c
+    INNER JOIN addresses as a1 ON a1.id = c.primaryAddress
+    LEFT JOIN addresses as a2 ON a2.id = c.secondaryAddress
+    WHERE c.id = ?
+    \`
+
+    return connection.query({sql, rowsAsArray: true}, [params.clientId])
+        .then(res => res[0] as any[])
+        .then(res => res.map(data => mapArrayToSelectClientsResult(data)));
+}
+
+function mapArrayToSelectClientsResult(data: any) {
+    const result: SelectClientsResult = {
+        id: data[0],
+        id_2: data[1],
+        address: data[2],
+        id_3: data[3],
+        address_2: data[4]
+    }
+    return result;
+}
+
+export type SelectClientsNestedC = {
+    id: number;
+    a1: SelectClientsNestedA1;
+    a2?: SelectClientsNestedA2;
+}
+
+export type SelectClientsNestedA1 = {
+    id: number;
+    address: string;
+}
+
+export type SelectClientsNestedA2 = {
+    id: number;
+    address: string;
+}
+
+export async function selectClientsNested(connection: Connection, params: SelectClientsParams): Promise<SelectClientsNestedC[]> {
+    const selectResult = await selectClients(connection, params);
+    if (selectResult.length == 0) {
+        return [];
+    }
+    return collectSelectClientsNestedC(selectResult);
+}
+
+function collectSelectClientsNestedC(selectResult: SelectClientsResult[]): SelectClientsNestedC[] {
+    const grouped = groupBy(selectResult.filter(r => r.id != null), r => r.id);
+    return [...grouped.values()].map(r => mapToSelectClientsNestedC(r))
+}
+
+function mapToSelectClientsNestedC(selectResult: SelectClientsResult[]): SelectClientsNestedC {
+    const firstRow = selectResult[0];
+    const result: SelectClientsNestedC = {
+        id: firstRow.id!,
+        a1: collectSelectClientsNestedA1(selectResult)[0],
+        a2: collectSelectClientsNestedA2(selectResult)[0]
+    }
+    return result;
+}
+
+function collectSelectClientsNestedA1(selectResult: SelectClientsResult[]): SelectClientsNestedA1[] {
+    const grouped = groupBy(selectResult.filter(r => r.id_2 != null), r => r.id_2);
+    return [...grouped.values()].map(r => mapToSelectClientsNestedA1(r))
+}
+
+function mapToSelectClientsNestedA1(selectResult: SelectClientsResult[]): SelectClientsNestedA1 {
+    const firstRow = selectResult[0];
+    const result: SelectClientsNestedA1 = {
+        id: firstRow.id_2!,
+        address: firstRow.address!
+    }
+    return result;
+}
+
+function collectSelectClientsNestedA2(selectResult: SelectClientsResult[]): SelectClientsNestedA2[] {
+    const grouped = groupBy(selectResult.filter(r => r.id_3 != null), r => r.id_3);
+    return [...grouped.values()].map(r => mapToSelectClientsNestedA2(r))
+}
+
+function mapToSelectClientsNestedA2(selectResult: SelectClientsResult[]): SelectClientsNestedA2 {
+    const firstRow = selectResult[0];
+    const result: SelectClientsNestedA2 = {
+        id: firstRow.id_3!,
+        address: firstRow.address_2!
+    }
+    return result;
+}
+
+const groupBy = <T, Q>(array: T[], predicate: (value: T, index: number, array: T[]) => Q) => {
+    return array.reduce((map, value, index, array) => {
+        const key = predicate(value, index, array);
+        map.get(key)?.push(value) ?? map.set(key, [value]);
+        return map;
+    }, new Map<Q, T[]>());
+}`
+
+        assert.deepStrictEqual(actual, expected);
+    })
 })
 

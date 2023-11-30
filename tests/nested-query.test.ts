@@ -53,7 +53,8 @@ describe('nested-query', () => {
                         {
                             type: 'relation',
                             name: 'posts',
-                            cardinality: 'many'
+                            cardinality: 'many',
+                            notNull: true
                         }
                     ]
                 },
@@ -123,7 +124,8 @@ describe('nested-query', () => {
                         {
                             type: 'relation',
                             name: 'posts',
-                            cardinality: 'many'
+                            cardinality: 'many',
+                            notNull: true
                         }
                     ]
                 },
@@ -208,7 +210,8 @@ describe('nested-query', () => {
                         {
                             type: 'relation',
                             name: 'users',
-                            cardinality: 'one'
+                            cardinality: 'one',
+                            notNull: true
                         }
                     ]
                 },
@@ -285,7 +288,8 @@ describe('nested-query', () => {
                         {
                             type: 'relation',
                             name: 'posts',
-                            cardinality: 'many'
+                            cardinality: 'many',
+                            notNull: true
                         }
                     ]
                 },
@@ -311,7 +315,8 @@ describe('nested-query', () => {
                         {
                             type: 'relation',
                             name: 'comments',
-                            cardinality: 'many'
+                            cardinality: 'many',
+                            notNull: true
                         }
                     ]
                 },
@@ -385,12 +390,14 @@ describe('nested-query', () => {
                         {
                             type: 'relation',
                             name: 'posts',
-                            cardinality: 'many'
+                            cardinality: 'many',
+                            notNull: true
                         },
                         {
                             type: 'relation',
                             name: 'roles',
-                            cardinality: 'many'
+                            cardinality: 'many',
+                            notNull: true
                         }
                     ]
                 },
@@ -486,12 +493,14 @@ describe('nested-query', () => {
                         {
                             type: 'relation',
                             name: 'posts',
-                            cardinality: 'many'
+                            cardinality: 'many',
+                            notNull: true
                         },
                         {
                             type: 'relation',
                             name: 'roles',
-                            cardinality: 'many'
+                            cardinality: 'many',
+                            notNull: true
                         }
 
                     ]
@@ -519,7 +528,8 @@ describe('nested-query', () => {
                         {
                             type: 'relation',
                             name: "comments",
-                            cardinality: 'many'
+                            cardinality: 'many',
+                            notNull: true
                         }
                     ]
                 },
@@ -613,11 +623,13 @@ describe('nested-query', () => {
                             type: "relation",
                             name: "users",
                             cardinality: "many",
+                            notNull: true
                         },
                         {
                             type: "relation",
                             name: "questions",
                             cardinality: "many",
+                            notNull: true
                         },
                     ],
                 },
@@ -639,6 +651,7 @@ describe('nested-query', () => {
                             type: "relation",
                             name: "answers",
                             cardinality: "many",
+                            notNull: true
                         },
                     ],
                 },
@@ -660,6 +673,7 @@ describe('nested-query', () => {
                             type: "relation",
                             name: "answers",
                             cardinality: "many",
+                            notNull: true
                         },
                     ],
                 },
@@ -720,6 +734,7 @@ describe('nested-query', () => {
                             type: "relation",
                             name: "posts",
                             cardinality: "many",
+                            notNull: true
                         }
                     ],
                 },
@@ -796,6 +811,7 @@ describe('nested-query', () => {
                             type: "relation",
                             name: "authors",
                             cardinality: "many",
+                            notNull: true
                         }
                     ],
                 },
@@ -819,6 +835,89 @@ describe('nested-query', () => {
                             index: 8,
                         }
                     ],
+                }
+            ],
+        }
+        if (isLeft(dbSchema)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        const actual = describeNestedQuery(sql, dbSchema.right);
+
+        assert.deepStrictEqual(actual, expectedModel);
+
+    })
+
+    it('self relation - clients with primaryAddress and secondaryAddress', async () => {
+        const dbSchema = await client.loadDbSchema();
+
+        const sql = `
+        SELECT 
+            c.id,
+            a1.*,
+            a2.*
+        FROM clients as c
+        INNER JOIN addresses as a1 ON a1.id = c.primaryAddress
+        LEFT JOIN addresses as a2 ON a2.id = c.secondaryAddress
+        WHERE c.id = :clientId
+        `
+
+        //[id(0),id(1),address(2),id(3),address(3)]
+        const expectedModel: NestedResultInfo = {
+            relations: [
+                {
+                    name: "c",
+                    groupKeyIndex: 0,
+                    columns: [
+                        {
+                            type: "field",
+                            name: "id",
+                            index: 0,
+                        },
+                        {
+                            type: "relation",
+                            name: "a1",
+                            cardinality: "one",
+                            notNull: true,
+                        },
+                        {
+                            type: "relation",
+                            name: "a2",
+                            cardinality: "one",
+                            notNull: false
+                        }
+                    ],
+                },
+                {
+                    name: 'a1',
+                    groupKeyIndex: 1,
+                    columns: [
+                        {
+                            type: "field",
+                            name: "id",
+                            index: 1,
+                        },
+                        {
+                            type: "field",
+                            name: "address",
+                            index: 2,
+                        },
+                    ]
+                },
+                {
+                    name: 'a2',
+                    groupKeyIndex: 3,
+                    columns: [
+                        {
+                            type: "field",
+                            name: "id",
+                            index: 3,
+                        },
+                        {
+                            type: "field",
+                            name: "address",
+                            index: 4,
+                        },
+                    ]
                 }
             ],
         }

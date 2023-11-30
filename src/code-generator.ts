@@ -130,7 +130,8 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
                     }
                     if (field.type == 'relation') {
                         const nestedRelationType = generateRelationType(capitalizedName, field.tsType);
-                        writer.writeLine(`${field.name}: ${nestedRelationType};`);
+                        const nullableOperator = field.notNull ? '' : '?'
+                        writer.writeLine(`${field.name}${nullableOperator}: ${nestedRelationType};`);
                     }
                 })
             })
