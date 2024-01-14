@@ -124,9 +124,10 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
             const relationType = generateRelationType(capitalizedName, relation.name);
             writer.blankLine();
             writer.write(`export type ${relationType} = `).block(() => {
-                relation.fields.forEach(field => {
+                const uniqueNameFields = renameInvalidNames(relation.fields.map(f => f.name));
+                relation.fields.forEach((field, index) => {
                     if (field.type == 'field') {
-                        writer.writeLine(`${field.name}: ${field.tsType};`);
+                        writer.writeLine(`${uniqueNameFields[index]}: ${field.tsType};`);
                     }
                     if (field.type == 'relation') {
                         const nestedRelationType = generateRelationType(capitalizedName, field.tsType);
@@ -161,11 +162,12 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
             writer.write(`function ${mapFunctionName}(selectResult: ${resultTypeName}[]): ${relationType}`).block(() => {
                 writer.writeLine(`const firstRow = selectResult[0];`)
                 writer.write(`const result: ${relationType} = `).block(() => {
+                    const uniqueNameFields = renameInvalidNames(relation.fields.map(f => f.name));
                     relation.fields.forEach((field, index) => {
                         const separator = commaSeparator(relation.fields.length, index);
                         if (field.type == 'field') {
-                            const fieldName = index == 0 ? tsDescriptor.columns[relation.groupKeyIndex].name : tsDescriptor.columns[field.index].name;
-                            writer.writeLine(`${field.name}: firstRow.${fieldName}!` + separator);
+                            const fieldName = tsDescriptor.columns[field.index].name;
+                            writer.writeLine(`${uniqueNameFields[index]}: firstRow.${fieldName}!` + separator);
                         }
                         if (field.type == 'relation') {
                             const nestedRelationType = generateRelationType(capitalizedName, field.name);

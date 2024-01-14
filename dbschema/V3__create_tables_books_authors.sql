@@ -16,6 +16,7 @@ CREATE TABLE books_authors(
     id SERIAL,
     book_id BIGINT UNSIGNED NOT NULL,
     author_id BIGINT UNSIGNED NOT NULL,
+    author_ordinal INT NOT NULL,
     PRIMARY KEY `pk_id`(`id`),
     CONSTRAINT `fk_books_authors_books`
         FOREIGN KEY (`book_id`)

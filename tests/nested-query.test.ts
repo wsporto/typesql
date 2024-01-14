@@ -639,6 +639,11 @@ describe('nested-query', () => {
                     columns: [
                         {
                             type: "field",
+                            name: "participantId",
+                            index: 2
+                        },
+                        {
+                            type: "field",
                             name: "userId",
                             index: 3
                         },
@@ -817,22 +822,42 @@ describe('nested-query', () => {
                 },
                 {
                     name: "authors",
-                    groupKeyIndex: 6,
+                    groupKeyIndex: 7,
                     columns: [
                         {
                             type: "field",
                             name: "id",
+                            index: 3,
+                        },
+                        {
+                            type: "field",
+                            name: "book_id",
+                            index: 4,
+                        },
+                        {
+                            type: "field",
+                            name: "author_id",
+                            index: 5,
+                        },
+                        {
+                            type: "field",
+                            name: "author_ordinal",
                             index: 6,
                         },
                         {
                             type: "field",
-                            name: "fullName",
+                            name: "id",
                             index: 7,
                         },
                         {
                             type: "field",
-                            name: "shortName",
+                            name: "fullName",
                             index: 8,
+                        },
+                        {
+                            type: "field",
+                            name: "shortName",
+                            index: 9,
                         }
                     ],
                 }

@@ -126,42 +126,50 @@ function getRelations(tableRef: TableReferenceContext, dbSchema: ColumnSchema[],
         }
     }
 
-    const result = parentList.filter(r => r.isJunctionTable == false).map(r => {
-        const relationFields = relations.filter(r2 => r2.parent.name == r.name || (r.alias != '' && r2.parent.alias == r.alias))
-            .map(relation => {
-                //relation many always have not null array (possible empty)
-                const nullable = relation.cardinality == 'one' &&
-                    columns.some(c => (c.table == relation.child.name || c.table == relation.child.alias) && c.notNull == false);
+    const result = parentList
+        .map((r, index) => ({ r, index })) //keep index
+        .filter(({ r }) => r.isJunctionTable == false)
+        .map(({ r, index }) => {
+            const relationFields = relations.filter(r2 => r2.parent.name == r.name || (r.alias != '' && r2.parent.alias == r.alias))
+                .map((relation) => {
+                    //relation many always have not null array (possible empty)
+                    const nullable = relation.cardinality == 'one' &&
+                        columns.some(c => (c.table == relation.child.name || c.table == relation.child.alias) && c.notNull == false);
 
-                const field: ModelColumn = {
-                    type: 'relation',
-                    name: getRelationName(relation),
-                    cardinality: relation.cardinality,
-                    notNull: !nullable
+                    const field: ModelColumn = {
+                        type: 'relation',
+                        name: getRelationName(relation),
+                        cardinality: relation.cardinality,
+                        notNull: !nullable
 
-                }
-                return field;
-            })
-        const fields: ModelColumn[] = columns
-            .map((col, index) => ({ col, index })) //keep index
-            .filter(({ col }) => col.table == r.name || col.table == r.alias)
-            .map(({ col, index }) => {
-                const f: ModelColumn = {
-                    type: 'field',
-                    name: col.columnName,
-                    index: index
-                }
-                return f;
-            });
-        const relationInfo: RelationInfo = {
-            name: r.asSymbol ? r.alias : r.name,
-            // tableName: r.name,
-            // tableAlias: r.alias,
-            groupKeyIndex: columns.findIndex(col => col.table == r.name || col.table == r.alias),
-            columns: fields.concat(relationFields)
-        }
-        return relationInfo;
-    })
+                    }
+                    return field;
+                });
+
+            const previousRelation = parentList[index - 1];
+            const junctionRelation = previousRelation && previousRelation.isJunctionTable ? previousRelation : undefined;
+
+            const fields: ModelColumn[] = columns
+                .map((col, index) => ({ col, index })) //keep index
+                .filter(({ col }) => col.table == r.name || col.table == r.alias || (junctionRelation != null && (col.table == junctionRelation?.name || col.table == junctionRelation?.alias)))
+                .map(({ col, index }) => {
+                    const f: ModelColumn = {
+                        type: 'field',
+                        name: col.columnName,
+                        index: index
+                    }
+                    return f;
+                });
+
+            const relationInfo: RelationInfo = {
+                name: r.asSymbol ? r.alias : r.name,
+                // tableName: r.name,
+                // tableAlias: r.alias,
+                groupKeyIndex: columns.findIndex(col => col.table == r.name || col.table == r.alias),
+                columns: fields.concat(relationFields)
+            }
+            return relationInfo;
+        })
     return result;
 }
 

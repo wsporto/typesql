@@ -861,6 +861,7 @@ export type SelectAnswersNestedSurveys = {
 }
 
 export type SelectAnswersNestedUsers = {
+    participantId: number;
     userId: number;
     userName: string;
 }
@@ -896,6 +897,7 @@ function collectSelectAnswersNestedUsers(selectResult: SelectAnswersResult[]): S
 function mapToSelectAnswersNestedUsers(selectResult: SelectAnswersResult[]): SelectAnswersNestedUsers {
     const firstRow = selectResult[0];
     const result: SelectAnswersNestedUsers = {
+        participantId: firstRow.participantId!,
         userId: firstRow.userId!,
         userName: firstRow.userName!
     }
@@ -1032,6 +1034,131 @@ function mapToSelectClientsNestedA2(selectResult: SelectClientsResult[]): Select
     const result: SelectClientsNestedA2 = {
         id: firstRow.id_3!,
         address: firstRow.address_2!
+    }
+    return result;
+}
+
+const groupBy = <T, Q>(array: T[], predicate: (value: T, index: number, array: T[]) => Q) => {
+    return array.reduce((map, value, index, array) => {
+        const key = predicate(value, index, array);
+        map.get(key)?.push(value) ?? map.set(key, [value]);
+        return map;
+    }, new Map<Q, T[]>());
+}`
+
+        assert.deepStrictEqual(actual, expected);
+    })
+
+    it('generate nested result with many to many relation - duplicated field name', async () => {
+        const queryName = 'select-books';
+        const sql = `-- @nested
+SELECT *
+FROM books b
+INNER JOIN books_authors ba on ba.book_id = b.id
+INNER JOIN authors a on a.id = ba.author_id`
+
+        const actual = await generateTsFileFromContent(client, 'select-clients.sql', queryName, sql, 'node');
+        const expected = `import type { Connection } from 'mysql2/promise';
+
+export type SelectBooksResult = {
+    id: number;
+    title: string;
+    isbn: string;
+    id_2: number;
+    book_id: number;
+    author_id: number;
+    author_ordinal: number;
+    id_3: number;
+    fullName: string;
+    shortName?: string;
+}
+
+export async function selectBooks(connection: Connection) : Promise<SelectBooksResult[]> {
+    const sql = \`
+    -- @nested
+    SELECT *
+    FROM books b
+    INNER JOIN books_authors ba on ba.book_id = b.id
+    INNER JOIN authors a on a.id = ba.author_id
+    \`
+
+    return connection.query({sql, rowsAsArray: true})
+        .then(res => res[0] as any[])
+        .then(res => res.map(data => mapArrayToSelectBooksResult(data)));
+}
+
+function mapArrayToSelectBooksResult(data: any) {
+    const result: SelectBooksResult = {
+        id: data[0],
+        title: data[1],
+        isbn: data[2],
+        id_2: data[3],
+        book_id: data[4],
+        author_id: data[5],
+        author_ordinal: data[6],
+        id_3: data[7],
+        fullName: data[8],
+        shortName: data[9]
+    }
+    return result;
+}
+
+export type SelectBooksNestedBooks = {
+    id: number;
+    title: string;
+    isbn: string;
+    authors: SelectBooksNestedAuthors[];
+}
+
+export type SelectBooksNestedAuthors = {
+    id: number;
+    book_id: number;
+    author_id: number;
+    author_ordinal: number;
+    id_2: number;
+    fullName: string;
+    shortName: string;
+}
+
+export async function selectBooksNested(connection: Connection): Promise<SelectBooksNestedBooks[]> {
+    const selectResult = await selectBooks(connection);
+    if (selectResult.length == 0) {
+        return [];
+    }
+    return collectSelectBooksNestedBooks(selectResult);
+}
+
+function collectSelectBooksNestedBooks(selectResult: SelectBooksResult[]): SelectBooksNestedBooks[] {
+    const grouped = groupBy(selectResult.filter(r => r.id != null), r => r.id);
+    return [...grouped.values()].map(r => mapToSelectBooksNestedBooks(r))
+}
+
+function mapToSelectBooksNestedBooks(selectResult: SelectBooksResult[]): SelectBooksNestedBooks {
+    const firstRow = selectResult[0];
+    const result: SelectBooksNestedBooks = {
+        id: firstRow.id!,
+        title: firstRow.title!,
+        isbn: firstRow.isbn!,
+        authors: collectSelectBooksNestedAuthors(selectResult)
+    }
+    return result;
+}
+
+function collectSelectBooksNestedAuthors(selectResult: SelectBooksResult[]): SelectBooksNestedAuthors[] {
+    const grouped = groupBy(selectResult.filter(r => r.id_3 != null), r => r.id_3);
+    return [...grouped.values()].map(r => mapToSelectBooksNestedAuthors(r))
+}
+
+function mapToSelectBooksNestedAuthors(selectResult: SelectBooksResult[]): SelectBooksNestedAuthors {
+    const firstRow = selectResult[0];
+    const result: SelectBooksNestedAuthors = {
+        id: firstRow.id_2!,
+        book_id: firstRow.book_id!,
+        author_id: firstRow.author_id!,
+        author_ordinal: firstRow.author_ordinal!,
+        id_2: firstRow.id_3!,
+        fullName: firstRow.fullName!,
+        shortName: firstRow.shortName!
     }
     return result;
 }
