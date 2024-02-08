@@ -1331,6 +1331,35 @@ describe('Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('select id from mytable1 where 1 = 1', async () => {
+
+        const sql = `
+        select id from mytable1 where 1 = 1
+        `;
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 'mytable1'
+                }
+            ],
+            parameters: []
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: `, actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+
     it(`select enum_column from all_types where enum_column = 'medium' or 'short' = enum_column`, async () => {
 
         const sql = `
