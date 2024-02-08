@@ -1331,6 +1331,34 @@ describe('Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it(`select enum_column from all_types where enum_column = 'medium' or 'short' = enum_column`, async () => {
+
+        const sql = `
+        select enum_column from all_types where enum_column = 'medium' or 'short' = enum_column
+        `;
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'enum_column',
+                    type: `enum('x-small','small','medium','large','x-large')`,
+                    notNull: true,
+                    table: 'all_types'
+                }
+            ],
+            parameters: []
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: `, actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     //TODO - MOVE TO FUNCTIONS TESTS
     it('parse select without from clause', async () => {
         const sql = `

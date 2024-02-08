@@ -154,9 +154,11 @@ function getBestPossibleType(type1: InferType, type2: InferType, max?: boolean, 
         }
         return resultType;
     }
+    const newType1 = type1.startsWith('enum(') ? 'char' : type1;
+    const newType2 = type2.startsWith('enum(') ? 'char' : type2;
     const order2: InferType[] = ['char', 'varchar', 'tinytext', 'mediumtext', 'text', 'longtext'];
-    const indexStrType1 = order2.indexOf(type1);
-    const indexStrType2 = order2.indexOf(type2);
+    const indexStrType1 = order2.indexOf(newType1);
+    const indexStrType2 = order2.indexOf(newType2);
     if (indexStrType1 != -1 && indexStrType2 != -1) {
         const index = max ? Math.max(indexStrType1, indexStrType2) : Math.min(indexStrType1, indexStrType2);
         return order2[index];
