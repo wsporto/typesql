@@ -1388,6 +1388,38 @@ describe('Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('select :ano - year_column as result from all_types where int_column = 1', async () => {
+        const sql = `
+        select ? - year_column as result from all_types where int_column = 1
+        `;
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'result',
+                    type: `double`,
+                    notNull: false,
+                    table: ''
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'double',
+                    notNull: true
+                }
+            ]
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     //TODO - MOVE TO FUNCTIONS TESTS
     it('parse select without from clause', async () => {
         const sql = `

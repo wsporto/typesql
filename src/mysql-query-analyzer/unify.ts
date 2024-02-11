@@ -130,20 +130,16 @@ function getBestPossibleType(type1: InferType, type2: InferType, max?: boolean, 
         return coercionType == 'Coalesce' ? 'any' : type1;
     }
 
-    if (coercionType != 'Sum' && type1 === type2) return type1;
-    if (coercionType == 'Sum' && max && type1 == 'number' && type2 == 'int' || type1 == 'int' && type2 == 'number') return 'double';
+    if (coercionType == 'Sum' && isNumericType(type1) && isNumericType(type2) && (type1 == 'number' || type2 == 'number')) return 'double';
     if (coercionType == 'Sum' && max && type1 == 'int' && type2 == 'int') return 'bigint';
-    if (coercionType == 'Sum' && max && ((type1 == 'int' && type2 == 'double') || type1 == 'double' && type2 == 'int')) return 'double';
-    if (coercionType == 'Sum' && max && ((type1 == 'bigint' && type2 == 'double') || type1 == 'double' && type2 == 'bigint')) return 'double';
     if (coercionType == 'Sum' && max && type1 == 'date' && type2 == 'date') return 'bigint';
-    if (coercionType == 'Sum' && type1 == 'int' && type2 == 'int') return 'bigint';
 
     //enum
     if (type1 == type2) {
         return type1;
     }
 
-    const order: InferType[] = ['number', 'tinyint', 'smallint', 'int', 'bigint', 'decimal', 'float', 'double', 'varchar'];
+    const order: InferType[] = ['number', 'tinyint', 'year', 'smallint', 'int', 'bigint', 'decimal', 'float', 'double', 'varchar'];
     const indexType1 = order.indexOf(type1);
     const indexType2 = order.indexOf(type2);
     if (indexType1 != -1 && indexType2 != -1) {
@@ -208,6 +204,12 @@ export function substitute(type: Type, substitutions: SubstitutionHash, constrai
     }
 
     return type;
+}
+
+function isNumericType(type: InferType) {
+    const numericTypes = ['number', 'tinyint', 'year', 'smallint', 'int', 'bigint', 'decimal', 'float', 'double'];
+    return numericTypes.indexOf(type) >= 0;
+
 }
 
 export function unionTypeResult(type1: InferType, type2: InferType): InferType {
