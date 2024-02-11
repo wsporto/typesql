@@ -1488,6 +1488,25 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
             }
             return freshVar(simpleExpr.text, 'bigint');
         }
+
+        if (functionIdentifier === 'period_add' || functionIdentifier == 'period_diff') {
+            const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr();
+            if (udfExprList) {
+                udfExprList.forEach((inExpr) => {
+                    const expr = inExpr.expr();
+                    const exprType = traverseExpr(expr, constraints, parameters, dbSchema, withSchema, fromColumns);
+
+                    constraints.push({
+                        expression: expr.text,
+                        type1: exprType,
+                        type2: freshVar('bigint', 'bigint'),
+                        mostGeneralType: true
+                    })
+                })
+            }
+            return freshVar(simpleExpr.text, 'bigint');
+        }
+
         if (functionIdentifier === 'lpad' || functionIdentifier == 'rpad') {
             const varcharParam = freshVar('varchar', 'varchar');
             const intParam = freshVar('int', 'int');

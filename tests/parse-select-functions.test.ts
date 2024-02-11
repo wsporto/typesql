@@ -474,6 +474,57 @@ describe('Test parse select with functions', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('SELECT PERIOD_ADD(:p1, :p2) as add, PERIOD_DIFF(:p1, :p2) as diff', async () => {
+        const sql = `SELECT PERIOD_ADD(:p1, :p2) as add_result, PERIOD_DIFF(:p1, :p2) as diff_result`
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql: 'SELECT PERIOD_ADD(?, ?) as add_result, PERIOD_DIFF(?, ?) as diff_result',
+            queryType: 'Select',
+            multipleRowsResult: false,
+            columns: [
+                {
+                    columnName: 'add_result',
+                    type: 'bigint',
+                    notNull: true,
+                    table: ''
+                },
+                {
+                    columnName: 'diff_result',
+                    type: 'bigint',
+                    notNull: true,
+                    table: ''
+                }
+            ],
+            parameters: [
+                {
+                    name: 'p1',
+                    columnType: 'bigint',
+                    notNull: true
+                },
+                {
+                    name: 'p2',
+                    columnType: 'bigint',
+                    notNull: true
+                },
+                {
+                    name: 'p1',
+                    columnType: 'bigint',
+                    notNull: true
+                },
+                {
+                    name: 'p2',
+                    columnType: 'bigint',
+                    notNull: true
+                }
+            ]
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it(`SELECT IFNULL(NULL, 'yes') as result1, IFNULL('10', 'yes') as result2`, async () => {
         const sql = `
         SELECT IFNULL(NULL, 'yes') as result1, IFNULL('10', 'yes') as result2
