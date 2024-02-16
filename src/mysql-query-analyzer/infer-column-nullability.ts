@@ -122,7 +122,13 @@ function inferNotNullSimpleExpr(simpleExpr: SimpleExprContext, dbSchema: ColumnS
         const columnName = simpleExpr.columnRef().fieldIdentifier().text;
         const fieldName = splitName(columnName);
         const column = findColumn(fieldName, fromColumns);
-        return column.notNull || (whereClause && !possibleNullWhere(fieldName, whereClause) || false);
+        if (column.notNull) {
+            return true;
+        }
+        if (whereClause && !possibleNullWhere(fieldName, whereClause)) {
+            return true;
+        };
+        return false;
     }
     if (simpleExpr instanceof SimpleExprRuntimeFunctionContext) {
         return inferNotNullRuntimeFunctionCall(simpleExpr, dbSchema, fromColumns);
@@ -320,6 +326,9 @@ export function possibleNull(field: FieldName, exprContext: ExprContext): boolea
                 const expr = res.exprList().expr()[0];
                 return possibleNull(field, expr);
             }
+            if (res instanceof SimpleExprSubQueryContext) { //exists, not exists
+                return true; //possibleNull
+            }
         }
         if (boolPri instanceof PrimaryExprIsNullContext) {
             const compare = boolPri.boolPri();
@@ -340,7 +349,7 @@ export function possibleNull(field: FieldName, exprContext: ExprContext): boolea
     }
     if (exprContext instanceof ExprNotContext) {
         const expr = exprContext.expr();
-        return !possibleNull(field, expr);
+        return possibleNull(field, expr);
     }
     if (exprContext instanceof ExprAndContext) {
         const [first, ...rest] = exprContext.expr();

@@ -731,6 +731,10 @@ function traverseExpr(expr: ExprContext, constraints: Constraint[], parameters: 
         return boolPriType;
     }
     if (expr instanceof ExprNotContext) {
+        const expr2 = expr.expr();
+        if (expr2) {
+            return traverseExpr(expr2, constraints, parameters, dbSchema, withSchema, fromColumns);
+        }
         return freshVar(expr.text, 'tinyint');;
     }
     if (expr instanceof ExprAndContext || expr instanceof ExprXorContext || expr instanceof ExprOrContext) {
@@ -1234,6 +1238,24 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
             }
             const returnType = runtimeFunctionCall.YEAR_SYMBOL() ? 'year' : 'tinyint';
             return freshVar(simpleExpr.text, returnType);
+        }
+        if (runtimeFunctionCall.DATE_SYMBOL()) {
+            const expr = runtimeFunctionCall.exprWithParentheses()?.expr();
+            if (expr) {
+                const paramType = traverseExpr(expr, constraints, parameters, dbSchema, withSchema, fromColumns);
+                if (paramType.kind == 'TypeVar' && isDateTimeLiteral(paramType.name)) {
+                    paramType.type = 'datetime'
+                }
+                if (paramType.kind == 'TypeVar' && isDateLiteral(paramType.name)) {
+                    paramType.type = 'date'
+                }
+                constraints.push({
+                    expression: expr.text,
+                    type1: paramType,
+                    type2: freshVar(simpleExpr.text, 'date')
+                })
+            }
+            return freshVar(simpleExpr.text, 'date');
         }
         if (runtimeFunctionCall.HOUR_SYMBOL() || runtimeFunctionCall.MINUTE_SYMBOL() || runtimeFunctionCall.SECOND_SYMBOL()) {
             const expr = runtimeFunctionCall.exprWithParentheses()?.expr();

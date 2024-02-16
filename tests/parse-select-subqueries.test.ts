@@ -386,6 +386,42 @@ describe('Test parse select with subqueries', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('select name from mytable2 where not exists ( select id from mytable1 where id = :a and value = :b)', async () => {
+        const sql = `select name from mytable2 where not exists ( select id from mytable1 where id = :a and value = :b)`
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql: `select name from mytable2 where not exists ( select id from mytable1 where id = ? and value = ?)`,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'name',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 'mytable2'
+
+                }
+            ],
+            parameters: [
+                {
+                    name: 'a',
+                    columnType: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'b',
+                    columnType: 'int',
+                    notNull: true
+                }
+            ]
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it('SELECT * from (SELECT * FROM mytable1) as t1 WHERE t1.id > ?', async () => {
         const sql = `
         SELECT id from (SELECT * FROM mytable1) as t1 WHERE t1.id > ?
