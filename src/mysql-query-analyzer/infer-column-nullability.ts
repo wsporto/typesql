@@ -320,6 +320,9 @@ export function possibleNull(field: FieldName, exprContext: ExprContext): boolea
                 const expr = res.exprList().expr()[0];
                 return possibleNull(field, expr);
             }
+            // if (res instanceof SimpleExprSubQueryContext) { //exists, not exists
+            //     return false; //possibleNull
+            // }
         }
         if (boolPri instanceof PrimaryExprIsNullContext) {
             const compare = boolPri.boolPri();
