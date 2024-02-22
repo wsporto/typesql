@@ -1675,6 +1675,36 @@ describe('Test simple select statements', () => {
 
     })
 
+    it('SELECT bit_column FROM all_types WHERE bit_column = 1', async () => {
+        const sql = 'SELECT bit_column FROM all_types WHERE bit_column = 1 or bit_column = ?';
+
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'bit_column',
+                    type: 'bit',
+                    notNull: true,
+                    table: 'all_types'
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'bit',
+                    notNull: true
+                }
+            ]
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
 
     it('try to parse with reserved word desc'), () => {
         //SELECT id, name, desc as description FROM MYTABLE

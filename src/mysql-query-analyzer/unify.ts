@@ -139,7 +139,7 @@ function getBestPossibleType(type1: InferType, type2: InferType, max?: boolean, 
         return type1;
     }
 
-    const order: InferType[] = ['number', 'tinyint', 'year', 'smallint', 'int', 'bigint', 'decimal', 'float', 'double', 'varchar'];
+    const order: InferType[] = ['number', 'bit', 'tinyint', 'year', 'smallint', 'int', 'bigint', 'decimal', 'float', 'double', 'varchar'];
     const indexType1 = order.indexOf(type1);
     const indexType2 = order.indexOf(type2);
     if (indexType1 != -1 && indexType2 != -1) {
