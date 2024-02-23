@@ -54,7 +54,7 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
         }
         return 'data.' + field.name;
     }) : [];
-    allParameters.push(...tsDescriptor.parameterNames.map(paramName => 'params.' + paramName));
+    allParameters.push(...tsDescriptor.parameterNames.map((paramName) => generateParam(target, paramName)));
 
     const queryParams = allParameters.length > 0 ? ', [' + allParameters.join(', ') + ']' : '';
 
@@ -192,6 +192,13 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
     return writer.toString();
 }
 
+function generateParam(target: 'node' | 'deno', param: ParamInfo) {
+    if (target == 'node' && param.isList) {
+        return `params.${param.name}.length == 0? null : params.${param.name}`
+    }
+    return `params.${param.name}`;
+}
+
 function generateRelationType(capitalizedName: string, relationName: string) {
     return capitalizedName + 'Nested' + capitalizeStr(relationName);
 }
@@ -237,7 +244,13 @@ export function generateTsDescriptor(queryInfo: SchemaDef): TsDescriptor {
         }
         return tsDesc;
     })
-    const parameterNames = queryInfo.parameters.map(p => p.name);
+    const parameterNames = queryInfo.parameters.map(p => {
+        const paramInfo: ParamInfo = {
+            name: p.name,
+            isList: p.columnType.endsWith('[]') ? true : false
+        }
+        return paramInfo;
+    });
     const uniqueParams = removeDuplicatedParameters(queryInfo.parameters);
     const escapedParametersNames = renameInvalidNames(uniqueParams.map(col => col.name));
     const parameters = uniqueParams.map((col, paramIndex) => {
@@ -395,12 +408,17 @@ export async function generateTsFileFromContent(client: DbClient, filePath: stri
     return tsContent;
 }
 
+export type ParamInfo = {
+    name: string;
+    isList: boolean;
+}
+
 export type TsDescriptor = {
     sql: string;
     queryType: 'Select' | 'Insert' | 'Update' | 'Delete';
     multipleRowsResult: boolean;
     columns: TsFieldDescriptor[];
-    parameterNames: string[];
+    parameterNames: ParamInfo[];
     parameters: TsFieldDescriptor[];
     data?: TsFieldDescriptor[];
     orderByColumns?: string[];

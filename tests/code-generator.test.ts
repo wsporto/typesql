@@ -33,7 +33,7 @@ describe('code-generator', () => {
                     notNull: false
                 }
             ],
-            parameterNames: ['param1'],
+            parameterNames: [{ name: 'param1', isList: false }],
             parameters: [
                 {
                     name: 'param1',
@@ -62,6 +62,68 @@ export async function getPerson(connection: Connection, params: GetPersonParams)
     \`
 
     return connection.query({sql, rowsAsArray: true}, [params.param1])
+        .then(res => res[0] as any[])
+        .then(res => res.map(data => mapArrayToGetPersonResult(data)));
+}
+
+function mapArrayToGetPersonResult(data: any) {
+    const result: GetPersonResult = {
+        id: data[0],
+        name: data[1]
+    }
+    return result;
+}`
+
+        assert.deepStrictEqual(actual, expected);
+    })
+
+    it('generate main function with list parameters', () => {
+        const queryName = 'get-person';
+        const tsDescriptor: TsDescriptor = {
+            sql: 'select id, name from person where id in (?)',
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'id',
+                    tsType: 'number',
+                    notNull: true
+                },
+                {
+                    name: 'name',
+                    tsType: 'string',
+                    notNull: false
+                }
+            ],
+            parameterNames: [{ name: 'param1', isList: true }],
+            parameters: [
+                {
+                    name: 'param1',
+                    tsType: 'number',
+                    notNull: true
+                }
+            ]
+        }
+
+        const actual = generateTsCode(tsDescriptor, queryName, 'node');
+        const expected =
+            `import type { Connection } from 'mysql2/promise';
+
+export type GetPersonParams = {
+    param1: number;
+}
+
+export type GetPersonResult = {
+    id: number;
+    name?: string;
+}
+
+export async function getPerson(connection: Connection, params: GetPersonParams) : Promise<GetPersonResult[]> {
+    const sql = \`
+    select id, name from person where id in (?)
+    \`
+
+    return connection.query({sql, rowsAsArray: true}, [params.param1.length == 0? null : params.param1])
         .then(res => res[0] as any[])
         .then(res => res.map(data => mapArrayToGetPersonResult(data)));
 }
