@@ -1,38 +1,60 @@
-import { DynamicSqlInfo, DynamicSqlInfoResult, FragmentInfo, FragmentInfoResult, TableField } from "./mysql-query-analyzer/types";
+import { DynamicSqlInfo, DynamicSqlInfoResult, FragmentInfoResult, TableField } from "./mysql-query-analyzer/types";
 
 export function describeDynamicQuery(dynamicQueryInfo: DynamicSqlInfo, namedParameters: string[]): DynamicSqlInfoResult {
     const { select, from, where } = dynamicQueryInfo;
-    const dynamicQuery: DynamicSqlInfoResult = {
-        select: convertToFragmentResultList(select, namedParameters),
-        from: convertToFragmentResultList(from, namedParameters),
-        where: convertToFragmentResultList(where, namedParameters)
-    }
-    return dynamicQuery;
-}
 
-function convertToFragmentResultList(fragmentInfo: FragmentInfo[], namedParameters: string[]) {
-    return fragmentInfo.map(fragment => convertToFragementResult(fragment, namedParameters));
-}
+    const selectFragments = select.map(fragment => {
+        const fragmentResult: FragmentInfoResult = {
+            fragment: fragment.fragment,
+            dependOnFields: fragment.fields.map(f => f.name),
+            dependOnParams: []
+        }
+        return fragmentResult;
+    });
+    const fromFragements = from.map(fragment => {
 
-function convertToFragementResult(fragmentInfo: FragmentInfo, namedParameters: string[]): FragmentInfoResult {
-    const fragmentResult: FragmentInfoResult = {
-        fragment: fragmentInfo.fragment,
-        dependOnFields: fragmentInfo.dependOnFields.map(field => field.name),
-        dependOnParams: fragmentInfo.dependOnParams.map(paramIndex => namedParameters[paramIndex])
-    }
-    return fragmentResult;
-}
+        const filteredWhere = where.filter(whereFragment => includeAny(whereFragment.fields, fragment.fields));
+        const hasUnconditional = filteredWhere
+            .some(fragment => fragment.dependOnParams.length == 0);
 
-export function filterSelectFieldsFromAllFragments(dynamicSqlInfo: DynamicSqlInfo, selectFragments: FragmentInfo[]) {
+        if (hasUnconditional) {
+            return {
+                fragment: fragment.fragment,
+                dependOnFields: [],
+                dependOnParams: [],
+            }
+        }
+        const selectedFields = select.flatMap(fragment => fragment.fields);
 
-    dynamicSqlInfo.from?.forEach(fragment => {
-        fragment.dependOnFields = filterSelectFieldsFromFragment(fragment, selectFragments.flatMap(f => f.fields));
+        const conditonalFields = fragment.fields
+            .filter(field => selectedFields.find(selected => field.field == selected.field && field.table == selected.table));
+
+        const params = filteredWhere.flatMap(fragment => fragment.dependOnParams).map(paramIndex => namedParameters[paramIndex]);
+        const fragmentResult: FragmentInfoResult = {
+            fragment: fragment.fragment,
+            dependOnFields: conditonalFields.map(f => f.name),
+            dependOnParams: params
+        }
+        return fragmentResult;
+    });
+
+    const whereFragements = where.map(fragment => {
+
+        const fragmentResult: FragmentInfoResult = {
+            fragment: fragment.fragment,
+            dependOnFields: [],
+            dependOnParams: fragment.dependOnParams.map(paramIndex => namedParameters[paramIndex])
+        }
+        return fragmentResult
     })
-    selectFragments.forEach(selectFragment => {
-        selectFragment.dependOnFields = [...selectFragment.fields]
-    })
+
+    return {
+        select: selectFragments,
+        from: fromFragements,
+        where: whereFragements
+    };
 }
 
-export function filterSelectFieldsFromFragment(fragment: FragmentInfo, selectedItems: TableField[]) {
-    return fragment.fields?.filter(field => selectedItems?.find(f => f.field == field.field && f.table == field.table));
+function includeAny(fields: TableField[], fields2: TableField[]) {
+    return fields.some(f => fields2.find(f2 => f2.field == f.field && f2.table == f.table));
 }

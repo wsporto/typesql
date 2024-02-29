@@ -8,7 +8,6 @@ import { inferNotNull, possibleNull } from "./infer-column-nullability";
 import { getParentContext, inferParamNullability, inferParamNullabilityQuery, inferParamNullabilityQueryExpression } from "./infer-param-nullability";
 import { ParameterDef } from "../types";
 import { getPairWise, getParameterIndexes } from "./util";
-import { filterSelectFieldsFromAllFragments } from "../describe-dynamic-query";
 
 export type TraverseResult = SelectStatementResult | InsertStatementResult | UpdateStatementResult | DeleteStatementResult;
 
@@ -480,7 +479,6 @@ export function traverseQuerySpecification(querySpec: QuerySpecificationContext,
     const fromColumnsFrom = fromClause ? traverseFromClause(fromClause, traverseContext) : [];
     const allColumns = subQuery ? traverseContext.fromColumns.concat(fromColumnsFrom) : fromColumnsFrom;     //(... where id = t1.id)
     const selectItemListResult = traverseSelectItemList(querySpec.selectItemList(), { ...traverseContext, fromColumns: allColumns });
-    filterSelectFieldsFromAllFragments(traverseContext.dynamicSqlInfo, traverseContext.dynamicSqlInfo.select);
 
     const whereClause = querySpec.whereClause();
     //TODO - HAVING, BLAH
@@ -773,17 +771,17 @@ function traverseHavingClause(havingClause: HavingClauseContext, traverseContext
     traverseExpr(havingExpr, traverseContext);
 }
 
-function traverseExpr(expr: ExprContext, traverseContext: TraverseContext): Type {
+function traverseExpr(expr: ExprContext, traverseContext: TraverseContext, topLevel: FragmentInfo | null = null): Type {
 
     if (expr instanceof ExprIsContext) {
         const boolPri = expr.boolPri();
-        const boolPriType = traverseBoolPri(boolPri, traverseContext);
+        const boolPriType = traverseBoolPri(boolPri, traverseContext, topLevel);
         return boolPriType;
     }
     if (expr instanceof ExprNotContext) {
         const expr2 = expr.expr();
         if (expr2) {
-            return traverseExpr(expr2, traverseContext);
+            return traverseExpr(expr2, traverseContext, topLevel);
         }
         return freshVar(expr.text, 'tinyint');;
     }
@@ -791,27 +789,15 @@ function traverseExpr(expr: ExprContext, traverseContext: TraverseContext): Type
         const all: ExpressionAndOperator[] = [];
         getTopLevelAndExpr(expr, all);
         all.forEach(andExpression => {
-            traverseExpr(andExpression.expr, traverseContext)
-            const columnRefs = getExpressions(andExpression.expr, SimpleExprColumnRefContext);
-            columnRefs.map(columnRef => {
-                const compareExpr = getParentContext(columnRef, PrimaryExprCompareContext);
-                const columnName = splitName(columnRef.text);
+            const currentFragment: FragmentInfo = {
+                fragment: andExpression.operator + ' ' + extractOriginalSql(andExpression.expr),
+                fields: [],
+                dependOnFields: [],
+                dependOnParams: []
+            }
+            traverseContext.dynamicSqlInfo.where.push(currentFragment);
+            traverseExpr(andExpression.expr, traverseContext, currentFragment)
 
-                traverseContext.dynamicSqlInfo.where?.push({
-                    fragment: andExpression.operator + ' ' + extractOriginalSql(andExpression.expr),
-                    fields: [],
-                    dependOnFields: [],
-                    dependOnParams: [(traverseContext.parameters.length - 1)]
-                })
-                traverseContext.dynamicSqlInfo.from?.forEach(fragment => {
-                    const found = fragment.fields.find(field => field.name == columnName.name && field.table == columnName.prefix);
-                    if (found) {
-                        // fragment.dependOnFields.push(found);
-                        fragment.dependOnParams.push((traverseContext.parameters.length - 1))
-                    }
-
-                })
-            })
         })
         return freshVar(expr.text, 'tinyint');
     }
@@ -819,7 +805,7 @@ function traverseExpr(expr: ExprContext, traverseContext: TraverseContext): Type
     throw Error('traverseExpr - not supported: ' + expr.text);
 }
 
-function traverseBoolPri(boolPri: BoolPriContext, traverseContext: TraverseContext): Type {
+function traverseBoolPri(boolPri: BoolPriContext, traverseContext: TraverseContext, currentFragment: FragmentInfo | null = null): Type {
     if (boolPri instanceof PrimaryExprPredicateContext) {
         const predicate = boolPri.predicate();
         const predicateType = traversePredicate(predicate, traverseContext);
@@ -842,6 +828,32 @@ function traverseBoolPri(boolPri: BoolPriContext, traverseContext: TraverseConte
             type1: typeLeft,
             type2: typeRight
         })
+
+        if (typeLeft.kind == 'TypeVar') {
+            if (typeLeft.name == '?') {
+                currentFragment?.dependOnParams.push(traverseContext.parameters.length - 1);
+            }
+            if (typeLeft.table != null) {
+                currentFragment?.fields.push({
+                    field: typeLeft.name,
+                    name: typeLeft.name,
+                    table: typeLeft.table
+                })
+            }
+        }
+        if (typeRight.kind == 'TypeVar') {
+            if (typeRight.name == '?') {
+                currentFragment?.dependOnParams.push(traverseContext.parameters.length - 1);
+            }
+            if (typeRight.table != null) {
+                currentFragment?.fields.push({
+                    field: typeRight.name,
+                    name: typeRight.name,
+                    table: typeRight.table
+                })
+            }
+        }
+
         return freshVar(boolPri.text, 'tinyint');
     }
     if (boolPri instanceof PrimaryExprAllAnyContext) {
