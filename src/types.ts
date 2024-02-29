@@ -1,6 +1,6 @@
 import { MySqlType } from "./mysql-mapping"
 import { Brand } from "./utility-types"
-import { ColumnInfo, ColumnSchema } from "./mysql-query-analyzer/types"
+import { ColumnInfo, ColumnSchema, DynamicSqlInfoResult } from "./mysql-query-analyzer/types"
 import { QueryContext } from "ts-mysql-parser";
 import { NestedResultInfo } from "./describe-nested-query";
 
@@ -24,6 +24,7 @@ export type SchemaDef = {
     parameters: ParameterDef[];
     data?: ParameterDef[];
     nestedResultInfo?: NestedResultInfo;
+    dynamicSqlQuery?: DynamicSqlInfoResult;
 }
 
 export type FieldNullability = {

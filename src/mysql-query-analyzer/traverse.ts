@@ -1,13 +1,14 @@
 import { BitExprContext, BoolPriContext, DeleteStatementContext, ExprAndContext, ExprContext, ExprIsContext, ExprListContext, ExprNotContext, ExprOrContext, ExprXorContext, FromClauseContext, HavingClauseContext, InsertQueryExpressionContext, InsertStatementContext, PredicateContext, PredicateExprBetweenContext, PredicateExprInContext, PredicateExprLikeContext, PredicateOperationsContext, PrimaryExprAllAnyContext, PrimaryExprCompareContext, PrimaryExprIsNullContext, PrimaryExprPredicateContext, QueryContext, QueryExpressionBodyContext, QueryExpressionContext, QueryExpressionOrParensContext, QueryExpressionParensContext, QuerySpecificationContext, SelectItemContext, SelectItemListContext, SelectStatementContext, SimpleExprCaseContext, SimpleExprCastContext, SimpleExprColumnRefContext, SimpleExprContext, SimpleExprFunctionContext, SimpleExprIntervalContext, SimpleExprListContext, SimpleExprLiteralContext, SimpleExprParamMarkerContext, SimpleExprRuntimeFunctionContext, SimpleExprSubQueryContext, SimpleExprSumContext, SimpleExprWindowingFunctionContext, SingleTableContext, SubqueryContext, TableFactorContext, TableReferenceContext, TableReferenceListParensContext, UpdateStatementContext, WindowFunctionCallContext, WithClauseContext } from "ts-mysql-parser";
 import { verifyNotInferred } from "../describe-query";
 import { extractLimitParameters, extractOrderByParameters, getAllQuerySpecificationsFromSelectStatement, getLimitOptions, isSumExpressContext } from "./parse";
-import { ColumnDef, ColumnSchema, Constraint, FieldName, ParameterInfo, TraverseContext, Type, TypeAndNullInfer, TypeOperator, TypeVar } from "./types";
+import { ColumnDef, ColumnSchema, Constraint, DynamicSqlInfo, FieldName, FragmentInfo, ParameterInfo, TableField, TraverseContext, Type, TypeAndNullInfer, TypeOperator, TypeVar } from "./types";
 import { ExprOrDefault, FixedLengthParams, FunctionParams, VariableLengthParams, createColumnType, createColumnTypeFomColumnSchema, freshVar, generateTypeInfo, getDeleteColumns, getFunctionName, getInsertColumns, getInsertIntoTable, isDateLiteral, isDateTimeLiteral, isTimeLiteral, verifyDateTypesCoercion } from "./collect-constraints";
-import { extractFieldsFromUsingClause, findColumn, getColumnName, getSimpleExpressions, splitName } from "./select-columns";
+import { ExpressionAndOperator, extractFieldsFromUsingClause, extractOriginalSql, findColumn, getColumnName, getExpressions, getSimpleExpressions, getTopLevelAndExpr, splitName } from "./select-columns";
 import { inferNotNull, possibleNull } from "./infer-column-nullability";
-import { inferParamNullability, inferParamNullabilityQuery, inferParamNullabilityQueryExpression } from "./infer-param-nullability";
+import { getParentContext, inferParamNullability, inferParamNullabilityQuery, inferParamNullabilityQueryExpression } from "./infer-param-nullability";
 import { ParameterDef } from "../types";
 import { getPairWise, getParameterIndexes } from "./util";
+import { filterSelectFieldsFromAllFragments } from "../describe-dynamic-query";
 
 export type TraverseResult = SelectStatementResult | InsertStatementResult | UpdateStatementResult | DeleteStatementResult;
 
@@ -19,6 +20,7 @@ export type SelectStatementResult = {
     limitParameters: ParameterInfo[];
     isMultiRow: boolean;
     orderByColumns?: string[];
+    dynamicSqlInfo: DynamicSqlInfo;
 }
 
 export type InsertStatementResult = {
@@ -49,7 +51,12 @@ export function traverseQueryContext(queryContext: QueryContext, dbSchema: Colum
         dbSchema,
         parameters,
         fromColumns: [],
-        withSchema: []
+        withSchema: [],
+        dynamicSqlInfo: {
+            select: [],
+            from: [],
+            where: []
+        }
     }
 
     const selectStatement = queryContext.simpleStatement()?.selectStatement();
@@ -114,7 +121,8 @@ function traverseSelectStatement(selectStatement: SelectStatementContext, traver
             columns: result.columns,
             parameters: allParameters,
             limitParameters,
-            isMultiRow
+            isMultiRow,
+            dynamicSqlInfo: traverseContext.dynamicSqlInfo
         };
         const orderByColumns = orderByParameters.length > 0 ? getOrderByColumns(result.fromColumns, result.columns) : undefined;
         if (orderByColumns) {
@@ -472,6 +480,7 @@ export function traverseQuerySpecification(querySpec: QuerySpecificationContext,
     const fromColumnsFrom = fromClause ? traverseFromClause(fromClause, traverseContext) : [];
     const allColumns = subQuery ? traverseContext.fromColumns.concat(fromColumnsFrom) : fromColumnsFrom;     //(... where id = t1.id)
     const selectItemListResult = traverseSelectItemList(querySpec.selectItemList(), { ...traverseContext, fromColumns: allColumns });
+    filterSelectFieldsFromAllFragments(traverseContext.dynamicSqlInfo, traverseContext.dynamicSqlInfo.select);
 
     const whereClause = querySpec.whereClause();
     //TODO - HAVING, BLAH
@@ -546,12 +555,19 @@ function traverseFromClause(fromClause: FromClauseContext, traverseContext: Trav
 function traverseTableReferenceList(tableReferenceList: TableReferenceContext[], traverseContext: TraverseContext): ColumnDef[] {
 
     const result: ColumnDef[] = [];
+    const fragements: FragmentInfo[] = [];
 
     tableReferenceList.forEach(tab => {
         const tableFactor = tab.tableFactor();
         if (tableFactor) {
             const fields = traverseTableFactor(tableFactor, traverseContext);
             result.push(...fields);
+            fragements.push({
+                fragment: extractOriginalSql(tableFactor) + '',
+                fields: [], //fields.map(field => ({ field: field.columnName, name: field.columnName, table: field.table })),
+                dependOnFields: [],
+                dependOnParams: [],
+            })
         }
         const allJoinedColumns: ColumnDef[][] = [];
         let firstLeftJoinIndex = -1;
@@ -571,6 +587,16 @@ function traverseTableReferenceList(tableReferenceList: TableReferenceContext[],
                 //doesn't duplicate the fields of the USING clause. Ex. INNER JOIN mytable2 USING(id);
                 const joinedFieldsFiltered = usingFields.length > 0 ? filterUsingFields(joinedFields, usingFields) : joinedFields;
                 allJoinedColumns.push(joinedFieldsFiltered);
+                fragements.push({
+                    fragment: extractOriginalSql(joined) + '',
+                    fields: [...joinedFieldsFiltered.map(f => ({
+                        field: f.columnName,
+                        table: f.tableAlias || f.table,
+                        name: f.columnName
+                    }))],
+                    dependOnFields: [],
+                    dependOnParams: [],
+                })
 
                 const onClause = joined.expr(); //ON expr
                 if (onClause) {
@@ -616,6 +642,7 @@ function traverseTableReferenceList(tableReferenceList: TableReferenceContext[],
         });
 
     });
+    traverseContext.dynamicSqlInfo.from = fragements;
     return result;
 }
 
@@ -715,6 +742,13 @@ function traverseSelectItemList(selectItemList: SelectItemListContext, traverseC
         const expr = selectItem.expr();
         if (expr) {
             const exprType = traverseExpr(expr, traverseContext);
+            const fields = exprType.kind == 'TypeVar' ? [{ field: exprType.name, table: exprType.table + '', name: getColumnName(selectItem) }] : []
+            traverseContext.dynamicSqlInfo.select?.push({
+                fragment: extractOriginalSql(selectItem) + '',
+                fields,
+                dependOnFields: [],
+                dependOnParams: []
+            })
 
             if (exprType.kind == 'TypeOperator') {
                 const subqueryType = exprType.types[0] as TypeVar;
@@ -754,10 +788,31 @@ function traverseExpr(expr: ExprContext, traverseContext: TraverseContext): Type
         return freshVar(expr.text, 'tinyint');;
     }
     if (expr instanceof ExprAndContext || expr instanceof ExprXorContext || expr instanceof ExprOrContext) {
-        const exprLeft = expr.expr()[0];
-        traverseExpr(exprLeft, traverseContext);
-        const exprRight = expr.expr()[1];
-        traverseExpr(exprRight, traverseContext);
+        const all: ExpressionAndOperator[] = [];
+        getTopLevelAndExpr(expr, all);
+        all.forEach(andExpression => {
+            traverseExpr(andExpression.expr, traverseContext)
+            const columnRefs = getExpressions(andExpression.expr, SimpleExprColumnRefContext);
+            columnRefs.map(columnRef => {
+                const compareExpr = getParentContext(columnRef, PrimaryExprCompareContext);
+                const columnName = splitName(columnRef.text);
+
+                traverseContext.dynamicSqlInfo.where?.push({
+                    fragment: andExpression.operator + ' ' + extractOriginalSql(andExpression.expr),
+                    fields: [],
+                    dependOnFields: [],
+                    dependOnParams: [(traverseContext.parameters.length - 1)]
+                })
+                traverseContext.dynamicSqlInfo.from?.forEach(fragment => {
+                    const found = fragment.fields.find(field => field.name == columnName.name && field.table == columnName.prefix);
+                    if (found) {
+                        // fragment.dependOnFields.push(found);
+                        fragment.dependOnParams.push((traverseContext.parameters.length - 1))
+                    }
+
+                })
+            })
+        })
         return freshVar(expr.text, 'tinyint');
     }
 

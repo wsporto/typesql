@@ -7,7 +7,7 @@ import {
     SimpleExprRuntimeFunctionContext, SimpleExprFunctionContext, SimpleExprCollateContext, SimpleExprParamMarkerContext, SimpleExprSumContext,
     SimpleExprGroupingOperationContext, SimpleExprWindowingFunctionContext, SimpleExprConcatContext, SimpleExprUnaryContext, SimpleExprNotContext,
     SimpleExprSubQueryContext, SimpleExprOdbcContext, SimpleExprMatchContext, SimpleExprBinaryContext, SimpleExprCastContext, SimpleExprCaseContext,
-    SimpleExprConvertContext, SimpleExprConvertUsingContext, SimpleExprDefaultContext, SimpleExprValuesContext, SimpleExprIntervalContext, SelectItemContext
+    SimpleExprConvertContext, SimpleExprConvertUsingContext, SimpleExprDefaultContext, SimpleExprValuesContext, SimpleExprIntervalContext, SelectItemContext, ExprContext, ExprAndContext, ExprXorContext, ExprOrContext
 } from "ts-mysql-parser";
 
 import { ColumnDef, ColumnSchema, FieldName } from "./types";
@@ -172,6 +172,50 @@ export function extractOriginalSql(rule: ParserRuleContext) {
     const interval = new Interval(startIndex, stopIndex);
     const result = rule.start.inputStream?.getText(interval);
     return result;
+}
+
+export function getExpressions(ctx: RuleContext, exprType: any): RuleContext[] {
+
+    const tokens: RuleContext[] = [];
+    collectExpr(tokens, ctx, exprType);
+    return tokens;
+}
+
+function collectExpr(tokens: RuleContext[], parent: RuleContext, exprType: any) {
+
+    if (parent instanceof exprType) {
+        tokens.push(parent);
+    }
+
+    for (let i = 0; i < parent.childCount; i++) {
+        const child = parent.getChild(i);
+        if (child instanceof RuleContext) {
+            collectExpr(tokens, child, exprType);
+        }
+    }
+}
+
+export type ExpressionAndOperator = {
+    operator: string;
+    expr: ExprContext;
+}
+
+export function getTopLevelAndExpr(expr: ExprContext, all: ExpressionAndOperator[]) {
+
+    if (expr instanceof ExprAndContext || expr instanceof ExprXorContext || expr instanceof ExprOrContext) {
+        const exprLeft = expr.expr()[0];
+        getTopLevelAndExpr(exprLeft, all);
+        const exprRight = expr.expr()[1];
+        all.push({
+            operator: 'AND',
+            expr: exprRight
+        });
+    } else {
+        all.push({
+            operator: 'AND',
+            expr
+        });
+    }
 }
 
 export function getSimpleExpressions(ctx: RuleContext): ParseTree[] {

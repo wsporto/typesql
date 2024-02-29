@@ -32,6 +32,9 @@ export function describeSql(dbSchema: ColumnSchema[], sql: string): SchemaDef {
         if (queryInfo.nestedResultInfo) {
             schemaDef.nestedResultInfo = queryInfo.nestedResultInfo;
         }
+        if (queryInfo.dynamicQuery) {
+            schemaDef.dynamicSqlQuery = queryInfo.dynamicQuery;
+        }
         return schemaDef;
 
     }

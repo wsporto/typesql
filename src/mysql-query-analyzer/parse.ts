@@ -3,7 +3,7 @@ import { ParseTree, TerminalNode } from "antlr4ts/tree";
 import { getVarType } from './collect-constraints';
 import {
     ColumnSchema, TypeInferenceResult, QueryInfoResult, InsertInfoResult, UpdateInfoResult, DeleteInfoResult,
-    ParameterInfo, ColumnInfo, ColumnDef, SubstitutionHash
+    ParameterInfo, ColumnInfo, ColumnDef, SubstitutionHash, DynamicSqlInfo
 } from './types';
 import { inferParamNullabilityQuery } from './infer-param-nullability';
 import { generateNestedQueryResult, preprocessSql, verifyNotInferred } from '../describe-query';
@@ -12,6 +12,7 @@ import { unify } from './unify';
 import { SelectStatementResult, traverseQueryContext } from './traverse';
 import { ParameterDef } from '../types';
 import { generateNestedInfo } from '../describe-nested-query';
+import { describeDynamicQuery } from '../describe-dynamic-query';
 
 const parser = new MySQLParser({
     version: '8.0.17',
@@ -160,6 +161,7 @@ export function getLimitOptions(selectStatement: SelectStatementContext) {
 export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[]): QueryInfoResult | InsertInfoResult | UpdateInfoResult | DeleteInfoResult {
     const { sql: processedSql, namedParameters } = preprocessSql(sql);
     const gererateNested = generateNestedQueryResult(sql);
+    const genereteDynamicQuery = false;
     const tree = parse(processedSql);
 
     const traverseResult = traverseQueryContext(tree, dbSchema, namedParameters);
@@ -169,6 +171,11 @@ export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[]): QueryIn
             const nestedInfo = generateNestedInfo(tree, dbSchema, queryInfoResult.columns)
             queryInfoResult.nestedResultInfo = nestedInfo;
         }
+        if (genereteDynamicQuery) {
+            const dynamicQuery = describeDynamicQuery(traverseResult.dynamicSqlInfo, namedParameters);
+            queryInfoResult.dynamicQuery = dynamicQuery;
+        }
+
         return queryInfoResult;
     }
     if (traverseResult.type == 'Insert') {
@@ -283,4 +290,43 @@ function collectAllQuerySpecifications(tree: ParseTree, result: QuerySpecificati
             collectAllQuerySpecifications(child, result);
         }
     }
+}
+
+function printQuery(dynamicSqlInfo: DynamicSqlInfo) {
+    console.dir(dynamicSqlInfo, { depth: null });
+    let sql = `let sql = 'SELECT';\n`;
+    dynamicSqlInfo.select.forEach(selectItem => {
+        if (selectItem.fields.length > 0) {
+            sql += `if (${selectItem.fields.map(f => 'select.' + f.name)}) {\n`
+            sql += `    sql += ${selectItem.fragment};\n`;
+            sql += '}\n';
+        }
+        else {
+            sql += `sql += ${selectItem.fragment};\n`;
+        }
+    })
+    sql += 'FROM '
+    dynamicSqlInfo.from.forEach(from => {
+        if (from.dependOnFields.length > 0) {
+            sql += `if (${from.dependOnFields.map(f => 'select.' + f.name).concat(from.dependOnParams.map(p => 'params.' + p)).join(' || ')}) {\n`
+            sql += `    sql += ${from.fragment};\n`;
+            sql += '}\n';
+        }
+        else {
+            sql += `sql += ${from.fragment};\n`;
+        }
+    })
+    sql += `sql += 'WHERE 1 = 1'\n`;
+    dynamicSqlInfo.where.forEach(where => {
+        if (where.dependOnFields.length > 0 || where.dependOnParams.length > 0) {
+            sql += `if (${where.dependOnFields.map(f => 'select.' + f.name).concat(where.dependOnParams.map(param => 'param.' + param)).join(' || ')})) {\n`
+            sql += `    sql += '${where.fragment}';\n`;
+            sql += '}\n';
+        }
+        else {
+            sql += `sql += ${where.fragment};\n`;
+        }
+    })
+    console.log(sql);
+
 }

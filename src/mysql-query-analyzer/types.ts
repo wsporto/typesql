@@ -31,7 +31,8 @@ export type TraverseContext = {
     withSchema: ColumnDef[];
     constraints: Constraint[];
     parameters: TypeVar[];
-    fromColumns: ColumnDef[]
+    fromColumns: ColumnDef[];
+    dynamicSqlInfo: DynamicSqlInfo;
 }
 
 export type Constraint = {
@@ -90,6 +91,37 @@ export type ParameterInfo = {
     notNull: boolean;
 }
 
+export type TableField = {
+    field: string;
+    table: string;
+    name: string;
+}
+
+export type FragmentInfo = {
+    fragment: string;
+    fields: TableField[];
+    dependOnFields: TableField[];
+    dependOnParams: number[];
+}
+
+export type FragmentInfoResult = {
+    fragment: string;
+    dependOnFields: string[];
+    dependOnParams: string[];
+}
+
+export type DynamicSqlInfo = {
+    select: FragmentInfo[];
+    from: FragmentInfo[];
+    where: FragmentInfo[];
+}
+
+export type DynamicSqlInfoResult = {
+    select: FragmentInfoResult[];
+    from: FragmentInfoResult[];
+    where: FragmentInfoResult[];
+}
+
 export type SubstitutionHash = {
     [index: string]: TypeVar
 }
@@ -123,6 +155,7 @@ export type QueryInfoResult = {
     multipleRowsResult: boolean;
     orderByColumns?: string[];
     nestedResultInfo?: NestedResultInfo;
+    dynamicQuery?: DynamicSqlInfoResult;
 }
 
 export type InsertInfoResult = {
