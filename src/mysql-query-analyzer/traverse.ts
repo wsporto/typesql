@@ -1,7 +1,7 @@
 import { BitExprContext, BoolPriContext, DeleteStatementContext, ExprAndContext, ExprContext, ExprIsContext, ExprListContext, ExprNotContext, ExprOrContext, ExprXorContext, FromClauseContext, HavingClauseContext, InsertQueryExpressionContext, InsertStatementContext, PredicateContext, PredicateExprBetweenContext, PredicateExprInContext, PredicateExprLikeContext, PredicateOperationsContext, PrimaryExprAllAnyContext, PrimaryExprCompareContext, PrimaryExprIsNullContext, PrimaryExprPredicateContext, QueryContext, QueryExpressionBodyContext, QueryExpressionContext, QueryExpressionOrParensContext, QueryExpressionParensContext, QuerySpecificationContext, SelectItemContext, SelectItemListContext, SelectStatementContext, SimpleExprCaseContext, SimpleExprCastContext, SimpleExprColumnRefContext, SimpleExprContext, SimpleExprFunctionContext, SimpleExprIntervalContext, SimpleExprListContext, SimpleExprLiteralContext, SimpleExprParamMarkerContext, SimpleExprRuntimeFunctionContext, SimpleExprSubQueryContext, SimpleExprSumContext, SimpleExprWindowingFunctionContext, SingleTableContext, SubqueryContext, TableFactorContext, TableReferenceContext, TableReferenceListParensContext, UpdateStatementContext, WindowFunctionCallContext, WithClauseContext } from "ts-mysql-parser";
 import { verifyNotInferred } from "../describe-query";
 import { extractLimitParameters, extractOrderByParameters, getAllQuerySpecificationsFromSelectStatement, getLimitOptions, isSumExpressContext } from "./parse";
-import { ColumnDef, ColumnSchema, Constraint, FieldName, ParameterInfo, Type, TypeAndNullInfer, TypeOperator, TypeVar } from "./types";
+import { ColumnDef, ColumnSchema, Constraint, FieldName, ParameterInfo, TraverseContext, Type, TypeAndNullInfer, TypeOperator, TypeVar } from "./types";
 import { ExprOrDefault, FixedLengthParams, FunctionParams, VariableLengthParams, createColumnType, createColumnTypeFomColumnSchema, freshVar, generateTypeInfo, getDeleteColumns, getFunctionName, getInsertColumns, getInsertIntoTable, isDateLiteral, isDateTimeLiteral, isTimeLiteral, verifyDateTypesCoercion } from "./collect-constraints";
 import { extractFieldsFromUsingClause, findColumn, getColumnName, getSimpleExpressions, splitName } from "./select-columns";
 import { inferNotNull, possibleNull } from "./infer-column-nullability";
@@ -43,40 +43,50 @@ export type DeleteStatementResult = {
 export function traverseQueryContext(queryContext: QueryContext, dbSchema: ColumnSchema[], namedParameters: string[]) {
     const constraints: Constraint[] = [];
     const parameters: TypeVar[] = [];
+
+    const traverseContext: TraverseContext = {
+        constraints,
+        dbSchema,
+        parameters,
+        fromColumns: [],
+        withSchema: []
+    }
+
     const selectStatement = queryContext.simpleStatement()?.selectStatement();
     if (selectStatement) {
-        const typeInfer = traverseSelectStatement(selectStatement, constraints, parameters, dbSchema, namedParameters);
+        const typeInfer = traverseSelectStatement(selectStatement, traverseContext, namedParameters);
         return typeInfer;
     }
     const insertStatement = queryContext.simpleStatement()?.insertStatement();
     if (insertStatement) {
-        return traverseInsertStatement(insertStatement, constraints, parameters, dbSchema);
+        return traverseInsertStatement(insertStatement, traverseContext);
     }
     const updateStatement = queryContext.simpleStatement()?.updateStatement();
     if (updateStatement) {
-        const typeInfer = traverseUpdateStatement(updateStatement, constraints, parameters, dbSchema, namedParameters);
+        const typeInfer = traverseUpdateStatement(updateStatement, traverseContext, namedParameters);
         return typeInfer;
     }
     const deleteStatement = queryContext.simpleStatement()?.deleteStatement();
     if (deleteStatement) {
-        const typeInfer = traverseDeleteStatement(deleteStatement, constraints, parameters, dbSchema);
+        const typeInfer = traverseDeleteStatement(deleteStatement, traverseContext);
         return typeInfer;
     }
     throw Error('traverseSql - not supported: ' + queryContext.constructor.name);
 }
 
 
-function traverseSelectStatement(selectStatement: SelectStatementContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], namedParameters: string[]): SelectStatementResult {
+function traverseSelectStatement(selectStatement: SelectStatementContext, traverseContext: TraverseContext, namedParameters: string[]): SelectStatementResult {
+
     const queryExpression = selectStatement.queryExpression();
     if (queryExpression) {
-        const result = traverseQueryExpression(queryExpression, constraints, parameters, dbSchema, [], []);
+        const result = traverseQueryExpression(queryExpression, traverseContext);
 
         const orderByParameters = extractOrderByParameters(selectStatement);
         const limitParameters = extractLimitParameters(selectStatement);
 
         const paramInference = inferParamNullabilityQueryExpression(queryExpression);
 
-        const allParameters = parameters
+        const allParameters = traverseContext.parameters
             .map((param, index) => {
                 const param2: TypeAndNullInfer = {
                     name: param.name,
@@ -89,7 +99,7 @@ function traverseSelectStatement(selectStatement: SelectStatementContext, constr
         const paramIndexes = getParameterIndexes(namedParameters.slice(0, allParameters.length)); //for [a, a, b, a] will return a: [0, 1, 3]; b: [2]
         paramIndexes.forEach(paramIndex => {
             getPairWise(paramIndex.indexes, (cur, next) => { //for [0, 1, 3] will return [0, 1], [1, 3]
-                constraints.push({
+                traverseContext.constraints.push({
                     expression: paramIndex.paramName,
                     type1: allParameters[cur].type,
                     type2: allParameters[next].type
@@ -100,7 +110,7 @@ function traverseSelectStatement(selectStatement: SelectStatementContext, constr
         const isMultiRow = isMultipleRowResult(selectStatement, result.fromColumns);
         const traverseResult: SelectStatementResult = {
             type: 'Select',
-            constraints,
+            constraints: traverseContext.constraints,
             columns: result.columns,
             parameters: allParameters,
             limitParameters,
@@ -115,7 +125,7 @@ function traverseSelectStatement(selectStatement: SelectStatementContext, constr
     throw Error('traverseSelectStatement - not supported: ' + selectStatement.text);
 }
 
-export function traverseInsertStatement(insertStatement: InsertStatementContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[]): InsertStatementResult {
+export function traverseInsertStatement(insertStatement: InsertStatementContext, traverseContext: TraverseContext): InsertStatementResult {
 
     const allParameters: ParameterDef[] = [];
     const paramsNullability: { [paramId: string]: boolean } = {};
@@ -128,7 +138,7 @@ export function traverseInsertStatement(insertStatement: InsertStatementContext,
 
     const insertIntoTable = getInsertIntoTable(insertStatement);
 
-    const fromColumns = dbSchema
+    const fromColumns = traverseContext.dbSchema
         .filter(c => c.table == insertIntoTable)
         .map(c => {
             const col: ColumnDef = {
@@ -141,19 +151,20 @@ export function traverseInsertStatement(insertStatement: InsertStatementContext,
             return col;
         })
     const insertColumns = getInsertColumns(insertStatement, fromColumns);
+    traverseContext.fromColumns = insertColumns;
 
     exprOrDefaultList.forEach(exprOrDefault => {
         exprOrDefault.forEach((expr, index) => {
             const column = insertColumns[index];
 
             if (expr instanceof ExprContext) {
-                const numberParamsBefore = parameters.length;
-                const exprType = traverseExpr(expr, constraints, parameters, dbSchema, [], fromColumns);
+                const numberParamsBefore = traverseContext.parameters.length;
+                const exprType = traverseExpr(expr, traverseContext);
                 const paramNullabilityExpr = inferParamNullability(expr);
-                parameters.slice(numberParamsBefore).forEach(param => {
+                traverseContext.parameters.slice(numberParamsBefore).forEach(param => {
                     paramsNullability[param.id] = paramNullabilityExpr.every(n => n) && column.notNull;
                 })
-                constraints.push({
+                traverseContext.constraints.push({
                     expression: expr.text,
                     //TODO - CHANGING ORDER SHOULDN'T AFFECT THE TYPE INFERENCE
                     type1: exprType.kind == 'TypeOperator' ? exprType.types[0] : exprType,
@@ -172,13 +183,13 @@ export function traverseInsertStatement(insertStatement: InsertStatementContext,
         const field = splitName(columnName);
         const expr = updateElement.expr();
         if (expr) {
-            const numberParamsBefore = parameters.length;
-            const exprType = traverseExpr(expr, constraints, parameters, dbSchema, /*withSchema*/[], fromColumns);
+            const numberParamsBefore = traverseContext.parameters.length;
+            const exprType = traverseExpr(expr, traverseContext);
             const column = findColumn(field, fromColumns);
-            parameters.slice(numberParamsBefore).forEach(param => {
+            traverseContext.parameters.slice(numberParamsBefore).forEach(param => {
                 paramsNullability[param.id] = column.notNull;
             })
-            constraints.push({
+            traverseContext.constraints.push({
                 expression: expr.text,
                 type1: exprType,
                 type2: freshVar(column.columnName, column.columnType.type)
@@ -189,15 +200,15 @@ export function traverseInsertStatement(insertStatement: InsertStatementContext,
     const insertQueryExpression = insertStatement.insertQueryExpression();
     if (insertQueryExpression) {
         //TODO - REMOVE numberParamsBefore (walk first insertQueryExpression)
-        const numberParamsBefore = parameters.length;
-        const exprTypes = traverseInsertQueryExpression(insertQueryExpression, constraints, parameters, dbSchema, /*withSchema*/[], fromColumns);
+        const numberParamsBefore = traverseContext.parameters.length;
+        const exprTypes = traverseInsertQueryExpression(insertQueryExpression, traverseContext);
 
         exprTypes.columns.forEach((type, index) => {
             const column = insertColumns[index];
             if (type.type.kind == 'TypeVar') {
                 paramsNullability[type.type.id] = column.notNull;
             }
-            constraints.push({
+            traverseContext.constraints.push({
                 expression: insertQueryExpression.text,
                 type1: type.type,
                 type2: freshVar(column.columnName, column.columnType.type)
@@ -205,7 +216,7 @@ export function traverseInsertStatement(insertStatement: InsertStatementContext,
 
         })
         const paramNullabilityExpr = inferParamNullabilityQuery(insertQueryExpression);
-        parameters.slice(numberParamsBefore).forEach((param, index) => {
+        traverseContext.parameters.slice(numberParamsBefore).forEach((param, index) => {
             if (paramsNullability[param.id] == null) {
                 paramsNullability[param.id] = paramNullabilityExpr[index];
             }
@@ -213,9 +224,9 @@ export function traverseInsertStatement(insertStatement: InsertStatementContext,
 
     }
 
-    const typeInfo = generateTypeInfo(parameters, constraints);
+    const typeInfo = generateTypeInfo(traverseContext.parameters, traverseContext.constraints);
     typeInfo.forEach((param, index) => {
-        const paramId = parameters[index].id;
+        const paramId = traverseContext.parameters[index].id;
         allParameters.push({
             name: 'param' + (allParameters.length + 1),
             columnType: verifyNotInferred(param),
@@ -225,42 +236,46 @@ export function traverseInsertStatement(insertStatement: InsertStatementContext,
 
     const typeInferenceResult: InsertStatementResult = {
         type: 'Insert',
-        constraints: constraints,
+        constraints: traverseContext.constraints,
         parameters: allParameters
     }
     return typeInferenceResult;
 }
 
-function traverseUpdateStatement(updateStatement: UpdateStatementContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], namedParamters: string[]): UpdateStatementResult {
+
+function traverseUpdateStatement(updateStatement: UpdateStatementContext, traverseContext: TraverseContext, namedParamters: string[]): UpdateStatementResult {
 
     const updateElement = updateStatement.updateList().updateElement();
     const withClause = updateStatement.withClause();
     const withSchema: ColumnDef[] = [];
+
     if (withClause) {
-        traverseWithClause(withClause, constraints, parameters, dbSchema, withSchema);
+        traverseWithClause(withClause, traverseContext);
     }
-    const updateColumns = getUpdateColumns(updateStatement, constraints, parameters, dbSchema, withSchema, []);
+
+    const updateColumns = getUpdateColumns(updateStatement, traverseContext);
+    traverseContext.fromColumns = updateColumns;
 
     const dataTypes: TypeAndNullInfer[] = [];
     const whereParameters: TypeAndNullInfer[] = [];
-    const paramsBefore = parameters.length;
+    const paramsBefore = traverseContext.parameters.length;
     const whereExpr = updateStatement.whereClause()?.expr();
     const paramNullability = inferParamNullability(updateStatement);
 
     updateElement.forEach(updateElement => {
         const expr = updateElement.expr();
         if (expr) {
-            const paramBeforeExpr = parameters.length;
-            const result = traverseExpr(expr, constraints, parameters, dbSchema, withSchema, updateColumns);
+            const paramBeforeExpr = traverseContext.parameters.length;
+            const result = traverseExpr(expr, traverseContext);
             const columnName = updateElement.columnRef().text;
             const field = splitName(columnName);
             const column = findColumn(field, updateColumns);
-            constraints.push({
+            traverseContext.constraints.push({
                 expression: updateStatement.text,
                 type1: result,
                 type2: column.columnType //freshVar(column.columnName, )
             })
-            parameters.slice(paramBeforeExpr, parameters.length).forEach((param, index) => {
+            traverseContext.parameters.slice(paramBeforeExpr, traverseContext.parameters.length).forEach((param, index) => {
                 dataTypes.push({
                     name: namedParamters[paramBeforeExpr + index] || field.name,
                     type: param,
@@ -272,13 +287,13 @@ function traverseUpdateStatement(updateStatement: UpdateStatementContext, constr
         }
     });
 
-    const paramsAfter = parameters.length;
+    const paramsAfter = traverseContext.parameters.length;
 
     if (whereExpr) {
-        traverseExpr(whereExpr, constraints, parameters, dbSchema, withSchema, updateColumns);
+        traverseExpr(whereExpr, traverseContext);
     }
 
-    parameters.slice(0, paramsBefore).forEach((param, index) => {
+    traverseContext.parameters.slice(0, paramsBefore).forEach((param, index) => {
         whereParameters.push({
             name: namedParamters[index] || 'param' + (whereParameters.length + 1),
             type: param,
@@ -286,7 +301,7 @@ function traverseUpdateStatement(updateStatement: UpdateStatementContext, constr
             table: ''
         })
     })
-    parameters.slice(paramsAfter).forEach((param, index) => {
+    traverseContext.parameters.slice(paramsAfter).forEach((param, index) => {
         whereParameters.push({
             name: namedParamters[paramsAfter + index] || 'param' + (whereParameters.length + 1),
             type: param,
@@ -297,7 +312,7 @@ function traverseUpdateStatement(updateStatement: UpdateStatementContext, constr
 
     const typeInferenceResult: UpdateStatementResult = {
         type: 'Update',
-        constraints,
+        constraints: traverseContext.constraints,
         data: dataTypes,
         parameters: whereParameters
     }
@@ -305,16 +320,17 @@ function traverseUpdateStatement(updateStatement: UpdateStatementContext, constr
     return typeInferenceResult;
 }
 
-export function traverseDeleteStatement(deleteStatement: DeleteStatementContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[]): DeleteStatementResult {
+export function traverseDeleteStatement(deleteStatement: DeleteStatementContext, traverseContext: TraverseContext): DeleteStatementResult {
 
     const whereExpr = deleteStatement.whereClause()?.expr();
-    const deleteColumns = getDeleteColumns(deleteStatement, dbSchema);
+    const deleteColumns = getDeleteColumns(deleteStatement, traverseContext.dbSchema);
+    traverseContext.fromColumns = deleteColumns;
     const allParameters: ParameterDef[] = [];
 
     if (whereExpr) {
 
-        traverseExpr(whereExpr, constraints, parameters, dbSchema, [], deleteColumns);
-        const typeInfo = generateTypeInfo(parameters, constraints);
+        traverseExpr(whereExpr, traverseContext);
+        const typeInfo = generateTypeInfo(traverseContext.parameters, traverseContext.constraints);
 
         const paramNullability = inferParamNullability(whereExpr);
         typeInfo.forEach((param, paramIndex) => {
@@ -329,60 +345,60 @@ export function traverseDeleteStatement(deleteStatement: DeleteStatementContext,
 
     const typeInferenceResult: DeleteStatementResult = {
         type: 'Delete',
-        constraints,
+        constraints: traverseContext.constraints,
         parameters: allParameters
     }
     return typeInferenceResult;
 }
 
-export function getUpdateColumns(updateStatement: UpdateStatementContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], withSchema: ColumnDef[], fromColumns: ColumnDef[]) {
+export function getUpdateColumns(updateStatement: UpdateStatementContext, traverseContext: TraverseContext) {
     const tableReferences = updateStatement.tableReferenceList().tableReference();
-    const columns = traverseTableReferenceList(tableReferences, constraints, parameters, dbSchema, withSchema, fromColumns)
+    const columns = traverseTableReferenceList(tableReferences, traverseContext)
     return columns;
 }
 
-function traverseInsertQueryExpression(insertQueryExpression: InsertQueryExpressionContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], withSchema: ColumnDef[], fromColumns: ColumnDef[]): QuerySpecificationResult {
+function traverseInsertQueryExpression(insertQueryExpression: InsertQueryExpressionContext, traverseContext: TraverseContext): QuerySpecificationResult {
     const queryExpressionOrParens = insertQueryExpression.queryExpressionOrParens();
-    return traverseQueryExpressionOrParens(queryExpressionOrParens, constraints, parameters, dbSchema, withSchema, fromColumns);
+    return traverseQueryExpressionOrParens(queryExpressionOrParens, traverseContext);
 }
 
-function traverseQueryExpressionOrParens(queryExpressionOrParens: QueryExpressionOrParensContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], withSchema: ColumnDef[], fromColumns: ColumnDef[]): QuerySpecificationResult {
+function traverseQueryExpressionOrParens(queryExpressionOrParens: QueryExpressionOrParensContext, traverseContext: TraverseContext): QuerySpecificationResult {
     const queryExpression = queryExpressionOrParens.queryExpression();
     if (queryExpression) {
-        return traverseQueryExpression(queryExpression, constraints, parameters, dbSchema, withSchema, fromColumns);
+        return traverseQueryExpression(queryExpression, traverseContext)
     }
     const queryEpressionParens = queryExpressionOrParens.queryExpressionParens();
     if (queryEpressionParens) {
-        return traverseQueryExpressionParens(queryEpressionParens, constraints, parameters, dbSchema, withSchema, fromColumns);
+        return traverseQueryExpressionParens(queryEpressionParens, traverseContext)
     }
     throw Error("walkQueryExpressionOrParens");
 }
 
-function traverseQueryExpression(queryExpression: QueryExpressionContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], withSchema: ColumnDef[], fromColumns: ColumnDef[], subQuery: boolean = false, recursiveNames?: string[]): QuerySpecificationResult {
+function traverseQueryExpression(queryExpression: QueryExpressionContext, traverseContext: TraverseContext, subQuery: boolean = false, recursiveNames?: string[]): QuerySpecificationResult {
     const withClause = queryExpression.withClause();
     if (withClause) {
-        traverseWithClause(withClause, constraints, parameters, dbSchema, withSchema);
+        traverseWithClause(withClause, traverseContext);
     }
 
     const queryExpressionBody = queryExpression.queryExpressionBody();
     if (queryExpressionBody) {
-        return traverseQueryExpressionBody(queryExpressionBody, constraints, parameters, dbSchema, withSchema, fromColumns, subQuery, recursiveNames)
+        return traverseQueryExpressionBody(queryExpressionBody, traverseContext, subQuery, recursiveNames)
     }
     const queryExpressionParens = queryExpression.queryExpressionParens();
     if (queryExpressionParens) {
-        return traverseQueryExpressionParens(queryExpressionParens, constraints, parameters, dbSchema, withSchema, fromColumns, recursiveNames);
+        return traverseQueryExpressionParens(queryExpressionParens, traverseContext, recursiveNames);
     }
     throw Error("walkQueryExpression");
 }
 
-function traverseQueryExpressionParens(queryExpressionParens: QueryExpressionParensContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], withSchema: ColumnDef[], fromColumns: ColumnDef[], recursiveNames?: string[]): QuerySpecificationResult {
+function traverseQueryExpressionParens(queryExpressionParens: QueryExpressionParensContext, traverseContext: TraverseContext, recursiveNames?: string[]): QuerySpecificationResult {
     const queryExpression = queryExpressionParens.queryExpression();
     if (queryExpression) {
-        return traverseQueryExpression(queryExpression, constraints, parameters, dbSchema, withSchema, fromColumns, false, recursiveNames);
+        return traverseQueryExpression(queryExpression, traverseContext, false, recursiveNames);
     }
     const queryExpressionParens2 = queryExpressionParens.queryExpressionParens();
     if (queryExpressionParens2) {
-        return traverseQueryExpressionParens(queryExpressionParens, constraints, parameters, dbSchema, withSchema, fromColumns, recursiveNames);
+        return traverseQueryExpressionParens(queryExpressionParens, traverseContext, recursiveNames);
     }
     throw Error("walkQueryExpressionParens");
 }
@@ -392,10 +408,10 @@ function createUnionVar(type: TypeVar, name: string) {
     return newVar;
 }
 
-function traverseQueryExpressionBody(queryExpressionBody: QueryExpressionBodyContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], withSchema: ColumnDef[], fromColumns: ColumnDef[], subQuery: boolean = false, recursiveNames?: string[]): QuerySpecificationResult {
+function traverseQueryExpressionBody(queryExpressionBody: QueryExpressionBodyContext, traverseContext: TraverseContext, subQuery: boolean = false, recursiveNames?: string[]): QuerySpecificationResult {
     const allQueries = getAllQuerySpecificationsFromSelectStatement(queryExpressionBody);
     const [first, ...unionQuerySpec] = allQueries;
-    const mainQueryResult = traverseQuerySpecification(first, constraints, parameters, dbSchema, withSchema, fromColumns, subQuery);
+    const mainQueryResult = traverseQuerySpecification(first, traverseContext, subQuery);
 
     const resultTypes = mainQueryResult.columns.map((t, index) => unionQuerySpec.length == 0 ? t.type : createUnionVar(t.type, recursiveNames && recursiveNames.length > 0 ? recursiveNames[index] : t.name)); //TODO mover para traversequeryspecificat?
 
@@ -403,11 +419,11 @@ function traverseQueryExpressionBody(queryExpressionBody: QueryExpressionBodyCon
         const columnNames = recursiveNames && recursiveNames.length > 0 ? recursiveNames : mainQueryResult.columns.map(col => col.name);
         const newFromColumns = recursiveNames ? renameFromColumns(mainQueryResult.columns, columnNames) : [];
         const unionQuery = unionQuerySpec[queryIndex];
-        const unionResult = traverseQuerySpecification(unionQuery, constraints, parameters, dbSchema, withSchema, newFromColumns, subQuery);
+        const unionResult = traverseQuerySpecification(unionQuery, { ...traverseContext, fromColumns: newFromColumns }, subQuery);
 
         resultTypes.forEach((t2, index) => {
             mainQueryResult.columns[index].notNull = mainQueryResult.columns[index].notNull && unionResult.columns[index].notNull;
-            constraints.push({
+            traverseContext.constraints.push({
                 expression: 'union',
                 coercionType: 'Union',
                 mostGeneralType: true,
@@ -451,21 +467,21 @@ function renameFromColumns(fromColumns: TypeAndNullInfer[], recursiveNames: stri
     return newFromColumns;
 }
 
-export function traverseQuerySpecification(querySpec: QuerySpecificationContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], withSchema: ColumnDef[], fromColumnsParent: ColumnDef[], subQuery = false): QuerySpecificationResult {
+export function traverseQuerySpecification(querySpec: QuerySpecificationContext, traverseContext: TraverseContext, subQuery = false): QuerySpecificationResult {
     const fromClause = querySpec.fromClause();
-    const fromColumns = fromClause ? traverseFromClause(fromClause, constraints, parameters, dbSchema, withSchema, fromColumnsParent) : [];
-    const allColumns = subQuery ? fromColumnsParent.concat(fromColumns) : fromColumns;     //(... where id = t1.id)
-    const selectItemListResult = traverseSelectItemList(querySpec.selectItemList(), constraints, parameters, dbSchema, withSchema, allColumns);
+    const fromColumnsFrom = fromClause ? traverseFromClause(fromClause, traverseContext) : [];
+    const allColumns = subQuery ? traverseContext.fromColumns.concat(fromColumnsFrom) : fromColumnsFrom;     //(... where id = t1.id)
+    const selectItemListResult = traverseSelectItemList(querySpec.selectItemList(), { ...traverseContext, fromColumns: allColumns });
 
     const whereClause = querySpec.whereClause();
     //TODO - HAVING, BLAH
     if (whereClause) {
         const whereExpr = whereClause?.expr();
-        traverseExpr(whereExpr, constraints, parameters, dbSchema, withSchema, allColumns);
+        traverseExpr(whereExpr, { ...traverseContext, fromColumns: allColumns });
     }
 
 
-    const columnNullability = inferNotNull(querySpec, dbSchema, allColumns);
+    const columnNullability = inferNotNull(querySpec, traverseContext.dbSchema, allColumns);
 
     const columns = selectItemListResult.types.map((t, index) => {
         const resultType: TypeAndNullInfer = {
@@ -490,21 +506,21 @@ export function traverseQuerySpecification(querySpec: QuerySpecificationContext,
             }
             return col;
         })
-        traverseHavingClause(havingClause, constraints, parameters, dbSchema, withSchema, selectColumns.concat(fromColumns));
+        traverseHavingClause(havingClause, { ...traverseContext, fromColumns: selectColumns.concat(fromColumnsFrom) });
     }
     return {
         columns,
-        fromColumns
+        fromColumns: fromColumnsFrom
     };
 }
 
-export function traverseWithClause(withClause: WithClauseContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], withSchema: ColumnDef[]) {
+export function traverseWithClause(withClause: WithClauseContext, traverseContext: TraverseContext) {
     //result1, result2
     withClause.commonTableExpression().forEach(commonTableExpression => {
         const identifier = commonTableExpression.identifier().text;
         const recursiveNames = withClause.RECURSIVE_SYMBOL() ? commonTableExpression.columnInternalRefList()?.columnInternalRef().map(t => t.text) || [] : undefined;
         const subQuery = commonTableExpression.subquery();
-        const subqueryResult = traverseSubquery(subQuery, constraints, parameters, dbSchema, withSchema, [], recursiveNames); //recursive= true??
+        const subqueryResult = traverseSubquery(subQuery, traverseContext, recursiveNames); //recursive= true??
         subqueryResult.columns.forEach(col => {
             const withCol: ColumnDef = {
                 table: identifier,
@@ -513,28 +529,28 @@ export function traverseWithClause(withClause: WithClauseContext, constraints: C
                 columnKey: "",
                 notNull: col.notNull
             }
-            withSchema.push(withCol);
+            traverseContext.withSchema.push(withCol);
         })
 
     });
 }
 
-function traverseFromClause(fromClause: FromClauseContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], withSchema: ColumnDef[], fromColumnsParent: ColumnDef[]): ColumnDef[] {
+function traverseFromClause(fromClause: FromClauseContext, traverseContext: TraverseContext): ColumnDef[] {
     const tableReferenceList = fromClause.tableReferenceList()?.tableReference();
 
-    const fromColumns = tableReferenceList ? traverseTableReferenceList(tableReferenceList, constraints, parameters, dbSchema, withSchema, fromColumnsParent) : [];
+    const fromColumns = tableReferenceList ? traverseTableReferenceList(tableReferenceList, traverseContext) : [];
 
     return fromColumns;
 }
 
-function traverseTableReferenceList(tableReferenceList: TableReferenceContext[], constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], withSchema: ColumnDef[], fromColumns: ColumnDef[]): ColumnDef[] {
+function traverseTableReferenceList(tableReferenceList: TableReferenceContext[], traverseContext: TraverseContext): ColumnDef[] {
 
     const result: ColumnDef[] = [];
 
     tableReferenceList.forEach(tab => {
         const tableFactor = tab.tableFactor();
         if (tableFactor) {
-            const fields = traverseTableFactor(tableFactor, constraints, parameters, dbSchema, withSchema, fromColumns);
+            const fields = traverseTableFactor(tableFactor, traverseContext);
             result.push(...fields);
         }
         const allJoinedColumns: ColumnDef[][] = [];
@@ -551,7 +567,7 @@ function traverseTableReferenceList(tableReferenceList: TableReferenceContext[],
 
             if (tableReferences) {
                 const usingFields = extractFieldsFromUsingClause(joined);
-                const joinedFields = traverseTableReferenceList([tableReferences], constraints, parameters, dbSchema, withSchema, fromColumns);
+                const joinedFields = traverseTableReferenceList([tableReferences], traverseContext);
                 //doesn't duplicate the fields of the USING clause. Ex. INNER JOIN mytable2 USING(id);
                 const joinedFieldsFiltered = usingFields.length > 0 ? filterUsingFields(joinedFields, usingFields) : joinedFields;
                 allJoinedColumns.push(joinedFieldsFiltered);
@@ -576,7 +592,7 @@ function traverseTableReferenceList(tableReferenceList: TableReferenceContext[],
 
                     })
 
-                    traverseExpr(onClause, constraints, parameters, dbSchema, withSchema, allJoinedColumns.flatMap(c => c).concat(result))
+                    traverseExpr(onClause, { ...traverseContext, fromColumns: allJoinedColumns.flatMap(c => c).concat(result) })
                 }
 
             }
@@ -603,11 +619,11 @@ function traverseTableReferenceList(tableReferenceList: TableReferenceContext[],
     return result;
 }
 
-function traverseTableFactor(tableFactor: TableFactorContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], withSchema: ColumnDef[], fromColumns: ColumnDef[]): ColumnDef[] {
+function traverseTableFactor(tableFactor: TableFactorContext, traverseContext: TraverseContext): ColumnDef[] {
 
     const singleTable = tableFactor.singleTable();
     if (singleTable) {
-        return traverseSingleTable(singleTable, constraints, parameters, dbSchema, withSchema);
+        return traverseSingleTable(singleTable, traverseContext.dbSchema, traverseContext.withSchema);
     }
 
     const derivadTable = tableFactor.derivedTable();
@@ -615,7 +631,7 @@ function traverseTableFactor(tableFactor: TableFactorContext, constraints: Const
         const tableAlias = derivadTable.tableAlias()?.identifier().text;
         const subQuery = derivadTable.subquery();
         if (subQuery) {
-            const subQueryResult = traverseSubquery(subQuery, constraints, parameters, dbSchema, withSchema, fromColumns);
+            const subQueryResult = traverseSubquery(subQuery, traverseContext);
             const result = subQueryResult.columns.map(t => {
                 const colDef: ColumnDef = {
                     table: tableAlias || '',
@@ -632,30 +648,30 @@ function traverseTableFactor(tableFactor: TableFactorContext, constraints: Const
     }
     const tableReferenceListParens = tableFactor.tableReferenceListParens();
     if (tableReferenceListParens) {
-        const listParens = traverseTableReferenceListParens(tableReferenceListParens, constraints, parameters, dbSchema, withSchema, fromColumns);
+        const listParens = traverseTableReferenceListParens(tableReferenceListParens, traverseContext);
         return listParens;
     }
     throw Error('traverseTableFactor - not supported: ' + tableFactor.constructor.name);
 }
 
 //tableReferenceList | tableReferenceListParens
-function traverseTableReferenceListParens(ctx: TableReferenceListParensContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], withSchema: ColumnDef[], fromColumns: ColumnDef[]): ColumnDef[] {
+function traverseTableReferenceListParens(ctx: TableReferenceListParensContext, traverseContext: TraverseContext): ColumnDef[] {
 
     const tableReferenceList = ctx.tableReferenceList();
     if (tableReferenceList) {
-        return traverseTableReferenceList(tableReferenceList.tableReference(), constraints, parameters, dbSchema, withSchema, fromColumns);
+        return traverseTableReferenceList(tableReferenceList.tableReference(), traverseContext);
     }
 
     const tableReferenceListParens = ctx.tableReferenceListParens();
 
     if (tableReferenceListParens) {
-        return traverseTableReferenceListParens(tableReferenceListParens, constraints, parameters, dbSchema, withSchema, fromColumns);
+        return traverseTableReferenceListParens(tableReferenceListParens, traverseContext);
     }
 
     throw Error('traverseTableReferenceListParens - not supported: ' + ctx.constructor.name);
 }
 
-function traverseSingleTable(singleTable: SingleTableContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], withSchema: ColumnDef[]): ColumnDef[] {
+function traverseSingleTable(singleTable: SingleTableContext, dbSchema: ColumnSchema[], withSchema: ColumnDef[]): ColumnDef[] {
     const table = singleTable?.tableRef().text;
     const tableAlias = singleTable?.tableAlias()?.identifier().text;
     const tableName = splitName(table);
@@ -663,23 +679,23 @@ function traverseSingleTable(singleTable: SingleTableContext, constraints: Const
     return fields;
 }
 
-function traverseSubquery(subQuery: SubqueryContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], fromColumns: ColumnDef[], withSchema: ColumnDef[], recursiveNames?: string[] | undefined): QuerySpecificationResult {
+function traverseSubquery(subQuery: SubqueryContext, traverseContext: TraverseContext, recursiveNames?: string[] | undefined): QuerySpecificationResult {
     const queryExpressionParens = subQuery.queryExpressionParens();
     const queryExpression = queryExpressionParens.queryExpression();
     if (queryExpression) {
-        return traverseQueryExpression(queryExpression, constraints, parameters, dbSchema, fromColumns, withSchema, true, recursiveNames);
+        return traverseQueryExpression(queryExpression, traverseContext, true, recursiveNames);
     }
     const queryExpressionParens2 = queryExpressionParens.queryExpressionParens();
     if (queryExpressionParens2) {
-        return traverseQueryExpressionParens(queryExpressionParens2, constraints, parameters, dbSchema, fromColumns, withSchema);
+        return traverseQueryExpressionParens(queryExpressionParens2, traverseContext);
     }
     throw Error('traverseSubquery - not expected: ' + subQuery.constructor.name);
 }
 
-function traverseSelectItemList(selectItemList: SelectItemListContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], withSchema: ColumnDef[], fromColumns: ColumnDef[]): TypeOperator {
+function traverseSelectItemList(selectItemList: SelectItemListContext, traverseContext: TraverseContext): TypeOperator {
     const listType: TypeVar[] = [];
     if (selectItemList.MULT_OPERATOR()) {
-        fromColumns.forEach(col => {
+        traverseContext.fromColumns.forEach(col => {
             const columnType = createColumnType(col);
             listType.push(columnType);
         })
@@ -689,7 +705,7 @@ function traverseSelectItemList(selectItemList: SelectItemListContext, constrain
         if (tableWild) {
             if (tableWild.MULT_OPERATOR()) {
                 const itemName = splitName(selectItem.text);
-                const allColumns = selectAllColumns(itemName.prefix, fromColumns);
+                const allColumns = selectAllColumns(itemName.prefix, traverseContext.fromColumns);
                 allColumns.forEach(col => {
                     const columnType = createColumnType(col);
                     listType.push(columnType);
@@ -698,7 +714,7 @@ function traverseSelectItemList(selectItemList: SelectItemListContext, constrain
         }
         const expr = selectItem.expr();
         if (expr) {
-            const exprType = traverseExpr(expr, constraints, parameters, dbSchema, withSchema, fromColumns);
+            const exprType = traverseExpr(expr, traverseContext);
 
             if (exprType.kind == 'TypeOperator') {
                 const subqueryType = exprType.types[0] as TypeVar;
@@ -718,55 +734,55 @@ function traverseSelectItemList(selectItemList: SelectItemListContext, constrain
     return result;
 }
 
-function traverseHavingClause(havingClause: HavingClauseContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], withSchema: ColumnDef[], fromColumns: ColumnDef[]) {
+function traverseHavingClause(havingClause: HavingClauseContext, traverseContext: TraverseContext) {
     const havingExpr = havingClause.expr();
-    traverseExpr(havingExpr, constraints, parameters, dbSchema, withSchema, fromColumns);
+    traverseExpr(havingExpr, traverseContext);
 }
 
-function traverseExpr(expr: ExprContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], withSchema: ColumnDef[], fromColumns: ColumnDef[]): Type {
+function traverseExpr(expr: ExprContext, traverseContext: TraverseContext): Type {
 
     if (expr instanceof ExprIsContext) {
         const boolPri = expr.boolPri();
-        const boolPriType = traverseBoolPri(boolPri, constraints, parameters, dbSchema, withSchema, fromColumns);
+        const boolPriType = traverseBoolPri(boolPri, traverseContext);
         return boolPriType;
     }
     if (expr instanceof ExprNotContext) {
         const expr2 = expr.expr();
         if (expr2) {
-            return traverseExpr(expr2, constraints, parameters, dbSchema, withSchema, fromColumns);
+            return traverseExpr(expr2, traverseContext);
         }
         return freshVar(expr.text, 'tinyint');;
     }
     if (expr instanceof ExprAndContext || expr instanceof ExprXorContext || expr instanceof ExprOrContext) {
         const exprLeft = expr.expr()[0];
-        traverseExpr(exprLeft, constraints, parameters, dbSchema, withSchema, fromColumns);
+        traverseExpr(exprLeft, traverseContext);
         const exprRight = expr.expr()[1];
-        traverseExpr(exprRight, constraints, parameters, dbSchema, withSchema, fromColumns);
+        traverseExpr(exprRight, traverseContext);
         return freshVar(expr.text, 'tinyint');
     }
 
     throw Error('traverseExpr - not supported: ' + expr.text);
 }
 
-function traverseBoolPri(boolPri: BoolPriContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], withSchema: ColumnDef[], fromColumns: ColumnDef[]): Type {
+function traverseBoolPri(boolPri: BoolPriContext, traverseContext: TraverseContext): Type {
     if (boolPri instanceof PrimaryExprPredicateContext) {
         const predicate = boolPri.predicate();
-        const predicateType = traversePredicate(predicate, constraints, parameters, dbSchema, withSchema, fromColumns);
+        const predicateType = traversePredicate(predicate, traverseContext);
         return predicateType;
     }
     if (boolPri instanceof PrimaryExprIsNullContext) {
         const boolPri2 = boolPri.boolPri();
-        traverseBoolPri(boolPri2, constraints, parameters, dbSchema, withSchema, fromColumns);
+        traverseBoolPri(boolPri2, traverseContext);
         return freshVar(boolPri.text, '?');
     }
     if (boolPri instanceof PrimaryExprCompareContext) {
 
         const compareLeft = boolPri.boolPri();
         const compareRight = boolPri.predicate();
-        const typeLeft = traverseBoolPri(compareLeft, constraints, parameters, dbSchema, withSchema, fromColumns);
-        const typeRight = traversePredicate(compareRight, constraints, parameters, dbSchema, withSchema, fromColumns);
+        const typeLeft = traverseBoolPri(compareLeft, traverseContext);
+        const typeRight = traversePredicate(compareRight, traverseContext);
 
-        constraints.push({
+        traverseContext.constraints.push({
             expression: boolPri.text,
             type1: typeLeft,
             type2: typeRight
@@ -776,9 +792,9 @@ function traverseBoolPri(boolPri: BoolPriContext, constraints: Constraint[], par
     if (boolPri instanceof PrimaryExprAllAnyContext) {
         const compareLeft = boolPri.boolPri();
         const compareRight = boolPri.subquery();
-        const typeLeft = traverseBoolPri(compareLeft, constraints, parameters, dbSchema, withSchema, fromColumns);
-        const subQueryResult = traverseSubquery(compareRight, constraints, parameters, dbSchema, withSchema, fromColumns);
-        constraints.push({
+        const typeLeft = traverseBoolPri(compareLeft, traverseContext);
+        const subQueryResult = traverseSubquery(compareRight, traverseContext);
+        traverseContext.constraints.push({
             expression: boolPri.text,
             type1: typeLeft,
             type2: {
@@ -793,15 +809,15 @@ function traverseBoolPri(boolPri: BoolPriContext, constraints: Constraint[], par
 
 }
 
-function traversePredicate(predicate: PredicateContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], withSchema: ColumnDef[], fromColumns: ColumnDef[]): Type {
+function traversePredicate(predicate: PredicateContext, traverseContext: TraverseContext): Type {
     const bitExpr = predicate.bitExpr()[0]; //TODO - predicate length = 2? [1] == predicateOperations
-    const bitExprType = traverseBitExpr(bitExpr, constraints, parameters, dbSchema, withSchema, fromColumns);
+    const bitExprType = traverseBitExpr(bitExpr, traverseContext);
     const predicateOperations = predicate.predicateOperations();
     if (predicateOperations) {
-        const rightType = traversePredicateOperations(predicateOperations, bitExprType, constraints, parameters, fromColumns, dbSchema, withSchema);
+        const rightType = traversePredicateOperations(predicateOperations, bitExprType, traverseContext);
         if (bitExprType.kind == 'TypeOperator' && rightType.kind == 'TypeOperator') {
             rightType.types.forEach((t, i) => {
-                constraints.push({
+                traverseContext.constraints.push({
                     expression: predicateOperations.text,
                     type1: t, // ? array of id+id
                     type2: bitExprType.types[i],
@@ -814,7 +830,7 @@ function traversePredicate(predicate: PredicateContext, constraints: Constraint[
         if (bitExprType.kind == 'TypeVar' && rightType.kind == 'TypeOperator') {
 
             rightType.types.forEach((t, i) => {
-                constraints.push({
+                traverseContext.constraints.push({
                     expression: predicateOperations.text,
                     type1: bitExprType, // ? array of id+id
                     type2: { ...t, list: true },
@@ -832,10 +848,10 @@ function traversePredicate(predicate: PredicateContext, constraints: Constraint[
     return bitExprType;
 }
 
-function traverseExprList(exprList: ExprListContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], withSchema: ColumnDef[], fromColumns: ColumnDef[]): Type {
+function traverseExprList(exprList: ExprListContext, traverseContext: TraverseContext): Type {
 
     const listType = exprList.expr().map(item => {
-        const exprType = traverseExpr(item, constraints, parameters, dbSchema, withSchema, fromColumns);
+        const exprType = traverseExpr(item, traverseContext);
         return exprType as TypeVar;
 
     })
@@ -846,22 +862,22 @@ function traverseExprList(exprList: ExprListContext, constraints: Constraint[], 
     return type;
 }
 
-function traverseBitExpr(bitExpr: BitExprContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], withSchema: ColumnDef[], fromColumns: ColumnDef[]): Type {
+function traverseBitExpr(bitExpr: BitExprContext, traverseContext: TraverseContext): Type {
     const simpleExpr = bitExpr.simpleExpr();
     if (simpleExpr) {
-        return traverseSimpleExpr(simpleExpr, constraints, parameters, dbSchema, withSchema, fromColumns);
+        return traverseSimpleExpr(simpleExpr, traverseContext);
     }
     if (bitExpr.bitExpr().length == 2) {
 
 
 
         const bitExprLeft = bitExpr.bitExpr()[0];
-        const typeLeftTemp = traverseBitExpr(bitExprLeft, constraints, parameters, dbSchema, withSchema, fromColumns);
+        const typeLeftTemp = traverseBitExpr(bitExprLeft, traverseContext);
         const typeLeft = typeLeftTemp.kind == 'TypeOperator' ? typeLeftTemp.types[0] : typeLeftTemp;
         //const newTypeLeft = typeLeft.name == '?'? freshVar('?', 'bigint') : typeLeft;
 
         const bitExprRight = bitExpr.bitExpr()[1]
-        const typeRightTemp = traverseBitExpr(bitExprRight, constraints, parameters, dbSchema, withSchema, fromColumns);
+        const typeRightTemp = traverseBitExpr(bitExprRight, traverseContext);
 
         //In the expression 'id + (value + 2) + ?' the '(value+2)' is treated as a SimpleExprListContext and return a TypeOperator
         const typeRight = typeRightTemp.kind == 'TypeOperator' ? typeRightTemp.types[0] : typeRightTemp;
@@ -871,7 +887,7 @@ function traverseBitExpr(bitExpr: BitExprContext, constraints: Constraint[], par
             bitExprType.table = typeLeftTemp.table;
         }
         //PRECISA?
-        // constraints.push({
+        // traverseContext.constraints.push({
         //     expression: bitExpr.text,
         //     type1: typeLeft,
         //     type2: typeRight,
@@ -880,28 +896,28 @@ function traverseBitExpr(bitExpr: BitExprContext, constraints: Constraint[], par
         // })
 
 
-        // constraints.push({
+        // traverseContext.constraints.push({
         //     expression: bitExpr.text,
         //     type1: typeLeft,
         //     type2: typeRight,
         //     mostGeneralType: true,
         //     coercionType: 'Sum'
         // })
-        // constraints.push({
+        // traverseContext.constraints.push({
         //     expression: bitExpr.text,
         //     type1: bitExprType,
         //     type2: typeRight,
         //     mostGeneralType: true,
         //     coercionType: 'Sum'
         // })
-        constraints.push({
+        traverseContext.constraints.push({
             expression: bitExprLeft.text,
             type1: bitExprType,
             type2: typeLeft,
             mostGeneralType: true,
             coercionType: 'Sum'
         })
-        constraints.push({
+        traverseContext.constraints.push({
             expression: bitExprRight.text,
             type1: bitExprType,
             type2: typeRight,
@@ -909,7 +925,7 @@ function traverseBitExpr(bitExpr: BitExprContext, constraints: Constraint[], par
             coercionType: 'Sum'
         })
         // const resultType = freshVar(bitExprRight.text, 'number');
-        // constraints.push({
+        // traverseContext.constraints.push({
         //     expression: bitExprRight.text,
         //     type1: resultType,
         //     type2: freshVar(bitExprRight.text, 'number'),
@@ -922,10 +938,10 @@ function traverseBitExpr(bitExpr: BitExprContext, constraints: Constraint[], par
 
     if (bitExpr.INTERVAL_SYMBOL()) {
         const bitExpr2 = bitExpr.bitExpr()[0];
-        const leftType = traverseBitExpr(bitExpr2, constraints, parameters, dbSchema, withSchema, fromColumns);
+        const leftType = traverseBitExpr(bitExpr2, traverseContext);
         const expr = bitExpr.expr()!; //expr interval
-        traverseExpr(expr, constraints, parameters, dbSchema, withSchema, fromColumns);
-        constraints.push({
+        traverseExpr(expr, traverseContext);
+        traverseContext.constraints.push({
             expression: bitExpr.text,
             type1: leftType,
             type2: freshVar('datetime', 'datetime')
@@ -936,25 +952,25 @@ function traverseBitExpr(bitExpr: BitExprContext, constraints: Constraint[], par
     throw Error('traverseBitExpr - not supported: ' + bitExpr.constructor.name);
 }
 
-function traversePredicateOperations(predicateOperations: PredicateOperationsContext, parentType: Type, constraints: Constraint[], parameters: TypeVar[], fromColumns: ColumnDef[], dbSchema: ColumnSchema[], withSchema: ColumnDef[]): Type {
+function traversePredicateOperations(predicateOperations: PredicateOperationsContext, parentType: Type, traverseContext: TraverseContext): Type {
     if (predicateOperations instanceof PredicateExprInContext) {
 
         const subquery = predicateOperations.subquery();
         if (subquery) {
-            const subQueryResult = traverseSubquery(subquery, constraints, parameters, dbSchema, withSchema, fromColumns);
+            const subQueryResult = traverseSubquery(subquery, traverseContext);
             return { kind: 'TypeOperator', types: subQueryResult.columns.map(t => t.type) };
         }
         const exprList = predicateOperations.exprList();
         if (exprList) {
-            const rightType = traverseExprList(exprList, constraints, parameters, dbSchema, withSchema, fromColumns);
+            const rightType = traverseExprList(exprList, traverseContext);
             return rightType;
         }
     }
 
     if (predicateOperations instanceof PredicateExprLikeContext) {
         const simpleExpr = predicateOperations.simpleExpr()[0];
-        const rightType = traverseSimpleExpr(simpleExpr, constraints, parameters, dbSchema, withSchema, fromColumns);
-        constraints.push({
+        const rightType = traverseSimpleExpr(simpleExpr, traverseContext);
+        traverseContext.constraints.push({
             expression: simpleExpr.text,
             type1: parentType,
             type2: rightType
@@ -965,19 +981,19 @@ function traversePredicateOperations(predicateOperations: PredicateOperationsCon
     if (predicateOperations instanceof PredicateExprBetweenContext) {
         const bitExpr = predicateOperations.bitExpr();
         const predicate = predicateOperations.predicate();
-        const bitExprType = traverseBitExpr(bitExpr, constraints, parameters, dbSchema, withSchema, fromColumns);
-        const predicateType = traversePredicate(predicate, constraints, parameters, dbSchema, withSchema, fromColumns);
-        constraints.push({
+        const bitExprType = traverseBitExpr(bitExpr, traverseContext);
+        const predicateType = traversePredicate(predicate, traverseContext);
+        traverseContext.constraints.push({
             expression: predicateOperations.text,
             type1: parentType,
             type2: bitExprType
         });
-        constraints.push({
+        traverseContext.constraints.push({
             expression: predicateOperations.text,
             type1: parentType,
             type2: predicateType
         });
-        constraints.push({
+        traverseContext.constraints.push({
             expression: predicateOperations.text,
             type1: bitExprType,
             type2: predicateType
@@ -988,12 +1004,12 @@ function traversePredicateOperations(predicateOperations: PredicateOperationsCon
 
 }
 
-function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], withSchema: ColumnDef[], fromColumns: ColumnDef[]): Type {
+function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: TraverseContext): Type {
     if (simpleExpr instanceof SimpleExprColumnRefContext) {
         const fieldName = splitName(simpleExpr.text);
-        const column = findColumn(fieldName, fromColumns);
+        const column = findColumn(fieldName, traverseContext.fromColumns);
         const typeVar = freshVar(column.columnName, column.columnType.type, column.tableAlias || column.table);
-        constraints.push({
+        traverseContext.constraints.push({
             expression: simpleExpr.text,
             type1: typeVar,
             type2: column.columnType,
@@ -1003,7 +1019,7 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
     }
     if (simpleExpr instanceof SimpleExprParamMarkerContext) {
         const param = freshVar('?', '?');
-        parameters.push(param);
+        traverseContext.parameters.push(param);
         return param;
     }
     if (simpleExpr instanceof SimpleExprLiteralContext) {
@@ -1046,7 +1062,7 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
         const exprList = simpleExpr.exprList();
 
         const listType = exprList.expr().map(item => {
-            const exprType = traverseExpr(item, constraints, parameters, dbSchema, withSchema, fromColumns);
+            const exprType = traverseExpr(item, traverseContext);
             return exprType as TypeVar;
         })
         const resultType: TypeOperator = {
@@ -1057,7 +1073,7 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
     }
     if (simpleExpr instanceof SimpleExprSubQueryContext) {
         const subquery = simpleExpr.subquery();
-        const subqueryResult = traverseSubquery(subquery, constraints, parameters, dbSchema, withSchema, fromColumns);
+        const subqueryResult = traverseSubquery(subquery, traverseContext);
         return {
             kind: 'TypeOperator',
             types: subqueryResult.columns.map(t => ({ ...t.type, table: '' }))
@@ -1070,9 +1086,9 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
 
         simpleExpr.whenExpression().forEach(whenExprCont => {
             const whenExpr = whenExprCont.expr();
-            const whenType = traverseExpr(whenExpr, constraints, parameters, dbSchema, withSchema, fromColumns);
+            const whenType = traverseExpr(whenExpr, traverseContext);
 
-            constraints.push({
+            traverseContext.constraints.push({
                 expression: whenExpr.text,
                 type1: whenType.kind == 'TypeOperator' ? whenType.types[0] : whenType,
                 type2: freshVar('tinyint', 'tinyint') //bool
@@ -1081,9 +1097,9 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
 
         const thenTypes = simpleExpr.thenExpression().map(thenExprCtx => {
             const thenExpr = thenExprCtx.expr();
-            const thenType = traverseExpr(thenExpr, constraints, parameters, dbSchema, withSchema, fromColumns);
+            const thenType = traverseExpr(thenExpr, traverseContext);
 
-            constraints.push({
+            traverseContext.constraints.push({
                 expression: thenExprCtx.text,
                 type1: caseType,
                 type2: thenType.kind == 'TypeOperator' ? thenType.types[0] : thenType,
@@ -1094,16 +1110,16 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
 
         const elseExpr = simpleExpr.elseExpression()?.expr();
         if (elseExpr) {
-            const elseType = traverseExpr(elseExpr, constraints, parameters, dbSchema, withSchema, fromColumns);
+            const elseType = traverseExpr(elseExpr, traverseContext);
 
-            constraints.push({
+            traverseContext.constraints.push({
                 expression: simpleExpr.elseExpression()?.text!,
                 type1: caseType,
                 type2: elseType.kind == 'TypeOperator' ? elseType.types[0] : elseType,
                 mostGeneralType: true
             })
             thenTypes.forEach(thenType => {
-                constraints.push({
+                traverseContext.constraints.push({
                     expression: simpleExpr.elseExpression()?.text!,
                     type1: thenType,
                     type2: elseType.kind == 'TypeOperator' ? elseType.types[0] : elseType,
@@ -1118,9 +1134,9 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
         const exprList = simpleExpr.expr();
         const exprLeft = exprList[0];
         const exprRight = exprList[1];
-        const typeLeft = traverseExpr(exprLeft, constraints, parameters, dbSchema, withSchema, fromColumns);
-        const typeRight = traverseExpr(exprRight, constraints, parameters, dbSchema, withSchema, fromColumns);
-        constraints.push({
+        const typeLeft = traverseExpr(exprLeft, traverseContext);
+        const typeRight = traverseExpr(exprRight, traverseContext);
+        traverseContext.constraints.push({
             expression: exprLeft.text,
             type1: typeLeft,
             type2: freshVar('bigint', 'bigint')
@@ -1128,7 +1144,7 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
         if (typeRight.kind == 'TypeVar' && (isDateLiteral(typeRight.name) || isDateTimeLiteral(typeRight.name))) {
             typeRight.type = 'datetime';
         }
-        constraints.push({
+        traverseContext.constraints.push({
             expression: exprRight.text,
             type1: typeRight,
             type2: freshVar('datetime', 'datetime')
@@ -1142,8 +1158,8 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
             const functionType = freshVar(simpleExpr.text, '?');
             const inSumExpr = sumExpr.inSumExpr()?.expr();
             if (inSumExpr) {
-                const inSumExprType = traverseExpr(inSumExpr, constraints, parameters, dbSchema, withSchema, fromColumns);
-                constraints.push({
+                const inSumExprType = traverseExpr(inSumExpr, traverseContext);
+                traverseContext.constraints.push({
                     expression: simpleExpr.text,
                     type1: functionType,
                     type2: inSumExprType,
@@ -1156,7 +1172,7 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
             const functionType = freshVar(simpleExpr.text, 'bigint');
             const inSumExpr = sumExpr.inSumExpr()?.expr();
             if (inSumExpr) {
-                traverseExpr(inSumExpr, constraints, parameters, dbSchema, withSchema, fromColumns);
+                traverseExpr(inSumExpr, traverseContext);
             }
             return functionType;
         }
@@ -1165,8 +1181,8 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
             const functionType = freshVar(simpleExpr.text, '?');
             const inSumExpr = sumExpr.inSumExpr()?.expr();
             if (inSumExpr) {
-                const inSumExprType = traverseExpr(inSumExpr, constraints, parameters, dbSchema, withSchema, fromColumns);
-                constraints.push({
+                const inSumExprType = traverseExpr(inSumExpr, traverseContext);
+                traverseContext.constraints.push({
                     expression: simpleExpr.text,
                     type1: functionType,
                     type2: inSumExprType,
@@ -1183,7 +1199,7 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
             const exprList = sumExpr.exprList();
             if (exprList) {
                 exprList.expr().map(item => {
-                    const exprType = traverseExpr(item, constraints, parameters, dbSchema, withSchema, fromColumns);
+                    const exprType = traverseExpr(item, traverseContext);
                     return exprType;
                 })
                 /*
@@ -1210,8 +1226,8 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
         if (runtimeFunctionCall.REPLACE_SYMBOL()) {
             const exprList = runtimeFunctionCall.expr();
             exprList.forEach(expr => {
-                const exprType = traverseExpr(expr, constraints, parameters, dbSchema, withSchema, fromColumns);
-                constraints.push({
+                const exprType = traverseExpr(expr, traverseContext);
+                traverseContext.constraints.push({
                     expression: expr.text,
                     type1: exprType,
                     type2: freshVar('varchar', 'varchar')
@@ -1223,14 +1239,14 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
         if (runtimeFunctionCall.YEAR_SYMBOL() || runtimeFunctionCall.MONTH_SYMBOL() || runtimeFunctionCall.DAY_SYMBOL()) {
             const expr = runtimeFunctionCall.exprWithParentheses()?.expr();
             if (expr) {
-                const paramType = traverseExpr(expr, constraints, parameters, dbSchema, withSchema, fromColumns);
+                const paramType = traverseExpr(expr, traverseContext);
                 if (paramType.kind == 'TypeVar' && isDateTimeLiteral(paramType.name)) {
                     paramType.type = 'datetime'
                 }
                 if (paramType.kind == 'TypeVar' && isDateLiteral(paramType.name)) {
                     paramType.type = 'date'
                 }
-                constraints.push({
+                traverseContext.constraints.push({
                     expression: expr.text,
                     type1: paramType,
                     type2: freshVar(simpleExpr.text, 'date')
@@ -1242,14 +1258,14 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
         if (runtimeFunctionCall.DATE_SYMBOL()) {
             const expr = runtimeFunctionCall.exprWithParentheses()?.expr();
             if (expr) {
-                const paramType = traverseExpr(expr, constraints, parameters, dbSchema, withSchema, fromColumns);
+                const paramType = traverseExpr(expr, traverseContext);
                 if (paramType.kind == 'TypeVar' && isDateTimeLiteral(paramType.name)) {
                     paramType.type = 'datetime'
                 }
                 if (paramType.kind == 'TypeVar' && isDateLiteral(paramType.name)) {
                     paramType.type = 'date'
                 }
-                constraints.push({
+                traverseContext.constraints.push({
                     expression: expr.text,
                     type1: paramType,
                     type2: freshVar(simpleExpr.text, 'date')
@@ -1260,7 +1276,7 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
         if (runtimeFunctionCall.HOUR_SYMBOL() || runtimeFunctionCall.MINUTE_SYMBOL() || runtimeFunctionCall.SECOND_SYMBOL()) {
             const expr = runtimeFunctionCall.exprWithParentheses()?.expr();
             if (expr) {
-                const paramType = traverseExpr(expr, constraints, parameters, dbSchema, withSchema, fromColumns);
+                const paramType = traverseExpr(expr, traverseContext);
                 if (paramType.kind == 'TypeVar' && isTimeLiteral(paramType.name)) {
                     paramType.type = 'time';
                 }
@@ -1271,7 +1287,7 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
                     paramType.type = 'datetime';
                 }
 
-                constraints.push({
+                traverseContext.constraints.push({
                     expression: expr.text,
                     type1: paramType,
                     type2: freshVar(simpleExpr.text, 'time')
@@ -1286,22 +1302,22 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
         if (trimFunction) {
             const exprList = trimFunction.expr();
             if (exprList.length == 1) {
-                const exprType = traverseExpr(exprList[0], constraints, parameters, dbSchema, withSchema, fromColumns);
-                constraints.push({
+                const exprType = traverseExpr(exprList[0], traverseContext);
+                traverseContext.constraints.push({
                     expression: exprList[0].text,
                     type1: exprType,
                     type2: freshVar('varchar', 'varchar')
                 })
             }
             if (exprList.length == 2) {
-                const exprType = traverseExpr(exprList[0], constraints, parameters, dbSchema, withSchema, fromColumns);
-                const expr2Type = traverseExpr(exprList[1], constraints, parameters, dbSchema, withSchema, fromColumns);
-                constraints.push({
+                const exprType = traverseExpr(exprList[0], traverseContext);
+                const expr2Type = traverseExpr(exprList[1], traverseContext);
+                traverseContext.constraints.push({
                     expression: exprList[0].text,
                     type1: exprType,
                     type2: freshVar('varchar', 'varchar')
                 })
-                constraints.push({
+                traverseContext.constraints.push({
                     expression: exprList[1].text,
                     type1: expr2Type,
                     type2: freshVar('varchar', 'varchar')
@@ -1318,7 +1334,7 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
                 kind: 'FixedLengthParams',
                 paramsType: [varcharParam, intParam, intParam]
             }
-            traverseExprListParameters(exprList, params, constraints, parameters, dbSchema, withSchema, fromColumns);
+            traverseExprListParameters(exprList, params, traverseContext);
             return varcharParam;
         }
 
@@ -1331,20 +1347,20 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
             //SELECT ADDDATE('2008-01-02', 31)
             const expr1 = runtimeFunctionCall.expr()[0];
             const expr2 = runtimeFunctionCall.expr()[1];
-            const typeExpr1 = traverseExpr(expr1, constraints, parameters, dbSchema, withSchema, fromColumns);
-            const typeExpr2 = traverseExpr(expr2, constraints, parameters, dbSchema, withSchema, fromColumns);
+            const typeExpr1 = traverseExpr(expr1, traverseContext);
+            const typeExpr2 = traverseExpr(expr2, traverseContext);
 
             if (typeExpr1.kind == 'TypeVar' && (isDateLiteral(typeExpr1.name) || isDateTimeLiteral(typeExpr1.name))) {
                 typeExpr1.type = 'datetime';
             }
 
-            constraints.push({
+            traverseContext.constraints.push({
                 expression: expr1.text,
                 type1: typeExpr1,
                 type2: freshVar('datetime', 'datetime')
             })
 
-            constraints.push({
+            traverseContext.constraints.push({
                 expression: expr2.text,
                 type1: typeExpr2,
                 type2: freshVar('bigint', 'bigint')
@@ -1361,9 +1377,9 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
                     kind: 'VariableLengthParams',
                     paramType: '?'
                 }
-                const paramsTypeList = traverseExprListParameters(exprList, params, constraints, parameters, dbSchema, withSchema, fromColumns);
+                const paramsTypeList = traverseExprListParameters(exprList, params, traverseContext);
                 paramsTypeList.forEach((typeVar, paramIndex) => {
-                    constraints.push({
+                    traverseContext.constraints.push({
                         expression: runtimeFunctionCall.text + '_param' + (paramIndex + 1),
                         type1: paramType,
                         type2: typeVar,
@@ -1378,29 +1394,29 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
         if (runtimeFunctionCall.MOD_SYMBOL()) {
             const functionType = freshVar('number', 'number');
             const exprList = runtimeFunctionCall.expr();
-            const param1 = traverseExpr(exprList[0], constraints, parameters, dbSchema, withSchema, fromColumns);
-            const param2 = traverseExpr(exprList[1], constraints, parameters, dbSchema, withSchema, fromColumns);
-            constraints.push({
+            const param1 = traverseExpr(exprList[0], traverseContext);
+            const param2 = traverseExpr(exprList[1], traverseContext);
+            traverseContext.constraints.push({
                 expression: simpleExpr.text,
                 type1: freshVar('number', 'number'),
                 type2: param1,
                 mostGeneralType: true,
                 coercionType: 'Numeric'
             })
-            constraints.push({
+            traverseContext.constraints.push({
                 expression: simpleExpr.text,
                 type1: freshVar('number', 'number'),
                 type2: param2,
                 mostGeneralType: true,
                 coercionType: 'Numeric'
             })
-            constraints.push({
+            traverseContext.constraints.push({
                 expression: simpleExpr.text,
                 type1: functionType,
                 type2: param1,
                 mostGeneralType: true
             })
-            constraints.push({
+            traverseContext.constraints.push({
                 expression: simpleExpr.text,
                 type1: functionType,
                 type2: param2,
@@ -1413,10 +1429,10 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
             const expr1 = exprList[0];
             const expr2 = exprList[1];
             const expr3 = exprList[2];
-            traverseExpr(expr1, constraints, parameters, dbSchema, withSchema, fromColumns);
-            const expr2Type = traverseExpr(expr2, constraints, parameters, dbSchema, withSchema, fromColumns);
-            const expr3Type = traverseExpr(expr3, constraints, parameters, dbSchema, withSchema, fromColumns);
-            constraints.push({
+            traverseExpr(expr1, traverseContext);
+            const expr2Type = traverseExpr(expr2, traverseContext);
+            const expr3Type = traverseExpr(expr3, traverseContext);
+            traverseContext.constraints.push({
                 expression: runtimeFunctionCall.text,
                 type1: expr2Type,
                 type2: expr3Type,
@@ -1435,13 +1451,13 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
                 kind: 'VariableLengthParams',
                 paramType: 'varchar'
             }
-            walkFunctionParameters(simpleExpr, params, constraints, parameters, dbSchema, withSchema, fromColumns);
+            walkFunctionParameters(simpleExpr, params, traverseContext);
             return varcharType;
         }
 
         if (functionIdentifier === 'avg') {
             const functionType = freshVar(simpleExpr.text, '?');
-            constraints.push({
+            traverseContext.constraints.push({
                 expression: simpleExpr.text,
                 type1: functionType,
                 type2: freshVar('decimal', 'decimal'),
@@ -1451,7 +1467,7 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
                 kind: 'FixedLengthParams',
                 paramsType: [functionType]
             }
-            walkFunctionParameters(simpleExpr, params, constraints, parameters, dbSchema, withSchema, fromColumns);
+            walkFunctionParameters(simpleExpr, params, traverseContext);
             return functionType;
         }
 
@@ -1461,9 +1477,9 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
                 kind: 'FixedLengthParams',
                 paramsType: [functionType]
             }
-            const paramsType = walkFunctionParameters(simpleExpr, params, constraints, parameters, dbSchema, withSchema, fromColumns);
+            const paramsType = walkFunctionParameters(simpleExpr, params, traverseContext);
             //The return value has the same type as the first argument
-            constraints.push({
+            traverseContext.constraints.push({
                 expression: simpleExpr.text,
                 type1: functionType,
                 type2: paramsType[0], //type of the first parameter
@@ -1478,7 +1494,7 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
                 kind: 'FixedLengthParams',
                 paramsType: [doubleParam, doubleParam]
             }
-            walkFunctionParameters(simpleExpr, params, constraints, parameters, dbSchema, withSchema, fromColumns);
+            walkFunctionParameters(simpleExpr, params, traverseContext);
             return freshVar(simpleExpr.text, 'bigint');
         }
 
@@ -1488,7 +1504,7 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
                 kind: 'FixedLengthParams',
                 paramsType: [varcharParam, varcharParam]
             }
-            walkFunctionParameters(simpleExpr, params, constraints, parameters, dbSchema, withSchema, fromColumns);
+            walkFunctionParameters(simpleExpr, params, traverseContext);
             return freshVar(simpleExpr.text, 'date');
         }
 
@@ -1497,10 +1513,10 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
             if (udfExprList) {
                 udfExprList.forEach((inExpr) => {
                     const expr = inExpr.expr();
-                    const exprType = traverseExpr(expr, constraints, parameters, dbSchema, withSchema, fromColumns);
+                    const exprType = traverseExpr(expr, traverseContext);
                     const newType = verifyDateTypesCoercion(exprType);
 
-                    constraints.push({
+                    traverseContext.constraints.push({
                         expression: expr.text,
                         type1: newType,
                         type2: freshVar('date', 'date'),
@@ -1516,9 +1532,9 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
             if (udfExprList) {
                 udfExprList.forEach((inExpr) => {
                     const expr = inExpr.expr();
-                    const exprType = traverseExpr(expr, constraints, parameters, dbSchema, withSchema, fromColumns);
+                    const exprType = traverseExpr(expr, traverseContext);
 
-                    constraints.push({
+                    traverseContext.constraints.push({
                         expression: expr.text,
                         type1: exprType,
                         type2: freshVar('bigint', 'bigint'),
@@ -1536,7 +1552,7 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
                 kind: 'FixedLengthParams',
                 paramsType: [varcharParam, intParam, varcharParam]
             }
-            walkFunctionParameters(simpleExpr, params, constraints, parameters, dbSchema, withSchema, fromColumns);
+            walkFunctionParameters(simpleExpr, params, traverseContext);
             return varcharParam;
         }
 
@@ -1552,7 +1568,7 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
                 kind: 'FixedLengthParams',
                 paramsType: [varcharParam]
             }
-            walkFunctionParameters(simpleExpr, params, constraints, parameters, dbSchema, withSchema, fromColumns);
+            walkFunctionParameters(simpleExpr, params, traverseContext);
             return varcharParam;
         }
 
@@ -1562,15 +1578,15 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
                 kind: 'FixedLengthParams',
                 paramsType: [varcharParam]
             }
-            walkFunctionParameters(simpleExpr, params, constraints, parameters, dbSchema, withSchema, fromColumns);
+            walkFunctionParameters(simpleExpr, params, traverseContext);
             return freshVar('int', 'int');
         }
         if (functionIdentifier === 'abs') {
             const functionType = freshVar('number', 'number');
             const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr();
             udfExprList?.forEach(expr => {
-                const param1 = traverseExpr(expr.expr(), constraints, parameters, dbSchema, withSchema, fromColumns);
-                constraints.push({
+                const param1 = traverseExpr(expr.expr(), traverseContext);
+                traverseContext.constraints.push({
                     expression: simpleExpr.text,
                     type1: functionType,
                     type2: param1,
@@ -1585,8 +1601,8 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
             const functionType = freshVar('number', 'number');
             const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr();
             udfExprList?.forEach(expr => {
-                const param1 = traverseExpr(expr.expr(), constraints, parameters, dbSchema, withSchema, fromColumns);
-                constraints.push({
+                const param1 = traverseExpr(expr.expr(), traverseContext);
+                traverseContext.constraints.push({
                     expression: simpleExpr.text,
                     type1: functionType,
                     type2: param1,
@@ -1605,11 +1621,11 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
                 const unit = first.text.trim().toLowerCase();
                 rest.forEach((inExpr, paramIndex) => {
                     const expr = inExpr.expr();
-                    const exprType = traverseExpr(expr, constraints, parameters, dbSchema, withSchema, fromColumns);
+                    const exprType = traverseExpr(expr, traverseContext);
                     const newType = verifyDateTypesCoercion(exprType);
 
                     //const expectedType = ['hour', 'minute', 'second'].includes(unit)? 'time' : 'datetime'
-                    constraints.push({
+                    traverseContext.constraints.push({
                         expression: expr.text,
                         type1: newType,
                         type2: freshVar('datetime', 'datetime'),
@@ -1627,15 +1643,15 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
             if (udfExprList) {
                 const [expr1, expr2] = udfExprList;
 
-                const expr1Type = traverseExpr(expr1.expr(), constraints, parameters, dbSchema, withSchema, fromColumns);
-                constraints.push({
+                const expr1Type = traverseExpr(expr1.expr(), traverseContext);
+                traverseContext.constraints.push({
                     expression: expr1.text,
                     type1: functionType,
                     type2: expr1Type
                 })
 
-                const expr2Type = traverseExpr(expr2.expr(), constraints, parameters, dbSchema, withSchema, fromColumns);
-                constraints.push({
+                const expr2Type = traverseExpr(expr2.expr(), traverseContext);
+                traverseContext.constraints.push({
                     expression: expr2.text,
                     type1: functionType,
                     type2: expr2Type
@@ -1652,8 +1668,8 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
             const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr();
             if (udfExprList) {
                 const [expr1] = udfExprList;
-                const paramType = traverseExpr(expr1.expr(), constraints, parameters, dbSchema, withSchema, fromColumns);
-                constraints.push({
+                const paramType = traverseExpr(expr1.expr(), traverseContext);
+                traverseContext.constraints.push({
                     expression: expr1.text,
                     type1: paramType,
                     type2: freshVar(expr1.text, 'varchar')
@@ -1666,7 +1682,7 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
     }
     if (simpleExpr instanceof SimpleExprWindowingFunctionContext) {
         const windowFunctionCall = simpleExpr.windowFunctionCall();
-        return traverseWindowFunctionCall(windowFunctionCall, constraints, parameters, dbSchema, withSchema, fromColumns);
+        return traverseWindowFunctionCall(windowFunctionCall, traverseContext);
     }
     if (simpleExpr instanceof SimpleExprCastContext) {
         const castType = simpleExpr.castType();
@@ -1678,7 +1694,7 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, constraints: Constrai
     throw Error('traverseSimpleExpr - not supported: ' + simpleExpr.constructor.name);
 }
 
-function traverseWindowFunctionCall(windowFunctionCall: WindowFunctionCallContext, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], withSchema: ColumnDef[], fromColumns: ColumnDef[]) {
+function traverseWindowFunctionCall(windowFunctionCall: WindowFunctionCallContext, traverseContext: TraverseContext) {
     if (windowFunctionCall.ROW_NUMBER_SYMBOL()
         || windowFunctionCall.RANK_SYMBOL()
         || windowFunctionCall.DENSE_RANK_SYMBOL()
@@ -1688,21 +1704,21 @@ function traverseWindowFunctionCall(windowFunctionCall: WindowFunctionCallContex
     }
     const expr = windowFunctionCall.expr();
     if (expr) {
-        return traverseExpr(expr, constraints, parameters, dbSchema, withSchema, fromColumns);
+        return traverseExpr(expr, traverseContext);
     }
     const exprWithParentheses = windowFunctionCall.exprWithParentheses();
     if (exprWithParentheses) {
         const expr = exprWithParentheses.expr();
-        return traverseExpr(expr, constraints, parameters, dbSchema, withSchema, fromColumns);
+        return traverseExpr(expr, traverseContext);
     }
     throw Error('No support for expression' + windowFunctionCall.constructor.name);
 }
 
-function traverseExprListParameters(exprList: ExprContext[], params: FunctionParams, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], withSchema: ColumnDef[], fromColumns: ColumnDef[]) {
+function traverseExprListParameters(exprList: ExprContext[], params: FunctionParams, traverseContext: TraverseContext) {
     return exprList.map((expr, paramIndex) => {
-        const exprType = traverseExpr(expr, constraints, parameters, dbSchema, withSchema, fromColumns);
+        const exprType = traverseExpr(expr, traverseContext);
         const paramType = params.kind == 'FixedLengthParams' ? params.paramsType[paramIndex] : freshVar(params.paramType, params.paramType);
-        constraints.push({
+        traverseContext.constraints.push({
             expression: expr.text,
             type1: exprType,
             type2: paramType,
@@ -1712,7 +1728,7 @@ function traverseExprListParameters(exprList: ExprContext[], params: FunctionPar
     })
 }
 
-function walkFunctionParameters(simpleExprFunction: SimpleExprFunctionContext, params: FunctionParams, constraints: Constraint[], parameters: TypeVar[], dbSchema: ColumnSchema[], withSchema: ColumnDef[], fromColumns: ColumnDef[]) {
+function walkFunctionParameters(simpleExprFunction: SimpleExprFunctionContext, params: FunctionParams, traverseContext: TraverseContext) {
     const functionName = getFunctionName(simpleExprFunction);
     const udfExprList = simpleExprFunction.functionCall().udfExprList()?.udfExpr();
     if (udfExprList) {
@@ -1722,8 +1738,8 @@ function walkFunctionParameters(simpleExprFunction: SimpleExprFunctionContext, p
             })
             .map((inExpr, paramIndex) => {
                 const expr = inExpr.expr();
-                const exprType = traverseExpr(expr, constraints, parameters, dbSchema, withSchema, fromColumns);
-                constraints.push({
+                const exprType = traverseExpr(expr, traverseContext);
+                traverseContext.constraints.push({
                     expression: expr.text,
                     type1: exprType,
                     type2: params.kind == 'FixedLengthParams' ? params.paramsType[paramIndex] : freshVar(params.paramType, params.paramType),
@@ -1735,8 +1751,8 @@ function walkFunctionParameters(simpleExprFunction: SimpleExprFunctionContext, p
     const exprList = simpleExprFunction.functionCall().exprList()?.expr();
     if (exprList) {
         const paramTypes = exprList.map((inExpr, paramIndex) => {
-            const inSumExprType = traverseExpr(inExpr, constraints, parameters, dbSchema, withSchema, fromColumns);
-            constraints.push({
+            const inSumExprType = traverseExpr(inExpr, traverseContext);
+            traverseContext.constraints.push({
                 expression: inExpr.text,
                 type1: params.kind == 'FixedLengthParams' ? params.paramsType[paramIndex] : freshVar(params.paramType, params.paramType),
                 type2: inSumExprType,

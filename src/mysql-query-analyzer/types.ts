@@ -26,6 +26,14 @@ export type TypeOperator = {
 
 export type CoercionType = 'Sum' | 'Coalesce' | 'SumFunction' | 'Ceiling' | 'Union' | 'Numeric'; //Numeric means: Don't convert to string
 
+export type TraverseContext = {
+    dbSchema: ColumnSchema[];
+    withSchema: ColumnDef[];
+    constraints: Constraint[];
+    parameters: TypeVar[];
+    fromColumns: ColumnDef[]
+}
+
 export type Constraint = {
     type1: Type;
     type2: Type;
