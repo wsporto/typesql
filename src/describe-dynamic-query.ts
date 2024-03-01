@@ -27,7 +27,13 @@ export function describeDynamicQuery(dynamicQueryInfo: DynamicSqlInfo, namedPara
         const selectedFields = select.flatMap(fragment => fragment.fields);
 
         const conditonalFields = fragment.fields
-            .filter(field => selectedFields.find(selected => field.field == selected.field && field.table == selected.table));
+            .map(field => {
+                const found = selectedFields.find(selected => field.field == selected.field && field.table == selected.table);
+                if (found) {
+                    return { ...field, name: found.name }
+                }
+                return null
+            }).filter((field): field is TableField => field != null);
 
         const params = filteredWhere.flatMap(fragment => fragment.dependOnParams).map(paramIndex => namedParameters[paramIndex]);
         const fragmentResult: FragmentInfoResult = {

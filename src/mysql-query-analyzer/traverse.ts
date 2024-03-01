@@ -484,7 +484,7 @@ export function traverseQuerySpecification(querySpec: QuerySpecificationContext,
     //TODO - HAVING, BLAH
     if (whereClause) {
         const whereExpr = whereClause?.expr();
-        traverseExpr(whereExpr, { ...traverseContext, fromColumns: allColumns });
+        traverseExpr(whereExpr, { ...traverseContext, fromColumns: allColumns }, null, true);
     }
 
 
@@ -771,11 +771,21 @@ function traverseHavingClause(havingClause: HavingClauseContext, traverseContext
     traverseExpr(havingExpr, traverseContext);
 }
 
-function traverseExpr(expr: ExprContext, traverseContext: TraverseContext, topLevel: FragmentInfo | null = null): Type {
+function traverseExpr(expr: ExprContext, traverseContext: TraverseContext, topLevel: FragmentInfo | null = null, where = false): Type {
 
     if (expr instanceof ExprIsContext) {
         const boolPri = expr.boolPri();
-        const boolPriType = traverseBoolPri(boolPri, traverseContext, topLevel);
+
+        const currentFragment: FragmentInfo = {
+            fragment: 'AND ' + extractOriginalSql(expr),
+            fields: [],
+            dependOnFields: [],
+            dependOnParams: []
+        }
+        if (where) {
+            traverseContext.dynamicSqlInfo.where.push(currentFragment);
+        }
+        const boolPriType = traverseBoolPri(boolPri, traverseContext, where ? currentFragment : topLevel);
         return boolPriType;
     }
     if (expr instanceof ExprNotContext) {
@@ -808,7 +818,7 @@ function traverseExpr(expr: ExprContext, traverseContext: TraverseContext, topLe
 function traverseBoolPri(boolPri: BoolPriContext, traverseContext: TraverseContext, currentFragment: FragmentInfo | null = null): Type {
     if (boolPri instanceof PrimaryExprPredicateContext) {
         const predicate = boolPri.predicate();
-        const predicateType = traversePredicate(predicate, traverseContext);
+        const predicateType = traversePredicate(predicate, traverseContext, currentFragment);
         return predicateType;
     }
     if (boolPri instanceof PrimaryExprIsNullContext) {
@@ -876,7 +886,7 @@ function traverseBoolPri(boolPri: BoolPriContext, traverseContext: TraverseConte
 
 }
 
-function traversePredicate(predicate: PredicateContext, traverseContext: TraverseContext): Type {
+function traversePredicate(predicate: PredicateContext, traverseContext: TraverseContext, currentFragment: FragmentInfo | null = null): Type {
     const bitExpr = predicate.bitExpr()[0]; //TODO - predicate length = 2? [1] == predicateOperations
     const bitExprType = traverseBitExpr(bitExpr, traverseContext);
     const predicateOperations = predicate.predicateOperations();
@@ -896,6 +906,7 @@ function traversePredicate(predicate: PredicateContext, traverseContext: Travers
         }
         if (bitExprType.kind == 'TypeVar' && rightType.kind == 'TypeOperator') {
 
+            let containsParam = false;
             rightType.types.forEach((t, i) => {
                 traverseContext.constraints.push({
                     expression: predicateOperations.text,
@@ -903,8 +914,20 @@ function traversePredicate(predicate: PredicateContext, traverseContext: Travers
                     type2: { ...t, list: true },
                     mostGeneralType: true
                 })
-
+                if (t.name == '?') {
+                    containsParam = true;
+                }
             })
+            if (containsParam) {
+                currentFragment?.dependOnParams.push(traverseContext.parameters.length - 1)
+            }
+            if (bitExprType.table != null) {
+                currentFragment?.fields.push({
+                    field: bitExprType.name,
+                    name: bitExprType.name,
+                    table: bitExprType.table
+                })
+            }
             // return rightType.types[0];
 
         }
