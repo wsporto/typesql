@@ -1,4 +1,4 @@
-import { DynamicSqlInfo, DynamicSqlInfoResult, FragmentInfoResult, TableField } from "./mysql-query-analyzer/types";
+import { DynamicSqlInfo, DynamicSqlInfoResult, FragmentInfo, FragmentInfoResult, TableField } from "./mysql-query-analyzer/types";
 
 export function describeDynamicQuery(dynamicQueryInfo: DynamicSqlInfo, namedParameters: string[]): DynamicSqlInfoResult {
     const { select, from, where } = dynamicQueryInfo;
@@ -12,6 +12,10 @@ export function describeDynamicQuery(dynamicQueryInfo: DynamicSqlInfo, namedPara
         return fragmentResult;
     });
     const fromFragements = from.map(fragment => {
+
+        if (fragment.relation) {
+            addAllChildFields(fragment, from);
+        }
 
         const filteredWhere = where.filter(whereFragment => includeAny(whereFragment.fields, fragment.fields));
         const hasUnconditional = filteredWhere
@@ -63,4 +67,12 @@ export function describeDynamicQuery(dynamicQueryInfo: DynamicSqlInfo, namedPara
 
 function includeAny(fields: TableField[], fields2: TableField[]) {
     return fields.some(f => fields2.find(f2 => f2.field == f.field && f2.table == f.table));
+}
+
+function addAllChildFields(currentRelation: FragmentInfo, from: FragmentInfo[]) {
+    from.forEach(fragment => {
+        if (fragment.parentRelation == currentRelation.relation) {
+            currentRelation.fields.push(...fragment.fields);
+        }
+    })
 }

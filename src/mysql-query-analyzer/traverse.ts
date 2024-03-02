@@ -360,7 +360,7 @@ export function traverseDeleteStatement(deleteStatement: DeleteStatementContext,
 
 export function getUpdateColumns(updateStatement: UpdateStatementContext, traverseContext: TraverseContext) {
     const tableReferences = updateStatement.tableReferenceList().tableReference();
-    const columns = traverseTableReferenceList(tableReferences, traverseContext)
+    const columns = traverseTableReferenceList(tableReferences, traverseContext, null)
     return columns;
 }
 
@@ -545,12 +545,12 @@ export function traverseWithClause(withClause: WithClauseContext, traverseContex
 function traverseFromClause(fromClause: FromClauseContext, traverseContext: TraverseContext): ColumnDef[] {
     const tableReferenceList = fromClause.tableReferenceList()?.tableReference();
 
-    const fromColumns = tableReferenceList ? traverseTableReferenceList(tableReferenceList, traverseContext) : [];
+    const fromColumns = tableReferenceList ? traverseTableReferenceList(tableReferenceList, traverseContext, null) : [];
 
     return fromColumns;
 }
 
-function traverseTableReferenceList(tableReferenceList: TableReferenceContext[], traverseContext: TraverseContext): ColumnDef[] {
+function traverseTableReferenceList(tableReferenceList: TableReferenceContext[], traverseContext: TraverseContext, currentFragment: FragmentInfo | null): ColumnDef[] {
 
     const result: ColumnDef[] = [];
     const fragements: FragmentInfo[] = [];
@@ -558,7 +558,7 @@ function traverseTableReferenceList(tableReferenceList: TableReferenceContext[],
     tableReferenceList.forEach(tab => {
         const tableFactor = tab.tableFactor();
         if (tableFactor) {
-            const fields = traverseTableFactor(tableFactor, traverseContext);
+            const fields = traverseTableFactor(tableFactor, traverseContext, currentFragment);
             result.push(...fields);
             fragements.push({
                 fragment: extractOriginalSql(tableFactor) + '',
@@ -580,21 +580,25 @@ function traverseTableReferenceList(tableReferenceList: TableReferenceContext[],
             const tableReferences = joined.tableReference();
 
             if (tableReferences) {
+                const innerJoinFragment: FragmentInfo = {
+                    fragment: extractOriginalSql(joined) + '',
+                    fields: [],
+                    dependOnFields: [],
+                    dependOnParams: [],
+                }
+
                 const usingFields = extractFieldsFromUsingClause(joined);
-                const joinedFields = traverseTableReferenceList([tableReferences], traverseContext);
+                const joinedFields = traverseTableReferenceList([tableReferences], traverseContext, innerJoinFragment);
                 //doesn't duplicate the fields of the USING clause. Ex. INNER JOIN mytable2 USING(id);
                 const joinedFieldsFiltered = usingFields.length > 0 ? filterUsingFields(joinedFields, usingFields) : joinedFields;
                 allJoinedColumns.push(joinedFieldsFiltered);
-                fragements.push({
-                    fragment: extractOriginalSql(joined) + '',
-                    fields: [...joinedFieldsFiltered.map(f => ({
-                        field: f.columnName,
-                        table: f.tableAlias || f.table,
-                        name: f.columnName
-                    }))],
-                    dependOnFields: [],
-                    dependOnParams: [],
-                })
+
+                innerJoinFragment.fields = [...joinedFieldsFiltered.map(f => ({
+                    field: f.columnName,
+                    table: f.tableAlias || f.table,
+                    name: f.columnName
+                }))]
+                fragements.push(innerJoinFragment)
 
                 const onClause = joined.expr(); //ON expr
                 if (onClause) {
@@ -617,8 +621,14 @@ function traverseTableReferenceList(tableReferenceList: TableReferenceContext[],
                     })
 
                     traverseExpr(onClause, { ...traverseContext, fromColumns: allJoinedColumns.flatMap(c => c).concat(result) })
+                    const columns = getExpressions(onClause, SimpleExprColumnRefContext);
+                    columns.forEach(columnRef => {
+                        const fieldName = splitName(columnRef.text);
+                        if (innerJoinFragment?.relation != fieldName.prefix) {
+                            innerJoinFragment.parentRelation = fieldName.prefix
+                        }
+                    });
                 }
-
             }
         })
         allJoinedColumns.forEach((joinedColumns, index) => {
@@ -644,11 +654,11 @@ function traverseTableReferenceList(tableReferenceList: TableReferenceContext[],
     return result;
 }
 
-function traverseTableFactor(tableFactor: TableFactorContext, traverseContext: TraverseContext): ColumnDef[] {
+function traverseTableFactor(tableFactor: TableFactorContext, traverseContext: TraverseContext, currentFragement: FragmentInfo | null): ColumnDef[] {
 
     const singleTable = tableFactor.singleTable();
     if (singleTable) {
-        return traverseSingleTable(singleTable, traverseContext.dbSchema, traverseContext.withSchema);
+        return traverseSingleTable(singleTable, traverseContext.dbSchema, traverseContext.withSchema, currentFragement);
     }
 
     const derivadTable = tableFactor.derivedTable();
@@ -684,7 +694,7 @@ function traverseTableReferenceListParens(ctx: TableReferenceListParensContext, 
 
     const tableReferenceList = ctx.tableReferenceList();
     if (tableReferenceList) {
-        return traverseTableReferenceList(tableReferenceList.tableReference(), traverseContext);
+        return traverseTableReferenceList(tableReferenceList.tableReference(), traverseContext, null);
     }
 
     const tableReferenceListParens = ctx.tableReferenceListParens();
@@ -696,10 +706,13 @@ function traverseTableReferenceListParens(ctx: TableReferenceListParensContext, 
     throw Error('traverseTableReferenceListParens - not supported: ' + ctx.constructor.name);
 }
 
-function traverseSingleTable(singleTable: SingleTableContext, dbSchema: ColumnSchema[], withSchema: ColumnDef[]): ColumnDef[] {
+function traverseSingleTable(singleTable: SingleTableContext, dbSchema: ColumnSchema[], withSchema: ColumnDef[], currentFragment: FragmentInfo | null): ColumnDef[] {
     const table = singleTable?.tableRef().text;
     const tableAlias = singleTable?.tableAlias()?.identifier().text;
     const tableName = splitName(table);
+    if (currentFragment) {
+        currentFragment.relation = tableAlias || tableName.name;
+    }
     const fields = filterColumns(dbSchema, withSchema, tableAlias, tableName)
     return fields;
 }

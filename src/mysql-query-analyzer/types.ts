@@ -99,6 +99,8 @@ export type TableField = {
 
 export type FragmentInfo = {
     fragment: string;
+    relation?: string;
+    parentRelation?: string;
     fields: TableField[];
     dependOnFields: TableField[];
     dependOnParams: number[];
