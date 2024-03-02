@@ -2,9 +2,9 @@ import assert from "assert";
 import { DbClient } from "../src/queryExectutor";
 import { isLeft } from "fp-ts/lib/Either";
 import { parseSql } from "../src/describe-query";
-import { DynamicSqlInfo, DynamicSqlInfoResult } from "../src/mysql-query-analyzer/types";
+import { DynamicSqlInfoResult } from "../src/mysql-query-analyzer/types";
 
-describe.skip('dynamic-query', () => {
+describe('dynamic-query', () => {
 
     let client: DbClient = new DbClient();
     before(async () => {
@@ -21,6 +21,7 @@ describe.skip('dynamic-query', () => {
 
     it('WHERE m2.name = :name AND m2.descr = :description', async () => {
         const sql = `
+        -- @dynamicQuery
         SELECT m1.id, m1.value, m2.name, m2.descr as description
         FROM mytable1 m1
         INNER JOIN mytable2 m2 on m1.id = m2.id
@@ -87,6 +88,7 @@ describe.skip('dynamic-query', () => {
 
     it('WHERE m2.id = 1 AND m2.name = :name AND m2.descr = :description', async () => {
         const sql = `
+        -- @dynamicQuery
         SELECT m1.id, m1.value, m2.name, m2.descr as description
         FROM mytable1 m1
         INNER JOIN mytable2 m2 on m1.id = m2.id
@@ -159,6 +161,7 @@ describe.skip('dynamic-query', () => {
 
     it('WHERE m2.id in (:ids)', async () => {
         const sql = `
+        -- @dynamicQuery
         SELECT m1.id, m2.name, m2.descr as description
         FROM mytable1 m1
         INNER JOIN mytable2 m2 on m1.id = m2.id
@@ -213,6 +216,7 @@ describe.skip('dynamic-query', () => {
 
     it('mytable1 m1 INNER JOIN mytable2 ... INNER JOIN mytable3', async () => {
         const sql = `
+        -- @dynamicQuery
         SELECT m1.id, m2.name, m3.double_value as value
         FROM mytable1 m1
         INNER JOIN mytable2 m2 on m2.id = m1.id

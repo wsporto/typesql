@@ -158,7 +158,8 @@ export function preprocessSql(sql: string) {
     return processedSql;
 }
 
-export function generateNestedQueryResult(sql: string) {
-    const regex = /-- @nested/g;
-    return sql.match(regex) != null;
+//https://stackoverflow.com/a/1695647
+export function hasAnnotation(sql: string, annotation: string) {
+    const regex = `-- ${annotation}`;
+    return sql.match(new RegExp(regex)) != null;
 }

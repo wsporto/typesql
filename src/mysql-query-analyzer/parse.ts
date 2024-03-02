@@ -6,7 +6,7 @@ import {
     ParameterInfo, ColumnInfo, ColumnDef, SubstitutionHash, DynamicSqlInfo
 } from './types';
 import { inferParamNullabilityQuery } from './infer-param-nullability';
-import { generateNestedQueryResult, preprocessSql, verifyNotInferred } from '../describe-query';
+import { hasAnnotation, preprocessSql, verifyNotInferred } from '../describe-query';
 import { verifyMultipleResult } from './verify-multiple-result';
 import { unify } from './unify';
 import { SelectStatementResult, traverseQueryContext } from './traverse';
@@ -160,8 +160,8 @@ export function getLimitOptions(selectStatement: SelectStatementContext) {
 
 export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[]): QueryInfoResult | InsertInfoResult | UpdateInfoResult | DeleteInfoResult {
     const { sql: processedSql, namedParameters } = preprocessSql(sql);
-    const gererateNested = generateNestedQueryResult(sql);
-    const genereteDynamicQuery = false;
+    const gererateNested = hasAnnotation(sql, '@nested');
+    const gererateDynamicQuery = hasAnnotation(sql, '@dynamicQuery');
     const tree = parse(processedSql);
 
     const traverseResult = traverseQueryContext(tree, dbSchema, namedParameters);
@@ -171,7 +171,7 @@ export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[]): QueryIn
             const nestedInfo = generateNestedInfo(tree, dbSchema, queryInfoResult.columns)
             queryInfoResult.nestedResultInfo = nestedInfo;
         }
-        if (genereteDynamicQuery) {
+        if (gererateDynamicQuery) {
             const dynamicQuery = describeDynamicQuery(traverseResult.dynamicSqlInfo, namedParameters);
             queryInfoResult.dynamicQuery = dynamicQuery;
         }

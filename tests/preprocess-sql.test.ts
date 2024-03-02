@@ -1,5 +1,5 @@
 import assert from "assert";
-import { generateNestedQueryResult, preprocessSql } from "../src/describe-query";
+import { hasAnnotation, preprocessSql } from "../src/describe-query";
 import { PreprocessedSql } from "../src/types";
 
 describe('preprocess-sql', () => {
@@ -87,7 +87,7 @@ describe('preprocess-sql', () => {
         const sql = `
         -- @nested
         `;
-        const actual = generateNestedQueryResult(sql);
+        const actual = hasAnnotation(sql, "@nested");
 
         assert.deepStrictEqual(actual, true);
     })
@@ -97,7 +97,7 @@ describe('preprocess-sql', () => {
         const sql = `
         SELECT * FROM mytable1
         `;
-        const actual = generateNestedQueryResult(sql);
+        const actual = hasAnnotation(sql, "@nested");
 
         assert.deepStrictEqual(actual, false);
     })
@@ -107,7 +107,7 @@ describe('preprocess-sql', () => {
         const sql = `
         SELECT id as @nested FROM mytable1
         `;
-        const actual = generateNestedQueryResult(sql);
+        const actual = hasAnnotation(sql, "@nested");
 
         assert.deepStrictEqual(actual, false);
     })
