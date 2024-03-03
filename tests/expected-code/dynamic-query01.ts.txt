@@ -7,8 +7,8 @@ export type DynamicQuery01DynamicParams = {
 }
 
 export type DynamicQuery01Params = {
-    name: string;
-    description: string;
+    name?: string;
+    description?: string;
 }
 
 export type DynamicQuery01Result = {

@@ -23,3 +23,15 @@ function mapToResultColumn(r: TsFieldDescriptor): TsFieldDescriptor {
         notNull: false
     }
 }
+
+export function mapToDynamicParams(columns: TsFieldDescriptor[]): TsFieldDescriptor[] {
+    return columns.map(column => mapToDynamicParam(column));
+}
+
+function mapToDynamicParam(r: TsFieldDescriptor): TsFieldDescriptor {
+    return {
+        name: r.name,
+        tsType: r.tsType,
+        notNull: false
+    }
+}

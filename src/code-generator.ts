@@ -9,7 +9,7 @@ import { converToTsType, MySqlType } from "./mysql-mapping";
 import { parseSql } from "./describe-query";
 import CodeBlockWriter from "code-block-writer";
 import { NestedTsDescriptor, createNestedTsDescriptor } from "./ts-nested-descriptor";
-import { mapToDyanicResultColumns, mapToDynamicSelectColumns } from "./ts-dynamic-query-descriptor";
+import { mapToDyanicResultColumns, mapToDynamicParams, mapToDynamicSelectColumns } from "./ts-dynamic-query-descriptor";
 import { DynamicSqlInfoResult } from "./mysql-query-analyzer/types";
 
 export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, target: 'node' | 'deno', crud: boolean = false): string {
@@ -50,7 +50,8 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
         })
         writer.blankLine();
     }
-    writeTypeBlock(writer, tsDescriptor.parameters, paramsTypeName, false, orderByField);
+    const paramsTypes = tsDescriptor.dynamicQuery == null ? tsDescriptor.parameters : mapToDynamicParams(tsDescriptor.parameters);
+    writeTypeBlock(writer, paramsTypes, paramsTypeName, false, orderByField);
     const resultTypes = tsDescriptor.dynamicQuery == null ? tsDescriptor.columns : mapToDyanicResultColumns(tsDescriptor.columns);
     writeTypeBlock(writer, resultTypes, resultTypeName, false);
     if (tsDescriptor.dynamicQuery) {
