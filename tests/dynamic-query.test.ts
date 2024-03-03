@@ -374,4 +374,57 @@ describe('dynamic-query', () => {
 
         assert.deepStrictEqual(actual.right.dynamicSqlQuery, sqlFragments);
     })
+
+    it(`SELECT concat(m1.value, ': ', m2.name) as valueAndName`, async () => {
+        const sql = `
+        -- @dynamicQuery
+        SELECT m1.id, m1.value, m2.name, concat(m1.value, ': ', m2.name) as valueAndName
+        FROM mytable1 m1
+        INNER JOIN mytable2 m2 on m1.id = m2.id
+        `
+        const sqlFragments: DynamicSqlInfoResult = {
+            select: [
+                {
+                    fragment: 'm1.id',
+                    dependOnFields: ['id'],
+                    dependOnParams: []
+                },
+                {
+                    fragment: 'm1.value',
+                    dependOnFields: ['value'],
+                    dependOnParams: []
+                },
+                {
+                    fragment: 'm2.name',
+                    dependOnFields: ['name'],
+                    dependOnParams: []
+                },
+                {
+                    fragment: `concat(m1.value, ': ', m2.name) as valueAndName`,
+                    dependOnFields: ['valueAndName'],
+                    dependOnParams: []
+                }
+            ],
+            from: [
+                {
+                    fragment: 'FROM mytable1 m1',
+                    dependOnFields: [],
+                    dependOnParams: []
+                },
+                {
+                    fragment: 'INNER JOIN mytable2 m2 on m1.id = m2.id',
+                    dependOnFields: ['name', 'valueAndName'],
+                    dependOnParams: []
+                }
+            ],
+            where: []
+        }
+
+        const actual = await parseSql(client, sql);
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+
+        assert.deepStrictEqual(actual.right.dynamicSqlQuery, sqlFragments);
+    })
 });

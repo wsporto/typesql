@@ -753,13 +753,25 @@ function traverseSelectItemList(selectItemList: SelectItemListContext, traverseC
         const expr = selectItem.expr();
         if (expr) {
             const exprType = traverseExpr(expr, traverseContext);
-            const fields = exprType.kind == 'TypeVar' ? [{ field: exprType.name, table: exprType.table + '', name: getColumnName(selectItem) }] : []
-            traverseContext.dynamicSqlInfo.select?.push({
+            const selectFragment: FragmentInfo = {
                 fragment: extractOriginalSql(selectItem) + '',
-                fields,
+                fields: [],
                 dependOnFields: [],
                 dependOnParams: []
+            }
+            traverseContext.dynamicSqlInfo.select?.push(selectFragment);
+            const columns = getExpressions(expr, SimpleExprColumnRefContext);
+            const columnName = getColumnName(selectItem);
+            columns.forEach(colRef => {
+                const fieldName = splitName(colRef.text);
+                selectFragment.fields.push({
+                    field: fieldName.name,
+                    name: columnName,
+                    table: fieldName.prefix
+                })
             })
+            // const fields = exprType.kind == 'TypeVar' ? [{ field: exprType.name, table: exprType.table + '', name: getColumnName(selectItem) }] : []
+
 
             if (exprType.kind == 'TypeOperator') {
                 const subqueryType = exprType.types[0] as TypeVar;

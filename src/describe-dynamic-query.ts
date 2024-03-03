@@ -6,7 +6,7 @@ export function describeDynamicQuery(dynamicQueryInfo: DynamicSqlInfo, namedPara
     const selectFragments = select.map(fragment => {
         const fragmentResult: FragmentInfoResult = {
             fragment: fragment.fragment,
-            dependOnFields: fragment.fields.map(f => f.name),
+            dependOnFields: [...new Set(fragment.fields.map(f => f.name))], //remove duplicated
             dependOnParams: []
         }
         return fragmentResult;
@@ -31,13 +31,10 @@ export function describeDynamicQuery(dynamicQueryInfo: DynamicSqlInfo, namedPara
         const selectedFields = select.flatMap(fragment => fragment.fields);
 
         const conditonalFields = fragment.fields
-            .map(field => {
-                const found = selectedFields.find(selected => field.field == selected.field && field.table == selected.table);
-                if (found) {
-                    return { ...field, name: found.name }
-                }
-                return null
-            }).filter((field): field is TableField => field != null);
+            .flatMap(field => {
+                const found = selectedFields.filter(selected => field.field == selected.field && field.table == selected.table);
+                return found;
+            });// .filter((field): field is TableField => field != null);
 
         const params = filteredWhere.flatMap(fragment => fragment.dependOnParams).map(paramIndex => namedParameters[paramIndex]);
         const fragmentResult: FragmentInfoResult = {
