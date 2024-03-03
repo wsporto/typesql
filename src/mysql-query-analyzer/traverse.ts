@@ -843,6 +843,7 @@ function traverseBoolPri(boolPri: BoolPriContext, traverseContext: TraverseConte
 
         const compareLeft = boolPri.boolPri();
         const compareRight = boolPri.predicate();
+        let paramsCount = traverseContext.parameters.length;
         const typeLeft = traverseBoolPri(compareLeft, traverseContext);
         const typeRight = traversePredicate(compareRight, traverseContext);
 
@@ -852,30 +853,35 @@ function traverseBoolPri(boolPri: BoolPriContext, traverseContext: TraverseConte
             type2: typeRight
         })
 
-        if (typeLeft.kind == 'TypeVar') {
-            if (typeLeft.name == '?') {
-                currentFragment?.dependOnParams.push(traverseContext.parameters.length - 1);
-            }
-            if (typeLeft.table != null) {
-                currentFragment?.fields.push({
-                    field: typeLeft.name,
-                    name: typeLeft.name,
-                    table: typeLeft.table
-                })
-            }
-        }
         if (typeRight.kind == 'TypeVar') {
-            if (typeRight.name == '?') {
-                currentFragment?.dependOnParams.push(traverseContext.parameters.length - 1);
-            }
             if (typeRight.table != null) {
                 currentFragment?.fields.push({
                     field: typeRight.name,
                     name: typeRight.name,
                     table: typeRight.table
                 })
+                const paramsLeft = getExpressions(compareLeft, SimpleExprParamMarkerContext);
+                paramsLeft.forEach(_ => {
+                    currentFragment?.dependOnParams.push(paramsCount);
+                    paramsCount++;
+                });
             }
         }
+        if (typeLeft.kind == 'TypeVar') {
+            if (typeLeft.table != null) {
+                currentFragment?.fields.push({
+                    field: typeLeft.name,
+                    name: typeLeft.name,
+                    table: typeLeft.table
+                })
+                const paramsRight = getExpressions(compareRight, SimpleExprParamMarkerContext);
+                paramsRight.forEach(_ => {
+                    currentFragment?.dependOnParams.push(paramsCount);
+                    paramsCount++;
+                });
+            }
+        }
+
 
         return freshVar(boolPri.text, 'tinyint');
     }
