@@ -910,7 +910,7 @@ function traversePredicate(predicate: PredicateContext, traverseContext: Travers
     const bitExprType = traverseBitExpr(bitExpr, traverseContext);
     const predicateOperations = predicate.predicateOperations();
     if (predicateOperations) {
-        const rightType = traversePredicateOperations(predicateOperations, bitExprType, traverseContext);
+        const rightType = traversePredicateOperations(predicateOperations, bitExprType, traverseContext, currentFragment);
         if (bitExprType.kind == 'TypeOperator' && rightType.kind == 'TypeOperator') {
             rightType.types.forEach((t, i) => {
                 traverseContext.constraints.push({
@@ -1061,7 +1061,7 @@ function traverseBitExpr(bitExpr: BitExprContext, traverseContext: TraverseConte
     throw Error('traverseBitExpr - not supported: ' + bitExpr.constructor.name);
 }
 
-function traversePredicateOperations(predicateOperations: PredicateOperationsContext, parentType: Type, traverseContext: TraverseContext): Type {
+function traversePredicateOperations(predicateOperations: PredicateOperationsContext, parentType: Type, traverseContext: TraverseContext, currentFragment: FragmentInfo | null): Type {
     if (predicateOperations instanceof PredicateExprInContext) {
 
         const subquery = predicateOperations.subquery();
@@ -1078,12 +1078,26 @@ function traversePredicateOperations(predicateOperations: PredicateOperationsCon
 
     if (predicateOperations instanceof PredicateExprLikeContext) {
         const simpleExpr = predicateOperations.simpleExpr()[0];
+        let paramsCount = traverseContext.parameters.length;
         const rightType = traverseSimpleExpr(simpleExpr, traverseContext);
         traverseContext.constraints.push({
             expression: simpleExpr.text,
             type1: parentType,
             type2: rightType
         })
+        if (parentType.kind == 'TypeVar' && parentType.table) {
+            currentFragment?.fields.push({
+                field: parentType.name,
+                name: parentType.name,
+                table: parentType.table
+            })
+            const paramsRight = getExpressions(simpleExpr, SimpleExprParamMarkerContext);
+            paramsRight.forEach(_ => {
+                currentFragment?.dependOnParams.push(paramsCount);
+                paramsCount++;
+            });
+        }
+
         return rightType;
 
     }

@@ -324,4 +324,54 @@ describe('dynamic-query', () => {
 
         assert.deepStrictEqual(actual.right.dynamicSqlQuery, sqlFragments);
     })
+
+    it(`m2.name like concat('%', :name, '%')`, async () => {
+        const sql = `
+        -- @dynamicQuery
+        SELECT m1.id, m2.name
+        FROM mytable1 m1
+        INNER JOIN mytable2 m2 on m1.id = m2.id
+        WHERE m2.name like concat('%', :name, '%')
+        `
+        const sqlFragments: DynamicSqlInfoResult = {
+            select: [
+                {
+                    fragment: 'm1.id',
+                    dependOnFields: ['id'],
+                    dependOnParams: []
+                },
+                {
+                    fragment: 'm2.name',
+                    dependOnFields: ['name'],
+                    dependOnParams: []
+                }
+            ],
+            from: [
+                {
+                    fragment: 'FROM mytable1 m1',
+                    dependOnFields: [],
+                    dependOnParams: []
+                },
+                {
+                    fragment: 'INNER JOIN mytable2 m2 on m1.id = m2.id',
+                    dependOnFields: ['name'],
+                    dependOnParams: ['name']
+                }
+            ],
+            where: [
+                {
+                    fragment: `AND m2.name like concat('%', ?, '%')`,
+                    dependOnFields: [],
+                    dependOnParams: ['name']
+                }
+            ]
+        }
+
+        const actual = await parseSql(client, sql);
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+
+        assert.deepStrictEqual(actual.right.dynamicSqlQuery, sqlFragments);
+    })
 });
