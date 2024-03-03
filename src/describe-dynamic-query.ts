@@ -40,17 +40,18 @@ export function describeDynamicQuery(dynamicQueryInfo: DynamicSqlInfo, namedPara
         const fragmentResult: FragmentInfoResult = {
             fragment: fragment.fragment,
             dependOnFields: conditonalFields.map(f => f.name),
-            dependOnParams: params
+            dependOnParams: [...new Set(params)]
         }
         return fragmentResult;
     });
 
     const whereFragements = where.map(fragment => {
 
+        const params = fragment.dependOnParams.map(paramIndex => namedParameters[paramIndex]);
         const fragmentResult: FragmentInfoResult = {
             fragment: fragment.fragment,
             dependOnFields: [],
-            dependOnParams: fragment.dependOnParams.map(paramIndex => namedParameters[paramIndex])
+            dependOnParams: [...new Set(params)]
         }
         return fragmentResult
     })

@@ -1,4 +1,4 @@
-import { BitExprContext, BoolPriContext, DeleteStatementContext, ExprAndContext, ExprContext, ExprIsContext, ExprListContext, ExprNotContext, ExprOrContext, ExprXorContext, FromClauseContext, HavingClauseContext, InsertQueryExpressionContext, InsertStatementContext, PredicateContext, PredicateExprBetweenContext, PredicateExprInContext, PredicateExprLikeContext, PredicateOperationsContext, PrimaryExprAllAnyContext, PrimaryExprCompareContext, PrimaryExprIsNullContext, PrimaryExprPredicateContext, QueryContext, QueryExpressionBodyContext, QueryExpressionContext, QueryExpressionOrParensContext, QueryExpressionParensContext, QuerySpecificationContext, SelectItemContext, SelectItemListContext, SelectStatementContext, SimpleExprCaseContext, SimpleExprCastContext, SimpleExprColumnRefContext, SimpleExprContext, SimpleExprFunctionContext, SimpleExprIntervalContext, SimpleExprListContext, SimpleExprLiteralContext, SimpleExprParamMarkerContext, SimpleExprRuntimeFunctionContext, SimpleExprSubQueryContext, SimpleExprSumContext, SimpleExprWindowingFunctionContext, SingleTableContext, SubqueryContext, TableFactorContext, TableReferenceContext, TableReferenceListParensContext, UpdateStatementContext, WindowFunctionCallContext, WithClauseContext } from "ts-mysql-parser";
+import { BitExprContext, BoolPriContext, ColumnRefContext, DeleteStatementContext, ExprAndContext, ExprContext, ExprIsContext, ExprListContext, ExprNotContext, ExprOrContext, ExprXorContext, FromClauseContext, HavingClauseContext, InsertQueryExpressionContext, InsertStatementContext, PredicateContext, PredicateExprBetweenContext, PredicateExprInContext, PredicateExprLikeContext, PredicateOperationsContext, PrimaryExprAllAnyContext, PrimaryExprCompareContext, PrimaryExprIsNullContext, PrimaryExprPredicateContext, QueryContext, QueryExpressionBodyContext, QueryExpressionContext, QueryExpressionOrParensContext, QueryExpressionParensContext, QuerySpecificationContext, SelectItemContext, SelectItemListContext, SelectStatementContext, SimpleExprCaseContext, SimpleExprCastContext, SimpleExprColumnRefContext, SimpleExprContext, SimpleExprFunctionContext, SimpleExprIntervalContext, SimpleExprListContext, SimpleExprLiteralContext, SimpleExprParamMarkerContext, SimpleExprRuntimeFunctionContext, SimpleExprSubQueryContext, SimpleExprSumContext, SimpleExprWindowingFunctionContext, SingleTableContext, SubqueryContext, TableFactorContext, TableReferenceContext, TableReferenceListParensContext, UpdateStatementContext, WindowFunctionCallContext, WithClauseContext } from "ts-mysql-parser";
 import { verifyNotInferred } from "../describe-query";
 import { extractLimitParameters, extractOrderByParameters, getAllQuerySpecificationsFromSelectStatement, getLimitOptions, isSumExpressContext } from "./parse";
 import { ColumnDef, ColumnSchema, Constraint, DynamicSqlInfo, FieldName, FragmentInfo, ParameterInfo, TableField, TraverseContext, Type, TypeAndNullInfer, TypeOperator, TypeVar } from "./types";
@@ -922,6 +922,7 @@ function traversePredicate(predicate: PredicateContext, traverseContext: Travers
     const bitExprType = traverseBitExpr(bitExpr, traverseContext);
     const predicateOperations = predicate.predicateOperations();
     if (predicateOperations) {
+        let paramsCount = traverseContext.parameters.length;
         const rightType = traversePredicateOperations(predicateOperations, bitExprType, traverseContext, currentFragment);
         if (bitExprType.kind == 'TypeOperator' && rightType.kind == 'TypeOperator') {
             rightType.types.forEach((t, i) => {
@@ -937,7 +938,6 @@ function traversePredicate(predicate: PredicateContext, traverseContext: Travers
         }
         if (bitExprType.kind == 'TypeVar' && rightType.kind == 'TypeOperator') {
 
-            let containsParam = false;
             rightType.types.forEach((t, i) => {
                 traverseContext.constraints.push({
                     expression: predicateOperations.text,
@@ -945,23 +945,23 @@ function traversePredicate(predicate: PredicateContext, traverseContext: Travers
                     type2: { ...t, list: true },
                     mostGeneralType: true
                 })
-                if (t.name == '?') {
-                    containsParam = true;
-                }
             })
-            if (containsParam) {
-                currentFragment?.dependOnParams.push(traverseContext.parameters.length - 1)
-            }
-            if (bitExprType.table != null) {
-                currentFragment?.fields.push({
-                    field: bitExprType.name,
-                    name: bitExprType.name,
-                    table: bitExprType.table
-                })
-            }
             // return rightType.types[0];
-
         }
+        const params = getExpressions(predicateOperations, SimpleExprParamMarkerContext);
+        params.forEach(_ => {
+            currentFragment?.dependOnParams.push(paramsCount);
+            paramsCount++;
+        })
+        const columnsRef = getExpressions(bitExpr, ColumnRefContext);
+        columnsRef.forEach(colRef => {
+            const fileName = splitName(colRef.text);
+            currentFragment?.fields.push({
+                field: fileName.name,
+                name: fileName.name,
+                table: fileName.prefix
+            })
+        })
 
         return bitExprType;
 
