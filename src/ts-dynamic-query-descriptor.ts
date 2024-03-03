@@ -12,7 +12,7 @@ function mapToSelectColumn(r: TsFieldDescriptor): TsFieldDescriptor {
     }
 }
 
-export function mapToDyanicResultColumns(columns: TsFieldDescriptor[]): TsFieldDescriptor[] {
+export function mapToDynamicResultColumns(columns: TsFieldDescriptor[]): TsFieldDescriptor[] {
     return columns.map(column => mapToResultColumn(column));
 }
 
