@@ -9,6 +9,8 @@ import { converToTsType, MySqlType } from "./mysql-mapping";
 import { parseSql } from "./describe-query";
 import CodeBlockWriter from "code-block-writer";
 import { NestedTsDescriptor, createNestedTsDescriptor } from "./ts-nested-descriptor";
+import { mapToDyanicResultColumns, mapToDynamicSelectColumns } from "./ts-dynamic-query-descriptor";
+import { DynamicSqlInfoResult } from "./mysql-query-analyzer/types";
 
 export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, target: 'node' | 'deno', crud: boolean = false): string {
     const writer = new CodeBlockWriter();
@@ -19,6 +21,7 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
     const dataTypeName = capitalizedName + 'Data';
     const paramsTypeName = capitalizedName + 'Params';
     const resultTypeName = capitalizedName + 'Result';
+    const selectColumnsTypeName = capitalizedName + 'Select';
     const orderByTypeName = capitalizedName + 'OrderBy';
     const generateOrderBy = tsDescriptor.orderByColumns != null && tsDescriptor.orderByColumns.length > 0;
 
@@ -28,6 +31,9 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
     }
     else {
         writer.writeLine(`import type { Connection } from 'mysql2/promise';`);
+        if (tsDescriptor.dynamicQuery != null) {
+            writer.writeLine(`import { EOL } from 'os';`);
+        }
     }
     writer.blankLine();
 
@@ -37,7 +43,12 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
 
     const orderByField = generateOrderBy ? `orderBy: [${orderByTypeName}, ...${orderByTypeName}[]]` : undefined;
     writeTypeBlock(writer, tsDescriptor.parameters, paramsTypeName, false, orderByField);
-    writeTypeBlock(writer, tsDescriptor.columns, resultTypeName, false)
+    const resultTypes = tsDescriptor.dynamicQuery == null ? tsDescriptor.columns : mapToDyanicResultColumns(tsDescriptor.columns);
+    writeTypeBlock(writer, resultTypes, resultTypeName, false);
+    if (tsDescriptor.dynamicQuery) {
+        const selectFields = mapToDynamicSelectColumns(tsDescriptor.columns);
+        writeTypeBlock(writer, selectFields, selectColumnsTypeName, false);
+    }
 
     let functionReturnType = resultTypeName;
     functionReturnType += tsDescriptor.multipleRowsResult ? '[]' : tsDescriptor.queryType == 'Select' ? ' | null' : '';
@@ -45,6 +56,7 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
     let functionArguments = target == 'deno' ? 'client: Client' : 'connection: Connection';
     functionArguments += tsDescriptor.data && tsDescriptor.data.length > 0 ? ', data: ' + dataTypeName : '';
     functionArguments += tsDescriptor.parameters.length > 0 || generateOrderBy ? ', params: ' + paramsTypeName : '';
+    functionArguments += tsDescriptor.dynamicQuery ? `, select: ${selectColumnsTypeName}` : '';
 
     const allParameters = tsDescriptor.data ? tsDescriptor.data.map((field, index) => {
         //:nameIsSet, :name, :valueIsSet, :value....
@@ -62,14 +74,54 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
     const processedSql = replaceOrderByParam(escapedBackstick);
     const sqlSplit = processedSql.split('\n');
 
-    writer.write(`export async function ${camelCaseName}(${functionArguments}) : Promise<${functionReturnType}>`).block(() => {
-        writer.writeLine('const sql = `');
-        sqlSplit.forEach(sqlLine => {
-            writer.indent().write(sqlLine);
-            writer.newLine();
-        });
-        writer.indent().write('`');
-        writer.blankLine();
+    writer.write(`export async function ${camelCaseName}(${functionArguments}): Promise<${functionReturnType}>`).block(() => {
+        if (tsDescriptor.dynamicQuery == null) {
+            writer.writeLine('const sql = `');
+            sqlSplit.forEach(sqlLine => {
+                writer.indent().write(sqlLine);
+                writer.newLine();
+            });
+            writer.indent().write('`');
+            writer.blankLine();
+        }
+        else {
+            writer.writeLine('const paramsValues: any = [];');
+            writer.writeLine(`let sql = 'SELECT';`);
+            tsDescriptor.dynamicQuery.select.forEach(fragment => {
+                writer.write(`if (${fragment.dependOnFields.map(field => 'select.' + field).join('&&')})`).block(() => {
+                    writer.write(`sql = appendSelect(sql, '${fragment.fragment}');`)
+                })
+            })
+            tsDescriptor.dynamicQuery.from.forEach(fragment => {
+                const selectConditions = fragment.dependOnFields.map(field => 'select.' + field);
+                const paramConditions = fragment.dependOnParams.map(param => 'params.' + param);
+                const allConditions = [...selectConditions, ...paramConditions];
+                if (allConditions.length > 0) {
+                    writer.write(`if (${allConditions.join(' || ')})`).block(() => {
+                        writer.write(`sql += EOL + '${fragment.fragment}';`);
+                    })
+                }
+                else {
+                    writer.writeLine(`sql += EOL + '${fragment.fragment}';`);
+                }
+            })
+            if (tsDescriptor.dynamicQuery.where.length > 0) {
+                writer.writeLine(`sql += 'WHERE 1=  1';`);
+            }
+            tsDescriptor.dynamicQuery.where.forEach(fragment => {
+                const paramConditions = fragment.dependOnParams.map(param => 'params.' + param);
+                if (paramConditions.length > 0) {
+                    writer.write(`if (${paramConditions.join(' || ')})`).block(() => {
+                        writer.writeLine(`sql += EOL + '${fragment.fragment}';`);
+                        writer.writeLine(`paramsValues.push(${paramConditions[0]});`); //TODO - more than one parameter condition
+                    })
+                }
+                else {
+                    writer.writeLine(`sql += EOL + '${fragment.fragment}';`);
+                }
+            })
+        }
+
         const singleRowSelect = tsDescriptor.queryType == 'Select' && tsDescriptor.multipleRowsResult === false;
         if (target == 'deno') {
             writer.writeLine(`return client.query(sql${queryParams})`);
@@ -77,9 +129,16 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
         }
         else {
             if (tsDescriptor.queryType == 'Select') {
-                writer.writeLine(`return connection.query({sql, rowsAsArray: true}${queryParams})`);
-                writer.indent().write(`.then(res => res[0] as any[])`);
-                writer.newLine().indent().write(`.then(res => res.map(data => mapArrayTo${resultTypeName}(data)))`);
+                if (tsDescriptor.dynamicQuery == null) {
+                    writer.writeLine(`return connection.query({sql, rowsAsArray: true}${queryParams})`);
+                    writer.indent().write(`.then(res => res[0] as any[])`);
+                    writer.newLine().indent().write(`.then(res => res.map(data => mapArrayTo${resultTypeName}(data)))`);
+                }
+                else {
+                    writer.writeLine(`return connection.query({ sql, rowsAsArray: true }, paramsValues)`);
+                    writer.indent().write(`.then(res => res[0] as any[])`);
+                    writer.newLine().indent().write(`.then(res => res.map(data => mapArrayTo${resultTypeName}(data, select)))`);
+                }
             }
             else {
                 writer.writeLine(`return connection.query(sql${queryParams})`);
@@ -95,14 +154,37 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
     })
     if (target == 'node' && tsDescriptor.queryType == 'Select') {
         writer.blankLine();
-        writer.write(`function mapArrayTo${resultTypeName}(data: any)`).block(() => {
-            writer.write(`const result: ${resultTypeName} =`).block(() => {
-                tsDescriptor.columns.forEach((tsField, index) => {
-                    writer.writeLine(`${tsField.name}: data[${index}]${commaSeparator(tsDescriptor.columns.length, index)}`);
+        if (tsDescriptor.dynamicQuery == null) {
+            writer.write(`function mapArrayTo${resultTypeName}(data: any)`).block(() => {
+                writer.write(`const result: ${resultTypeName} =`).block(() => {
+                    tsDescriptor.columns.forEach((tsField, index) => {
+                        writer.writeLine(`${tsField.name}: data[${index}]${commaSeparator(tsDescriptor.columns.length, index)}`);
+                    })
+                });
+                writer.write('return result;');
+            })
+        }
+        else {
+            writer.write(`function mapArrayTo${resultTypeName}(data: any, select: ${selectColumnsTypeName})`).block(() => {
+                writer.writeLine(`const result = {} as ${resultTypeName};`);
+                writer.writeLine(`let rowIndex = 0;`);
+                tsDescriptor.columns.forEach((tsField) => {
+                    writer.write(`if (select.${tsField.name})`).block(() => {
+                        writer.writeLine(`result.${tsField.name} = data[rowIndex++];`);
+                    })
                 })
-            });
-            writer.write('return result;');
-        })
+                writer.write('return result;');
+            })
+            writer.blankLine();
+            writer.write(`function appendSelect(sql: string, selectField: string)`).block(() => {
+                writer.write(`if (sql == 'SELECT')`).block(() => {
+                    writer.writeLine(`return sql + EOL + selectField;`);
+                })
+                writer.write(`else`).block(() => {
+                    writer.writeLine(`return sql + ', ' + EOL + selectField;`);
+                })
+            })
+        }
     }
 
     if (generateOrderBy) {
@@ -289,6 +371,10 @@ export function generateTsDescriptor(queryInfo: SchemaDef): TsDescriptor {
         const nestedDescriptor = createNestedTsDescriptor(queryInfo.columns, queryInfo.nestedResultInfo);
         result.nestedDescriptor = nestedDescriptor;
     }
+    if (queryInfo.dynamicSqlQuery) {
+        const dynamicQueryDescriptor = queryInfo.dynamicSqlQuery;
+        result.dynamicQuery = dynamicQueryDescriptor;
+    }
     return result;
 }
 
@@ -423,6 +509,7 @@ export type TsDescriptor = {
     data?: TsFieldDescriptor[];
     orderByColumns?: string[];
     nestedDescriptor?: NestedTsDescriptor;
+    dynamicQuery?: DynamicSqlInfoResult;
 }
 
 function commaSeparator(length: number, index: number) {

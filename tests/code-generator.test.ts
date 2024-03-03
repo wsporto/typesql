@@ -3,6 +3,7 @@ import { TsDescriptor, convertToCamelCaseName, replaceOrderByParam, generateTsCo
 import { describeSql } from "../src/describe-query";
 import { dbSchema } from "./mysql-query-analyzer/create-schema";
 import { DbClient } from "../src/queryExectutor";
+import { readFileSync } from "fs";
 
 describe('code-generator', () => {
 
@@ -56,7 +57,7 @@ export type GetPersonResult = {
     name?: string;
 }
 
-export async function getPerson(connection: Connection, params: GetPersonParams) : Promise<GetPersonResult[]> {
+export async function getPerson(connection: Connection, params: GetPersonParams): Promise<GetPersonResult[]> {
     const sql = \`
     select id, name from person where id = ?
     \`
@@ -118,7 +119,7 @@ export type GetPersonResult = {
     name?: string;
 }
 
-export async function getPerson(connection: Connection, params: GetPersonParams) : Promise<GetPersonResult[]> {
+export async function getPerson(connection: Connection, params: GetPersonParams): Promise<GetPersonResult[]> {
     const sql = \`
     select id, name from person where id in (?)
     \`
@@ -161,7 +162,7 @@ export type UpdatePersonResult = {
     affectedRows: number;
 }
 
-export async function updatePerson(connection: Connection, data: UpdatePersonData, params: UpdatePersonParams) : Promise<UpdatePersonResult> {
+export async function updatePerson(connection: Connection, data: UpdatePersonData, params: UpdatePersonParams): Promise<UpdatePersonResult> {
     const sql = \`
     update mytable2 set name= ?, descr= ? where id = ?
     \`
@@ -204,7 +205,7 @@ export type SelectPersonResult = {
     id: number;
 }
 
-export async function selectPerson(connection: Connection, params: SelectPersonParams) : Promise<SelectPersonResult | null> {
+export async function selectPerson(connection: Connection, params: SelectPersonParams): Promise<SelectPersonResult | null> {
     const sql = \`
     SELECT id FROM person ORDER BY \${escapeOrderBy(params.orderBy)}
     \`
@@ -302,7 +303,7 @@ export type SelectIdResult = {
     id: number;
 }
 
-export async function selectId(client: Client) : Promise<SelectIdResult[]> {
+export async function selectId(client: Client): Promise<SelectIdResult[]> {
     const sql = \`
     SELECT id FROM mytable1
     \`
@@ -331,7 +332,7 @@ export type SelectIdResult = {
     id: number;
 }
 
-export async function selectId(client: Client, params: SelectIdParams) : Promise<SelectIdResult | null> {
+export async function selectId(client: Client, params: SelectIdParams): Promise<SelectIdResult | null> {
     const sql = \`
     SELECT id from mytable1 where id = ? and value in (?)
     \`
@@ -359,7 +360,7 @@ export type SelectIdResult = {
     id: number;
 }
 
-export async function selectId(connection: Connection, params: SelectIdParams) : Promise<SelectIdResult[]> {
+export async function selectId(connection: Connection, params: SelectIdParams): Promise<SelectIdResult[]> {
     const sql = \`
     SELECT id from mytable1 where id = ? or id = ?
     \`
@@ -395,7 +396,7 @@ export type UpdateValueResult = {
     affectedRows: number;
 }
 
-export async function updateValue(client: Client, data: UpdateValueData) : Promise<UpdateValueResult> {
+export async function updateValue(client: Client, data: UpdateValueData): Promise<UpdateValueResult> {
     const sql = \`
     UPDATE mytable1 SET value = ?
     \`
@@ -428,7 +429,7 @@ export type UpdateValueResult = {
     affectedRows: number;
 }
 
-export async function updateValue(client: Client, data: UpdateValueData, params: UpdateValueParams) : Promise<UpdateValueResult> {
+export async function updateValue(client: Client, data: UpdateValueData, params: UpdateValueParams): Promise<UpdateValueResult> {
     const sql = \`
     UPDATE mytable1 SET value = ? WHERE id = ?
     \`
@@ -456,7 +457,7 @@ export type SelectIdResult = {
     id: number;
 }
 
-export async function selectId(client: Client, params: SelectIdParams) : Promise<SelectIdResult[]> {
+export async function selectId(client: Client, params: SelectIdParams): Promise<SelectIdResult[]> {
     const sql = \`
     SELECT id from mytable1 ORDER BY \${escapeOrderBy(params.orderBy)}
     \`
@@ -490,7 +491,7 @@ export type SelectIdResult = {
     id: number;
 }
 
-export async function selectId(client: Client) : Promise<SelectIdResult[]> {
+export async function selectId(client: Client): Promise<SelectIdResult[]> {
     const sql = \`
     SELECT id FROM \\\`my table\\\`
     \`
@@ -545,7 +546,7 @@ export type SelectIdResult = {
     id: number;
 }
 
-export async function selectId(connection: Connection, params: SelectIdParams) : Promise<SelectIdResult[]> {
+export async function selectId(connection: Connection, params: SelectIdParams): Promise<SelectIdResult[]> {
     const sql = \`
     SELECT id from mytable1 where (id = ? or id = ?) and value = ?
     \`
@@ -598,7 +599,7 @@ export type SelectUsersResult = {
     comment?: string;
 }
 
-export async function selectUsers(connection: Connection) : Promise<SelectUsersResult[]> {
+export async function selectUsers(connection: Connection): Promise<SelectUsersResult[]> {
     const sql = \`
     -- @nested
     SELECT 
@@ -768,7 +769,7 @@ export type SelectUsersResult = {
     post_body?: string;
 }
 
-export async function selectUsers(connection: Connection, params: SelectUsersParams) : Promise<SelectUsersResult[]> {
+export async function selectUsers(connection: Connection, params: SelectUsersParams): Promise<SelectUsersResult[]> {
     const sql = \`
     -- @nested
     SELECT 
@@ -886,7 +887,7 @@ export type SelectAnswersResult = {
     userName: string;
 }
 
-export async function selectAnswers(connection: Connection, params: SelectAnswersParams) : Promise<SelectAnswersResult[]> {
+export async function selectAnswers(connection: Connection, params: SelectAnswersParams): Promise<SelectAnswersResult[]> {
     const sql = \`
     -- @nested
     SELECT
@@ -1004,7 +1005,7 @@ export type SelectClientsResult = {
     address_2?: string;
 }
 
-export async function selectClients(connection: Connection, params: SelectClientsParams) : Promise<SelectClientsResult[]> {
+export async function selectClients(connection: Connection, params: SelectClientsParams): Promise<SelectClientsResult[]> {
     const sql = \`
     -- @nested
     SELECT
@@ -1135,7 +1136,7 @@ export type SelectBooksResult = {
     shortName?: string;
 }
 
-export async function selectBooks(connection: Connection) : Promise<SelectBooksResult[]> {
+export async function selectBooks(connection: Connection): Promise<SelectBooksResult[]> {
     const sql = \`
     -- @nested
     SELECT *
@@ -1232,6 +1233,22 @@ const groupBy = <T, Q>(array: T[], predicate: (value: T, index: number, array: T
         return map;
     }, new Map<Q, T[]>());
 }`
+
+        assert.deepStrictEqual(actual, expected);
+    })
+
+    it('dynamic-query-01', async () => {
+        const queryName = 'dynamic-query-01';
+        const sql = `-- @dynamicQuery
+SELECT m1.id, m1.value, m2.name, m2.descr as description
+FROM mytable1 m1
+INNER JOIN mytable2 m2 on m1.id = m2.id
+WHERE m2.name = :name
+AND m2.descr = :description`
+
+        const actual = await generateTsFileFromContent(client, `${queryName}1.sql`, queryName, sql, 'node');
+        //tests\expected-code\dynamic-query01.ts
+        const expected = readFileSync('tests/expected-code/dynamic-query01.ts.txt', 'utf-8').replace(/\r/gm, '');
 
         assert.deepStrictEqual(actual, expected);
     })

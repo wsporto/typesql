@@ -1,0 +1,81 @@
+import type { Connection } from 'mysql2/promise';
+import { EOL } from 'os';
+
+export type DynamicQuery01Params = {
+    name: string;
+    description: string;
+}
+
+export type DynamicQuery01Result = {
+    id?: number;
+    value?: number;
+    name?: string;
+    description?: string;
+}
+
+export type DynamicQuery01Select = {
+    id?: boolean;
+    value?: boolean;
+    name?: boolean;
+    description?: boolean;
+}
+
+export async function dynamicQuery01(connection: Connection, params: DynamicQuery01Params, select: DynamicQuery01Select): Promise<DynamicQuery01Result[]> {
+    const paramsValues: any = [];
+    let sql = 'SELECT';
+    if (select.id) {
+        sql = appendSelect(sql, 'm1.id');
+    }
+    if (select.value) {
+        sql = appendSelect(sql, 'm1.value');
+    }
+    if (select.name) {
+        sql = appendSelect(sql, 'm2.name');
+    }
+    if (select.description) {
+        sql = appendSelect(sql, 'm2.descr as description');
+    }
+    sql += EOL + 'FROM mytable1 m1';
+    if (select.name || select.description || params.name || params.description) {
+        sql += EOL + 'INNER JOIN mytable2 m2 on m1.id = m2.id';
+    }
+    sql += 'WHERE 1=  1';
+    if (params.name) {
+        sql += EOL + 'AND m2.name = ?';
+        paramsValues.push(params.name);
+    }
+    if (params.description) {
+        sql += EOL + 'AND m2.descr = ?';
+        paramsValues.push(params.description);
+    }
+    return connection.query({ sql, rowsAsArray: true }, paramsValues)
+        .then(res => res[0] as any[])
+        .then(res => res.map(data => mapArrayToDynamicQuery01Result(data, select)));
+}
+
+function mapArrayToDynamicQuery01Result(data: any, select: DynamicQuery01Select) {
+    const result = {} as DynamicQuery01Result;
+    let rowIndex = 0;
+    if (select.id) {
+        result.id = data[rowIndex++];
+    }
+    if (select.value) {
+        result.value = data[rowIndex++];
+    }
+    if (select.name) {
+        result.name = data[rowIndex++];
+    }
+    if (select.description) {
+        result.description = data[rowIndex++];
+    }
+    return result;
+}
+
+function appendSelect(sql: string, selectField: string) {
+    if (sql == 'SELECT') {
+        return sql + EOL + selectField;
+    }
+    else {
+        return sql + ', ' + EOL + selectField;
+    }
+}

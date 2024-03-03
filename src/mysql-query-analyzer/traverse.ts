@@ -561,7 +561,7 @@ function traverseTableReferenceList(tableReferenceList: TableReferenceContext[],
             const fields = traverseTableFactor(tableFactor, traverseContext, currentFragment);
             result.push(...fields);
             fragements.push({
-                fragment: extractOriginalSql(tableFactor) + '',
+                fragment: 'FROM ' + extractOriginalSql(tableFactor) + '',
                 fields: [], //fields.map(field => ({ field: field.columnName, name: field.columnName, table: field.table })),
                 dependOnFields: [],
                 dependOnParams: [],

@@ -54,7 +54,7 @@ describe('dynamic-query', () => {
             ],
             from: [
                 {
-                    fragment: 'mytable1 m1',
+                    fragment: 'FROM mytable1 m1',
                     dependOnFields: [],
                     dependOnParams: []
                 },
@@ -122,7 +122,7 @@ describe('dynamic-query', () => {
             ],
             from: [
                 {
-                    fragment: 'mytable1 m1',
+                    fragment: 'FROM mytable1 m1',
                     dependOnFields: [],
                     dependOnParams: []
                 },
@@ -187,7 +187,7 @@ describe('dynamic-query', () => {
             ],
             from: [
                 {
-                    fragment: 'mytable1 m1',
+                    fragment: 'FROM mytable1 m1',
                     dependOnFields: [],
                     dependOnParams: []
                 },
@@ -243,7 +243,7 @@ describe('dynamic-query', () => {
             ],
             from: [
                 {
-                    fragment: 'mytable1 m1',
+                    fragment: 'FROM mytable1 m1',
                     dependOnFields: [],
                     dependOnParams: []
                 },
