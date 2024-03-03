@@ -1,6 +1,11 @@
 import type { Connection } from 'mysql2/promise';
 import { EOL } from 'os';
 
+export type DynamicQuery01DynamicParams = {
+    select?: DynamicQuery01Select;
+    params?: DynamicQuery01Params;
+}
+
 export type DynamicQuery01Params = {
     name: string;
     description: string;
@@ -20,52 +25,52 @@ export type DynamicQuery01Select = {
     description?: boolean;
 }
 
-export async function dynamicQuery01(connection: Connection, params: DynamicQuery01Params, select: DynamicQuery01Select): Promise<DynamicQuery01Result[]> {
+export async function dynamicQuery01(connection: Connection, params: DynamicQuery01DynamicParams): Promise<DynamicQuery01Result[]> {
     const paramsValues: any = [];
     let sql = 'SELECT';
-    if (select.id) {
+    if (params.select == null || params.select.id) {
         sql = appendSelect(sql, 'm1.id');
     }
-    if (select.value) {
+    if (params.select == null || params.select.value) {
         sql = appendSelect(sql, 'm1.value');
     }
-    if (select.name) {
+    if (params.select == null || params.select.name) {
         sql = appendSelect(sql, 'm2.name');
     }
-    if (select.description) {
+    if (params.select == null || params.select.description) {
         sql = appendSelect(sql, 'm2.descr as description');
     }
     sql += EOL + 'FROM mytable1 m1';
-    if (select.name || select.description || params.name || params.description) {
+    if (params.select == null || params.select.name || params.select.description || params.params?.name || params.params?.description) {
         sql += EOL + 'INNER JOIN mytable2 m2 on m1.id = m2.id';
     }
-    sql += 'WHERE 1=  1';
-    if (params.name) {
+    sql += EOL + 'WHERE 1 = 1';
+    if (params.params?.name) {
         sql += EOL + 'AND m2.name = ?';
-        paramsValues.push(params.name);
+        paramsValues.push(params.params.name);
     }
-    if (params.description) {
+    if (params.params?.description) {
         sql += EOL + 'AND m2.descr = ?';
-        paramsValues.push(params.description);
+        paramsValues.push(params.params.description);
     }
     return connection.query({ sql, rowsAsArray: true }, paramsValues)
         .then(res => res[0] as any[])
-        .then(res => res.map(data => mapArrayToDynamicQuery01Result(data, select)));
+        .then(res => res.map(data => mapArrayToDynamicQuery01Result(data, params.select)));
 }
 
-function mapArrayToDynamicQuery01Result(data: any, select: DynamicQuery01Select) {
+function mapArrayToDynamicQuery01Result(data: any, select?: DynamicQuery01Select) {
     const result = {} as DynamicQuery01Result;
     let rowIndex = 0;
-    if (select.id) {
+    if (select == null || select.id) {
         result.id = data[rowIndex++];
     }
-    if (select.value) {
+    if (select == null || select.value) {
         result.value = data[rowIndex++];
     }
-    if (select.name) {
+    if (select == null || select.name) {
         result.name = data[rowIndex++];
     }
-    if (select.description) {
+    if (select == null || select.description) {
         result.description = data[rowIndex++];
     }
     return result;
