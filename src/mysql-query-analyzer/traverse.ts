@@ -476,15 +476,15 @@ function renameFromColumns(fromColumns: TypeAndNullInfer[], recursiveNames: stri
 
 export function traverseQuerySpecification(querySpec: QuerySpecificationContext, traverseContext: TraverseContext, subQuery = false): QuerySpecificationResult {
     const fromClause = querySpec.fromClause();
-    const fromColumnsFrom = fromClause ? traverseFromClause(fromClause, traverseContext) : [];
+    const fromColumnsFrom = fromClause ? traverseFromClause(fromClause, traverseContext, subQuery) : [];
     const allColumns = subQuery ? traverseContext.fromColumns.concat(fromColumnsFrom) : fromColumnsFrom;     //(... where id = t1.id)
-    const selectItemListResult = traverseSelectItemList(querySpec.selectItemList(), { ...traverseContext, fromColumns: allColumns });
+    const selectItemListResult = traverseSelectItemList(querySpec.selectItemList(), { ...traverseContext, fromColumns: allColumns }, subQuery);
 
     const whereClause = querySpec.whereClause();
     //TODO - HAVING, BLAH
     if (whereClause) {
         const whereExpr = whereClause?.expr();
-        traverseExpr(whereExpr, { ...traverseContext, fromColumns: allColumns }, null, true);
+        traverseExpr(whereExpr, { ...traverseContext, fromColumns: allColumns }, null, !subQuery);
     }
 
 
@@ -542,15 +542,15 @@ export function traverseWithClause(withClause: WithClauseContext, traverseContex
     });
 }
 
-function traverseFromClause(fromClause: FromClauseContext, traverseContext: TraverseContext): ColumnDef[] {
+function traverseFromClause(fromClause: FromClauseContext, traverseContext: TraverseContext, subQuery = false): ColumnDef[] {
     const tableReferenceList = fromClause.tableReferenceList()?.tableReference();
 
-    const fromColumns = tableReferenceList ? traverseTableReferenceList(tableReferenceList, traverseContext, null) : [];
+    const fromColumns = tableReferenceList ? traverseTableReferenceList(tableReferenceList, traverseContext, null, subQuery) : [];
 
     return fromColumns;
 }
 
-function traverseTableReferenceList(tableReferenceList: TableReferenceContext[], traverseContext: TraverseContext, currentFragment: FragmentInfo | null): ColumnDef[] {
+function traverseTableReferenceList(tableReferenceList: TableReferenceContext[], traverseContext: TraverseContext, currentFragment: FragmentInfo | null, subQuery = false): ColumnDef[] {
 
     const result: ColumnDef[] = [];
     const fragements: FragmentInfo[] = [];
@@ -650,7 +650,9 @@ function traverseTableReferenceList(tableReferenceList: TableReferenceContext[],
         });
 
     });
-    traverseContext.dynamicSqlInfo.from = fragements;
+    if (!subQuery) {
+        traverseContext.dynamicSqlInfo.from = fragements;
+    }
     return result;
 }
 
@@ -730,7 +732,7 @@ function traverseSubquery(subQuery: SubqueryContext, traverseContext: TraverseCo
     throw Error('traverseSubquery - not expected: ' + subQuery.constructor.name);
 }
 
-function traverseSelectItemList(selectItemList: SelectItemListContext, traverseContext: TraverseContext): TypeOperator {
+function traverseSelectItemList(selectItemList: SelectItemListContext, traverseContext: TraverseContext, subQuery = false): TypeOperator {
     const listType: TypeVar[] = [];
     if (selectItemList.MULT_OPERATOR()) {
         traverseContext.fromColumns.forEach(col => {
@@ -759,17 +761,19 @@ function traverseSelectItemList(selectItemList: SelectItemListContext, traverseC
                 dependOnFields: [],
                 dependOnParams: []
             }
-            traverseContext.dynamicSqlInfo.select?.push(selectFragment);
-            const columns = getExpressions(expr, SimpleExprColumnRefContext);
-            const columnName = getColumnName(selectItem);
-            columns.forEach(colRef => {
-                const fieldName = splitName(colRef.text);
-                selectFragment.fields.push({
-                    field: fieldName.name,
-                    name: columnName,
-                    table: fieldName.prefix
+            if (!subQuery) {
+                traverseContext.dynamicSqlInfo.select?.push(selectFragment);
+                const columns = getExpressions(expr, SimpleExprColumnRefContext);
+                const columnName = getColumnName(selectItem);
+                columns.forEach(colRef => {
+                    const fieldName = splitName(colRef.text);
+                    selectFragment.fields.push({
+                        field: fieldName.name,
+                        name: columnName,
+                        table: fieldName.prefix
+                    })
                 })
-            })
+            }
             // const fields = exprType.kind == 'TypeVar' ? [{ field: exprType.name, table: exprType.table + '', name: getColumnName(selectItem) }] : []
 
 
