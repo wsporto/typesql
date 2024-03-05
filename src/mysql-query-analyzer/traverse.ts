@@ -805,16 +805,33 @@ function traverseExpr(expr: ExprContext, traverseContext: TraverseContext, topLe
     if (expr instanceof ExprIsContext) {
         const boolPri = expr.boolPri();
 
-        const currentFragment: FragmentInfo = {
-            fragment: 'AND ' + extractOriginalSql(expr),
-            fields: [],
-            dependOnFields: [],
-            dependOnParams: []
-        }
+        let paramsCount = traverseContext.parameters.length;
+        const boolPriType = traverseBoolPri(boolPri, traverseContext, topLevel, where);
+
         if (where) {
+            const currentFragment: FragmentInfo = {
+                fragment: 'AND ' + extractOriginalSql(expr),
+                fields: [],
+                dependOnFields: [],
+                dependOnParams: []
+            }
+            const paramsRight = getExpressions(expr, SimpleExprParamMarkerContext);
+            paramsRight.forEach(_ => {
+                currentFragment.dependOnParams.push(paramsCount);
+                paramsCount++;
+            });
+            const columnsRef = getExpressions(expr, ColumnRefContext);
+            columnsRef.forEach(colRef => {
+                const fileName = splitName(colRef.text);
+                currentFragment.fields.push({
+                    field: fileName.name,
+                    name: fileName.name,
+                    table: fileName.prefix
+                })
+            })
             traverseContext.dynamicSqlInfo.where.push(currentFragment);
         }
-        const boolPriType = traverseBoolPri(boolPri, traverseContext, where ? currentFragment : topLevel);
+
         return boolPriType;
     }
     if (expr instanceof ExprNotContext) {
@@ -828,14 +845,32 @@ function traverseExpr(expr: ExprContext, traverseContext: TraverseContext, topLe
         const all: ExpressionAndOperator[] = [];
         getTopLevelAndExpr(expr, all);
         all.forEach(andExpression => {
-            const currentFragment: FragmentInfo = {
-                fragment: andExpression.operator + ' ' + extractOriginalSql(andExpression.expr),
-                fields: [],
-                dependOnFields: [],
-                dependOnParams: []
+
+            let paramsCount = traverseContext.parameters.length;
+            traverseExpr(andExpression.expr, traverseContext, topLevel, false)
+            if (where) {
+                const currentFragment: FragmentInfo = {
+                    fragment: andExpression.operator + ' ' + extractOriginalSql(andExpression.expr),
+                    fields: [],
+                    dependOnFields: [],
+                    dependOnParams: []
+                }
+                const paramsRight = getExpressions(andExpression.expr, SimpleExprParamMarkerContext);
+                paramsRight.forEach(_ => {
+                    currentFragment.dependOnParams.push(paramsCount);
+                    paramsCount++;
+                });
+                const columnsRef = getExpressions(andExpression.expr, ColumnRefContext);
+                columnsRef.forEach(colRef => {
+                    const fileName = splitName(colRef.text);
+                    currentFragment.fields.push({
+                        field: fileName.name,
+                        name: fileName.name,
+                        table: fileName.prefix
+                    })
+                })
+                traverseContext.dynamicSqlInfo.where.push(currentFragment);
             }
-            traverseContext.dynamicSqlInfo.where.push(currentFragment);
-            traverseExpr(andExpression.expr, traverseContext, currentFragment)
 
         })
         return freshVar(expr.text, 'tinyint');
@@ -844,10 +879,10 @@ function traverseExpr(expr: ExprContext, traverseContext: TraverseContext, topLe
     throw Error('traverseExpr - not supported: ' + expr.text);
 }
 
-function traverseBoolPri(boolPri: BoolPriContext, traverseContext: TraverseContext, currentFragment: FragmentInfo | null = null): Type {
+function traverseBoolPri(boolPri: BoolPriContext, traverseContext: TraverseContext, currentFragment: FragmentInfo | null = null, where = false): Type {
     if (boolPri instanceof PrimaryExprPredicateContext) {
         const predicate = boolPri.predicate();
-        const predicateType = traversePredicate(predicate, traverseContext, currentFragment);
+        const predicateType = traversePredicate(predicate, traverseContext, currentFragment, where);
         return predicateType;
     }
     if (boolPri instanceof PrimaryExprIsNullContext) {
@@ -859,7 +894,7 @@ function traverseBoolPri(boolPri: BoolPriContext, traverseContext: TraverseConte
 
         const compareLeft = boolPri.boolPri();
         const compareRight = boolPri.predicate();
-        let paramsCount = traverseContext.parameters.length;
+        // let paramsCount = traverseContext.parameters.length;
         const typeLeft = traverseBoolPri(compareLeft, traverseContext);
         const typeRight = traversePredicate(compareRight, traverseContext);
 
@@ -876,11 +911,11 @@ function traverseBoolPri(boolPri: BoolPriContext, traverseContext: TraverseConte
                     name: typeRight.name,
                     table: typeRight.table
                 })
-                const paramsLeft = getExpressions(compareLeft, SimpleExprParamMarkerContext);
-                paramsLeft.forEach(_ => {
-                    currentFragment?.dependOnParams.push(paramsCount);
-                    paramsCount++;
-                });
+                // const paramsLeft = getExpressions(compareLeft, SimpleExprParamMarkerContext);
+                // paramsLeft.forEach(_ => {
+                //     currentFragment?.dependOnParams.push(paramsCount);
+                //     paramsCount++;
+                // });
             }
         }
         if (typeLeft.kind == 'TypeVar') {
@@ -890,11 +925,11 @@ function traverseBoolPri(boolPri: BoolPriContext, traverseContext: TraverseConte
                     name: typeLeft.name,
                     table: typeLeft.table
                 })
-                const paramsRight = getExpressions(compareRight, SimpleExprParamMarkerContext);
-                paramsRight.forEach(_ => {
-                    currentFragment?.dependOnParams.push(paramsCount);
-                    paramsCount++;
-                });
+                // const paramsRight = getExpressions(compareRight, SimpleExprParamMarkerContext);
+                // paramsRight.forEach(_ => {
+                //     currentFragment?.dependOnParams.push(paramsCount);
+                //     paramsCount++;
+                // });
             }
         }
 
@@ -921,9 +956,9 @@ function traverseBoolPri(boolPri: BoolPriContext, traverseContext: TraverseConte
 
 }
 
-function traversePredicate(predicate: PredicateContext, traverseContext: TraverseContext, currentFragment: FragmentInfo | null = null): Type {
+function traversePredicate(predicate: PredicateContext, traverseContext: TraverseContext, currentFragment: FragmentInfo | null = null, where = false): Type {
     const bitExpr = predicate.bitExpr()[0]; //TODO - predicate length = 2? [1] == predicateOperations
-    const bitExprType = traverseBitExpr(bitExpr, traverseContext);
+    const bitExprType = traverseBitExpr(bitExpr, traverseContext, currentFragment, where);
     const predicateOperations = predicate.predicateOperations();
     if (predicateOperations) {
         let paramsCount = traverseContext.parameters.length;
@@ -952,20 +987,20 @@ function traversePredicate(predicate: PredicateContext, traverseContext: Travers
             })
             // return rightType.types[0];
         }
-        const params = getExpressions(predicateOperations, SimpleExprParamMarkerContext);
-        params.forEach(_ => {
-            currentFragment?.dependOnParams.push(paramsCount);
-            paramsCount++;
-        })
-        const columnsRef = getExpressions(bitExpr, ColumnRefContext);
-        columnsRef.forEach(colRef => {
-            const fileName = splitName(colRef.text);
-            currentFragment?.fields.push({
-                field: fileName.name,
-                name: fileName.name,
-                table: fileName.prefix
-            })
-        })
+        // const params = getExpressions(predicateOperations, SimpleExprParamMarkerContext);
+        // params.forEach(_ => {
+        //     currentFragment?.dependOnParams.push(paramsCount);
+        //     paramsCount++;
+        // })
+        // const columnsRef = getExpressions(bitExpr, ColumnRefContext);
+        // columnsRef.forEach(colRef => {
+        //     const fileName = splitName(colRef.text);
+        //     currentFragment?.fields.push({
+        //         field: fileName.name,
+        //         name: fileName.name,
+        //         table: fileName.prefix
+        //     })
+        // })
 
         return bitExprType;
 
@@ -987,22 +1022,22 @@ function traverseExprList(exprList: ExprListContext, traverseContext: TraverseCo
     return type;
 }
 
-function traverseBitExpr(bitExpr: BitExprContext, traverseContext: TraverseContext): Type {
+function traverseBitExpr(bitExpr: BitExprContext, traverseContext: TraverseContext, currentFragment: any, where = false): Type {
     const simpleExpr = bitExpr.simpleExpr();
     if (simpleExpr) {
-        return traverseSimpleExpr(simpleExpr, traverseContext);
+        return traverseSimpleExpr(simpleExpr, traverseContext, currentFragment, where);
     }
     if (bitExpr.bitExpr().length == 2) {
 
 
 
         const bitExprLeft = bitExpr.bitExpr()[0];
-        const typeLeftTemp = traverseBitExpr(bitExprLeft, traverseContext);
+        const typeLeftTemp = traverseBitExpr(bitExprLeft, traverseContext, currentFragment);
         const typeLeft = typeLeftTemp.kind == 'TypeOperator' ? typeLeftTemp.types[0] : typeLeftTemp;
         //const newTypeLeft = typeLeft.name == '?'? freshVar('?', 'bigint') : typeLeft;
 
         const bitExprRight = bitExpr.bitExpr()[1]
-        const typeRightTemp = traverseBitExpr(bitExprRight, traverseContext);
+        const typeRightTemp = traverseBitExpr(bitExprRight, traverseContext, currentFragment);
 
         //In the expression 'id + (value + 2) + ?' the '(value+2)' is treated as a SimpleExprListContext and return a TypeOperator
         const typeRight = typeRightTemp.kind == 'TypeOperator' ? typeRightTemp.types[0] : typeRightTemp;
@@ -1063,7 +1098,7 @@ function traverseBitExpr(bitExpr: BitExprContext, traverseContext: TraverseConte
 
     if (bitExpr.INTERVAL_SYMBOL()) {
         const bitExpr2 = bitExpr.bitExpr()[0];
-        const leftType = traverseBitExpr(bitExpr2, traverseContext);
+        const leftType = traverseBitExpr(bitExpr2, traverseContext, currentFragment);
         const expr = bitExpr.expr()!; //expr interval
         traverseExpr(expr, traverseContext);
         traverseContext.constraints.push({
@@ -1095,7 +1130,7 @@ function traversePredicateOperations(predicateOperations: PredicateOperationsCon
     if (predicateOperations instanceof PredicateExprLikeContext) {
         const simpleExpr = predicateOperations.simpleExpr()[0];
         let paramsCount = traverseContext.parameters.length;
-        const rightType = traverseSimpleExpr(simpleExpr, traverseContext);
+        const rightType = traverseSimpleExpr(simpleExpr, traverseContext, currentFragment);
         traverseContext.constraints.push({
             expression: simpleExpr.text,
             type1: parentType,
@@ -1107,11 +1142,11 @@ function traversePredicateOperations(predicateOperations: PredicateOperationsCon
                 name: parentType.name,
                 table: parentType.table
             })
-            const paramsRight = getExpressions(simpleExpr, SimpleExprParamMarkerContext);
-            paramsRight.forEach(_ => {
-                currentFragment?.dependOnParams.push(paramsCount);
-                paramsCount++;
-            });
+            // const paramsRight = getExpressions(simpleExpr, SimpleExprParamMarkerContext);
+            // paramsRight.forEach(_ => {
+            //     currentFragment?.dependOnParams.push(paramsCount);
+            //     paramsCount++;
+            // });
         }
 
         return rightType;
@@ -1120,7 +1155,7 @@ function traversePredicateOperations(predicateOperations: PredicateOperationsCon
     if (predicateOperations instanceof PredicateExprBetweenContext) {
         const bitExpr = predicateOperations.bitExpr();
         const predicate = predicateOperations.predicate();
-        const bitExprType = traverseBitExpr(bitExpr, traverseContext);
+        const bitExprType = traverseBitExpr(bitExpr, traverseContext, currentFragment);
         const predicateType = traversePredicate(predicate, traverseContext);
         traverseContext.constraints.push({
             expression: predicateOperations.text,
@@ -1143,7 +1178,7 @@ function traversePredicateOperations(predicateOperations: PredicateOperationsCon
 
 }
 
-function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: TraverseContext): Type {
+function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: TraverseContext, currentFragement: any, where = false): Type {
     if (simpleExpr instanceof SimpleExprColumnRefContext) {
         const fieldName = splitName(simpleExpr.text);
         const column = findColumn(fieldName, traverseContext.fromColumns);
@@ -1201,7 +1236,7 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
         const exprList = simpleExpr.exprList();
 
         const listType = exprList.expr().map(item => {
-            const exprType = traverseExpr(item, traverseContext);
+            const exprType = traverseExpr(item, traverseContext, currentFragement, false);
             return exprType as TypeVar;
         })
         const resultType: TypeOperator = {
