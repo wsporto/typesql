@@ -102,7 +102,7 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
             writer.writeLine(`let sql = 'SELECT';`);
             tsDescriptor.dynamicQuery.select.forEach(fragment => {
                 writer.write(`if (params.select == null || ${fragment.dependOnFields.map(field => 'params.select.' + field).join('&&')})`).block(() => {
-                    writer.write(`sql = appendSelect(sql, '${fragment.fragment}');`)
+                    writer.write(`sql = appendSelect(sql, \`${fragment.fragment}\`);`)
                 })
             })
             tsDescriptor.dynamicQuery.from.forEach(fragment => {
@@ -115,22 +115,22 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
                 const allConditions = [...selectConditions, ...paramConditions];
                 if (allConditions.length > 0) {
                     writer.write(`if (${allConditions.join(' || ')})`).block(() => {
-                        writer.write(`sql += EOL + '${fragment.fragment}';`);
+                        writer.write(`sql += EOL + \`${fragment.fragment}\`;`);
                     })
                 }
                 else {
-                    writer.writeLine(`sql += EOL + '${fragment.fragment}';`);
+                    writer.writeLine(`sql += EOL + \`${fragment.fragment}\`;`);
                 }
             })
             if (tsDescriptor.dynamicQuery.where.length > 0) {
-                writer.writeLine(`sql += EOL + 'WHERE 1 = 1';`);
+                writer.writeLine(`sql += EOL + \`WHERE 1 = 1\`;`);
             }
             tsDescriptor.dynamicQuery.where.forEach(fragment => {
                 const ifParamConditions = fragment.dependOnParams.map(param => 'params.params?.' + param);
                 const paramConditions = fragment.dependOnParams.map(param => 'params.params.' + param);
                 if (paramConditions.length > 0) {
                     writer.write(`if (${ifParamConditions.join(' || ')})`).block(() => {
-                        writer.writeLine(`sql += EOL + '${fragment.fragment}';`);
+                        writer.writeLine(`sql += EOL + \`${fragment.fragment}\`;`);
                         writer.writeLine(`paramsValues.push(${paramConditions[0]});`); //TODO - more than one parameter condition
                     })
                 }

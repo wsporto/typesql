@@ -541,7 +541,7 @@ describe('dynamic-query', () => {
         assert.deepStrictEqual(actual.right.dynamicSqlQuery, sqlFragments);
     })
 
-    it(`SELECT concat(m1.value, ': ', m2.name) as valueAndName`, async () => {
+    it(`INNER JOIN (SELECT FROM ...)`, async () => {
         const sql = `
         -- @dynamicQuery
         SELECT 
