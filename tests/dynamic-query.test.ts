@@ -540,4 +540,62 @@ describe('dynamic-query', () => {
 
         assert.deepStrictEqual(actual.right.dynamicSqlQuery, sqlFragments);
     })
+
+    it(`SELECT concat(m1.value, ': ', m2.name) as valueAndName`, async () => {
+        const sql = `
+        -- @dynamicQuery
+        SELECT 
+            m1.id, 
+            m2.name
+        FROM mytable1 m1
+        INNER JOIN ( -- derivated table
+            SELECT id, name from mytable2 m 
+            WHERE m.name = :subqueryName
+        ) m2
+        WHERE m2.name = :name
+        `
+        const sqlFragments: DynamicSqlInfoResult = {
+            select: [
+                {
+                    fragment: 'm1.id',
+                    dependOnFields: ['id'],
+                    dependOnParams: []
+                },
+                {
+                    fragment: 'm2.name',
+                    dependOnFields: ['name'],
+                    dependOnParams: []
+                }
+            ],
+            from: [
+                {
+                    fragment: 'FROM mytable1 m1',
+                    dependOnFields: [],
+                    dependOnParams: []
+                },
+                {
+                    fragment: `INNER JOIN ( -- derivated table
+            SELECT id, name from mytable2 m 
+            WHERE m.name = ?
+        ) m2`,
+                    dependOnFields: ['name'],
+                    dependOnParams: ['name']
+                }
+            ],
+            where: [
+                {
+                    fragment: `AND m2.name = ?`,
+                    dependOnFields: [],
+                    dependOnParams: ['name']
+                }
+            ]
+        }
+
+        const actual = await parseSql(client, sql);
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+
+        assert.deepStrictEqual(actual.right.dynamicSqlQuery, sqlFragments);
+    })
 });
