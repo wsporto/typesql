@@ -558,13 +558,16 @@ function traverseTableReferenceList(tableReferenceList: TableReferenceContext[],
     tableReferenceList.forEach(tab => {
         const tableFactor = tab.tableFactor();
         if (tableFactor) {
+            let paramBefore = traverseContext.parameters.length;
             const fields = traverseTableFactor(tableFactor, traverseContext, currentFragment);
+            let paramsAfter = traverseContext.parameters.length;
             result.push(...fields);
             fragements.push({
                 fragment: 'FROM ' + extractOriginalSql(tableFactor) + '',
                 fields: [], //fields.map(field => ({ field: field.columnName, name: field.columnName, table: field.table })),
                 dependOnFields: [],
                 dependOnParams: [],
+                parameters: Array.from({ length: paramsAfter - paramBefore }, (x, i) => i + paramBefore)
             })
         }
         const allJoinedColumns: ColumnDef[][] = [];
@@ -585,10 +588,13 @@ function traverseTableReferenceList(tableReferenceList: TableReferenceContext[],
                     fields: [],
                     dependOnFields: [],
                     dependOnParams: [],
+                    parameters: []
                 }
 
                 const usingFields = extractFieldsFromUsingClause(joined);
+                const paramsBefore = traverseContext.parameters.length;
                 const joinedFields = traverseTableReferenceList([tableReferences], traverseContext, innerJoinFragment);
+                const paramsAfter = traverseContext.parameters.length;
                 //doesn't duplicate the fields of the USING clause. Ex. INNER JOIN mytable2 USING(id);
                 const joinedFieldsFiltered = usingFields.length > 0 ? filterUsingFields(joinedFields, usingFields) : joinedFields;
                 allJoinedColumns.push(joinedFieldsFiltered);
@@ -598,6 +604,7 @@ function traverseTableReferenceList(tableReferenceList: TableReferenceContext[],
                     table: f.tableAlias || f.table,
                     name: f.columnName
                 }))]
+                innerJoinFragment.parameters = Array.from({ length: paramsAfter - paramsBefore }, (x, i) => i + paramsAfter - 1);
                 fragements.push(innerJoinFragment)
 
                 const onClause = joined.expr(); //ON expr
@@ -628,6 +635,7 @@ function traverseTableReferenceList(tableReferenceList: TableReferenceContext[],
                             innerJoinFragment.parentRelation = fieldName.prefix
                         }
                     });
+
                 }
             }
         })
@@ -759,7 +767,8 @@ function traverseSelectItemList(selectItemList: SelectItemListContext, traverseC
                 fragment: extractOriginalSql(selectItem) + '',
                 fields: [],
                 dependOnFields: [],
-                dependOnParams: []
+                dependOnParams: [],
+                parameters: []
             }
             if (!subQuery) {
                 traverseContext.dynamicSqlInfo.select?.push(selectFragment);
@@ -813,7 +822,8 @@ function traverseExpr(expr: ExprContext, traverseContext: TraverseContext, where
                 fragment: 'AND ' + extractOriginalSql(expr),
                 fields: [],
                 dependOnFields: [],
-                dependOnParams: []
+                dependOnParams: [],
+                parameters: []
             }
             const paramsRight = getExpressions(expr, SimpleExprParamMarkerContext);
             paramsRight.forEach(_ => {
@@ -853,7 +863,8 @@ function traverseExpr(expr: ExprContext, traverseContext: TraverseContext, where
                     fragment: andExpression.operator + ' ' + extractOriginalSql(andExpression.expr),
                     fields: [],
                     dependOnFields: [],
-                    dependOnParams: []
+                    dependOnParams: [],
+                    parameters: []
                 }
                 const paramsRight = getExpressions(andExpression.expr, SimpleExprParamMarkerContext);
                 paramsRight.forEach(_ => {

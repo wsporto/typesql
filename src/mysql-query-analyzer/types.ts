@@ -104,12 +104,14 @@ export type FragmentInfo = {
     fields: TableField[];
     dependOnFields: TableField[];
     dependOnParams: number[];
+    parameters: number[];
 }
 
 export type FragmentInfoResult = {
     fragment: string;
     dependOnFields: string[];
     dependOnParams: string[];
+    parameters: string[];
 }
 
 export type DynamicSqlInfo = {

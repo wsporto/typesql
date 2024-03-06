@@ -1252,5 +1252,22 @@ AND m2.descr = :description`
 
         assert.deepStrictEqual(actual, expected);
     })
-})
 
+    it('dynamic-query-02', async () => {
+        const queryName = 'derivated-table';
+        const sql = `-- @dynamicQuery
+SELECT m1.id, m2.name
+FROM mytable1 m1
+INNER JOIN ( -- derivated table
+	SELECT id, name from mytable2 m 
+	WHERE m.name = :subqueryName
+) m2
+WHERE (:name is NULL or m2.name = :name)`
+
+        const actual = await generateTsFileFromContent(client, `${queryName}.sql`, queryName, sql, 'node');
+        //tests\expected-code\dynamic-query01.ts
+        const expected = readFileSync('tests/expected-code/dynamic-query02.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+        assert.deepStrictEqual(actual, expected);
+    })
+})

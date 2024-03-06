@@ -113,13 +113,20 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
                 }
                 const paramConditions = fragment.dependOnParams.map(param => 'params.params?.' + param);
                 const allConditions = [...selectConditions, ...paramConditions];
+                const paramValues = fragment.parameters.map(param => 'params.params?.' + param);
                 if (allConditions.length > 0) {
                     writer.write(`if (${allConditions.join(' || ')})`).block(() => {
                         writer.write(`sql += EOL + \`${fragment.fragment}\`;`);
+                        paramValues.forEach(paramValues => {
+                            writer.writeLine(`paramsValues.push(${paramValues});`);
+                        })
                     })
                 }
                 else {
                     writer.writeLine(`sql += EOL + \`${fragment.fragment}\`;`);
+                    paramValues.forEach(paramValues => {
+                        writer.writeLine(`paramsValues.push(${paramValues});`);
+                    })
                 }
             })
             if (tsDescriptor.dynamicQuery.where.length > 0) {
@@ -127,11 +134,13 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
             }
             tsDescriptor.dynamicQuery.where.forEach(fragment => {
                 const ifParamConditions = fragment.dependOnParams.map(param => 'params.params?.' + param);
-                const paramConditions = fragment.dependOnParams.map(param => 'params.params.' + param);
-                if (paramConditions.length > 0) {
+                const paramValues = fragment.parameters.map(param => 'params.params.' + param);
+                if (ifParamConditions.length > 0) {
                     writer.write(`if (${ifParamConditions.join(' || ')})`).block(() => {
                         writer.writeLine(`sql += EOL + \`${fragment.fragment}\`;`);
-                        writer.writeLine(`paramsValues.push(${paramConditions[0]});`); //TODO - more than one parameter condition
+                        paramValues.forEach(paramValues => {
+                            writer.writeLine(`paramsValues.push(${paramValues});`);
+                        })
                     })
                 }
                 else {

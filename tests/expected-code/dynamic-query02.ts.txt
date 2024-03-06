@@ -1,0 +1,71 @@
+import type { Connection } from 'mysql2/promise';
+import { EOL } from 'os';
+
+export type DerivatedTableDynamicParams = {
+    select?: DerivatedTableSelect;
+    params?: DerivatedTableParams;
+}
+
+export type DerivatedTableParams = {
+    subqueryName?: string;
+    name?: string;
+}
+
+export type DerivatedTableResult = {
+    id?: number;
+    name?: string;
+}
+
+export type DerivatedTableSelect = {
+    id?: boolean;
+    name?: boolean;
+}
+
+export async function derivatedTable(connection: Connection, params: DerivatedTableDynamicParams): Promise<DerivatedTableResult[]> {
+    const paramsValues: any = [];
+    let sql = 'SELECT';
+    if (params.select == null || params.select.id) {
+        sql = appendSelect(sql, `m1.id`);
+    }
+    if (params.select == null || params.select.name) {
+        sql = appendSelect(sql, `m2.name`);
+    }
+    sql += EOL + `FROM mytable1 m1`;
+    if (params.select == null || params.select.name || params.params?.name) {
+        sql += EOL + `INNER JOIN ( -- derivated table
+	SELECT id, name from mytable2 m 
+	WHERE m.name = ?
+) m2`;
+        paramsValues.push(params.params?.subqueryName);
+    }
+    sql += EOL + `WHERE 1 = 1`;
+    if (params.params?.name || params.params?.name) {
+        sql += EOL + `AND (? is NULL or m2.name = ?)`;
+        paramsValues.push(params.params.name);
+        paramsValues.push(params.params.name);
+    }
+    return connection.query({ sql, rowsAsArray: true }, paramsValues)
+        .then(res => res[0] as any[])
+        .then(res => res.map(data => mapArrayToDerivatedTableResult(data, params.select)));
+}
+
+function mapArrayToDerivatedTableResult(data: any, select?: DerivatedTableSelect) {
+    const result = {} as DerivatedTableResult;
+    let rowIndex = 0;
+    if (select == null || select.id) {
+        result.id = data[rowIndex++];
+    }
+    if (select == null || select.name) {
+        result.name = data[rowIndex++];
+    }
+    return result;
+}
+
+function appendSelect(sql: string, selectField: string) {
+    if (sql == 'SELECT') {
+        return sql + EOL + selectField;
+    }
+    else {
+        return sql + ', ' + EOL + selectField;
+    }
+}

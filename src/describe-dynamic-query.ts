@@ -7,7 +7,8 @@ export function describeDynamicQuery(dynamicQueryInfo: DynamicSqlInfo, namedPara
         const fragmentResult: FragmentInfoResult = {
             fragment: fragment.fragment,
             dependOnFields: [...new Set(fragment.fields.map(f => f.name))], //remove duplicated
-            dependOnParams: []
+            dependOnParams: [],
+            parameters: []
         }
         return fragmentResult;
     });
@@ -26,6 +27,7 @@ export function describeDynamicQuery(dynamicQueryInfo: DynamicSqlInfo, namedPara
                 fragment: fragment.fragment,
                 dependOnFields: [],
                 dependOnParams: [],
+                parameters: fragment.parameters.map(paramIndex => namedParameters[paramIndex])
             }
         }
         const selectedFields = select.flatMap(fragment => fragment.fields);
@@ -40,7 +42,8 @@ export function describeDynamicQuery(dynamicQueryInfo: DynamicSqlInfo, namedPara
         const fragmentResult: FragmentInfoResult = {
             fragment: fragment.fragment,
             dependOnFields: conditonalFields.map(f => f.name),
-            dependOnParams: [...new Set(params)]
+            dependOnParams: [...new Set(params)],
+            parameters: fragment.parameters.map(paramIndex => namedParameters[paramIndex])
         }
         return fragmentResult;
     });
@@ -51,7 +54,8 @@ export function describeDynamicQuery(dynamicQueryInfo: DynamicSqlInfo, namedPara
         const fragmentResult: FragmentInfoResult = {
             fragment: fragment.fragment,
             dependOnFields: [],
-            dependOnParams: [...new Set(params)]
+            dependOnParams: params,
+            parameters: params
         }
         return fragmentResult
     })
