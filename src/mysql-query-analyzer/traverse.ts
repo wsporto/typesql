@@ -484,7 +484,7 @@ export function traverseQuerySpecification(querySpec: QuerySpecificationContext,
     //TODO - HAVING, BLAH
     if (whereClause) {
         const whereExpr = whereClause?.expr();
-        traverseExpr(whereExpr, { ...traverseContext, fromColumns: allColumns }, null, !subQuery);
+        traverseExpr(whereExpr, { ...traverseContext, fromColumns: allColumns }, !subQuery);
     }
 
 
@@ -656,11 +656,11 @@ function traverseTableReferenceList(tableReferenceList: TableReferenceContext[],
     return result;
 }
 
-function traverseTableFactor(tableFactor: TableFactorContext, traverseContext: TraverseContext, currentFragement: FragmentInfo | null): ColumnDef[] {
+function traverseTableFactor(tableFactor: TableFactorContext, traverseContext: TraverseContext, currentFragment: FragmentInfo | null): ColumnDef[] {
 
     const singleTable = tableFactor.singleTable();
     if (singleTable) {
-        return traverseSingleTable(singleTable, traverseContext.dbSchema, traverseContext.withSchema, currentFragement);
+        return traverseSingleTable(singleTable, traverseContext.dbSchema, traverseContext.withSchema, currentFragment);
     }
 
     const derivadTable = tableFactor.derivedTable();
@@ -800,13 +800,13 @@ function traverseHavingClause(havingClause: HavingClauseContext, traverseContext
     traverseExpr(havingExpr, traverseContext);
 }
 
-function traverseExpr(expr: ExprContext, traverseContext: TraverseContext, topLevel: FragmentInfo | null = null, where = false): Type {
+function traverseExpr(expr: ExprContext, traverseContext: TraverseContext, where = false): Type {
 
     if (expr instanceof ExprIsContext) {
         const boolPri = expr.boolPri();
 
         let paramsCount = traverseContext.parameters.length;
-        const boolPriType = traverseBoolPri(boolPri, traverseContext, topLevel, where);
+        const boolPriType = traverseBoolPri(boolPri, traverseContext, where);
 
         if (where) {
             const currentFragment: FragmentInfo = {
@@ -837,7 +837,7 @@ function traverseExpr(expr: ExprContext, traverseContext: TraverseContext, topLe
     if (expr instanceof ExprNotContext) {
         const expr2 = expr.expr();
         if (expr2) {
-            return traverseExpr(expr2, traverseContext, topLevel);
+            return traverseExpr(expr2, traverseContext);
         }
         return freshVar(expr.text, 'tinyint');;
     }
@@ -847,7 +847,7 @@ function traverseExpr(expr: ExprContext, traverseContext: TraverseContext, topLe
         all.forEach(andExpression => {
 
             let paramsCount = traverseContext.parameters.length;
-            traverseExpr(andExpression.expr, traverseContext, topLevel, false)
+            traverseExpr(andExpression.expr, traverseContext, false)
             if (where) {
                 const currentFragment: FragmentInfo = {
                     fragment: andExpression.operator + ' ' + extractOriginalSql(andExpression.expr),
@@ -879,10 +879,10 @@ function traverseExpr(expr: ExprContext, traverseContext: TraverseContext, topLe
     throw Error('traverseExpr - not supported: ' + expr.text);
 }
 
-function traverseBoolPri(boolPri: BoolPriContext, traverseContext: TraverseContext, currentFragment: FragmentInfo | null = null, where = false): Type {
+function traverseBoolPri(boolPri: BoolPriContext, traverseContext: TraverseContext, where = false): Type {
     if (boolPri instanceof PrimaryExprPredicateContext) {
         const predicate = boolPri.predicate();
-        const predicateType = traversePredicate(predicate, traverseContext, currentFragment, where);
+        const predicateType = traversePredicate(predicate, traverseContext, where);
         return predicateType;
     }
     if (boolPri instanceof PrimaryExprIsNullContext) {
@@ -903,35 +903,6 @@ function traverseBoolPri(boolPri: BoolPriContext, traverseContext: TraverseConte
             type1: typeLeft,
             type2: typeRight
         })
-
-        if (typeRight.kind == 'TypeVar') {
-            if (typeRight.table != null) {
-                currentFragment?.fields.push({
-                    field: typeRight.name,
-                    name: typeRight.name,
-                    table: typeRight.table
-                })
-                // const paramsLeft = getExpressions(compareLeft, SimpleExprParamMarkerContext);
-                // paramsLeft.forEach(_ => {
-                //     currentFragment?.dependOnParams.push(paramsCount);
-                //     paramsCount++;
-                // });
-            }
-        }
-        if (typeLeft.kind == 'TypeVar') {
-            if (typeLeft.table != null) {
-                currentFragment?.fields.push({
-                    field: typeLeft.name,
-                    name: typeLeft.name,
-                    table: typeLeft.table
-                })
-                // const paramsRight = getExpressions(compareRight, SimpleExprParamMarkerContext);
-                // paramsRight.forEach(_ => {
-                //     currentFragment?.dependOnParams.push(paramsCount);
-                //     paramsCount++;
-                // });
-            }
-        }
 
 
         return freshVar(boolPri.text, 'tinyint');
@@ -956,13 +927,12 @@ function traverseBoolPri(boolPri: BoolPriContext, traverseContext: TraverseConte
 
 }
 
-function traversePredicate(predicate: PredicateContext, traverseContext: TraverseContext, currentFragment: FragmentInfo | null = null, where = false): Type {
+function traversePredicate(predicate: PredicateContext, traverseContext: TraverseContext, where = false): Type {
     const bitExpr = predicate.bitExpr()[0]; //TODO - predicate length = 2? [1] == predicateOperations
-    const bitExprType = traverseBitExpr(bitExpr, traverseContext, currentFragment, where);
+    const bitExprType = traverseBitExpr(bitExpr, traverseContext, where);
     const predicateOperations = predicate.predicateOperations();
     if (predicateOperations) {
-        let paramsCount = traverseContext.parameters.length;
-        const rightType = traversePredicateOperations(predicateOperations, bitExprType, traverseContext, currentFragment);
+        const rightType = traversePredicateOperations(predicateOperations, bitExprType, traverseContext);
         if (bitExprType.kind == 'TypeOperator' && rightType.kind == 'TypeOperator') {
             rightType.types.forEach((t, i) => {
                 traverseContext.constraints.push({
@@ -987,20 +957,6 @@ function traversePredicate(predicate: PredicateContext, traverseContext: Travers
             })
             // return rightType.types[0];
         }
-        // const params = getExpressions(predicateOperations, SimpleExprParamMarkerContext);
-        // params.forEach(_ => {
-        //     currentFragment?.dependOnParams.push(paramsCount);
-        //     paramsCount++;
-        // })
-        // const columnsRef = getExpressions(bitExpr, ColumnRefContext);
-        // columnsRef.forEach(colRef => {
-        //     const fileName = splitName(colRef.text);
-        //     currentFragment?.fields.push({
-        //         field: fileName.name,
-        //         name: fileName.name,
-        //         table: fileName.prefix
-        //     })
-        // })
 
         return bitExprType;
 
@@ -1022,22 +978,22 @@ function traverseExprList(exprList: ExprListContext, traverseContext: TraverseCo
     return type;
 }
 
-function traverseBitExpr(bitExpr: BitExprContext, traverseContext: TraverseContext, currentFragment: any, where = false): Type {
+function traverseBitExpr(bitExpr: BitExprContext, traverseContext: TraverseContext, where = false): Type {
     const simpleExpr = bitExpr.simpleExpr();
     if (simpleExpr) {
-        return traverseSimpleExpr(simpleExpr, traverseContext, currentFragment, where);
+        return traverseSimpleExpr(simpleExpr, traverseContext, where);
     }
     if (bitExpr.bitExpr().length == 2) {
 
 
 
         const bitExprLeft = bitExpr.bitExpr()[0];
-        const typeLeftTemp = traverseBitExpr(bitExprLeft, traverseContext, currentFragment);
+        const typeLeftTemp = traverseBitExpr(bitExprLeft, traverseContext);
         const typeLeft = typeLeftTemp.kind == 'TypeOperator' ? typeLeftTemp.types[0] : typeLeftTemp;
         //const newTypeLeft = typeLeft.name == '?'? freshVar('?', 'bigint') : typeLeft;
 
         const bitExprRight = bitExpr.bitExpr()[1]
-        const typeRightTemp = traverseBitExpr(bitExprRight, traverseContext, currentFragment);
+        const typeRightTemp = traverseBitExpr(bitExprRight, traverseContext);
 
         //In the expression 'id + (value + 2) + ?' the '(value+2)' is treated as a SimpleExprListContext and return a TypeOperator
         const typeRight = typeRightTemp.kind == 'TypeOperator' ? typeRightTemp.types[0] : typeRightTemp;
@@ -1098,7 +1054,7 @@ function traverseBitExpr(bitExpr: BitExprContext, traverseContext: TraverseConte
 
     if (bitExpr.INTERVAL_SYMBOL()) {
         const bitExpr2 = bitExpr.bitExpr()[0];
-        const leftType = traverseBitExpr(bitExpr2, traverseContext, currentFragment);
+        const leftType = traverseBitExpr(bitExpr2, traverseContext);
         const expr = bitExpr.expr()!; //expr interval
         traverseExpr(expr, traverseContext);
         traverseContext.constraints.push({
@@ -1112,7 +1068,7 @@ function traverseBitExpr(bitExpr: BitExprContext, traverseContext: TraverseConte
     throw Error('traverseBitExpr - not supported: ' + bitExpr.constructor.name);
 }
 
-function traversePredicateOperations(predicateOperations: PredicateOperationsContext, parentType: Type, traverseContext: TraverseContext, currentFragment: FragmentInfo | null): Type {
+function traversePredicateOperations(predicateOperations: PredicateOperationsContext, parentType: Type, traverseContext: TraverseContext): Type {
     if (predicateOperations instanceof PredicateExprInContext) {
 
         const subquery = predicateOperations.subquery();
@@ -1129,25 +1085,12 @@ function traversePredicateOperations(predicateOperations: PredicateOperationsCon
 
     if (predicateOperations instanceof PredicateExprLikeContext) {
         const simpleExpr = predicateOperations.simpleExpr()[0];
-        let paramsCount = traverseContext.parameters.length;
-        const rightType = traverseSimpleExpr(simpleExpr, traverseContext, currentFragment);
+        const rightType = traverseSimpleExpr(simpleExpr, traverseContext);
         traverseContext.constraints.push({
             expression: simpleExpr.text,
             type1: parentType,
             type2: rightType
         })
-        if (parentType.kind == 'TypeVar' && parentType.table) {
-            currentFragment?.fields.push({
-                field: parentType.name,
-                name: parentType.name,
-                table: parentType.table
-            })
-            // const paramsRight = getExpressions(simpleExpr, SimpleExprParamMarkerContext);
-            // paramsRight.forEach(_ => {
-            //     currentFragment?.dependOnParams.push(paramsCount);
-            //     paramsCount++;
-            // });
-        }
 
         return rightType;
 
@@ -1155,7 +1098,7 @@ function traversePredicateOperations(predicateOperations: PredicateOperationsCon
     if (predicateOperations instanceof PredicateExprBetweenContext) {
         const bitExpr = predicateOperations.bitExpr();
         const predicate = predicateOperations.predicate();
-        const bitExprType = traverseBitExpr(bitExpr, traverseContext, currentFragment);
+        const bitExprType = traverseBitExpr(bitExpr, traverseContext);
         const predicateType = traversePredicate(predicate, traverseContext);
         traverseContext.constraints.push({
             expression: predicateOperations.text,
@@ -1178,7 +1121,7 @@ function traversePredicateOperations(predicateOperations: PredicateOperationsCon
 
 }
 
-function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: TraverseContext, currentFragement: any, where = false): Type {
+function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: TraverseContext, where = false): Type {
     if (simpleExpr instanceof SimpleExprColumnRefContext) {
         const fieldName = splitName(simpleExpr.text);
         const column = findColumn(fieldName, traverseContext.fromColumns);
@@ -1236,7 +1179,7 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
         const exprList = simpleExpr.exprList();
 
         const listType = exprList.expr().map(item => {
-            const exprType = traverseExpr(item, traverseContext, currentFragement, false);
+            const exprType = traverseExpr(item, traverseContext, false);
             return exprType as TypeVar;
         })
         const resultType: TypeOperator = {
