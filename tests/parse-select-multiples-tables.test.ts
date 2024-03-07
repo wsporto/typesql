@@ -863,6 +863,44 @@ describe('Test select with multiples tables', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('SELECT mytable1.id, mytable2.id is not null as hasOwner', async () => {
+
+        const sql = `
+        SELECT 
+            mytable1.id,
+            mytable2.id is not null as hasOwner
+        FROM mytable1
+        LEFT JOIN mytable2 ON mytable1.id = mytable2.id
+        `;
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 'mytable1'
+                },
+                {
+                    columnName: 'hasOwner',
+                    type: 'tinyint',
+                    notNull: true,
+                    table: ''
+                }
+            ],
+            parameters: []
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it.skip('subquery in joined tables', () => {
 
     })

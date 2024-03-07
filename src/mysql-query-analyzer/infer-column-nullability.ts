@@ -92,6 +92,9 @@ function inferNotNullBoolPri(boolPri: BoolPriContext, dbSchema: ColumnSchema[], 
         const notNullRight = inferNotNullPredicate(compareRight, dbSchema, fromColumns);
         return notNullLeft && notNullRight;
     }
+    if (boolPri instanceof PrimaryExprIsNullContext) {
+        return true;
+    }
     throw Error('Error during column null inference');
 }
 

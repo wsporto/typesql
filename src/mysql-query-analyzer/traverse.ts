@@ -773,7 +773,7 @@ function traverseBoolPri(boolPri: BoolPriContext, traverseContext: TraverseConte
     if (boolPri instanceof PrimaryExprIsNullContext) {
         const boolPri2 = boolPri.boolPri();
         traverseBoolPri(boolPri2, traverseContext);
-        return freshVar(boolPri.text, '?');
+        return freshVar(boolPri.text, 'tinyint');
     }
     if (boolPri instanceof PrimaryExprCompareContext) {
 
