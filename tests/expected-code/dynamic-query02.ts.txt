@@ -31,7 +31,7 @@ export async function derivatedTable(connection: Connection, params?: DerivatedT
         sql = appendSelect(sql, `m2.name`);
     }
     sql += EOL + `FROM mytable1 m1`;
-    if (params?.select == null || params.select.name || params.params?.name) {
+    if (params?.select == null || params.select.name || params.params?.name != null) {
         sql += EOL + `INNER JOIN ( -- derivated table
 	SELECT id, name from mytable2 m 
 	WHERE m.name = ?
@@ -39,7 +39,7 @@ export async function derivatedTable(connection: Connection, params?: DerivatedT
         paramsValues.push(params?.params?.subqueryName);
     }
     sql += EOL + `WHERE 1 = 1`;
-    if (params?.params?.name || params?.params?.name) {
+    if (params?.params?.name != null || params?.params?.name != null) {
         sql += EOL + `AND (? is NULL or m2.name = ?)`;
         paramsValues.push(params.params.name);
         paramsValues.push(params.params.name);

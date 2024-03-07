@@ -115,7 +115,7 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
                 if (selectConditions.length > 0) {
                     selectConditions.unshift('params?.select == null');
                 }
-                const paramConditions = fragment.dependOnParams.map(param => 'params.params?.' + param);
+                const paramConditions = fragment.dependOnParams.map(param => 'params.params?.' + param + ' != null');
                 const allConditions = [...selectConditions, ...paramConditions];
                 const paramValues = fragment.parameters.map(param => 'params?.params?.' + param);
                 if (allConditions.length > 0) {
@@ -137,7 +137,7 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
                 writer.writeLine(`sql += EOL + \`WHERE 1 = 1\`;`);
             }
             tsDescriptor.dynamicQuery.where.forEach(fragment => {
-                const ifParamConditions = fragment.dependOnParams.map(param => 'params?.params?.' + param);
+                const ifParamConditions = fragment.dependOnParams.map(param => 'params?.params?.' + param + ' != null');
                 const paramValues = fragment.parameters.map(param => 'params.params.' + param);
                 if (ifParamConditions.length > 0) {
                     writer.write(`if (${ifParamConditions.join(' || ')})`).block(() => {
