@@ -1,0 +1,52 @@
+import type { Connection } from 'mysql2/promise';
+import { EOL } from 'os';
+
+export type DynamicQuery03DynamicParams = {
+    select?: DynamicQuery03Select;
+}
+
+export type DynamicQuery03Result = {
+    id?: number;
+    value?: number;
+}
+
+export type DynamicQuery03Select = {
+    id?: boolean;
+    value?: boolean;
+}
+
+export async function dynamicQuery03(connection: Connection, params?: DynamicQuery03DynamicParams): Promise<DynamicQuery03Result[]> {
+    const paramsValues: any = [];
+    let sql = 'SELECT';
+    if (params?.select == null || params.select.id) {
+        sql = appendSelect(sql, `t1.id`);
+    }
+    if (params?.select == null || params.select.value) {
+        sql = appendSelect(sql, `t1.value`);
+    }
+    sql += EOL + `FROM mytable1 t1`;
+    return connection.query({ sql, rowsAsArray: true }, paramsValues)
+        .then(res => res[0] as any[])
+        .then(res => res.map(data => mapArrayToDynamicQuery03Result(data, params?.select)));
+}
+
+function mapArrayToDynamicQuery03Result(data: any, select?: DynamicQuery03Select) {
+    const result = {} as DynamicQuery03Result;
+    let rowIndex = 0;
+    if (select == null || select.id) {
+        result.id = data[rowIndex++];
+    }
+    if (select == null || select.value) {
+        result.value = data[rowIndex++];
+    }
+    return result;
+}
+
+function appendSelect(sql: string, selectField: string) {
+    if (sql == 'SELECT') {
+        return sql + EOL + selectField;
+    }
+    else {
+        return sql + ', ' + EOL + selectField;
+    }
+}

@@ -43,14 +43,18 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
     }
 
     const orderByField = generateOrderBy ? `orderBy: [${orderByTypeName}, ...${orderByTypeName}[]]` : undefined;
+    const paramsTypes = tsDescriptor.dynamicQuery == null ? tsDescriptor.parameters : mapToDynamicParams(tsDescriptor.parameters);
+
     if (tsDescriptor.dynamicQuery != null) {
         writer.write(`export type ${dynamicParamsTypeName} = `).block(() => {
             writer.writeLine(`select?: ${selectColumnsTypeName};`);
-            writer.writeLine(`params?: ${paramsTypeName};`);
+            if (paramsTypes.length > 0) {
+                writer.writeLine(`params?: ${paramsTypeName};`);
+            }
         })
         writer.blankLine();
     }
-    const paramsTypes = tsDescriptor.dynamicQuery == null ? tsDescriptor.parameters : mapToDynamicParams(tsDescriptor.parameters);
+
     writeTypeBlock(writer, paramsTypes, paramsTypeName, false, orderByField);
     const resultTypes = tsDescriptor.dynamicQuery == null ? tsDescriptor.columns : mapToDynamicResultColumns(tsDescriptor.columns);
     writeTypeBlock(writer, resultTypes, resultTypeName, false);
@@ -68,7 +72,7 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
         functionArguments += tsDescriptor.parameters.length > 0 || generateOrderBy ? ', params: ' + paramsTypeName : '';
     }
     else {
-        functionArguments += tsDescriptor.parameters.length > 0 || generateOrderBy ? ', params: ' + dynamicParamsTypeName : '';
+        functionArguments += ', params?: ' + dynamicParamsTypeName;
     }
 
     const allParameters = tsDescriptor.data ? tsDescriptor.data.map((field, index) => {
@@ -101,7 +105,7 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
             writer.writeLine('const paramsValues: any = [];');
             writer.writeLine(`let sql = 'SELECT';`);
             tsDescriptor.dynamicQuery.select.forEach(fragment => {
-                writer.write(`if (params.select == null || ${fragment.dependOnFields.map(field => 'params.select.' + field).join('&&')})`).block(() => {
+                writer.write(`if (params?.select == null || ${fragment.dependOnFields.map(field => 'params.select.' + field).join('&&')})`).block(() => {
                     writer.write(`sql = appendSelect(sql, \`${fragment.fragment}\`);`)
                 })
             })
@@ -109,11 +113,11 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
 
                 const selectConditions = fragment.dependOnFields.map(field => 'params.select.' + field);
                 if (selectConditions.length > 0) {
-                    selectConditions.unshift('params.select == null');
+                    selectConditions.unshift('params?.select == null');
                 }
                 const paramConditions = fragment.dependOnParams.map(param => 'params.params?.' + param);
                 const allConditions = [...selectConditions, ...paramConditions];
-                const paramValues = fragment.parameters.map(param => 'params.params?.' + param);
+                const paramValues = fragment.parameters.map(param => 'params?.params?.' + param);
                 if (allConditions.length > 0) {
                     writer.write(`if (${allConditions.join(' || ')})`).block(() => {
                         writer.write(`sql += EOL + \`${fragment.fragment}\`;`);
@@ -133,7 +137,7 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
                 writer.writeLine(`sql += EOL + \`WHERE 1 = 1\`;`);
             }
             tsDescriptor.dynamicQuery.where.forEach(fragment => {
-                const ifParamConditions = fragment.dependOnParams.map(param => 'params.params?.' + param);
+                const ifParamConditions = fragment.dependOnParams.map(param => 'params?.params?.' + param);
                 const paramValues = fragment.parameters.map(param => 'params.params.' + param);
                 if (ifParamConditions.length > 0) {
                     writer.write(`if (${ifParamConditions.join(' || ')})`).block(() => {
@@ -164,7 +168,7 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
                 else {
                     writer.writeLine(`return connection.query({ sql, rowsAsArray: true }, paramsValues)`);
                     writer.indent().write(`.then(res => res[0] as any[])`);
-                    writer.newLine().indent().write(`.then(res => res.map(data => mapArrayTo${resultTypeName}(data, params.select)))`);
+                    writer.newLine().indent().write(`.then(res => res.map(data => mapArrayTo${resultTypeName}(data, params?.select)))`);
                 }
             }
             else {

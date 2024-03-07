@@ -1270,4 +1270,17 @@ WHERE (:name is NULL or m2.name = :name)`
 
         assert.deepStrictEqual(actual, expected);
     })
+
+    it('dynamic-query-03 - without parameters', async () => {
+        const queryName = 'dynamic-query03';
+        const sql = `-- @dynamicQuery
+SELECT t1.id, t1.value
+FROM mytable1 t1`
+
+        const actual = await generateTsFileFromContent(client, `${queryName}.sql`, queryName, sql, 'node');
+        //tests\expected-code\dynamic-query01.ts
+        const expected = readFileSync('tests/expected-code/dynamic-query03.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+        assert.deepStrictEqual(actual, expected);
+    })
 })
