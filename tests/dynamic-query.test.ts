@@ -33,24 +33,28 @@ describe('dynamic-query', () => {
             select: [
                 {
                     fragment: 'm1.id',
+                    fragmentWitoutAlias: 'm1.id',
                     dependOnFields: ['id'],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: 'm1.value',
+                    fragmentWitoutAlias: 'm1.value',
                     dependOnFields: ['value'],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: 'm2.name',
+                    fragmentWitoutAlias: 'm2.name',
                     dependOnFields: ['name'],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: 'm2.descr as description',
+                    fragmentWitoutAlias: 'm2.descr',
                     dependOnFields: ['description'],
                     dependOnParams: [],
                     parameters: []
@@ -109,24 +113,28 @@ describe('dynamic-query', () => {
             select: [
                 {
                     fragment: 'm1.id',
+                    fragmentWitoutAlias: 'm1.id',
                     dependOnFields: ['id'],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: 'm1.value',
+                    fragmentWitoutAlias: 'm1.value',
                     dependOnFields: ['value'],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: 'm2.name',
+                    fragmentWitoutAlias: 'm2.name',
                     dependOnFields: ['name'],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: 'm2.descr as description',
+                    fragmentWitoutAlias: 'm2.descr',
                     dependOnFields: ['description'],
                     dependOnParams: [],
                     parameters: []
@@ -188,18 +196,21 @@ describe('dynamic-query', () => {
             select: [
                 {
                     fragment: 'm1.id',
+                    fragmentWitoutAlias: 'm1.id',
                     dependOnFields: ['id'],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: 'm2.name',
+                    fragmentWitoutAlias: 'm2.name',
                     dependOnFields: ['name'],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: 'm2.descr as description',
+                    fragmentWitoutAlias: 'm2.descr',
                     dependOnFields: ['description'],
                     dependOnParams: [],
                     parameters: []
@@ -250,18 +261,21 @@ describe('dynamic-query', () => {
             select: [
                 {
                     fragment: 'm1.id',
+                    fragmentWitoutAlias: 'm1.id',
                     dependOnFields: ['id'],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: 'm2.name',
+                    fragmentWitoutAlias: 'm2.name',
                     dependOnFields: ['name'],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: 'm3.double_value as value',
+                    fragmentWitoutAlias: 'm3.double_value',
                     dependOnFields: ['value'],
                     dependOnParams: [],
                     parameters: []
@@ -317,12 +331,14 @@ describe('dynamic-query', () => {
             select: [
                 {
                     fragment: 'm1.id',
+                    fragmentWitoutAlias: 'm1.id',
                     dependOnFields: ['id'],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: 'm2.name',
+                    fragmentWitoutAlias: 'm2.name',
                     dependOnFields: ['name'],
                     dependOnParams: [],
                     parameters: []
@@ -372,12 +388,14 @@ describe('dynamic-query', () => {
             select: [
                 {
                     fragment: 'm1.id',
+                    fragmentWitoutAlias: 'm1.id',
                     dependOnFields: ['id'],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: 'm2.name',
+                    fragmentWitoutAlias: 'm2.name',
                     dependOnFields: ['name'],
                     dependOnParams: [],
                     parameters: []
@@ -426,24 +444,28 @@ describe('dynamic-query', () => {
             select: [
                 {
                     fragment: 'm1.id',
+                    fragmentWitoutAlias: 'm1.id',
                     dependOnFields: ['id'],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: 'm1.value',
+                    fragmentWitoutAlias: 'm1.value',
                     dependOnFields: ['value'],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: 'm2.name',
+                    fragmentWitoutAlias: 'm2.name',
                     dependOnFields: ['name'],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: `concat(m1.value, ': ', m2.name) as valueAndName`,
+                    fragmentWitoutAlias: `concat(m1.value, ': ', m2.name)`,
                     dependOnFields: ['valueAndName'],
                     dependOnParams: [],
                     parameters: []
@@ -486,18 +508,21 @@ describe('dynamic-query', () => {
             select: [
                 {
                     fragment: 'm1.id',
+                    fragmentWitoutAlias: 'm1.id',
                     dependOnFields: ['id'],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: 'm1.value',
+                    fragmentWitoutAlias: 'm1.value',
                     dependOnFields: ['value'],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: 'm2.name',
+                    fragmentWitoutAlias: 'm2.name',
                     dependOnFields: ['name'],
                     dependOnParams: [],
                     parameters: []
@@ -550,18 +575,21 @@ describe('dynamic-query', () => {
             select: [
                 {
                     fragment: 'm1.id',
+                    fragmentWitoutAlias: 'm1.id',
                     dependOnFields: ['id'],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: 'm2.name',
+                    fragmentWitoutAlias: 'm2.name',
                     dependOnFields: ['name'],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: '(select name from mytable1 where id = 1) as subQuery',
+                    fragmentWitoutAlias: '(select name from mytable1 where id = 1)',
                     dependOnFields: ['subQuery'],
                     dependOnParams: [],
                     parameters: []
@@ -616,12 +644,14 @@ describe('dynamic-query', () => {
             select: [
                 {
                     fragment: 'm1.id',
+                    fragmentWitoutAlias: 'm1.id',
                     dependOnFields: ['id'],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: 'm2.name',
+                    fragmentWitoutAlias: 'm2.name',
                     dependOnFields: ['name'],
                     dependOnParams: [],
                     parameters: []
@@ -676,12 +706,14 @@ describe('dynamic-query', () => {
             select: [
                 {
                     fragment: 'm1.id',
+                    fragmentWitoutAlias: 'm1.id',
                     dependOnFields: ['id'],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: 'm2.name',
+                    fragmentWitoutAlias: 'm2.name',
                     dependOnFields: ['name'],
                     dependOnParams: [],
                     parameters: []

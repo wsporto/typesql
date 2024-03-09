@@ -3,6 +3,7 @@ import { EOL } from 'os';
 
 export type DynamicQuery03DynamicParams = {
     select?: DynamicQuery03Select;
+    where?: DynamicQuery03Where[];
 }
 
 export type DynamicQuery03Result = {
@@ -15,7 +16,10 @@ export type DynamicQuery03Select = {
     value?: boolean;
 }
 
+export type DynamicQuery03Where = [string, string, ...any];
+
 export async function dynamicQuery03(connection: Connection, params?: DynamicQuery03DynamicParams): Promise<DynamicQuery03Result[]> {
+    const where = whereConditionsToObject(params?.where);
     const paramsValues: any = [];
     let sql = 'SELECT';
     if (params?.select == null || params.select.id) {
@@ -25,6 +29,12 @@ export async function dynamicQuery03(connection: Connection, params?: DynamicQue
         sql = appendSelect(sql, `t1.value`);
     }
     sql += EOL + `FROM mytable1 t1`;
+    sql += EOL + `WHERE 1 = 1`;
+    params?.where?.forEach(condition => {
+        const where = whereCondition(condition);
+        sql += EOL + 'AND ' + where.sql;
+        paramsValues.push(...where.values);
+    });
     return connection.query({ sql, rowsAsArray: true }, paramsValues)
         .then(res => res[0] as any[])
         .then(res => res.map(data => mapArrayToDynamicQuery03Result(data, params?.select)));
@@ -48,5 +58,55 @@ function appendSelect(sql: string, selectField: string) {
     }
     else {
         return sql + ', ' + EOL + selectField;
+    }
+}
+
+function whereConditionsToObject(whereConditions?: DynamicQuery03Where[]) {
+    const obj = {} as any;
+    whereConditions?.forEach(whereCondition => {
+        obj[whereCondition[0]] = true;
+    });
+    return obj;
+}
+
+export type WhereConditionResult = {
+    sql: string;
+    values: any[];
+}
+
+function whereCondition(condition: DynamicQuery03Where): WhereConditionResult {
+    const selectFragments = {
+        id: `t1.id`,
+        value: `t1.value`,
+    } as any;
+
+    const operators = {
+        '=': '=',
+        '<>': '<>',
+        '>': '>',
+        '<': '<',
+        'BETWEEN': 'BETWEEN',
+        'IN': 'IN',
+        'NOT IN': 'NOT IN'
+    } as any;
+
+    const selectFragment = selectFragments[condition[0]];
+    const operator = operators[condition[1]];
+
+    if (operator == 'BETWEEN') {
+        return {
+            sql: `${selectFragment} BETWEEN ? AND ?`,
+            values: [condition[2], condition[3]]
+        }
+    }
+    if (operator == 'IN' || operator == 'NOT IN') {
+        return {
+            sql: `${selectFragment} ${operator} (?)`,
+            values: condition[2]
+        }
+    }
+    return {
+        sql: `${selectFragment} ${operator} ?`,
+        values: [condition[2]]
     }
 }

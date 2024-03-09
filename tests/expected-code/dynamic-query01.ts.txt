@@ -4,6 +4,7 @@ import { EOL } from 'os';
 export type DynamicQuery01DynamicParams = {
     select?: DynamicQuery01Select;
     params?: DynamicQuery01Params;
+    where?: DynamicQuery01Where[];
 }
 
 export type DynamicQuery01Params = {
@@ -25,7 +26,10 @@ export type DynamicQuery01Select = {
     description?: boolean;
 }
 
+export type DynamicQuery01Where = [string, string, ...any];
+
 export async function dynamicQuery01(connection: Connection, params?: DynamicQuery01DynamicParams): Promise<DynamicQuery01Result[]> {
+    const where = whereConditionsToObject(params?.where);
     const paramsValues: any = [];
     let sql = 'SELECT';
     if (params?.select == null || params.select.id) {
@@ -41,7 +45,7 @@ export async function dynamicQuery01(connection: Connection, params?: DynamicQue
         sql = appendSelect(sql, `m2.descr as description`);
     }
     sql += EOL + `FROM mytable1 m1`;
-    if (params?.select == null || params.select.name || params.select.description || params.params?.name != null || params.params?.description != null) {
+    if (params?.select == null || params.select.name || params.select.description || params.params?.name != null || params.params?.description != null || where.name != null || where.description != null) {
         sql += EOL + `INNER JOIN mytable2 m2 on m1.id = m2.id`;
     }
     sql += EOL + `WHERE 1 = 1`;
@@ -53,6 +57,11 @@ export async function dynamicQuery01(connection: Connection, params?: DynamicQue
         sql += EOL + `AND m2.descr = ?`;
         paramsValues.push(params.params.description);
     }
+    params?.where?.forEach(condition => {
+        const where = whereCondition(condition);
+        sql += EOL + 'AND ' + where.sql;
+        paramsValues.push(...where.values);
+    });
     return connection.query({ sql, rowsAsArray: true }, paramsValues)
         .then(res => res[0] as any[])
         .then(res => res.map(data => mapArrayToDynamicQuery01Result(data, params?.select)));
@@ -82,5 +91,57 @@ function appendSelect(sql: string, selectField: string) {
     }
     else {
         return sql + ', ' + EOL + selectField;
+    }
+}
+
+function whereConditionsToObject(whereConditions?: DynamicQuery01Where[]) {
+    const obj = {} as any;
+    whereConditions?.forEach(whereCondition => {
+        obj[whereCondition[0]] = true;
+    });
+    return obj;
+}
+
+export type WhereConditionResult = {
+    sql: string;
+    values: any[];
+}
+
+function whereCondition(condition: DynamicQuery01Where): WhereConditionResult {
+    const selectFragments = {
+        id: `m1.id`,
+        value: `m1.value`,
+        name: `m2.name`,
+        description: `m2.descr`,
+    } as any;
+
+    const operators = {
+        '=': '=',
+        '<>': '<>',
+        '>': '>',
+        '<': '<',
+        'BETWEEN': 'BETWEEN',
+        'IN': 'IN',
+        'NOT IN': 'NOT IN'
+    } as any;
+
+    const selectFragment = selectFragments[condition[0]];
+    const operator = operators[condition[1]];
+
+    if (operator == 'BETWEEN') {
+        return {
+            sql: `${selectFragment} BETWEEN ? AND ?`,
+            values: [condition[2], condition[3]]
+        }
+    }
+    if (operator == 'IN' || operator == 'NOT IN') {
+        return {
+            sql: `${selectFragment} ${operator} (?)`,
+            values: condition[2]
+        }
+    }
+    return {
+        sql: `${selectFragment} ${operator} ?`,
+        values: [condition[2]]
     }
 }

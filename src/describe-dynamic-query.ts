@@ -6,6 +6,7 @@ export function describeDynamicQuery(dynamicQueryInfo: DynamicSqlInfo, namedPara
     const selectFragments = select.map(fragment => {
         const fragmentResult: FragmentInfoResult = {
             fragment: fragment.fragment,
+            fragmentWitoutAlias: fragment.fragementWithoutAlias,
             dependOnFields: [...new Set(fragment.fields.map(f => f.name))], //remove duplicated
             dependOnParams: [],
             parameters: []

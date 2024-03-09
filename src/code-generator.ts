@@ -23,6 +23,7 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
     const resultTypeName = capitalizedName + 'Result';
     const dynamicParamsTypeName = capitalizedName + 'DynamicParams'
     const selectColumnsTypeName = capitalizedName + 'Select';
+    const whereTypeName = capitalizedName + 'Where';
     const orderByTypeName = capitalizedName + 'OrderBy';
     const generateOrderBy = tsDescriptor.orderByColumns != null && tsDescriptor.orderByColumns.length > 0;
 
@@ -51,6 +52,7 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
             if (paramsTypes.length > 0) {
                 writer.writeLine(`params?: ${paramsTypeName};`);
             }
+            writer.writeLine(`where?: ${whereTypeName}[];`);
         })
         writer.blankLine();
     }
@@ -61,6 +63,8 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
     if (tsDescriptor.dynamicQuery) {
         const selectFields = mapToDynamicSelectColumns(tsDescriptor.columns);
         writeTypeBlock(writer, selectFields, selectColumnsTypeName, false);
+        writer.writeLine(`export type ${whereTypeName} = [string, string, ...any];`);
+        writer.blankLine();
     }
 
     let functionReturnType = resultTypeName;
@@ -102,6 +106,7 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
             writer.blankLine();
         }
         else {
+            writer.writeLine(`const where = whereConditionsToObject(params?.where);`)
             writer.writeLine('const paramsValues: any = [];');
             writer.writeLine(`let sql = 'SELECT';`);
             tsDescriptor.dynamicQuery.select.forEach(fragment => {
@@ -116,7 +121,8 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
                     selectConditions.unshift('params?.select == null');
                 }
                 const paramConditions = fragment.dependOnParams.map(param => 'params.params?.' + param + ' != null');
-                const allConditions = [...selectConditions, ...paramConditions];
+                const whereConditions = fragment.dependOnFields.map(field => 'where.' + field + ' != null');
+                const allConditions = [...selectConditions, ...paramConditions, ...whereConditions];
                 const paramValues = fragment.parameters.map(param => 'params?.params?.' + param);
                 if (allConditions.length > 0) {
                     writer.write(`if (${allConditions.join(' || ')})`).block(() => {
@@ -133,9 +139,7 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
                     })
                 }
             })
-            if (tsDescriptor.dynamicQuery.where.length > 0) {
-                writer.writeLine(`sql += EOL + \`WHERE 1 = 1\`;`);
-            }
+            writer.writeLine(`sql += EOL + \`WHERE 1 = 1\`;`);
             tsDescriptor.dynamicQuery.where.forEach(fragment => {
                 const ifParamConditions = fragment.dependOnParams.map(param => 'params?.params?.' + param + ' != null');
                 const paramValues = fragment.parameters.map(param => 'params.params.' + param);
@@ -151,6 +155,12 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
                     writer.writeLine(`sql += EOL + '${fragment.fragment}';`);
                 }
             })
+            writer.write(`params?.where?.forEach(condition => `).inlineBlock(() => {
+                writer.writeLine(`const where = whereCondition(condition);`)
+                writer.writeLine(`sql += EOL + 'AND ' + where.sql;`)
+                writer.write(`paramsValues.push(...where.values);`)
+            })
+            writer.write(');');
         }
 
         const singleRowSelect = tsDescriptor.queryType == 'Select' && tsDescriptor.multipleRowsResult === false;
@@ -214,6 +224,61 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
                 writer.write(`else`).block(() => {
                     writer.writeLine(`return sql + ', ' + EOL + selectField;`);
                 })
+            })
+            writer.blankLine();
+            writer.write(`function whereConditionsToObject(whereConditions?: ${whereTypeName}[])`).block(() => {
+                writer.writeLine(`const obj = {} as any;`);
+                writer.write(`whereConditions?.forEach(whereCondition => `).inlineBlock(() => {
+                    writer.writeLine(`obj[whereCondition[0]] = true;`);
+                });
+                writer.write(');');
+                writer.writeLine(`return obj;`);
+            })
+            writer.blankLine();
+            writer.write(`export type WhereConditionResult = `).block(() => {
+                writer.writeLine('sql: string;');
+                writer.writeLine('values: any[];');
+            })
+            writer.blankLine();
+            writer.write(`function whereCondition(condition: ${whereTypeName}): WhereConditionResult `).block(() => {
+                writer.write(`const selectFragments = `).inlineBlock(() => {
+                    tsDescriptor.dynamicQuery?.select.forEach((fragment, index) => {
+                        const field = tsDescriptor.columns[index].name;
+                        writer.writeLine(`${field}: \`${fragment.fragmentWitoutAlias}\`,`);
+                    });
+                })
+                writer.write(' as any;');
+                writer.blankLine();
+                writer.write('const operators = ').inlineBlock(() => {
+                    writer.writeLine(`'=': '=',`);
+                    writer.writeLine(`'<>': '<>',`);
+                    writer.writeLine(`'>': '>',`);
+                    writer.writeLine(`'<': '<',`);
+                    writer.writeLine(`'BETWEEN': 'BETWEEN',`);
+                    writer.writeLine(`'IN': 'IN',`);
+                    writer.writeLine(`'NOT IN': 'NOT IN'`);
+                });
+                writer.write(' as any;');
+                writer.blankLine();
+                writer.writeLine('const selectFragment = selectFragments[condition[0]];');
+                writer.writeLine('const operator = operators[condition[1]];');
+                writer.blankLine();
+                writer.write(`if (operator == 'BETWEEN') `).block(() => {
+                    writer.write(`return `).block(() => {
+                        writer.writeLine('sql: `${selectFragment} BETWEEN ? AND ?`,');
+                        writer.writeLine('values: [condition[2], condition[3]]');
+                    });
+                });
+                writer.write(`if (operator == 'IN' || operator == 'NOT IN') `).block(() => {
+                    writer.write(`return `).block(() => {
+                        writer.writeLine('sql: `${selectFragment} ${operator} (?)`,');
+                        writer.writeLine('values: condition[2]');
+                    });
+                });
+                writer.write(`return `).block(() => {
+                    writer.writeLine('sql: `${selectFragment} ${operator} ?`,');
+                    writer.writeLine('values: [condition[2]]');
+                });
             })
         }
     }

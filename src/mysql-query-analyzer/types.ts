@@ -99,6 +99,7 @@ export type TableField = {
 
 export type FragmentInfo = {
     fragment: string;
+    fragementWithoutAlias?: string;
     relation?: string;
     parentRelation?: string;
     fields: TableField[];
@@ -109,6 +110,7 @@ export type FragmentInfo = {
 
 export type FragmentInfoResult = {
     fragment: string;
+    fragmentWitoutAlias?: string;
     dependOnFields: string[];
     dependOnParams: string[];
     parameters: string[];

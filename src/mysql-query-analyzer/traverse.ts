@@ -765,6 +765,7 @@ function traverseSelectItemList(selectItemList: SelectItemListContext, traverseC
             const exprType = traverseExpr(expr, traverseContext);
             const selectFragment: FragmentInfo = {
                 fragment: extractOriginalSql(selectItem) + '',
+                fragementWithoutAlias: extractOriginalSql(expr),
                 fields: [],
                 dependOnFields: [],
                 dependOnParams: [],

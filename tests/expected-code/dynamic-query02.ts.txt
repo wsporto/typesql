@@ -4,6 +4,7 @@ import { EOL } from 'os';
 export type DerivatedTableDynamicParams = {
     select?: DerivatedTableSelect;
     params?: DerivatedTableParams;
+    where?: DerivatedTableWhere[];
 }
 
 export type DerivatedTableParams = {
@@ -21,7 +22,10 @@ export type DerivatedTableSelect = {
     name?: boolean;
 }
 
+export type DerivatedTableWhere = [string, string, ...any];
+
 export async function derivatedTable(connection: Connection, params?: DerivatedTableDynamicParams): Promise<DerivatedTableResult[]> {
+    const where = whereConditionsToObject(params?.where);
     const paramsValues: any = [];
     let sql = 'SELECT';
     if (params?.select == null || params.select.id) {
@@ -31,7 +35,7 @@ export async function derivatedTable(connection: Connection, params?: DerivatedT
         sql = appendSelect(sql, `m2.name`);
     }
     sql += EOL + `FROM mytable1 m1`;
-    if (params?.select == null || params.select.name || params.params?.name != null) {
+    if (params?.select == null || params.select.name || params.params?.name != null || where.name != null) {
         sql += EOL + `INNER JOIN ( -- derivated table
 	SELECT id, name from mytable2 m 
 	WHERE m.name = ?
@@ -44,6 +48,11 @@ export async function derivatedTable(connection: Connection, params?: DerivatedT
         paramsValues.push(params.params.name);
         paramsValues.push(params.params.name);
     }
+    params?.where?.forEach(condition => {
+        const where = whereCondition(condition);
+        sql += EOL + 'AND ' + where.sql;
+        paramsValues.push(...where.values);
+    });
     return connection.query({ sql, rowsAsArray: true }, paramsValues)
         .then(res => res[0] as any[])
         .then(res => res.map(data => mapArrayToDerivatedTableResult(data, params?.select)));
@@ -67,5 +76,55 @@ function appendSelect(sql: string, selectField: string) {
     }
     else {
         return sql + ', ' + EOL + selectField;
+    }
+}
+
+function whereConditionsToObject(whereConditions?: DerivatedTableWhere[]) {
+    const obj = {} as any;
+    whereConditions?.forEach(whereCondition => {
+        obj[whereCondition[0]] = true;
+    });
+    return obj;
+}
+
+export type WhereConditionResult = {
+    sql: string;
+    values: any[];
+}
+
+function whereCondition(condition: DerivatedTableWhere): WhereConditionResult {
+    const selectFragments = {
+        id: `m1.id`,
+        name: `m2.name`,
+    } as any;
+
+    const operators = {
+        '=': '=',
+        '<>': '<>',
+        '>': '>',
+        '<': '<',
+        'BETWEEN': 'BETWEEN',
+        'IN': 'IN',
+        'NOT IN': 'NOT IN'
+    } as any;
+
+    const selectFragment = selectFragments[condition[0]];
+    const operator = operators[condition[1]];
+
+    if (operator == 'BETWEEN') {
+        return {
+            sql: `${selectFragment} BETWEEN ? AND ?`,
+            values: [condition[2], condition[3]]
+        }
+    }
+    if (operator == 'IN' || operator == 'NOT IN') {
+        return {
+            sql: `${selectFragment} ${operator} (?)`,
+            values: condition[2]
+        }
+    }
+    return {
+        sql: `${selectFragment} ${operator} ?`,
+        values: [condition[2]]
     }
 }
