@@ -111,7 +111,7 @@ export type FragmentInfo = {
 export type FragmentInfoResult = {
     fragment: string;
     fragmentWitoutAlias?: string;
-    dependOnFields: string[];
+    dependOnFields: number[];
     dependOnParams: string[];
     parameters: string[];
 }

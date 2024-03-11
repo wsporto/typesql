@@ -746,6 +746,22 @@ function traverseSelectItemList(selectItemList: SelectItemListContext, traverseC
         traverseContext.fromColumns.forEach(col => {
             const columnType = createColumnType(col);
             listType.push(columnType);
+            const tableName = col.tableAlias || col.table;
+            const fieldFragment: FragmentInfo = {
+                fragment: `${tableName}.${col.columnName}`,
+                fragementWithoutAlias: `${tableName}.${col.columnName}`,
+                fields: [{
+                    field: col.columnName,
+                    name: col.columnName,
+                    table: tableName
+                }],
+                dependOnFields: [],
+                dependOnParams: [],
+                parameters: []
+            }
+            if (!subQuery) {
+                traverseContext.dynamicSqlInfo.select.push(fieldFragment);
+            }
         })
     }
     selectItemList.selectItem().forEach(selectItem => {

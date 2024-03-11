@@ -34,28 +34,28 @@ describe('dynamic-query', () => {
                 {
                     fragment: 'm1.id',
                     fragmentWitoutAlias: 'm1.id',
-                    dependOnFields: ['id'],
+                    dependOnFields: [0],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: 'm1.value',
                     fragmentWitoutAlias: 'm1.value',
-                    dependOnFields: ['value'],
+                    dependOnFields: [1],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: 'm2.name',
                     fragmentWitoutAlias: 'm2.name',
-                    dependOnFields: ['name'],
+                    dependOnFields: [2],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: 'm2.descr as description',
                     fragmentWitoutAlias: 'm2.descr',
-                    dependOnFields: ['description'],
+                    dependOnFields: [3],
                     dependOnParams: [],
                     parameters: []
                 }
@@ -69,7 +69,7 @@ describe('dynamic-query', () => {
                 },
                 {
                     fragment: 'INNER JOIN mytable2 m2 on m1.id = m2.id',
-                    dependOnFields: ['name', 'description'],
+                    dependOnFields: [2, 3],
                     dependOnParams: ['name', 'description'],
                     parameters: []
                 }
@@ -114,28 +114,28 @@ describe('dynamic-query', () => {
                 {
                     fragment: 'm1.id',
                     fragmentWitoutAlias: 'm1.id',
-                    dependOnFields: ['id'],
+                    dependOnFields: [0],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: 'm1.value',
                     fragmentWitoutAlias: 'm1.value',
-                    dependOnFields: ['value'],
+                    dependOnFields: [1],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: 'm2.name',
                     fragmentWitoutAlias: 'm2.name',
-                    dependOnFields: ['name'],
+                    dependOnFields: [2],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: 'm2.descr as description',
                     fragmentWitoutAlias: 'm2.descr',
-                    dependOnFields: ['description'],
+                    dependOnFields: [3],
                     dependOnParams: [],
                     parameters: []
                 }
@@ -197,21 +197,21 @@ describe('dynamic-query', () => {
                 {
                     fragment: 'm1.id',
                     fragmentWitoutAlias: 'm1.id',
-                    dependOnFields: ['id'],
+                    dependOnFields: [0],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: 'm2.name',
                     fragmentWitoutAlias: 'm2.name',
-                    dependOnFields: ['name'],
+                    dependOnFields: [1],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: 'm2.descr as description',
                     fragmentWitoutAlias: 'm2.descr',
-                    dependOnFields: ['description'],
+                    dependOnFields: [2],
                     dependOnParams: [],
                     parameters: []
                 }
@@ -225,7 +225,7 @@ describe('dynamic-query', () => {
                 },
                 {
                     fragment: 'INNER JOIN mytable2 m2 on m1.id = m2.id',
-                    dependOnFields: ['name', 'description'],
+                    dependOnFields: [1, 2],
                     dependOnParams: ['ids'],
                     parameters: []
                 }
@@ -250,33 +250,33 @@ describe('dynamic-query', () => {
 
     it('mytable1 m1 INNER JOIN mytable2 ... INNER JOIN mytable3', async () => {
         const sql = `
-        -- @dynamicQuery
-        SELECT m1.id, m2.name, m3.double_value as value
-        FROM mytable1 m1
-        INNER JOIN mytable2 m2 on m2.id = m1.id
-        INNER JOIN mytable3 m3 on m3.id = m2.id
-        WHERE m3.id in (:ids)
-        `
+            -- @dynamicQuery
+            SELECT m1.id, m2.name, m3.double_value as value
+            FROM mytable1 m1
+            INNER JOIN mytable2 m2 on m2.id = m1.id
+            INNER JOIN mytable3 m3 on m3.id = m2.id
+            WHERE m3.id in (:ids)
+            `
         const sqlFragments: DynamicSqlInfoResult = {
             select: [
                 {
                     fragment: 'm1.id',
                     fragmentWitoutAlias: 'm1.id',
-                    dependOnFields: ['id'],
+                    dependOnFields: [0],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: 'm2.name',
                     fragmentWitoutAlias: 'm2.name',
-                    dependOnFields: ['name'],
+                    dependOnFields: [1],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: 'm3.double_value as value',
                     fragmentWitoutAlias: 'm3.double_value',
-                    dependOnFields: ['value'],
+                    dependOnFields: [2],
                     dependOnParams: [],
                     parameters: []
                 }
@@ -290,13 +290,13 @@ describe('dynamic-query', () => {
                 },
                 {
                     fragment: 'INNER JOIN mytable2 m2 on m2.id = m1.id',
-                    dependOnFields: ['name', 'value'],
+                    dependOnFields: [1, 2],
                     dependOnParams: ['ids'],
                     parameters: []
                 },
                 {
                     fragment: 'INNER JOIN mytable3 m3 on m3.id = m2.id',
-                    dependOnFields: ['value'],
+                    dependOnFields: [2],
                     dependOnParams: ['ids'],
                     parameters: []
                 }
@@ -332,14 +332,14 @@ describe('dynamic-query', () => {
                 {
                     fragment: 'm1.id',
                     fragmentWitoutAlias: 'm1.id',
-                    dependOnFields: ['id'],
+                    dependOnFields: [0],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: 'm2.name',
                     fragmentWitoutAlias: 'm2.name',
-                    dependOnFields: ['name'],
+                    dependOnFields: [1],
                     dependOnParams: [],
                     parameters: []
                 }
@@ -353,7 +353,7 @@ describe('dynamic-query', () => {
                 },
                 {
                     fragment: 'INNER JOIN mytable2 m2 on m1.id = m2.id',
-                    dependOnFields: ['name'],
+                    dependOnFields: [1],
                     dependOnParams: ['name', 'name2'],
                     parameters: []
                 }
@@ -389,14 +389,14 @@ describe('dynamic-query', () => {
                 {
                     fragment: 'm1.id',
                     fragmentWitoutAlias: 'm1.id',
-                    dependOnFields: ['id'],
+                    dependOnFields: [0],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: 'm2.name',
                     fragmentWitoutAlias: 'm2.name',
-                    dependOnFields: ['name'],
+                    dependOnFields: [1],
                     dependOnParams: [],
                     parameters: []
                 }
@@ -410,7 +410,7 @@ describe('dynamic-query', () => {
                 },
                 {
                     fragment: 'INNER JOIN mytable2 m2 on m1.id = m2.id',
-                    dependOnFields: ['name'],
+                    dependOnFields: [1],
                     dependOnParams: ['name'],
                     parameters: []
                 }
@@ -445,28 +445,28 @@ describe('dynamic-query', () => {
                 {
                     fragment: 'm1.id',
                     fragmentWitoutAlias: 'm1.id',
-                    dependOnFields: ['id'],
+                    dependOnFields: [0],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: 'm1.value',
                     fragmentWitoutAlias: 'm1.value',
-                    dependOnFields: ['value'],
+                    dependOnFields: [1],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: 'm2.name',
                     fragmentWitoutAlias: 'm2.name',
-                    dependOnFields: ['name'],
+                    dependOnFields: [2],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: `concat(m1.value, ': ', m2.name) as valueAndName`,
                     fragmentWitoutAlias: `concat(m1.value, ': ', m2.name)`,
-                    dependOnFields: ['valueAndName'],
+                    dependOnFields: [3],
                     dependOnParams: [],
                     parameters: []
                 }
@@ -480,7 +480,7 @@ describe('dynamic-query', () => {
                 },
                 {
                     fragment: 'INNER JOIN mytable2 m2 on m1.id = m2.id',
-                    dependOnFields: ['name', 'valueAndName'],
+                    dependOnFields: [2, 3],
                     dependOnParams: [],
                     parameters: []
                 }
@@ -509,21 +509,21 @@ describe('dynamic-query', () => {
                 {
                     fragment: 'm1.id',
                     fragmentWitoutAlias: 'm1.id',
-                    dependOnFields: ['id'],
+                    dependOnFields: [0],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: 'm1.value',
                     fragmentWitoutAlias: 'm1.value',
-                    dependOnFields: ['value'],
+                    dependOnFields: [1],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: 'm2.name',
                     fragmentWitoutAlias: 'm2.name',
-                    dependOnFields: ['name'],
+                    dependOnFields: [2],
                     dependOnParams: [],
                     parameters: []
                 }
@@ -537,7 +537,7 @@ describe('dynamic-query', () => {
                 },
                 {
                     fragment: 'INNER JOIN mytable2 m2 on m1.id = m2.id',
-                    dependOnFields: ['name'],
+                    dependOnFields: [2],
                     dependOnParams: ['name'],
                     parameters: []
                 }
@@ -576,21 +576,21 @@ describe('dynamic-query', () => {
                 {
                     fragment: 'm1.id',
                     fragmentWitoutAlias: 'm1.id',
-                    dependOnFields: ['id'],
+                    dependOnFields: [0],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: 'm2.name',
                     fragmentWitoutAlias: 'm2.name',
-                    dependOnFields: ['name'],
+                    dependOnFields: [1],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: '(select name from mytable1 where id = 1) as subQuery',
                     fragmentWitoutAlias: '(select name from mytable1 where id = 1)',
-                    dependOnFields: ['subQuery'],
+                    dependOnFields: [2],
                     dependOnParams: [],
                     parameters: []
                 }
@@ -604,7 +604,7 @@ describe('dynamic-query', () => {
                 },
                 {
                     fragment: 'INNER JOIN mytable2 m2 on m1.id = m2.id',
-                    dependOnFields: ['name'],
+                    dependOnFields: [1],
                     dependOnParams: ['name'],
                     parameters: []
                 }
@@ -645,14 +645,14 @@ describe('dynamic-query', () => {
                 {
                     fragment: 'm1.id',
                     fragmentWitoutAlias: 'm1.id',
-                    dependOnFields: ['id'],
+                    dependOnFields: [0],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: 'm2.name',
                     fragmentWitoutAlias: 'm2.name',
-                    dependOnFields: ['name'],
+                    dependOnFields: [1],
                     dependOnParams: [],
                     parameters: []
                 }
@@ -669,7 +669,7 @@ describe('dynamic-query', () => {
             SELECT id, name from mytable2 m 
             WHERE m.name = ?
         ) m2`,
-                    dependOnFields: ['name'],
+                    dependOnFields: [1],
                     dependOnParams: ['name'],
                     parameters: ['subqueryName']
                 }
@@ -707,14 +707,14 @@ describe('dynamic-query', () => {
                 {
                     fragment: 'm1.id',
                     fragmentWitoutAlias: 'm1.id',
-                    dependOnFields: ['id'],
+                    dependOnFields: [0],
                     dependOnParams: [],
                     parameters: []
                 },
                 {
                     fragment: 'm2.name',
                     fragmentWitoutAlias: 'm2.name',
-                    dependOnFields: ['name'],
+                    dependOnFields: [1],
                     dependOnParams: [],
                     parameters: []
                 }
@@ -728,7 +728,7 @@ describe('dynamic-query', () => {
                 },
                 {
                     fragment: 'INNER JOIN mytable2 m2 on m1.id = m2.id',
-                    dependOnFields: ['name'],
+                    dependOnFields: [1],
                     dependOnParams: ['name'],
                     parameters: []
                 }
@@ -741,6 +741,77 @@ describe('dynamic-query', () => {
                     parameters: ['name', 'name']
                 }
             ]
+        }
+
+        const actual = await parseSql(client, sql);
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+
+        assert.deepStrictEqual(actual.right.dynamicSqlQuery, sqlFragments);
+    })
+
+    it(`SELECT * FROM mytable1 m1`, async () => {
+        const sql = `
+        -- @dynamicQuery
+        SELECT 
+           *
+        FROM mytable1 m1
+        INNER JOIN mytable2 m2 on m2.id = m1.id
+        `
+        const sqlFragments: DynamicSqlInfoResult = {
+            select: [
+                {
+                    fragment: 'm1.id',
+                    fragmentWitoutAlias: 'm1.id',
+                    dependOnFields: [0],
+                    dependOnParams: [],
+                    parameters: []
+                },
+                {
+                    fragment: 'm1.value',
+                    fragmentWitoutAlias: 'm1.value',
+                    dependOnFields: [1],
+                    dependOnParams: [],
+                    parameters: []
+                },
+                {
+                    fragment: 'm2.id',
+                    fragmentWitoutAlias: 'm2.id',
+                    dependOnFields: [2],
+                    dependOnParams: [],
+                    parameters: []
+                },
+                {
+                    fragment: 'm2.name',
+                    fragmentWitoutAlias: 'm2.name',
+                    dependOnFields: [3],
+                    dependOnParams: [],
+                    parameters: []
+                },
+                {
+                    fragment: 'm2.descr',
+                    fragmentWitoutAlias: 'm2.descr',
+                    dependOnFields: [4],
+                    dependOnParams: [],
+                    parameters: []
+                },
+            ],
+            from: [
+                {
+                    fragment: 'FROM mytable1 m1',
+                    dependOnFields: [],
+                    dependOnParams: [],
+                    parameters: []
+                },
+                {
+                    fragment: 'INNER JOIN mytable2 m2 on m2.id = m1.id',
+                    dependOnFields: [2, 3, 4],
+                    dependOnParams: [],
+                    parameters: []
+                }
+            ],
+            where: []
         }
 
         const actual = await parseSql(client, sql);

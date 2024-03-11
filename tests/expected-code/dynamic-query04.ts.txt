@@ -1,0 +1,142 @@
+import type { Connection } from 'mysql2/promise';
+import { EOL } from 'os';
+
+export type DynamicQuery04DynamicParams = {
+    select?: DynamicQuery04Select;
+    where?: DynamicQuery04Where[];
+}
+
+export type DynamicQuery04Result = {
+    id?: number;
+    value?: number;
+    id_2?: number;
+    name?: string;
+    descr?: string;
+}
+
+export type DynamicQuery04Select = {
+    id?: boolean;
+    value?: boolean;
+    id_2?: boolean;
+    name?: boolean;
+    descr?: boolean;
+}
+
+export type DynamicQuery04Where = [string, string, ...any];
+
+export async function dynamicQuery04(connection: Connection, params?: DynamicQuery04DynamicParams): Promise<DynamicQuery04Result[]> {
+    const where = whereConditionsToObject(params?.where);
+    const paramsValues: any = [];
+    let sql = 'SELECT';
+    if (params?.select == null || params.select.id) {
+        sql = appendSelect(sql, `m1.id`);
+    }
+    if (params?.select == null || params.select.value) {
+        sql = appendSelect(sql, `m1.value`);
+    }
+    if (params?.select == null || params.select.id_2) {
+        sql = appendSelect(sql, `m2.id`);
+    }
+    if (params?.select == null || params.select.name) {
+        sql = appendSelect(sql, `m2.name`);
+    }
+    if (params?.select == null || params.select.descr) {
+        sql = appendSelect(sql, `m2.descr`);
+    }
+    sql += EOL + `FROM mytable1 m1`;
+    if (params?.select == null || params.select.id_2 || params.select.name || params.select.descr || where.id_2 != null || where.name != null || where.descr != null) {
+        sql += EOL + `INNER JOIN mytable2 m2 on m2.id = m1.id`;
+    }
+    sql += EOL + `WHERE 1 = 1`;
+    params?.where?.forEach(condition => {
+        const where = whereCondition(condition);
+        sql += EOL + 'AND ' + where.sql;
+        paramsValues.push(...where.values);
+    });
+    return connection.query({ sql, rowsAsArray: true }, paramsValues)
+        .then(res => res[0] as any[])
+        .then(res => res.map(data => mapArrayToDynamicQuery04Result(data, params?.select)));
+}
+
+function mapArrayToDynamicQuery04Result(data: any, select?: DynamicQuery04Select) {
+    const result = {} as DynamicQuery04Result;
+    let rowIndex = 0;
+    if (select == null || select.id) {
+        result.id = data[rowIndex++];
+    }
+    if (select == null || select.value) {
+        result.value = data[rowIndex++];
+    }
+    if (select == null || select.id_2) {
+        result.id_2 = data[rowIndex++];
+    }
+    if (select == null || select.name) {
+        result.name = data[rowIndex++];
+    }
+    if (select == null || select.descr) {
+        result.descr = data[rowIndex++];
+    }
+    return result;
+}
+
+function appendSelect(sql: string, selectField: string) {
+    if (sql == 'SELECT') {
+        return sql + EOL + selectField;
+    }
+    else {
+        return sql + ', ' + EOL + selectField;
+    }
+}
+
+function whereConditionsToObject(whereConditions?: DynamicQuery04Where[]) {
+    const obj = {} as any;
+    whereConditions?.forEach(whereCondition => {
+        obj[whereCondition[0]] = true;
+    });
+    return obj;
+}
+
+export type WhereConditionResult = {
+    sql: string;
+    values: any[];
+}
+
+function whereCondition(condition: DynamicQuery04Where): WhereConditionResult {
+    const selectFragments = {
+        id: `m1.id`,
+        value: `m1.value`,
+        id_2: `m2.id`,
+        name: `m2.name`,
+        descr: `m2.descr`,
+    } as any;
+
+    const operators = {
+        '=': '=',
+        '<>': '<>',
+        '>': '>',
+        '<': '<',
+        'BETWEEN': 'BETWEEN',
+        'IN': 'IN',
+        'NOT IN': 'NOT IN'
+    } as any;
+
+    const selectFragment = selectFragments[condition[0]];
+    const operator = operators[condition[1]];
+
+    if (operator == 'BETWEEN') {
+        return {
+            sql: `${selectFragment} BETWEEN ? AND ?`,
+            values: [condition[2], condition[3]]
+        }
+    }
+    if (operator == 'IN' || operator == 'NOT IN') {
+        return {
+            sql: `${selectFragment} ${operator} (?)`,
+            values: condition[2]
+        }
+    }
+    return {
+        sql: `${selectFragment} ${operator} ?`,
+        values: [condition[2]]
+    }
+}

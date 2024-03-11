@@ -1283,4 +1283,19 @@ FROM mytable1 t1`
 
         assert.deepStrictEqual(actual, expected);
     })
+
+    it('dynamic-query-04 - select *', async () => {
+        const queryName = 'dynamic-query04';//
+        const sql = `-- @dynamicQuery
+SELECT 
+    *
+FROM mytable1 m1
+INNER JOIN mytable2 m2 on m2.id = m1.id`
+
+        const actual = await generateTsFileFromContent(client, `${queryName}.sql`, queryName, sql, 'node');
+        //tests\expected-code\dynamic-query01.ts
+        const expected = readFileSync('tests/expected-code/dynamic-query04.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+        assert.deepStrictEqual(actual, expected);
+    })
 })

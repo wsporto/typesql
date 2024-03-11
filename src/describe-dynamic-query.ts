@@ -1,13 +1,17 @@
-import { DynamicSqlInfo, DynamicSqlInfoResult, FragmentInfo, FragmentInfoResult, TableField } from "./mysql-query-analyzer/types";
+import { ColumnInfo, DynamicSqlInfo, DynamicSqlInfoResult, FragmentInfo, FragmentInfoResult, TableField } from "./mysql-query-analyzer/types";
 
-export function describeDynamicQuery(dynamicQueryInfo: DynamicSqlInfo, namedParameters: string[]): DynamicSqlInfoResult {
+export function describeDynamicQuery(dynamicQueryInfo: DynamicSqlInfo, namedParameters: string[], columnNames: ColumnInfo[]): DynamicSqlInfoResult {
     const { select, from, where } = dynamicQueryInfo;
 
     const selectFragments = select.map(fragment => {
+        const fields = fragment.fields.flatMap(field => {
+            return columnNames.findIndex(col => col.columnName == field.name && (col.table == field.table || col.table == ''));
+        });
+
         const fragmentResult: FragmentInfoResult = {
             fragment: fragment.fragment,
             fragmentWitoutAlias: fragment.fragementWithoutAlias,
-            dependOnFields: [...new Set(fragment.fields.map(f => f.name))], //remove duplicated
+            dependOnFields: [...new Set(fields)], //remove duplicated
             dependOnParams: [],
             parameters: []
         }
@@ -39,10 +43,14 @@ export function describeDynamicQuery(dynamicQueryInfo: DynamicSqlInfo, namedPara
                 return found;
             });// .filter((field): field is TableField => field != null);
 
+        const fields = conditonalFields.flatMap(field => {
+            return columnNames.findIndex(col => col.columnName == field.name && (col.table == field.table || col.table == ''));
+        });
+
         const params = filteredWhere.flatMap(fragment => fragment.dependOnParams).map(paramIndex => namedParameters[paramIndex]);
         const fragmentResult: FragmentInfoResult = {
             fragment: fragment.fragment,
-            dependOnFields: conditonalFields.map(f => f.name),
+            dependOnFields: fields,
             dependOnParams: [...new Set(params)],
             parameters: fragment.parameters.map(paramIndex => namedParameters[paramIndex])
         }

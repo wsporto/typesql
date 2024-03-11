@@ -110,18 +110,18 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
             writer.writeLine('const paramsValues: any = [];');
             writer.writeLine(`let sql = 'SELECT';`);
             tsDescriptor.dynamicQuery.select.forEach(fragment => {
-                writer.write(`if (params?.select == null || ${fragment.dependOnFields.map(field => 'params.select.' + field).join('&&')})`).block(() => {
+                writer.write(`if (params?.select == null || ${fragment.dependOnFields.map(fieldIndex => 'params.select.' + tsDescriptor.columns[fieldIndex].name).join('&&')})`).block(() => {
                     writer.write(`sql = appendSelect(sql, \`${fragment.fragment}\`);`)
                 })
             })
             tsDescriptor.dynamicQuery.from.forEach(fragment => {
 
-                const selectConditions = fragment.dependOnFields.map(field => 'params.select.' + field);
+                const selectConditions = fragment.dependOnFields.map(fieldIndex => 'params.select.' + tsDescriptor.columns[fieldIndex].name);
                 if (selectConditions.length > 0) {
                     selectConditions.unshift('params?.select == null');
                 }
                 const paramConditions = fragment.dependOnParams.map(param => 'params.params?.' + param + ' != null');
-                const whereConditions = fragment.dependOnFields.map(field => 'where.' + field + ' != null');
+                const whereConditions = fragment.dependOnFields.map(fieldIndex => 'where.' + tsDescriptor.columns[fieldIndex].name + ' != null');
                 const allConditions = [...selectConditions, ...paramConditions, ...whereConditions];
                 const paramValues = fragment.parameters.map(param => 'params?.params?.' + param);
                 if (allConditions.length > 0) {
