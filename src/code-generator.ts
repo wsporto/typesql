@@ -254,6 +254,8 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
                     writer.writeLine(`'<>': '<>',`);
                     writer.writeLine(`'>': '>',`);
                     writer.writeLine(`'<': '<',`);
+                    writer.writeLine(`'>=': '>=',`);
+                    writer.writeLine(`'<=': '<=',`);
                     writer.writeLine(`'BETWEEN': 'BETWEEN',`);
                     writer.writeLine(`'IN': 'IN',`);
                     writer.writeLine(`'NOT IN': 'NOT IN'`);

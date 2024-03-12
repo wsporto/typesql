@@ -103,6 +103,8 @@ function whereCondition(condition: DerivatedTableWhere): WhereConditionResult {
         '<>': '<>',
         '>': '>',
         '<': '<',
+        '>=': '>=',
+        '<=': '<=',
         'BETWEEN': 'BETWEEN',
         'IN': 'IN',
         'NOT IN': 'NOT IN'

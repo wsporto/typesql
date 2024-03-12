@@ -120,6 +120,8 @@ function whereCondition(condition: DynamicQuery01Where): WhereConditionResult {
         '<>': '<>',
         '>': '>',
         '<': '<',
+        '>=': '>=',
+        '<=': '<=',
         'BETWEEN': 'BETWEEN',
         'IN': 'IN',
         'NOT IN': 'NOT IN'
