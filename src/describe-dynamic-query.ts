@@ -3,15 +3,11 @@ import { ColumnInfo, DynamicSqlInfo, DynamicSqlInfoResult, FragmentInfo, Fragmen
 export function describeDynamicQuery(dynamicQueryInfo: DynamicSqlInfo, namedParameters: string[], columnNames: ColumnInfo[]): DynamicSqlInfoResult {
     const { select, from, where } = dynamicQueryInfo;
 
-    const selectFragments = select.map(fragment => {
-        const fields = fragment.fields.flatMap(field => {
-            return columnNames.findIndex(col => col.columnName == field.name && (col.table == field.table || col.table == ''));
-        });
-
+    const selectFragments = select.map((fragment, index) => {
         const fragmentResult: FragmentInfoResult = {
             fragment: fragment.fragment,
             fragmentWitoutAlias: fragment.fragementWithoutAlias,
-            dependOnFields: [...new Set(fields)], //remove duplicated
+            dependOnFields: [index], //remove duplicated
             dependOnParams: [],
             parameters: []
         }
@@ -35,22 +31,14 @@ export function describeDynamicQuery(dynamicQueryInfo: DynamicSqlInfo, namedPara
                 parameters: fragment.parameters.map(paramIndex => namedParameters[paramIndex])
             }
         }
-        const selectedFields = select.flatMap(fragment => fragment.fields);
-
-        const conditonalFields = fragment.fields
-            .flatMap(field => {
-                const found = selectedFields.filter(selected => field.field == selected.field && field.table == selected.table);
-                return found;
-            });// .filter((field): field is TableField => field != null);
-
-        const fields = conditonalFields.flatMap(field => {
-            return columnNames.findIndex(col => col.columnName == field.name && (col.table == field.table || col.table == ''));
-        });
+        const selectedFields = select.flatMap(fragment => fragment.fields)
+            .filter(field => fragment.dependOn.includes(field.table));
+        const fieldIndex = selectedFields.map(field => columnNames.findIndex(col => col.columnName == field.name && (col.table == field.table || col.table == '')));
 
         const params = filteredWhere.flatMap(fragment => fragment.dependOnParams).map(paramIndex => namedParameters[paramIndex]);
         const fragmentResult: FragmentInfoResult = {
             fragment: fragment.fragment,
-            dependOnFields: fields,
+            dependOnFields: fieldIndex,
             dependOnParams: [...new Set(params)],
             parameters: fragment.parameters.map(paramIndex => namedParameters[paramIndex])
         }
@@ -81,9 +69,11 @@ function includeAny(fields: TableField[], fields2: TableField[]) {
 }
 
 function addAllChildFields(currentRelation: FragmentInfo, from: FragmentInfo[]) {
+    currentRelation.dependOn.push(currentRelation.relation + '');
     from.forEach(fragment => {
         if (fragment.parentRelation == currentRelation.relation) {
             currentRelation.fields.push(...fragment.fields);
+            currentRelation.dependOn.push(fragment.relation + '')
         }
     })
 }

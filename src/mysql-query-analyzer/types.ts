@@ -106,6 +106,7 @@ export type FragmentInfo = {
     dependOnFields: TableField[];
     dependOnParams: number[];
     parameters: number[];
+    dependOn: string[];
 }
 
 export type FragmentInfoResult = {

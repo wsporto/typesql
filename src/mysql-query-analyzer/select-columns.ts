@@ -261,7 +261,7 @@ function collectExpr(tokens: RuleContext[], parent: RuleContext, exprType: any) 
 
     for (let i = 0; i < parent.childCount; i++) {
         const child = parent.getChild(i);
-        if (child instanceof RuleContext) {
+        if (child instanceof RuleContext && !(child instanceof SimpleExprSubQueryContext)) {
             collectExpr(tokens, child, exprType);
         }
     }

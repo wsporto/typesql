@@ -567,7 +567,8 @@ function traverseTableReferenceList(tableReferenceList: TableReferenceContext[],
                 fields: [], //fields.map(field => ({ field: field.columnName, name: field.columnName, table: field.table })),
                 dependOnFields: [],
                 dependOnParams: [],
-                parameters: Array.from({ length: paramsAfter - paramBefore }, (x, i) => i + paramBefore)
+                parameters: Array.from({ length: paramsAfter - paramBefore }, (x, i) => i + paramBefore),
+                dependOn: []
             })
         }
         const allJoinedColumns: ColumnDef[][] = [];
@@ -588,7 +589,8 @@ function traverseTableReferenceList(tableReferenceList: TableReferenceContext[],
                     fields: [],
                     dependOnFields: [],
                     dependOnParams: [],
-                    parameters: []
+                    parameters: [],
+                    dependOn: []
                 }
 
                 const usingFields = extractFieldsFromUsingClause(joined);
@@ -674,6 +676,9 @@ function traverseTableFactor(tableFactor: TableFactorContext, traverseContext: T
     const derivadTable = tableFactor.derivedTable();
     if (derivadTable) {
         const tableAlias = derivadTable.tableAlias()?.identifier().text;
+        if (currentFragment) {
+            currentFragment.relation = tableAlias;
+        }
         const subQuery = derivadTable.subquery();
         if (subQuery) {
             const subQueryResult = traverseSubquery(subQuery, traverseContext);
@@ -757,7 +762,8 @@ function traverseSelectItemList(selectItemList: SelectItemListContext, traverseC
                 }],
                 dependOnFields: [],
                 dependOnParams: [],
-                parameters: []
+                parameters: [],
+                dependOn: []
             }
             if (!subQuery) {
                 traverseContext.dynamicSqlInfo.select.push(fieldFragment);
@@ -785,7 +791,8 @@ function traverseSelectItemList(selectItemList: SelectItemListContext, traverseC
                 fields: [],
                 dependOnFields: [],
                 dependOnParams: [],
-                parameters: []
+                parameters: [],
+                dependOn: []
             }
             if (!subQuery) {
                 traverseContext.dynamicSqlInfo.select?.push(selectFragment);
@@ -793,11 +800,13 @@ function traverseSelectItemList(selectItemList: SelectItemListContext, traverseC
                 const columnName = getColumnName(selectItem);
                 columns.forEach(colRef => {
                     const fieldName = splitName(colRef.text);
+                    const column = findColumn(fieldName, traverseContext.fromColumns);
                     selectFragment.fields.push({
                         field: fieldName.name,
                         name: columnName,
-                        table: fieldName.prefix
+                        table: column.tableAlias || column.table
                     })
+                    selectFragment.dependOn.push(column.tableAlias || column.table);
                 })
             }
             // const fields = exprType.kind == 'TypeVar' ? [{ field: exprType.name, table: exprType.table + '', name: getColumnName(selectItem) }] : []
@@ -840,7 +849,8 @@ function traverseExpr(expr: ExprContext, traverseContext: TraverseContext, where
                 fields: [],
                 dependOnFields: [],
                 dependOnParams: [],
-                parameters: []
+                parameters: [],
+                dependOn: []
             }
             const paramsRight = getExpressions(expr, SimpleExprParamMarkerContext);
             paramsRight.forEach(_ => {
@@ -881,7 +891,8 @@ function traverseExpr(expr: ExprContext, traverseContext: TraverseContext, where
                     fields: [],
                     dependOnFields: [],
                     dependOnParams: [],
-                    parameters: []
+                    parameters: [],
+                    dependOn: []
                 }
                 const paramsRight = getExpressions(andExpression.expr, SimpleExprParamMarkerContext);
                 paramsRight.forEach(_ => {
