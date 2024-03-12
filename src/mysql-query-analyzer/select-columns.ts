@@ -134,7 +134,79 @@ export const functionAlias: ColumnSchema[] = [
         schema: '',
         table: ''
 
-    }
+    },
+    {
+        column: 'MICROSECOND',
+        column_type: 'bigint',
+        columnKey: '',
+        notNull: true,
+        schema: '',
+        table: ''
+    },
+    {
+        column: 'SECOND',
+        column_type: 'bigint',
+        columnKey: '',
+        notNull: true,
+        schema: '',
+        table: ''
+    },
+    {
+        column: 'MINUTE',
+        column_type: 'bigint',
+        columnKey: '',
+        notNull: true,
+        schema: '',
+        table: ''
+    },
+    {
+        column: 'HOUR',
+        column_type: 'bigint',
+        columnKey: '',
+        notNull: true,
+        schema: '',
+        table: ''
+    },
+    {
+        column: 'DAY',
+        column_type: 'bigint',
+        columnKey: '',
+        notNull: true,
+        schema: '',
+        table: ''
+    },
+    {
+        column: 'WEEK',
+        column_type: 'bigint',
+        columnKey: '',
+        notNull: true,
+        schema: '',
+        table: ''
+    },
+    {
+        column: 'MONTH',
+        column_type: 'bigint',
+        columnKey: '',
+        notNull: true,
+        schema: '',
+        table: ''
+    },
+    {
+        column: 'QUARTER',
+        column_type: 'bigint',
+        columnKey: '',
+        notNull: true,
+        schema: '',
+        table: ''
+    },
+    {
+        column: 'YEAR',
+        column_type: 'year',
+        columnKey: '',
+        notNull: true,
+        schema: '',
+        table: ''
+    },
 ]
 
 export function findColumnSchema(tableName: string, columnName: string, dbSchema: ColumnSchema[]) {
