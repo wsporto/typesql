@@ -122,6 +122,7 @@ function whereCondition(condition: DynamicQuery01Where): WhereConditionResult {
         '<': '<',
         '>=': '>=',
         '<=': '<=',
+        'LIKE': 'LIKE',
         'BETWEEN': 'BETWEEN',
         'IN': 'IN',
         'NOT IN': 'NOT IN'
@@ -130,6 +131,12 @@ function whereCondition(condition: DynamicQuery01Where): WhereConditionResult {
     const selectFragment = selectFragments[condition[0]];
     const operator = operators[condition[1]];
 
+    if (operator == 'LIKE') {
+        return {
+            sql: `${selectFragment} LIKE concat('%', ?, '%')`,
+            values: [condition[2]]
+        }
+    }
     if (operator == 'BETWEEN') {
         return {
             sql: `${selectFragment} BETWEEN ? AND ?`,

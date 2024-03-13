@@ -256,6 +256,7 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
                     writer.writeLine(`'<': '<',`);
                     writer.writeLine(`'>=': '>=',`);
                     writer.writeLine(`'<=': '<=',`);
+                    writer.writeLine(`'LIKE': 'LIKE',`);
                     writer.writeLine(`'BETWEEN': 'BETWEEN',`);
                     writer.writeLine(`'IN': 'IN',`);
                     writer.writeLine(`'NOT IN': 'NOT IN'`);
@@ -265,6 +266,12 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
                 writer.writeLine('const selectFragment = selectFragments[condition[0]];');
                 writer.writeLine('const operator = operators[condition[1]];');
                 writer.blankLine();
+                writer.write(`if (operator == 'LIKE') `).block(() => {
+                    writer.write(`return `).block(() => {
+                        writer.writeLine('sql: `${selectFragment} LIKE concat(\'%\', ?, \'%\')`,');
+                        writer.writeLine('values: [condition[2]]');
+                    });
+                });
                 writer.write(`if (operator == 'BETWEEN') `).block(() => {
                     writer.write(`return `).block(() => {
                         writer.writeLine('sql: `${selectFragment} BETWEEN ? AND ?`,');
