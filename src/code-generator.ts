@@ -63,7 +63,19 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
     if (tsDescriptor.dynamicQuery) {
         const selectFields = mapToDynamicSelectColumns(tsDescriptor.columns);
         writeTypeBlock(writer, selectFields, selectColumnsTypeName, false);
-        writer.writeLine(`export type ${whereTypeName} = [string, string, ...any];`);
+        writer.writeLine(`const NumericOperatorList = ['=', '<>', '>', '<', '>=', '<='] as const;`);
+        writer.writeLine(`type NumericOperator = typeof NumericOperatorList[number];`);
+        writer.writeLine(`type StringOperator = '=' | '<>' | '>' | '<' | '>=' | '<=' | 'LIKE';`);
+        writer.writeLine(`type SetOperator = 'IN' | 'NOT IN';`);
+        writer.writeLine(`type BetweenOperator = 'BETWEEN';`);
+        writer.blankLine();
+        writer.write(`export type ${whereTypeName} =`).indent(() => {
+            tsDescriptor.columns.forEach(col => {
+                writer.writeLine(`| ['${col.name}', ${getOperator(col.tsType)}, ${col.tsType} | null]`);
+                writer.writeLine(`| ['${col.name}', SetOperator, ${col.tsType}[]]`);
+                writer.writeLine(`| ['${col.name}', BetweenOperator, ${col.tsType} | null, ${col.tsType} | null]`);
+            })
+        });
         writer.blankLine();
     }
 
@@ -157,8 +169,10 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
             })
             writer.write(`params?.where?.forEach(condition => `).inlineBlock(() => {
                 writer.writeLine(`const where = whereCondition(condition);`)
-                writer.writeLine(`sql += EOL + 'AND ' + where.sql;`)
-                writer.write(`paramsValues.push(...where.values);`)
+                writer.write(`if (where?.hasValue)`).block(() => {
+                    writer.writeLine(`sql += EOL + 'AND ' + where.sql;`)
+                    writer.write(`paramsValues.push(...where.values);`)
+                })
             })
             writer.write(');');
         }
@@ -228,8 +242,11 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
             writer.blankLine();
             writer.write(`function whereConditionsToObject(whereConditions?: ${whereTypeName}[])`).block(() => {
                 writer.writeLine(`const obj = {} as any;`);
-                writer.write(`whereConditions?.forEach(whereCondition => `).inlineBlock(() => {
-                    writer.writeLine(`obj[whereCondition[0]] = true;`);
+                writer.write(`whereConditions?.forEach(condition => `).inlineBlock(() => {
+                    writer.writeLine(`const where = whereCondition(condition);`)
+                    writer.write(`if (where?.hasValue) `).block(() => {
+                        writer.writeLine(`obj[condition[0]] = true;`);
+                    })
                 });
                 writer.write(');');
                 writer.writeLine(`return obj;`);
@@ -237,56 +254,49 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
             writer.blankLine();
             writer.write(`export type WhereConditionResult = `).block(() => {
                 writer.writeLine('sql: string;');
+                writer.writeLine('hasValue: boolean;');
                 writer.writeLine('values: any[];');
             })
             writer.blankLine();
-            writer.write(`function whereCondition(condition: ${whereTypeName}): WhereConditionResult `).block(() => {
+            writer.write(`function whereCondition(condition: ${whereTypeName}): WhereConditionResult | undefined `).block(() => {
                 writer.write(`const selectFragments = `).inlineBlock(() => {
                     tsDescriptor.dynamicQuery?.select.forEach((fragment, index) => {
                         const field = tsDescriptor.columns[index].name;
                         writer.writeLine(`${field}: \`${fragment.fragmentWitoutAlias}\`,`);
                     });
                 })
-                writer.write(' as any;');
-                writer.blankLine();
-                writer.write('const operators = ').inlineBlock(() => {
-                    writer.writeLine(`'=': '=',`);
-                    writer.writeLine(`'<>': '<>',`);
-                    writer.writeLine(`'>': '>',`);
-                    writer.writeLine(`'<': '<',`);
-                    writer.writeLine(`'>=': '>=',`);
-                    writer.writeLine(`'<=': '<=',`);
-                    writer.writeLine(`'LIKE': 'LIKE',`);
-                    writer.writeLine(`'BETWEEN': 'BETWEEN',`);
-                    writer.writeLine(`'IN': 'IN',`);
-                    writer.writeLine(`'NOT IN': 'NOT IN'`);
-                });
-                writer.write(' as any;');
+                writer.write(' as const;');
                 writer.blankLine();
                 writer.writeLine('const selectFragment = selectFragments[condition[0]];');
-                writer.writeLine('const operator = operators[condition[1]];');
+                writer.writeLine('const operator = condition[1];');
                 writer.blankLine();
                 writer.write(`if (operator == 'LIKE') `).block(() => {
                     writer.write(`return `).block(() => {
                         writer.writeLine('sql: `${selectFragment} LIKE concat(\'%\', ?, \'%\')`,');
+                        writer.writeLine('hasValue: condition[2] != null,');
                         writer.writeLine('values: [condition[2]]');
                     });
                 });
                 writer.write(`if (operator == 'BETWEEN') `).block(() => {
                     writer.write(`return `).block(() => {
                         writer.writeLine('sql: `${selectFragment} BETWEEN ? AND ?`,');
+                        writer.writeLine('hasValue: condition[2] != null && condition[3] != null,');
                         writer.writeLine('values: [condition[2], condition[3]]');
                     });
                 });
                 writer.write(`if (operator == 'IN' || operator == 'NOT IN') `).block(() => {
                     writer.write(`return `).block(() => {
                         writer.writeLine('sql: `${selectFragment} ${operator} (?)`,');
-                        writer.writeLine('values: condition[2]');
+                        writer.writeLine('hasValue: condition[2] != null && condition[2].length > 0,');
+                        writer.writeLine('values: [condition[2]]');
                     });
                 });
-                writer.write(`return `).block(() => {
-                    writer.writeLine('sql: `${selectFragment} ${operator} ?`,');
-                    writer.writeLine('values: [condition[2]]');
+                writer.write(`if (NumericOperatorList.includes(operator)) `).block(() => {
+                    writer.write(`return `).block(() => {
+                        writer.writeLine('sql: `${selectFragment} ${operator} ?`,');
+                        writer.writeLine('hasValue: condition[2] != null,');
+                        writer.writeLine('values: [condition[2]]');
+                    });
                 });
             })
         }
@@ -377,6 +387,13 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
     }
 
     return writer.toString();
+}
+
+function getOperator(type: string) {
+    if (type == 'number' || type == 'Date') {
+        return 'NumericOperator';
+    }
+    return 'StringOperator';
 }
 
 function generateParam(target: 'node' | 'deno', param: ParamInfo) {

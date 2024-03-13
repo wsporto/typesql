@@ -8,8 +8,8 @@ export type DerivatedTableDynamicParams = {
 }
 
 export type DerivatedTableParams = {
-    subqueryName?: string;
-    name?: string;
+    subqueryName?: string | null;
+    name?: string | null;
 }
 
 export type DerivatedTableResult = {
@@ -22,7 +22,19 @@ export type DerivatedTableSelect = {
     name?: boolean;
 }
 
-export type DerivatedTableWhere = [string, string, ...any];
+const NumericOperatorList = ['=', '<>', '>', '<', '>=', '<='] as const;
+type NumericOperator = typeof NumericOperatorList[number];
+type StringOperator = '=' | '<>' | '>' | '<' | '>=' | '<=' | 'LIKE';
+type SetOperator = 'IN' | 'NOT IN';
+type BetweenOperator = 'BETWEEN';
+
+export type DerivatedTableWhere =
+    | ['id', NumericOperator, number | null]
+    | ['id', SetOperator, number[]]
+    | ['id', BetweenOperator, number | null, number | null]
+    | ['name', StringOperator, string | null]
+    | ['name', SetOperator, string[]]
+    | ['name', BetweenOperator, string | null, string | null]
 
 export async function derivatedTable(connection: Connection, params?: DerivatedTableDynamicParams): Promise<DerivatedTableResult[]> {
     const where = whereConditionsToObject(params?.where);
@@ -50,8 +62,10 @@ export async function derivatedTable(connection: Connection, params?: DerivatedT
     }
     params?.where?.forEach(condition => {
         const where = whereCondition(condition);
-        sql += EOL + 'AND ' + where.sql;
-        paramsValues.push(...where.values);
+        if (where?.hasValue) {
+            sql += EOL + 'AND ' + where.sql;
+            paramsValues.push(...where.values);
+        }
     });
     return connection.query({ sql, rowsAsArray: true }, paramsValues)
         .then(res => res[0] as any[])
@@ -81,59 +95,56 @@ function appendSelect(sql: string, selectField: string) {
 
 function whereConditionsToObject(whereConditions?: DerivatedTableWhere[]) {
     const obj = {} as any;
-    whereConditions?.forEach(whereCondition => {
-        obj[whereCondition[0]] = true;
+    whereConditions?.forEach(condition => {
+        const where = whereCondition(condition);
+        if (where?.hasValue) {
+            obj[condition[0]] = true;
+        }
     });
     return obj;
 }
 
 export type WhereConditionResult = {
     sql: string;
+    hasValue: boolean;
     values: any[];
 }
 
-function whereCondition(condition: DerivatedTableWhere): WhereConditionResult {
+function whereCondition(condition: DerivatedTableWhere): WhereConditionResult | undefined {
     const selectFragments = {
         id: `m1.id`,
         name: `m2.name`,
-    } as any;
-
-    const operators = {
-        '=': '=',
-        '<>': '<>',
-        '>': '>',
-        '<': '<',
-        '>=': '>=',
-        '<=': '<=',
-        'LIKE': 'LIKE',
-        'BETWEEN': 'BETWEEN',
-        'IN': 'IN',
-        'NOT IN': 'NOT IN'
-    } as any;
+    } as const;
 
     const selectFragment = selectFragments[condition[0]];
-    const operator = operators[condition[1]];
+    const operator = condition[1];
 
     if (operator == 'LIKE') {
         return {
             sql: `${selectFragment} LIKE concat('%', ?, '%')`,
+            hasValue: condition[2] != null,
             values: [condition[2]]
         }
     }
     if (operator == 'BETWEEN') {
         return {
             sql: `${selectFragment} BETWEEN ? AND ?`,
+            hasValue: condition[2] != null && condition[3] != null,
             values: [condition[2], condition[3]]
         }
     }
     if (operator == 'IN' || operator == 'NOT IN') {
         return {
             sql: `${selectFragment} ${operator} (?)`,
-            values: condition[2]
+            hasValue: condition[2] != null && condition[2].length > 0,
+            values: [condition[2]]
         }
     }
-    return {
-        sql: `${selectFragment} ${operator} ?`,
-        values: [condition[2]]
+    if (NumericOperatorList.includes(operator)) {
+        return {
+            sql: `${selectFragment} ${operator} ?`,
+            hasValue: condition[2] != null,
+            values: [condition[2]]
+        }
     }
 }

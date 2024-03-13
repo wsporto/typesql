@@ -8,8 +8,8 @@ export type DynamicQuery01DynamicParams = {
 }
 
 export type DynamicQuery01Params = {
-    name?: string;
-    description?: string;
+    name?: string | null;
+    description?: string | null;
 }
 
 export type DynamicQuery01Result = {
@@ -26,7 +26,25 @@ export type DynamicQuery01Select = {
     description?: boolean;
 }
 
-export type DynamicQuery01Where = [string, string, ...any];
+const NumericOperatorList = ['=', '<>', '>', '<', '>=', '<='] as const;
+type NumericOperator = typeof NumericOperatorList[number];
+type StringOperator = '=' | '<>' | '>' | '<' | '>=' | '<=' | 'LIKE';
+type SetOperator = 'IN' | 'NOT IN';
+type BetweenOperator = 'BETWEEN';
+
+export type DynamicQuery01Where =
+    | ['id', NumericOperator, number | null]
+    | ['id', SetOperator, number[]]
+    | ['id', BetweenOperator, number | null, number | null]
+    | ['value', NumericOperator, number | null]
+    | ['value', SetOperator, number[]]
+    | ['value', BetweenOperator, number | null, number | null]
+    | ['name', StringOperator, string | null]
+    | ['name', SetOperator, string[]]
+    | ['name', BetweenOperator, string | null, string | null]
+    | ['description', StringOperator, string | null]
+    | ['description', SetOperator, string[]]
+    | ['description', BetweenOperator, string | null, string | null]
 
 export async function dynamicQuery01(connection: Connection, params?: DynamicQuery01DynamicParams): Promise<DynamicQuery01Result[]> {
     const where = whereConditionsToObject(params?.where);
@@ -59,8 +77,10 @@ export async function dynamicQuery01(connection: Connection, params?: DynamicQue
     }
     params?.where?.forEach(condition => {
         const where = whereCondition(condition);
-        sql += EOL + 'AND ' + where.sql;
-        paramsValues.push(...where.values);
+        if (where?.hasValue) {
+            sql += EOL + 'AND ' + where.sql;
+            paramsValues.push(...where.values);
+        }
     });
     return connection.query({ sql, rowsAsArray: true }, paramsValues)
         .then(res => res[0] as any[])
@@ -96,61 +116,58 @@ function appendSelect(sql: string, selectField: string) {
 
 function whereConditionsToObject(whereConditions?: DynamicQuery01Where[]) {
     const obj = {} as any;
-    whereConditions?.forEach(whereCondition => {
-        obj[whereCondition[0]] = true;
+    whereConditions?.forEach(condition => {
+        const where = whereCondition(condition);
+        if (where?.hasValue) {
+            obj[condition[0]] = true;
+        }
     });
     return obj;
 }
 
 export type WhereConditionResult = {
     sql: string;
+    hasValue: boolean;
     values: any[];
 }
 
-function whereCondition(condition: DynamicQuery01Where): WhereConditionResult {
+function whereCondition(condition: DynamicQuery01Where): WhereConditionResult | undefined {
     const selectFragments = {
         id: `m1.id`,
         value: `m1.value`,
         name: `m2.name`,
         description: `m2.descr`,
-    } as any;
-
-    const operators = {
-        '=': '=',
-        '<>': '<>',
-        '>': '>',
-        '<': '<',
-        '>=': '>=',
-        '<=': '<=',
-        'LIKE': 'LIKE',
-        'BETWEEN': 'BETWEEN',
-        'IN': 'IN',
-        'NOT IN': 'NOT IN'
-    } as any;
+    } as const;
 
     const selectFragment = selectFragments[condition[0]];
-    const operator = operators[condition[1]];
+    const operator = condition[1];
 
     if (operator == 'LIKE') {
         return {
             sql: `${selectFragment} LIKE concat('%', ?, '%')`,
+            hasValue: condition[2] != null,
             values: [condition[2]]
         }
     }
     if (operator == 'BETWEEN') {
         return {
             sql: `${selectFragment} BETWEEN ? AND ?`,
+            hasValue: condition[2] != null && condition[3] != null,
             values: [condition[2], condition[3]]
         }
     }
     if (operator == 'IN' || operator == 'NOT IN') {
         return {
             sql: `${selectFragment} ${operator} (?)`,
-            values: condition[2]
+            hasValue: condition[2] != null && condition[2].length > 0,
+            values: [condition[2]]
         }
     }
-    return {
-        sql: `${selectFragment} ${operator} ?`,
-        values: [condition[2]]
+    if (NumericOperatorList.includes(operator)) {
+        return {
+            sql: `${selectFragment} ${operator} ?`,
+            hasValue: condition[2] != null,
+            values: [condition[2]]
+        }
     }
 }

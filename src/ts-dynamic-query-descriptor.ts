@@ -31,7 +31,7 @@ export function mapToDynamicParams(columns: TsFieldDescriptor[]): TsFieldDescrip
 function mapToDynamicParam(r: TsFieldDescriptor): TsFieldDescriptor {
     return {
         name: r.name,
-        tsType: r.tsType,
+        tsType: r.tsType + ' | null',
         notNull: false
     }
 }
