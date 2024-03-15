@@ -3,7 +3,7 @@ import { verifyNotInferred } from "../describe-query";
 import { extractLimitParameters, extractOrderByParameters, getAllQuerySpecificationsFromSelectStatement, getLimitOptions, isSumExpressContext } from "./parse";
 import { ColumnDef, ColumnSchema, Constraint, DynamicSqlInfo, FieldName, FragmentInfo, ParameterInfo, TableField, TraverseContext, Type, TypeAndNullInfer, TypeOperator, TypeVar } from "./types";
 import { ExprOrDefault, FixedLengthParams, FunctionParams, VariableLengthParams, createColumnType, createColumnTypeFomColumnSchema, freshVar, generateTypeInfo, getDeleteColumns, getFunctionName, getInsertColumns, getInsertIntoTable, isDateLiteral, isDateTimeLiteral, isTimeLiteral, verifyDateTypesCoercion } from "./collect-constraints";
-import { ExpressionAndOperator, extractFieldsFromUsingClause, extractOriginalSql, findColumn, getColumnName, getExpressions, getSimpleExpressions, getTopLevelAndExpr, splitName } from "./select-columns";
+import { ExpressionAndOperator, extractFieldsFromUsingClause, extractOriginalSql, findColumn, findColumnOrNull, getColumnName, getExpressions, getSimpleExpressions, getTopLevelAndExpr, splitName } from "./select-columns";
 import { inferNotNull, possibleNull } from "./infer-column-nullability";
 import { getParentContext, inferParamNullability, inferParamNullabilityQuery, inferParamNullabilityQueryExpression } from "./infer-param-nullability";
 import { ParameterDef } from "../types";
@@ -50,6 +50,9 @@ export function traverseQueryContext(queryContext: QueryContext, dbSchema: Colum
         dbSchema,
         parameters,
         fromColumns: [],
+        subQueryColumns: [],
+        subQuery: false,
+        where: false,
         withSchema: [],
         dynamicSqlInfo: {
             select: [],
@@ -381,7 +384,7 @@ function traverseQueryExpressionOrParens(queryExpressionOrParens: QueryExpressio
     throw Error("walkQueryExpressionOrParens");
 }
 
-function traverseQueryExpression(queryExpression: QueryExpressionContext, traverseContext: TraverseContext, subQuery: boolean = false, recursiveNames?: string[]): QuerySpecificationResult {
+function traverseQueryExpression(queryExpression: QueryExpressionContext, traverseContext: TraverseContext, recursiveNames?: string[]): QuerySpecificationResult {
     const withClause = queryExpression.withClause();
     if (withClause) {
         traverseWithClause(withClause, traverseContext);
@@ -389,7 +392,7 @@ function traverseQueryExpression(queryExpression: QueryExpressionContext, traver
 
     const queryExpressionBody = queryExpression.queryExpressionBody();
     if (queryExpressionBody) {
-        return traverseQueryExpressionBody(queryExpressionBody, traverseContext, subQuery, recursiveNames)
+        return traverseQueryExpressionBody(queryExpressionBody, traverseContext, recursiveNames)
     }
     const queryExpressionParens = queryExpression.queryExpressionParens();
     if (queryExpressionParens) {
@@ -401,7 +404,7 @@ function traverseQueryExpression(queryExpression: QueryExpressionContext, traver
 function traverseQueryExpressionParens(queryExpressionParens: QueryExpressionParensContext, traverseContext: TraverseContext, recursiveNames?: string[]): QuerySpecificationResult {
     const queryExpression = queryExpressionParens.queryExpression();
     if (queryExpression) {
-        return traverseQueryExpression(queryExpression, traverseContext, false, recursiveNames);
+        return traverseQueryExpression(queryExpression, traverseContext, recursiveNames);
     }
     const queryExpressionParens2 = queryExpressionParens.queryExpressionParens();
     if (queryExpressionParens2) {
@@ -415,10 +418,10 @@ function createUnionVar(type: TypeVar, name: string) {
     return newVar;
 }
 
-function traverseQueryExpressionBody(queryExpressionBody: QueryExpressionBodyContext, traverseContext: TraverseContext, subQuery: boolean = false, recursiveNames?: string[]): QuerySpecificationResult {
+function traverseQueryExpressionBody(queryExpressionBody: QueryExpressionBodyContext, traverseContext: TraverseContext, recursiveNames?: string[]): QuerySpecificationResult {
     const allQueries = getAllQuerySpecificationsFromSelectStatement(queryExpressionBody);
     const [first, ...unionQuerySpec] = allQueries;
-    const mainQueryResult = traverseQuerySpecification(first, traverseContext, subQuery);
+    const mainQueryResult = traverseQuerySpecification(first, traverseContext);
 
     const resultTypes = mainQueryResult.columns.map((t, index) => unionQuerySpec.length == 0 ? t.type : createUnionVar(t.type, recursiveNames && recursiveNames.length > 0 ? recursiveNames[index] : t.name)); //TODO mover para traversequeryspecificat?
 
@@ -426,7 +429,7 @@ function traverseQueryExpressionBody(queryExpressionBody: QueryExpressionBodyCon
         const columnNames = recursiveNames && recursiveNames.length > 0 ? recursiveNames : mainQueryResult.columns.map(col => col.name);
         const newFromColumns = recursiveNames ? renameFromColumns(mainQueryResult.columns, columnNames) : [];
         const unionQuery = unionQuerySpec[queryIndex];
-        const unionResult = traverseQuerySpecification(unionQuery, { ...traverseContext, fromColumns: newFromColumns }, subQuery);
+        const unionResult = traverseQuerySpecification(unionQuery, { ...traverseContext, fromColumns: newFromColumns });
 
         resultTypes.forEach((t2, index) => {
             mainQueryResult.columns[index].notNull = mainQueryResult.columns[index].notNull && unionResult.columns[index].notNull;
@@ -474,17 +477,17 @@ function renameFromColumns(fromColumns: TypeAndNullInfer[], recursiveNames: stri
     return newFromColumns;
 }
 
-export function traverseQuerySpecification(querySpec: QuerySpecificationContext, traverseContext: TraverseContext, subQuery = false): QuerySpecificationResult {
+export function traverseQuerySpecification(querySpec: QuerySpecificationContext, traverseContext: TraverseContext): QuerySpecificationResult {
     const fromClause = querySpec.fromClause();
-    const fromColumnsFrom = fromClause ? traverseFromClause(fromClause, traverseContext, subQuery) : [];
-    const allColumns = subQuery ? traverseContext.fromColumns.concat(fromColumnsFrom) : fromColumnsFrom;     //(... where id = t1.id)
-    const selectItemListResult = traverseSelectItemList(querySpec.selectItemList(), { ...traverseContext, fromColumns: allColumns }, subQuery);
+    const fromColumnsFrom = fromClause ? traverseFromClause(fromClause, traverseContext) : [];
+    const allColumns = traverseContext.subQuery ? traverseContext.fromColumns.concat(fromColumnsFrom) : fromColumnsFrom;     //(... where id = t1.id)
+    const selectItemListResult = traverseSelectItemList(querySpec.selectItemList(), { ...traverseContext, fromColumns: allColumns, subQueryColumns: fromColumnsFrom });
 
     const whereClause = querySpec.whereClause();
     //TODO - HAVING, BLAH
     if (whereClause) {
         const whereExpr = whereClause?.expr();
-        traverseExpr(whereExpr, { ...traverseContext, fromColumns: allColumns }, !subQuery);
+        traverseExpr(whereExpr, { ...traverseContext, fromColumns: allColumns, subQueryColumns: fromColumnsFrom, where: !traverseContext.subQuery });
     }
 
 
@@ -542,15 +545,15 @@ export function traverseWithClause(withClause: WithClauseContext, traverseContex
     });
 }
 
-function traverseFromClause(fromClause: FromClauseContext, traverseContext: TraverseContext, subQuery = false): ColumnDef[] {
+function traverseFromClause(fromClause: FromClauseContext, traverseContext: TraverseContext): ColumnDef[] {
     const tableReferenceList = fromClause.tableReferenceList()?.tableReference();
 
-    const fromColumns = tableReferenceList ? traverseTableReferenceList(tableReferenceList, traverseContext, null, subQuery) : [];
+    const fromColumns = tableReferenceList ? traverseTableReferenceList(tableReferenceList, traverseContext, null) : [];
 
     return fromColumns;
 }
 
-function traverseTableReferenceList(tableReferenceList: TableReferenceContext[], traverseContext: TraverseContext, currentFragment: FragmentInfo | null, subQuery = false): ColumnDef[] {
+function traverseTableReferenceList(tableReferenceList: TableReferenceContext[], traverseContext: TraverseContext, currentFragment: FragmentInfo | null): ColumnDef[] {
 
     const result: ColumnDef[] = [];
     const fragements: FragmentInfo[] = [];
@@ -660,7 +663,7 @@ function traverseTableReferenceList(tableReferenceList: TableReferenceContext[],
         });
 
     });
-    if (!subQuery) {
+    if (!traverseContext.subQuery) {
         traverseContext.dynamicSqlInfo.from = fragements;
     }
     return result;
@@ -736,7 +739,7 @@ function traverseSubquery(subQuery: SubqueryContext, traverseContext: TraverseCo
     const queryExpressionParens = subQuery.queryExpressionParens();
     const queryExpression = queryExpressionParens.queryExpression();
     if (queryExpression) {
-        return traverseQueryExpression(queryExpression, traverseContext, true, recursiveNames);
+        return traverseQueryExpression(queryExpression, { ...traverseContext, subQuery: true }, recursiveNames);
     }
     const queryExpressionParens2 = queryExpressionParens.queryExpressionParens();
     if (queryExpressionParens2) {
@@ -745,7 +748,7 @@ function traverseSubquery(subQuery: SubqueryContext, traverseContext: TraverseCo
     throw Error('traverseSubquery - not expected: ' + subQuery.constructor.name);
 }
 
-function traverseSelectItemList(selectItemList: SelectItemListContext, traverseContext: TraverseContext, subQuery = false): TypeOperator {
+function traverseSelectItemList(selectItemList: SelectItemListContext, traverseContext: TraverseContext): TypeOperator {
     const listType: TypeVar[] = [];
     if (selectItemList.MULT_OPERATOR()) {
         traverseContext.fromColumns.forEach(col => {
@@ -765,7 +768,7 @@ function traverseSelectItemList(selectItemList: SelectItemListContext, traverseC
                 parameters: [],
                 dependOn: [tableName]
             }
-            if (!subQuery) {
+            if (!traverseContext.subQuery) {
                 traverseContext.dynamicSqlInfo.select.push(fieldFragment);
             }
         })
@@ -784,7 +787,6 @@ function traverseSelectItemList(selectItemList: SelectItemListContext, traverseC
         }
         const expr = selectItem.expr();
         if (expr) {
-            const exprType = traverseExpr(expr, traverseContext);
             const selectFragment: FragmentInfo = {
                 fragment: extractOriginalSql(selectItem) + '',
                 fragementWithoutAlias: extractOriginalSql(expr),
@@ -794,22 +796,9 @@ function traverseSelectItemList(selectItemList: SelectItemListContext, traverseC
                 parameters: [],
                 dependOn: []
             }
-            if (!subQuery) {
+            const exprType = traverseExpr(expr, { ...traverseContext, currentFragement: traverseContext.subQuery ? traverseContext.currentFragement : selectFragment });
+            if (!traverseContext.subQuery) {
                 traverseContext.dynamicSqlInfo.select?.push(selectFragment);
-                const columns = getExpressions(expr, SimpleExprColumnRefContext);
-                const columnName = getColumnName(selectItem);
-                columns.forEach(colRef => {
-                    const fieldName = splitName(colRef.expr.text);
-                    if (!colRef.isSubQuery || (colRef.isSubQuery && fieldName.prefix != '')) {
-                        const column = findColumn(fieldName, traverseContext.fromColumns);
-                        selectFragment.fields.push({
-                            field: fieldName.name,
-                            name: columnName,
-                            table: column.tableAlias || column.table
-                        })
-                        selectFragment.dependOn.push(column.tableAlias || column.table);
-                    }
-                })
             }
             // const fields = exprType.kind == 'TypeVar' ? [{ field: exprType.name, table: exprType.table + '', name: getColumnName(selectItem) }] : []
 
@@ -837,15 +826,15 @@ function traverseHavingClause(havingClause: HavingClauseContext, traverseContext
     traverseExpr(havingExpr, traverseContext);
 }
 
-function traverseExpr(expr: ExprContext, traverseContext: TraverseContext, where = false): Type {
+function traverseExpr(expr: ExprContext, traverseContext: TraverseContext): Type {
 
     if (expr instanceof ExprIsContext) {
         const boolPri = expr.boolPri();
 
         let paramsCount = traverseContext.parameters.length;
-        const boolPriType = traverseBoolPri(boolPri, traverseContext, where);
+        const boolPriType = traverseBoolPri(boolPri, traverseContext);
 
-        if (where) {
+        if (traverseContext.where) {
             const currentFragment: FragmentInfo = {
                 fragment: 'AND ' + extractOriginalSql(expr),
                 fields: [],
@@ -886,8 +875,8 @@ function traverseExpr(expr: ExprContext, traverseContext: TraverseContext, where
         all.forEach(andExpression => {
 
             let paramsCount = traverseContext.parameters.length;
-            traverseExpr(andExpression.expr, traverseContext, false)
-            if (where) {
+            traverseExpr(andExpression.expr, { ...traverseContext, where: false })
+            if (traverseContext.where) {
                 const currentFragment: FragmentInfo = {
                     fragment: andExpression.operator + ' ' + extractOriginalSql(andExpression.expr),
                     fields: [],
@@ -920,10 +909,10 @@ function traverseExpr(expr: ExprContext, traverseContext: TraverseContext, where
     throw Error('traverseExpr - not supported: ' + expr.text);
 }
 
-function traverseBoolPri(boolPri: BoolPriContext, traverseContext: TraverseContext, where = false): Type {
+function traverseBoolPri(boolPri: BoolPriContext, traverseContext: TraverseContext): Type {
     if (boolPri instanceof PrimaryExprPredicateContext) {
         const predicate = boolPri.predicate();
-        const predicateType = traversePredicate(predicate, traverseContext, where);
+        const predicateType = traversePredicate(predicate, traverseContext);
         return predicateType;
     }
     if (boolPri instanceof PrimaryExprIsNullContext) {
@@ -968,9 +957,9 @@ function traverseBoolPri(boolPri: BoolPriContext, traverseContext: TraverseConte
 
 }
 
-function traversePredicate(predicate: PredicateContext, traverseContext: TraverseContext, where = false): Type {
+function traversePredicate(predicate: PredicateContext, traverseContext: TraverseContext): Type {
     const bitExpr = predicate.bitExpr()[0]; //TODO - predicate length = 2? [1] == predicateOperations
-    const bitExprType = traverseBitExpr(bitExpr, traverseContext, where);
+    const bitExprType = traverseBitExpr(bitExpr, traverseContext);
     const predicateOperations = predicate.predicateOperations();
     if (predicateOperations) {
         const rightType = traversePredicateOperations(predicateOperations, bitExprType, traverseContext);
@@ -1019,10 +1008,10 @@ function traverseExprList(exprList: ExprListContext, traverseContext: TraverseCo
     return type;
 }
 
-function traverseBitExpr(bitExpr: BitExprContext, traverseContext: TraverseContext, where = false): Type {
+function traverseBitExpr(bitExpr: BitExprContext, traverseContext: TraverseContext): Type {
     const simpleExpr = bitExpr.simpleExpr();
     if (simpleExpr) {
-        return traverseSimpleExpr(simpleExpr, traverseContext, where);
+        return traverseSimpleExpr(simpleExpr, { ...traverseContext, where: false });
     }
     if (bitExpr.bitExpr().length == 2) {
 
@@ -1119,14 +1108,14 @@ function traversePredicateOperations(predicateOperations: PredicateOperationsCon
         }
         const exprList = predicateOperations.exprList();
         if (exprList) {
-            const rightType = traverseExprList(exprList, traverseContext);
+            const rightType = traverseExprList(exprList, { ...traverseContext, where: false });
             return rightType;
         }
     }
 
     if (predicateOperations instanceof PredicateExprLikeContext) {
         const simpleExpr = predicateOperations.simpleExpr()[0];
-        const rightType = traverseSimpleExpr(simpleExpr, traverseContext);
+        const rightType = traverseSimpleExpr(simpleExpr, { ...traverseContext, where: false });
         traverseContext.constraints.push({
             expression: simpleExpr.text,
             type1: parentType,
@@ -1162,7 +1151,7 @@ function traversePredicateOperations(predicateOperations: PredicateOperationsCon
 
 }
 
-function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: TraverseContext, where = false): Type {
+function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: TraverseContext): Type {
     if (simpleExpr instanceof SimpleExprColumnRefContext) {
         const fieldName = splitName(simpleExpr.text);
         const column = findColumn(fieldName, traverseContext.fromColumns);
@@ -1173,6 +1162,17 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
             type2: column.columnType,
             mostGeneralType: true
         })
+        if (traverseContext.currentFragement != null) {
+            if (!traverseContext.subQuery) {
+                traverseContext.currentFragement.dependOn.push(column.tableAlias || column.table)
+            }
+            else {
+                const subQueryColumn = findColumnOrNull(fieldName, traverseContext.subQueryColumns);
+                if (subQueryColumn == null) {
+                    traverseContext.currentFragement.dependOn.push(column.tableAlias || column.table);
+                }
+            }
+        }
         return typeVar;
     }
     if (simpleExpr instanceof SimpleExprParamMarkerContext) {
@@ -1220,7 +1220,7 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
         const exprList = simpleExpr.exprList();
 
         const listType = exprList.expr().map(item => {
-            const exprType = traverseExpr(item, traverseContext, false);
+            const exprType = traverseExpr(item, { ...traverseContext, where: false });
             return exprType as TypeVar;
         })
         const resultType: TypeOperator = {

@@ -216,6 +216,15 @@ export function findColumnSchema(tableName: string, columnName: string, dbSchema
 }
 
 export function findColumn(fieldName: FieldName, columns: ColumnDef[]): ColumnDef {
+    const found = findColumnOrNull(fieldName, columns);
+
+    if (!found) {
+        throw Error('column not found:' + JSON.stringify(fieldName));
+    }
+    return found;
+}
+
+export function findColumnOrNull(fieldName: FieldName, columns: ColumnDef[]): ColumnDef | undefined {
     //TODO - Put tableAlias always ''
     const functionType = functionAlias.find(col => col.column.toLowerCase() == fieldName.name.toLowerCase());
     if (functionType) {
@@ -231,9 +240,6 @@ export function findColumn(fieldName: FieldName, columns: ColumnDef[]): ColumnDe
     const found = columns.find(col => col.columnName.toLowerCase() == fieldName.name.toLowerCase() &&
         (fieldName.prefix == '' || fieldName.prefix == col.tableAlias || fieldName.prefix == col.table));
 
-    if (!found) {
-        throw Error('column not found:' + JSON.stringify(fieldName));
-    }
     return found;
 }
 

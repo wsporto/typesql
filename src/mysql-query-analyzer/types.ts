@@ -32,6 +32,10 @@ export type TraverseContext = {
     constraints: Constraint[];
     parameters: TypeVar[];
     fromColumns: ColumnDef[];
+    subQueryColumns: ColumnDef[];
+    subQuery: boolean;
+    where: boolean;
+    currentFragement?: FragmentInfo;
     dynamicSqlInfo: DynamicSqlInfo;
 }
 
