@@ -246,23 +246,31 @@ export function extractOriginalSql(rule: ParserRuleContext) {
     return result;
 }
 
-export function getExpressions(ctx: RuleContext, exprType: any): RuleContext[] {
+type Expr = {
+    expr: RuleContext;
+    isSubQuery: boolean;
+}
 
-    const tokens: RuleContext[] = [];
+export function getExpressions(ctx: RuleContext, exprType: any): Expr[] {
+
+    const tokens: Expr[] = [];
     collectExpr(tokens, ctx, exprType);
     return tokens;
 }
 
-function collectExpr(tokens: RuleContext[], parent: RuleContext, exprType: any) {
+function collectExpr(tokens: Expr[], parent: RuleContext, exprType: any, isSubQuery = false) {
 
     if (parent instanceof exprType) {
-        tokens.push(parent);
+        tokens.push({
+            expr: parent,
+            isSubQuery
+        });
     }
 
     for (let i = 0; i < parent.childCount; i++) {
         const child = parent.getChild(i);
-        if (child instanceof RuleContext && !(child instanceof SimpleExprSubQueryContext)) {
-            collectExpr(tokens, child, exprType);
+        if (child instanceof RuleContext) {
+            collectExpr(tokens, child, exprType, (isSubQuery || child instanceof SimpleExprSubQueryContext));
         }
     }
 }

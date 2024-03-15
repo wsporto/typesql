@@ -560,7 +560,7 @@ describe('dynamic-query', () => {
         assert.deepStrictEqual(actual.right.dynamicSqlQuery, sqlFragments);
     })
 
-    it(`SELECT concat(m1.value, ': ', m2.name) as valueAndName`, async () => {
+    it(`(select name from mytable1 where id = 1) as subQuery`, async () => {
         const sql = `
         -- @dynamicQuery
         SELECT 
@@ -605,6 +605,73 @@ describe('dynamic-query', () => {
                 {
                     fragment: 'INNER JOIN mytable2 m2 on m1.id = m2.id',
                     dependOnFields: [1],
+                    dependOnParams: ['name'],
+                    parameters: []
+                }
+            ],
+            where: [
+                {
+                    fragment: `AND m2.name = ?`,
+                    dependOnFields: [],
+                    dependOnParams: ['name'],
+                    parameters: ['name']
+                }
+            ]
+        }
+
+        const actual = await parseSql(client, sql);
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+
+        assert.deepStrictEqual(actual.right.dynamicSqlQuery, sqlFragments);
+    })
+
+    it(`(select name from mytable1 where id = m2.id) as subQuery`, async () => {
+        const sql = `
+        -- @dynamicQuery
+        SELECT 
+            m1.id, 
+            m2.name,
+            (select name from mytable1 where id = m2.id) as subQuery
+        FROM mytable1 m1
+        INNER JOIN mytable2 m2 on m1.id = m2.id
+        WHERE m2.name = :name
+        `
+        const sqlFragments: DynamicSqlInfoResult = {
+            select: [
+                {
+                    fragment: 'm1.id',
+                    fragmentWitoutAlias: 'm1.id',
+                    dependOnFields: [0],
+                    dependOnParams: [],
+                    parameters: []
+                },
+                {
+                    fragment: 'm2.name',
+                    fragmentWitoutAlias: 'm2.name',
+                    dependOnFields: [1],
+                    dependOnParams: [],
+                    parameters: []
+                },
+                {
+                    fragment: '(select name from mytable1 where id = m2.id) as subQuery',
+                    fragmentWitoutAlias: '(select name from mytable1 where id = m2.id)',
+                    dependOnFields: [2],
+                    dependOnParams: [],
+                    parameters: []
+                }
+            ],
+            from: [
+                {
+                    fragment: 'FROM mytable1 m1',
+                    dependOnFields: [],
+                    dependOnParams: [],
+                    parameters: []
+                },
+                {
+                    fragment: 'INNER JOIN mytable2 m2 on m1.id = m2.id',
+                    dependOnFields: [1, 2],
                     dependOnParams: ['name'],
                     parameters: []
                 }

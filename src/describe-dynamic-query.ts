@@ -31,9 +31,14 @@ export function describeDynamicQuery(dynamicQueryInfo: DynamicSqlInfo, namedPara
                 parameters: fragment.parameters.map(paramIndex => namedParameters[paramIndex])
             }
         }
-        const selectedFields = select.flatMap(fragment => fragment.fields)
-            .filter(field => fragment.dependOn.includes(field.table));
-        const fieldIndex = selectedFields.map(field => columnNames.findIndex(col => col.columnName == field.name && (col.table == field.table || col.table == '')));
+
+        const fieldIndex = select.flatMap((selectField, index) => {
+            const found = selectField.dependOn.find(dependsOn => fragment.dependOn.includes(dependsOn));
+            if (found) {
+                return index;
+            }
+            return [];
+        });
 
         const params = filteredWhere.flatMap(fragment => fragment.dependOnParams).map(paramIndex => namedParameters[paramIndex]);
         const fragmentResult: FragmentInfoResult = {
@@ -68,9 +73,9 @@ function includeAny(fields: TableField[], fields2: TableField[]) {
     return fields.some(f => fields2.find(f2 => f2.field == f.field && f2.table == f.table));
 }
 
-function addAllChildFields(currentRelation: FragmentInfo, from: FragmentInfo[]) {
+function addAllChildFields(currentRelation: FragmentInfo, select: FragmentInfo[]) {
     currentRelation.dependOn.push(currentRelation.relation + '');
-    from.forEach(fragment => {
+    select.forEach(fragment => {
         if (fragment.parentRelation == currentRelation.relation) {
             currentRelation.fields.push(...fragment.fields);
             currentRelation.dependOn.push(fragment.relation + '')

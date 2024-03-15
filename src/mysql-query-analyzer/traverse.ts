@@ -632,7 +632,7 @@ function traverseTableReferenceList(tableReferenceList: TableReferenceContext[],
                     traverseExpr(onClause, { ...traverseContext, fromColumns: allJoinedColumns.flatMap(c => c).concat(result) })
                     const columns = getExpressions(onClause, SimpleExprColumnRefContext);
                     columns.forEach(columnRef => {
-                        const fieldName = splitName(columnRef.text);
+                        const fieldName = splitName(columnRef.expr.text);
                         if (innerJoinFragment?.relation != fieldName.prefix) {
                             innerJoinFragment.parentRelation = fieldName.prefix
                         }
@@ -763,7 +763,7 @@ function traverseSelectItemList(selectItemList: SelectItemListContext, traverseC
                 dependOnFields: [],
                 dependOnParams: [],
                 parameters: [],
-                dependOn: []
+                dependOn: [tableName]
             }
             if (!subQuery) {
                 traverseContext.dynamicSqlInfo.select.push(fieldFragment);
@@ -799,14 +799,16 @@ function traverseSelectItemList(selectItemList: SelectItemListContext, traverseC
                 const columns = getExpressions(expr, SimpleExprColumnRefContext);
                 const columnName = getColumnName(selectItem);
                 columns.forEach(colRef => {
-                    const fieldName = splitName(colRef.text);
-                    const column = findColumn(fieldName, traverseContext.fromColumns);
-                    selectFragment.fields.push({
-                        field: fieldName.name,
-                        name: columnName,
-                        table: column.tableAlias || column.table
-                    })
-                    selectFragment.dependOn.push(column.tableAlias || column.table);
+                    const fieldName = splitName(colRef.expr.text);
+                    if (!colRef.isSubQuery || (colRef.isSubQuery && fieldName.prefix != '')) {
+                        const column = findColumn(fieldName, traverseContext.fromColumns);
+                        selectFragment.fields.push({
+                            field: fieldName.name,
+                            name: columnName,
+                            table: column.tableAlias || column.table
+                        })
+                        selectFragment.dependOn.push(column.tableAlias || column.table);
+                    }
                 })
             }
             // const fields = exprType.kind == 'TypeVar' ? [{ field: exprType.name, table: exprType.table + '', name: getColumnName(selectItem) }] : []
@@ -859,7 +861,7 @@ function traverseExpr(expr: ExprContext, traverseContext: TraverseContext, where
             });
             const columnsRef = getExpressions(expr, ColumnRefContext);
             columnsRef.forEach(colRef => {
-                const fileName = splitName(colRef.text);
+                const fileName = splitName(colRef.expr.text);
                 currentFragment.fields.push({
                     field: fileName.name,
                     name: fileName.name,
@@ -901,7 +903,7 @@ function traverseExpr(expr: ExprContext, traverseContext: TraverseContext, where
                 });
                 const columnsRef = getExpressions(andExpression.expr, ColumnRefContext);
                 columnsRef.forEach(colRef => {
-                    const fileName = splitName(colRef.text);
+                    const fileName = splitName(colRef.expr.text);
                     currentFragment.fields.push({
                         field: fileName.name,
                         name: fileName.name,
