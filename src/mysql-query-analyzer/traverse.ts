@@ -55,6 +55,7 @@ export function traverseQueryContext(queryContext: QueryContext, dbSchema: Colum
         where: false,
         withSchema: [],
         dynamicSqlInfo: {
+            with: [],
             select: [],
             from: [],
             where: []
@@ -541,7 +542,15 @@ export function traverseWithClause(withClause: WithClauseContext, traverseContex
             }
             traverseContext.withSchema.push(withCol);
         })
-
+        traverseContext.dynamicSqlInfo.with?.push({
+            fragment: extractOriginalSql(commonTableExpression) + '',
+            relation: identifier,
+            fields: [],
+            dependOnFields: [],
+            dependOnParams: [],
+            parameters: [], //Array.from({ length: paramsAfter - paramBefore }, (x, i) => i + paramBefore),
+            dependOn: []
+        })
     });
 }
 
@@ -673,7 +682,7 @@ function traverseTableFactor(tableFactor: TableFactorContext, traverseContext: T
 
     const singleTable = tableFactor.singleTable();
     if (singleTable) {
-        return traverseSingleTable(singleTable, traverseContext.dbSchema, traverseContext.withSchema, currentFragment);
+        return traverseSingleTable(singleTable, traverseContext.dbSchema, traverseContext.withSchema, currentFragment, traverseContext.dynamicSqlInfo.with);
     }
 
     const derivadTable = tableFactor.derivedTable();
@@ -724,13 +733,18 @@ function traverseTableReferenceListParens(ctx: TableReferenceListParensContext, 
     throw Error('traverseTableReferenceListParens - not supported: ' + ctx.constructor.name);
 }
 
-function traverseSingleTable(singleTable: SingleTableContext, dbSchema: ColumnSchema[], withSchema: ColumnDef[], currentFragment: FragmentInfo | null): ColumnDef[] {
+function traverseSingleTable(singleTable: SingleTableContext, dbSchema: ColumnSchema[], withSchema: ColumnDef[], currentFragment: FragmentInfo | null, withFragments: FragmentInfo[] | undefined): ColumnDef[] {
     const table = singleTable?.tableRef().text;
     const tableAlias = singleTable?.tableAlias()?.identifier().text;
     const tableName = splitName(table);
     if (currentFragment) {
         currentFragment.relation = tableAlias || tableName.name;
     }
+    withFragments?.forEach(withFragment => {
+        if (withFragment.relation == table) {
+            withFragment.parentRelation = tableAlias || tableName.name;
+        }
+    })
     const fields = filterColumns(dbSchema, withSchema, tableAlias, tableName)
     return fields;
 }

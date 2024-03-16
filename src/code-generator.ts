@@ -10,7 +10,7 @@ import { parseSql } from "./describe-query";
 import CodeBlockWriter from "code-block-writer";
 import { NestedTsDescriptor, createNestedTsDescriptor } from "./ts-nested-descriptor";
 import { mapToDynamicResultColumns, mapToDynamicParams, mapToDynamicSelectColumns } from "./ts-dynamic-query-descriptor";
-import { DynamicSqlInfoResult } from "./mysql-query-analyzer/types";
+import { DynamicSqlInfoResult, FragmentInfoResult } from "./mysql-query-analyzer/types";
 
 export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, target: 'node' | 'deno', crud: boolean = false): string {
     const writer = new CodeBlockWriter();
@@ -120,6 +120,12 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
         else {
             writer.writeLine(`const where = whereConditionsToObject(params?.where);`)
             writer.writeLine('const paramsValues: any = [];');
+            if (tsDescriptor.dynamicQuery.with) {
+                writer.writeLine(`let withClause = '';`);
+                tsDescriptor.dynamicQuery.with.forEach(withFragment => {
+                    generateDynamicQueryFrom(writer, 'withClause', withFragment, tsDescriptor.columns);
+                })
+            }
             writer.writeLine(`let sql = 'SELECT';`);
             tsDescriptor.dynamicQuery.select.forEach(fragment => {
                 writer.write(`if (params?.select == null || ${fragment.dependOnFields.map(fieldIndex => 'params.select.' + tsDescriptor.columns[fieldIndex].name).join('&&')})`).block(() => {
@@ -127,29 +133,7 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
                 })
             })
             tsDescriptor.dynamicQuery.from.forEach(fragment => {
-
-                const selectConditions = fragment.dependOnFields.map(fieldIndex => 'params.select.' + tsDescriptor.columns[fieldIndex].name);
-                if (selectConditions.length > 0) {
-                    selectConditions.unshift('params?.select == null');
-                }
-                const paramConditions = fragment.dependOnParams.map(param => 'params.params?.' + param + ' != null');
-                const whereConditions = fragment.dependOnFields.map(fieldIndex => 'where.' + tsDescriptor.columns[fieldIndex].name + ' != null');
-                const allConditions = [...selectConditions, ...paramConditions, ...whereConditions];
-                const paramValues = fragment.parameters.map(param => 'params?.params?.' + param);
-                if (allConditions.length > 0) {
-                    writer.write(`if (${allConditions.join(' || ')})`).block(() => {
-                        writer.write(`sql += EOL + \`${fragment.fragment}\`;`);
-                        paramValues.forEach(paramValues => {
-                            writer.writeLine(`paramsValues.push(${paramValues});`);
-                        })
-                    })
-                }
-                else {
-                    writer.writeLine(`sql += EOL + \`${fragment.fragment}\`;`);
-                    paramValues.forEach(paramValues => {
-                        writer.writeLine(`paramsValues.push(${paramValues});`);
-                    })
-                }
+                generateDynamicQueryFrom(writer, 'sql', fragment, tsDescriptor.columns);
             })
             writer.writeLine(`sql += EOL + \`WHERE 1 = 1\`;`);
             tsDescriptor.dynamicQuery.where.forEach(fragment => {
@@ -167,6 +151,11 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
                     writer.writeLine(`sql += EOL + '${fragment.fragment}';`);
                 }
             })
+            if (tsDescriptor.dynamicQuery.with) {
+                writer.write(`if (withClause != '') `).block(() => {
+                    writer.writeLine(`sql = 'WITH ' + withClause + EOL + sql;`);
+                });
+            }
             writer.write(`params?.where?.forEach(condition => `).inlineBlock(() => {
                 writer.writeLine(`const where = whereCondition(condition);`)
                 writer.write(`if (where?.hasValue)`).block(() => {
@@ -387,6 +376,31 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
     }
 
     return writer.toString();
+}
+
+function generateDynamicQueryFrom(writer: CodeBlockWriter, sqlVar: string, fragment: FragmentInfoResult, columns: TsFieldDescriptor[]) {
+    const selectConditions = fragment.dependOnFields.map(fieldIndex => 'params.select.' + columns[fieldIndex].name);
+    if (selectConditions.length > 0) {
+        selectConditions.unshift('params?.select == null');
+    }
+    const paramConditions = fragment.dependOnParams.map(param => 'params.params?.' + param + ' != null');
+    const whereConditions = fragment.dependOnFields.map(fieldIndex => 'where.' + columns[fieldIndex].name + ' != null');
+    const allConditions = [...selectConditions, ...paramConditions, ...whereConditions];
+    const paramValues = fragment.parameters.map(param => 'params?.params?.' + param);
+    if (allConditions.length > 0) {
+        writer.write(`if (${allConditions.join(' || ')})`).block(() => {
+            writer.write(`${sqlVar} += EOL + \`${fragment.fragment}\`;`);
+            paramValues.forEach(paramValues => {
+                writer.writeLine(`paramsValues.push(${paramValues});`);
+            })
+        })
+    }
+    else {
+        writer.writeLine(`${sqlVar} += EOL + \`${fragment.fragment}\`;`);
+        paramValues.forEach(paramValues => {
+            writer.writeLine(`paramsValues.push(${paramValues});`);
+        })
+    }
 }
 
 function getOperator(type: string) {

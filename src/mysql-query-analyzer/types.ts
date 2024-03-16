@@ -122,12 +122,14 @@ export type FragmentInfoResult = {
 }
 
 export type DynamicSqlInfo = {
+    with: FragmentInfo[];
     select: FragmentInfo[];
     from: FragmentInfo[];
     where: FragmentInfo[];
 }
 
 export type DynamicSqlInfoResult = {
+    with?: FragmentInfoResult[];
     select: FragmentInfoResult[];
     from: FragmentInfoResult[];
     where: FragmentInfoResult[];

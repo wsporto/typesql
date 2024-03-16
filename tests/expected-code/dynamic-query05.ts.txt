@@ -1,0 +1,153 @@
+import type { Connection } from 'mysql2/promise';
+import { EOL } from 'os';
+
+export type CteDynamicParams = {
+    select?: CteSelect;
+    params?: CteParams;
+    where?: CteWhere[];
+}
+
+export type CteParams = {
+    name?: string | null;
+}
+
+export type CteResult = {
+    id?: number;
+    name?: string;
+}
+
+export type CteSelect = {
+    id?: boolean;
+    name?: boolean;
+}
+
+const NumericOperatorList = ['=', '<>', '>', '<', '>=', '<='] as const;
+type NumericOperator = typeof NumericOperatorList[number];
+type StringOperator = '=' | '<>' | '>' | '<' | '>=' | '<=' | 'LIKE';
+type SetOperator = 'IN' | 'NOT IN';
+type BetweenOperator = 'BETWEEN';
+
+export type CteWhere =
+    | ['id', NumericOperator, number | null]
+    | ['id', SetOperator, number[]]
+    | ['id', BetweenOperator, number | null, number | null]
+    | ['name', StringOperator, string | null]
+    | ['name', SetOperator, string[]]
+    | ['name', BetweenOperator, string | null, string | null]
+
+export async function cte(connection: Connection, params?: CteDynamicParams): Promise<CteResult[]> {
+    const where = whereConditionsToObject(params?.where);
+    const paramsValues: any = [];
+    let withClause = '';
+    if (params?.select == null || params.select.name || params.params?.name != null || where.name != null) {
+        withClause += EOL + `cte as (
+            select id, name from mytable2
+        )`;
+    }
+    let sql = 'SELECT';
+    if (params?.select == null || params.select.id) {
+        sql = appendSelect(sql, `m1.id`);
+    }
+    if (params?.select == null || params.select.name) {
+        sql = appendSelect(sql, `m2.name`);
+    }
+    sql += EOL + `FROM mytable1 m1`;
+    if (params?.select == null || params.select.name || params.params?.name != null || where.name != null) {
+        sql += EOL + `INNER JOIN cte m2 on m2.id = m1.id`;
+    }
+    sql += EOL + `WHERE 1 = 1`;
+    if (params?.params?.name != null) {
+        sql += EOL + `AND m2.name LIKE concat('%', ?, '%')`;
+        paramsValues.push(params.params.name);
+    }
+    if (withClause != '') {
+        sql = 'WITH ' + withClause + EOL + sql;
+    }
+    params?.where?.forEach(condition => {
+        const where = whereCondition(condition);
+        if (where?.hasValue) {
+            sql += EOL + 'AND ' + where.sql;
+            paramsValues.push(...where.values);
+        }
+    });
+    return connection.query({ sql, rowsAsArray: true }, paramsValues)
+        .then(res => res[0] as any[])
+        .then(res => res.map(data => mapArrayToCteResult(data, params?.select)));
+}
+
+function mapArrayToCteResult(data: any, select?: CteSelect) {
+    const result = {} as CteResult;
+    let rowIndex = 0;
+    if (select == null || select.id) {
+        result.id = data[rowIndex++];
+    }
+    if (select == null || select.name) {
+        result.name = data[rowIndex++];
+    }
+    return result;
+}
+
+function appendSelect(sql: string, selectField: string) {
+    if (sql == 'SELECT') {
+        return sql + EOL + selectField;
+    }
+    else {
+        return sql + ', ' + EOL + selectField;
+    }
+}
+
+function whereConditionsToObject(whereConditions?: CteWhere[]) {
+    const obj = {} as any;
+    whereConditions?.forEach(condition => {
+        const where = whereCondition(condition);
+        if (where?.hasValue) {
+            obj[condition[0]] = true;
+        }
+    });
+    return obj;
+}
+
+export type WhereConditionResult = {
+    sql: string;
+    hasValue: boolean;
+    values: any[];
+}
+
+function whereCondition(condition: CteWhere): WhereConditionResult | undefined {
+    const selectFragments = {
+        id: `m1.id`,
+        name: `m2.name`,
+    } as const;
+
+    const selectFragment = selectFragments[condition[0]];
+    const operator = condition[1];
+
+    if (operator == 'LIKE') {
+        return {
+            sql: `${selectFragment} LIKE concat('%', ?, '%')`,
+            hasValue: condition[2] != null,
+            values: [condition[2]]
+        }
+    }
+    if (operator == 'BETWEEN') {
+        return {
+            sql: `${selectFragment} BETWEEN ? AND ?`,
+            hasValue: condition[2] != null && condition[3] != null,
+            values: [condition[2], condition[3]]
+        }
+    }
+    if (operator == 'IN' || operator == 'NOT IN') {
+        return {
+            sql: `${selectFragment} ${operator} (?)`,
+            hasValue: condition[2] != null && condition[2].length > 0,
+            values: [condition[2]]
+        }
+    }
+    if (NumericOperatorList.includes(operator)) {
+        return {
+            sql: `${selectFragment} ${operator} ?`,
+            hasValue: condition[2] != null,
+            values: [condition[2]]
+        }
+    }
+}
