@@ -454,4 +454,37 @@ describe('Test parse select with subqueries', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     })
+
+    it('SELECT id, exists(SELECT 1 FROM mytable2 t2 where t2.id = t1.id) as has from mytable1 t1', async () => {
+        const sql = `
+        SELECT id, exists(SELECT 1 FROM mytable2 t2 where t2.id = t1.id) as has from mytable1 t1
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 't1'
+                },
+                {
+                    columnName: 'has',
+                    type: 'int',
+                    notNull: true,
+                    table: ''
+
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
 });

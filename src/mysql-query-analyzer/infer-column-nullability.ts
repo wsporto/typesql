@@ -180,6 +180,9 @@ function inferNotNullSimpleExpr(simpleExpr: SimpleExprContext, dbSchema: ColumnS
     }
 
     if (simpleExpr instanceof SimpleExprSubQueryContext) {
+        if (simpleExpr.EXISTS_SYMBOL()) {
+            return true;
+        }
         return false;
     }
 
