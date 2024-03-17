@@ -1082,4 +1082,44 @@ WHERE m2.name LIKE :name
 
 		assert.deepStrictEqual(actual.right.dynamicSqlQuery, sqlFragments);
 	})
+
+	it(`SELECT m1.id, name, descr as description FROM mytable1 m1`, async () => {
+		const sql = `-- @dynamicQuery
+SELECT id, exists(SELECT 1 FROM mytable2 where id = t1.id) as has from mytable1 t1`
+
+		const sqlFragments: DynamicSqlInfoResult = {
+			select: [
+				{
+					fragment: 'id',
+					fragmentWitoutAlias: 'id',
+					dependOnFields: [0],
+					dependOnParams: [],
+					parameters: []
+				},
+				{
+					fragment: 'exists(SELECT 1 FROM mytable2 where id = t1.id) as has',
+					fragmentWitoutAlias: 'exists(SELECT 1 FROM mytable2 where id = t1.id)',
+					dependOnFields: [1],
+					dependOnParams: [],
+					parameters: []
+				}
+			],
+			from: [
+				{
+					fragment: 'FROM mytable1 t1',
+					dependOnFields: [],
+					dependOnParams: [],
+					parameters: []
+				}
+			],
+			where: []
+		}
+
+		const actual = await parseSql(client, sql);
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+
+		assert.deepStrictEqual(actual.right.dynamicSqlQuery, sqlFragments);
+	})
 });
