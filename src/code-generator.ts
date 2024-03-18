@@ -243,7 +243,7 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
                 writer.writeLine(`return obj;`);
             })
             writer.blankLine();
-            writer.write(`export type WhereConditionResult = `).block(() => {
+            writer.write(`type WhereConditionResult = `).block(() => {
                 writer.writeLine('sql: string;');
                 writer.writeLine('hasValue: boolean;');
                 writer.writeLine('values: any[];');

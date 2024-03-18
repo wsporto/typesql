@@ -107,7 +107,7 @@ function whereConditionsToObject(whereConditions?: CteWhere[]) {
     return obj;
 }
 
-export type WhereConditionResult = {
+type WhereConditionResult = {
     sql: string;
     hasValue: boolean;
     values: any[];

@@ -122,7 +122,7 @@ function whereConditionsToObject(whereConditions?: DynamicQuery04Where[]) {
     return obj;
 }
 
-export type WhereConditionResult = {
+type WhereConditionResult = {
     sql: string;
     hasValue: boolean;
     values: any[];
