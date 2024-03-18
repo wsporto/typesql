@@ -18,7 +18,6 @@ export type DynamicQuery03Select = {
 
 const NumericOperatorList = ['=', '<>', '>', '<', '>=', '<='] as const;
 type NumericOperator = typeof NumericOperatorList[number];
-type StringOperator = '=' | '<>' | '>' | '<' | '>=' | '<=' | 'LIKE';
 type SetOperator = 'IN' | 'NOT IN';
 type BetweenOperator = 'BETWEEN';
 
@@ -101,13 +100,6 @@ function whereCondition(condition: DynamicQuery03Where): WhereConditionResult | 
     const selectFragment = selectFragments[condition[0]];
     const operator = condition[1];
 
-    if (operator == 'LIKE') {
-        return {
-            sql: `${selectFragment} LIKE concat('%', ?, '%')`,
-            hasValue: condition[2] != null,
-            values: [condition[2]]
-        }
-    }
     if (operator == 'BETWEEN') {
         return {
             sql: `${selectFragment} BETWEEN ? AND ?`,

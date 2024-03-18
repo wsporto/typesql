@@ -65,7 +65,9 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
         writeTypeBlock(writer, selectFields, selectColumnsTypeName, false);
         writer.writeLine(`const NumericOperatorList = ['=', '<>', '>', '<', '>=', '<='] as const;`);
         writer.writeLine(`type NumericOperator = typeof NumericOperatorList[number];`);
-        writer.writeLine(`type StringOperator = '=' | '<>' | '>' | '<' | '>=' | '<=' | 'LIKE';`);
+        if (hasStringColumn(tsDescriptor.columns)) {
+            writer.writeLine(`type StringOperator = '=' | '<>' | '>' | '<' | '>=' | '<=' | 'LIKE';`);
+        }
         writer.writeLine(`type SetOperator = 'IN' | 'NOT IN';`);
         writer.writeLine(`type BetweenOperator = 'BETWEEN';`);
         writer.blankLine();
@@ -259,13 +261,15 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
                 writer.writeLine('const selectFragment = selectFragments[condition[0]];');
                 writer.writeLine('const operator = condition[1];');
                 writer.blankLine();
-                writer.write(`if (operator == 'LIKE') `).block(() => {
-                    writer.write(`return `).block(() => {
-                        writer.writeLine('sql: `${selectFragment} LIKE concat(\'%\', ?, \'%\')`,');
-                        writer.writeLine('hasValue: condition[2] != null,');
-                        writer.writeLine('values: [condition[2]]');
+                if (hasStringColumn(tsDescriptor.columns)) {
+                    writer.write(`if (operator == 'LIKE') `).block(() => {
+                        writer.write(`return `).block(() => {
+                            writer.writeLine('sql: `${selectFragment} LIKE concat(\'%\', ?, \'%\')`,');
+                            writer.writeLine('hasValue: condition[2] != null,');
+                            writer.writeLine('values: [condition[2]]');
+                        });
                     });
-                });
+                }
                 writer.write(`if (operator == 'BETWEEN') `).block(() => {
                     writer.write(`return `).block(() => {
                         writer.writeLine('sql: `${selectFragment} BETWEEN ? AND ?`,');
@@ -567,6 +571,10 @@ function mapColumnType(columnType: MySqlType | MySqlType[] | 'any'): string {
     const mappedTypes = types.map(type => converToTsType(type));
     return mappedTypes.join(' | '); // number | string
 
+}
+
+function hasStringColumn(columns: TsFieldDescriptor[]) {
+    return columns.some(c => c.tsType == 'string');
 }
 
 function generateTsContent(tsDescriptorOption: Option<TsDescriptor>, queryName: string, target: 'node' | 'deno', crud: boolean) {
