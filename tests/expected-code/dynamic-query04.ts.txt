@@ -22,6 +22,14 @@ export type DynamicQuery04Select = {
     descr?: boolean;
 }
 
+const selectFragments = {
+    id: `m1.id`,
+    value: `m1.value`,
+    id_2: `m2.id`,
+    name: `m2.name`,
+    descr: `m2.descr`,
+} as const;
+
 const NumericOperatorList = ['=', '<>', '>', '<', '>=', '<='] as const;
 type NumericOperator = typeof NumericOperatorList[number];
 type StringOperator = '=' | '<>' | '>' | '<' | '>=' | '<=' | 'LIKE';
@@ -129,13 +137,6 @@ type WhereConditionResult = {
 }
 
 function whereCondition(condition: DynamicQuery04Where): WhereConditionResult | undefined {
-    const selectFragments = {
-        id: `m1.id`,
-        value: `m1.value`,
-        id_2: `m2.id`,
-        name: `m2.name`,
-        descr: `m2.descr`,
-    } as const;
 
     const selectFragment = selectFragments[condition[0]];
     const operator = condition[1];

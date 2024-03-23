@@ -228,8 +228,8 @@ export type SelectPersonOrderBy = {
     direction: 'asc' | 'desc';
 }
 
-function escapeOrderBy(orderBy: SelectPersonOrderBy[]) : string {
-    return orderBy.map( order => \`\\\`\${order.column}\\\` \${order.direction == 'desc' ? 'desc' : 'asc' }\`).join(', ');
+function escapeOrderBy(orderBy: SelectPersonOrderBy[]): string {
+    return orderBy.map(order => \`\\\`\${order.column}\\\` \${order.direction == 'desc' ? 'desc' : 'asc' }\`).join(', ');
 }`
 
         assert.deepStrictEqual(actual, expected);
@@ -471,8 +471,8 @@ export type SelectIdOrderBy = {
     direction: 'asc' | 'desc';
 }
 
-function escapeOrderBy(orderBy: SelectIdOrderBy[]) : string {
-    return orderBy.map( order => \`\\\`\${order.column}\\\` \${order.direction == 'desc' ? 'desc' : 'asc' }\`).join(', ');
+function escapeOrderBy(orderBy: SelectIdOrderBy[]): string {
+    return orderBy.map(order => \`\\\`\${order.column}\\\` \${order.direction == 'desc' ? 'desc' : 'asc' }\`).join(', ');
 }`
 
         assert.deepStrictEqual(actual, expected);
@@ -1319,4 +1319,21 @@ WHERE m2.name LIKE concat('%', :name, '%')`
 
         assert.deepStrictEqual(actual, expected);
     })
+
+    it('dynamic-query-06 - select * ORDER BY ?', async () => {
+        const queryName = 'dynamic-query06';
+        const sql = `-- @dynamicQuery
+SELECT 
+    *
+FROM mytable1 m1
+INNER JOIN mytable2 m2 on m2.id = m1.id
+ORDER BY ?`
+
+        const actual = await generateTsFileFromContent(client, `${queryName}.sql`, queryName, sql, 'node');
+        //tests\expected-code\dynamic-query01.ts
+        const expected = readFileSync('tests/expected-code/dynamic-query06.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+        assert.deepStrictEqual(actual, expected);
+    })
+
 })

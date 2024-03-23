@@ -16,6 +16,11 @@ export type DynamicQuery03Select = {
     value?: boolean;
 }
 
+const selectFragments = {
+    id: `t1.id`,
+    value: `t1.value`,
+} as const;
+
 const NumericOperatorList = ['=', '<>', '>', '<', '>=', '<='] as const;
 type NumericOperator = typeof NumericOperatorList[number];
 type SetOperator = 'IN' | 'NOT IN';
@@ -92,10 +97,6 @@ type WhereConditionResult = {
 }
 
 function whereCondition(condition: DynamicQuery03Where): WhereConditionResult | undefined {
-    const selectFragments = {
-        id: `t1.id`,
-        value: `t1.value`,
-    } as const;
 
     const selectFragment = selectFragments[condition[0]];
     const operator = condition[1];

@@ -53,16 +53,27 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
                 writer.writeLine(`params?: ${paramsTypeName};`);
             }
             writer.writeLine(`where?: ${whereTypeName}[];`);
+            if (orderByField) {
+                writer.writeLine(`${orderByField};`);
+            }
         })
         writer.blankLine();
     }
 
-    writeTypeBlock(writer, paramsTypes, paramsTypeName, false, orderByField);
+    writeTypeBlock(writer, paramsTypes, paramsTypeName, false, tsDescriptor.dynamicQuery ? undefined : orderByField);
     const resultTypes = tsDescriptor.dynamicQuery == null ? tsDescriptor.columns : mapToDynamicResultColumns(tsDescriptor.columns);
     writeTypeBlock(writer, resultTypes, resultTypeName, false);
     if (tsDescriptor.dynamicQuery) {
         const selectFields = mapToDynamicSelectColumns(tsDescriptor.columns);
         writeTypeBlock(writer, selectFields, selectColumnsTypeName, false);
+        writer.write(`const selectFragments = `).inlineBlock(() => {
+            tsDescriptor.dynamicQuery?.select.forEach((fragment, index) => {
+                const field = tsDescriptor.columns[index].name;
+                writer.writeLine(`${field}: \`${fragment.fragmentWitoutAlias}\`,`);
+            });
+        })
+        writer.write(' as const;');
+        writer.blankLine();
         writer.writeLine(`const NumericOperatorList = ['=', '<>', '>', '<', '>=', '<='] as const;`);
         writer.writeLine(`type NumericOperator = typeof NumericOperatorList[number];`);
         if (hasStringColumn(tsDescriptor.columns)) {
@@ -90,7 +101,7 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
         functionArguments += tsDescriptor.parameters.length > 0 || generateOrderBy ? ', params: ' + paramsTypeName : '';
     }
     else {
-        functionArguments += ', params?: ' + dynamicParamsTypeName;
+        functionArguments += `, ${orderByField ? 'params' : 'params?'}: ${dynamicParamsTypeName}`;
     }
 
     const allParameters = tsDescriptor.data ? tsDescriptor.data.map((field, index) => {
@@ -121,6 +132,9 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
         }
         else {
             writer.writeLine(`const where = whereConditionsToObject(params?.where);`)
+            if (orderByField != null) {
+                writer.writeLine(`const orderBy = orderByToObject(params.orderBy);`)
+            }
             writer.writeLine('const paramsValues: any = [];');
             if (tsDescriptor.dynamicQuery.with) {
                 writer.writeLine(`let withClause = '';`);
@@ -135,7 +149,7 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
                 })
             })
             tsDescriptor.dynamicQuery.from.forEach(fragment => {
-                generateDynamicQueryFrom(writer, 'sql', fragment, tsDescriptor.columns);
+                generateDynamicQueryFrom(writer, 'sql', fragment, tsDescriptor.columns, tsDescriptor.orderByColumns != null);
             })
             writer.writeLine(`sql += EOL + \`WHERE 1 = 1\`;`);
             tsDescriptor.dynamicQuery.where.forEach(fragment => {
@@ -166,6 +180,9 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
                 })
             })
             writer.write(');');
+            if (tsDescriptor.orderByColumns) {
+                writer.writeLine('sql += EOL + `ORDER BY ${escapeOrderBy(params.orderBy)}`;')
+            }
         }
 
         const singleRowSelect = tsDescriptor.queryType == 'Select' && tsDescriptor.multipleRowsResult === false;
@@ -242,6 +259,18 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
                 writer.write(');');
                 writer.writeLine(`return obj;`);
             })
+
+            if (orderByField != null) {
+                writer.blankLine();
+                writer.write(`function orderByToObject(${orderByField})`).block(() => {
+                    writer.writeLine(`const obj = {} as any;`);
+                    writer.write(`orderBy?.forEach(order => `).inlineBlock(() => {
+                        writer.writeLine(`obj[order.column] = true;`);
+                    });
+                    writer.write(');');
+                    writer.writeLine(`return obj;`);
+                })
+            }
             writer.blankLine();
             writer.write(`type WhereConditionResult = `).block(() => {
                 writer.writeLine('sql: string;');
@@ -250,13 +279,6 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
             })
             writer.blankLine();
             writer.write(`function whereCondition(condition: ${whereTypeName}): WhereConditionResult | undefined `).block(() => {
-                writer.write(`const selectFragments = `).inlineBlock(() => {
-                    tsDescriptor.dynamicQuery?.select.forEach((fragment, index) => {
-                        const field = tsDescriptor.columns[index].name;
-                        writer.writeLine(`${field}: \`${fragment.fragmentWitoutAlias}\`,`);
-                    });
-                })
-                writer.write(' as const;');
                 writer.blankLine();
                 writer.writeLine('const selectFragment = selectFragments[condition[0]];');
                 writer.writeLine('const operator = condition[1];');
@@ -303,8 +325,13 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
             writer.writeLine(`direction: 'asc' | 'desc';`);
         })
         writer.blankLine();
-        writer.write(`function escapeOrderBy(orderBy: ${orderByTypeName}[]) : string`).block(() => {
-            writer.writeLine(`return orderBy.map( order => \`\\\`\${order.column}\\\` \${order.direction == 'desc' ? 'desc' : 'asc' }\`).join(', ');`);
+        writer.write(`function escapeOrderBy(orderBy: ${orderByTypeName}[]): string`).block(() => {
+            if (tsDescriptor.dynamicQuery == null) {
+                writer.writeLine(`return orderBy.map(order => \`\\\`\${order.column}\\\` \${order.direction == 'desc' ? 'desc' : 'asc' }\`).join(', ');`);
+            }
+            else {
+                writer.writeLine(`return orderBy.map(order => \`\${selectFragments[order.column]} \${order.direction == 'desc' ? 'desc' : 'asc'}\`).join(', ');`);
+            }
         })
     }
 
@@ -382,14 +409,15 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
     return writer.toString();
 }
 
-function generateDynamicQueryFrom(writer: CodeBlockWriter, sqlVar: string, fragment: FragmentInfoResult, columns: TsFieldDescriptor[]) {
+function generateDynamicQueryFrom(writer: CodeBlockWriter, sqlVar: string, fragment: FragmentInfoResult, columns: TsFieldDescriptor[], includeOrderBy = false) {
     const selectConditions = fragment.dependOnFields.map(fieldIndex => 'params.select.' + columns[fieldIndex].name);
     if (selectConditions.length > 0) {
         selectConditions.unshift('params?.select == null');
     }
     const paramConditions = fragment.dependOnParams.map(param => 'params.params?.' + param + ' != null');
     const whereConditions = fragment.dependOnFields.map(fieldIndex => 'where.' + columns[fieldIndex].name + ' != null');
-    const allConditions = [...selectConditions, ...paramConditions, ...whereConditions];
+    const orderByConditions = includeOrderBy ? fragment.dependOnFields.map(fieldIndex => 'orderBy.' + columns[fieldIndex].name + ' != null') : [];
+    const allConditions = [...selectConditions, ...paramConditions, ...whereConditions, ...orderByConditions];
     const paramValues = fragment.parameters.map(param => 'params?.params?.' + param);
     if (allConditions.length > 0) {
         writer.write(`if (${allConditions.join(' || ')})`).block(() => {

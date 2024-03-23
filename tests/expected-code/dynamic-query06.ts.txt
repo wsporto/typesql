@@ -1,29 +1,34 @@
 import type { Connection } from 'mysql2/promise';
 import { EOL } from 'os';
 
-export type CteDynamicParams = {
-    select?: CteSelect;
-    params?: CteParams;
-    where?: CteWhere[];
+export type DynamicQuery06DynamicParams = {
+    select?: DynamicQuery06Select;
+    where?: DynamicQuery06Where[];
+    orderBy: [DynamicQuery06OrderBy, ...DynamicQuery06OrderBy[]];
 }
 
-export type CteParams = {
-    name?: string | null;
-}
-
-export type CteResult = {
+export type DynamicQuery06Result = {
     id?: number;
+    value?: number;
+    id_2?: number;
     name?: string;
+    descr?: string;
 }
 
-export type CteSelect = {
+export type DynamicQuery06Select = {
     id?: boolean;
+    value?: boolean;
+    id_2?: boolean;
     name?: boolean;
+    descr?: boolean;
 }
 
 const selectFragments = {
     id: `m1.id`,
+    value: `m1.value`,
+    id_2: `m2.id`,
     name: `m2.name`,
+    descr: `m2.descr`,
 } as const;
 
 const NumericOperatorList = ['=', '<>', '>', '<', '>=', '<='] as const;
@@ -32,42 +37,48 @@ type StringOperator = '=' | '<>' | '>' | '<' | '>=' | '<=' | 'LIKE';
 type SetOperator = 'IN' | 'NOT IN';
 type BetweenOperator = 'BETWEEN';
 
-export type CteWhere =
+export type DynamicQuery06Where =
     | ['id', NumericOperator, number | null]
     | ['id', SetOperator, number[]]
     | ['id', BetweenOperator, number | null, number | null]
+    | ['value', NumericOperator, number | null]
+    | ['value', SetOperator, number[]]
+    | ['value', BetweenOperator, number | null, number | null]
+    | ['id_2', NumericOperator, number | null]
+    | ['id_2', SetOperator, number[]]
+    | ['id_2', BetweenOperator, number | null, number | null]
     | ['name', StringOperator, string | null]
     | ['name', SetOperator, string[]]
     | ['name', BetweenOperator, string | null, string | null]
+    | ['descr', StringOperator, string | null]
+    | ['descr', SetOperator, string[]]
+    | ['descr', BetweenOperator, string | null, string | null]
 
-export async function cte(connection: Connection, params?: CteDynamicParams): Promise<CteResult[]> {
+export async function dynamicQuery06(connection: Connection, params: DynamicQuery06DynamicParams): Promise<DynamicQuery06Result[]> {
     const where = whereConditionsToObject(params?.where);
+    const orderBy = orderByToObject(params.orderBy);
     const paramsValues: any = [];
-    let withClause = '';
-    if (params?.select == null || params.select.name || params.params?.name != null || where.name != null) {
-        withClause += EOL + `cte as (
-            select id, name from mytable2
-        )`;
-    }
     let sql = 'SELECT';
     if (params?.select == null || params.select.id) {
         sql = appendSelect(sql, `m1.id`);
     }
+    if (params?.select == null || params.select.value) {
+        sql = appendSelect(sql, `m1.value`);
+    }
+    if (params?.select == null || params.select.id_2) {
+        sql = appendSelect(sql, `m2.id`);
+    }
     if (params?.select == null || params.select.name) {
         sql = appendSelect(sql, `m2.name`);
     }
+    if (params?.select == null || params.select.descr) {
+        sql = appendSelect(sql, `m2.descr`);
+    }
     sql += EOL + `FROM mytable1 m1`;
-    if (params?.select == null || params.select.name || params.params?.name != null || where.name != null) {
-        sql += EOL + `INNER JOIN cte m2 on m2.id = m1.id`;
+    if (params?.select == null || params.select.id_2 || params.select.name || params.select.descr || where.id_2 != null || where.name != null || where.descr != null || orderBy.id_2 != null || orderBy.name != null || orderBy.descr != null) {
+        sql += EOL + `INNER JOIN mytable2 m2 on m2.id = m1.id`;
     }
     sql += EOL + `WHERE 1 = 1`;
-    if (params?.params?.name != null) {
-        sql += EOL + `AND m2.name LIKE concat('%', ?, '%')`;
-        paramsValues.push(params.params.name);
-    }
-    if (withClause != '') {
-        sql = 'WITH ' + withClause + EOL + sql;
-    }
     params?.where?.forEach(condition => {
         const where = whereCondition(condition);
         if (where?.hasValue) {
@@ -75,19 +86,29 @@ export async function cte(connection: Connection, params?: CteDynamicParams): Pr
             paramsValues.push(...where.values);
         }
     });
+    sql += EOL + `ORDER BY ${escapeOrderBy(params.orderBy)}`;
     return connection.query({ sql, rowsAsArray: true }, paramsValues)
         .then(res => res[0] as any[])
-        .then(res => res.map(data => mapArrayToCteResult(data, params?.select)));
+        .then(res => res.map(data => mapArrayToDynamicQuery06Result(data, params?.select)));
 }
 
-function mapArrayToCteResult(data: any, select?: CteSelect) {
-    const result = {} as CteResult;
+function mapArrayToDynamicQuery06Result(data: any, select?: DynamicQuery06Select) {
+    const result = {} as DynamicQuery06Result;
     let rowIndex = 0;
     if (select == null || select.id) {
         result.id = data[rowIndex++];
     }
+    if (select == null || select.value) {
+        result.value = data[rowIndex++];
+    }
+    if (select == null || select.id_2) {
+        result.id_2 = data[rowIndex++];
+    }
     if (select == null || select.name) {
         result.name = data[rowIndex++];
+    }
+    if (select == null || select.descr) {
+        result.descr = data[rowIndex++];
     }
     return result;
 }
@@ -101,7 +122,7 @@ function appendSelect(sql: string, selectField: string) {
     }
 }
 
-function whereConditionsToObject(whereConditions?: CteWhere[]) {
+function whereConditionsToObject(whereConditions?: DynamicQuery06Where[]) {
     const obj = {} as any;
     whereConditions?.forEach(condition => {
         const where = whereCondition(condition);
@@ -112,13 +133,21 @@ function whereConditionsToObject(whereConditions?: CteWhere[]) {
     return obj;
 }
 
+function orderByToObject(orderBy: [DynamicQuery06OrderBy, ...DynamicQuery06OrderBy[]]) {
+    const obj = {} as any;
+    orderBy?.forEach(order => {
+        obj[order.column] = true;
+    });
+    return obj;
+}
+
 type WhereConditionResult = {
     sql: string;
     hasValue: boolean;
     values: any[];
 }
 
-function whereCondition(condition: CteWhere): WhereConditionResult | undefined {
+function whereCondition(condition: DynamicQuery06Where): WhereConditionResult | undefined {
 
     const selectFragment = selectFragments[condition[0]];
     const operator = condition[1];
@@ -151,4 +180,13 @@ function whereCondition(condition: CteWhere): WhereConditionResult | undefined {
             values: [condition[2]]
         }
     }
+}
+
+export type DynamicQuery06OrderBy = {
+    column: "id" | "value" | "name" | "descr";
+    direction: 'asc' | 'desc';
+}
+
+function escapeOrderBy(orderBy: DynamicQuery06OrderBy[]): string {
+    return orderBy.map(order => `${selectFragments[order.column]} ${order.direction == 'desc' ? 'desc' : 'asc'}`).join(', ');
 }

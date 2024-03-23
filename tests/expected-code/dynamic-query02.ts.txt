@@ -22,6 +22,11 @@ export type DerivatedTableSelect = {
     name?: boolean;
 }
 
+const selectFragments = {
+    id: `m1.id`,
+    name: `m2.name`,
+} as const;
+
 const NumericOperatorList = ['=', '<>', '>', '<', '>=', '<='] as const;
 type NumericOperator = typeof NumericOperatorList[number];
 type StringOperator = '=' | '<>' | '>' | '<' | '>=' | '<=' | 'LIKE';
@@ -111,10 +116,6 @@ type WhereConditionResult = {
 }
 
 function whereCondition(condition: DerivatedTableWhere): WhereConditionResult | undefined {
-    const selectFragments = {
-        id: `m1.id`,
-        name: `m2.name`,
-    } as const;
 
     const selectFragment = selectFragments[condition[0]];
     const operator = condition[1];
