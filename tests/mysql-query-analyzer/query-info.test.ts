@@ -3,7 +3,7 @@ import { extractQueryInfo } from "../../src/mysql-query-analyzer/parse";
 import { dbSchema } from "./create-schema";
 import { QueryInfoResult } from "../../src/mysql-query-analyzer/types";
 
-describe('Test parse parameters', () => {
+describe('QueryInfoResult test', () => {
 
     it(`SELECT id FROM mytable1`, () => {
         const sql = `SELECT id FROM mytable1`;
