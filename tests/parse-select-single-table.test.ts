@@ -1477,16 +1477,7 @@ describe('Test simple select statements', () => {
                     table: 'mytable1'
                 }
             ],
-            orderByColumns: [
-                {
-                    name: 'id',
-                    table: 'mytable1'
-                },
-                {
-                    name: 'value',
-                    table: 'mytable1'
-                }
-            ],
+            orderByColumns: ['id', 'mytable1.id', 'value', 'mytable1.value'],
             parameters: []
 
         }
@@ -1514,20 +1505,7 @@ describe('Test simple select statements', () => {
                     table: 'mytable1'
                 }
             ],
-            orderByColumns: [
-                {
-                    name: 'id',
-                    table: 'mytable1'
-                },
-                {
-                    name: 'value',
-                    table: 'mytable1'
-                },
-                {
-                    name: 'myValue',
-                    table: 'mytable1'
-                }
-            ],
+            orderByColumns: ['id', 'mytable1.id', 'value', 'mytable1.value', 'myValue'],
             parameters: []
 
         }
@@ -1591,20 +1569,7 @@ describe('Test simple select statements', () => {
                     table: ''
                 }
             ],
-            orderByColumns: [
-                {
-                    name: 'id',
-                    table: 'mytable1'
-                },
-                {
-                    name: 'value',
-                    table: 'mytable1'
-                },
-                {
-                    name: 'ordering',
-                    table: ''
-                }
-            ],
+            orderByColumns: ['id', 'mytable1.id', 'value', 'mytable1.value', 'ordering'],
             parameters: []
 
         }
@@ -1634,18 +1599,7 @@ describe('Test simple select statements', () => {
                     table: 't'
                 }
             ],
-            orderByColumns: [
-                {
-                    name: 'id',
-                    table: 't'
-                }, {
-                    name: 'value',
-                    table: 't'
-                },
-                {
-                    name: 'ordering',
-                    table: 't'
-                }],
+            orderByColumns: ['id', 't.id', 'value', 't.value', 'ordering'],
             parameters: []
 
         }
@@ -1675,20 +1629,7 @@ describe('Test simple select statements', () => {
                     table: 't'
                 }
             ],
-            orderByColumns: [
-                {
-                    name: 'id',
-                    table: 't'
-                },
-                {
-                    name: 'value',
-                    table: 't'
-                },
-                {
-                    name: 'case when value = 1 then 1 else 2 end',
-                    table: 't'
-                }
-            ],
+            orderByColumns: ['id', 't.id', 'value', 't.value', 'case when value = 1 then 1 else 2 end'],
             parameters: []
 
         }

@@ -79,28 +79,14 @@ describe('rename invalid names', () => {
                     notNull: true,
                 }
             ],
-            orderByColumns: [
-                {
-                    name: 'id',
-                    table: ''
-                },
-                {
-                    name: 'count(*)',
-                    table: ''
-                },
-                {
-                    name: `concat(name, ' ', name)`,
-                    table: ''
-                }
-
-            ]
+            orderByColumns: ['id', 'count(*)', `concat(name, ' ', name)`]
         }
         const actual = generateTsDescriptor(schema);
 
         assert.deepStrictEqual(actual.columns.map(col => col.name), ['id', 'id_2', '"count(*)"']);
         assert.deepStrictEqual(actual.data!.map(col => col.name), ['"id+id"']);
         assert.deepStrictEqual(actual.parameters.map(col => col.name), ['name']); //remove duplicated parameters
-        assert.deepStrictEqual(actual.orderByColumns, [{ name: 'id', table: '' }, { name: 'count(*)', table: '' }, { name: `concat(name, ' ', name)`, table: '' }]);
+        assert.deepStrictEqual(actual.orderByColumns, ['id', 'count(*)', `concat(name, ' ', name)`]);
     })
 
     it('removeDuplicatedParameters: notNull (true) and notNull (false)', async () => {

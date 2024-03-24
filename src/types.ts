@@ -1,6 +1,6 @@
 import { MySqlType } from "./mysql-mapping"
 import { Brand } from "./utility-types"
-import { ColumnInfo, ColumnName, ColumnSchema, DynamicSqlInfoResult } from "./mysql-query-analyzer/types"
+import { ColumnInfo, ColumnSchema, DynamicSqlInfoResult } from "./mysql-query-analyzer/types"
 import { QueryContext } from "ts-mysql-parser";
 import { NestedResultInfo } from "./describe-nested-query";
 
@@ -20,7 +20,7 @@ export type SchemaDef = {
     queryType: 'Select' | 'Insert' | 'Update' | 'Delete'
     multipleRowsResult: boolean;
     columns: ColumnInfo[]; //TODO - ColumnDef and ParamterDef should be the same
-    orderByColumns?: ColumnName[];
+    orderByColumns?: string[];
     parameters: ParameterDef[];
     data?: ParameterDef[];
     nestedResultInfo?: NestedResultInfo;

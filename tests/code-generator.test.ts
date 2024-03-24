@@ -190,15 +190,7 @@ export async function updatePerson(connection: Connection, data: UpdatePersonDat
             data: [],
             parameterNames: [],
             parameters: [],
-            orderByColumns: [
-                {
-                    name: 'id',
-                    table: 'person'
-                }, {
-                    name: 'name',
-                    table: 'person'
-                }
-            ]
+            orderByColumns: ['id', 'name']
         }
 
         const actual = generateTsCode(tsDescriptor, queryName, 'node');
@@ -232,7 +224,7 @@ function mapArrayToSelectPersonResult(data: any) {
 }
 
 export type SelectPersonOrderBy = {
-    column: "id" | "name";
+    column: 'id' | 'name';
     direction: 'asc' | 'desc';
 }
 
@@ -475,7 +467,7 @@ export async function selectId(client: Client, params: SelectIdParams): Promise<
 }
 
 export type SelectIdOrderBy = {
-    column: "id" | "value";
+    column: 'id' | 'mytable1.id' | 'value' | 'mytable1.value';
     direction: 'asc' | 'desc';
 }
 
@@ -1340,6 +1332,23 @@ ORDER BY ?`
         const actual = await generateTsFileFromContent(client, `${queryName}.sql`, queryName, sql, 'node');
         //tests\expected-code\dynamic-query01.ts
         const expected = readFileSync('tests/expected-code/dynamic-query06.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+        assert.deepStrictEqual(actual, expected);
+    })
+
+    it('dynamic-query-07 - select * ORDER BY ?', async () => {
+        const queryName = 'dynamic-query07';
+        const sql = `-- @dynamicQuery
+SELECT 
+    m1.id as myId,
+    m2.name
+FROM mytable1 m1
+INNER JOIN mytable2 m2 on m2.id = m1.id
+ORDER BY ?`
+
+        const actual = await generateTsFileFromContent(client, `${queryName}.sql`, queryName, sql, 'node');
+        //tests\expected-code\dynamic-query01.ts
+        const expected = readFileSync('tests/expected-code/dynamic-query07.ts.txt', 'utf-8').replace(/\r/gm, '');
 
         assert.deepStrictEqual(actual, expected);
     })

@@ -1,34 +1,25 @@
 import type { Connection } from 'mysql2/promise';
 import { EOL } from 'os';
 
-export type DynamicQuery06DynamicParams = {
-    select?: DynamicQuery06Select;
-    where?: DynamicQuery06Where[];
-    orderBy: [DynamicQuery06OrderBy, ...DynamicQuery06OrderBy[]];
+export type DynamicQuery07DynamicParams = {
+    select?: DynamicQuery07Select;
+    where?: DynamicQuery07Where[];
+    orderBy: [DynamicQuery07OrderBy, ...DynamicQuery07OrderBy[]];
 }
 
-export type DynamicQuery06Result = {
-    id?: number;
-    value?: number;
-    id_2?: number;
+export type DynamicQuery07Result = {
+    myId?: number;
     name?: string;
-    descr?: string;
 }
 
-export type DynamicQuery06Select = {
-    id?: boolean;
-    value?: boolean;
-    id_2?: boolean;
+export type DynamicQuery07Select = {
+    myId?: boolean;
     name?: boolean;
-    descr?: boolean;
 }
 
 const selectFragments = {
-    id: `m1.id`,
-    value: `m1.value`,
-    id_2: `m2.id`,
+    myId: `m1.id`,
     name: `m2.name`,
-    descr: `m2.descr`,
 } as const;
 
 const orderByFragments = {
@@ -40,7 +31,7 @@ const orderByFragments = {
     'm2.name': `m2.name`,
     'descr': `descr`,
     'm2.descr': `m2.descr`,
-    'id': `id`,
+    'myId': `myId`,
 } as const;
 
 const NumericOperatorList = ['=', '<>', '>', '<', '>=', '<='] as const;
@@ -49,45 +40,27 @@ type StringOperator = '=' | '<>' | '>' | '<' | '>=' | '<=' | 'LIKE';
 type SetOperator = 'IN' | 'NOT IN';
 type BetweenOperator = 'BETWEEN';
 
-export type DynamicQuery06Where =
-    | ['id', NumericOperator, number | null]
-    | ['id', SetOperator, number[]]
-    | ['id', BetweenOperator, number | null, number | null]
-    | ['value', NumericOperator, number | null]
-    | ['value', SetOperator, number[]]
-    | ['value', BetweenOperator, number | null, number | null]
-    | ['id_2', NumericOperator, number | null]
-    | ['id_2', SetOperator, number[]]
-    | ['id_2', BetweenOperator, number | null, number | null]
+export type DynamicQuery07Where =
+    | ['myId', NumericOperator, number | null]
+    | ['myId', SetOperator, number[]]
+    | ['myId', BetweenOperator, number | null, number | null]
     | ['name', StringOperator, string | null]
     | ['name', SetOperator, string[]]
     | ['name', BetweenOperator, string | null, string | null]
-    | ['descr', StringOperator, string | null]
-    | ['descr', SetOperator, string[]]
-    | ['descr', BetweenOperator, string | null, string | null]
 
-export async function dynamicQuery06(connection: Connection, params: DynamicQuery06DynamicParams): Promise<DynamicQuery06Result[]> {
+export async function dynamicQuery07(connection: Connection, params: DynamicQuery07DynamicParams): Promise<DynamicQuery07Result[]> {
     const where = whereConditionsToObject(params?.where);
     const orderBy = orderByToObject(params.orderBy);
     const paramsValues: any = [];
     let sql = 'SELECT';
-    if (params?.select == null || params.select.id) {
-        sql = appendSelect(sql, `m1.id`);
-    }
-    if (params?.select == null || params.select.value) {
-        sql = appendSelect(sql, `m1.value`);
-    }
-    if (params?.select == null || params.select.id_2) {
-        sql = appendSelect(sql, `m2.id`);
+    if (params?.select == null || params.select.myId) {
+        sql = appendSelect(sql, `m1.id as myId`);
     }
     if (params?.select == null || params.select.name) {
         sql = appendSelect(sql, `m2.name`);
     }
-    if (params?.select == null || params.select.descr) {
-        sql = appendSelect(sql, `m2.descr`);
-    }
     sql += EOL + `FROM mytable1 m1`;
-    if (params?.select == null || params.select.id_2 || params.select.name || params.select.descr || where.id_2 != null || where.name != null || where.descr != null || orderBy.id_2 != null || orderBy.name != null || orderBy.descr != null) {
+    if (params?.select == null || params.select.name || where.name != null || orderBy.name != null) {
         sql += EOL + `INNER JOIN mytable2 m2 on m2.id = m1.id`;
     }
     sql += EOL + `WHERE 1 = 1`;
@@ -101,26 +74,17 @@ export async function dynamicQuery06(connection: Connection, params: DynamicQuer
     sql += EOL + `ORDER BY ${escapeOrderBy(params.orderBy)}`;
     return connection.query({ sql, rowsAsArray: true }, paramsValues)
         .then(res => res[0] as any[])
-        .then(res => res.map(data => mapArrayToDynamicQuery06Result(data, params?.select)));
+        .then(res => res.map(data => mapArrayToDynamicQuery07Result(data, params?.select)));
 }
 
-function mapArrayToDynamicQuery06Result(data: any, select?: DynamicQuery06Select) {
-    const result = {} as DynamicQuery06Result;
+function mapArrayToDynamicQuery07Result(data: any, select?: DynamicQuery07Select) {
+    const result = {} as DynamicQuery07Result;
     let rowIndex = 0;
-    if (select == null || select.id) {
-        result.id = data[rowIndex++];
-    }
-    if (select == null || select.value) {
-        result.value = data[rowIndex++];
-    }
-    if (select == null || select.id_2) {
-        result.id_2 = data[rowIndex++];
+    if (select == null || select.myId) {
+        result.myId = data[rowIndex++];
     }
     if (select == null || select.name) {
         result.name = data[rowIndex++];
-    }
-    if (select == null || select.descr) {
-        result.descr = data[rowIndex++];
     }
     return result;
 }
@@ -134,7 +98,7 @@ function appendSelect(sql: string, selectField: string) {
     }
 }
 
-function whereConditionsToObject(whereConditions?: DynamicQuery06Where[]) {
+function whereConditionsToObject(whereConditions?: DynamicQuery07Where[]) {
     const obj = {} as any;
     whereConditions?.forEach(condition => {
         const where = whereCondition(condition);
@@ -145,7 +109,7 @@ function whereConditionsToObject(whereConditions?: DynamicQuery06Where[]) {
     return obj;
 }
 
-function orderByToObject(orderBy: [DynamicQuery06OrderBy, ...DynamicQuery06OrderBy[]]) {
+function orderByToObject(orderBy: [DynamicQuery07OrderBy, ...DynamicQuery07OrderBy[]]) {
     const obj = {} as any;
     orderBy?.forEach(order => {
         obj[order.column] = true;
@@ -159,7 +123,7 @@ type WhereConditionResult = {
     values: any[];
 }
 
-function whereCondition(condition: DynamicQuery06Where): WhereConditionResult | undefined {
+function whereCondition(condition: DynamicQuery07Where): WhereConditionResult | undefined {
 
     const selectFragment = selectFragments[condition[0]];
     const operator = condition[1];
@@ -194,11 +158,11 @@ function whereCondition(condition: DynamicQuery06Where): WhereConditionResult | 
     }
 }
 
-export type DynamicQuery06OrderBy = {
+export type DynamicQuery07OrderBy = {
     column: keyof typeof orderByFragments;
     direction: 'asc' | 'desc';
 }
 
-function escapeOrderBy(orderBy: DynamicQuery06OrderBy[]): string {
+function escapeOrderBy(orderBy: DynamicQuery07OrderBy[]): string {
     return orderBy.map(order => `${orderByFragments[order.column]} ${order.direction == 'desc' ? 'desc' : 'asc'}`).join(', ');
 }

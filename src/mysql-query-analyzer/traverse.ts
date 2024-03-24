@@ -1,7 +1,7 @@
 import { BitExprContext, BoolPriContext, ColumnRefContext, DeleteStatementContext, ExprAndContext, ExprContext, ExprIsContext, ExprListContext, ExprNotContext, ExprOrContext, ExprXorContext, FromClauseContext, HavingClauseContext, InsertQueryExpressionContext, InsertStatementContext, PredicateContext, PredicateExprBetweenContext, PredicateExprInContext, PredicateExprLikeContext, PredicateOperationsContext, PrimaryExprAllAnyContext, PrimaryExprCompareContext, PrimaryExprIsNullContext, PrimaryExprPredicateContext, QueryContext, QueryExpressionBodyContext, QueryExpressionContext, QueryExpressionOrParensContext, QueryExpressionParensContext, QuerySpecificationContext, SelectItemContext, SelectItemListContext, SelectStatementContext, SimpleExprCaseContext, SimpleExprCastContext, SimpleExprColumnRefContext, SimpleExprContext, SimpleExprFunctionContext, SimpleExprIntervalContext, SimpleExprListContext, SimpleExprLiteralContext, SimpleExprParamMarkerContext, SimpleExprRuntimeFunctionContext, SimpleExprSubQueryContext, SimpleExprSumContext, SimpleExprWindowingFunctionContext, SingleTableContext, SubqueryContext, TableFactorContext, TableReferenceContext, TableReferenceListParensContext, UpdateStatementContext, WindowFunctionCallContext, WithClauseContext } from "ts-mysql-parser";
 import { verifyNotInferred } from "../describe-query";
 import { extractLimitParameters, extractOrderByParameters, getAllQuerySpecificationsFromSelectStatement, getLimitOptions, isSumExpressContext } from "./parse";
-import { ColumnDef, ColumnName, ColumnSchema, Constraint, DynamicSqlInfo, FieldName, FragmentInfo, ParameterInfo, TraverseContext, Type, TypeAndNullInfer, TypeOperator, TypeVar } from "./types";
+import { ColumnDef, ColumnSchema, Constraint, DynamicSqlInfo, FieldName, FragmentInfo, ParameterInfo, TraverseContext, Type, TypeAndNullInfer, TypeOperator, TypeVar } from "./types";
 import { ExprOrDefault, FixedLengthParams, FunctionParams, VariableLengthParams, createColumnType, createColumnTypeFomColumnSchema, freshVar, generateTypeInfo, getDeleteColumns, getFunctionName, getInsertColumns, getInsertIntoTable, isDateLiteral, isDateTimeLiteral, isTimeLiteral, verifyDateTypesCoercion } from "./collect-constraints";
 import { ExpressionAndOperator, extractFieldsFromUsingClause, extractOriginalSql, findColumn, findColumnOrNull, getColumnName, getExpressions, getSimpleExpressions, getTopLevelAndExpr, splitName } from "./select-columns";
 import { inferNotNull, possibleNull } from "./infer-column-nullability";
@@ -18,7 +18,7 @@ export type SelectStatementResult = {
     parameters: TypeAndNullInfer[];
     limitParameters: ParameterInfo[];
     isMultiRow: boolean;
-    orderByColumns?: ColumnName[];
+    orderByColumns?: string[];
     dynamicSqlInfo: DynamicSqlInfo;
 }
 
@@ -696,7 +696,7 @@ function traverseTableFactor(tableFactor: TableFactorContext, traverseContext: T
             const subQueryResult = traverseSubquery(subQuery, traverseContext);
             const result = subQueryResult.columns.map(t => {
                 const colDef: ColumnDef = {
-                    table: tableAlias || '',
+                    table: t.table ? tableAlias || '' : '',
                     columnName: t.name,
                     columnType: t.type,
                     columnKey: "",
@@ -2070,14 +2070,32 @@ function isUniqueKeyComparation(compare: BoolPriContext | PredicateContext, from
     return false; //isUniqueKeyComparation = false
 }
 
-function getOrderByColumns(fromColumns: ColumnDef[], selectColumns: TypeAndNullInfer[]): ColumnName[] {
-    const fromColumnsNames = fromColumns.map(col => ({ name: col.columnName, table: col.table })); //TODO - loading twice
-    const selectColumnsNames = selectColumns.map(col => ({ name: col.name, table: col.table }));
-    const allOrderByColumns = getUniqueListBy(fromColumnsNames.concat(selectColumnsNames), 'name');
-    return allOrderByColumns;
+function getOrderByColumns(fromColumns: ColumnDef[], selectColumns: TypeAndNullInfer[]): string[] {
+    const orderByColumns: string[] = [];
+    fromColumns.forEach((col) => {
+        const ambiguous = isAmbiguous(fromColumns, col.columnName);
+        if (!ambiguous) {
+            orderByColumns.push(col.columnName);
+        }
+        if (col.tableAlias && col.table) {
+            orderByColumns.push(`${col.tableAlias}.${col.columnName}`)
+        }
+        else if (col.table) {
+            orderByColumns.push(`${col.table}.${col.columnName}`)
+        }
+    });
+
+    selectColumns.forEach(col => {
+        const exists = orderByColumns.find(orderBy => orderBy == col.name);
+        if (!exists) {
+            orderByColumns.push(col.name)
+        }
+    });
+    return orderByColumns;
 }
 
-function getUniqueListBy(arr: any[], key: string) {
-    return [...new Map(arr.map(item => [item[key], item])).values()]
+function isAmbiguous(columns: ColumnDef[], columnName: string) {
+    const filterByName = columns.filter(col => col.columnName == columnName);
+    return filterByName.length > 1;
 }
 

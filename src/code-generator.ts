@@ -10,7 +10,7 @@ import { parseSql } from "./describe-query";
 import CodeBlockWriter from "code-block-writer";
 import { NestedTsDescriptor, createNestedTsDescriptor } from "./ts-nested-descriptor";
 import { mapToDynamicResultColumns, mapToDynamicParams, mapToDynamicSelectColumns } from "./ts-dynamic-query-descriptor";
-import { ColumnName, DynamicSqlInfoResult, FragmentInfoResult } from "./mysql-query-analyzer/types";
+import { DynamicSqlInfoResult, FragmentInfoResult } from "./mysql-query-analyzer/types";
 
 export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, target: 'node' | 'deno', crud: boolean = false): string {
     const writer = new CodeBlockWriter();
@@ -73,6 +73,15 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
             });
         })
         writer.write(' as const;');
+        if (orderByField != null) {
+            writer.blankLine();
+            writer.write(`const orderByFragments = `).inlineBlock(() => {
+                tsDescriptor.orderByColumns?.forEach((col) => {
+                    writer.writeLine(`'${col}': \`${col}\`,`);
+                });
+            })
+            writer.write(' as const;');
+        }
         writer.blankLine();
         writer.writeLine(`const NumericOperatorList = ['=', '<>', '>', '<', '>=', '<='] as const;`);
         writer.writeLine(`type NumericOperator = typeof NumericOperatorList[number];`);
@@ -318,10 +327,15 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
     }
 
     if (generateOrderBy) {
-        const orderByColumnsType = tsDescriptor.orderByColumns?.map(col => `"${col.name}"`).join(' | ');
+        const orderByColumnsType = tsDescriptor.orderByColumns?.map(col => `'${col}'`).join(' | ');
         writer.blankLine();
         writer.write(`export type ${orderByTypeName} = `).block(() => {
-            writer.writeLine(`column: ${orderByColumnsType};`);
+            if (tsDescriptor.dynamicQuery == null) {
+                writer.writeLine(`column: ${orderByColumnsType};`);
+            }
+            else {
+                writer.writeLine(`column: keyof typeof orderByFragments;`);
+            }
             writer.writeLine(`direction: 'asc' | 'desc';`);
         })
         writer.blankLine();
@@ -330,7 +344,7 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
                 writer.writeLine(`return orderBy.map(order => \`\\\`\${order.column}\\\` \${order.direction == 'desc' ? 'desc' : 'asc' }\`).join(', ');`);
             }
             else {
-                writer.writeLine(`return orderBy.map(order => \`\${selectFragments[order.column]} \${order.direction == 'desc' ? 'desc' : 'asc'}\`).join(', ');`);
+                writer.writeLine(`return orderBy.map(order => \`\${orderByFragments[order.column]} \${order.direction == 'desc' ? 'desc' : 'asc'}\`).join(', ');`);
             }
         })
     }
@@ -679,7 +693,7 @@ export type TsDescriptor = {
     parameterNames: ParamInfo[];
     parameters: TsFieldDescriptor[];
     data?: TsFieldDescriptor[];
-    orderByColumns?: ColumnName[];
+    orderByColumns?: string[];
     nestedDescriptor?: NestedTsDescriptor;
     dynamicQuery?: DynamicSqlInfoResult;
 }

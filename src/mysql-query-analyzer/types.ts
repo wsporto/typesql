@@ -78,11 +78,6 @@ export type FieldName = {
     prefix: string;
 }
 
-export type ColumnName = {
-    name: string;
-    table: string;
-}
-
 export type ColumnInfo = {
     columnName: string;
     type: MySqlType | 'any';
@@ -171,7 +166,7 @@ export type QueryInfoResult = {
     columns: ColumnInfo[];
     parameters: ParameterInfo[];
     multipleRowsResult: boolean;
-    orderByColumns?: ColumnName[];
+    orderByColumns?: string[];
     nestedResultInfo?: NestedResultInfo;
     dynamicQuery?: DynamicSqlInfoResult;
 }
