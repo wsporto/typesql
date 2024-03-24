@@ -10,7 +10,7 @@ import { parseSql } from "./describe-query";
 import CodeBlockWriter from "code-block-writer";
 import { NestedTsDescriptor, createNestedTsDescriptor } from "./ts-nested-descriptor";
 import { mapToDynamicResultColumns, mapToDynamicParams, mapToDynamicSelectColumns } from "./ts-dynamic-query-descriptor";
-import { DynamicSqlInfoResult, FragmentInfoResult } from "./mysql-query-analyzer/types";
+import { ColumnName, DynamicSqlInfoResult, FragmentInfoResult } from "./mysql-query-analyzer/types";
 
 export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, target: 'node' | 'deno', crud: boolean = false): string {
     const writer = new CodeBlockWriter();
@@ -318,7 +318,7 @@ export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, tar
     }
 
     if (generateOrderBy) {
-        const orderByColumnsType = tsDescriptor.orderByColumns?.map(col => `"${col}"`).join(' | ');
+        const orderByColumnsType = tsDescriptor.orderByColumns?.map(col => `"${col.name}"`).join(' | ');
         writer.blankLine();
         writer.write(`export type ${orderByTypeName} = `).block(() => {
             writer.writeLine(`column: ${orderByColumnsType};`);
@@ -679,7 +679,7 @@ export type TsDescriptor = {
     parameterNames: ParamInfo[];
     parameters: TsFieldDescriptor[];
     data?: TsFieldDescriptor[];
-    orderByColumns?: string[];
+    orderByColumns?: ColumnName[];
     nestedDescriptor?: NestedTsDescriptor;
     dynamicQuery?: DynamicSqlInfoResult;
 }

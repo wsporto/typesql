@@ -190,7 +190,15 @@ export async function updatePerson(connection: Connection, data: UpdatePersonDat
             data: [],
             parameterNames: [],
             parameters: [],
-            orderByColumns: ['id', 'name']
+            orderByColumns: [
+                {
+                    name: 'id',
+                    table: 'person'
+                }, {
+                    name: 'name',
+                    table: 'person'
+                }
+            ]
         }
 
         const actual = generateTsCode(tsDescriptor, queryName, 'node');

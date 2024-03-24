@@ -1477,7 +1477,57 @@ describe('Test simple select statements', () => {
                     table: 'mytable1'
                 }
             ],
-            orderByColumns: ['id', 'value'],
+            orderByColumns: [
+                {
+                    name: 'id',
+                    table: 'mytable1'
+                },
+                {
+                    name: 'value',
+                    table: 'mytable1'
+                }
+            ],
+            parameters: []
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('select value as myValue from mytable1 order by ?', async () => {
+        const sql = `
+        select value as myValue from mytable1 order by ?
+        `;
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'myValue',
+                    type: 'int',
+                    notNull: false,
+                    table: 'mytable1'
+                }
+            ],
+            orderByColumns: [
+                {
+                    name: 'id',
+                    table: 'mytable1'
+                },
+                {
+                    name: 'value',
+                    table: 'mytable1'
+                },
+                {
+                    name: 'myValue',
+                    table: 'mytable1'
+                }
+            ],
             parameters: []
 
         }
@@ -1541,7 +1591,20 @@ describe('Test simple select statements', () => {
                     table: ''
                 }
             ],
-            orderByColumns: ['id', 'value', 'ordering'],
+            orderByColumns: [
+                {
+                    name: 'id',
+                    table: 'mytable1'
+                },
+                {
+                    name: 'value',
+                    table: 'mytable1'
+                },
+                {
+                    name: 'ordering',
+                    table: ''
+                }
+            ],
             parameters: []
 
         }
@@ -1571,7 +1634,18 @@ describe('Test simple select statements', () => {
                     table: 't'
                 }
             ],
-            orderByColumns: ['id', 'value', 'ordering'],
+            orderByColumns: [
+                {
+                    name: 'id',
+                    table: 't'
+                }, {
+                    name: 'value',
+                    table: 't'
+                },
+                {
+                    name: 'ordering',
+                    table: 't'
+                }],
             parameters: []
 
         }
@@ -1601,7 +1675,20 @@ describe('Test simple select statements', () => {
                     table: 't'
                 }
             ],
-            orderByColumns: ['id', 'value', 'case when value = 1 then 1 else 2 end'],
+            orderByColumns: [
+                {
+                    name: 'id',
+                    table: 't'
+                },
+                {
+                    name: 'value',
+                    table: 't'
+                },
+                {
+                    name: 'case when value = 1 then 1 else 2 end',
+                    table: 't'
+                }
+            ],
             parameters: []
 
         }

@@ -531,7 +531,15 @@ describe('Test parse parameters', () => {
                 }
             ],
             parameters: [],
-            orderByColumns: ['id', 'value']
+            orderByColumns: [
+                {
+                    name: 'id',
+                    table: 'mytable1'
+                }, {
+                    name: 'value',
+                    table: 'mytable1'
+                }
+            ]
         }
 
         assert.deepStrictEqual(actual, expected);
