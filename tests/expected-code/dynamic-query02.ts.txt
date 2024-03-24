@@ -52,7 +52,10 @@ export async function derivatedTable(connection: Connection, params?: DerivatedT
         sql = appendSelect(sql, `m2.name`);
     }
     sql += EOL + `FROM mytable1 m1`;
-    if (params?.select == null || params.select.name || params.params?.name != null || where.name != null) {
+    if (params?.select == null
+        || params.select.name
+        || params.params?.name != null
+        || where.name != null) {
         sql += EOL + `INNER JOIN ( -- derivated table
 	SELECT id, name from mytable2 m 
 	WHERE m.name = ?

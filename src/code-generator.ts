@@ -11,6 +11,7 @@ import CodeBlockWriter from "code-block-writer";
 import { NestedTsDescriptor, createNestedTsDescriptor } from "./ts-nested-descriptor";
 import { mapToDynamicResultColumns, mapToDynamicParams, mapToDynamicSelectColumns } from "./ts-dynamic-query-descriptor";
 import { DynamicSqlInfoResult, FragmentInfoResult } from "./mysql-query-analyzer/types";
+import { EOL } from "os";
 
 export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, target: 'node' | 'deno', crud: boolean = false): string {
     const writer = new CodeBlockWriter();
@@ -434,7 +435,7 @@ function generateDynamicQueryFrom(writer: CodeBlockWriter, sqlVar: string, fragm
     const allConditions = [...selectConditions, ...paramConditions, ...whereConditions, ...orderByConditions];
     const paramValues = fragment.parameters.map(param => 'params?.params?.' + param);
     if (allConditions.length > 0) {
-        writer.write(`if (${allConditions.join(' || ')})`).block(() => {
+        writer.write(`if (${allConditions.join(EOL + '    || ')})`).block(() => {
             writer.write(`${sqlVar} += EOL + \`${fragment.fragment}\`;`);
             paramValues.forEach(paramValues => {
                 writer.writeLine(`paramsValues.push(${paramValues});`);

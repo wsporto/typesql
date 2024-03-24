@@ -44,7 +44,10 @@ export async function cte(connection: Connection, params?: CteDynamicParams): Pr
     const where = whereConditionsToObject(params?.where);
     const paramsValues: any = [];
     let withClause = '';
-    if (params?.select == null || params.select.name || params.params?.name != null || where.name != null) {
+    if (params?.select == null
+        || params.select.name
+        || params.params?.name != null
+        || where.name != null) {
         withClause += EOL + `cte as (
             select id, name from mytable2
         )`;
@@ -57,7 +60,10 @@ export async function cte(connection: Connection, params?: CteDynamicParams): Pr
         sql = appendSelect(sql, `m2.name`);
     }
     sql += EOL + `FROM mytable1 m1`;
-    if (params?.select == null || params.select.name || params.params?.name != null || where.name != null) {
+    if (params?.select == null
+        || params.select.name
+        || params.params?.name != null
+        || where.name != null) {
         sql += EOL + `INNER JOIN cte m2 on m2.id = m1.id`;
     }
     sql += EOL + `WHERE 1 = 1`;

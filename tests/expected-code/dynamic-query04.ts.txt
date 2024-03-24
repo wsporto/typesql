@@ -73,7 +73,13 @@ export async function dynamicQuery04(connection: Connection, params?: DynamicQue
         sql = appendSelect(sql, `m2.descr`);
     }
     sql += EOL + `FROM mytable1 m1`;
-    if (params?.select == null || params.select.id_2 || params.select.name || params.select.descr || where.id_2 != null || where.name != null || where.descr != null) {
+    if (params?.select == null
+        || params.select.id_2
+        || params.select.name
+        || params.select.descr
+        || where.id_2 != null
+        || where.name != null
+        || where.descr != null) {
         sql += EOL + `INNER JOIN mytable2 m2 on m2.id = m1.id`;
     }
     sql += EOL + `WHERE 1 = 1`;
