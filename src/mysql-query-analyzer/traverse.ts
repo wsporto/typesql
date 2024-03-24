@@ -2075,7 +2075,10 @@ function getOrderByColumns(fromColumns: ColumnDef[], selectColumns: TypeAndNullI
     fromColumns.forEach((col) => {
         const ambiguous = isAmbiguous(fromColumns, col.columnName);
         if (!ambiguous) {
-            orderByColumns.push(col.columnName);
+            const exists = orderByColumns.find(orderBy => orderBy == col.columnName);
+            if (!exists) {
+                orderByColumns.push(col.columnName);
+            }
         }
         if (col.tableAlias && col.table) {
             orderByColumns.push(`${col.tableAlias}.${col.columnName}`)
@@ -2084,13 +2087,17 @@ function getOrderByColumns(fromColumns: ColumnDef[], selectColumns: TypeAndNullI
             orderByColumns.push(`${col.table}.${col.columnName}`)
         }
     });
-
     selectColumns.forEach(col => {
-        const exists = orderByColumns.find(orderBy => orderBy == col.name);
-        if (!exists) {
-            orderByColumns.push(col.name)
+        const duplicated = selectColumns.filter(orderBy => orderBy.name == col.name);
+        if (duplicated.length <= 1) {
+            const exists = orderByColumns.find(orderBy => orderBy == col.name);
+            if (!exists) {
+                orderByColumns.push(col.name);
+            }
         }
     });
+
+
     return orderByColumns;
 }
 

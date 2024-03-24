@@ -430,7 +430,7 @@ function generateDynamicQueryFrom(writer: CodeBlockWriter, sqlVar: string, fragm
     }
     const paramConditions = fragment.dependOnParams.map(param => 'params.params?.' + param + ' != null');
     const whereConditions = fragment.dependOnFields.map(fieldIndex => 'where.' + columns[fieldIndex].name + ' != null');
-    const orderByConditions = includeOrderBy ? fragment.dependOnFields.map(fieldIndex => 'orderBy.' + columns[fieldIndex].name + ' != null') : [];
+    const orderByConditions = includeOrderBy ? fragment.dependOnOrderBy?.map(orderBy => 'orderBy[\'' + orderBy + '\'] != null') || [] : [];
     const allConditions = [...selectConditions, ...paramConditions, ...whereConditions, ...orderByConditions];
     const paramValues = fragment.parameters.map(param => 'params?.params?.' + param);
     if (allConditions.length > 0) {

@@ -118,6 +118,7 @@ export type FragmentInfoResult = {
     fragmentWitoutAlias?: string;
     dependOnFields: number[];
     dependOnParams: string[];
+    dependOnOrderBy?: string[];
     parameters: string[];
 }
 

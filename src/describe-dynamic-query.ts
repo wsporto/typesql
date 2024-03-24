@@ -1,6 +1,7 @@
-import { ColumnInfo, DynamicSqlInfo, DynamicSqlInfoResult, FragmentInfo, FragmentInfoResult, TableField } from "./mysql-query-analyzer/types";
+import { splitName } from "./mysql-query-analyzer/select-columns";
+import { DynamicSqlInfo, DynamicSqlInfoResult, FragmentInfo, FragmentInfoResult, TableField } from "./mysql-query-analyzer/types";
 
-export function describeDynamicQuery(dynamicQueryInfo: DynamicSqlInfo, namedParameters: string[], columnNames: ColumnInfo[]): DynamicSqlInfoResult {
+export function describeDynamicQuery(dynamicQueryInfo: DynamicSqlInfo, namedParameters: string[], orderBy: string[]): DynamicSqlInfoResult {
     const { with: withFragments, select, from, where } = dynamicQueryInfo;
 
     const selectFragments = select.map((fragment, index) => {
@@ -13,8 +14,8 @@ export function describeDynamicQuery(dynamicQueryInfo: DynamicSqlInfo, namedPara
         }
         return fragmentResult;
     });
-    const withFragements = withFragments?.map(fragment => transformFrom(fragment, withFragments, select, from, where, namedParameters));
-    const fromFragements = from.map(fragment => transformFrom(fragment, undefined, select, from, where, namedParameters));
+    const withFragements = withFragments?.map(fragment => transformFrom(fragment, withFragments, select, from, where, namedParameters, orderBy));
+    const fromFragements = from.map(fragment => transformFrom(fragment, undefined, select, from, where, namedParameters, orderBy));
 
     const whereFragements = where.map(fragment => {
 
@@ -39,7 +40,7 @@ export function describeDynamicQuery(dynamicQueryInfo: DynamicSqlInfo, namedPara
     return result;
 }
 
-function transformFrom(fragment: FragmentInfo, withFragments: FragmentInfo[] | undefined, select: FragmentInfo[], from: FragmentInfo[], where: FragmentInfo[], namedParameters: string[]) {
+function transformFrom(fragment: FragmentInfo, withFragments: FragmentInfo[] | undefined, select: FragmentInfo[], from: FragmentInfo[], where: FragmentInfo[], namedParameters: string[], orderByColumns: string[]) {
     if (fragment.relation) {
         addAllChildFields(fragment, from, withFragments);
     }
@@ -65,12 +66,24 @@ function transformFrom(fragment: FragmentInfo, withFragments: FragmentInfo[] | u
         return [];
     });
 
+    const orderBy = orderByColumns.flatMap(orderBy => {
+        const orderByField = splitName(orderBy);
+        const found = fragment.fields.find(field => field.name == orderByField.name && (field.table == orderByField.prefix || orderByField.prefix == ''));
+        if (found) {
+            return orderBy;
+        }
+        return [];
+    })
+
     const params = filteredWhere.flatMap(fragment => fragment.dependOnParams).map(paramIndex => namedParameters[paramIndex]);
     const fragmentResult: FragmentInfoResult = {
         fragment: fragment.fragment,
         dependOnFields: fieldIndex,
         dependOnParams: [...new Set(params)],
         parameters: fragment.parameters.map(paramIndex => namedParameters[paramIndex])
+    }
+    if (orderBy.length > 0) {
+        fragmentResult.dependOnOrderBy = orderBy;
     }
     return fragmentResult;
 }

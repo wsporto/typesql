@@ -172,7 +172,7 @@ export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[]): QueryIn
             queryInfoResult.nestedResultInfo = nestedInfo;
         }
         if (gererateDynamicQuery) {
-            const dynamicQuery = describeDynamicQuery(traverseResult.dynamicSqlInfo, namedParameters, queryInfoResult.columns);
+            const dynamicQuery = describeDynamicQuery(traverseResult.dynamicSqlInfo, namedParameters, queryInfoResult.orderByColumns || []);
             queryInfoResult.dynamicQuery = dynamicQuery;
         }
 
