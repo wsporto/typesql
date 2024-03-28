@@ -1,7 +1,7 @@
 import {
     ExprContext, ExprIsContext, PrimaryExprCompareContext,
     ExprAndContext, SimpleExprColumnRefContext, ExprNotContext, ExprOrContext, BoolPriContext, PredicateContext
-} from "ts-mysql-parser";
+} from '@wsporto/ts-mysql-parser';
 import { getSimpleExpressions, splitName, findColumn } from "./select-columns";
 import { ColumnDef } from "./types";
 

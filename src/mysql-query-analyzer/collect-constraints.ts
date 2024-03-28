@@ -4,7 +4,7 @@ import {
     SimpleExprFunctionContext,
     ExprContext,
     InsertStatementContext, DeleteStatementContext
-} from "ts-mysql-parser";
+} from '@wsporto/ts-mysql-parser';
 
 import { ColumnSchema, ColumnDef, TypeVar, Type, Constraint, SubstitutionHash } from "./types";
 import { findColumn, splitName } from "./select-columns";

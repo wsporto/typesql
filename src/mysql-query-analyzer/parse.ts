@@ -1,4 +1,4 @@
-import MySQLParser, { SqlMode, QueryContext, QuerySpecificationContext, SelectStatementContext, SubqueryContext, QueryExpressionParensContext, QueryExpressionBodyContext, InsertQueryExpressionContext, SelectItemContext, SumExprContext, SimpleExprWindowingFunctionContext, WindowingClauseContext, FunctionCallContext } from 'ts-mysql-parser';
+import MySQLParser, { SqlMode, QueryContext, QuerySpecificationContext, SelectStatementContext, SubqueryContext, QueryExpressionParensContext, QueryExpressionBodyContext, InsertQueryExpressionContext, SelectItemContext, SumExprContext, SimpleExprWindowingFunctionContext, WindowingClauseContext, FunctionCallContext } from '@wsporto/ts-mysql-parser';
 import { ParseTree, TerminalNode } from "antlr4ts/tree";
 import { getVarType } from './collect-constraints';
 import {

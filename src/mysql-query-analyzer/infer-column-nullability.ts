@@ -4,7 +4,7 @@ import {
     WhereClauseContext, SimpleExprListContext, PrimaryExprIsNullContext, PrimaryExprCompareContext, ExprNotContext, ExprAndContext,
     ExprXorContext, ExprOrContext, SimpleExprParamMarkerContext, SimpleExprLiteralContext, SimpleExprCaseContext, SimpleExprSumContext,
     SimpleExprSubQueryContext, SimpleExprRuntimeFunctionContext, SimpleExprIntervalContext, SimpleExprWindowingFunctionContext, WindowFunctionCallContext, SimpleExprCastContext, SubqueryContext, QueryExpressionOrParensContext, QueryExpressionContext, QueryExpressionBodyContext
-} from "ts-mysql-parser";
+} from '@wsporto/ts-mysql-parser';
 import { ColumnSchema, FieldName, ColumnDef } from "./types";
 import { findColumn, splitName, selectAllColumns } from "./select-columns";
 import { getParentContext, inferParameterNotNull } from "./infer-param-nullability";

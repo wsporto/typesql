@@ -1,4 +1,4 @@
-import { ExprContext, JoinedTableContext, QueryContext, SimpleExprColumnRefContext, TableFactorContext, TableReferenceContext } from "ts-mysql-parser";
+import { ExprContext, JoinedTableContext, QueryContext, SimpleExprColumnRefContext, TableFactorContext, TableReferenceContext } from '@wsporto/ts-mysql-parser';
 import { extractQueryInfo, parse } from "./mysql-query-analyzer/parse";
 import { findColumnSchema, getSimpleExpressions, splitName } from "./mysql-query-analyzer/select-columns";
 import { ColumnInfo, ColumnSchema } from "./mysql-query-analyzer/types";

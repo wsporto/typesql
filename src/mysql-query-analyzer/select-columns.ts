@@ -8,7 +8,7 @@ import {
     SimpleExprGroupingOperationContext, SimpleExprWindowingFunctionContext, SimpleExprConcatContext, SimpleExprUnaryContext, SimpleExprNotContext,
     SimpleExprSubQueryContext, SimpleExprOdbcContext, SimpleExprMatchContext, SimpleExprBinaryContext, SimpleExprCastContext, SimpleExprCaseContext,
     SimpleExprConvertContext, SimpleExprConvertUsingContext, SimpleExprDefaultContext, SimpleExprValuesContext, SimpleExprIntervalContext, SelectItemContext, ExprContext, ExprAndContext, ExprXorContext, ExprOrContext
-} from "ts-mysql-parser";
+} from '@wsporto/ts-mysql-parser';
 
 import { ColumnDef, ColumnSchema, FieldName } from "./types";
 import { createColumnTypeFomColumnSchema } from "./collect-constraints";

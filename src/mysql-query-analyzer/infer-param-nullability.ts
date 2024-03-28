@@ -1,4 +1,4 @@
-import { SimpleExprParamMarkerContext, PrimaryExprIsNullContext, FunctionCallContext, ExprContext, InsertQueryExpressionContext, SelectStatementContext, QueryExpressionBodyContext, QuerySpecOptionContext, QuerySpecificationContext, QueryExpressionContext } from "ts-mysql-parser";
+import { SimpleExprParamMarkerContext, PrimaryExprIsNullContext, FunctionCallContext, ExprContext, InsertQueryExpressionContext, SelectStatementContext, QueryExpressionBodyContext, QuerySpecOptionContext, QuerySpecificationContext, QueryExpressionContext } from '@wsporto/ts-mysql-parser';
 import { RuleContext } from "antlr4ts";
 import { ParseTree } from "antlr4ts/tree";
 import { getAllQuerySpecificationsFromSelectStatement } from "./parse";
