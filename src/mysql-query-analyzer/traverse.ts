@@ -385,7 +385,7 @@ function traverseQueryExpressionOrParens(queryExpressionOrParens: QueryExpressio
     throw Error("walkQueryExpressionOrParens");
 }
 
-function traverseQueryExpression(queryExpression: QueryExpressionContext, traverseContext: TraverseContext, recursiveNames?: string[]): QuerySpecificationResult {
+function traverseQueryExpression(queryExpression: QueryExpressionContext, traverseContext: TraverseContext, cte?: string, recursiveNames?: string[]): QuerySpecificationResult {
     const withClause = queryExpression.withClause();
     if (withClause) {
         traverseWithClause(withClause, traverseContext);
@@ -393,23 +393,23 @@ function traverseQueryExpression(queryExpression: QueryExpressionContext, traver
 
     const queryExpressionBody = queryExpression.queryExpressionBody();
     if (queryExpressionBody) {
-        return traverseQueryExpressionBody(queryExpressionBody, traverseContext, recursiveNames)
+        return traverseQueryExpressionBody(queryExpressionBody, traverseContext, cte, recursiveNames)
     }
     const queryExpressionParens = queryExpression.queryExpressionParens();
     if (queryExpressionParens) {
-        return traverseQueryExpressionParens(queryExpressionParens, traverseContext, recursiveNames);
+        return traverseQueryExpressionParens(queryExpressionParens, traverseContext, cte, recursiveNames);
     }
     throw Error("walkQueryExpression");
 }
 
-function traverseQueryExpressionParens(queryExpressionParens: QueryExpressionParensContext, traverseContext: TraverseContext, recursiveNames?: string[]): QuerySpecificationResult {
+function traverseQueryExpressionParens(queryExpressionParens: QueryExpressionParensContext, traverseContext: TraverseContext, cte?: string, recursiveNames?: string[]): QuerySpecificationResult {
     const queryExpression = queryExpressionParens.queryExpression();
     if (queryExpression) {
-        return traverseQueryExpression(queryExpression, traverseContext, recursiveNames);
+        return traverseQueryExpression(queryExpression, traverseContext, cte, recursiveNames);
     }
     const queryExpressionParens2 = queryExpressionParens.queryExpressionParens();
     if (queryExpressionParens2) {
-        return traverseQueryExpressionParens(queryExpressionParens, traverseContext, recursiveNames);
+        return traverseQueryExpressionParens(queryExpressionParens, traverseContext, cte, recursiveNames);
     }
     throw Error("walkQueryExpressionParens");
 }
@@ -419,12 +419,24 @@ function createUnionVar(type: TypeVar, name: string) {
     return newVar;
 }
 
-function traverseQueryExpressionBody(queryExpressionBody: QueryExpressionBodyContext, traverseContext: TraverseContext, recursiveNames?: string[]): QuerySpecificationResult {
+function traverseQueryExpressionBody(queryExpressionBody: QueryExpressionBodyContext, traverseContext: TraverseContext, cte?: string, recursiveNames?: string[]): QuerySpecificationResult {
     const allQueries = getAllQuerySpecificationsFromSelectStatement(queryExpressionBody);
     const [first, ...unionQuerySpec] = allQueries;
     const mainQueryResult = traverseQuerySpecification(first, traverseContext);
 
     const resultTypes = mainQueryResult.columns.map((t, index) => unionQuerySpec.length == 0 ? t.type : createUnionVar(t.type, recursiveNames && recursiveNames.length > 0 ? recursiveNames[index] : t.name)); //TODO mover para traversequeryspecificat?
+    if (cte) {
+        resultTypes.forEach((col, index) => {
+            const withCol: ColumnDef = {
+                table: cte,
+                columnName: col.name,
+                columnType: col,
+                columnKey: "",
+                notNull: mainQueryResult.columns[index].notNull
+            }
+            traverseContext.withSchema.push(withCol);
+        })
+    }
 
     for (let queryIndex = 0; queryIndex < unionQuerySpec.length; queryIndex++) {
         const columnNames = recursiveNames && recursiveNames.length > 0 ? recursiveNames : mainQueryResult.columns.map(col => col.name);
@@ -528,23 +540,13 @@ export function traverseQuerySpecification(querySpec: QuerySpecificationContext,
 export function traverseWithClause(withClause: WithClauseContext, traverseContext: TraverseContext) {
     //result1, result2
     withClause.commonTableExpression().forEach(commonTableExpression => {
-        const identifier = commonTableExpression.identifier().text;
+        const cte = commonTableExpression.identifier().text;
         const recursiveNames = withClause.RECURSIVE_SYMBOL() ? commonTableExpression.columnInternalRefList()?.columnInternalRef().map(t => t.text) || [] : undefined;
         const subQuery = commonTableExpression.subquery();
-        const subqueryResult = traverseSubquery(subQuery, traverseContext, recursiveNames); //recursive= true??
-        subqueryResult.columns.forEach(col => {
-            const withCol: ColumnDef = {
-                table: identifier,
-                columnName: col.name,
-                columnType: col.type,
-                columnKey: "",
-                notNull: col.notNull
-            }
-            traverseContext.withSchema.push(withCol);
-        })
+        traverseSubquery(subQuery, traverseContext, cte, recursiveNames); //recursive= true??
         traverseContext.dynamicSqlInfo.with?.push({
             fragment: extractOriginalSql(commonTableExpression) + '',
-            relation: identifier,
+            relation: cte,
             fields: [],
             dependOnFields: [],
             dependOnParams: [],
@@ -749,11 +751,11 @@ function traverseSingleTable(singleTable: SingleTableContext, dbSchema: ColumnSc
     return fields;
 }
 
-function traverseSubquery(subQuery: SubqueryContext, traverseContext: TraverseContext, recursiveNames?: string[] | undefined): QuerySpecificationResult {
+function traverseSubquery(subQuery: SubqueryContext, traverseContext: TraverseContext, cte?: string, recursiveNames?: string[] | undefined): QuerySpecificationResult {
     const queryExpressionParens = subQuery.queryExpressionParens();
     const queryExpression = queryExpressionParens.queryExpression();
     if (queryExpression) {
-        return traverseQueryExpression(queryExpression, { ...traverseContext, subQuery: true }, recursiveNames);
+        return traverseQueryExpression(queryExpression, { ...traverseContext, subQuery: true }, cte, recursiveNames);
     }
     const queryExpressionParens2 = queryExpressionParens.queryExpressionParens();
     if (queryExpressionParens2) {

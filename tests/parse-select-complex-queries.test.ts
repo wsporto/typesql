@@ -742,6 +742,49 @@ describe('Test parse complex queries', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('WITH RECURSIVE cte ...SELECT ... INNER JOIN', async () => {
+        const sql = `
+        WITH RECURSIVE cte as (
+            SELECT     t1.id, 0 as level
+            FROM       mytable1 t1
+            WHERE      id is null
+            UNION ALL
+            SELECT     t1.id,
+                        level+1 as level
+            FROM       cte c
+            INNER JOIN mytable1 t1
+                    on c.id = t1.id
+        )
+        SELECT * from cte
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 'cte'
+                },
+                {
+                    columnName: 'level',
+                    type: 'bigint',
+                    notNull: true,
+                    table: 'cte'
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it('select id, :value from (select id from mytable1 t where t.value = :value) t', async () => {
         const sql = `select id, :value as value from (
             select id from mytable1 t where t.value = :value
