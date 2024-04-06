@@ -1,7 +1,7 @@
 import { Select_stmtContext, Sql_stmtContext, ExprContext } from "@wsporto/ts-mysql-parser/sqlite/SQLiteParser";
 import { ColumnDef, TraverseContext, Type, TypeAndNullInfer, TypeVar } from "../mysql-query-analyzer/types";
 import { filterColumns, findColumn, splitName } from "../mysql-query-analyzer/select-columns";
-import { freshVar } from "../mysql-query-analyzer/collect-constraints";
+import { createColumnType, freshVar } from "../mysql-query-analyzer/collect-constraints";
 import { QuerySpecificationResult } from "../mysql-query-analyzer/traverse";
 
 export function traverse_Sql_stmtContext(sql_stmt: Sql_stmtContext, traverseContext: TraverseContext): QuerySpecificationResult {
@@ -38,9 +38,16 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
 
         const result_column = select_core.result_column();
 
-        result_column.forEach(col => {
-            const expr = col.expr();
-            const alias = col.column_alias()?.text;
+        result_column.forEach(result_column => {
+            if (result_column.STAR()) {
+                columnsResult.forEach(col => {
+                    const columnType = createColumnType(col);
+                    listType.push(columnType);
+                })
+            }
+
+            const expr = result_column.expr();
+            const alias = result_column.column_alias()?.text;
             if (expr) {
                 const exprType = traverse_expr(expr, { ...traverseContext, fromColumns: columnsResult });
                 if (exprType.kind == 'TypeVar') {
