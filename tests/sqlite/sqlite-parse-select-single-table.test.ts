@@ -31,4 +31,30 @@ describe('Test simple select statements', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     })
+
+    it('SELECT id as name FROM mytable1', async () => {
+        const sql = 'SELECT id as name FROM MYTABLE1';
+        const actual = await parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'NAME',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: 'MYTABLE1'
+                }
+            ],
+            parameters: []
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+
+    })
 });

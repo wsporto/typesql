@@ -32,7 +32,6 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
                     const tableName = splitName(table_name.any_name().text);
                     const fields = filterColumns(traverseContext.dbSchema, [], '', tableName);
                     columnsResult.push(...fields);
-                    console.log("columnResult=", columnsResult);
                 }
             })
         }
@@ -41,9 +40,13 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
 
         result_column.forEach(col => {
             const expr = col.expr();
+            const alias = col.column_alias()?.text;
             if (expr) {
                 const exprType = traverse_expr(expr, { ...traverseContext, fromColumns: columnsResult });
                 if (exprType.kind == 'TypeVar') {
+                    if (alias) {
+                        exprType.name = alias;
+                    }
                     listType.push(exprType);
                 }
             }
