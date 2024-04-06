@@ -23,4 +23,27 @@ describe.only('sqlite-parse-params', () => {
         }
         assert.deepStrictEqual(actual.right.parameters, expected);
     })
+
+    it(`SELECT * from mytable2 where id = ? or id > ?`, async () => {
+        const sql = `
+        SELECT * from mytable2 where id = ? or id > ?
+        `
+        const actual = await parseSql(sql, sqliteDbSchema);
+        const expected: ParameterDef[] = [
+            {
+                name: 'param1',
+                columnType: 'INTEGER',
+                notNull: true
+            },
+            {
+                name: 'param2',
+                columnType: 'INTEGER',
+                notNull: true
+            }
+        ]
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right.parameters, expected);
+    })
 });

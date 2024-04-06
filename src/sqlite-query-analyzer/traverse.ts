@@ -101,5 +101,24 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         })
         return freshVar(expr.text, 'tinyint');
     }
+    if (expr.ASSIGN()) { //=
+        const exprLeft = expr.expr()[0];
+        const exprRight = expr.expr()[1];
+        const typeLeft = traverse_expr(exprLeft, traverseContext);
+        const typeRight = traverse_expr(exprRight, traverseContext);
+        traverseContext.constraints.push({
+            expression: expr.text,
+            type1: typeLeft,
+            type2: typeRight
+        })
+        return freshVar(expr.text, 'tinyint');
+    }
+    if (expr.OR_() || expr.AND_()) {
+        const expr1 = expr.expr()[0];
+        const expr2 = expr.expr()[1];
+        traverse_expr(expr1, traverseContext);
+        traverse_expr(expr2, traverseContext);
+        return freshVar(expr.text, 'tinyint');
+    }
     throw Error('traverse_expr not supported:' + expr.text);
 }
