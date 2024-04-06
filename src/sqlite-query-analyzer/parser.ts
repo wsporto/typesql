@@ -1,26 +1,28 @@
 import { SQLiteLexer } from "@wsporto/ts-mysql-parser/sqlite/SQLiteLexer";
 import { Either, right } from "fp-ts/lib/Either";
-import { SchemaDef, TypeSqlError } from "../types";
+import { ParameterDef, SchemaDef, TypeSqlError } from "../types";
 import { SQLiteParser, Sql_stmtContext } from "@wsporto/ts-mysql-parser/sqlite/SQLiteParser";
 import { CharStreams, CommonTokenStream } from "antlr4ts";
 import { traverse_Sql_stmtContext } from "./traverse";
 import { ColumnInfo, ColumnSchema, SubstitutionHash, TraverseContext } from "../mysql-query-analyzer/types";
 import { getVarType } from "../mysql-query-analyzer/collect-constraints";
 import { unify } from "../mysql-query-analyzer/unify";
-import { verifyNotInferred } from "../describe-query";
+import { preprocessSql, verifyNotInferred } from "../describe-query";
 
 export function parseSql(sql: string, dbSchema: ColumnSchema[]): Either<TypeSqlError, SchemaDef> {
+
+    const { sql: processedSql, namedParameters } = preprocessSql(sql);
 
     const input = CharStreams.fromString(sql.toUpperCase());
     const lexer = new SQLiteLexer(input);
     const parser = new SQLiteParser(new CommonTokenStream(lexer));
     const sql_stmt = parser.sql_stmt();
 
-    return describeSQL(sql, sql_stmt, dbSchema);
+    return describeSQL(processedSql, sql_stmt, dbSchema, namedParameters);
 
 }
 
-function describeSQL(sql: string, sql_stmtContext: Sql_stmtContext, dbSchema: ColumnSchema[]): Either<TypeSqlError, SchemaDef> {
+function describeSQL(sql: string, sql_stmtContext: Sql_stmtContext, dbSchema: ColumnSchema[], namedParameters: string[]): Either<TypeSqlError, SchemaDef> {
 
     const traverseContext: TraverseContext = {
         dbSchema,
@@ -54,13 +56,23 @@ function describeSQL(sql: string, sql_stmtContext: Sql_stmtContext, dbSchema: Co
         }
         return colInfo;
     })
+    const paramsResult = traverseContext.parameters.map((param, index) => {
+        const columnType = getVarType(substitutions, param);
+        const columnNotNull = true;// param.notNull;
+        const colInfo: ParameterDef = {
+            name: namedParameters && namedParameters[index] ? namedParameters[index] : 'param' + (index + 1),
+            columnType: verifyNotInferred(columnType),
+            notNull: columnNotNull
+        }
+        return colInfo;
+    })
 
     const schemaDef: SchemaDef = {
         sql,
         queryType: "Select",
         multipleRowsResult: true,
         columns: columnResult,
-        parameters: []
+        parameters: paramsResult
     }
     return right(schemaDef);
 }

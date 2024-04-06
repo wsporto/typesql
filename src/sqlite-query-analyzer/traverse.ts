@@ -51,6 +51,11 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
                 }
             }
         })
+
+        const whereList = select_core.expr();
+        whereList.forEach(where => {
+            traverse_expr(where, { ...traverseContext, fromColumns: columnsResult });
+        })
     })
     //const columnNullability = inferNotNull(querySpec, traverseContext.dbSchema, allColumns);
 
@@ -77,6 +82,24 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         const column = findColumn(fieldName, traverseContext.fromColumns);
         const typeVar = freshVar(column.columnName, column.columnType.type, column.tableAlias || column.table);
         return typeVar;
+    }
+    const parameter = expr.BIND_PARAMETER();
+    if (parameter) {
+        const param = freshVar('?', '?');
+        traverseContext.parameters.push(param);
+        return param;
+    }
+    if (expr.LT2() || expr.GT2() || expr.AMP() || expr.PIPE() || expr.LT() || expr.LT_EQ() || expr.GT() || expr.GT_EQ()) {
+        const exprLeft = expr.expr()[0];
+        const exprRight = expr.expr()[1];
+        const typeLeft = traverse_expr(exprLeft, traverseContext);
+        const typeRight = traverse_expr(exprRight, traverseContext);
+        traverseContext.constraints.push({
+            expression: expr.text,
+            type1: typeLeft,
+            type2: typeRight
+        })
+        return freshVar(expr.text, 'tinyint');
     }
     throw Error('traverse_expr not supported:' + expr.text);
 }
