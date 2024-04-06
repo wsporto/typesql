@@ -4,7 +4,7 @@ import { isLeft } from "fp-ts/lib/Either";
 import { parseSql } from "../../src/sqlite-query-analyzer/parser";
 import { sqliteDbSchema } from "../mysql-query-analyzer/create-schema";
 
-describe.only('sqlite-parse-params', () => {
+describe('sqlite-parse-params', () => {
 
     it('SELECT * from mytable1 where id > ?', async () => {
         const sql = `
