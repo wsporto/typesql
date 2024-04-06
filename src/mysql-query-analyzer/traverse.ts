@@ -471,7 +471,7 @@ function traverseQueryExpressionBody(queryExpressionBody: QueryExpressionBodyCon
     return result;
 }
 
-type QuerySpecificationResult = {
+export type QuerySpecificationResult = {
     columns: TypeAndNullInfer[];
     fromColumns: ColumnDef[];
 }

@@ -1,5 +1,5 @@
 import { Field, RelationInfo, NestedResultInfo, RelationField } from "./describe-nested-query";
-import { TsType, converToTsType } from "./mysql-mapping";
+import { MySqlType, TsType, converToTsType } from "./mysql-mapping";
 import { ColumnInfo } from "./mysql-query-analyzer/types";
 
 export type TsField = {
@@ -60,7 +60,7 @@ function mapToField(columns: ColumnInfo[], field: Field | RelationField): FieldT
 
 function mapModelColumnToTsField(columns: ColumnInfo[], modelColumn: Field): TsField {
     const column = columns.find(col => col.columnName == modelColumn.name)!;
-    const tsType = converToTsType(column.type);
+    const tsType = converToTsType(column.type as MySqlType);
 
     const field: TsField = {
         type: "field",

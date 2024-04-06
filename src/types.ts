@@ -3,6 +3,7 @@ import { Brand } from "./utility-types"
 import { ColumnInfo, ColumnSchema, DynamicSqlInfoResult } from "./mysql-query-analyzer/types"
 import { QueryContext } from '@wsporto/ts-mysql-parser';
 import { NestedResultInfo } from "./describe-nested-query";
+import { SQLiteType } from "./sqlite-query-analyzer/types";
 
 export type DBSchema = {
     columns: ColumnSchema[];
@@ -42,7 +43,7 @@ export type ColumnDef2 = {
 
 export type ParameterDef = {
     name: string,
-    columnType: MySqlType | 'any';
+    columnType: MySqlType | SQLiteType | 'any';
     notNull: boolean,
     list?: boolean; //id in (?)
 }

@@ -1,8 +1,19 @@
 import { NestedResultInfo } from "../describe-nested-query";
-import { MySqlType, InferType } from "../mysql-mapping"
+import { MySqlType, InferType, DbType } from "../mysql-mapping"
+import { SQLiteType } from "../sqlite-query-analyzer/types";
 import { ParameterDef } from "../types"
 
 export type TypeVar = {
+    kind: 'TypeVar';
+    id: string;
+    name: string;
+    type: InferType;
+    table?: string;
+    list?: true;
+    selectItem?: true
+}
+
+export type SQliteTypeVar = {
     kind: 'TypeVar';
     id: string;
     name: string;
@@ -49,11 +60,13 @@ export type Constraint = {
     list?: true;
 }
 
-export type ColumnSchema = {
+export type ColumnSchema = GenericColumnSchema<MySqlType> | GenericColumnSchema<SQLiteType>;
+
+export type GenericColumnSchema<DbType> = {
     schema: string;
     table: string;
     column: string;
-    column_type: MySqlType;
+    column_type: DbType;
     columnKey: 'PRI' | 'MUL' | 'UNI' | '';
     notNull: boolean;
     autoincrement?: boolean;
@@ -80,7 +93,7 @@ export type FieldName = {
 
 export type ColumnInfo = {
     columnName: string;
-    type: MySqlType | 'any';
+    type: DbType | 'any';
     notNull: boolean;
     table?: string;
 }
@@ -91,7 +104,7 @@ export type FieldInfo = {
 }
 
 export type ParameterInfo = {
-    type: MySqlType | 'any'
+    type: DbType | 'any'
     notNull: boolean;
 }
 

@@ -1,3 +1,5 @@
+import { SQLiteType } from "./sqlite-query-analyzer/types";
+
 export enum FlagEnum {
     NOT_NULL = 1,
     PRI_KEY = 2,
@@ -6,8 +8,9 @@ export enum FlagEnum {
     SET_FLAG = 2048
 }
 
-export type InferType = MySqlType | '?' | 'number' | 'any';
+export type InferType = MySqlType | SQLiteType | '?' | 'number' | 'any';
 
+export type DbType = MySqlType | SQLiteType;
 
 export type MySqlType =
     | 'decimal' | 'decimal[]'

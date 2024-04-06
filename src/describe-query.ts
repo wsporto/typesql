@@ -3,7 +3,7 @@ import { extractQueryInfo } from "./mysql-query-analyzer/parse";
 import { DbClient } from "./queryExectutor";
 import { Either, isLeft, right, left } from "fp-ts/lib/Either";
 import { ColumnInfo, ColumnSchema } from "./mysql-query-analyzer/types";
-import { MySqlType, InferType } from "./mysql-mapping";
+import { InferType, DbType } from "./mysql-mapping";
 
 export function describeSql(dbSchema: ColumnSchema[], sql: string): SchemaDef {
     const { sql: processedSql, namedParameters } = preprocessSql(sql);
@@ -114,7 +114,7 @@ function addParameterNames(parameters: ParameterDef[], namedParameters: string[]
     })
 }
 
-export function verifyNotInferred(type: InferType): MySqlType | 'any' {
+export function verifyNotInferred(type: InferType): DbType | 'any' {
     if (type == '?' || type == 'any') return "any";
     if (type == 'number') return "double";
     return type;

@@ -504,7 +504,7 @@ export function generateTsDescriptor(queryInfo: SchemaDef): TsDescriptor {
     const columns = queryInfo.columns.map((col, columnIndex) => {
         const tsDesc: TsFieldDescriptor = {
             name: escapedColumnsNames[columnIndex],
-            tsType: mapColumnType(col.type),
+            tsType: mapColumnType(col.type as MySqlType),
             notNull: col.notNull ? col.notNull : false
         }
         return tsDesc;
@@ -523,7 +523,7 @@ export function generateTsDescriptor(queryInfo: SchemaDef): TsDescriptor {
 
         const tsDesc: TsFieldDescriptor = {
             name: escapedParametersNames[paramIndex],
-            tsType: mapColumnType(col.columnType) + arraySymbol,
+            tsType: mapColumnType(col.columnType as MySqlType) + arraySymbol,
             notNull: col.notNull ? col.notNull : false
         }
         return tsDesc;
@@ -534,7 +534,7 @@ export function generateTsDescriptor(queryInfo: SchemaDef): TsDescriptor {
 
         const tsDesc: TsFieldDescriptor = {
             name: escapedDataNames[dataIndex],
-            tsType: mapColumnType(col.columnType),
+            tsType: mapColumnType(col.columnType as MySqlType),
             notNull: col.notNull ? col.notNull : false
         }
         return tsDesc;

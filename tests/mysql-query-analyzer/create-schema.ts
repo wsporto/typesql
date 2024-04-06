@@ -1,4 +1,5 @@
-import { ColumnSchema } from "../../src/mysql-query-analyzer/types";
+import { ColumnSchema, GenericColumnSchema } from "../../src/mysql-query-analyzer/types";
+import { SQLiteType } from "../../src/sqlite-query-analyzer/types";
 
 export const dbSchema: ColumnSchema[] = [
     {
@@ -150,6 +151,25 @@ export const dbSchema: ColumnSchema[] = [
         column_type: 'varchar',
         columnKey: '',
         table: 'my table',
+        schema: 'mydb',
+        notNull: false
+    },
+]
+
+export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
+    {
+        column: 'id',
+        column_type: 'INTEGER',
+        columnKey: 'PRI',
+        table: 'mytable1',
+        schema: 'mydb',
+        notNull: true
+    },
+    {
+        column: 'value',
+        column_type: 'INTEGER',
+        columnKey: '',
+        table: 'mytable1',
         schema: 'mydb',
         notNull: false
     },
