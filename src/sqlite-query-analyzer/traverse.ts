@@ -25,13 +25,13 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
     select_coreList.forEach(select_core => {
         const table_or_subquery = select_core.table_or_subquery();
         if (table_or_subquery) {
-            const fields = traverse_table_or_subquery(table_or_subquery, traverseContext.dbSchema);
+            const fields = traverse_table_or_subquery(table_or_subquery, traverseContext);
             columnsResult.push(...fields);
         }
         const join_clause = select_core.join_clause();
         if (join_clause) {
             const join_table_or_subquery = join_clause.table_or_subquery();
-            const fields = traverse_table_or_subquery(join_table_or_subquery, traverseContext.dbSchema);
+            const fields = traverse_table_or_subquery(join_table_or_subquery, traverseContext);
             columnsResult.push(...fields);
         }
 
@@ -85,15 +85,31 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
     return querySpecification;
 }
 
-function traverse_table_or_subquery(table_or_subquery: Table_or_subqueryContext[], dbSchema: ColumnSchema[]) {
+function traverse_table_or_subquery(table_or_subquery: Table_or_subqueryContext[], traverseContext: TraverseContext): ColumnDef[] {
     const allFields: ColumnDef[] = [];
     table_or_subquery.forEach(table_or_subquery => {
         const table_name = table_or_subquery.table_name();
         const table_alias = table_or_subquery.table_alias()?.text;
         if (table_name) {
             const tableName = splitName(table_name.any_name().text);
-            const fields = filterColumns(dbSchema, [], table_alias, tableName);
+            const fields = filterColumns(traverseContext.dbSchema, [], table_alias, tableName);
             allFields.push(...fields);
+        }
+        const select_stmt = table_or_subquery.select_stmt();
+        if (select_stmt) {
+            const subQueryResult = traverse_select_stmt(select_stmt, traverseContext);
+            const tableAlias = table_or_subquery.table_alias()?.text;
+            subQueryResult.columns.forEach(t => {
+                const colDef: ColumnDef = {
+                    table: t.table ? tableAlias || '' : '',
+                    columnName: t.name,
+                    columnType: t.type,
+                    columnKey: "",
+                    notNull: t.notNull,
+                    tableAlias: tableAlias
+                }
+                allFields.push(colDef);
+            })
         }
     })
     return allFields;

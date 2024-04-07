@@ -108,7 +108,7 @@ describe('sqlite-parse-select-functions', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it.only('select sum(2*value) from  mytable1', async () => {
+    it('select sum(2*value) from  mytable1', async () => {
         const sql = `
         select sum(2*value) from  mytable1
         `
