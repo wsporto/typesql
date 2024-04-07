@@ -144,5 +144,15 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         traverse_expr(expr2, traverseContext);
         return freshVar(expr.text, 'tinyint');
     }
+    const function_name = expr.function_name()?.text.toLowerCase();
+    if (function_name == 'sum') {
+        const functionType = freshVar(function_name, 'NUMERIC');
+        const sumParamExpr = expr.expr()[0];
+        const paramType = traverse_expr(sumParamExpr, traverseContext);
+        if (paramType.kind == 'TypeVar') {
+            functionType.table = paramType.table
+        }
+        return functionType;
+    }
     throw Error('traverse_expr not supported:' + expr.text);
 }

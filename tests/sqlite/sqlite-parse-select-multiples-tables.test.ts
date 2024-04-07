@@ -4,7 +4,7 @@ import { isLeft } from "fp-ts/lib/Either";
 import { parseSql } from "../../src/sqlite-query-analyzer/parser";
 import { sqliteDbSchema } from "../mysql-query-analyzer/create-schema";
 
-describe.only('sqlite-parse-select-multiples-tables', () => {
+describe('sqlite-parse-select-multiples-tables', () => {
 
 	it('parse a basic with inner join', async () => {
 

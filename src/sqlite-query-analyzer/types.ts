@@ -1,3 +1,4 @@
 export type SQLiteType =
 	| 'INTEGER'
-	| 'TEXT';
+	| 'TEXT'
+	| 'NUMERIC';
