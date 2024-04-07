@@ -1,6 +1,6 @@
 import { Select_stmtContext, Sql_stmtContext, ExprContext, Table_or_subqueryContext } from "@wsporto/ts-mysql-parser/sqlite/SQLiteParser";
 import { ColumnDef, ColumnSchema, TraverseContext, Type, TypeAndNullInfer, TypeVar } from "../mysql-query-analyzer/types";
-import { filterColumns, findColumn, splitName } from "../mysql-query-analyzer/select-columns";
+import { filterColumns, findColumn, includeColumn, splitName } from "../mysql-query-analyzer/select-columns";
 import { createColumnType, freshVar } from "../mysql-query-analyzer/collect-constraints";
 import { QuerySpecificationResult } from "../mysql-query-analyzer/traverse";
 
@@ -39,9 +39,13 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
 
         result_column.forEach(result_column => {
             if (result_column.STAR()) {
+                const tableName = result_column.table_name()?.text;
                 columnsResult.forEach(col => {
-                    const columnType = createColumnType(col);
-                    listType.push(columnType);
+                    if (!tableName || includeColumn(col, tableName)) {
+                        const columnType = createColumnType(col);
+                        listType.push(columnType);
+                    }
+
                 })
             }
 

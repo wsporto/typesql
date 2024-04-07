@@ -13,6 +13,10 @@ import {
 import { ColumnDef, ColumnSchema, FieldName } from "./types";
 import { createColumnTypeFomColumnSchema } from "./collect-constraints";
 
+export function includeColumn(column: ColumnDef, table: string) {
+    return column.table.toLowerCase() == table.toLowerCase() || column.tableAlias?.toLowerCase() == table.toLowerCase();
+}
+
 export function filterColumns(dbSchema: ColumnSchema[], withSchema: ColumnDef[], tableAlias: string | undefined, table: FieldName): ColumnDef[] {
     const tableColumns1 = dbSchema
         .filter(schema => schema.table.toLowerCase() == table.name.toLowerCase() && (schema.schema == table.prefix || table.prefix == ''))
