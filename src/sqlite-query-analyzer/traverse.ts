@@ -154,5 +154,14 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         }
         return functionType;
     }
+    if (function_name == 'count') {
+        const functionType = freshVar(function_name, 'INTEGER');
+        const sumParamExpr = expr.expr()[0];
+        const paramType = traverse_expr(sumParamExpr, traverseContext);
+        if (paramType.kind == 'TypeVar') {
+            functionType.table = paramType.table
+        }
+        return functionType;
+    }
     throw Error('traverse_expr not supported:' + expr.text);
 }

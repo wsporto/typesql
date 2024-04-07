@@ -6,7 +6,7 @@ import { sqliteDbSchema } from "../mysql-query-analyzer/create-schema";
 
 describe('sqlite-parse-select-functions', () => {
 
-    it.only('select sum(value) as total from mytable1', async () => {
+    it('select sum(value) as total from mytable1', async () => {
         const sql = `
         select sum(value) as total from mytable1
         `
@@ -32,7 +32,7 @@ describe('sqlite-parse-select-functions', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it.only('select sum(t1.value) as total from mytable1 t1', async () => {
+    it('select sum(t1.value) as total from mytable1 t1', async () => {
         const sql = `
         select sum(t1.value) as total from mytable1 t1
         `
@@ -51,6 +51,31 @@ describe('sqlite-parse-select-functions', () => {
             ],
             parameters: []
 
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('select count(id) from mytable1', async () => {
+        const sql = `
+        select count(id) from mytable1
+        `
+        const actual = await parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: false,
+            columns: [
+                {
+                    columnName: 'count',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: 'MYTABLE1'
+                }
+            ],
+            parameters: []
         }
         if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
