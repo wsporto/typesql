@@ -107,11 +107,22 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         const typeVar = freshVar(column.columnName, column.columnType.type, column.tableAlias || column.table);
         return typeVar;
     }
+    const literal = expr.literal_value();
+    if (literal) {
+        return freshVar(literal.text, 'INTEGER')
+    }
     const parameter = expr.BIND_PARAMETER();
     if (parameter) {
         const param = freshVar('?', '?');
         traverseContext.parameters.push(param);
         return param;
+    }
+    if (expr.STAR() || expr.DIV() || expr.MOD()) {
+        const exprLeft = expr.expr()[0];
+        const exprRight = expr.expr()[1];
+        const typeLeft = traverse_expr(exprLeft, traverseContext);
+        const typeRight = traverse_expr(exprRight, traverseContext);
+        return freshVar(expr.text, 'tinyint');
     }
     if (expr.LT2() || expr.GT2() || expr.AMP() || expr.PIPE() || expr.LT() || expr.LT_EQ() || expr.GT() || expr.GT_EQ()) {
         const exprLeft = expr.expr()[0];
@@ -146,7 +157,7 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
     }
     const function_name = expr.function_name()?.text.toLowerCase();
     if (function_name == 'sum') {
-        const functionType = freshVar(function_name, 'NUMERIC');
+        const functionType = freshVar(expr.text, 'NUMERIC');
         const sumParamExpr = expr.expr()[0];
         const paramType = traverse_expr(sumParamExpr, traverseContext);
         if (paramType.kind == 'TypeVar') {

@@ -107,4 +107,30 @@ describe('sqlite-parse-select-functions', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     })
+
+    it.only('select sum(2*value) from  mytable1', async () => {
+        const sql = `
+        select sum(2*value) from  mytable1
+        `
+        const actual = await parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: false,
+            columns: [
+                {
+                    columnName: 'SUM(2*VALUE)',
+                    type: 'NUMERIC',
+                    notNull: false,
+                    table: ''
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
 });
