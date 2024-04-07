@@ -1,5 +1,5 @@
-import { Select_stmtContext, Sql_stmtContext, ExprContext } from "@wsporto/ts-mysql-parser/sqlite/SQLiteParser";
-import { ColumnDef, TraverseContext, Type, TypeAndNullInfer, TypeVar } from "../mysql-query-analyzer/types";
+import { Select_stmtContext, Sql_stmtContext, ExprContext, Table_or_subqueryContext } from "@wsporto/ts-mysql-parser/sqlite/SQLiteParser";
+import { ColumnDef, ColumnSchema, TraverseContext, Type, TypeAndNullInfer, TypeVar } from "../mysql-query-analyzer/types";
 import { filterColumns, findColumn, splitName } from "../mysql-query-analyzer/select-columns";
 import { createColumnType, freshVar } from "../mysql-query-analyzer/collect-constraints";
 import { QuerySpecificationResult } from "../mysql-query-analyzer/traverse";
@@ -25,15 +25,14 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
     select_coreList.forEach(select_core => {
         const table_or_subquery = select_core.table_or_subquery();
         if (table_or_subquery) {
-            console.log("table_or_subquery=", table_or_subquery[0].text);
-            table_or_subquery.forEach(table_or_subquery => {
-                const table_name = table_or_subquery.table_name();
-                if (table_name) {
-                    const tableName = splitName(table_name.any_name().text);
-                    const fields = filterColumns(traverseContext.dbSchema, [], '', tableName);
-                    columnsResult.push(...fields);
-                }
-            })
+            const fields = traverse_table_or_subquery(table_or_subquery, traverseContext.dbSchema);
+            columnsResult.push(...fields);
+        }
+        const join_clause = select_core.join_clause();
+        if (join_clause) {
+            const join_table_or_subquery = join_clause.table_or_subquery();
+            const fields = traverse_table_or_subquery(join_table_or_subquery, traverseContext.dbSchema);
+            columnsResult.push(...fields);
         }
 
         const result_column = select_core.result_column();
@@ -80,6 +79,20 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
         fromColumns: columnsResult
     }
     return querySpecification;
+}
+
+function traverse_table_or_subquery(table_or_subquery: Table_or_subqueryContext[], dbSchema: ColumnSchema[]) {
+    const allFields: ColumnDef[] = [];
+    table_or_subquery.forEach(table_or_subquery => {
+        const table_name = table_or_subquery.table_name();
+        const table_alias = table_or_subquery.table_alias()?.text;
+        if (table_name) {
+            const tableName = splitName(table_name.any_name().text);
+            const fields = filterColumns(dbSchema, [], table_alias, tableName);
+            allFields.push(...fields);
+        }
+    })
+    return allFields;
 }
 
 function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Type {

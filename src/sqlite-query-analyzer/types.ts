@@ -1,1 +1,3 @@
-export type SQLiteType = 'INTEGER'
+export type SQLiteType =
+	| 'INTEGER'
+	| 'TEXT';
