@@ -118,4 +118,37 @@ describe('Test simple select statements', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     })
+
+    it('parse select with CASE WHEN', async () => {
+
+        const sql = `
+        SELECT 
+            CASE 
+                WHEN id = 1 THEN 'one'
+                WHEN id = 2 THEN 'two'
+            END as id
+        FROM mytable1
+        `;
+        const actual = await parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'ID',
+                    type: 'TEXT',
+                    notNull: false, //not null can't be inferred
+                    table: ''
+                }
+            ],
+            parameters: []
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
 });

@@ -125,7 +125,13 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
     }
     const literal = expr.literal_value();
     if (literal) {
-        return freshVar(literal.text, 'INTEGER')
+        if (literal.STRING_LITERAL()) {
+            return freshVar(literal.text, 'TEXT')
+        }
+        if (literal.NUMERIC_LITERAL()) {
+            return freshVar(literal.text, 'INTEGER');
+        }
+        return freshVar(literal.text, '?');
     }
     const parameter = expr.BIND_PARAMETER();
     if (parameter) {
@@ -192,6 +198,34 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         }
 
         return functionType;
+    }
+    if (expr.CASE_()) {
+        const resultTypes: Type[] = []; //then and else
+        const whenTypes: Type[] = [];
+        expr.expr().forEach((expr_, index) => {
+            const type = traverse_expr(expr_, traverseContext);
+            if (expr_.WHEN_() || expr_.THEN_()) {
+                if (index % 2 == 0) {
+                    whenTypes.push(type);
+                }
+                else {
+                    resultTypes.push(type);
+                }
+            }
+            if (expr_.ELSE_()) {
+                resultTypes.push(type);
+            }
+        });
+        resultTypes.forEach((resultType, index) => {
+            if (index > 0) {
+                traverseContext.constraints.push({
+                    expression: expr.text,
+                    type1: resultTypes[0],
+                    type2: resultType
+                })
+            }
+        });
+        return resultTypes[0];
     }
     throw Error('traverse_expr not supported:' + expr.text);
 }
