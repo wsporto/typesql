@@ -1,5 +1,5 @@
 import assert from "assert";
-import { TsDescriptor, convertToCamelCaseName, replaceOrderByParam, generateTsCode, generateTsDescriptor, generateTsFileFromContent } from "../src/code-generator";
+import { TsDescriptor, convertToCamelCaseName, replaceOrderByParam, generateTsCodeForMySQL as generateTsCode, generateTsDescriptor, generateTsFileFromContent } from "../src/code-generator";
 import { describeSql } from "../src/describe-query";
 import { dbSchema } from "./mysql-query-analyzer/create-schema";
 import { DbClient } from "../src/queryExectutor";

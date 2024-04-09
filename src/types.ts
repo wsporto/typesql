@@ -104,10 +104,13 @@ export type PreprocessedSql = {
 
 export type CamelCaseName = Brand<string, 'CamelCase'>;
 
+export type TypeSqlDialect = 'mysql' | 'sqlite';
+
 export type TypeSqlConfig = {
     databaseUri: string;
     sqlDir: string;
     target: 'node' | 'deno';
+    client: TypeSqlDialect;
     includeCrudTables: string[];
 }
 

@@ -1,4 +1,4 @@
-import { SchemaDef, CamelCaseName, TsFieldDescriptor, ParameterDef } from "./types";
+import { SchemaDef, CamelCaseName, TsFieldDescriptor, ParameterDef, TypeSqlDialect } from "./types";
 import fs from "fs";
 import path, { parse } from "path";
 import { DbClient } from "./queryExectutor";
@@ -10,10 +10,11 @@ import { parseSql } from "./describe-query";
 import CodeBlockWriter from "code-block-writer";
 import { NestedTsDescriptor, createNestedTsDescriptor } from "./ts-nested-descriptor";
 import { mapToDynamicResultColumns, mapToDynamicParams, mapToDynamicSelectColumns } from "./ts-dynamic-query-descriptor";
-import { DynamicSqlInfoResult, FragmentInfoResult } from "./mysql-query-analyzer/types";
+import { ColumnSchema, DynamicSqlInfoResult, FragmentInfoResult } from "./mysql-query-analyzer/types";
 import { EOL } from "os";
+import { generateTsCode } from "./sqlite-query-analyzer/code-generator";
 
-export function generateTsCode(tsDescriptor: TsDescriptor, fileName: string, target: 'node' | 'deno', crud: boolean = false): string {
+export function generateTsCodeForMySQL(tsDescriptor: TsDescriptor, fileName: string, target: 'node' | 'deno', crud: boolean = false): string {
     const writer = new CodeBlockWriter();
 
     const camelCaseName = convertToCamelCaseName(fileName);
@@ -625,7 +626,7 @@ function generateTsContent(tsDescriptorOption: Option<TsDescriptor>, queryName: 
     if (isNone(tsDescriptorOption)) {
         return '//Invalid sql';
     }
-    return generateTsCode(tsDescriptorOption.value, queryName, target, crud);
+    return generateTsCodeForMySQL(tsDescriptorOption.value, queryName, target, crud);
 }
 
 export function replaceOrderByParam(sql: string) {
@@ -652,8 +653,7 @@ export function convertToCamelCaseName(name: string): CamelCaseName {
     return camelCaseStr;
 }
 
-//TODO - pass dbSchema instead of connection
-export async function generateTsFile(client: DbClient, sqlFile: string, target: 'node' | 'deno', isCrudFile: boolean) {
+export async function generateTsFile(client: DbClient, database: TypeSqlDialect, sqlFile: string, dbSchema: ColumnSchema[], isCrudFile: boolean) {
 
     const sqlContent = fs.readFileSync(sqlFile, 'utf8');
 
@@ -661,7 +661,8 @@ export async function generateTsFile(client: DbClient, sqlFile: string, target: 
     const dirPath = parse(sqlFile).dir;
     const queryName = convertToCamelCaseName(fileName);
 
-    const tsContent = await generateTsFileFromContent(client, sqlFile, queryName, sqlContent, target, isCrudFile);
+    const tsContent = database == 'mysql' ? await generateTsFileFromContent(client, sqlFile, queryName, sqlContent, 'node', isCrudFile)
+        : generateTsCode(sqlContent, queryName, dbSchema);
 
     const tsFilePath = path.resolve(dirPath, fileName) + ".ts";
 

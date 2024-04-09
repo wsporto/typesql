@@ -6,7 +6,7 @@ import CodeBlockWriter from "code-block-writer";
 import { ParameterDef, SchemaDef, TsFieldDescriptor } from "../types";
 import { SQLiteType } from "./types";
 
-export async function generateTsCode(sql: string, queryName: string, sqliteDbSchema: ColumnSchema[]) {
+export function generateTsCode(sql: string, queryName: string, sqliteDbSchema: ColumnSchema[]) {
     const queryInfo = parseSql(sql, sqliteDbSchema);
     if (isLeft(queryInfo)) {
         return 'invalid'

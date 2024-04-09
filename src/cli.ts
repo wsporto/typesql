@@ -7,10 +7,11 @@ import { generateTsFile, writeFile } from "./code-generator";
 import { DbClient } from "./queryExectutor";
 import { generateInsertStatement, generateUpdateStatement, generateDeleteStatement, generateSelectStatement } from "./sql-generator";
 import { ColumnSchema, Table } from "./mysql-query-analyzer/types";
-import { TypeSqlConfig, SqlGenOption } from "./types";
-import { Either, isLeft, left } from "fp-ts/lib/Either";
+import { TypeSqlConfig, SqlGenOption, TypeSqlDialect } from "./types";
+import { Either, isLeft, left, right } from "fp-ts/lib/Either";
 import CodeBlockWriter from "code-block-writer";
 import { globSync } from "glob";
+import { loadDbSchema } from "./sqlite-query-analyzer/query-executor";
 
 const CRUD_FOLDER = 'crud';
 
@@ -28,6 +29,7 @@ function parseArgs() {
                 "databaseUri": "mysql://root:password@localhost/mydb",
                 "sqlDir": "./sqls",
                 "target": "node",
+                "client": "mysql",
                 "includeCrudTables": []
             }
             const configPath = "./typesql.json";
@@ -89,7 +91,7 @@ function validateDirectories(dir: string) {
     }
 }
 
-function watchDirectories(client: DbClient, dirPath: string, target: 'node' | 'deno') {
+function watchDirectories(client: DbClient, db: TypeSqlDialect, dirPath: string, dbSchema: ColumnSchema[], target: 'node' | 'deno') {
     const dirGlob = `${dirPath}/**/*.sql`;
 
     chokidar.watch(dirGlob, {
@@ -97,12 +99,12 @@ function watchDirectories(client: DbClient, dirPath: string, target: 'node' | 'd
             stabilityThreshold: 100
         }
     })
-        .on('add', path => rewiteFiles(client, path, target, isCrudFile(dirPath, path)))
-        .on('change', path => rewiteFiles(client, path, target, isCrudFile(dirPath, path)));
+        .on('add', path => rewiteFiles(client, db, path, dbSchema, target, isCrudFile(dirPath, path)))
+        .on('change', path => rewiteFiles(client, db, path, dbSchema, target, isCrudFile(dirPath, path)));
 }
 
-async function rewiteFiles(client: DbClient, path: string, target: 'node' | 'deno', isCrudFile: boolean) {
-    await generateTsFile(client, path, target, isCrudFile);
+async function rewiteFiles(client: DbClient, db: TypeSqlDialect, path: string, dbSchema: ColumnSchema[], target: 'node' | 'deno', isCrudFile: boolean) {
+    await generateTsFile(client, db, path, dbSchema, isCrudFile);
     const dirPath = parse(path).dir;
     await writeIndexFile(dirPath);
 }
@@ -113,36 +115,38 @@ async function main() {
 
 async function compile(watch: boolean, config: TypeSqlConfig) {
 
-    const { sqlDir, databaseUri, target } = config;
+    const { sqlDir, databaseUri, target, client: dialect } = config;
     validateDirectories(sqlDir);
 
     const client = new DbClient();
-    const result = await client.connect(databaseUri);
-    if (isLeft(result)) {
-        console.error(`Error: ${result.left.description}.`);
-        return;
+    if (dialect == 'mysql') {
+        const result = await client.connect(databaseUri);
+        if (isLeft(result)) {
+            console.error(`Error: ${result.left.description}.`);
+            return;
+        }
     }
 
     const includeCrudTables = config.includeCrudTables || [];
-    const dbSchema = await client.loadDbSchema();
+    const dbSchema = dialect === 'mysql' ? await client.loadDbSchema() : loadDbSchema(databaseUri);
     if (isLeft(dbSchema)) {
         console.error(`Error: ${dbSchema.left.description}.`);
         return;
     }
 
-    await generateCrudTables(client, sqlDir, dbSchema.right, includeCrudTables);
+    await generateCrudTables(client, dialect, sqlDir, dbSchema.right, includeCrudTables);
     const dirGlob = `${sqlDir}/**/*.sql`;
 
     const sqlFiles = globSync(dirGlob);
 
-    const filesGeneration = sqlFiles.map(sqlFile => generateTsFile(client, sqlFile, target, isCrudFile(sqlDir, sqlFile)));
+    const filesGeneration = sqlFiles.map(sqlFile => generateTsFile(client, dialect, sqlFile, dbSchema.right, isCrudFile(sqlDir, sqlFile)));
     await Promise.all(filesGeneration);
 
     writeIndexFile(sqlDir);
 
     if (watch) {
         console.log("watching mode!");
-        watchDirectories(client, sqlDir, target);
+        watchDirectories(client, dialect, sqlDir, dbSchema.right, target);
     }
     else {
         client.closeConnection();
@@ -226,8 +230,8 @@ function generateSql(stmtType: SqlGenOption, tableName: string, columns: ColumnS
 
 main().then(() => console.log("finished!"));
 
-async function generateCrudTables(client: DbClient, sqlFolderPath: string, dbSchema: ColumnSchema[], includeCrudTables: string[]) {
-    const allTables = await selectAllTables(client);
+async function generateCrudTables(client: DbClient, dialect: TypeSqlDialect, sqlFolderPath: string, dbSchema: ColumnSchema[], includeCrudTables: string[]) {
+    const allTables = dialect == 'mysql' ? await selectAllTables(client) : right([]);
     if (isLeft(allTables)) {
         console.error(allTables.left);
         return;
