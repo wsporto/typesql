@@ -638,7 +638,7 @@ export function writeFile(filePath: string, tsContent: string) {
     fs.writeFileSync(filePath, tsContent);
 }
 
-function capitalize(name: CamelCaseName) {
+export function capitalize(name: CamelCaseName) {
     return capitalizeStr(name);
 }
 
