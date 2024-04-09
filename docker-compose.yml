@@ -18,3 +18,10 @@ services:
       - ./dbschema:/flyway/sql
     depends_on:
       - mysql-dev
+  sqlite-flyway:
+    image: flyway/flyway:7.15
+    container_name: "sqlite_flyway"
+    command: -url=jdbc:sqlite:/flyway/db/mydb.db migrate
+    volumes:
+      - .:/flyway/db
+      - ./sqlite-migrations:/flyway/sql
