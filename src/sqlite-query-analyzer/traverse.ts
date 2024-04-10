@@ -143,7 +143,6 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         const exprLeft = expr.expr()[0];
         const exprRight = expr.expr()[1];
         const typeLeft = traverse_expr(exprLeft, traverseContext);
-        const typeRight = traverse_expr(exprRight, traverseContext);
         return freshVar(expr.text, 'tinyint');
     }
     if (expr.LT2() || expr.GT2() || expr.AMP() || expr.PIPE() || expr.LT() || expr.LT_EQ() || expr.GT() || expr.GT_EQ()) {
@@ -167,6 +166,22 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
             expression: expr.text,
             type1: typeLeft,
             type2: typeRight
+        })
+        return freshVar(expr.text, 'tinyint');
+    }
+    if (expr.IN_()) {
+        const inExprLeft = expr.expr()[0];
+        const inExprRight = expr.expr()[1];
+        const typeLeft = traverse_expr(inExprLeft, traverseContext);
+        inExprRight.children?.forEach(exprRight => {
+            if (exprRight instanceof ExprContext) {
+                const typeRight = traverse_expr(exprRight, traverseContext);
+                traverseContext.constraints.push({
+                    expression: expr.text,
+                    type1: typeLeft,
+                    type2: typeRight
+                })
+            }
         })
         return freshVar(expr.text, 'tinyint');
     }
