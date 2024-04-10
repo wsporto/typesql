@@ -1,7 +1,7 @@
 import { isLeft } from "fp-ts/lib/Either";
 import { ColumnInfo, ColumnSchema } from "../mysql-query-analyzer/types";
 import { parseSql } from "./parser";
-import { TsDescriptor, capitalize, convertToCamelCaseName } from "../code-generator";
+import { TsDescriptor, capitalize, convertToCamelCaseName, removeDuplicatedParameters2 } from "../code-generator";
 import CodeBlockWriter from "code-block-writer";
 import { ParameterDef, SchemaDef, TsFieldDescriptor } from "../types";
 import { SQLiteType } from "./types";
@@ -12,13 +12,13 @@ export function generateTsCode(sql: string, queryName: string, sqliteDbSchema: C
         return 'invalid'
     }
     const tsDescriptor = createTsDescriptor(queryInfo.right);
-    const code = generateCodeFromTsDescriptor(sql, queryName, tsDescriptor);
+    const code = generateCodeFromTsDescriptor(queryName, tsDescriptor);
     return code;
 }
 
 function createTsDescriptor(queryInfo: SchemaDef): TsDescriptor {
     const tsDescriptor: TsDescriptor = {
-        sql: "",
+        sql: queryInfo.sql,
         queryType: "Select",
         multipleRowsResult: false,
         columns: queryInfo.columns.map(col => mapColumnToTsFieldDescriptor(col)),
@@ -57,7 +57,7 @@ function mapColumnType(sqliteType: SQLiteType) {
     }
 }
 
-function generateCodeFromTsDescriptor(sql: string, queryName: string, tsDescriptor: TsDescriptor) {
+function generateCodeFromTsDescriptor(queryName: string, tsDescriptor: TsDescriptor) {
 
     const writer = new CodeBlockWriter({
         useTabs: true
@@ -66,6 +66,7 @@ function generateCodeFromTsDescriptor(sql: string, queryName: string, tsDescript
     const camelCaseName = convertToCamelCaseName(queryName);
     const capitalizedName = capitalize(camelCaseName);
 
+    const sql = tsDescriptor.sql;
     const dataTypeName = capitalizedName + 'Data';
     const paramsTypeName = capitalizedName + 'Params';
     const resultTypeName = capitalizedName + 'Result';
@@ -74,14 +75,15 @@ function generateCodeFromTsDescriptor(sql: string, queryName: string, tsDescript
     const whereTypeName = capitalizedName + 'Where';
     const orderByTypeName = capitalizedName + 'OrderBy';
     const generateOrderBy = tsDescriptor.orderByColumns != null && tsDescriptor.orderByColumns.length > 0;
+    const uniqueParams = removeDuplicatedParameters2(tsDescriptor.parameters);
 
     writer.writeLine(`import { Database } from 'better-sqlite3';`);
 
-    if (tsDescriptor.parameters.length > 0) {
+    if (uniqueParams.length > 0) {
         writer.blankLine();
         writer.write(`export type ${paramsTypeName} =`).block(() => {
-            tsDescriptor.parameters.forEach((field) => {
-                writer.write(`${field.name}: ${field.tsType};`);
+            uniqueParams.forEach((field) => {
+                writer.writeLine(`${field.name}: ${field.tsType};`);
             });
         });
     }

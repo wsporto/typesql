@@ -1,0 +1,26 @@
+import { Database } from 'better-sqlite3';
+
+export type Select03Params = {
+	id: number;
+}
+
+export type Select03Result = {
+	id: number;
+}
+
+export function select03(db: Database, params: Select03Params): Select03Result[] {
+	const sql = `
+	select id from mytable1 where id = ? or id = ?
+	`
+	return db.prepare(sql)
+		.raw(true)
+		.all([params.id, params.id])
+		.map(data => mapArrayToSelect03Result(data));
+}
+
+function mapArrayToSelect03Result(data: any) {
+	const result: Select03Result = {
+		id: data[0]
+	}
+	return result;
+}

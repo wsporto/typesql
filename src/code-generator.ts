@@ -579,6 +579,24 @@ export function removeDuplicatedParameters(parameters: ParameterDef[]): Paramete
     return [...columnsCount.values()];
 }
 
+//TODO - remove duplicated code
+export function removeDuplicatedParameters2(parameters: TsFieldDescriptor[]): TsFieldDescriptor[] {
+    const columnsCount: Map<string, TsFieldDescriptor> = new Map();
+    parameters.forEach(param => {
+        const dupParam = columnsCount.get(param.name);
+        if (dupParam != null) { //duplicated - two parameter null and notNull, resturn the null param (notNull == false)
+            if (param.notNull == false) {
+                columnsCount.set(param.name, param);
+            }
+            // return param;
+        }
+        else {
+            columnsCount.set(param.name, param);
+        }
+    })
+    return [...columnsCount.values()];
+}
+
 export function renameInvalidNames(columnNames: string[]): string[] {
     const columnsCount: Map<string, number> = new Map();
     return columnNames.map(columnName => {

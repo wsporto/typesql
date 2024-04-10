@@ -23,4 +23,13 @@ describe('sqlite-code-generator', () => {
 
 		assert.deepStrictEqual(actual, expected);
 	})
+
+	it('select03 - select with same parameter used twice', async () => {
+		const sql = 'select id from mytable1 where id = :id or id = :id';
+
+		const actual = await generateTsCode(sql, 'select03', sqliteDbSchema);
+		const expected = readFileSync('tests/sqlite/expected-code/select03.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		assert.deepStrictEqual(actual, expected);
+	})
 });
