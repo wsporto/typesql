@@ -1,7 +1,7 @@
-import { SQLiteLexer } from "@wsporto/ts-mysql-parser/sqlite/SQLiteLexer";
+import { SQLiteLexer } from "@wsporto/ts-mysql-parser/dist/sqlite";
 import { Either, right } from "fp-ts/lib/Either";
 import { ParameterDef, SchemaDef, TypeSqlError } from "../types";
-import { SQLiteParser, Sql_stmtContext } from "@wsporto/ts-mysql-parser/sqlite/SQLiteParser";
+import { SQLiteParser, Sql_stmtContext } from "@wsporto/ts-mysql-parser/dist/sqlite";
 import { CharStreams, CommonTokenStream } from "antlr4ts";
 import { traverse_Sql_stmtContext } from "./traverse";
 import { ColumnInfo, ColumnSchema, SubstitutionHash, TraverseContext } from "../mysql-query-analyzer/types";
