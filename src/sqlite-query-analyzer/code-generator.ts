@@ -73,26 +73,33 @@ function generateCodeFromTsDescriptor(sql: string, queryName: string, tsDescript
     const selectColumnsTypeName = capitalizedName + 'Select';
     const whereTypeName = capitalizedName + 'Where';
     const orderByTypeName = capitalizedName + 'OrderBy';
+    const generateOrderBy = tsDescriptor.orderByColumns != null && tsDescriptor.orderByColumns.length > 0;
 
     writer.writeLine(`import { Database } from 'better-sqlite3';`);
-    writer.blankLine();
 
-    writer.write(`export type ${paramsTypeName} =`).block(() => {
-        tsDescriptor.parameters.forEach((field) => {
-            writer.write(`${field.name}: ${field.tsType};`);
+    if (tsDescriptor.parameters.length > 0) {
+        writer.blankLine();
+        writer.write(`export type ${paramsTypeName} =`).block(() => {
+            tsDescriptor.parameters.forEach((field) => {
+                writer.write(`${field.name}: ${field.tsType};`);
+            });
         });
-    });
-    writer.blankLine();
+    }
 
+    writer.blankLine();
     writer.write(`export type ${resultTypeName} =`).block(() => {
         tsDescriptor.columns.forEach((field, index) => {
             const optionalOp = field.notNull ? '' : '?';
             writer.writeLine(`${field.name}${optionalOp}: ${field.tsType};`);
         });
-        writer.blankLine();
     });
+    writer.blankLine();
 
-    const functionArguments = `db: Database, params: ${paramsTypeName}`;
+    let functionArguments = `db: Database`;
+    functionArguments += tsDescriptor.parameters.length > 0 || generateOrderBy ? ', params: ' + paramsTypeName : '';
+
+    const queryParams = tsDescriptor.parameters.length > 0 ? '[' + tsDescriptor.parameters.map(param => 'params.' + param.name).join(', ') + ']' : '';
+
     writer.write(`export function ${camelCaseName}(${functionArguments}): ${resultTypeName}[]`).block(() => {
         const sqlSplit = sql.split('\n');
         writer.write('const sql = `').newLine();
@@ -102,7 +109,7 @@ function generateCodeFromTsDescriptor(sql: string, queryName: string, tsDescript
         writer.indent().write('`').newLine();
         writer.write('return db.prepare(sql)').newLine();
         writer.indent().write('.raw(true)').newLine();
-        writer.indent().write('.all([params.param1])').newLine();
+        writer.indent().write(`.all(${queryParams})`).newLine();
         writer.indent().write(`.map(data => mapArrayTo${resultTypeName}(data));`);
     });
     writer.blankLine();

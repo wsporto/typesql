@@ -1,0 +1,22 @@
+import { Database } from 'better-sqlite3';
+
+export type Select02Result = {
+	id: number;
+}
+
+export function select02(db: Database): Select02Result[] {
+	const sql = `
+	select id from mytable1
+	`
+	return db.prepare(sql)
+		.raw(true)
+		.all()
+		.map(data => mapArrayToSelect02Result(data));
+}
+
+function mapArrayToSelect02Result(data: any) {
+	const result: Select02Result = {
+		id: data[0]
+	}
+	return result;
+}
