@@ -1,5 +1,5 @@
 import { ParserRuleContext, RuleContext } from "antlr4ts";
-import { ParseTree } from "antlr4ts/tree";
+import { ParseTree, TerminalNode } from "antlr4ts/tree";
 import { Interval } from "antlr4ts/misc/Interval";
 
 import {
@@ -257,7 +257,7 @@ export function extractOriginalSql(rule: ParserRuleContext) {
 }
 
 type Expr = {
-    expr: RuleContext;
+    expr: ParseTree;
     isSubQuery: boolean;
 }
 
@@ -268,7 +268,7 @@ export function getExpressions(ctx: RuleContext, exprType: any): Expr[] {
     return tokens;
 }
 
-function collectExpr(tokens: Expr[], parent: RuleContext, exprType: any, isSubQuery = false) {
+function collectExpr(tokens: Expr[], parent: ParseTree, exprType: any, isSubQuery = false) {
 
     if (parent instanceof exprType) {
         tokens.push({
@@ -279,7 +279,7 @@ function collectExpr(tokens: Expr[], parent: RuleContext, exprType: any, isSubQu
 
     for (let i = 0; i < parent.childCount; i++) {
         const child = parent.getChild(i);
-        if (child instanceof RuleContext) {
+        if (!(child instanceof TerminalNode)) {
             collectExpr(tokens, child, exprType, (isSubQuery || child instanceof SimpleExprSubQueryContext));
         }
     }
@@ -310,12 +310,12 @@ export function getTopLevelAndExpr(expr: ExprContext, all: ExpressionAndOperator
 
 export function getSimpleExpressions(ctx: RuleContext): ParseTree[] {
 
-    const tokens: RuleContext[] = [];
+    const tokens: ParseTree[] = [];
     collectSimpleExpr(tokens, ctx);
     return tokens;
 }
 
-function collectSimpleExpr(tokens: RuleContext[], parent: RuleContext) {
+function collectSimpleExpr(tokens: ParseTree[], parent: ParseTree) {
 
     if (isSimpleExpression(parent)) {
         tokens.push(parent);
@@ -323,7 +323,7 @@ function collectSimpleExpr(tokens: RuleContext[], parent: RuleContext) {
 
     for (let i = 0; i < parent.childCount; i++) {
         const child = parent.getChild(i);
-        if (child instanceof RuleContext) {
+        if (!(child instanceof TerminalNode)) {
             collectSimpleExpr(tokens, child);
         }
     }
