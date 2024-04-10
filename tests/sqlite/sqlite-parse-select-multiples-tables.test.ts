@@ -206,7 +206,7 @@ describe('sqlite-parse-select-multiples-tables', () => {
 					columnName: 'id',
 					type: 'INTEGER',
 					notNull: true,
-					table: 't2'
+					table: 'T2'
 				},
 				{
 					columnName: 'name',
