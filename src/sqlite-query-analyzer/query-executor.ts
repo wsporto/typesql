@@ -15,7 +15,7 @@ export function loadDbSchema(databaseUri: string): Either<TypeSqlError, ColumnSc
 			t.name as 'table',
 			ti.name as 'column', 
 			ti.type as column_type,
-			ti.'notnull' as 'notnull',
+			ti.'notnull' or ti.pk = 1 as 'notNull',
 			IIF(ti.pk = 1, 'PRI', '') as columnKey
 		FROM all_tables t INNER JOIN pragma_table_info(t.name) ti
 		`
