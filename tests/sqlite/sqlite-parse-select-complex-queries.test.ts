@@ -36,12 +36,12 @@ describe('sqlite-parse-select-complex-queries', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('subselect in column', async () => {
+    it('subselect in column', () => {
         const sql = `
         SELECT (SELECT name FROM mytable2 where id = t1.id) as fullname
         FROM mytable1 t1
         `
-        const actual = await parseSql(sql, sqliteDbSchema);
+        const actual = parseSql(sql, sqliteDbSchema);
         const expected: SchemaDef = {
             sql,
             queryType: 'Select',
@@ -63,12 +63,12 @@ describe('sqlite-parse-select-complex-queries', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('subselect in column (with parameter)', async () => {
+    it('subselect in column (with parameter)', () => {
         const sql = `
         SELECT (SELECT name as namealias FROM mytable2 where id = ?) as fullname
         FROM mytable1 t1
         `
-        const actual = await parseSql(sql, sqliteDbSchema);
+        const actual = parseSql(sql, sqliteDbSchema);
         const expected: SchemaDef = {
             sql,
             queryType: 'Select',
