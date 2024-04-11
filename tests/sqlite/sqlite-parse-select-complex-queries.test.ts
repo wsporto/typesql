@@ -62,4 +62,35 @@ describe('sqlite-parse-select-complex-queries', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     })
+
+    it('subselect in column (with parameter)', async () => {
+        const sql = `
+        SELECT (SELECT name as namealias FROM mytable2 where id = ?) as fullname
+        FROM mytable1 t1
+        `
+        const actual = await parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'FULLNAME',
+                    type: 'TEXT',
+                    notNull: false,
+                    table: ''
+                }
+            ],
+            parameters: [{
+                name: 'param1',
+                columnType: 'INTEGER',
+                notNull: true
+            }]
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
 });
