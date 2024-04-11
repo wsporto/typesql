@@ -151,7 +151,7 @@ function traverse_table_or_subquery(table_or_subquery: Table_or_subqueryContext[
 
 function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Type {
     const function_name = expr.function_name()?.text.toLowerCase();
-    if (function_name == 'sum') {
+    if (function_name == 'sum' || function_name == 'avg') {
         const functionType = freshVar(expr.text, 'NUMERIC');
         const sumParamExpr = expr.expr()[0];
         const paramType = traverse_expr(sumParamExpr, traverseContext);

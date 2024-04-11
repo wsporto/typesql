@@ -133,4 +133,30 @@ describe('sqlite-parse-select-functions', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     })
+
+    it('select avg(value) from mytable1', () => {
+        const sql = `
+        select avg(value) from mytable1
+        `
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: false,
+            columns: [
+                {
+                    columnName: 'AVG(VALUE)',
+                    type: 'NUMERIC',
+                    notNull: false,
+                    table: 'MYTABLE1' //TODO: empty?
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
 });
