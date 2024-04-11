@@ -186,7 +186,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         column_type: 'TEXT',
         columnKey: '',
         table: 'mytable2',
-        schema: 'text',
+        schema: 'mydb',
         notNull: false
     },
     {
@@ -194,7 +194,31 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         column_type: 'TEXT',
         columnKey: '',
         table: 'mytable2',
-        schema: 'text',
+        schema: 'mydb',
         notNull: false
     },
+    {
+        column: 'id',
+        column_type: 'INTEGER',
+        columnKey: 'PRI',
+        table: 'mytable3',
+        schema: 'mydb',
+        notNull: true
+    },
+    {
+        column: 'double_value',
+        column_type: 'REAL',
+        columnKey: '',
+        table: 'mytable3',
+        schema: 'mydb',
+        notNull: false
+    },
+    {
+        column: 'name',
+        column_type: 'TEXT',
+        columnKey: '',
+        table: 'mytable3',
+        schema: 'mydb',
+        notNull: true
+    }
 ]

@@ -19,11 +19,11 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
 
     const select_coreList = select_stmt.select_core();
 
-    const columnsResult: ColumnDef[] = [];
-    const listType: TypeVar[] = [];
-    const columnNullability: boolean[] = [];
-
     const querySpecResult = select_coreList.map(select_core => {
+        const columnsResult: ColumnDef[] = [];
+        const listType: TypeVar[] = [];
+        const columnNullability: boolean[] = [];
+
         const table_or_subquery = select_core.table_or_subquery();
         if (table_or_subquery) {
             const fields = traverse_table_or_subquery(table_or_subquery, traverseContext);
@@ -84,9 +84,22 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
             fromColumns: []
         }
         return querySpecification;
-    })
+    });
 
-    return querySpecResult[0];
+    const mainQuery = querySpecResult[0];
+    for (let queryIndex = 1; queryIndex < querySpecResult.length; queryIndex++) {//UNION
+        const unionQuery = querySpecResult[queryIndex];
+        unionQuery.columns.forEach((col, colIndex) => {
+            mainQuery.columns[colIndex].table = '';
+            traverseContext.constraints.push({
+                expression: 'UNION',
+                type1: mainQuery.columns[colIndex].type,
+                type2: col.type
+            })
+        })
+    }
+
+    return mainQuery;
 }
 
 function traverse_table_or_subquery(table_or_subquery: Table_or_subqueryContext[], traverseContext: TraverseContext): ColumnDef[] {
