@@ -29,17 +29,15 @@ export function filterColumns(dbSchema: ColumnSchema[], withSchema: ColumnDef[],
             }
             return r;
         });
-    const result = tableColumns1.concat(withSchema).map(col => {
-        const r: ColumnDef = {
-            table: table.name,
-            tableAlias: tableAlias || '',
-            columnName: col.columnName,
-            columnType: col.columnType,
-            columnKey: col.columnKey,
-            notNull: col.notNull
-        }
-        return r;
-    })
+    const result = tableColumns1.concat(withSchema.filter(schema => schema.table.toLowerCase() == table.name.toLowerCase())).
+        map(col => {
+            const r: ColumnDef = {
+                ...col,
+                table: table.name,
+                tableAlias: tableAlias
+            }
+            return r;
+        })
     return result;
 
 }

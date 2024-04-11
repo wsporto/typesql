@@ -16,6 +16,23 @@ export function traverse_Sql_stmtContext(sql_stmt: Sql_stmtContext, traverseCont
 
 function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: TraverseContext): QuerySpecificationResult {
     const common_table_stmt = select_stmt.common_table_stmt();
+    if (common_table_stmt) {
+        const common_table_expression = common_table_stmt.common_table_expression();
+        common_table_expression.forEach(common_table_expression => {
+            const table_name = common_table_expression.table_name();
+            const select_stmt = common_table_expression.select_stmt();
+            const select_stmt_result = traverse_select_stmt(select_stmt, traverseContext);
+            select_stmt_result.columns.forEach(col => {
+                traverseContext.withSchema.push({
+                    table: table_name.text,
+                    columnName: col.name,
+                    columnType: col.type,
+                    columnKey: '',
+                    notNull: col.notNull
+                });
+            })
+        })
+    }
 
     const select_coreList = select_stmt.select_core();
 
@@ -109,7 +126,7 @@ function traverse_table_or_subquery(table_or_subquery: Table_or_subqueryContext[
         const table_alias = table_or_subquery.table_alias()?.text;
         if (table_name) {
             const tableName = splitName(table_name.any_name().text);
-            const fields = filterColumns(traverseContext.dbSchema, [], table_alias, tableName);
+            const fields = filterColumns(traverseContext.dbSchema, traverseContext.withSchema, table_alias, tableName);
             allFields.push(...fields);
         }
         const select_stmt = table_or_subquery.select_stmt();
