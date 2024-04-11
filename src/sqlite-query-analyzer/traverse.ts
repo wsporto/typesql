@@ -232,6 +232,11 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         traverse_expr(expr2, traverseContext);
         return freshVar(expr.text, 'tinyint');
     }
+    const select_stmt = expr.select_stmt();
+    if (select_stmt) {
+        const subQueryType = traverse_select_stmt(select_stmt, traverseContext);
+        return { ...subQueryType.columns[0].type, table: '' };
+    }
     if (expr.CASE_()) {
         const resultTypes: Type[] = []; //then and else
         const whenTypes: Type[] = [];
