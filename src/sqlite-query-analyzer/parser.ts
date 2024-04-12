@@ -1,7 +1,7 @@
 import { Either, right } from "fp-ts/lib/Either";
 import { ParameterDef, SchemaDef, TypeSqlError } from "../types";
 import { Sql_stmtContext, parseSql as parseSqlite } from "@wsporto/ts-mysql-parser/dist/sqlite";
-import { traverse_Sql_stmtContext } from "./traverse";
+import { isMultipleRowResult, traverse_Sql_stmtContext } from "./traverse";
 import { ColumnInfo, ColumnSchema, SubstitutionHash, TraverseContext } from "../mysql-query-analyzer/types";
 import { getVarType } from "../mysql-query-analyzer/collect-constraints";
 import { unify } from "../mysql-query-analyzer/unify";
@@ -67,7 +67,7 @@ function describeSQL(sql: string, sql_stmtContext: Sql_stmtContext, dbSchema: Co
     const schemaDef: SchemaDef = {
         sql,
         queryType: "Select",
-        multipleRowsResult: true,
+        multipleRowsResult: isMultipleRowResult(sql_stmtContext),
         columns: columnResult,
         parameters: paramsResult
     }

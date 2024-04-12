@@ -1,4 +1,4 @@
-import { Select_stmtContext, Sql_stmtContext, ExprContext, Table_or_subqueryContext } from "@wsporto/ts-mysql-parser/dist/sqlite";
+import { Select_stmtContext, Sql_stmtContext, ExprContext, Table_or_subqueryContext, Sql_stmt_listContext, Select_coreContext, Result_columnContext } from "@wsporto/ts-mysql-parser/dist/sqlite";
 import { ColumnDef, TraverseContext, Type, TypeAndNullInfer, TypeVar } from "../mysql-query-analyzer/types";
 import { filterColumns, findColumn, includeColumn, splitName } from "../mysql-query-analyzer/select-columns";
 import { createColumnType, freshVar } from "../mysql-query-analyzer/collect-constraints";
@@ -299,3 +299,38 @@ function inferNotNull_expr(expr: ExprContext, fromColumns: ColumnDef[]): boolean
     return false;
 }
 
+export function isMultipleRowResult(sql_stmtContext: Sql_stmtContext) {
+    const select_stmt = sql_stmtContext.select_stmt();
+
+    if (select_stmt.select_core_list().length == 1) { //UNION queries are multipleRowsResult = true
+        const from = select_stmt.select_core(0).FROM_();
+        if (!from) {
+            return false;
+        }
+        const agreegateFunction = select_stmt.select_core(0).result_column_list().every(result_column => isAgregateFunction(result_column));
+        if (agreegateFunction) {
+            return false;
+        }
+    }
+    if (isLimitOne(select_stmt)) {
+        return false;
+    }
+
+    return true;
+}
+
+function isAgregateFunction(result_column: Result_columnContext) {
+    const function_name = result_column.expr()?.function_name()?.getText().toLowerCase();
+    return function_name == 'count'
+        || function_name == 'sum'
+        || function_name == 'avg';
+}
+
+function isLimitOne(select_stmt: Select_stmtContext) {
+
+    const limit_stmt = select_stmt.limit_stmt();
+    if (limit_stmt && limit_stmt.expr(0).getText() == '1') {
+        return true;
+    }
+    return false;
+}
