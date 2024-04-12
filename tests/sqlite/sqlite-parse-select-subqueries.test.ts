@@ -22,7 +22,7 @@ describe('sqlite-parse-select-subqueries', () => {
                     columnName: 'id',
                     type: 'INTEGER',
                     notNull: true,
-                    table: 'T'
+                    table: 't'
                 }
             ],
             parameters: []
@@ -51,13 +51,13 @@ describe('sqlite-parse-select-subqueries', () => {
                     columnName: 'id',
                     type: 'INTEGER',
                     notNull: true,
-                    table: 'T'
+                    table: 't'
                 },
                 {
                     columnName: 'name',
                     type: 'TEXT',
                     notNull: false,
-                    table: 'T'
+                    table: 't'
                 }
             ],
             parameters: []
@@ -82,10 +82,10 @@ describe('sqlite-parse-select-subqueries', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    columnName: 'ID',
+                    columnName: 'id',
                     type: 'INTEGER',
                     notNull: false,
-                    table: 'T1'
+                    table: 't1'
                 }
             ],
             parameters: []
@@ -110,10 +110,10 @@ describe('sqlite-parse-select-subqueries', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    columnName: 'CODE',
+                    columnName: 'code',
                     type: 'INTEGER',
                     notNull: false,
-                    table: 'T1'
+                    table: 't1'
                 }
             ],
             parameters: []
@@ -143,7 +143,7 @@ describe('sqlite-parse-select-subqueries', () => {
                     columnName: 'id',
                     type: 'INTEGER',
                     notNull: true,
-                    table: 'T2'
+                    table: 't2'
                 }
             ],
             parameters: []

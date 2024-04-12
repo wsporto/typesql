@@ -30,7 +30,7 @@
     "typescript": "^5.4.3"
   },
   "dependencies": {
-    "@wsporto/ts-mysql-parser": "^0.3.0-alpha.3",
+    "@wsporto/ts-mysql-parser": "^0.3.0-alpha.5",
     "antlr4ts": "^0.5.0-alpha.3",
     "better-sqlite3": "^9.4.5",
     "camelcase": "^6.3.0",

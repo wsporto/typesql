@@ -17,10 +17,10 @@ describe('sqlite-parse-select-functions', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    columnName: 'TOTAL',
+                    columnName: 'total',
                     type: 'NUMERIC',
                     notNull: false,
-                    table: 'MYTABLE1'
+                    table: 'mytable1'
                 }
             ],
             parameters: []
@@ -43,10 +43,10 @@ describe('sqlite-parse-select-functions', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    columnName: 'TOTAL',
+                    columnName: 'total',
                     type: 'NUMERIC',
                     notNull: false,
-                    table: 'T1'
+                    table: 't1'
                 }
             ],
             parameters: []
@@ -69,10 +69,10 @@ describe('sqlite-parse-select-functions', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    columnName: 'count',
+                    columnName: 'count(id)',
                     type: 'INTEGER',
                     notNull: true,
-                    table: 'MYTABLE1'
+                    table: 'mytable1'
                 }
             ],
             parameters: []
@@ -94,7 +94,7 @@ describe('sqlite-parse-select-functions', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    columnName: 'COUNT(*)',
+                    columnName: 'count(*)',
                     type: 'INTEGER',
                     notNull: true,
                     table: ''
@@ -119,7 +119,7 @@ describe('sqlite-parse-select-functions', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    columnName: 'SUM(2*VALUE)',
+                    columnName: 'sum(2*value)',
                     type: 'NUMERIC',
                     notNull: false,
                     table: ''
@@ -145,10 +145,10 @@ describe('sqlite-parse-select-functions', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    columnName: 'AVG(VALUE)',
+                    columnName: 'avg(value)',
                     type: 'NUMERIC',
                     notNull: false,
-                    table: 'MYTABLE1' //TODO: empty?
+                    table: 'mytable1' //TODO: empty?
                 }
             ],
             parameters: []

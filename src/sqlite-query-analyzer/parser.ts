@@ -1,8 +1,6 @@
-import { SQLiteLexer } from "@wsporto/ts-mysql-parser/dist/sqlite";
 import { Either, right } from "fp-ts/lib/Either";
 import { ParameterDef, SchemaDef, TypeSqlError } from "../types";
-import { SQLiteParser, Sql_stmtContext } from "@wsporto/ts-mysql-parser/dist/sqlite";
-import { CharStreams, CommonTokenStream } from "antlr4ts";
+import { Sql_stmtContext, parseSql as parseSqlite } from "@wsporto/ts-mysql-parser/dist/sqlite";
 import { traverse_Sql_stmtContext } from "./traverse";
 import { ColumnInfo, ColumnSchema, SubstitutionHash, TraverseContext } from "../mysql-query-analyzer/types";
 import { getVarType } from "../mysql-query-analyzer/collect-constraints";
@@ -13,9 +11,8 @@ export function parseSql(sql: string, dbSchema: ColumnSchema[]): Either<TypeSqlE
 
     const { sql: processedSql, namedParameters } = preprocessSql(sql);
 
-    const input = CharStreams.fromString(sql.toUpperCase());
-    const lexer = new SQLiteLexer(input);
-    const parser = new SQLiteParser(new CommonTokenStream(lexer));
+    const parser = parseSqlite(sql);
+
     const sql_stmt = parser.sql_stmt();
 
     return describeSQL(processedSql, sql_stmt, dbSchema, namedParameters);

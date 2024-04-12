@@ -17,14 +17,14 @@ export function traverse_Sql_stmtContext(sql_stmt: Sql_stmtContext, traverseCont
 function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: TraverseContext): QuerySpecificationResult {
     const common_table_stmt = select_stmt.common_table_stmt();
     if (common_table_stmt) {
-        const common_table_expression = common_table_stmt.common_table_expression();
+        const common_table_expression = common_table_stmt.common_table_expression_list()
         common_table_expression.forEach(common_table_expression => {
             const table_name = common_table_expression.table_name();
             const select_stmt = common_table_expression.select_stmt();
             const select_stmt_result = traverse_select_stmt(select_stmt, traverseContext);
             select_stmt_result.columns.forEach(col => {
                 traverseContext.withSchema.push({
-                    table: table_name.text,
+                    table: table_name.getText(),
                     columnName: col.name,
                     columnType: col.type,
                     columnKey: '',
@@ -34,30 +34,30 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
         })
     }
 
-    const select_coreList = select_stmt.select_core();
+    const select_coreList = select_stmt.select_core_list();
 
     const querySpecResult = select_coreList.map(select_core => {
         const columnsResult: ColumnDef[] = [];
         const listType: TypeVar[] = [];
         const columnNullability: boolean[] = [];
 
-        const table_or_subquery = select_core.table_or_subquery();
+        const table_or_subquery = select_core.table_or_subquery_list();
         if (table_or_subquery) {
             const fields = traverse_table_or_subquery(table_or_subquery, traverseContext);
             columnsResult.push(...fields);
         }
         const join_clause = select_core.join_clause();
         if (join_clause) {
-            const join_table_or_subquery = join_clause.table_or_subquery();
+            const join_table_or_subquery = join_clause.table_or_subquery_list();
             const fields = traverse_table_or_subquery(join_table_or_subquery, traverseContext);
             columnsResult.push(...fields);
         }
 
-        const result_column = select_core.result_column();
+        const result_column = select_core.result_column_list();
 
         result_column.forEach(result_column => {
             if (result_column.STAR()) {
-                const tableName = result_column.table_name()?.text;
+                const tableName = result_column.table_name()?.getText();
                 columnsResult.forEach(col => {
                     if (!tableName || includeColumn(col, tableName)) {
                         const columnType = createColumnType(col);
@@ -69,7 +69,7 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
             }
 
             const expr = result_column.expr();
-            const alias = result_column.column_alias()?.text;
+            const alias = result_column.column_alias()?.getText();
             if (expr) {
                 const exprType = traverse_expr(expr, { ...traverseContext, fromColumns: columnsResult });
                 if (exprType.kind == 'TypeVar') {
@@ -82,7 +82,7 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
             }
         })
 
-        const whereList = select_core.expr();
+        const whereList = select_core.expr_list();
         whereList.forEach(where => {
             traverse_expr(where, { ...traverseContext, fromColumns: columnsResult });
         })
@@ -123,16 +123,16 @@ function traverse_table_or_subquery(table_or_subquery: Table_or_subqueryContext[
     const allFields: ColumnDef[] = [];
     table_or_subquery.forEach(table_or_subquery => {
         const table_name = table_or_subquery.table_name();
-        const table_alias = table_or_subquery.table_alias()?.text;
+        const table_alias = table_or_subquery.table_alias()?.getText();
         if (table_name) {
-            const tableName = splitName(table_name.any_name().text);
+            const tableName = splitName(table_name.any_name().getText());
             const fields = filterColumns(traverseContext.dbSchema, traverseContext.withSchema, table_alias, tableName);
             allFields.push(...fields);
         }
         const select_stmt = table_or_subquery.select_stmt();
         if (select_stmt) {
             const subQueryResult = traverse_select_stmt(select_stmt, traverseContext);
-            const tableAlias = table_or_subquery.table_alias()?.text;
+            const tableAlias = table_or_subquery.table_alias()?.getText();
             subQueryResult.columns.forEach(t => {
                 const colDef: ColumnDef = {
                     table: t.table ? tableAlias || '' : '',
@@ -150,10 +150,10 @@ function traverse_table_or_subquery(table_or_subquery: Table_or_subqueryContext[
 }
 
 function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Type {
-    const function_name = expr.function_name()?.text.toLowerCase();
+    const function_name = expr.function_name()?.getText().toLowerCase();
     if (function_name == 'sum' || function_name == 'avg') {
-        const functionType = freshVar(expr.text, 'NUMERIC');
-        const sumParamExpr = expr.expr()[0];
+        const functionType = freshVar(expr.getText(), 'NUMERIC');
+        const sumParamExpr = expr.expr(0);
         const paramType = traverse_expr(sumParamExpr, traverseContext);
         if (paramType.kind == 'TypeVar') {
             functionType.table = paramType.table
@@ -161,9 +161,9 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         return functionType;
     }
     if (function_name == 'count') {
-        const functionType = freshVar(expr.text, 'INTEGER');
-        if (expr.expr().length == 1) {
-            const sumParamExpr = expr.expr()[0];
+        const functionType = freshVar(expr.getText(), 'INTEGER');
+        if (expr.expr_list().length == 1) {
+            const sumParamExpr = expr.expr(0);
             const paramType = traverse_expr(sumParamExpr, traverseContext);
             if (paramType.kind == 'TypeVar') {
                 functionType.table = paramType.table
@@ -175,7 +175,7 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
 
     const column_name = expr.column_name();
     if (column_name) {
-        const fieldName = splitName(column_name.text);
+        const fieldName = splitName(column_name.getText());
         const column = findColumn(fieldName, traverseContext.fromColumns);
         const typeVar = freshVar(column.columnName, column.columnType.type, column.tableAlias || column.table);
         return typeVar;
@@ -183,12 +183,12 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
     const literal = expr.literal_value();
     if (literal) {
         if (literal.STRING_LITERAL()) {
-            return freshVar(literal.text, 'TEXT')
+            return freshVar(literal.getText(), 'TEXT')
         }
         if (literal.NUMERIC_LITERAL()) {
-            return freshVar(literal.text, 'INTEGER');
+            return freshVar(literal.getText(), 'INTEGER');
         }
-        return freshVar(literal.text, '?');
+        return freshVar(literal.getText(), '?');
     }
     const parameter = expr.BIND_PARAMETER();
     if (parameter) {
@@ -197,57 +197,57 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         return param;
     }
     if (expr.STAR() || expr.DIV() || expr.MOD()) {
-        const exprLeft = expr.expr()[0];
-        const exprRight = expr.expr()[1];
+        const exprLeft = expr.expr(0);
+        const exprRight = expr.expr(1);
         const typeLeft = traverse_expr(exprLeft, traverseContext);
-        return freshVar(expr.text, 'tinyint');
+        return freshVar(expr.getText(), 'tinyint');
     }
     if (expr.LT2() || expr.GT2() || expr.AMP() || expr.PIPE() || expr.LT() || expr.LT_EQ() || expr.GT() || expr.GT_EQ()) {
-        const exprLeft = expr.expr()[0];
-        const exprRight = expr.expr()[1];
+        const exprLeft = expr.expr(0);
+        const exprRight = expr.expr(1);
         const typeLeft = traverse_expr(exprLeft, traverseContext);
         const typeRight = traverse_expr(exprRight, traverseContext);
         traverseContext.constraints.push({
-            expression: expr.text,
+            expression: expr.getText(),
             type1: typeLeft,
             type2: typeRight
         })
-        return freshVar(expr.text, 'tinyint');
+        return freshVar(expr.getText(), 'tinyint');
     }
     if (expr.ASSIGN()) { //=
-        const exprLeft = expr.expr()[0];
-        const exprRight = expr.expr()[1];
+        const exprLeft = expr.expr(0);
+        const exprRight = expr.expr(1);
         const typeLeft = traverse_expr(exprLeft, traverseContext);
         const typeRight = traverse_expr(exprRight, traverseContext);
         traverseContext.constraints.push({
-            expression: expr.text,
+            expression: expr.getText(),
             type1: typeLeft,
             type2: typeRight
         })
-        return freshVar(expr.text, 'tinyint');
+        return freshVar(expr.getText(), 'tinyint');
     }
     if (expr.IN_()) {
-        const inExprLeft = expr.expr()[0];
-        const inExprRight = expr.expr()[1];
+        const inExprLeft = expr.expr(0);
+        const inExprRight = expr.expr(1);
         const typeLeft = traverse_expr(inExprLeft, traverseContext);
         inExprRight.children?.forEach(exprRight => {
             if (exprRight instanceof ExprContext) {
                 const typeRight = traverse_expr(exprRight, traverseContext);
                 traverseContext.constraints.push({
-                    expression: expr.text,
+                    expression: expr.getText(),
                     type1: typeLeft,
                     type2: typeRight
                 })
             }
         })
-        return freshVar(expr.text, 'tinyint');
+        return freshVar(expr.getText(), 'tinyint');
     }
     if (expr.OR_() || expr.AND_()) {
-        const expr1 = expr.expr()[0];
-        const expr2 = expr.expr()[1];
+        const expr1 = expr.expr(0);
+        const expr2 = expr.expr(1);
         traverse_expr(expr1, traverseContext);
         traverse_expr(expr2, traverseContext);
-        return freshVar(expr.text, 'tinyint');
+        return freshVar(expr.getText(), 'tinyint');
     }
     const select_stmt = expr.select_stmt();
     if (select_stmt) {
@@ -257,9 +257,9 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
     if (expr.CASE_()) {
         const resultTypes: Type[] = []; //then and else
         const whenTypes: Type[] = [];
-        expr.expr().forEach((expr_, index) => {
+        expr.expr_list().forEach((expr_, index) => {
             const type = traverse_expr(expr_, traverseContext);
-            if (expr_.WHEN_() || expr_.THEN_()) {
+            if (expr_.WHEN__list() || expr_.THEN__list()) {
                 if (index % 2 == 0) {
                     whenTypes.push(type);
                 }
@@ -274,7 +274,7 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         resultTypes.forEach((resultType, index) => {
             if (index > 0) {
                 traverseContext.constraints.push({
-                    expression: expr.text,
+                    expression: expr.getText(),
                     type1: resultTypes[0],
                     type2: resultType
                 })
@@ -282,17 +282,17 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         });
         return resultTypes[0];
     }
-    throw Error('traverse_expr not supported:' + expr.text);
+    throw Error('traverse_expr not supported:' + expr.getText());
 }
 
 function inferNotNull_expr(expr: ExprContext, fromColumns: ColumnDef[]): boolean {
     const column_name = expr.column_name();
     if (column_name) {
-        const fieldName = splitName(column_name.text);
+        const fieldName = splitName(column_name.getText());
         const column = findColumn(fieldName, fromColumns);
         return column.notNull;
     }
-    const function_name = expr.function_name()?.text.toLowerCase();
+    const function_name = expr.function_name()?.getText().toLowerCase();
     if (function_name == 'count') {
         return true;
     }

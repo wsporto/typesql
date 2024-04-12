@@ -24,31 +24,31 @@ describe('sqlite-parse-select-multiples-tables', () => {
 					columnName: 'id',
 					type: 'INTEGER',
 					notNull: true,
-					table: 'T1'
+					table: 't1'
 				},
 				{
 					columnName: 'value',
 					type: 'INTEGER',
 					notNull: false,
-					table: 'T1'
+					table: 't1'
 				},
 				{
 					columnName: 'id', //TODO - rename fields
 					type: 'INTEGER',
 					notNull: true,
-					table: 'T2'
+					table: 't2'
 				},
 				{
 					columnName: 'name',
 					type: 'TEXT',
 					notNull: false,
-					table: 'T2'
+					table: 't2'
 				},
 				{
 					columnName: 'descr',
 					type: 'TEXT',
 					notNull: false,
-					table: 'T2'
+					table: 't2'
 				}
 			],
 			parameters: []
@@ -77,31 +77,31 @@ describe('sqlite-parse-select-multiples-tables', () => {
 					columnName: 'id',
 					type: 'INTEGER',
 					notNull: true,
-					table: 'T1'
+					table: 't1'
 				},
 				{
 					columnName: 'value',
 					type: 'INTEGER',
 					notNull: false,
-					table: 'T1'
+					table: 't1'
 				},
 				{
 					columnName: 'id', //TODO - rename fields
 					type: 'INTEGER',
 					notNull: true,
-					table: 'T2'
+					table: 't2'
 				},
 				{
 					columnName: 'name',
 					type: 'TEXT',
 					notNull: false,
-					table: 'T2'
+					table: 't2'
 				},
 				{
 					columnName: 'descr',
 					type: 'TEXT',
 					notNull: false,
-					table: 'T2'
+					table: 't2'
 				}
 			],
 			parameters: []
@@ -130,13 +130,13 @@ describe('sqlite-parse-select-multiples-tables', () => {
 					columnName: 'id',
 					type: 'INTEGER',
 					notNull: true,
-					table: 'T1'
+					table: 't1'
 				},
 				{
 					columnName: 'value',
 					type: 'INTEGER',
 					notNull: false,
-					table: 'T1'
+					table: 't1'
 				}
 			],
 			parameters: []
@@ -165,19 +165,19 @@ describe('sqlite-parse-select-multiples-tables', () => {
 					columnName: 'id',
 					type: 'INTEGER',
 					notNull: true,
-					table: 'T2'
+					table: 't2'
 				},
 				{
 					columnName: 'name',
 					type: 'TEXT',
 					notNull: false,
-					table: 'T2'
+					table: 't2'
 				},
 				{
 					columnName: 'descr',
 					type: 'TEXT',
 					notNull: false,
-					table: 'T2'
+					table: 't2'
 				}
 			],
 			parameters: []
@@ -206,31 +206,31 @@ describe('sqlite-parse-select-multiples-tables', () => {
 					columnName: 'id',
 					type: 'INTEGER',
 					notNull: true,
-					table: 'T2'
+					table: 't2'
 				},
 				{
 					columnName: 'name',
 					type: 'TEXT',
 					notNull: false,
-					table: 'T2'
+					table: 't2'
 				},
 				{
 					columnName: 'descr',
 					type: 'TEXT',
 					notNull: false,
-					table: 'T2'
+					table: 't2'
 				},
 				{
 					columnName: 'id', //TODO - rename field
 					type: 'INTEGER',
 					notNull: true,
-					table: 'T1'
+					table: 't1'
 				},
 				{
 					columnName: 'value',
 					type: 'INTEGER',
 					notNull: false,
-					table: 'T1'
+					table: 't1'
 				},
 			],
 			parameters: []
@@ -260,7 +260,7 @@ describe('sqlite-parse-select-multiples-tables', () => {
 					columnName: 'id',
 					type: 'INTEGER',
 					notNull: true,
-					table: 'T1'
+					table: 't1'
 				}
 			],
 			parameters: [
@@ -294,7 +294,7 @@ describe('sqlite-parse-select-multiples-tables', () => {
 					columnName: 'name',
 					type: 'TEXT',
 					notNull: false,
-					table: 'T'
+					table: 't'
 				}
 			],
 			parameters: []

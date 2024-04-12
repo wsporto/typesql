@@ -7,7 +7,7 @@ import { sqliteDbSchema } from "../mysql-query-analyzer/create-schema";
 describe('Test simple select statements', () => {
 
     it('parse a basic select', async () => {
-        const sql = `SELECT id FROM MYTABLE1`;
+        const sql = `SELECT id FROM mytable1`;
 
         const actual = await parseSql(sql, sqliteDbSchema);
         const expected: SchemaDef = {
@@ -19,7 +19,7 @@ describe('Test simple select statements', () => {
                     columnName: 'id',
                     type: 'INTEGER',
                     notNull: true,
-                    table: 'MYTABLE1'
+                    table: 'mytable1'
                 }
             ],
             parameters: []
@@ -33,7 +33,7 @@ describe('Test simple select statements', () => {
     })
 
     it('SELECT id as name FROM mytable1', async () => {
-        const sql = 'SELECT id as name FROM MYTABLE1';
+        const sql = 'SELECT id as name FROM mytable1';
         const actual = await parseSql(sql, sqliteDbSchema);
         const expected: SchemaDef = {
             sql,
@@ -41,10 +41,10 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    columnName: 'NAME',
+                    columnName: 'name',
                     type: 'INTEGER',
                     notNull: true,
-                    table: 'MYTABLE1'
+                    table: 'mytable1'
                 }
             ],
             parameters: []
@@ -70,13 +70,13 @@ describe('Test simple select statements', () => {
                     columnName: 'id',
                     type: 'INTEGER',
                     notNull: true,
-                    table: 'MYTABLE1'
+                    table: 'mytable1'
                 },
                 {
                     columnName: 'value',
                     type: 'INTEGER',
                     notNull: false,
-                    table: 'MYTABLE1'
+                    table: 'mytable1'
                 }
             ],
             parameters: []
@@ -101,13 +101,13 @@ describe('Test simple select statements', () => {
                     columnName: 'id',
                     type: 'INTEGER',
                     notNull: true,
-                    table: 'MYTABLE1'
+                    table: 'mytable1'
                 },
                 {
                     columnName: 'value',
                     type: 'INTEGER',
                     notNull: false,
-                    table: 'MYTABLE1'
+                    table: 'mytable1'
                 }
             ],
             parameters: []
@@ -134,13 +134,13 @@ describe('Test simple select statements', () => {
                     columnName: 'id',
                     type: 'INTEGER',
                     notNull: true,
-                    table: 'MYTABLE1'
+                    table: 'mytable1'
                 },
                 {
                     columnName: 'value',
                     type: 'INTEGER',
                     notNull: false,
-                    table: 'MYTABLE1'
+                    table: 'mytable1'
                 }
             ],
             parameters: []
@@ -168,7 +168,7 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    columnName: 'ID',
+                    columnName: 'id',
                     type: 'TEXT',
                     notNull: false, //not null can't be inferred
                     table: ''
