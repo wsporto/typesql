@@ -226,6 +226,27 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         })
         return freshVar(expr.getText(), 'tinyint');
     }
+    if (expr.BETWEEN_()) {
+        const exprType = traverse_expr(expr.expr(0), traverseContext);
+        const between1 = traverse_expr(expr.expr(1), traverseContext);
+        const between2 = traverse_expr(expr.expr(2), traverseContext);
+        traverseContext.constraints.push({
+            expression: expr.getText(),
+            type1: exprType,
+            type2: between1
+        });
+        traverseContext.constraints.push({
+            expression: expr.getText(),
+            type1: exprType,
+            type2: between2
+        });
+        traverseContext.constraints.push({
+            expression: expr.getText(),
+            type1: between1,
+            type2: between2
+        })
+        return exprType;
+    }
     if (expr.IN_()) {
         const inExprLeft = expr.expr(0);
         const inExprRight = expr.expr(1);
