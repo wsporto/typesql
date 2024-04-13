@@ -639,4 +639,32 @@ describe('Test simple select statements', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     })
+
+    it('select value from mytable1 where value is not null', () => {
+
+        const sql = `
+        select value from mytable1 where value is not null or (id > 0 and value is not null) 
+        `;
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'value',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: 'mytable1'
+                }
+            ],
+            parameters: []
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
 });

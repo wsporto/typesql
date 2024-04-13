@@ -233,6 +233,11 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         })
         return freshVar(expr.getText(), 'tinyint');
     }
+    if (expr.IS_()) { //is null/is not null
+        const expr_ = expr.expr(0);
+        traverse_expr(expr_, traverseContext);
+        return freshVar(expr.getText(), 'tinyint');
+    }
     if (expr.ASSIGN()) { //=
         const exprLeft = expr.expr(0);
         const exprRight = expr.expr(1);
