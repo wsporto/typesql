@@ -46,4 +46,27 @@ describe('sqlite-parse-params', () => {
         }
         assert.deepStrictEqual(actual.right.parameters, expected);
     })
+
+    it(`select concat(?, ?) from mytable2`, () => {
+        const sql = `
+        select concat(?, ?) from mytable2
+        `
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: ParameterDef[] = [
+            {
+                name: 'param1',
+                columnType: 'TEXT',
+                notNull: true
+            },
+            {
+                name: 'param2',
+                columnType: 'TEXT',
+                notNull: true
+            }
+        ]
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right.parameters, expected);
+    })
 });

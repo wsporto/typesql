@@ -172,6 +172,25 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
 
         return functionType;
     }
+    if (function_name == 'concat') {
+        const functionType = freshVar(expr.getText(), 'TEXT');
+        expr.expr_list().forEach(paramExpr => {
+            const paramType = traverse_expr(paramExpr, traverseContext);
+            traverseContext.constraints.push({
+                expression: expr.getText(),
+                type1: functionType,
+                type2: paramType
+            })
+            if (paramType.kind == 'TypeVar') {
+                functionType.table = paramType.table
+            }
+        });
+
+        return functionType;
+    }
+    if (function_name) {
+        throw Error('traverse_expr: function not supported:' + function_name);
+    }
 
     const column_name = expr.column_name();
     if (column_name) {
