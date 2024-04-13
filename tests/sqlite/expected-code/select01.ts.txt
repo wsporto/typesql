@@ -9,14 +9,14 @@ export type Select01Result = {
 	name?: string;
 }
 
-export function select01(db: Database, params: Select01Params): Select01Result[] {
+export function select01(db: Database, params: Select01Params): Select01Result | null {
 	const sql = `
 	select id, name from mytable2 where id = ?
 	`
 	return db.prepare(sql)
 		.raw(true)
 		.all([params.param1])
-		.map(data => mapArrayToSelect01Result(data));
+		.map(data => mapArrayToSelect01Result(data))[0];
 }
 
 function mapArrayToSelect01Result(data: any) {

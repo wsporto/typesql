@@ -20,7 +20,7 @@ function createTsDescriptor(queryInfo: SchemaDef): TsDescriptor {
     const tsDescriptor: TsDescriptor = {
         sql: queryInfo.sql,
         queryType: "Select",
-        multipleRowsResult: false,
+        multipleRowsResult: queryInfo.multipleRowsResult,
         columns: queryInfo.columns.map(col => mapColumnToTsFieldDescriptor(col)),
         parameterNames: [],
         parameters: queryInfo.parameters.map(param => mapParameterToTsFieldDescriptor(param))
@@ -104,7 +104,9 @@ function generateCodeFromTsDescriptor(queryName: string, tsDescriptor: TsDescrip
 
     const queryParams = tsDescriptor.parameters.length > 0 ? '[' + tsDescriptor.parameters.map(param => 'params.' + param.name).join(', ') + ']' : '';
 
-    writer.write(`export function ${camelCaseName}(${functionArguments}): ${resultTypeName}[]`).block(() => {
+    const returnType = tsDescriptor.multipleRowsResult ? `${resultTypeName}[]` : `${resultTypeName} | null`;
+
+    writer.write(`export function ${camelCaseName}(${functionArguments}): ${returnType}`).block(() => {
         const sqlSplit = sql.split('\n');
         writer.write('const sql = `').newLine();
         sqlSplit.forEach(sqlLine => {
@@ -114,7 +116,7 @@ function generateCodeFromTsDescriptor(queryName: string, tsDescriptor: TsDescrip
         writer.write('return db.prepare(sql)').newLine();
         writer.indent().write('.raw(true)').newLine();
         writer.indent().write(`.all(${queryParams})`).newLine();
-        writer.indent().write(`.map(data => mapArrayTo${resultTypeName}(data));`);
+        writer.indent().write(`.map(data => mapArrayTo${resultTypeName}(data))${tsDescriptor.multipleRowsResult ? '' : '[0]'};`);
     });
     writer.blankLine();
 
