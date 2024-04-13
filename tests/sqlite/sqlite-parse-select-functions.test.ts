@@ -159,4 +159,82 @@ describe('sqlite-parse-select-functions', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     })
+
+    it('select avg(value + (value + 2)) from mytable1', () => {
+        const sql = `
+        select avg(value + (value + 2)) from mytable1
+        `
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: false,
+            columns: [
+                {
+                    columnName: 'avg(value + (value + 2))',
+                    type: 'REAL',
+                    notNull: false,
+                    table: ''
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('SELECT AVG(value) as avgResult FROM mytable1', () => {
+        const sql = `
+        SELECT AVG(value) as avgResult FROM mytable1
+        `
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: false,
+            columns: [
+                {
+                    columnName: 'avgResult',
+                    type: 'REAL',
+                    notNull: false,
+                    table: 'mytable1' //TODO - empty?
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('parse a select with SUM and with expression from multiple tables', () => {
+        const sql = `
+        select sum(t2.id + (t1.value + 2)) from mytable1 t1 inner join mytable2 t2 on t1.id = t2.id
+        `
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: false,
+            columns: [
+                {
+                    columnName: 'sum(t2.id + (t1.value + 2))',
+                    type: 'NUMERIC',
+                    notNull: false,
+                    table: ''
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
 });

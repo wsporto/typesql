@@ -152,7 +152,7 @@ function traverse_table_or_subquery(table_or_subquery: Table_or_subqueryContext[
 function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Type {
     const function_name = expr.function_name()?.getText().toLowerCase();
     if (function_name == 'sum' || function_name == 'avg') {
-        const functionType = freshVar(expr.getText(), 'NUMERIC');
+        const functionType = freshVar(expr.getText(), function_name == 'sum' ? 'NUMERIC' : 'REAL');
         const sumParamExpr = expr.expr(0);
         const paramType = traverse_expr(sumParamExpr, traverseContext);
         if (paramType.kind == 'TypeVar') {
@@ -219,7 +219,15 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         const exprLeft = expr.expr(0);
         const exprRight = expr.expr(1);
         const typeLeft = traverse_expr(exprLeft, traverseContext);
+        const typeRight = traverse_expr(exprRight, traverseContext);
         return freshVar(expr.getText(), 'tinyint');
+    }
+    if (expr.PLUS() || expr.MINUS()) {
+        const exprLeft = expr.expr(0);
+        const exprRight = expr.expr(1);
+        traverse_expr(exprLeft, traverseContext);
+        const typeRight = traverse_expr(exprRight, traverseContext);
+        return typeRight;
     }
     if (expr.LT2() || expr.GT2() || expr.AMP() || expr.PIPE() || expr.LT() || expr.LT_EQ() || expr.GT() || expr.GT_EQ()) {
         const exprLeft = expr.expr(0);
