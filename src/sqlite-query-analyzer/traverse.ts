@@ -98,7 +98,7 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
         })
         const querySpecification: QuerySpecificationResult = {
             columns,
-            fromColumns: []
+            fromColumns: columnsResult //TODO - return isMultipleRowResult instead
         }
         return querySpecification;
     });
@@ -344,16 +344,22 @@ function inferNotNull_expr(expr: ExprContext, fromColumns: ColumnDef[]): boolean
     return false;
 }
 
-export function isMultipleRowResult(sql_stmtContext: Sql_stmtContext) {
+export function isMultipleRowResult(sql_stmtContext: Sql_stmtContext, fromColumns: ColumnDef[]) {
     const select_stmt = sql_stmtContext.select_stmt();
 
     if (select_stmt.select_core_list().length == 1) { //UNION queries are multipleRowsResult = true
-        const from = select_stmt.select_core(0).FROM_();
+        const select_core = select_stmt.select_core(0);
+        const from = select_core.FROM_();
         if (!from) {
             return false;
         }
-        const agreegateFunction = select_stmt.select_core(0).result_column_list().every(result_column => isAgregateFunction(result_column));
+        const agreegateFunction = select_core.result_column_list().every(result_column => isAgregateFunction(result_column));
         if (agreegateFunction) {
+            return false;
+        }
+        const _whereExpr = select_core._whereExpr;
+        const isSingleResult = _whereExpr && where_is_single_result(_whereExpr, fromColumns);
+        if (isSingleResult == true) {
             return false;
         }
     }
@@ -376,6 +382,34 @@ function isLimitOne(select_stmt: Select_stmtContext) {
     const limit_stmt = select_stmt.limit_stmt();
     if (limit_stmt && limit_stmt.expr(0).getText() == '1') {
         return true;
+    }
+    return false;
+}
+
+function where_is_single_result(whereExpr: ExprContext, fromColumns: ColumnDef[]): boolean {
+    if (whereExpr.ASSIGN()) {
+        const isSingleResult = is_single_result(whereExpr, fromColumns);
+        return isSingleResult;
+    }
+    const expr_list = whereExpr.expr_list();
+    const onlyAnd = !whereExpr.OR_();
+    const oneSingle = expr_list.some(expr => is_single_result(expr, fromColumns));
+    if (onlyAnd && oneSingle) {
+        return true;
+    }
+    return false;
+}
+
+function is_single_result(expr: ExprContext, fromColumns: ColumnDef[]): boolean {
+    const expr1 = expr.expr(0);
+    const expr2 = expr.expr(1); //TODO: 1 = id
+    const column_name = expr1?.column_name();
+    if (column_name && expr.ASSIGN()) {
+        const fieldName = splitName(column_name.getText());
+        const column = findColumn(fieldName, fromColumns);
+        if (column.columnKey == 'PRI') {
+            return true;
+        }
     }
     return false;
 }

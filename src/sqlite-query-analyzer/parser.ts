@@ -67,7 +67,7 @@ function describeSQL(sql: string, sql_stmtContext: Sql_stmtContext, dbSchema: Co
     const schemaDef: SchemaDef = {
         sql,
         queryType: "Select",
-        multipleRowsResult: isMultipleRowResult(sql_stmtContext),
+        multipleRowsResult: isMultipleRowResult(sql_stmtContext, queryResult.fromColumns),
         columns: columnResult,
         parameters: paramsResult
     }

@@ -88,6 +88,427 @@ describe('Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('parse select t.* from mytable t', () => {
+        const sql = 'SELECT t.* FROM mytable1 t';
+
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: 't'
+                },
+                {
+                    columnName: 'value',
+                    type: 'INTEGER',
+                    notNull: false,
+                    table: 't'
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('select mytable1.id from mytable1', () => {
+        const sql = 'SELECT mytable1.id, mytable1.value FROM mytable1';
+
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: 'mytable1'
+                },
+                {
+                    columnName: 'value',
+                    type: 'INTEGER',
+                    notNull: false,
+                    table: 'mytable1'
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('parse select with multiples columns', () => {
+
+        const sql = 'SELECT id, name, descr as description FROM mytable2';
+
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: 'mytable2'
+                },
+                {
+                    columnName: 'name',
+                    type: 'TEXT',
+                    notNull: false,
+                    table: 'mytable2'
+                },
+                {
+                    columnName: 'description',
+                    type: 'TEXT',
+                    notNull: false,
+                    table: 'mytable2'
+                }
+            ],
+            parameters: []
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('SELECT id FROM mydb.MYTABLE1', () => {
+
+        const sql = 'SELECT id FROM mydb.mytable1';
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: 'mytable1'
+                }
+            ],
+            parameters: []
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('parse a select with a single parameter', () => {
+        const sql = 'SELECT * FROM mytable1 WHERE id = ?';
+
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: false, //changed at v0.3.0
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: 'mytable1'
+                },
+                {
+                    columnName: 'value',
+                    type: 'INTEGER',
+                    notNull: false,
+                    table: 'mytable1'
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'INTEGER',
+                    notNull: true
+                }
+            ]
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('parse a select with a single parameter (not using *)', async () => {
+        const sql = 'SELECT id FROM mytable1 WHERE id = ? and value = 10';
+
+        const actual = await parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: false, //changed at v.0.3.0
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: 'mytable1'
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'INTEGER',
+                    notNull: true
+                }
+            ]
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('parse a select with multiples parameters', () => {
+        const sql = 'SELECT value FROM mytable1 WHERE id = ? or value > ?';
+
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'value',
+                    type: 'INTEGER',
+                    notNull: false,
+                    table: 'mytable1'
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'INTEGER',
+                    notNull: true
+                },
+                {
+                    name: 'param2',
+                    columnType: 'INTEGER',
+                    notNull: true
+                }
+            ]
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('parse a select with param on column', async () => {
+        const sql = 'SELECT ? FROM mytable1';
+
+        const actual = await parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: '?', //TODO - PARAM1
+                    type: 'any',
+                    notNull: true,
+                    table: ''
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'any',
+                    notNull: true //todo - changed v0.0.2
+                }
+            ]
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('SELECT id FROM mytable1 where value between :start and :end', () => {
+        const sql = 'SELECT id FROM mytable1 where value between :start and :end';
+        const expectedSql = 'SELECT id FROM mytable1 where value between ? and ?'
+
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql: expectedSql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: 'mytable1'
+                }
+            ],
+            parameters: [
+                {
+                    name: 'start',
+                    columnType: 'INTEGER',
+                    notNull: true
+                },
+                {
+                    name: 'end',
+                    columnType: 'INTEGER',
+                    notNull: true
+                }
+            ]
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('SELECT id FROM mytable1 where value between :start and :end', () => { //todo - new
+        const sql = 'SELECT id FROM mytable1 where id = 0 and value between :start and :end';
+        const expectedSql = 'SELECT id FROM mytable1 where id = 0 and value between ? and ?'
+
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql: expectedSql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: 'mytable1'
+                }
+            ],
+            parameters: [
+                {
+                    name: 'start',
+                    columnType: 'INTEGER',
+                    notNull: true
+                },
+                {
+                    name: 'end',
+                    columnType: 'INTEGER',
+                    notNull: true
+                }
+            ]
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('parse a select with param on column', () => {
+        const sql = 'SELECT ? as name FROM mytable1';
+
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'name',
+                    type: 'any',
+                    notNull: true,
+                    table: ''
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'any',
+                    notNull: true //changed on v0.0.2
+                }
+            ]
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('parse a select with multiples params', () => {
+        const sql = `
+        SELECT ? as name, id, descr as description
+        FROM mytable2 
+        WHERE (name = ? or descr = ?) and id > ?
+        `
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'name',
+                    type: 'any',
+                    notNull: true,
+                    table: ''
+                },
+                {
+                    columnName: 'id',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: 'mytable2'
+                },
+                {
+                    columnName: 'description',
+                    type: 'TEXT',
+                    notNull: false,
+                    table: 'mytable2'
+                }
+
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'any',
+                    notNull: true //changed at v0.0.2
+                },
+                {
+                    name: 'param2',
+                    columnType: 'TEXT',
+                    notNull: true
+                },
+                {
+                    name: 'param3',
+                    columnType: 'TEXT',
+                    notNull: true
+                },
+                {
+                    name: 'param4',
+                    columnType: 'INTEGER',
+                    notNull: true
+                }
+            ]
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it('SELECT mytable1.* FROM mytable1', async () => {
         const sql = 'SELECT mytable1.* FROM mytable1';
 
@@ -184,84 +605,9 @@ describe('Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('SELECT id FROM mytable1 where value between :start and :end', async () => {
-        const sql = 'SELECT id FROM mytable1 where value between :start and :end';
-        const expectedSql = 'SELECT id FROM mytable1 where value between ? and ?'
+    it('parse a select with multiples parameters', () => {
+        const sql = 'SELECT value FROM mytable1 WHERE id = ? or value > ?';
 
-        const actual = await parseSql(sql, sqliteDbSchema);
-        const expected: SchemaDef = {
-            sql: expectedSql,
-            queryType: 'Select',
-            multipleRowsResult: true,
-            columns: [
-                {
-                    columnName: 'id',
-                    type: 'INTEGER',
-                    notNull: true,
-                    table: 'mytable1'
-                }
-            ],
-            parameters: [
-                {
-                    name: 'start',
-                    columnType: 'INTEGER',
-                    notNull: true
-                },
-                {
-                    name: 'end',
-                    columnType: 'INTEGER',
-                    notNull: true
-                }
-            ]
-        }
-        if (isLeft(actual)) {
-            assert.fail(`Shouldn't return an error` + actual.left.description);
-        }
-        assert.deepStrictEqual(actual.right, expected);
-    })
-
-    it('SELECT id FROM mytable1 where value between :start and :end', () => { //todo - new
-        const sql = 'SELECT id FROM mytable1 where id = 0 and value between :start and :end';
-        const expectedSql = 'SELECT id FROM mytable1 where id = 0 and value between ? and ?'
-
-        const actual = parseSql(sql, sqliteDbSchema);
-        const expected: SchemaDef = {
-            sql: expectedSql,
-            queryType: 'Select',
-            multipleRowsResult: true,
-            columns: [
-                {
-                    columnName: 'id',
-                    type: 'INTEGER',
-                    notNull: true,
-                    table: 'mytable1'
-                }
-            ],
-            parameters: [
-                {
-                    name: 'start',
-                    columnType: 'INTEGER',
-                    notNull: true
-                },
-                {
-                    name: 'end',
-                    columnType: 'INTEGER',
-                    notNull: true
-                }
-            ]
-        }
-        if (isLeft(actual)) {
-            assert.fail(`Shouldn't return an error` + actual.left.description);
-        }
-        assert.deepStrictEqual(actual.right, expected);
-    })
-
-    it('parse a select with multiples params', async () => {
-        const sql = `
-        SELECT ? as name, id, descr as description
-        FROM mytable2 
-        WHERE (name = ? or descr = ?) and id > ?
-        `
         const actual = parseSql(sql, sqliteDbSchema);
         const expected: SchemaDef = {
             sql,
@@ -269,43 +615,20 @@ describe('Test simple select statements', () => {
             multipleRowsResult: true,
             columns: [
                 {
-                    columnName: 'name',
-                    type: 'any',
-                    notNull: true,
-                    table: ''
-                },
-                {
-                    columnName: 'id',
+                    columnName: 'value',
                     type: 'INTEGER',
-                    notNull: true,
-                    table: 'mytable2'
-                },
-                {
-                    columnName: 'description',
-                    type: 'TEXT',
                     notNull: false,
-                    table: 'mytable2'
+                    table: 'mytable1'
                 }
-
             ],
             parameters: [
                 {
                     name: 'param1',
-                    columnType: 'any',
-                    notNull: true //changed at v0.0.2
+                    columnType: 'INTEGER',
+                    notNull: true
                 },
                 {
                     name: 'param2',
-                    columnType: 'TEXT',
-                    notNull: true
-                },
-                {
-                    name: 'param3',
-                    columnType: 'TEXT',
-                    notNull: true
-                },
-                {
-                    name: 'param4',
                     columnType: 'INTEGER',
                     notNull: true
                 }
