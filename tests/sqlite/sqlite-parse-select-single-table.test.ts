@@ -219,4 +219,40 @@ describe('Test simple select statements', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     })
+
+    it('SELECT id FROM mytable1 where value between :start and :end', () => { //todo - new
+        const sql = 'SELECT id FROM mytable1 where id = 0 and value between :start and :end';
+        const expectedSql = 'SELECT id FROM mytable1 where id = 0 and value between ? and ?'
+
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql: expectedSql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: 'mytable1'
+                }
+            ],
+            parameters: [
+                {
+                    name: 'start',
+                    columnType: 'INTEGER',
+                    notNull: true
+                },
+                {
+                    name: 'end',
+                    columnType: 'INTEGER',
+                    notNull: true
+                }
+            ]
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
 });

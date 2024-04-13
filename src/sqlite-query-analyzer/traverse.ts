@@ -247,6 +247,12 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         })
         return exprType;
     }
+    if (expr.OR_() || expr.AND_()) {
+        const expr1 = expr.expr(0);
+        const expr2 = expr.expr(1);
+        traverse_expr(expr1, traverseContext);
+        return traverse_expr(expr2, traverseContext);
+    }
     if (expr.IN_()) {
         const inExprLeft = expr.expr(0);
         const inExprRight = expr.expr(1);
@@ -261,13 +267,6 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
                 })
             }
         })
-        return freshVar(expr.getText(), 'tinyint');
-    }
-    if (expr.OR_() || expr.AND_()) {
-        const expr1 = expr.expr(0);
-        const expr2 = expr.expr(1);
-        traverse_expr(expr1, traverseContext);
-        traverse_expr(expr2, traverseContext);
         return freshVar(expr.getText(), 'tinyint');
     }
     const select_stmt = expr.select_stmt();
