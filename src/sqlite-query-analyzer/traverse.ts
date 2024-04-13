@@ -269,6 +269,12 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         })
         return freshVar(expr.getText(), 'tinyint');
     }
+    if (expr.OPEN_PAR() && expr.CLOSE_PAR()) {
+        expr.expr_list().forEach(innerExpr => {
+            traverse_expr(innerExpr, traverseContext);
+        });
+        return freshVar(expr.getText(), 'tinyint');
+    }
     const select_stmt = expr.select_stmt();
     if (select_stmt) {
         const subQueryType = traverse_select_stmt(select_stmt, traverseContext);

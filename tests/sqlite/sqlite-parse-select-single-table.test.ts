@@ -255,4 +255,65 @@ describe('Test simple select statements', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     })
+
+    it('parse a select with multiples params', async () => {
+        const sql = `
+        SELECT ? as name, id, descr as description
+        FROM mytable2 
+        WHERE (name = ? or descr = ?) and id > ?
+        `
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'name',
+                    type: 'any',
+                    notNull: true,
+                    table: ''
+                },
+                {
+                    columnName: 'id',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: 'mytable2'
+                },
+                {
+                    columnName: 'description',
+                    type: 'TEXT',
+                    notNull: false,
+                    table: 'mytable2'
+                }
+
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'any',
+                    notNull: true //changed at v0.0.2
+                },
+                {
+                    name: 'param2',
+                    columnType: 'TEXT',
+                    notNull: true
+                },
+                {
+                    name: 'param3',
+                    columnType: 'TEXT',
+                    notNull: true
+                },
+                {
+                    name: 'param4',
+                    columnType: 'INTEGER',
+                    notNull: true
+                }
+            ]
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
 });
