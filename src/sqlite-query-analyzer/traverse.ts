@@ -160,6 +160,17 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         }
         return functionType;
     }
+    if (function_name == 'min' || function_name == 'max') {
+        const functionType = freshVar(expr.getText(), '?');
+        const sumParamExpr = expr.expr(0);
+        const paramType = traverse_expr(sumParamExpr, traverseContext);
+        traverseContext.constraints.push({
+            expression: expr.getText(),
+            type1: functionType,
+            type2: paramType
+        })
+        return functionType;
+    }
     if (function_name == 'count') {
         const functionType = freshVar(expr.getText(), 'INTEGER');
         if (expr.expr_list().length == 1) {
@@ -387,7 +398,9 @@ function isAgregateFunction(result_column: Result_columnContext) {
     const function_name = result_column.expr()?.function_name()?.getText().toLowerCase();
     return function_name == 'count'
         || function_name == 'sum'
-        || function_name == 'avg';
+        || function_name == 'avg'
+        || function_name == 'min'
+        || function_name == 'max';
 }
 
 function isLimitOne(select_stmt: Select_stmtContext) {
