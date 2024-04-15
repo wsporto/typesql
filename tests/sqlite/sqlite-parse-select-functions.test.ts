@@ -292,7 +292,7 @@ describe('sqlite-parse-select-functions', () => {
 
     it(`SELECT strftime('%d/%m/%Y', '2013-05-21')`, () => {
         const sql = `
-        SELECT strftime('%d/%m/%Y', '2013-05-21')
+        SELECT strftime('%d/%m/%Y', '2013-05-21'), date('2013-05-21'), time('2013-05-21')
         `
         const actual = parseSql(sql, sqliteDbSchema);
         const expected: SchemaDef = {
@@ -302,6 +302,18 @@ describe('sqlite-parse-select-functions', () => {
             columns: [
                 {
                     columnName: `strftime('%d/%m/%Y','2013-05-21')`,
+                    type: 'TEXT',
+                    notNull: false, //invalid date
+                    table: ''
+                },
+                {
+                    columnName: `date('2013-05-21')`,
+                    type: 'TEXT',
+                    notNull: false, //invalid date
+                    table: ''
+                },
+                {
+                    columnName: `time('2013-05-21')`,
                     type: 'TEXT',
                     notNull: false, //invalid date
                     table: ''
@@ -317,11 +329,11 @@ describe('sqlite-parse-select-functions', () => {
     })
 
     it(`SELECT strftime('%d/%m/%Y', :param1)`, () => {
-        const sql = `SELECT strftime('%d/%m/%Y', :param1)`;
+        const sql = `SELECT strftime('%d/%m/%Y', :param1), date(:param2), time(:param3)`;
 
         const actual = parseSql(sql, sqliteDbSchema);
         const expected: SchemaDef = {
-            sql: `SELECT strftime('%d/%m/%Y', ?)`,
+            sql: `SELECT strftime('%d/%m/%Y', ?), date(?), time(?)`,
             queryType: 'Select',
             multipleRowsResult: false,
             columns: [
@@ -330,11 +342,33 @@ describe('sqlite-parse-select-functions', () => {
                     type: 'TEXT',
                     notNull: false, //invalid date
                     table: ''
+                },
+                {
+                    columnName: `date(?)`,
+                    type: 'TEXT',
+                    notNull: false, //invalid date
+                    table: ''
+                },
+                {
+                    columnName: `time(?)`,
+                    type: 'TEXT',
+                    notNull: false, //invalid date
+                    table: ''
                 }
             ],
             parameters: [
                 {
                     name: 'param1',
+                    columnType: 'DATE',
+                    notNull: true
+                },
+                {
+                    name: 'param2',
+                    columnType: 'DATE',
+                    notNull: true
+                },
+                {
+                    name: 'param3',
                     columnType: 'DATE',
                     notNull: true
                 }

@@ -210,6 +210,17 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         })
         return functionType;
     }
+    if (function_name == 'date' || function_name == 'time' || function_name == 'datetime') {
+        const functionType = freshVar(expr.getText(), 'TEXT');
+        const paramExpr = expr.expr(0);
+        const paramType = traverse_expr(paramExpr, traverseContext);
+        traverseContext.constraints.push({
+            expression: paramExpr.getText(),
+            type1: freshVar(paramExpr.getText(), 'DATE'),
+            type2: paramType
+        })
+        return functionType;
+    }
     if (function_name) {
         throw Error('traverse_expr: function not supported:' + function_name);
     }
