@@ -204,8 +204,8 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         const paramExpr = expr.expr(1);
         const paramType = traverse_expr(paramExpr, traverseContext);
         traverseContext.constraints.push({
-            expression: expr.expr(1).getText(),
-            type1: freshVar(expr.expr(1).getText(), 'DATE'),
+            expression: paramExpr.getText(),
+            type1: freshVar(paramExpr.getText(), 'DATE'),
             type2: paramType
         })
         return functionType;
