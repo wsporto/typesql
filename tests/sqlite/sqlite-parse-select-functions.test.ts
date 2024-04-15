@@ -289,4 +289,61 @@ describe('sqlite-parse-select-functions', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     })
+
+    it(`SELECT strftime('%d/%m/%Y', '2013-05-21')`, () => {
+        const sql = `
+        SELECT strftime('%d/%m/%Y', '2013-05-21')
+        `
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: false,
+            columns: [
+                {
+                    columnName: `strftime('%d/%m/%Y','2013-05-21')`,
+                    type: 'TEXT',
+                    notNull: false, //invalid date
+                    table: ''
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it(`SELECT strftime('%d/%m/%Y', :param1)`, () => {
+        const sql = `SELECT strftime('%d/%m/%Y', :param1)`;
+
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql: `SELECT strftime('%d/%m/%Y', ?)`,
+            queryType: 'Select',
+            multipleRowsResult: false,
+            columns: [
+                {
+                    columnName: `strftime('%d/%m/%Y',?)`,
+                    type: 'TEXT',
+                    notNull: false, //invalid date
+                    table: ''
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'DATE',
+                    notNull: true
+                }
+            ]
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
 });

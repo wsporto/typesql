@@ -2,4 +2,5 @@ export type SQLiteType =
 	| 'INTEGER'
 	| 'TEXT'
 	| 'NUMERIC'
-	| 'REAL';
+	| 'REAL'
+	| 'DATE';

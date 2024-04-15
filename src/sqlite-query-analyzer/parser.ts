@@ -11,7 +11,7 @@ export function parseSql(sql: string, dbSchema: ColumnSchema[]): Either<TypeSqlE
 
     const { sql: processedSql, namedParameters } = preprocessSql(sql);
 
-    const parser = parseSqlite(sql);
+    const parser = parseSqlite(processedSql);
 
     const sql_stmt = parser.sql_stmt();
 

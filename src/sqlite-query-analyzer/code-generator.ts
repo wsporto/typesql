@@ -55,7 +55,9 @@ function mapColumnType(sqliteType: SQLiteType) {
         case 'NUMERIC':
             return 'number';
         case 'REAL':
-            return 'number'
+            return 'number';
+        case 'DATE':
+            return 'Date';
     }
 }
 
