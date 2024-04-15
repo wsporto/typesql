@@ -106,7 +106,7 @@ function generateCodeFromTsDescriptor(queryName: string, tsDescriptor: TsDescrip
     let functionArguments = `db: Database`;
     functionArguments += tsDescriptor.parameters.length > 0 || generateOrderBy ? ', params: ' + paramsTypeName : '';
 
-    const queryParams = tsDescriptor.parameters.length > 0 ? '[' + tsDescriptor.parameters.map(param => 'params.' + param.name).join(', ') + ']' : '';
+    const queryParams = tsDescriptor.parameters.length > 0 ? '[' + tsDescriptor.parameters.map(param => toParamValue(param)).join(', ') + ']' : '';
 
     const returnType = tsDescriptor.multipleRowsResult ? `${resultTypeName}[]` : `${resultTypeName} | null`;
 
@@ -135,4 +135,11 @@ function generateCodeFromTsDescriptor(queryName: string, tsDescriptor: TsDescrip
     });
 
     return writer.toString();
+}
+
+function toParamValue(param: TsFieldDescriptor): string {
+    if (param.tsType == 'Date') {
+        return 'params.' + param.name + '.toISOString()';
+    }
+    return 'params.' + param.name;
 }

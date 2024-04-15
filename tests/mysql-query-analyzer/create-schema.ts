@@ -220,5 +220,37 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         table: 'mytable3',
         schema: 'mydb',
         notNull: true
-    }
+    },
+    {
+        column: 'integer_column',
+        column_type: 'INTEGER',
+        columnKey: '',
+        table: 'all_types',
+        schema: 'mydb',
+        notNull: false
+    },
+    {
+        column: 'real_column',
+        column_type: 'REAL',
+        columnKey: '',
+        table: 'all_types',
+        schema: 'mydb',
+        notNull: false
+    },
+    {
+        column: 'text_column',
+        column_type: 'TEXT',
+        columnKey: '',
+        table: 'all_types',
+        schema: 'mydb',
+        notNull: false
+    },
+    {
+        column: 'blob_column',
+        column_type: 'BLOB',
+        columnKey: '',
+        table: 'all_types',
+        schema: 'mydb',
+        notNull: false
+    },
 ]
