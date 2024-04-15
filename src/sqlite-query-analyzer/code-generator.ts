@@ -58,6 +58,8 @@ function mapColumnType(sqliteType: SQLiteType) {
             return 'number';
         case 'DATE':
             return 'Date';
+        case 'BLOB':
+            return 'any';
     }
 }
 

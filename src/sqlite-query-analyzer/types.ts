@@ -3,4 +3,5 @@ export type SQLiteType =
 	| 'TEXT'
 	| 'NUMERIC'
 	| 'REAL'
-	| 'DATE';
+	| 'DATE'
+	| 'BLOB';
