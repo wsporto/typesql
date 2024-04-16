@@ -1,15 +1,34 @@
-import { Select_stmtContext, Sql_stmtContext, ExprContext, Table_or_subqueryContext, Sql_stmt_listContext, Select_coreContext, Result_columnContext } from "@wsporto/ts-mysql-parser/dist/sqlite";
+import { Select_stmtContext, Sql_stmtContext, ExprContext, Table_or_subqueryContext, Sql_stmt_listContext, Select_coreContext, Result_columnContext, Insert_stmtContext, Column_nameContext } from "@wsporto/ts-mysql-parser/dist/sqlite";
 import { ColumnDef, TraverseContext, Type, TypeAndNullInfer, TypeVar } from "../mysql-query-analyzer/types";
 import { filterColumns, findColumn, includeColumn, splitName } from "../mysql-query-analyzer/select-columns";
 import { createColumnType, freshVar } from "../mysql-query-analyzer/collect-constraints";
 import { QuerySpecificationResult } from "../mysql-query-analyzer/traverse";
 
-export function traverse_Sql_stmtContext(sql_stmt: Sql_stmtContext, traverseContext: TraverseContext): QuerySpecificationResult {
+export type TraverseResult = {
+    queryType: 'Select' | 'Insert';
+    columns: TypeAndNullInfer[];
+    multipleRowsResult: boolean;
+}
+
+export function traverse_Sql_stmtContext(sql_stmt: Sql_stmtContext, traverseContext: TraverseContext): TraverseResult {
 
     const select_stmt = sql_stmt.select_stmt();
     if (select_stmt) {
         const queryResult = traverse_select_stmt(select_stmt, traverseContext);
-        return queryResult;
+        return {
+            queryType: 'Select',
+            columns: queryResult.columns,
+            multipleRowsResult: isMultipleRowResult(select_stmt, queryResult.fromColumns),
+        };
+    }
+    const insert_stmt = sql_stmt.insert_stmt();
+    if (insert_stmt) {
+        const insertResult = traverse_insert_stmt(insert_stmt, traverseContext);
+        return {
+            queryType: 'Insert',
+            columns: insertResult.columns,
+            multipleRowsResult: false
+        };
     }
     throw Error("traverse_Sql_stmtContext");
 }
@@ -227,10 +246,8 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
 
     const column_name = expr.column_name();
     if (column_name) {
-        const fieldName = splitName(column_name.getText());
-        const column = findColumn(fieldName, traverseContext.fromColumns);
-        const typeVar = freshVar(column.columnName, column.columnType.type, column.tableAlias || column.table);
-        return typeVar;
+        const { type } = traverse_column_name(column_name, traverseContext);
+        return type;
     }
     const literal = expr.literal_value();
     if (literal) {
@@ -376,6 +393,18 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
     throw Error('traverse_expr not supported:' + expr.getText());
 }
 
+function traverse_column_name(column_name: Column_nameContext, traverseContext: TraverseContext): TypeAndNullInfer {
+    const fieldName = splitName(column_name.getText());
+    const column = findColumn(fieldName, traverseContext.fromColumns);
+    const typeVar = freshVar(column.columnName, column.columnType.type, column.tableAlias || column.table);
+    return {
+        name: typeVar.name,
+        type: typeVar,
+        table: column.tableAlias || column.table,
+        notNull: column.notNull
+    };
+}
+
 function inferNotNull_expr(expr: ExprContext, fromColumns: ColumnDef[]): boolean {
     const column_name = expr.column_name();
     if (column_name) {
@@ -390,9 +419,7 @@ function inferNotNull_expr(expr: ExprContext, fromColumns: ColumnDef[]): boolean
     return false;
 }
 
-export function isMultipleRowResult(sql_stmtContext: Sql_stmtContext, fromColumns: ColumnDef[]) {
-    const select_stmt = sql_stmtContext.select_stmt();
-
+export function isMultipleRowResult(select_stmt: Select_stmtContext, fromColumns: ColumnDef[]) {
     if (select_stmt.select_core_list().length == 1) { //UNION queries are multipleRowsResult = true
         const select_core = select_stmt.select_core(0);
         const from = select_core.FROM_();
@@ -460,4 +487,29 @@ function is_single_result(expr: ExprContext, fromColumns: ColumnDef[]): boolean 
         }
     }
     return false;
+}
+
+function traverse_insert_stmt(insert_stmt: Insert_stmtContext, traverseContext: TraverseContext): QuerySpecificationResult {
+    const table_name = insert_stmt.table_name();
+    const fromColumns = filterColumns(traverseContext.dbSchema, [], '', splitName(table_name.getText()));
+    const columns = insert_stmt.column_name_list().map(column_name => {
+        return traverse_column_name(column_name, { ...traverseContext, fromColumns });
+    });
+    const value_row_list = insert_stmt.values_clause().value_row_list();
+    value_row_list.forEach((value_row, index) => {
+        const expr = value_row.expr_list()[index];
+        const exprType = traverse_expr(expr, traverseContext);
+        const columnType = columns[index].type;
+        traverseContext.constraints.push({
+            expression: expr.getText(),
+            type1: columnType,
+            type2: exprType
+        });
+    })
+
+    const queryResult: QuerySpecificationResult = {
+        columns: columns,
+        fromColumns: []
+    }
+    return queryResult;
 }

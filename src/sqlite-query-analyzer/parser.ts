@@ -1,7 +1,7 @@
 import { Either, right } from "fp-ts/lib/Either";
 import { ParameterDef, SchemaDef, TypeSqlError } from "../types";
 import { Sql_stmtContext, parseSql as parseSqlite } from "@wsporto/ts-mysql-parser/dist/sqlite";
-import { isMultipleRowResult, traverse_Sql_stmtContext } from "./traverse";
+import { traverse_Sql_stmtContext } from "./traverse";
 import { ColumnInfo, ColumnSchema, SubstitutionHash, TraverseContext } from "../mysql-query-analyzer/types";
 import { getVarType } from "../mysql-query-analyzer/collect-constraints";
 import { unify } from "../mysql-query-analyzer/unify";
@@ -42,34 +42,72 @@ function describeSQL(sql: string, sql_stmtContext: Sql_stmtContext, dbSchema: Co
 
     const substitutions: SubstitutionHash = {} //TODO - DUPLICADO
     unify(traverseContext.constraints, substitutions);
-    const columnResult = queryResult.columns.map((col) => {
-        const columnType = getVarType(substitutions, col.type);
-        const columnNotNull = col.notNull;
-        const colInfo: ColumnInfo = {
-            columnName: col.name,
-            type: verifyNotInferred(columnType),
-            notNull: columnNotNull,
-            table: col.table
-        }
-        return colInfo;
-    })
-    const paramsResult = traverseContext.parameters.map((param, index) => {
-        const columnType = getVarType(substitutions, param);
-        const columnNotNull = true;// param.notNull;
-        const colInfo: ParameterDef = {
-            name: namedParameters && namedParameters[index] ? namedParameters[index] : 'param' + (index + 1),
-            columnType: verifyNotInferred(columnType),
-            notNull: columnNotNull
-        }
-        return colInfo;
-    })
+    if (queryResult.queryType == 'Select') {
+        const columnResult = queryResult.columns.map((col) => {
+            const columnType = getVarType(substitutions, col.type);
+            const columnNotNull = col.notNull;
+            const colInfo: ColumnInfo = {
+                columnName: col.name,
+                type: verifyNotInferred(columnType),
+                notNull: columnNotNull,
+                table: col.table
+            }
+            return colInfo;
+        })
+        const paramsResult = traverseContext.parameters.map((param, index) => {
+            const columnType = getVarType(substitutions, param);
+            const columnNotNull = true;// param.notNull;
+            const colInfo: ParameterDef = {
+                name: namedParameters && namedParameters[index] ? namedParameters[index] : 'param' + (index + 1),
+                columnType: verifyNotInferred(columnType),
+                notNull: columnNotNull
+            }
+            return colInfo;
+        })
 
-    const schemaDef: SchemaDef = {
-        sql,
-        queryType: "Select",
-        multipleRowsResult: isMultipleRowResult(sql_stmtContext, queryResult.fromColumns),
-        columns: columnResult,
-        parameters: paramsResult
+        const schemaDef: SchemaDef = {
+            sql,
+            queryType: "Select",
+            multipleRowsResult: queryResult.multipleRowsResult,
+            columns: columnResult,
+            parameters: paramsResult
+        }
+        return right(schemaDef);
     }
-    return right(schemaDef);
+    else {
+
+        const columnResult: ColumnInfo[] = [
+            {
+                columnName: 'changes',
+                type: 'INTEGER',
+                notNull: true
+            },
+            {
+                columnName: 'lastInsertRowid',
+                type: 'INTEGER',
+                notNull: true
+            }
+        ]
+
+        const paramsResult = queryResult.columns.map((param, index) => {
+            const columnType = getVarType(substitutions, param.type);
+            const columnNotNull = param.notNull;
+            const colInfo: ParameterDef = {
+                name: namedParameters && namedParameters[index] ? namedParameters[index] : 'param' + (index + 1),
+                columnType: verifyNotInferred(columnType),
+                notNull: columnNotNull
+            }
+            return colInfo;
+        })
+
+        const schemaDef: SchemaDef = {
+            sql,
+            queryType: "Insert",
+            multipleRowsResult: false,
+            columns: columnResult,
+            parameters: paramsResult
+        }
+
+        return right(schemaDef);
+    }
 }
