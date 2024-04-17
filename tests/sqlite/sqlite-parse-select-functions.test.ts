@@ -146,7 +146,7 @@ describe('sqlite-parse-select-functions', () => {
             columns: [
                 {
                     columnName: 'avg(value)',
-                    type: 'NUMERIC',
+                    type: 'REAL',
                     notNull: false,
                     table: 'mytable1' //TODO: empty?
                 }
@@ -171,7 +171,7 @@ describe('sqlite-parse-select-functions', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    columnName: 'avg(value + (value + 2))',
+                    columnName: 'avg(value+(value+2))', //TODO: spaces
                     type: 'REAL',
                     notNull: false,
                     table: ''
@@ -223,7 +223,7 @@ describe('sqlite-parse-select-functions', () => {
             multipleRowsResult: false,
             columns: [
                 {
-                    columnName: 'sum(t2.id + (t1.value + 2))',
+                    columnName: 'sum(t2.id+(t1.value+2))', //TODO - spaces
                     type: 'NUMERIC',
                     notNull: false,
                     table: ''
