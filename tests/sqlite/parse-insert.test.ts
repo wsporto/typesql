@@ -160,4 +160,49 @@ describe('sqlite-parse-insert', () => {
         }
         assert.deepStrictEqual(actual.right.parameters, expected);
     })
+
+    // it('insert into mytable1 (id) values (IFNULL(:id, id))', () => {
+
+    //     const sql = `
+    //     insert into mytable1 (id) values (IFNULL(:id, id))
+    //         `;
+    //     const actual = parseSql(sql, sqliteDbSchema);
+    //     const expected: ParameterDef[] = [
+    //         {
+    //             name: 'id',
+    //             columnType: 'int',
+    //             notNull: false
+    //         }
+    //     ]
+
+    //     if (isLeft(actual)) {
+    //         assert.fail(`Shouldn't return an error: ` + actual.left.description);
+    //     }
+    //     assert.deepStrictEqual(actual.right.parameters, expected);
+    // })
+
+    it('insert into mytable1 (id) values (IFNULL(:id, :id2))', () => {
+
+        const sql = `
+        insert into mytable1 (id) values (IFNULL(:id, :id2))
+            `;
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: ParameterDef[] = [
+            {
+                name: 'id',
+                columnType: 'INTEGER',
+                notNull: false
+            },
+            {
+                name: 'id2',
+                columnType: 'INTEGER',
+                notNull: false
+            }
+        ]
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right.parameters, expected);
+    })
 });

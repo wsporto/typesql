@@ -1,5 +1,5 @@
 import { Select_stmtContext, Sql_stmtContext, ExprContext, Table_or_subqueryContext, Sql_stmt_listContext, Select_coreContext, Result_columnContext, Insert_stmtContext, Column_nameContext } from "@wsporto/ts-mysql-parser/dist/sqlite";
-import { ColumnDef, TraverseContext, Type, TypeAndNullInfer, TypeVar } from "../mysql-query-analyzer/types";
+import { ColumnDef, TraverseContext, TypeAndNullInfer, TypeVar } from "../mysql-query-analyzer/types";
 import { filterColumns, findColumn, includeColumn, splitName } from "../mysql-query-analyzer/select-columns";
 import { createColumnType, freshVar } from "../mysql-query-analyzer/collect-constraints";
 import { QuerySpecificationResult } from "../mysql-query-analyzer/traverse";
@@ -57,8 +57,7 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
 
     const querySpecResult = select_coreList.map(select_core => {
         const columnsResult: ColumnDef[] = [];
-        const listType: TypeVar[] = [];
-        const columnNullability: boolean[] = [];
+        const listType: TypeAndNullInfer[] = [];
 
         const table_or_subquery = select_core.table_or_subquery_list();
         if (table_or_subquery) {
@@ -80,8 +79,12 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
                 columnsResult.forEach(col => {
                     if (!tableName || includeColumn(col, tableName)) {
                         const columnType = createColumnType(col);
-                        listType.push(columnType);
-                        columnNullability.push(col.notNull);
+                        listType.push({
+                            name: columnType.name,
+                            type: columnType,
+                            notNull: col.notNull,
+                            table: col.tableAlias || col.table
+                        });
                     }
 
                 })
@@ -91,12 +94,11 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
             const alias = result_column.column_alias()?.getText();
             if (expr) {
                 const exprType = traverse_expr(expr, { ...traverseContext, fromColumns: columnsResult });
-                if (exprType.kind == 'TypeVar') {
+                if (exprType.type.kind == 'TypeVar') {
                     if (alias) {
                         exprType.name = alias;
                     }
                     listType.push(exprType);
-                    columnNullability.push(inferNotNull_expr(expr, columnsResult));
                 }
             }
         })
@@ -105,18 +107,8 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
         whereList.forEach(where => {
             traverse_expr(where, { ...traverseContext, fromColumns: columnsResult });
         })
-
-        const columns = listType.map((t, index) => {
-            const resultType: TypeAndNullInfer = {
-                name: t.name,
-                type: t,
-                notNull: columnNullability[index],
-                table: t.table || ''
-            }
-            return resultType;
-        })
         const querySpecification: QuerySpecificationResult = {
-            columns,
+            columns: listType,
             fromColumns: columnsResult //TODO - return isMultipleRowResult instead
         }
         return querySpecification;
@@ -168,16 +160,21 @@ function traverse_table_or_subquery(table_or_subquery: Table_or_subqueryContext[
     return allFields;
 }
 
-function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Type {
+function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): TypeAndNullInfer {
     const function_name = expr.function_name()?.getText().toLowerCase();
     if (function_name == 'sum' || function_name == 'avg') {
         const functionType = freshVar(expr.getText(), function_name == 'sum' ? 'NUMERIC' : 'REAL');
         const sumParamExpr = expr.expr(0);
         const paramType = traverse_expr(sumParamExpr, traverseContext);
-        if (paramType.kind == 'TypeVar') {
+        if (paramType.type.kind == 'TypeVar') {
             functionType.table = paramType.table
         }
-        return functionType;
+        return {
+            name: functionType.name,
+            type: functionType,
+            notNull: paramType.notNull,
+            table: functionType.table || ''
+        };
     }
     if (function_name == 'min' || function_name == 'max') {
         const functionType = freshVar(expr.getText(), '?');
@@ -186,21 +183,31 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         traverseContext.constraints.push({
             expression: expr.getText(),
             type1: functionType,
-            type2: paramType
+            type2: paramType.type
         })
-        return functionType;
+        return {
+            name: functionType.name,
+            type: functionType,
+            notNull: paramType.notNull,
+            table: functionType.table || ''
+        };
     }
     if (function_name == 'count') {
         const functionType = freshVar(expr.getText(), 'INTEGER');
         if (expr.expr_list().length == 1) {
             const sumParamExpr = expr.expr(0);
             const paramType = traverse_expr(sumParamExpr, traverseContext);
-            if (paramType.kind == 'TypeVar') {
+            if (paramType.type.kind == 'TypeVar') {
                 functionType.table = paramType.table
             }
         }
 
-        return functionType;
+        return {
+            name: functionType.name,
+            type: functionType,
+            notNull: true,
+            table: functionType.table || ''
+        };
     }
     if (function_name == 'concat') {
         const functionType = freshVar(expr.getText(), 'TEXT');
@@ -209,14 +216,19 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
             traverseContext.constraints.push({
                 expression: expr.getText(),
                 type1: functionType,
-                type2: paramType
+                type2: paramType.type
             })
-            if (paramType.kind == 'TypeVar') {
+            if (paramType.type.kind == 'TypeVar') {
                 functionType.table = paramType.table
             }
         });
 
-        return functionType;
+        return {
+            name: functionType.name,
+            type: functionType,
+            notNull: true,
+            table: functionType.table || ''
+        };
     }
     if (function_name == 'strftime') {
         const functionType = freshVar(expr.getText(), 'TEXT');
@@ -225,9 +237,14 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         traverseContext.constraints.push({
             expression: paramExpr.getText(),
             type1: freshVar(paramExpr.getText(), 'DATE'),
-            type2: paramType
+            type2: paramType.type
         })
-        return functionType;
+        return {
+            name: functionType.name,
+            type: functionType,
+            notNull: false,
+            table: functionType.table || ''
+        };
     }
     if (function_name == 'date' || function_name == 'time' || function_name == 'datetime') {
         const functionType = freshVar(expr.getText(), 'TEXT');
@@ -236,9 +253,33 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         traverseContext.constraints.push({
             expression: paramExpr.getText(),
             type1: freshVar(paramExpr.getText(), 'DATE'),
-            type2: paramType
+            type2: paramType.type
         })
-        return functionType;
+        return {
+            name: functionType.name,
+            type: functionType,
+            notNull: false,
+            table: functionType.table || ''
+        };
+    }
+    if (function_name == 'ifnull') {
+        const functionType = freshVar(expr.getText(), '?');
+        const paramTypes = expr.expr_list().map(paramExpr => {
+            const paramType = traverse_expr(paramExpr, traverseContext);
+            paramType.notNull = false;
+            traverseContext.constraints.push({
+                expression: expr.getText(),
+                type1: functionType,
+                type2: paramType.type
+            })
+            return paramType;
+        })
+        return {
+            name: functionType.name,
+            type: functionType,
+            notNull: paramTypes.every(param => param.notNull),
+            table: functionType.table || ''
+        };
     }
     if (function_name) {
         throw Error('traverse_expr: function not supported:' + function_name);
@@ -246,38 +287,72 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
 
     const column_name = expr.column_name();
     if (column_name) {
-        const { type } = traverse_column_name(column_name, traverseContext);
+        const type = traverse_column_name(column_name, traverseContext);
         return type;
     }
     const literal = expr.literal_value();
     if (literal) {
         if (literal.STRING_LITERAL()) {
-            return freshVar(literal.getText(), 'TEXT')
+            const type = freshVar(literal.getText(), 'TEXT')
+            return {
+                name: type.name,
+                type: type,
+                notNull: true,
+                table: type.table || ''
+            };
         }
         if (literal.NUMERIC_LITERAL()) {
-            return freshVar(literal.getText(), 'INTEGER');
+            const type = freshVar(literal.getText(), 'INTEGER');
+            return {
+                name: type.name,
+                type: type,
+                notNull: true,
+                table: type.table || ''
+            };
         }
-        return freshVar(literal.getText(), '?');
+        const type = freshVar(literal.getText(), '?');
+        return {
+            name: type.name,
+            type: type,
+            notNull: true,
+            table: type.table || ''
+        };
     }
     const parameter = expr.BIND_PARAMETER();
     if (parameter) {
         const param = freshVar('?', '?');
-        traverseContext.parameters.push(param);
-        return param;
+        const type = {
+            name: param.name,
+            type: param,
+            notNull: true,
+            table: param.table || ''
+        };
+        traverseContext.parameters.push(type.type);
+        return type;
+
     }
     if (expr.STAR() || expr.DIV() || expr.MOD()) {
         const exprLeft = expr.expr(0);
         const exprRight = expr.expr(1);
         const typeLeft = traverse_expr(exprLeft, traverseContext);
         const typeRight = traverse_expr(exprRight, traverseContext);
-        return freshVar(expr.getText(), 'tinyint');
+        const type = freshVar(expr.getText(), '?');
+        return {
+            name: type.name,
+            type: type,
+            notNull: typeLeft.notNull && typeRight.notNull,
+            table: type.table || ''
+        };
     }
     if (expr.PLUS() || expr.MINUS()) {
         const exprLeft = expr.expr(0);
         const exprRight = expr.expr(1);
-        traverse_expr(exprLeft, traverseContext);
+        const typeLeft = traverse_expr(exprLeft, traverseContext);
         const typeRight = traverse_expr(exprRight, traverseContext);
-        return typeRight;
+        return {
+            ...typeRight,
+            notNull: typeLeft.notNull && typeRight.notNull
+        };
     }
     if (expr.LT2() || expr.GT2() || expr.AMP() || expr.PIPE() || expr.LT() || expr.LT_EQ() || expr.GT() || expr.GT_EQ()) {
         const exprLeft = expr.expr(0);
@@ -286,15 +361,27 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         const typeRight = traverse_expr(exprRight, traverseContext);
         traverseContext.constraints.push({
             expression: expr.getText(),
-            type1: typeLeft,
-            type2: typeRight
+            type1: typeLeft.type,
+            type2: typeRight.type
         })
-        return freshVar(expr.getText(), 'tinyint');
+        const type = freshVar(expr.getText(), '?');
+        return {
+            name: type.name,
+            type: type,
+            notNull: true,
+            table: type.table || ''
+        };
     }
     if (expr.IS_()) { //is null/is not null
         const expr_ = expr.expr(0);
         traverse_expr(expr_, traverseContext);
-        return freshVar(expr.getText(), 'tinyint');
+        const type = freshVar(expr.getText(), '?');
+        return {
+            name: type.name,
+            type: type,
+            notNull: true,
+            table: type.table || ''
+        };
     }
     if (expr.ASSIGN()) { //=
         const exprLeft = expr.expr(0);
@@ -303,10 +390,16 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         const typeRight = traverse_expr(exprRight, traverseContext);
         traverseContext.constraints.push({
             expression: expr.getText(),
-            type1: typeLeft,
-            type2: typeRight
+            type1: typeLeft.type,
+            type2: typeRight.type
         })
-        return freshVar(expr.getText(), 'tinyint');
+        const type = freshVar(expr.getText(), '?');
+        return {
+            name: type.name,
+            type: type,
+            notNull: true,
+            table: type.table || ''
+        };
     }
     if (expr.BETWEEN_()) {
         const exprType = traverse_expr(expr.expr(0), traverseContext);
@@ -314,18 +407,18 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         const between2 = traverse_expr(expr.expr(2), traverseContext);
         traverseContext.constraints.push({
             expression: expr.getText(),
-            type1: exprType,
-            type2: between1
+            type1: exprType.type,
+            type2: between1.type
         });
         traverseContext.constraints.push({
             expression: expr.getText(),
-            type1: exprType,
-            type2: between2
+            type1: exprType.type,
+            type2: between2.type
         });
         traverseContext.constraints.push({
             expression: expr.getText(),
-            type1: between1,
-            type2: between2
+            type1: between1.type,
+            type2: between2.type
         })
         return exprType;
     }
@@ -344,39 +437,64 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
                 const typeRight = traverse_expr(exprRight, traverseContext);
                 traverseContext.constraints.push({
                     expression: expr.getText(),
-                    type1: typeLeft,
-                    type2: typeRight
+                    type1: typeLeft.type,
+                    type2: typeRight.type
                 })
             }
         })
-        return freshVar(expr.getText(), 'tinyint');
-    }
-    if (expr.OPEN_PAR() && expr.CLOSE_PAR()) {
-        expr.expr_list().forEach(innerExpr => {
-            traverse_expr(innerExpr, traverseContext);
-        });
-        return freshVar(expr.getText(), 'tinyint');
+        const type = freshVar(expr.getText(), '?');
+        return {
+            name: type.name,
+            type: type,
+            notNull: true,
+            table: type.table || ''
+        };
     }
     const select_stmt = expr.select_stmt();
     if (select_stmt) {
         const subQueryType = traverse_select_stmt(select_stmt, traverseContext);
-        return { ...subQueryType.columns[0].type, table: '' };
+        const type = { ...subQueryType.columns[0].type, table: '' };
+        return {
+            name: type.name,
+            type: type,
+            notNull: subQueryType.columns[0].notNull,
+            table: type.table || ''
+        };
     }
+    if (expr.OPEN_PAR() && expr.CLOSE_PAR()) {
+        const type = freshVar(expr.getText(), '?');
+        const exprTypes = expr.expr_list().map(innerExpr => {
+            const exprType = traverse_expr(innerExpr, traverseContext);
+            traverseContext.constraints.push({
+                expression: innerExpr.getText(),
+                type1: exprType.type,
+                type2: type
+            })
+            return exprType;
+        });
+        return {
+            name: type.name,
+            type: type,
+            notNull: exprTypes.every(type => type.notNull),
+            table: type.table || ''
+        };
+    }
+
     if (expr.CASE_()) {
-        const resultTypes: Type[] = []; //then and else
-        const whenTypes: Type[] = [];
+        const resultTypes: TypeVar[] = []; //then and else
+        const whenTypes: TypeVar[] = [];
         expr.expr_list().forEach((expr_, index) => {
             const type = traverse_expr(expr_, traverseContext);
             if (expr_.WHEN__list() || expr_.THEN__list()) {
                 if (index % 2 == 0) {
-                    whenTypes.push(type);
+                    whenTypes.push(type.type);
                 }
                 else {
-                    resultTypes.push(type);
+                    resultTypes.push(type.type);
                 }
             }
             if (expr_.ELSE_()) {
-                resultTypes.push(type);
+                resultTypes.push(type.type);
             }
         });
         resultTypes.forEach((resultType, index) => {
@@ -388,7 +506,13 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
                 })
             }
         });
-        return resultTypes[0];
+        const type = resultTypes[0];
+        return {
+            name: type.name,
+            type: type,
+            notNull: false,
+            table: type.table || ''
+        };
     }
     throw Error('traverse_expr not supported:' + expr.getText());
 }
@@ -403,20 +527,6 @@ function traverse_column_name(column_name: Column_nameContext, traverseContext: 
         table: column.tableAlias || column.table,
         notNull: column.notNull
     };
-}
-
-function inferNotNull_expr(expr: ExprContext, fromColumns: ColumnDef[]): boolean {
-    const column_name = expr.column_name();
-    if (column_name) {
-        const fieldName = splitName(column_name.getText());
-        const column = findColumn(fieldName, fromColumns);
-        return column.notNull;
-    }
-    const function_name = expr.function_name()?.getText().toLowerCase();
-    if (function_name == 'count') {
-        return true;
-    }
-    return false;
 }
 
 export function isMultipleRowResult(select_stmt: Select_stmtContext, fromColumns: ColumnDef[]) {
@@ -495,20 +605,31 @@ function traverse_insert_stmt(insert_stmt: Insert_stmtContext, traverseContext: 
     const columns = insert_stmt.column_name_list().map(column_name => {
         return traverse_column_name(column_name, { ...traverseContext, fromColumns });
     });
+    const insertColumns: TypeAndNullInfer[] = [];
     const value_row_list = insert_stmt.values_clause().value_row_list();
-    value_row_list.forEach((value_row, index) => {
-        const expr = value_row.expr_list()[index];
-        const exprType = traverse_expr(expr, traverseContext);
-        const columnType = columns[index].type;
-        traverseContext.constraints.push({
-            expression: expr.getText(),
-            type1: columnType,
-            type2: exprType
+    value_row_list.forEach((value_row) => {
+        value_row.expr_list().forEach((expr, index) => {
+            const numberParamsBefore = traverseContext.parameters.length;
+            const exprType = traverse_expr(expr, traverseContext);
+            traverseContext.parameters.slice(numberParamsBefore).forEach((param) => {
+                const col = columns[index];
+                traverseContext.constraints.push({
+                    expression: expr.getText(),
+                    type1: col.type,
+                    type2: exprType.type
+                });
+                insertColumns.push({
+                    name: param.name,
+                    type: param,
+                    notNull: exprType.notNull && col.notNull,
+                    table: ""
+                })
+            })
         });
     })
 
     const queryResult: QuerySpecificationResult = {
-        columns: columns,
+        columns: insertColumns,
         fromColumns: []
     }
     return queryResult;
