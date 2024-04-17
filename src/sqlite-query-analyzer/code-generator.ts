@@ -19,7 +19,7 @@ export function generateTsCode(sql: string, queryName: string, sqliteDbSchema: C
 function createTsDescriptor(queryInfo: SchemaDef): TsDescriptor {
     const tsDescriptor: TsDescriptor = {
         sql: queryInfo.sql,
-        queryType: "Select",
+        queryType: queryInfo.queryType,
         multipleRowsResult: queryInfo.multipleRowsResult,
         columns: queryInfo.columns.map(col => mapColumnToTsFieldDescriptor(col)),
         parameterNames: [],
@@ -72,6 +72,7 @@ function generateCodeFromTsDescriptor(queryName: string, tsDescriptor: TsDescrip
     const camelCaseName = convertToCamelCaseName(queryName);
     const capitalizedName = capitalize(camelCaseName);
 
+    const queryType = tsDescriptor.queryType;
     const sql = tsDescriptor.sql;
     const dataTypeName = capitalizedName + 'Data';
     const paramsTypeName = capitalizedName + 'Params';
@@ -110,29 +111,46 @@ function generateCodeFromTsDescriptor(queryName: string, tsDescriptor: TsDescrip
 
     const returnType = tsDescriptor.multipleRowsResult ? `${resultTypeName}[]` : `${resultTypeName} | null`;
 
-    writer.write(`export function ${camelCaseName}(${functionArguments}): ${returnType}`).block(() => {
-        const sqlSplit = sql.split('\n');
-        writer.write('const sql = `').newLine();
-        sqlSplit.forEach(sqlLine => {
-            writer.indent().write(sqlLine).newLine();
+    if (queryType == 'Select') {
+        writer.write(`export function ${camelCaseName}(${functionArguments}): ${returnType}`).block(() => {
+            const sqlSplit = sql.split('\n');
+            writer.write('const sql = `').newLine();
+            sqlSplit.forEach(sqlLine => {
+                writer.indent().write(sqlLine).newLine();
+            });
+            writer.indent().write('`').newLine();
+            writer.write('return db.prepare(sql)').newLine();
+            writer.indent().write('.raw(true)').newLine();
+            writer.indent().write(`.all(${queryParams})`).newLine();
+            writer.indent().write(`.map(data => mapArrayTo${resultTypeName}(data))${tsDescriptor.multipleRowsResult ? '' : '[0]'};`);
         });
-        writer.indent().write('`').newLine();
-        writer.write('return db.prepare(sql)').newLine();
-        writer.indent().write('.raw(true)').newLine();
-        writer.indent().write(`.all(${queryParams})`).newLine();
-        writer.indent().write(`.map(data => mapArrayTo${resultTypeName}(data))${tsDescriptor.multipleRowsResult ? '' : '[0]'};`);
-    });
-    writer.blankLine();
+    }
 
-    writer.write(`function mapArrayTo${resultTypeName}(data: any) `).block(() => {
-        writer.write(`const result: ${resultTypeName} = `).block(() => {
-            tsDescriptor.columns.forEach((col, index) => {
-                const separator = index < tsDescriptor.columns.length - 1 ? ',' : ''
-                writer.writeLine(`${col.name}: data[${index}]${separator}`);
+    if (queryType == 'Insert') {
+        writer.write(`export function ${camelCaseName}(${functionArguments}): ${resultTypeName}`).block(() => {
+            const sqlSplit = sql.split('\n');
+            writer.write('const sql = `').newLine();
+            sqlSplit.forEach(sqlLine => {
+                writer.indent().write(sqlLine).newLine();
+            });
+            writer.indent().write('`').newLine();
+            writer.write('return db.prepare(sql)').newLine();
+            writer.indent().write(`.run() as ${resultTypeName};`);
+        });
+    }
+
+    if (queryType == 'Select') {
+        writer.blankLine();
+        writer.write(`function mapArrayTo${resultTypeName}(data: any) `).block(() => {
+            writer.write(`const result: ${resultTypeName} = `).block(() => {
+                tsDescriptor.columns.forEach((col, index) => {
+                    const separator = index < tsDescriptor.columns.length - 1 ? ',' : ''
+                    writer.writeLine(`${col.name}: data[${index}]${separator}`);
+                })
             })
-        })
-        writer.writeLine('return result;');
-    });
+            writer.writeLine('return result;');
+        });
+    }
 
     return writer.toString();
 }

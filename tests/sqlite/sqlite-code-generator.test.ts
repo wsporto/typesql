@@ -41,4 +41,13 @@ describe('sqlite-code-generator', () => {
 
 		assert.deepStrictEqual(actual, expected);
 	})
+
+	it('insert01 - select with same parameter used twice', async () => {
+		const sql = 'INSERT INTO mytable1(value) values(10)';
+
+		const actual = await generateTsCode(sql, 'insert01', sqliteDbSchema);
+		const expected = readFileSync('tests/sqlite/expected-code/insert01.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		assert.deepStrictEqual(actual, expected);
+	})
 });
