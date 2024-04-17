@@ -90,7 +90,8 @@ function generateCodeFromTsDescriptor(queryName: string, tsDescriptor: TsDescrip
         writer.blankLine();
         writer.write(`export type ${paramsTypeName} =`).block(() => {
             uniqueParams.forEach((field) => {
-                writer.writeLine(`${field.name}: ${field.tsType};`);
+                const optionalOp = field.notNull ? '' : '?';
+                writer.writeLine(`${field.name}${optionalOp}: ${field.tsType};`);
             });
         });
     }
@@ -135,7 +136,7 @@ function generateCodeFromTsDescriptor(queryName: string, tsDescriptor: TsDescrip
             });
             writer.indent().write('`').newLine();
             writer.write('return db.prepare(sql)').newLine();
-            writer.indent().write(`.run() as ${resultTypeName};`);
+            writer.indent().write(`.run(${queryParams}) as ${resultTypeName};`);
         });
     }
 
