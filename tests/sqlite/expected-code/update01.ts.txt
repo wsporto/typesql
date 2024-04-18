@@ -12,10 +12,10 @@ export type Update01Result = {
 	changes: number;
 }
 
-export function update01(db: Database, params: Update01Params): Update01Result {
+export function update01(db: Database, data: Update01Data, params: Update01Params): Update01Result {
 	const sql = `
 	UPDATE mytable1 SET value=? WHERE id=?
 	`
 	return db.prepare(sql)
-		.run([params.value, params.param1]) as Update01Result;
+		.run([data.value, params.param1]) as Update01Result;
 }

@@ -118,10 +118,13 @@ function generateCodeFromTsDescriptor(queryName: string, tsDescriptor: TsDescrip
     writer.blankLine();
 
     let functionArguments = `db: Database`;
+    functionArguments += queryType == 'Update' ? `, data: ${dataTypeName}` : '';
     functionArguments += tsDescriptor.parameters.length > 0 || generateOrderBy ? ', params: ' + paramsTypeName : '';
 
-    const allParameters = (tsDescriptor.data || []).concat(tsDescriptor.parameters);
-    const queryParams = allParameters.length > 0 ? '[' + allParameters.map(param => toParamValue(param)).join(', ') + ']' : '';
+    const allParameters = (tsDescriptor.data?.map(param => toParamValue(param, 'data')) || [])
+        .concat(tsDescriptor.parameters.map(param => toParamValue(param, 'params')));
+
+    const queryParams = allParameters.length > 0 ? '[' + allParameters.join(', ') + ']' : '';
 
     const returnType = tsDescriptor.multipleRowsResult ? `${resultTypeName}[]` : `${resultTypeName} | null`;
 
@@ -169,9 +172,9 @@ function generateCodeFromTsDescriptor(queryName: string, tsDescriptor: TsDescrip
     return writer.toString();
 }
 
-function toParamValue(param: TsFieldDescriptor): string {
+function toParamValue(param: TsFieldDescriptor, paramVar: 'params' | 'data'): string {
     if (param.tsType == 'Date') {
-        return 'params.' + param.name + '.toISOString()';
+        return paramVar + '.' + param.name + '.toISOString()';
     }
-    return 'params.' + param.name;
+    return paramVar + '.' + param.name;
 }
