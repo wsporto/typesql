@@ -153,5 +153,36 @@ function describeSQL(sql: string, sql_stmtContext: Sql_stmtContext, dbSchema: Co
 
         return right(schemaDef);
     }
+    if (queryResult.queryType == 'Delete') {
+        const deleteColumnResult: ColumnInfo[] = [
+            {
+                columnName: 'changes',
+                type: 'INTEGER',
+                notNull: true
+            }
+        ]
+
+        const whereParams = queryResult.params.map((param, index) => {
+            const columnType = getVarType(substitutions, param.type);
+            const columnNotNull = param.notNull;
+            const paramIndex = index + queryResult.params.length;
+            const colInfo: ParameterDef = {
+                name: namedParameters && namedParameters[paramIndex] ? namedParameters[paramIndex] : 'param' + (index + 1),
+                columnType: verifyNotInferred(columnType),
+                notNull: columnNotNull
+            }
+            return colInfo;
+        })
+
+        const schemaDef: SchemaDef = {
+            sql,
+            queryType: queryResult.queryType,
+            multipleRowsResult: false,
+            columns: deleteColumnResult,
+            parameters: whereParams
+        }
+
+        return right(schemaDef);
+    }
     throw Error('query not supported: ' + sql_stmtContext.getText());
 }

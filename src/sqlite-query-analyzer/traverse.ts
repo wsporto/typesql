@@ -1,8 +1,8 @@
-import { Select_stmtContext, Sql_stmtContext, ExprContext, Table_or_subqueryContext, Sql_stmt_listContext, Select_coreContext, Result_columnContext, Insert_stmtContext, Column_nameContext, Update_stmtContext } from "@wsporto/ts-mysql-parser/dist/sqlite";
+import { Select_stmtContext, Sql_stmtContext, ExprContext, Table_or_subqueryContext, Sql_stmt_listContext, Select_coreContext, Result_columnContext, Insert_stmtContext, Column_nameContext, Update_stmtContext, Delete_stmtContext } from "@wsporto/ts-mysql-parser/dist/sqlite";
 import { ColumnDef, TraverseContext, TypeAndNullInfer, TypeVar } from "../mysql-query-analyzer/types";
 import { filterColumns, findColumn, includeColumn, splitName } from "../mysql-query-analyzer/select-columns";
 import { createColumnType, freshVar } from "../mysql-query-analyzer/collect-constraints";
-import { InsertResult, QuerySpecificationResult, SelectResult, TraverseResult2, UpdateResult } from "../mysql-query-analyzer/traverse";
+import { DeleteResult, InsertResult, QuerySpecificationResult, SelectResult, TraverseResult2, UpdateResult } from "../mysql-query-analyzer/traverse";
 
 export function traverse_Sql_stmtContext(sql_stmt: Sql_stmtContext, traverseContext: TraverseContext): TraverseResult2 {
 
@@ -24,6 +24,11 @@ export function traverse_Sql_stmtContext(sql_stmt: Sql_stmtContext, traverseCont
     if (update_stmt) {
         const updateResult = traverse_update_stmt(update_stmt, traverseContext);
         return updateResult;
+    }
+    const delete_stmt = sql_stmt.delete_stmt();
+    if (delete_stmt) {
+        const deleteResult = traverse_delete_stmt(delete_stmt, traverseContext);
+        return deleteResult;
     }
     throw Error("traverse_Sql_stmtContext");
 }
@@ -677,6 +682,29 @@ function traverse_update_stmt(update_stmt: Update_stmtContext, traverseContext: 
         queryType: 'Update',
         columns: updateColumns,
         params: whereParams
+    }
+    return queryResult;
+}
+
+function traverse_delete_stmt(delete_stmt: Delete_stmtContext, traverseContext: TraverseContext): DeleteResult {
+    const table_name = delete_stmt.qualified_table_name().getText();
+    const fromColumns = filterColumns(traverseContext.dbSchema, [], '', splitName(table_name));
+
+    const expr = delete_stmt.expr();
+    traverse_expr(expr, { ...traverseContext, fromColumns });
+    const params = traverseContext.parameters.map(param => {
+        const paramResult: TypeAndNullInfer = {
+            name: param.name,
+            type: param,
+            notNull: true,
+            table: param.table || ''
+        }
+        return paramResult;
+    });
+
+    const queryResult: DeleteResult = {
+        queryType: 'Delete',
+        params: params
     }
     return queryResult;
 }

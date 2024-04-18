@@ -477,7 +477,7 @@ export type QuerySpecificationResult = {
 }
 
 //sqlite
-export type TraverseResult2 = SelectResult | InsertResult | UpdateResult;
+export type TraverseResult2 = SelectResult | InsertResult | UpdateResult | DeleteResult;
 
 export type SelectResult = {
     queryType: 'Select';
@@ -491,6 +491,10 @@ export type InsertResult = {
 export type UpdateResult = {
     queryType: 'Update';
     columns: TypeAndNullInfer[];
+    params: TypeAndNullInfer[];
+}
+export type DeleteResult = {
+    queryType: 'Delete';
     params: TypeAndNullInfer[];
 }
 
