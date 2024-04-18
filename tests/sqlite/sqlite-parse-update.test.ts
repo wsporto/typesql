@@ -169,4 +169,35 @@ describe('sqlite-parse-update', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('UPDATE mytable1 SET id = IFNULL(:id, id)', () => {
+
+        const sql = `
+        UPDATE mytable1 SET id = IFNULL(:id, id)
+            `;
+        const expectedSql = `
+        UPDATE mytable1 SET id = IFNULL(?, id)
+            `;
+
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql: expectedSql,
+            queryType: 'Update',
+            multipleRowsResult: false,
+            columns,
+            data: [
+                {
+                    name: 'id',
+                    columnType: 'INTEGER',
+                    notNull: false
+                }
+            ],
+            parameters: []
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
 });
