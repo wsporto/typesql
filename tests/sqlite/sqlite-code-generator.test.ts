@@ -59,4 +59,13 @@ describe('sqlite-code-generator', () => {
 
 		assert.deepStrictEqual(actual, expected);
 	})
+
+	it('update01 - UPDATE mytable1 SET value=? WHERE id=?', () => {
+		const sql = 'UPDATE mytable1 SET value=? WHERE id=?';
+
+		const actual = generateTsCode(sql, 'update01', sqliteDbSchema);
+		const expected = readFileSync('tests/sqlite/expected-code/update01.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		assert.deepStrictEqual(actual, expected);//
+	})
 });

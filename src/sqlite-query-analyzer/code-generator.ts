@@ -23,7 +23,8 @@ function createTsDescriptor(queryInfo: SchemaDef): TsDescriptor {
         multipleRowsResult: queryInfo.multipleRowsResult,
         columns: queryInfo.columns.map(col => mapColumnToTsFieldDescriptor(col)),
         parameterNames: [],
-        parameters: queryInfo.parameters.map(param => mapParameterToTsFieldDescriptor(param))
+        parameters: queryInfo.parameters.map(param => mapParameterToTsFieldDescriptor(param)),
+        data: queryInfo.data?.map(param => mapParameterToTsFieldDescriptor(param)),
     }
     return tsDescriptor;
 }
@@ -83,8 +84,19 @@ function generateCodeFromTsDescriptor(queryName: string, tsDescriptor: TsDescrip
     const orderByTypeName = capitalizedName + 'OrderBy';
     const generateOrderBy = tsDescriptor.orderByColumns != null && tsDescriptor.orderByColumns.length > 0;
     const uniqueParams = removeDuplicatedParameters2(tsDescriptor.parameters);
+    const uniqueUpdateParams = removeDuplicatedParameters2(tsDescriptor.data || []);
 
     writer.writeLine(`import { Database } from 'better-sqlite3';`);
+
+    if (uniqueUpdateParams.length > 0) {
+        writer.blankLine();
+        writer.write(`export type ${dataTypeName} =`).block(() => {
+            uniqueUpdateParams.forEach((field) => {
+                const optionalOp = field.notNull ? '' : '?';
+                writer.writeLine(`${field.name}${optionalOp}: ${field.tsType};`);
+            });
+        });
+    }
 
     if (uniqueParams.length > 0) {
         writer.blankLine();
@@ -108,7 +120,8 @@ function generateCodeFromTsDescriptor(queryName: string, tsDescriptor: TsDescrip
     let functionArguments = `db: Database`;
     functionArguments += tsDescriptor.parameters.length > 0 || generateOrderBy ? ', params: ' + paramsTypeName : '';
 
-    const queryParams = tsDescriptor.parameters.length > 0 ? '[' + tsDescriptor.parameters.map(param => toParamValue(param)).join(', ') + ']' : '';
+    const allParameters = (tsDescriptor.data || []).concat(tsDescriptor.parameters);
+    const queryParams = allParameters.length > 0 ? '[' + allParameters.map(param => toParamValue(param)).join(', ') + ']' : '';
 
     const returnType = tsDescriptor.multipleRowsResult ? `${resultTypeName}[]` : `${resultTypeName} | null`;
 
@@ -127,7 +140,7 @@ function generateCodeFromTsDescriptor(queryName: string, tsDescriptor: TsDescrip
         });
     }
 
-    if (queryType == 'Insert') {
+    if (queryType == 'Insert' || queryType == 'Update') {
         writer.write(`export function ${camelCaseName}(${functionArguments}): ${resultTypeName}`).block(() => {
             const sqlSplit = sql.split('\n');
             writer.write('const sql = `').newLine();
