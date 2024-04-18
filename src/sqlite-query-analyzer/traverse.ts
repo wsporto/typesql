@@ -1,16 +1,10 @@
-import { Select_stmtContext, Sql_stmtContext, ExprContext, Table_or_subqueryContext, Sql_stmt_listContext, Select_coreContext, Result_columnContext, Insert_stmtContext, Column_nameContext } from "@wsporto/ts-mysql-parser/dist/sqlite";
+import { Select_stmtContext, Sql_stmtContext, ExprContext, Table_or_subqueryContext, Sql_stmt_listContext, Select_coreContext, Result_columnContext, Insert_stmtContext, Column_nameContext, Update_stmtContext } from "@wsporto/ts-mysql-parser/dist/sqlite";
 import { ColumnDef, TraverseContext, TypeAndNullInfer, TypeVar } from "../mysql-query-analyzer/types";
 import { filterColumns, findColumn, includeColumn, splitName } from "../mysql-query-analyzer/select-columns";
 import { createColumnType, freshVar } from "../mysql-query-analyzer/collect-constraints";
-import { QuerySpecificationResult } from "../mysql-query-analyzer/traverse";
+import { InsertResult, QuerySpecificationResult, SelectResult, TraverseResult2, UpdateResult } from "../mysql-query-analyzer/traverse";
 
-export type TraverseResult = {
-    queryType: 'Select' | 'Insert';
-    columns: TypeAndNullInfer[];
-    multipleRowsResult: boolean;
-}
-
-export function traverse_Sql_stmtContext(sql_stmt: Sql_stmtContext, traverseContext: TraverseContext): TraverseResult {
+export function traverse_Sql_stmtContext(sql_stmt: Sql_stmtContext, traverseContext: TraverseContext): TraverseResult2 {
 
     const select_stmt = sql_stmt.select_stmt();
     if (select_stmt) {
@@ -24,11 +18,12 @@ export function traverse_Sql_stmtContext(sql_stmt: Sql_stmtContext, traverseCont
     const insert_stmt = sql_stmt.insert_stmt();
     if (insert_stmt) {
         const insertResult = traverse_insert_stmt(insert_stmt, traverseContext);
-        return {
-            queryType: 'Insert',
-            columns: insertResult.columns,
-            multipleRowsResult: false
-        };
+        return insertResult;
+    }
+    const update_stmt = sql_stmt.update_stmt();
+    if (update_stmt) {
+        const updateResult = traverse_update_stmt(update_stmt, traverseContext);
+        return updateResult;
     }
     throw Error("traverse_Sql_stmtContext");
 }
@@ -599,7 +594,7 @@ function is_single_result(expr: ExprContext, fromColumns: ColumnDef[]): boolean 
     return false;
 }
 
-function traverse_insert_stmt(insert_stmt: Insert_stmtContext, traverseContext: TraverseContext): QuerySpecificationResult {
+function traverse_insert_stmt(insert_stmt: Insert_stmtContext, traverseContext: TraverseContext): InsertResult {
     const table_name = insert_stmt.table_name();
     const fromColumns = filterColumns(traverseContext.dbSchema, [], '', splitName(table_name.getText()));
     const columns = insert_stmt.column_name_list().map(column_name => {
@@ -628,9 +623,59 @@ function traverse_insert_stmt(insert_stmt: Insert_stmtContext, traverseContext: 
         });
     })
 
-    const queryResult: QuerySpecificationResult = {
-        columns: insertColumns,
-        fromColumns: []
+    const queryResult: InsertResult = {
+        queryType: 'Insert',
+        columns: insertColumns
+    }
+    return queryResult;
+}
+
+function traverse_update_stmt(update_stmt: Update_stmtContext, traverseContext: TraverseContext): UpdateResult {
+    const table_name = update_stmt.qualified_table_name().getText();
+    const fromColumns = filterColumns(traverseContext.dbSchema, [], '', splitName(table_name));
+
+    const column_name_list = [update_stmt.column_name(0)];
+    const columns = column_name_list.map(column_name => {
+        return traverse_column_name(column_name, { ...traverseContext, fromColumns });
+    });
+    const updateColumns: TypeAndNullInfer[] = [];
+    const whereParams: TypeAndNullInfer[] = [];
+    const expr_list = update_stmt.expr_list();
+    let paramsBefore = traverseContext.parameters.length;
+    expr_list.forEach((expr, index) => {
+        paramsBefore = traverseContext.parameters.length;
+        const exprType = traverse_expr(expr, { ...traverseContext, fromColumns });
+        if (index < columns.length) {
+
+            const col = columns[index];
+            traverseContext.constraints.push({
+                expression: expr.getText(),
+                type1: col.type,
+                type2: exprType.type
+            });
+            updateColumns.push({
+                name: col.name,
+                type: exprType.type,
+                notNull: exprType.notNull && col.notNull,
+                table: ""
+            })
+        }
+        else {
+            traverseContext.parameters.slice(paramsBefore).forEach((param, index) => {
+                whereParams.push({
+                    name: param.name,
+                    type: param,
+                    notNull: true,
+                    table: ''
+                })
+            });
+        }
+    });
+
+    const queryResult: UpdateResult = {
+        queryType: 'Update',
+        columns: updateColumns,
+        params: whereParams
     }
     return queryResult;
 }

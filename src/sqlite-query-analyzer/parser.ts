@@ -67,16 +67,16 @@ function describeSQL(sql: string, sql_stmtContext: Sql_stmtContext, dbSchema: Co
 
         const schemaDef: SchemaDef = {
             sql,
-            queryType: "Select",
+            queryType: queryResult.queryType,
             multipleRowsResult: queryResult.multipleRowsResult,
             columns: columnResult,
-            parameters: paramsResult
+            parameters: paramsResult,
         }
         return right(schemaDef);
     }
-    else {
+    if (queryResult.queryType == 'Insert') {
 
-        const columnResult: ColumnInfo[] = [
+        const insertColumnResult: ColumnInfo[] = [
             {
                 columnName: 'changes',
                 type: 'INTEGER',
@@ -102,12 +102,55 @@ function describeSQL(sql: string, sql_stmtContext: Sql_stmtContext, dbSchema: Co
 
         const schemaDef: SchemaDef = {
             sql,
-            queryType: "Insert",
+            queryType: queryResult.queryType,
             multipleRowsResult: false,
-            columns: columnResult,
+            columns: insertColumnResult,
             parameters: paramsResult
         }
 
         return right(schemaDef);
     }
+    if (queryResult.queryType == 'Update') {
+
+        const updateColumnResult: ColumnInfo[] = [
+            {
+                columnName: 'changes',
+                type: 'INTEGER',
+                notNull: true
+            }
+        ]
+
+        const paramsResult = queryResult.columns.map((param, index) => {
+            const columnType = getVarType(substitutions, param.type);
+            const columnNotNull = param.notNull;
+            const colInfo: ParameterDef = {
+                name: param.name,
+                columnType: verifyNotInferred(columnType),
+                notNull: columnNotNull
+            }
+            return colInfo;
+        })
+        const whereParams = queryResult.params.map((param, index) => {
+            const columnType = getVarType(substitutions, param.type);
+            const columnNotNull = param.notNull;
+            const colInfo: ParameterDef = {
+                name: namedParameters && namedParameters[index] ? namedParameters[index] : 'param' + (index + 1),
+                columnType: verifyNotInferred(columnType),
+                notNull: columnNotNull
+            }
+            return colInfo;
+        })
+
+        const schemaDef: SchemaDef = {
+            sql,
+            queryType: queryResult.queryType,
+            multipleRowsResult: false,
+            columns: updateColumnResult,
+            data: paramsResult,
+            parameters: whereParams
+        }
+
+        return right(schemaDef);
+    }
+    throw Error('query not supported: ' + sql_stmtContext.getText());
 }

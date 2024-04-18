@@ -476,6 +476,24 @@ export type QuerySpecificationResult = {
     fromColumns: ColumnDef[];
 }
 
+//sqlite
+export type TraverseResult2 = SelectResult | InsertResult | UpdateResult;
+
+export type SelectResult = {
+    queryType: 'Select';
+    columns: TypeAndNullInfer[];
+    multipleRowsResult: boolean;
+}
+export type InsertResult = {
+    queryType: 'Insert';
+    columns: TypeAndNullInfer[];
+}
+export type UpdateResult = {
+    queryType: 'Update';
+    columns: TypeAndNullInfer[];
+    params: TypeAndNullInfer[];
+}
+
 function renameFromColumns(fromColumns: TypeAndNullInfer[], recursiveNames: string[]): ColumnDef[] {
     const newFromColumns = fromColumns.map((col, index) => {
         const newCol: ColumnDef = {
