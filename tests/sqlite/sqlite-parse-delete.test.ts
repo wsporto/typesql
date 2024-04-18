@@ -20,6 +20,11 @@ describe('sqlite-parse-delete', () => {
                     columnName: 'changes',
                     type: 'INTEGER',
                     notNull: true
+                },
+                {
+                    columnName: 'lastInsertRowid',
+                    type: 'INTEGER',
+                    notNull: true
                 }
             ],
             parameters: [
@@ -49,6 +54,11 @@ describe('sqlite-parse-delete', () => {
             columns: [
                 {
                     columnName: 'changes',
+                    type: 'INTEGER',
+                    notNull: true
+                },
+                {
+                    columnName: 'lastInsertRowid',
                     type: 'INTEGER',
                     notNull: true
                 }

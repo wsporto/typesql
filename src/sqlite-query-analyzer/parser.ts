@@ -117,6 +117,11 @@ function describeSQL(sql: string, sql_stmtContext: Sql_stmtContext, dbSchema: Co
                 columnName: 'changes',
                 type: 'INTEGER',
                 notNull: true
+            },
+            {
+                columnName: 'lastInsertRowid',
+                type: 'INTEGER',
+                notNull: true
             }
         ]
 
@@ -157,6 +162,11 @@ function describeSQL(sql: string, sql_stmtContext: Sql_stmtContext, dbSchema: Co
         const deleteColumnResult: ColumnInfo[] = [
             {
                 columnName: 'changes',
+                type: 'INTEGER',
+                notNull: true
+            },
+            {
+                columnName: 'lastInsertRowid',
                 type: 'INTEGER',
                 notNull: true
             }

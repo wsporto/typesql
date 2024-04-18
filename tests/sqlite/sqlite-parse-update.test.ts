@@ -12,6 +12,11 @@ describe('sqlite-parse-update', () => {
             columnName: 'changes',
             type: 'INTEGER',
             notNull: true
+        },
+        {
+            columnName: 'lastInsertRowid',
+            type: 'INTEGER',
+            notNull: true
         }
     ]
 

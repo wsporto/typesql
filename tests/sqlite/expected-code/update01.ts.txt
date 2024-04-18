@@ -10,6 +10,7 @@ export type Update01Params = {
 
 export type Update01Result = {
 	changes: number;
+	lastInsertRowid: number;
 }
 
 export function update01(db: Database, data: Update01Data, params: Update01Params): Update01Result {
