@@ -634,7 +634,8 @@ function traverse_update_stmt(update_stmt: Update_stmtContext, traverseContext: 
     const table_name = update_stmt.qualified_table_name().getText();
     const fromColumns = filterColumns(traverseContext.dbSchema, [], '', splitName(table_name));
 
-    const column_name_list = [update_stmt.column_name(0)];
+    const column_name_list = Array.from({ length: update_stmt.ASSIGN_list().length })
+        .map((_, i) => update_stmt.column_name(i));
     const columns = column_name_list.map(column_name => {
         return traverse_column_name(column_name, { ...traverseContext, fromColumns });
     });
