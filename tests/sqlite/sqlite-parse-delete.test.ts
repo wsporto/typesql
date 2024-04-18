@@ -6,7 +6,7 @@ import { sqliteDbSchema } from "../mysql-query-analyzer/create-schema";
 
 describe('sqlite-parse-delete', () => {
 
-    it.only('delete from mytable1 where id = ?', () => {
+    it('delete from mytable1 where id = ?', () => {
 
         const sql = `delete from mytable1 where id = ?`;
 

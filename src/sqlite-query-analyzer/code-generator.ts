@@ -140,7 +140,7 @@ function generateCodeFromTsDescriptor(queryName: string, tsDescriptor: TsDescrip
         });
     }
 
-    if (queryType == 'Insert' || queryType == 'Update') {
+    if (queryType == 'Insert' || queryType == 'Update' || queryType == 'Delete') {
         writer.write(`export function ${camelCaseName}(${functionArguments}): ${resultTypeName}`).block(() => {
             const sqlSplit = sql.split('\n');
             writer.write('const sql = `').newLine();

@@ -68,4 +68,13 @@ describe('sqlite-code-generator', () => {
 
 		assert.deepStrictEqual(actual, expected);//
 	})
+
+	it('delete01 - UPDATE mytable1 SET value=? WHERE id=?', () => {
+		const sql = 'DELETE FROM mytable1 WHERE id=?';
+
+		const actual = generateTsCode(sql, 'delete01', sqliteDbSchema);
+		const expected = readFileSync('tests/sqlite/expected-code/delete01.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		assert.deepStrictEqual(actual, expected);
+	})
 });
