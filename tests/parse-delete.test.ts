@@ -46,6 +46,37 @@ describe('parse delete statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('delete from mytable1 where id = :id', async () => {
+
+        const sql = `delete from mytable1 where id = :id`;
+
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql: 'delete from mytable1 where id = ?',
+            queryType: 'Delete',
+            multipleRowsResult: false,
+            columns: [
+                {
+                    columnName: 'affectedRows',
+                    type: 'int',
+                    notNull: true
+                }
+            ],
+            parameters: [
+                {
+                    name: 'id',
+                    columnType: 'int',
+                    notNull: true
+                }
+            ]
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it('delete from mytable1 where value = 0 or value is null', async () => {
 
         const sql = `delete from mytable1 where value = 0 or value is null`;
