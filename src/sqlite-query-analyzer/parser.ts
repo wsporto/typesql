@@ -133,8 +133,9 @@ function describeSQL(sql: string, sql_stmtContext: Sql_stmtContext, dbSchema: Co
         const whereParams = queryResult.params.map((param, index) => {
             const columnType = getVarType(substitutions, param.type);
             const columnNotNull = param.notNull;
+            const paramIndex = index + queryResult.columns.length;
             const colInfo: ParameterDef = {
-                name: namedParameters && namedParameters[index] ? namedParameters[index] : 'param' + (index + 1),
+                name: namedParameters && namedParameters[paramIndex] ? namedParameters[paramIndex] : 'param' + (index + 1),
                 columnType: verifyNotInferred(columnType),
                 notNull: columnNotNull
             }
