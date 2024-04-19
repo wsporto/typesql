@@ -230,6 +230,24 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
             table: functionType.table || ''
         };
     }
+    if (function_name == 'coalesce') {
+        const functionType = freshVar(expr.getText(), '?');
+        const paramTypes = expr.expr_list().map(paramExpr => {
+            const paramType = traverse_expr(paramExpr, traverseContext);
+            traverseContext.constraints.push({
+                expression: expr.getText(),
+                type1: functionType,
+                type2: paramType.type
+            })
+            return paramType;
+        });
+        return {
+            name: functionType.name,
+            type: functionType,
+            notNull: paramTypes.some(param => param.notNull),
+            table: functionType.table || ''
+        };
+    }
     if (function_name == 'strftime') {
         const functionType = freshVar(expr.getText(), 'TEXT');
         const paramExpr = expr.expr(1);

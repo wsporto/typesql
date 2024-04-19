@@ -290,6 +290,32 @@ describe('sqlite-parse-select-functions', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('SELECT COALESCE (VALUE, ID) FROM mytable1', () => {
+        const sql = `
+        SELECT COALESCE(VALUE, ID) FROM mytable1
+        `
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'COALESCE(VALUE,ID)',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: ''
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it(`SELECT strftime('%d/%m/%Y', '2013-05-21')`, () => {
         const sql = `
         SELECT strftime('%d/%m/%Y', '2013-05-21'), date('2013-05-21'), time('2013-05-21')
