@@ -28,7 +28,7 @@ describe('code-generator', () => {
 
     it('test scaffolding select stmt', () => {
 
-        const actual = generateSelectStatement('mytable1', columns);
+        const actual = generateSelectStatement('mysql', 'mytable1', columns);
         const expected =
             `SELECT
     \`id\`,
@@ -42,7 +42,7 @@ WHERE \`id\` = :id`
 
     it('test scaffolding insert stmt', () => {
 
-        const actual = generateInsertStatement('mytable1', columns);
+        const actual = generateInsertStatement('mysql', 'mytable1', columns);
         const expected =
             `INSERT INTO mytable1
 (
@@ -58,11 +58,11 @@ VALUES
 
     it('test scaffolding update stmt', () => {
 
-        const actual = generateUpdateStatement('mytable1', columns);
+        const actual = generateUpdateStatement('mysql', 'mytable1', columns);
         const expected =
             `UPDATE mytable1
 SET
-    \`value\` = IF(:valueSet, :value, \`value\`)
+    \`value\` = CASE WHEN :valueSet THEN :value ELSE \`value\` END
 WHERE
     \`id\` = :id`
 
@@ -72,7 +72,7 @@ WHERE
 
     it('test scaffolding delete stmt', () => {
 
-        const actual = generateDeleteStatement('mytable1', columns);
+        const actual = generateDeleteStatement('mysql', 'mytable1', columns);
         const expected =
             `DELETE FROM mytable1
 WHERE \`id\` = :id`
@@ -83,7 +83,7 @@ WHERE \`id\` = :id`
 
     it('test tablename with whitespace', () => {
 
-        const actual = generateSelectStatement("my table", columns);
+        const actual = generateSelectStatement('mysql', "my table", columns);
         const expected =
             `SELECT
     \`id\`,
@@ -97,7 +97,7 @@ WHERE \`id\` = :id`
 
     it('test scaffolding insert stmt with space in table name', () => {
 
-        const actual = generateInsertStatement('my table', columns);
+        const actual = generateInsertStatement('mysql', 'my table', columns);
         const expected =
             `INSERT INTO \`my table\`
 (
@@ -113,11 +113,11 @@ VALUES
 
     it('test scaffolding update stmt with space in table name', () => {
 
-        const actual = generateUpdateStatement('my table', columns);
+        const actual = generateUpdateStatement('mysql', 'my table', columns);
         const expected =
             `UPDATE \`my table\`
 SET
-    \`value\` = IF(:valueSet, :value, \`value\`)
+    \`value\` = CASE WHEN :valueSet THEN :value ELSE \`value\` END
 WHERE
     \`id\` = :id`
 
@@ -127,7 +127,7 @@ WHERE
 
     it('test scaffolding delete stmt with space in table name', () => {
 
-        const actual = generateDeleteStatement('my table', columns);
+        const actual = generateDeleteStatement('mysql', 'my table', columns);
         const expected =
             `DELETE FROM \`my table\`
 WHERE \`id\` = :id`

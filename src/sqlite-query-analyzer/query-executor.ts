@@ -1,6 +1,6 @@
 import { Either, left, right } from "fp-ts/lib/Either";
 import { DatabaseClient, TypeSqlError } from "../types";
-import { ColumnSchema } from "../mysql-query-analyzer/types";
+import { ColumnSchema, Table } from "../mysql-query-analyzer/types";
 import Database, { Database as DatabaseType } from 'better-sqlite3';
 
 export function createSqliteClient(databaseUri: string): Either<TypeSqlError, DatabaseClient> {
@@ -11,9 +11,8 @@ export function createSqliteClient(databaseUri: string): Either<TypeSqlError, Da
 	});
 }
 
-export function loadDbSchema(databaseUri: string): Either<TypeSqlError, ColumnSchema[]> {
+export function loadDbSchema(db: DatabaseType): Either<TypeSqlError, ColumnSchema[]> {
 
-	const db = new Database(databaseUri);
 	const sql = `
 		WITH all_tables AS (
 			SELECT name FROM sqlite_schema WHERE type = 'table'
@@ -44,6 +43,30 @@ export function loadDbSchema(databaseUri: string): Either<TypeSqlError, ColumnSc
 			name: err.name,
 			description: err.message
 		})
+	}
+}
+
+export function selectSqliteTablesFromSchema(db: DatabaseType): Either<TypeSqlError, Table[]> {
+	const sql = `
+    SELECT 
+		'' as schema,
+		name as 'table'
+	FROM sqlite_schema 
+	WHERE type='table' 
+	ORDER BY name
+    `
+
+	try {
+		const result = db.prepare(sql)
+			.all() as Table[];
+		return right(result);
+	}
+	catch (e) {
+		const err = e as Error;
+		return left({
+			name: err.name,
+			description: err.message
+		});
 	}
 }
 

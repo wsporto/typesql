@@ -7,11 +7,11 @@ import { generateTsFile, writeFile } from "./code-generator";
 import { createMysqlClient, loadMysqlSchema, loadTableSchema, selectTablesFromSchema } from "./queryExectutor";
 import { generateInsertStatement, generateUpdateStatement, generateDeleteStatement, generateSelectStatement } from "./sql-generator";
 import { ColumnSchema, Table } from "./mysql-query-analyzer/types";
-import { TypeSqlConfig, SqlGenOption, DatabaseClient } from "./types";
-import { Either, isLeft, left, right } from "fp-ts/lib/Either";
+import { TypeSqlConfig, SqlGenOption, DatabaseClient, TypeSqlDialect } from "./types";
+import { Either, isLeft, left } from "fp-ts/lib/Either";
 import CodeBlockWriter from "code-block-writer";
 import { globSync } from "glob";
-import { createSqliteClient, loadDbSchema } from "./sqlite-query-analyzer/query-executor";
+import { createSqliteClient, loadDbSchema, selectSqliteTablesFromSchema } from "./sqlite-query-analyzer/query-executor";
 
 const CRUD_FOLDER = 'crud';
 
@@ -125,7 +125,7 @@ async function compile(watch: boolean, config: TypeSqlConfig) {
     const includeCrudTables = config.includeCrudTables || [];
     const databaseClient = databaseClientResult.right;
 
-    const dbSchema = databaseClient.type === 'mysql' ? await loadMysqlSchema(databaseClient.client, databaseClient.schema) : loadDbSchema(databaseUri);
+    const dbSchema = databaseClient.type === 'mysql' ? await loadMysqlSchema(databaseClient.client, databaseClient.schema) : loadDbSchema(databaseClient.client);
     if (isLeft(dbSchema)) {
         console.error(`Error: ${dbSchema.left.description}.`);
         return;
@@ -170,8 +170,8 @@ function generateIndexContent(tsFiles: string[]) {
 }
 
 async function writeSql(stmtType: SqlGenOption, tableName: string, queryName: string, config: TypeSqlConfig): Promise<boolean> {
-    const { sqlDir, databaseUri } = config;
-    const clientResult = await createMysqlClient(databaseUri);
+    const { sqlDir, databaseUri, client: dialect } = config;
+    const clientResult = dialect == 'mysql' ? await createMysqlClient(databaseUri) : createSqliteClient(databaseUri);
     if (isLeft(clientResult)) {
         console.error(clientResult.left.name);
         return false;
@@ -179,7 +179,7 @@ async function writeSql(stmtType: SqlGenOption, tableName: string, queryName: st
 
     const client = clientResult.right;
 
-    const columnsOption = await loadTableSchema(client.client, client.schema, tableName);
+    const columnsOption = client.type == 'mysql' ? await loadTableSchema(client.client, client.schema, tableName) : loadDbSchema(client.client);
     if (isLeft(columnsOption)) {
         console.error(columnsOption.left.description);
         return false;
@@ -188,36 +188,36 @@ async function writeSql(stmtType: SqlGenOption, tableName: string, queryName: st
     const columns = columnsOption.right;
     const filePath = sqlDir + '/' + queryName;
 
-    const generatedOk = checkAndGenerateSql(filePath, stmtType, tableName, columns);
+    const generatedOk = checkAndGenerateSql(client.type, filePath, stmtType, tableName, columns);
     return generatedOk;
 }
 
-function checkAndGenerateSql(filePath: string, stmtType: SqlGenOption, tableName: string, columns: ColumnSchema[]) {
+function checkAndGenerateSql(dialect: TypeSqlDialect, filePath: string, stmtType: SqlGenOption, tableName: string, columns: ColumnSchema[]) {
     if (columns.length == 0) {
         console.error(`Got no columns for table '${tableName}'. Did you type the table name correclty?`);
         return false;
     }
 
-    let generatedSql = generateSql(stmtType, tableName, columns);
+    let generatedSql = generateSql(dialect, stmtType, tableName, columns);
     writeFile(filePath, generatedSql);
     console.log("Generated file:", filePath);
     return true;
 }
 
-function generateSql(stmtType: SqlGenOption, tableName: string, columns: ColumnSchema[]) {
+function generateSql(dialect: TypeSqlDialect, stmtType: SqlGenOption, tableName: string, columns: ColumnSchema[]) {
     switch (stmtType) {
         case 'select':
         case 's':
-            return generateSelectStatement(tableName, columns);
+            return generateSelectStatement(dialect, tableName, columns);
         case 'insert':
         case 'i':
-            return generateInsertStatement(tableName, columns);
+            return generateInsertStatement(dialect, tableName, columns);
         case 'update':
         case 'u':
-            return generateUpdateStatement(tableName, columns);
+            return generateUpdateStatement(dialect, tableName, columns);
         case 'delete':
         case 'd':
-            return generateDeleteStatement(tableName, columns);
+            return generateDeleteStatement(dialect, tableName, columns);
         default:
             const exhaustive: never = stmtType;
             return exhaustive;
@@ -227,7 +227,7 @@ function generateSql(stmtType: SqlGenOption, tableName: string, columns: ColumnS
 main().then(() => console.log("finished!"));
 
 async function generateCrudTables(client: DatabaseClient, sqlFolderPath: string, dbSchema: ColumnSchema[], includeCrudTables: string[]) {
-    const allTables = client.type == 'mysql' ? await selectAllTables(client) : right([]);
+    const allTables = await selectAllTables(client);
     if (isLeft(allTables)) {
         console.error(allTables.left);
         return;
@@ -242,10 +242,10 @@ async function generateCrudTables(client: DatabaseClient, sqlFolderPath: string,
         }
 
         const columns = dbSchema.filter(col => col.table == tableName);
-        checkAndGenerateSql(filePath + "select-from-" + tableName + '.sql', 'select', tableName, columns);
-        checkAndGenerateSql(filePath + "insert-into-" + tableName + '.sql', 'insert', tableName, columns);
-        checkAndGenerateSql(filePath + "update-" + tableName + '.sql', 'update', tableName, columns);
-        checkAndGenerateSql(filePath + "delete-from-" + tableName + '.sql', 'delete', tableName, columns);
+        checkAndGenerateSql(client.type, filePath + "select-from-" + tableName + '.sql', 'select', tableName, columns);
+        checkAndGenerateSql(client.type, filePath + "insert-into-" + tableName + '.sql', 'insert', tableName, columns);
+        checkAndGenerateSql(client.type, filePath + "update-" + tableName + '.sql', 'update', tableName, columns);
+        checkAndGenerateSql(client.type, filePath + "delete-from-" + tableName + '.sql', 'delete', tableName, columns);
     }
 }
 
@@ -255,7 +255,7 @@ function filterTables(allTables: Table[], includeCrudTables: string[]) {
 }
 
 async function selectAllTables(client: DatabaseClient): Promise<Either<string, Table[]>> {
-    const selectTablesResult = client.type == 'mysql' ? await selectTablesFromSchema(client.client) : left({ name: 'Not supported', description: 'Not supported' });
+    const selectTablesResult = client.type == 'mysql' ? await selectTablesFromSchema(client.client) : selectSqliteTablesFromSchema(client.client);
     if (isLeft(selectTablesResult)) {
         return left("Error selecting table names: " + selectTablesResult.left.description);
     }
