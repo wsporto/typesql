@@ -247,4 +247,46 @@ describe('sqlite-parse-update', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('UPDATE mytable2 SET name = CASE WHEN :nameSet THEN :name ELSE name END WHERE id = :id', () => {
+
+        const sql = `
+        UPDATE mytable2 SET name = CASE WHEN :nameSet THEN :name ELSE name END WHERE id = :id
+            `;
+        const expectedSql = `
+        UPDATE mytable2 SET name = CASE WHEN ? THEN ? ELSE name END WHERE id = ?
+            `;
+
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql: expectedSql,
+            queryType: 'Update',
+            multipleRowsResult: false,
+            columns,
+            data: [
+                {
+                    name: 'nameSet',
+                    columnType: 'INTEGER',
+                    notNull: false
+                },
+                {
+                    name: 'name',
+                    columnType: 'TEXT',
+                    notNull: false
+                }
+            ],
+            parameters: [
+                {
+                    name: 'id',
+                    columnType: 'INTEGER',
+                    notNull: true
+                },
+            ]
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
 });

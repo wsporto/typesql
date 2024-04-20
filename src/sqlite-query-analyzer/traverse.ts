@@ -526,15 +526,10 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         const whenTypes: TypeVar[] = [];
         expr.expr_list().forEach((expr_, index) => {
             const type = traverse_expr(expr_, traverseContext);
-            if (expr_.WHEN__list() || expr_.THEN__list()) {
-                if (index % 2 == 0) {
-                    whenTypes.push(type.type);
-                }
-                else {
-                    resultTypes.push(type.type);
-                }
+            if (index % 2 == 0 && (!expr.ELSE_() || index < expr.expr_list().length - 1)) {
+                whenTypes.push(type.type);
             }
-            if (expr_.ELSE_()) {
+            else {
                 resultTypes.push(type.type);
             }
         });
@@ -547,11 +542,11 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
                 })
             }
         });
-        whenTypes.forEach((resultType) => {
+        whenTypes.forEach((whenType) => {
             traverseContext.constraints.push({
                 expression: expr.getText(),
                 type1: freshVar('INTEGER', 'INTEGER'),
-                type2: resultType
+                type2: whenType
             })
         });
         const type = resultTypes[0];
