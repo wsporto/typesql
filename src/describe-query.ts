@@ -1,9 +1,9 @@
-import { SchemaDef, ParameterDef, TypeSqlError, PreprocessedSql } from "./types";
+import { SchemaDef, ParameterDef, TypeSqlError, PreprocessedSql, MySqlDialect } from "./types";
 import { extractQueryInfo } from "./mysql-query-analyzer/parse";
-import { DbClient } from "./queryExectutor";
 import { Either, isLeft, right, left } from "fp-ts/lib/Either";
 import { ColumnInfo, ColumnSchema } from "./mysql-query-analyzer/types";
 import { InferType, DbType } from "./mysql-mapping";
+import { explainSql, loadMysqlSchema } from "./queryExectutor";
 
 export function describeSql(dbSchema: ColumnSchema[], sql: string): SchemaDef {
     const { sql: processedSql, namedParameters } = preprocessSql(sql);
@@ -120,13 +120,13 @@ export function verifyNotInferred(type: InferType): DbType | 'any' {
     return type;
 }
 
-export async function parseSql(client: DbClient, sql: string): Promise<Either<TypeSqlError, SchemaDef>> {
+export async function parseSql(client: MySqlDialect, sql: string): Promise<Either<TypeSqlError, SchemaDef>> {
     const { sql: processedSql } = preprocessSql(sql);
-    const explainResult = await client.explainSql(processedSql);
+    const explainResult = await explainSql(client.client, processedSql);
     if (isLeft(explainResult)) {
         return explainResult;
     }
-    const dbSchema = await client.loadDbSchema();
+    const dbSchema = await loadMysqlSchema(client.client, client.schema);
     if (isLeft(dbSchema)) {
         return left(dbSchema.left);
     }

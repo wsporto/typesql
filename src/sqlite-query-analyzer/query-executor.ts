@@ -1,7 +1,15 @@
-import { Either, right } from "fp-ts/lib/Either";
-import { TypeSqlError } from "../types";
+import { Either, left, right } from "fp-ts/lib/Either";
+import { DatabaseClient, TypeSqlError } from "../types";
 import { ColumnSchema } from "../mysql-query-analyzer/types";
-import Database from 'better-sqlite3';
+import Database, { Database as DatabaseType } from 'better-sqlite3';
+
+export function createSqliteClient(databaseUri: string): Either<TypeSqlError, DatabaseClient> {
+	const db = new Database(databaseUri);
+	return right({
+		type: 'sqlite',
+		client: db
+	});
+}
 
 export function loadDbSchema(databaseUri: string): Either<TypeSqlError, ColumnSchema[]> {
 
@@ -25,8 +33,30 @@ export function loadDbSchema(databaseUri: string): Either<TypeSqlError, ColumnSc
 			IIF(ti.pk = 1, 'PRI', '') as columnKey
 		FROM all_tables t INNER JOIN pragma_table_info(t.name) ti
 		`
+	try {
+		const result = db.prepare(sql)
+			.all() as ColumnSchema[];
+		return right(result.map(col => ({ ...col, notNull: !!col.notNull })));
+	}
+	catch (err_) {
+		const err = err_ as Error;
+		return left({
+			name: err.name,
+			description: err.message
+		})
+	}
+}
 
-	const result = db.prepare(sql)
-		.all() as ColumnSchema[];
-	return right(result.map(col => ({ ...col, notNull: !!col.notNull })));
+export function explainSql(db: DatabaseType, sql: string): Either<TypeSqlError, boolean> {
+	try {
+		db.prepare(sql);
+		return right(true);
+	}
+	catch (err_) {
+		const err = err_ as Error;
+		return left({
+			name: err.name,
+			description: err.message
+		})
+	}
 }

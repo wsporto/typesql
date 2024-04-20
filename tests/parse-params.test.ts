@@ -1,19 +1,15 @@
-import { ParameterDef } from "../src/types";
+import { MySqlDialect, ParameterDef } from "../src/types";
 import assert from "assert";
 import { parseSql } from "../src/describe-query";
 
-import { DbClient } from "../src/queryExectutor";
+import { createMysqlClientForTest } from "../src/queryExectutor";
 import { isLeft } from "fp-ts/lib/Either";
 
 describe('Test parse parameters', () => {
 
-    let client: DbClient = new DbClient();
+    let client!: MySqlDialect;
     before(async () => {
-        await client.connect('mysql://root:password@localhost/mydb');
-    })
-
-    after(async () => {
-        await client.closeConnection();
+        client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
     })
 
     it('SELECT ? from mytable1', async () => {
@@ -203,7 +199,7 @@ describe('Test parse parameters', () => {
 
     it.skip(`SELECT * from mytable1 where concat_ws('/', ?) < id`, async () => {
         const sql = `
-        SELECT * from mytable1 where concat_ws('/', ?) < id 
+        SELECT * from mytable1 where concat_ws('/', ?) < id
         `
         const actual = await parseSql(client, sql);
         const expected: ParameterDef[] = [
@@ -221,7 +217,7 @@ describe('Test parse parameters', () => {
 
     it(`SELECT * from mytable1 where concat_ws('/', ?) is null`, async () => {
         const sql = `
-        SELECT * from mytable1 where concat_ws('/', ?) is null 
+        SELECT * from mytable1 where concat_ws('/', ?) is null
         `
         const actual = await parseSql(client, sql);
         const expected: ParameterDef[] = [
@@ -545,13 +541,13 @@ describe('Test parse parameters', () => {
 
     it(`parse select with case when expression (multiple parameters)`, async () => {
         const sql = `
-        SELECT 
-            CASE 
+        SELECT
+            CASE
                 WHEN id = 1 THEN id
                 WHEN id = 2 THEN ?
                 WHEN id = 3 THEN id+id
-                ELSE ? 
-            END 
+                ELSE ?
+            END
         FROM mytable1`
         const actual = await parseSql(client, sql);
         const expectedParameters: ParameterDef[] = [
@@ -575,11 +571,11 @@ describe('Test parse parameters', () => {
 
     it(`parse select with case when expression  (id+id)`, async () => {
         const sql = `
-        SELECT 
-            CASE 
+        SELECT
+            CASE
                 WHEN id = ? THEN ?
                 ELSE id+id
-            END 
+            END
         FROM mytable1`
         const actual = await parseSql(client, sql);
         const expectedParameters: ParameterDef[] = [
@@ -654,12 +650,12 @@ describe('Test parse parameters', () => {
 
     it(`parse select with case when expression 3`, async () => {
         const sql = `
-        SELECT 
-            CASE 
+        SELECT
+            CASE
                 WHEN id = 1 THEN ? + id
                 WHEN id = 2 THEN 2
                 WHEN id = 3 then ?
-                ELSE 1 
+                ELSE 1
             END as result
         FROM mytable1`
         const actual = await parseSql(client, sql);
@@ -734,7 +730,7 @@ describe('Test parse parameters', () => {
 
     it(`Param within WITH clause`, async () => {
         const sql = `
-        WITH 
+        WITH
             names AS (SELECT id, name FROM mytable2 where id = ?)
         SELECT id
         FROM names`

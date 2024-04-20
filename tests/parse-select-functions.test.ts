@@ -1,18 +1,14 @@
-import { SchemaDef } from "../src/types";
+import { MySqlDialect, SchemaDef } from "../src/types";
 import assert from "assert";
 import { parseSql } from "../src/describe-query";
-import { DbClient } from "../src/queryExectutor";
+import { createMysqlClientForTest } from "../src/queryExectutor";
 import { isLeft } from "fp-ts/lib/Either";
 
 describe('Test parse select with functions', () => {
 
-    let client: DbClient = new DbClient();
+    let client!: MySqlDialect;
     before(async () => {
-        await client.connect('mysql://root:password@localhost/mydb');
-    })
-
-    after(async () => {
-        await client.closeConnection();
+        client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
     })
 
     //TODO = column sum?

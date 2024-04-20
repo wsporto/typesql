@@ -1,18 +1,14 @@
 import assert from "assert";
 import { parseSql } from "../src/describe-query";
-import { SchemaDef } from "../src/types";
-import { DbClient } from "../src/queryExectutor";
+import { MySqlDialect, SchemaDef } from "../src/types";
 import { isLeft, isRight } from "fp-ts/lib/Either";
+import { createMysqlClientForTest } from "../src/queryExectutor";
 
 describe('Test simple select statements', () => {
 
-    let client: DbClient = new DbClient();
+    let client!: MySqlDialect;
     before(async () => {
-        await client.connect('mysql://root:password@localhost/mydb');
-    })
-
-    after(async () => {
-        await client.closeConnection();
+        client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
     })
 
     it('try to parse a empty query', async () => {
@@ -246,7 +242,7 @@ describe('Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('parse select distinct column', async () => {
+    it('parse select distinct column', async () => {//TODO - FALTA
 
         const sql = 'SELECT distinct id, value FROM mytable1';
         const actual = await parseSql(client, sql);
@@ -278,7 +274,7 @@ describe('Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('parse select distinct *', async () => {
+    it('parse select distinct *', async () => { //FALTA
 
         const sql = 'SELECT distinct * FROM mytable1';
         const actual = await parseSql(client, sql);
@@ -537,7 +533,7 @@ describe('Test simple select statements', () => {
     it('parse a select with multiples params', async () => {
         const sql = `
         SELECT ? as name, id, descr as description
-        FROM mytable2 
+        FROM mytable2
         WHERE (name = ? or descr = ?) and id > ?
         `
         const actual = await parseSql(client, sql);
@@ -967,7 +963,7 @@ describe('Test simple select statements', () => {
         select * from (
             select name, name as id from mytable2
         ) t2
-        WHERE t2.id = ? and t2.name = ? 
+        WHERE t2.id = ? and t2.name = ?
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
@@ -1124,8 +1120,8 @@ describe('Test simple select statements', () => {
     it('parse select with CASE WHEN', async () => {
 
         const sql = `
-        SELECT 
-            CASE 
+        SELECT
+            CASE
                 WHEN id = 1 THEN 'one'
                 WHEN id = 2 THEN 'two'
             END as id
@@ -1157,8 +1153,8 @@ describe('Test simple select statements', () => {
     it('parse select with CASE WHEN', async () => {
 
         const sql = `
-        SELECT 
-            CASE 
+        SELECT
+            CASE
                 WHEN id = 1 THEN 'one'
                 WHEN id = 2 THEN 'two'
                 ELSE 'other'
@@ -1192,8 +1188,8 @@ describe('Test simple select statements', () => {
 
         const sql = `
         select id from mytable2 where ? in (
-            SELECT 
-                CASE 
+            SELECT
+                CASE
                     WHEN id = 1 THEN 'one'
                     WHEN id = 2 THEN 'two'
                 END
@@ -1306,7 +1302,7 @@ describe('Test simple select statements', () => {
     it('select value from mytable1 where value is not null', async () => {
 
         const sql = `
-        select value from mytable1 where value is not null or (id > 0 and value is not null) 
+        select value from mytable1 where value is not null or (id > 0 and value is not null)
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
@@ -1534,7 +1530,7 @@ describe('Test simple select statements', () => {
                 }
             ],
             //shouldn't include order by columns because there is no parameters on the order by clause
-            //orderByColumns: ['id', 'value'], 
+            //orderByColumns: ['id', 'value'],
             parameters: []
 
         }

@@ -1,26 +1,22 @@
-import { SchemaDef } from "../src/types";
+import { MySqlDialect, SchemaDef } from "../src/types";
 import assert from "assert";
 import { parseSql } from "../src/describe-query";
-import { DbClient } from "../src/queryExectutor";
+import { createMysqlClientForTest } from "../src/queryExectutor";
 import { isLeft } from "fp-ts/lib/Either";
 
 describe('Test parse complex queries', () => {
 
-    let client: DbClient = new DbClient();
+    let client!: MySqlDialect;
     before(async () => {
-        await client.connect('mysql://root:password@localhost/mydb');
-    })
-
-    after(async () => {
-        await client.closeConnection();
+        client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
     })
 
     it('parse SELECT t1.name, t2.mycolumn2, t3.mycolumn3, count', async () => {
         //mytable1 (id, value); mytable2 (id, name, descr); mytable3 (id)
         const sql = `
-        SELECT t1.value, t2.name, t3.id, count(*) AS quantity 
+        SELECT t1.value, t2.name, t3.id, count(*) AS quantity
         FROM mytable1 t1
-        INNER JOIN mytable2 t2 ON t2.id = t1.id 
+        INNER JOIN mytable2 t2 ON t2.id = t1.id
         LEFT JOIN mytable3 t3 ON t3.id = t2.id
         GROUP BY t1.value, t2.name, t3.id
         HAVING count(*) > 1
@@ -68,12 +64,12 @@ describe('Test parse complex queries', () => {
     it('HAVING value > ?', async () => {
         const sql = `
         SELECT
-            name, 
+            name,
             SUM(double_value) as value
         FROM mytable3
-        GROUP BY 
+        GROUP BY
             name
-        HAVING 
+        HAVING
             value > ?
         `
         const actual = await parseSql(client, sql);
@@ -113,15 +109,15 @@ describe('Test parse complex queries', () => {
     it('HAVING value > ? and ? < ', async () => {
         const sql = `
         SELECT
-            name, 
+            name,
             SUM(double_value) as value,
             SUM(double_value * 0.01) as id
         FROM mytable3
         WHERE id > ? -- this id is from mytable3 column
-        GROUP BY 
+        GROUP BY
             name
-        HAVING 
-            value > ? 
+        HAVING
+            value > ?
             and id < ? -- this id is from the SELECT alias
             AND SUM(double_value) = ?
 
@@ -374,7 +370,7 @@ describe('Test parse complex queries', () => {
 
     it('WITH names AS ( SELECT name FROM mytable2 )', async () => {
         const sql = `
-        WITH names AS ( 
+        WITH names AS (
             SELECT name FROM mytable2
         )
         SELECT name from names
@@ -404,7 +400,7 @@ describe('Test parse complex queries', () => {
 
     it('WITH names AS (query1), allvalues AS (query2)', async () => {
         const sql = `
-        WITH 
+        WITH
             names AS (SELECT id, name FROM mytable2),
             allvalues AS (SELECT id, value FROM mytable1)
         SELECT n.id, name, value
@@ -448,7 +444,7 @@ describe('Test parse complex queries', () => {
 
     it('WITH names AS (query1) SELECT names.*', async () => {
         const sql = `
-        WITH 
+        WITH
             names AS (SELECT id, name FROM mytable2)
         SELECT names.*
         FROM names
@@ -834,12 +830,12 @@ describe('Test parse complex queries', () => {
     })
 
     it('Infer parameter from with clause', async () => {
-        const sql = `WITH names AS ( 
+        const sql = `WITH names AS (
             SELECT name FROM mytable2 where id = :id
         )
         SELECT name, :id as idFilter from names`;
 
-        const expectedSql = `WITH names AS ( 
+        const expectedSql = `WITH names AS (
             SELECT name FROM mytable2 where id = ?
         )
         SELECT name, ? as idFilter from names`;
@@ -886,7 +882,7 @@ describe('Test parse complex queries', () => {
 
     it('Infer parameter - union inside with clause', async () => {
         const sql = `
-        WITH 
+        WITH
             with1 AS (SELECT id FROM mytable1),
             with2 AS (SELECT :newIndex as id),
             withUnion AS (
@@ -897,7 +893,7 @@ describe('Test parse complex queries', () => {
         SELECT * FROM withUnion`;
 
         const expectedSql = `
-        WITH 
+        WITH
             with1 AS (SELECT id FROM mytable1),
             with2 AS (SELECT ? as id),
             withUnion AS (

@@ -1,26 +1,22 @@
 import assert from "assert";
 import { parseSql } from "../src/describe-query";
-import { SchemaDef, TypeSqlError } from "../src/types";
-import { DbClient } from "../src/queryExectutor";
+import { MySqlDialect, SchemaDef, TypeSqlError } from "../src/types";
+import { createMysqlClientForTest } from "../src/queryExectutor";
 import { isLeft, isRight } from "fp-ts/lib/Either";
 
 describe('Test select with multiples tables', () => {
 
-    let client: DbClient = new DbClient();
+    let client!: MySqlDialect;
     before(async () => {
-        await client.connect('mysql://root:password@localhost/mydb');
-    })
-
-    after(async () => {
-        await client.closeConnection();
+        client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
     })
 
     it('parse a basic with inner join', async () => {
 
         //mytable1 (id, value); mytable2 (id, name, descr)
         const sql = `
-        SELECT * 
-        FROM mytable1 t1 
+        SELECT *
+        FROM mytable1 t1
         INNER JOIN mytable2 t2 on t2.id = t1.id
         `
         const actual = await parseSql(client, sql);
@@ -72,8 +68,8 @@ describe('Test select with multiples tables', () => {
     it('FROM mytable1 as t1 INNER JOIN mytable2 as t2', async () => {
 
         const sql = `
-        SELECT * 
-        FROM mytable1 as t1 
+        SELECT *
+        FROM mytable1 as t1
         INNER JOIN mytable2 as t2 on t2.id = t1.id
         `
         const actual = await parseSql(client, sql);
@@ -125,8 +121,8 @@ describe('Test select with multiples tables', () => {
     it('select t1.* from inner join', async () => {
 
         const sql = `
-        SELECT t1.* 
-        FROM mytable1 t1 
+        SELECT t1.*
+        FROM mytable1 t1
         INNER JOIN mytable2 t2 on t2.id = t1.id
         `
         const actual = await parseSql(client, sql);
@@ -160,8 +156,8 @@ describe('Test select with multiples tables', () => {
     it('select t2.* from inner join', async () => {
 
         const sql = `
-        SELECT t2.* 
-        FROM mytable1 t1 
+        SELECT t2.*
+        FROM mytable1 t1
         INNER JOIN mytable2 t2 on t2.id = t1.id
         `
         const actual = await parseSql(client, sql);
@@ -202,7 +198,7 @@ describe('Test select with multiples tables', () => {
 
         const sql = `
         SELECT t2.*, t1.*
-        FROM mytable1 t1 
+        FROM mytable1 t1
         INNER JOIN mytable2 t2 on t2.id = t1.id
         `
         const actual = await parseSql(client, sql);
@@ -255,7 +251,7 @@ describe('Test select with multiples tables', () => {
 
         const sql = `
         SELECT t1.id
-        FROM mytable1 t1 
+        FROM mytable1 t1
         INNER JOIN mytable2 t2 on t2.id = t1.id
         WHERE t2.id = ?
         `
@@ -291,7 +287,7 @@ describe('Test select with multiples tables', () => {
 
         const sql = `
         SELECT t1.id, t2.name, t1.value, t2.descr as description, ? as param1
-        FROM mytable1 t1 
+        FROM mytable1 t1
         INNER JOIN mytable2 t2 on t2.id = t1.id
         WHERE t1.id = ? and t2.name = ? and t1.value > ?
         `
@@ -433,7 +429,7 @@ describe('Test select with multiples tables', () => {
     it('parse a select with tablelist', async () => {
 
         const sql = `
-        SELECT t1.id, t2.name 
+        SELECT t1.id, t2.name
         FROM mytable1 t1, mytable2 t2
         `
         const actual = await parseSql(client, sql);
@@ -657,8 +653,8 @@ describe('Test select with multiples tables', () => {
     it('select * from inner join using', async () => {
 
         const sql = `
-        SELECT * 
-        FROM mytable1 t1 
+        SELECT *
+        FROM mytable1 t1
         INNER JOIN mytable2 t2 using(id)
         WHERE name is not null and value > 0
         `
@@ -705,8 +701,8 @@ describe('Test select with multiples tables', () => {
     it('select * from inner join using (id) and table alias', async () => {
 
         const sql = `
-        SELECT * 
-        FROM mytable1 t1 
+        SELECT *
+        FROM mytable1 t1
         INNER JOIN mytable2 t2 using(id)
         WHERE t2.name is not null and t1.value > 0
         `
@@ -753,8 +749,8 @@ describe('Test select with multiples tables', () => {
     it('select * from inner join using (id, name)', async () => {
 
         const sql = `
-        SELECT * 
-        FROM mytable2 t1 
+        SELECT *
+        FROM mytable2 t1
         INNER JOIN mytable2 t2 using (id, name)
         `
         const actual = await parseSql(client, sql);
@@ -800,8 +796,8 @@ describe('Test select with multiples tables', () => {
     it('multipleRowsResult must be false with inner join and t1.id = 1', async () => {
 
         const sql = `
-        SELECT t1.id, t1.name 
-        FROM mytable2 t1 
+        SELECT t1.id, t1.name
+        FROM mytable2 t1
         INNER JOIN mytable2 t2 ON t2.id = t1.id
         WHERE t1.id = 1
         `
@@ -866,7 +862,7 @@ describe('Test select with multiples tables', () => {
     it('SELECT mytable1.id, mytable2.id is not null as hasOwner', async () => {
 
         const sql = `
-        SELECT 
+        SELECT
             mytable1.id,
             mytable2.id is not null as hasOwner
         FROM mytable1
@@ -909,8 +905,8 @@ describe('Test select with multiples tables', () => {
 
         //mytable1 (id, value); mytable2 (id, name, descr)
         const sql = `
-        SELECT * 
-        FROM mytable1 t1 
+        SELECT *
+        FROM mytable1 t1
         INNER JOIN mytable2 t2 on t2.id = t1.id
         LIMIT 1
         `

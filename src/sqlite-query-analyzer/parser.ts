@@ -1,4 +1,4 @@
-import { Either, right } from "fp-ts/lib/Either";
+import { Either, isLeft, left, right } from "fp-ts/lib/Either";
 import { ParameterDef, SchemaDef, TypeSqlError } from "../types";
 import { Sql_stmtContext, parseSql as parseSqlite } from "@wsporto/ts-mysql-parser/dist/sqlite";
 import { traverse_Sql_stmtContext } from "./traverse";
@@ -6,20 +6,31 @@ import { ColumnInfo, ColumnSchema, SubstitutionHash, TraverseContext } from "../
 import { getVarType } from "../mysql-query-analyzer/collect-constraints";
 import { unify } from "../mysql-query-analyzer/unify";
 import { preprocessSql, verifyNotInferred } from "../describe-query";
+import { explainSql } from "./query-executor";
+import { Database } from "better-sqlite3";
+
+export function prepareAndParse(db: Database, sql: string, dbSchema: ColumnSchema[]) {
+    const { sql: processedSql } = preprocessSql(sql);
+    const explainSqlResult = explainSql(db, processedSql);
+    if (isLeft(explainSqlResult)) {
+        return left({
+            name: 'Invalid sql',
+            description: explainSqlResult.left.description
+        })
+    }
+    return parseSql(sql, dbSchema);
+}
 
 export function parseSql(sql: string, dbSchema: ColumnSchema[]): Either<TypeSqlError, SchemaDef> {
 
     const { sql: processedSql, namedParameters } = preprocessSql(sql);
 
     const parser = parseSqlite(processedSql);
-
     const sql_stmt = parser.sql_stmt();
-
-    return describeSQL(processedSql, sql_stmt, dbSchema, namedParameters);
-
+    return createSchemaDefinition(processedSql, sql_stmt, dbSchema, namedParameters);
 }
 
-function describeSQL(sql: string, sql_stmtContext: Sql_stmtContext, dbSchema: ColumnSchema[], namedParameters: string[]): Either<TypeSqlError, SchemaDef> {
+function createSchemaDefinition(sql: string, sql_stmtContext: Sql_stmtContext, dbSchema: ColumnSchema[], namedParameters: string[]): Either<TypeSqlError, SchemaDef> {
 
     const traverseContext: TraverseContext = {
         dbSchema,

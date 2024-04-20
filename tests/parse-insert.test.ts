@@ -1,18 +1,14 @@
 import assert from "assert";
 import { parseSql } from "../src/describe-query";
-import { ParameterDef, SchemaDef } from "../src/types";
-import { DbClient } from "../src/queryExectutor";
+import { MySqlDialect, ParameterDef, SchemaDef } from "../src/types";
+import { createMysqlClientForTest } from "../src/queryExectutor";
 import { isLeft, isRight } from "fp-ts/lib/Either";
 
 describe('parse insert statements', () => {
 
-    let client: DbClient = new DbClient();
+    let client!: MySqlDialect;
     before(async () => {
-        await client.connect('mysql://root:password@localhost/mydb');
-    })
-
-    after(async () => {
-        await client.closeConnection();
+        client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
     })
 
     it('insert into mytable1 (value) values (?)', async () => {
@@ -273,7 +269,7 @@ describe('parse insert statements', () => {
     it('ON DUPLICATE KEY UPDATE name = ?', async () => {
 
         const sql = `
-        INSERT INTO mytable2 (id, name) 
+        INSERT INTO mytable2 (id, name)
         VALUES (?, ?)
         ON DUPLICATE KEY UPDATE
         name = ?`;
@@ -323,7 +319,7 @@ describe('parse insert statements', () => {
     it('ON DUPLICATE KEY UPDATE name = concat(?, ?)', async () => {
 
         const sql = `
-        INSERT INTO mytable2 (id, name) 
+        INSERT INTO mytable2 (id, name)
         VALUES (?, ?)
         ON DUPLICATE KEY UPDATE
         name = concat(?, ?)`;
@@ -378,7 +374,7 @@ describe('parse insert statements', () => {
     it(`ON DUPLICATE KEY UPDATE name = concat(?, 'a', ?)`, async () => {
 
         const sql = `
-        INSERT INTO mytable2 (id, name) 
+        INSERT INTO mytable2 (id, name)
         VALUES (?, concat(?, '-a'))
         ON DUPLICATE KEY UPDATE
         name = concat(?, 'a', ?)`;
@@ -433,7 +429,7 @@ describe('parse insert statements', () => {
     it(`ON DUPLICATE KEY UPDATE name = name = IF(? != '', ?, name)`, async () => {
 
         const sql = `
-        INSERT INTO mytable2 (id, name) 
+        INSERT INTO mytable2 (id, name)
         VALUES (?, ?)
         ON DUPLICATE KEY UPDATE
         name = IF(? != '', ?, name)`;
@@ -487,7 +483,7 @@ describe('parse insert statements', () => {
     it(`INSERT INTO mytable2 (id, name) SELECT ?, ?`, async () => {
 
         const sql = `
-        INSERT INTO mytable2 (id, name) 
+        INSERT INTO mytable2 (id, name)
         SELECT ?, ?`;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
@@ -529,8 +525,8 @@ describe('parse insert statements', () => {
     it(`INSERT INTO mytable2 (id, name) SELECT id, descr FROM mytable2 WHERE name = ? AND id > ?`, async () => {
 
         const sql = `
-        INSERT INTO mytable2 (id, name) 
-        SELECT id, descr 
+        INSERT INTO mytable2 (id, name)
+        SELECT id, descr
         FROM mytable2 WHERE name = ? AND id > ?`;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
@@ -624,7 +620,7 @@ describe('parse insert statements', () => {
     it(`INSERT INTO mytable3 (double_value, name) VALUES (?, ?), (?, ?), (?, ?)`, async () => {
 
         const sql = `
-        INSERT INTO mytable3 (double_value, name) 
+        INSERT INTO mytable3 (double_value, name)
         VALUES (?, ?), (?, ?), (?, ?)`;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
@@ -686,10 +682,10 @@ describe('parse insert statements', () => {
     it(`INSERT INTO mytable3 (double_value, name) VALUES (?, ?), (10.5, ?), (?, 'name')`, async () => {
 
         const sql = `
-        INSERT INTO mytable3 (double_value, name) 
+        INSERT INTO mytable3 (double_value, name)
         VALUES (:value1, :name1), (10.5, :name2), (:value2, 'name')`;
         const expectedSql = `
-        INSERT INTO mytable3 (double_value, name) 
+        INSERT INTO mytable3 (double_value, name)
         VALUES (?, ?), (10.5, ?), (?, 'name')`;
 
         const actual = await parseSql(client, sql);

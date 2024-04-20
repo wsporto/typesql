@@ -1,23 +1,19 @@
-import { SchemaDef } from "../src/types";
+import { MySqlDialect, SchemaDef } from "../src/types";
 import assert from "assert";
 import { parseSql } from "../src/describe-query";
-import { DbClient } from "../src/queryExectutor";
+import { createMysqlClientForTest } from "../src/queryExectutor";
 import { isLeft } from "fp-ts/lib/Either";
 
 describe('Parse window functions', () => {
 
-    let client: DbClient = new DbClient();
+    let client!: MySqlDialect;
     before(async () => {
-        await client.connect('mysql://root:password@localhost/mydb');
-    })
-
-    after(async () => {
-        await client.closeConnection();
+        client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
     })
 
     it('SELECT ROW_NUMBER() OVER() as num', async () => {
         const sql = `
-        SELECT 
+        SELECT
             ROW_NUMBER() OVER() as num
         FROM mytable1
         `
@@ -45,7 +41,7 @@ describe('Parse window functions', () => {
 
     it('SELECT (ROW_NUMBER() OVER()) as num', async () => {
         const sql = `
-        SELECT 
+        SELECT
             *,
             (ROW_NUMBER() OVER()) as num
         FROM mytable1
@@ -86,7 +82,7 @@ describe('Parse window functions', () => {
 
     it('FIRST_VALUE(id), LAST_VALUE(name), RANK() and DENSE_RANK()', async () => {
         const sql = `
-        SELECT 
+        SELECT
             FIRST_VALUE(id) OVER() as firstId,
             LAST_VALUE(name) OVER() as lastName,
             RANK() OVER() as rankValue,
@@ -189,7 +185,7 @@ describe('Parse window functions', () => {
 
     it('LEAD() and LAG()', async () => {
         const sql = `
-        SELECT 
+        SELECT
             LEAD(id) OVER() as leadValue,
             LAG(name) OVER() as lagValue
         FROM mytable2

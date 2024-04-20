@@ -1,7 +1,6 @@
-import { SchemaDef, CamelCaseName, TsFieldDescriptor, ParameterDef, TypeSqlDialect } from "./types";
+import { SchemaDef, CamelCaseName, TsFieldDescriptor, ParameterDef, TypeSqlDialect, DatabaseClient, MySqlDialect } from "./types";
 import fs from "fs";
 import path, { parse } from "path";
-import { DbClient } from "./queryExectutor";
 import camelCase from "camelcase";
 import { isLeft } from "fp-ts/lib/Either";
 import { none, Option, some, isNone } from "fp-ts/lib/Option";
@@ -671,7 +670,7 @@ export function convertToCamelCaseName(name: string): CamelCaseName {
     return camelCaseStr;
 }
 
-export async function generateTsFile(client: DbClient, database: TypeSqlDialect, sqlFile: string, dbSchema: ColumnSchema[], isCrudFile: boolean) {
+export async function generateTsFile(client: DatabaseClient, sqlFile: string, dbSchema: ColumnSchema[], isCrudFile: boolean) {
 
     const sqlContent = fs.readFileSync(sqlFile, 'utf8');
 
@@ -679,15 +678,15 @@ export async function generateTsFile(client: DbClient, database: TypeSqlDialect,
     const dirPath = parse(sqlFile).dir;
     const queryName = convertToCamelCaseName(fileName);
 
-    const tsContent = database == 'mysql' ? await generateTsFileFromContent(client, sqlFile, queryName, sqlContent, 'node', isCrudFile)
-        : generateTsCode(sqlContent, queryName, dbSchema);
+    const tsContent = client.type == 'mysql' ? await generateTsFileFromContent(client, sqlFile, queryName, sqlContent, 'node', isCrudFile)
+        : generateTsCode(client.client, sqlContent, queryName, dbSchema);
 
     const tsFilePath = path.resolve(dirPath, fileName) + ".ts";
 
     writeFile(tsFilePath, tsContent);
 }
 
-export async function generateTsFileFromContent(client: DbClient, filePath: string, queryName: string, sqlContent: string, target: 'node' | 'deno', crud: boolean = false) {
+export async function generateTsFileFromContent(client: MySqlDialect, filePath: string, queryName: string, sqlContent: string, target: 'node' | 'deno', crud: boolean = false) {
     const queryInfo = await parseSql(client, sqlContent);
 
     if (isLeft(queryInfo)) {

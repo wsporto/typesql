@@ -1,18 +1,15 @@
 import assert from "assert";
-import { DbClient } from "../src/queryExectutor";
 import { isLeft } from "fp-ts/lib/Either";
 import { parseSql } from "../src/describe-query";
 import { ColumnInfo } from "../src/mysql-query-analyzer/types";
+import { createMysqlClientForTest, loadMysqlSchema } from "../src/queryExectutor";
+import { MySqlDialect } from "../src/types";
 
 describe('type-mapping', () => {
 
-    let client: DbClient = new DbClient();
+    let client!: MySqlDialect;
     before(async () => {
-        await client.connect('mysql://root:password@localhost/mydb');
-    })
-
-    after(async () => {
-        await client.closeConnection();
+        client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
     })
 
     it('select table with all types', async () => {
@@ -228,7 +225,7 @@ describe('type-mapping', () => {
             return nameAndType;
         });
 
-        const schema = await client.loadDbSchema();
+        const schema = await loadMysqlSchema(client.client, client.schema);
         if (isLeft(schema)) {
             assert.fail(`Shouldn't return an error`);
         }

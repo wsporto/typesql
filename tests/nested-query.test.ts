@@ -1,25 +1,22 @@
 import assert from "assert";
 import { NestedResultInfo, describeNestedQuery } from "../src/describe-nested-query";
-import { DbClient } from "../src/queryExectutor";
+import { createMysqlClientForTest, loadMysqlSchema } from "../src/queryExectutor";
 import { isLeft } from "fp-ts/lib/Either";
+import { MySqlDialect } from "../src/types";
 
 describe('nested-query', () => {
 
-    let client: DbClient = new DbClient();
+    let client!: MySqlDialect;
     before(async () => {
-        await client.connect('mysql://root:password@localhost/mydb');
-    })
-
-    after(async () => {
-        await client.closeConnection();
+        client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
     })
 
     it('SELECT FROM users u INNER JOIN posts p', async () => {
-        const dbSchema = await client.loadDbSchema();
+        const dbSchema = await loadMysqlSchema(client.client, client.schema);
 
         const sql = `
-        SELECT 
-            u.id as user_id, 
+        SELECT
+            u.id as user_id,
             u.name as user_name,
             p.id as post_id,
             p.title as post_title,
@@ -90,10 +87,10 @@ describe('nested-query', () => {
     })
 
     it('SELECT FROM users INNER JOIN posts (without alias)', async () => {
-        const dbSchema = await client.loadDbSchema();
+        const dbSchema = await loadMysqlSchema(client.client, client.schema);
 
         const sql = `
-        SELECT 
+        SELECT
             *
         FROM users
         INNER JOIN posts on fk_user = users.id
@@ -166,11 +163,11 @@ describe('nested-query', () => {
     })
 
     it('SELECT FROM posts p INNER JOIN users u', async () => {
-        const dbSchema = await client.loadDbSchema();
+        const dbSchema = await loadMysqlSchema(client.client, client.schema);
 
         const sql = `
-        SELECT 
-            u.id as user_id, 
+        SELECT
+            u.id as user_id,
             u.name as user_name,
             p.id as post_id,
             p.title as post_title,
@@ -242,11 +239,11 @@ describe('nested-query', () => {
     })
 
     it('SELECT FROM users u INNER JOIN posts p INNER JOIN comments c', async () => {
-        const dbSchema = await client.loadDbSchema();
+        const dbSchema = await loadMysqlSchema(client.client, client.schema);
 
         const sql = `
-        SELECT 
-            u.id as user_id, 
+        SELECT
+            u.id as user_id,
             u.name as user_name,
             p.id as post_id,
             p.title as post_title,
@@ -266,7 +263,7 @@ describe('nested-query', () => {
         //     post_id: string;
         //     post_title: string;
         //     post_body: string;
-        //     c: Comment[]; 
+        //     c: Comment[];
         // }
 
         const expectedModel: NestedResultInfo = {
@@ -344,16 +341,16 @@ describe('nested-query', () => {
     })
 
     it('SELECT FROM users u INNER JOIN posts p INNER JOIN roles r', async () => {
-        const dbSchema = await client.loadDbSchema();
+        const dbSchema = await loadMysqlSchema(client.client, client.schema);
 
         const sql = `
-        SELECT 
-            u.id as user_id, 
+        SELECT
+            u.id as user_id,
             u.name as user_name,
             p.id as post_id,
             p.title as post_title,
             p.body  as post_body,
-            r.role 
+            r.role
         FROM users u
         INNER JOIN posts p on p.fk_user = u.id
         INNER JOIN roles r on r.fk_user = u.id
@@ -444,17 +441,17 @@ describe('nested-query', () => {
     })
 
     it('SELECT FROM users u INNER JOIN posts p INNER JOIN roles r INNER JOIN comments c', async () => {
-        const dbSchema = await client.loadDbSchema();
+        const dbSchema = await loadMysqlSchema(client.client, client.schema);
 
         const sql = `
-        SELECT 
-            u.id as user_id, 
+        SELECT
+            u.id as user_id,
             u.name as user_name,
             p.id as post_id,
             p.title as post_title,
             p.body  as post_body,
             r.role,
-            c.comment 
+            c.comment
         FROM users u
         INNER JOIN posts p on p.fk_user = u.id
         INNER JOIN roles r on r.fk_user = u.id
@@ -566,7 +563,7 @@ describe('nested-query', () => {
     })
 
     it('FROM surveys INNER JOIN participants INNER JOIN users INNER JOIN questions INNER JOIN answers a', async () => {
-        const dbSchema = await client.loadDbSchema();
+        const dbSchema = await loadMysqlSchema(client.client, client.schema);
 
         const sql = `
         -- @nested
@@ -709,10 +706,10 @@ describe('nested-query', () => {
     })
 
     it('SELECT FROM users u INNER JOIN posts p', async () => {
-        const dbSchema = await client.loadDbSchema();
+        const dbSchema = await loadMysqlSchema(client.client, client.schema);
 
         const sql = `
-        SELECT 
+        SELECT
             *
         FROM users u
         INNER JOIN posts p on p.fk_user = u.id
@@ -781,7 +778,7 @@ describe('nested-query', () => {
     })
 
     it('many to many - books with authors', async () => {
-        const dbSchema = await client.loadDbSchema();
+        const dbSchema = await loadMysqlSchema(client.client, client.schema);
 
         const sql = `
         SELECT *
@@ -873,10 +870,10 @@ describe('nested-query', () => {
     })
 
     it('self relation - clients with primaryAddress and secondaryAddress', async () => {
-        const dbSchema = await client.loadDbSchema();
+        const dbSchema = await loadMysqlSchema(client.client, client.schema);
 
         const sql = `
-        SELECT 
+        SELECT
             c.id,
             a1.*,
             a2.*

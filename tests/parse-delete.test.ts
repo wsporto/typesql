@@ -1,18 +1,14 @@
 import assert from "assert";
 import { parseSql } from "../src/describe-query";
-import { ParameterDef, SchemaDef } from "../src/types";
-import { DbClient } from "../src/queryExectutor";
+import { MySqlDialect, SchemaDef } from "../src/types";
+import { createMysqlClientForTest } from "../src/queryExectutor";
 import { isLeft } from "fp-ts/lib/Either";
 
 describe('parse delete statements', () => {
 
-    let client: DbClient = new DbClient();
+    let client!: MySqlDialect;
     before(async () => {
-        await client.connect('mysql://root:password@localhost/mydb');
-    })
-
-    after(async () => {
-        await client.closeConnection();
+        client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
     })
 
     it('delete from mytable1 where id = ?', async () => {
@@ -109,10 +105,10 @@ describe('parse delete statements', () => {
         //tableRef ({serverVersion >= 80017}? tableAlias)?
      */
 
-    //in order to use this in mocha, don't use arrow function. 
+    //in order to use this in mocha, don't use arrow function.
     it('delete from mytable1 t1 where t1.id = ?', async function () {
 
-        if (!client.isVersion8()) {
+        if (!client.isVersion8) {
             this.skip();
         }
 

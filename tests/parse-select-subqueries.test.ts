@@ -1,18 +1,14 @@
-import { SchemaDef } from "../src/types";
+import { MySqlDialect, SchemaDef } from "../src/types";
 import assert from "assert";
 import { parseSql } from "../src/describe-query";
-import { DbClient } from "../src/queryExectutor";
+import { createMysqlClientForTest } from "../src/queryExectutor";
 import { isLeft } from "fp-ts/lib/Either";
 
 describe('Test parse select with subqueries', () => {
 
-    let client: DbClient = new DbClient();
+    let client!: MySqlDialect;
     before(async () => {
-        await client.connect('mysql://root:password@localhost/mydb');
-    })
-
-    after(async () => {
-        await client.closeConnection();
+        client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
     })
 
     //.only
@@ -140,7 +136,7 @@ describe('Test parse select with subqueries', () => {
         const sql = `
         select id from (
             select id from (
-                select id from mytable1 
+                select id from mytable1
             ) t1
         ) t2
         `
@@ -170,7 +166,7 @@ describe('Test parse select with subqueries', () => {
         const sql = `
         select id from (
             select id from (
-                select id+id as id from mytable1 
+                select id+id as id from mytable1
             ) t1
         ) t2
         `
@@ -233,7 +229,7 @@ describe('Test parse select with subqueries', () => {
         const sql = `
         select id from (
             select matricula as id from (
-                select name as matricula from mytable2 
+                select name as matricula from mytable2
             ) t1
         ) t2
         `

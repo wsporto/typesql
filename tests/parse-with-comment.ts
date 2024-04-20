@@ -1,19 +1,15 @@
 import assert from "assert";
 import { parseSql } from "../src/describe-query";
-import { DbClient } from "../src/queryExectutor";
+import { createMysqlClientForTest } from "../src/queryExectutor";
 import { isLeft } from "fp-ts/lib/Either";
-import { SchemaDef } from "../src/types";
+import { MySqlDialect, SchemaDef } from "../src/types";
 
 
 describe('Test simple select statements', () => {
 
-    let client: DbClient = new DbClient();
+    let client!: MySqlDialect;
     before(async () => {
-        await client.connect('mysql://root:password@localhost/mydb');
-    })
-
-    after(async () => {
-        await client.closeConnection();
+        client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
     })
 
     //https://dev.mysql.com/doc/refman/8.0/en/comments.html
@@ -107,7 +103,7 @@ describe('Test simple select statements', () => {
         this is a
         multiple-line comment
         */
-        SELECT id 
+        SELECT id
         /*
         this is a
         multiple-line comment

@@ -3,13 +3,16 @@ import assert from "assert";
 import { readFileSync } from "fs";
 import { generateTsCode } from "../../src/sqlite-query-analyzer/code-generator";
 import { sqliteDbSchema } from "../mysql-query-analyzer/create-schema";
+import Database from "better-sqlite3";
 
 describe('sqlite-code-generator', () => {
+
+	const db = new Database('./mydb.db');
 
 	it('select01 - select id, name from mytable2 where id = ?', async () => {
 		const sql = `select id, name from mytable2 where id = ?`;
 
-		const actual = await generateTsCode(sql, 'select01', sqliteDbSchema);
+		const actual = await generateTsCode(db, sql, 'select01', sqliteDbSchema);
 		const expected = readFileSync('tests/sqlite/expected-code/select01.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		assert.deepStrictEqual(actual, expected);
@@ -18,7 +21,7 @@ describe('sqlite-code-generator', () => {
 	it('select02 - select without parameters', async () => {
 		const sql = `select id from mytable1`;
 
-		const actual = await generateTsCode(sql, 'select02', sqliteDbSchema);
+		const actual = await generateTsCode(db, sql, 'select02', sqliteDbSchema);
 		const expected = readFileSync('tests/sqlite/expected-code/select02.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		assert.deepStrictEqual(actual, expected);
@@ -27,7 +30,7 @@ describe('sqlite-code-generator', () => {
 	it('select03 - select with same parameter used twice', async () => {
 		const sql = 'select id from mytable1 where id = :id or id = :id';
 
-		const actual = await generateTsCode(sql, 'select03', sqliteDbSchema);
+		const actual = await generateTsCode(db, sql, 'select03', sqliteDbSchema);
 		const expected = readFileSync('tests/sqlite/expected-code/select03.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		assert.deepStrictEqual(actual, expected);
@@ -36,7 +39,7 @@ describe('sqlite-code-generator', () => {
 	it('select04 - select with same parameter used twice', async () => {
 		const sql = 'SELECT text_column FROM all_types WHERE date(text_column) = date(:date)';
 
-		const actual = await generateTsCode(sql, 'select04', sqliteDbSchema);
+		const actual = await generateTsCode(db, sql, 'select04', sqliteDbSchema);
 		const expected = readFileSync('tests/sqlite/expected-code/select04.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		assert.deepStrictEqual(actual, expected);
@@ -45,7 +48,7 @@ describe('sqlite-code-generator', () => {
 	it('insert01 - select with same parameter used twice', async () => {
 		const sql = 'INSERT INTO mytable1(value) values(10)';
 
-		const actual = await generateTsCode(sql, 'insert01', sqliteDbSchema);
+		const actual = await generateTsCode(db, sql, 'insert01', sqliteDbSchema);
 		const expected = readFileSync('tests/sqlite/expected-code/insert01.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		assert.deepStrictEqual(actual, expected);
@@ -54,7 +57,7 @@ describe('sqlite-code-generator', () => {
 	it('insert02 - select with same parameter used twice', async () => {
 		const sql = 'INSERT INTO mytable1(value) values(?)';
 
-		const actual = await generateTsCode(sql, 'insert02', sqliteDbSchema);
+		const actual = await generateTsCode(db, sql, 'insert02', sqliteDbSchema);
 		const expected = readFileSync('tests/sqlite/expected-code/insert02.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		assert.deepStrictEqual(actual, expected);
@@ -63,7 +66,7 @@ describe('sqlite-code-generator', () => {
 	it('update01 - UPDATE mytable1 SET value=? WHERE id=?', () => {
 		const sql = 'UPDATE mytable1 SET value=? WHERE id=?';
 
-		const actual = generateTsCode(sql, 'update01', sqliteDbSchema);
+		const actual = generateTsCode(db, sql, 'update01', sqliteDbSchema);
 		const expected = readFileSync('tests/sqlite/expected-code/update01.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		assert.deepStrictEqual(actual, expected);//
@@ -72,7 +75,7 @@ describe('sqlite-code-generator', () => {
 	it('delete01 - UPDATE mytable1 SET value=? WHERE id=?', () => {
 		const sql = 'DELETE FROM mytable1 WHERE id=?';
 
-		const actual = generateTsCode(sql, 'delete01', sqliteDbSchema);
+		const actual = generateTsCode(db, sql, 'delete01', sqliteDbSchema);
 		const expected = readFileSync('tests/sqlite/expected-code/delete01.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		assert.deepStrictEqual(actual, expected);

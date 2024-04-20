@@ -1,23 +1,16 @@
 import assert from "assert";
-import { DbClient } from "../src/queryExectutor";
+import { createMysqlClientForTest } from "../src/queryExectutor";
 import { isLeft } from "fp-ts/lib/Either";
 import { parseSql } from "../src/describe-query";
 import { DynamicSqlInfoResult } from "../src/mysql-query-analyzer/types";
+import { MySqlDialect } from "../src/types";
 
 describe('dynamic-query', () => {
 
-	let client: DbClient = new DbClient();
+	let client!: MySqlDialect;
 	before(async () => {
-		await client.connect('mysql://root:password@localhost/mydb');
+		client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
 	})
-
-	after(async () => {
-		await client.closeConnection();
-	})
-
-	// and m1.id = 3
-	// and m1.id = 4
-	// and (m1.id = 5 and m1.id = 5)
 
 	it('WHERE m2.name = :name AND m2.descr = :description', async () => {
 		const sql = `
@@ -563,8 +556,8 @@ describe('dynamic-query', () => {
 	it(`(select name from mytable1 where id = 1) as subQuery`, async () => {
 		const sql = `
         -- @dynamicQuery
-        SELECT 
-            m1.id, 
+        SELECT
+            m1.id,
             m2.name,
             (select id from mytable1 where id = 1) as subQuery
         FROM mytable1 m1
@@ -630,8 +623,8 @@ describe('dynamic-query', () => {
 	it(`(select name from mytable1 where id = m2.id) as subQuery`, async () => {
 		const sql = `
         -- @dynamicQuery
-        SELECT 
-            m1.id, 
+        SELECT
+            m1.id,
             m2.name,
             (select name from mytable1 where id = m2.id) as subQuery
         FROM mytable1 m1
@@ -697,8 +690,8 @@ describe('dynamic-query', () => {
 	it(`(select name from mytable1 where id = m2.id) as subQuery`, async () => {
 		const sql = `
         -- @dynamicQuery
-        SELECT 
-            m1.id, 
+        SELECT
+            m1.id,
             m2.name,
             (select name from mytable1 m3 where m3.id = m2.id) as subQuery
         FROM mytable1 m1
@@ -764,12 +757,12 @@ describe('dynamic-query', () => {
 	it(`INNER JOIN (SELECT FROM ...)`, async () => {
 		const sql = `
         -- @dynamicQuery
-        SELECT 
-            m1.id, 
+        SELECT
+            m1.id,
             m2.name
         FROM mytable1 m1
         INNER JOIN ( -- derivated table
-            SELECT id, name from mytable2 m 
+            SELECT id, name from mytable2 m
             WHERE m.name = :subqueryName
         ) m2
         WHERE m2.name = :name
@@ -800,7 +793,7 @@ describe('dynamic-query', () => {
 				},
 				{
 					fragment: `INNER JOIN ( -- derivated table
-            SELECT id, name from mytable2 m 
+            SELECT id, name from mytable2 m
             WHERE m.name = ?
         ) m2`,
 					dependOnFields: [1],
@@ -829,8 +822,8 @@ describe('dynamic-query', () => {
 	it(`SELECT concat(m1.value, ': ', m2.name) as valueAndName`, async () => {
 		const sql = `
         -- @dynamicQuery
-        SELECT 
-            m1.id, 
+        SELECT
+            m1.id,
             m2.name
         FROM mytable1 m1
         INNER JOIN mytable2 m2 on m1.id = m2.id
@@ -888,7 +881,7 @@ describe('dynamic-query', () => {
 	it(`SELECT * FROM mytable1 m1`, async () => {
 		const sql = `
         -- @dynamicQuery
-        SELECT 
+        SELECT
            *
         FROM mytable1 m1
         INNER JOIN mytable2 m2 on m2.id = m1.id
@@ -958,7 +951,7 @@ describe('dynamic-query', () => {
 
 	it(`SELECT m1.id, name, descr as description FROM mytable1 m1`, async () => {
 		const sql = `-- @dynamicQuery
-SELECT 
+SELECT
 	m1.id, name, descr as description
 FROM mytable1 m1
 INNER JOIN mytable2 m2 on m2.id = m1.id
@@ -1017,7 +1010,7 @@ INNER JOIN mytable2 m2 on m2.id = m1.id
 WITH cte as (
 	select id, name from mytable2
 )
-SELECT 
+SELECT
 	m1.id,
 	m2.name
 FROM mytable1 m1

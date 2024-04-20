@@ -4,14 +4,14 @@ import path, { parse } from "path";
 import chokidar from "chokidar";
 import yargs from "yargs";
 import { generateTsFile, writeFile } from "./code-generator";
-import { DbClient } from "./queryExectutor";
+import { createMysqlClient, loadMysqlSchema, loadTableSchema, selectTablesFromSchema } from "./queryExectutor";
 import { generateInsertStatement, generateUpdateStatement, generateDeleteStatement, generateSelectStatement } from "./sql-generator";
 import { ColumnSchema, Table } from "./mysql-query-analyzer/types";
-import { TypeSqlConfig, SqlGenOption, TypeSqlDialect } from "./types";
+import { TypeSqlConfig, SqlGenOption, DatabaseClient } from "./types";
 import { Either, isLeft, left, right } from "fp-ts/lib/Either";
 import CodeBlockWriter from "code-block-writer";
 import { globSync } from "glob";
-import { loadDbSchema } from "./sqlite-query-analyzer/query-executor";
+import { createSqliteClient, loadDbSchema } from "./sqlite-query-analyzer/query-executor";
 
 const CRUD_FOLDER = 'crud';
 
@@ -77,8 +77,6 @@ function parseArgs() {
         .argv;
 }
 
-
-
 function loadConfig(configPath: string): TypeSqlConfig {
     let rawdata = fs.readFileSync(configPath, 'utf-8');
     let config = JSON.parse(rawdata);
@@ -91,7 +89,7 @@ function validateDirectories(dir: string) {
     }
 }
 
-function watchDirectories(client: DbClient, db: TypeSqlDialect, dirPath: string, dbSchema: ColumnSchema[], target: 'node' | 'deno') {
+function watchDirectories(client: DatabaseClient, dirPath: string, dbSchema: ColumnSchema[], target: 'node' | 'deno') {
     const dirGlob = `${dirPath}/**/*.sql`;
 
     chokidar.watch(dirGlob, {
@@ -99,12 +97,12 @@ function watchDirectories(client: DbClient, db: TypeSqlDialect, dirPath: string,
             stabilityThreshold: 100
         }
     })
-        .on('add', path => rewiteFiles(client, db, path, dbSchema, target, isCrudFile(dirPath, path)))
-        .on('change', path => rewiteFiles(client, db, path, dbSchema, target, isCrudFile(dirPath, path)));
+        .on('add', path => rewiteFiles(client, path, dbSchema, target, isCrudFile(dirPath, path)))
+        .on('change', path => rewiteFiles(client, path, dbSchema, target, isCrudFile(dirPath, path)));
 }
 
-async function rewiteFiles(client: DbClient, db: TypeSqlDialect, path: string, dbSchema: ColumnSchema[], target: 'node' | 'deno', isCrudFile: boolean) {
-    await generateTsFile(client, db, path, dbSchema, isCrudFile);
+async function rewiteFiles(client: DatabaseClient, path: string, dbSchema: ColumnSchema[], target: 'node' | 'deno', isCrudFile: boolean) {
+    await generateTsFile(client, path, dbSchema, isCrudFile);
     const dirPath = parse(path).dir;
     await writeIndexFile(dirPath);
 }
@@ -118,38 +116,37 @@ async function compile(watch: boolean, config: TypeSqlConfig) {
     const { sqlDir, databaseUri, target, client: dialect } = config;
     validateDirectories(sqlDir);
 
-    const client = new DbClient();
-    if (dialect == 'mysql') {
-        const result = await client.connect(databaseUri);
-        if (isLeft(result)) {
-            console.error(`Error: ${result.left.description}.`);
-            return;
-        }
+    const databaseClientResult = dialect == 'mysql' ? await createMysqlClient(databaseUri) : createSqliteClient(databaseUri);
+    if (isLeft(databaseClientResult)) {
+        console.error(`Error: ${databaseClientResult.left.description}.`);
+        return;
     }
 
     const includeCrudTables = config.includeCrudTables || [];
-    const dbSchema = dialect === 'mysql' ? await client.loadDbSchema() : loadDbSchema(databaseUri);
+    const databaseClient = databaseClientResult.right;
+
+    const dbSchema = databaseClient.type === 'mysql' ? await loadMysqlSchema(databaseClient.client, databaseClient.schema) : loadDbSchema(databaseUri);
     if (isLeft(dbSchema)) {
         console.error(`Error: ${dbSchema.left.description}.`);
         return;
     }
 
-    await generateCrudTables(client, dialect, sqlDir, dbSchema.right, includeCrudTables);
+    await generateCrudTables(databaseClient, sqlDir, dbSchema.right, includeCrudTables);
     const dirGlob = `${sqlDir}/**/*.sql`;
 
     const sqlFiles = globSync(dirGlob);
 
-    const filesGeneration = sqlFiles.map(sqlFile => generateTsFile(client, dialect, sqlFile, dbSchema.right, isCrudFile(sqlDir, sqlFile)));
+    const filesGeneration = sqlFiles.map(sqlFile => generateTsFile(databaseClient, sqlFile, dbSchema.right, isCrudFile(sqlDir, sqlFile)));
     await Promise.all(filesGeneration);
 
     writeIndexFile(sqlDir);
 
     if (watch) {
         console.log("watching mode!");
-        watchDirectories(client, dialect, sqlDir, dbSchema.right, target);
+        watchDirectories(databaseClient, sqlDir, dbSchema.right, target);
     }
     else {
-        client.closeConnection();
+        // databaseClient.client.closeConnection();
     }
 }
 
@@ -174,15 +171,15 @@ function generateIndexContent(tsFiles: string[]) {
 
 async function writeSql(stmtType: SqlGenOption, tableName: string, queryName: string, config: TypeSqlConfig): Promise<boolean> {
     const { sqlDir, databaseUri } = config;
-    const client = new DbClient();
-    const connectionResult = await client.connect(databaseUri);
-    if (isLeft(connectionResult)) {
-        console.error(connectionResult.left.name);
+    const clientResult = await createMysqlClient(databaseUri);
+    if (isLeft(clientResult)) {
+        console.error(clientResult.left.name);
         return false;
     }
 
+    const client = clientResult.right;
 
-    const columnsOption = await client.loadTableSchema(tableName);
+    const columnsOption = await loadTableSchema(client.client, client.schema, tableName);
     if (isLeft(columnsOption)) {
         console.error(columnsOption.left.description);
         return false;
@@ -190,7 +187,6 @@ async function writeSql(stmtType: SqlGenOption, tableName: string, queryName: st
 
     const columns = columnsOption.right;
     const filePath = sqlDir + '/' + queryName;
-    await client.closeConnection();
 
     const generatedOk = checkAndGenerateSql(filePath, stmtType, tableName, columns);
     return generatedOk;
@@ -230,8 +226,8 @@ function generateSql(stmtType: SqlGenOption, tableName: string, columns: ColumnS
 
 main().then(() => console.log("finished!"));
 
-async function generateCrudTables(client: DbClient, dialect: TypeSqlDialect, sqlFolderPath: string, dbSchema: ColumnSchema[], includeCrudTables: string[]) {
-    const allTables = dialect == 'mysql' ? await selectAllTables(client) : right([]);
+async function generateCrudTables(client: DatabaseClient, sqlFolderPath: string, dbSchema: ColumnSchema[], includeCrudTables: string[]) {
+    const allTables = client.type == 'mysql' ? await selectAllTables(client) : right([]);
     if (isLeft(allTables)) {
         console.error(allTables.left);
         return;
@@ -258,8 +254,8 @@ function filterTables(allTables: Table[], includeCrudTables: string[]) {
     return selectAll ? allTables : allTables.filter(t => includeCrudTables.find(t2 => t.table == t2) != null);
 }
 
-async function selectAllTables(client: DbClient): Promise<Either<string, Table[]>> {
-    const selectTablesResult = await client.selectTablesFromSchema();
+async function selectAllTables(client: DatabaseClient): Promise<Either<string, Table[]>> {
+    const selectTablesResult = client.type == 'mysql' ? await selectTablesFromSchema(client.client) : left({ name: 'Not supported', description: 'Not supported' });
     if (isLeft(selectTablesResult)) {
         return left("Error selecting table names: " + selectTablesResult.left.description);
     }

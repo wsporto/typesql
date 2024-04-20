@@ -1,18 +1,14 @@
 import assert from "assert";
 import { parseSql } from "../src/describe-query";
-import { SchemaDef, DBSchema, ColumnDef2 } from "../src/types";
-import { DbClient } from "../src/queryExectutor";
+import { SchemaDef, MySqlDialect } from "../src/types";
+import { createMysqlClientForTest } from "../src/queryExectutor";
 import { isLeft } from "fp-ts/lib/Either";
 
 describe('infer-not-null', () => {
 
-    let client: DbClient = new DbClient();
+    let client!: MySqlDialect;
     before(async () => {
-        await client.connect('mysql://root:password@localhost/mydb');
-    })
-
-    after(async () => {
-        await client.closeConnection();
+        client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
     })
 
     it('select value from mytable1 where value is not null', async () => {
@@ -310,7 +306,7 @@ describe('infer-not-null', () => {
     it('select value from mytable1 where value is not null or (id > 0 or value is not null)', async () => {
 
         const sql = `
-            select value from mytable1 where value is not null or (id > 0 or value is not null) 
+            select value from mytable1 where value is not null or (id > 0 or value is not null)
             `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
@@ -338,7 +334,7 @@ describe('infer-not-null', () => {
     it('select value from mytable1 where value is not null and (id > 0 or value is not null)', async () => {
 
         const sql = `
-    select value from mytable1 where value is not null and (id > 0 or value is not null) 
+    select value from mytable1 where value is not null and (id > 0 or value is not null)
     `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
@@ -366,7 +362,7 @@ describe('infer-not-null', () => {
     it('select value from mytable1 where value is not null or (id > 0 and (id < 10 and value is not null)) ', async () => {
 
         const sql = `
-        select value from mytable1 where value is not null or (id > 0 and (id < 10 and value is not null)) 
+        select value from mytable1 where value is not null or (id > 0 and (id < 10 and value is not null))
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
@@ -703,7 +699,7 @@ describe('infer-not-null', () => {
 
         const sql = `
         select name from mytable2 where name is not null
-        UNION 
+        UNION
         select id from mytable1
         UNION
         select value from mytable1 where value is not null
@@ -735,7 +731,7 @@ describe('infer-not-null', () => {
 
         const sql = `
         select name from mytable2 where name is not null
-        UNION 
+        UNION
         select id from mytable1
         UNION
         select value from mytable1
@@ -767,7 +763,7 @@ describe('infer-not-null', () => {
 
         const sql = `
         select name from mytable2 where name is not null
-        UNION 
+        UNION
         select name from mytable2
         UNION
         select value from mytable1 where value is not null
@@ -799,7 +795,7 @@ describe('infer-not-null', () => {
 
         const sql = `
         select name from mytable2 where name is not null
-        UNION 
+        UNION
         select value from mytable1 where value is not null
         UNION
         select value from mytable1
@@ -832,7 +828,7 @@ describe('infer-not-null', () => {
         const sql = `
         -- id, value, descr
         select *, (select descr from mytable2 where id = 1) from mytable1 where value is not null
-        UNION 
+        UNION
         -- id, name, descr
         select * from mytable2 where name is not null
         `;
@@ -875,7 +871,7 @@ describe('infer-not-null', () => {
 
         const sql = `
         select name from mytable2 where name is not null
-        UNION 
+        UNION
         select value + value from mytable1 where value is not null
         UNION
         select value + id from mytable1`;
@@ -906,7 +902,7 @@ describe('infer-not-null', () => {
 
         const sql = `
         select name from mytable2 where name is not null
-        UNION 
+        UNION
         select value+value as total from mytable1 where value is not null
         UNION
         select value+id from mytable1 where value is not null
@@ -1039,7 +1035,7 @@ describe('infer-not-null', () => {
     it('select name from (select name from mytable2 where name is not null) t1', async () => {
 
         const sql = `
-        select name from (select name from mytable2 where name is not null) t1 
+        select name from (select name from mytable2 where name is not null) t1
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
@@ -1067,7 +1063,7 @@ describe('infer-not-null', () => {
     it('select name from (select id as name from mytable2) t1', async () => {
 
         const sql = `
-        select name from (select id as name from mytable2) t1 
+        select name from (select id as name from mytable2) t1
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
@@ -1095,7 +1091,7 @@ describe('infer-not-null', () => {
     it('select name from (select id as name from mytable2) t1', async () => {
 
         const sql = `
-        select id from (select * from mytable2) t1 
+        select id from (select * from mytable2) t1
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
@@ -1123,7 +1119,7 @@ describe('infer-not-null', () => {
     it('select * from (select * from mytable2 where name is not null and descr is not null) t1', async () => {
 
         const sql = `
-        select * from (select * from mytable2 where name is not null and descr is not null) t1 
+        select * from (select * from mytable2 where name is not null and descr is not null) t1
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
@@ -1163,7 +1159,7 @@ describe('infer-not-null', () => {
     it('select * from (select * from mytable2 where name is not null or descr is not null) t1', async () => {
 
         const sql = `
-        select * from (select * from mytable2 where name is not null or descr is not null) t1 
+        select * from (select * from mytable2 where name is not null or descr is not null) t1
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
@@ -1203,7 +1199,7 @@ describe('infer-not-null', () => {
     it('select * from (select * from (select * from mytable2 where name is not null and descr is not null) t1) t2', async () => {
 
         const sql = `
-        select * from (select * from (select * from mytable2 where name is not null and descr is not null) t1) t2 
+        select * from (select * from (select * from mytable2 where name is not null and descr is not null) t1) t2
         `;
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {

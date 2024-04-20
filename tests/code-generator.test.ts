@@ -2,18 +2,15 @@ import assert from "assert";
 import { TsDescriptor, convertToCamelCaseName, replaceOrderByParam, generateTsCodeForMySQL as generateTsCode, generateTsDescriptor, generateTsFileFromContent } from "../src/code-generator";
 import { describeSql } from "../src/describe-query";
 import { dbSchema } from "./mysql-query-analyzer/create-schema";
-import { DbClient } from "../src/queryExectutor";
+import { createMysqlClientForTest } from "../src/queryExectutor";
 import { readFileSync } from "fs";
+import { MySqlDialect } from "../src/types";
 
 describe('code-generator', () => {
 
-    let client: DbClient = new DbClient();
+    let client!: MySqlDialect;
     before(async () => {
-        await client.connect('mysql://root:password@localhost/mydb');
-    })
-
-    after(async () => {
-        await client.closeConnection();
+        client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
     })
 
     it('generate main function with parameters', () => {

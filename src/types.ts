@@ -4,6 +4,8 @@ import { ColumnInfo, ColumnSchema, DynamicSqlInfoResult } from "./mysql-query-an
 import { QueryContext } from '@wsporto/ts-mysql-parser';
 import { NestedResultInfo } from "./describe-nested-query";
 import { SQLiteType } from "./sqlite-query-analyzer/types";
+import { Database } from "better-sqlite3";
+import { Pool } from "mysql2/promise";
 
 export type DBSchema = {
     columns: ColumnSchema[];
@@ -104,7 +106,22 @@ export type PreprocessedSql = {
 
 export type CamelCaseName = Brand<string, 'CamelCase'>;
 
-export type TypeSqlDialect = 'mysql' | 'sqlite';
+export type DatabaseClient = MySqlDialect | SQLiteDialect;
+
+export type TypeSqlDialect = DatabaseClient['type'];
+
+export type MySqlDialect = {
+    type: 'mysql';
+    client: Pool;
+    databaseVersion: string;
+    schema: string;
+    isVersion8: boolean;
+}
+
+export type SQLiteDialect = {
+    type: 'sqlite';
+    client: Database;
+}
 
 export type TypeSqlConfig = {
     databaseUri: string;

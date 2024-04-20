@@ -1,21 +1,18 @@
 import assert from "assert";
-import { DbClient } from "../src/queryExectutor";
+import { createMysqlClientForTest, loadMysqlSchema } from "../src/queryExectutor";
 import { isLeft } from "fp-ts/lib/Either";
+import { MySqlDialect } from "../src/types";
 
 describe('load-schema', () => {
 
-    let client: DbClient = new DbClient();
+    let client!: MySqlDialect;
     before(async () => {
-        await client.connect('mysql://root:password@localhost/mydb');
-    })
-
-    after(async () => {
-        await client.closeConnection();
+        client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
     })
 
     it('filter schema', async () => {
 
-        const actual = await client.loadDbSchema();
+        const actual = await loadMysqlSchema(client.client, client.schema);
         if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
         }
