@@ -1,20 +1,20 @@
-import { isLeft } from "fp-ts/lib/Either";
+import { Either, isLeft, left, right } from "fp-ts/lib/Either";
 import { ColumnInfo, ColumnSchema } from "../mysql-query-analyzer/types";
-import { parseSql, prepareAndParse } from "./parser";
+import { prepareAndParse } from "./parser";
 import { TsDescriptor, capitalize, convertToCamelCaseName, removeDuplicatedParameters2 } from "../code-generator";
 import CodeBlockWriter from "code-block-writer";
 import { ParameterDef, SchemaDef, TsFieldDescriptor } from "../types";
 import { SQLiteType } from "./types";
 import { Database } from "better-sqlite3";
 
-export function generateTsCode(db: Database, sql: string, queryName: string, sqliteDbSchema: ColumnSchema[]): string {
+export function generateTsCode(db: Database, sql: string, queryName: string, sqliteDbSchema: ColumnSchema[]): Either<string, string> {
     const queryInfo = prepareAndParse(db, sql, sqliteDbSchema);
     if (isLeft(queryInfo)) {
-        return '//Invalid sql';
+        return left('//Invalid sql');
     }
     const tsDescriptor = createTsDescriptor(queryInfo.right);
     const code = generateCodeFromTsDescriptor(queryName, tsDescriptor);
-    return code;
+    return right(code);
 }
 
 function createTsDescriptor(queryInfo: SchemaDef): TsDescriptor {

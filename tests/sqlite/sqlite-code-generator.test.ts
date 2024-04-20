@@ -4,6 +4,7 @@ import { readFileSync } from "fs";
 import { generateTsCode } from "../../src/sqlite-query-analyzer/code-generator";
 import { sqliteDbSchema } from "../mysql-query-analyzer/create-schema";
 import Database from "better-sqlite3";
+import { isLeft } from "fp-ts/lib/Either";
 
 describe('sqlite-code-generator', () => {
 
@@ -15,7 +16,10 @@ describe('sqlite-code-generator', () => {
 		const actual = await generateTsCode(db, sql, 'select01', sqliteDbSchema);
 		const expected = readFileSync('tests/sqlite/expected-code/select01.ts.txt', 'utf-8').replace(/\r/gm, '');
 
-		assert.deepStrictEqual(actual, expected);
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
 	})
 
 	it('select02 - select without parameters', async () => {
@@ -24,7 +28,10 @@ describe('sqlite-code-generator', () => {
 		const actual = await generateTsCode(db, sql, 'select02', sqliteDbSchema);
 		const expected = readFileSync('tests/sqlite/expected-code/select02.ts.txt', 'utf-8').replace(/\r/gm, '');
 
-		assert.deepStrictEqual(actual, expected);
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
 	})
 
 	it('select03 - select with same parameter used twice', async () => {
@@ -33,7 +40,10 @@ describe('sqlite-code-generator', () => {
 		const actual = await generateTsCode(db, sql, 'select03', sqliteDbSchema);
 		const expected = readFileSync('tests/sqlite/expected-code/select03.ts.txt', 'utf-8').replace(/\r/gm, '');
 
-		assert.deepStrictEqual(actual, expected);
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
 	})
 
 	it('select04 - select with same parameter used twice', async () => {
@@ -42,7 +52,10 @@ describe('sqlite-code-generator', () => {
 		const actual = await generateTsCode(db, sql, 'select04', sqliteDbSchema);
 		const expected = readFileSync('tests/sqlite/expected-code/select04.ts.txt', 'utf-8').replace(/\r/gm, '');
 
-		assert.deepStrictEqual(actual, expected);
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
 	})
 
 	it('insert01 - select with same parameter used twice', async () => {
@@ -51,7 +64,10 @@ describe('sqlite-code-generator', () => {
 		const actual = await generateTsCode(db, sql, 'insert01', sqliteDbSchema);
 		const expected = readFileSync('tests/sqlite/expected-code/insert01.ts.txt', 'utf-8').replace(/\r/gm, '');
 
-		assert.deepStrictEqual(actual, expected);
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
 	})
 
 	it('insert02 - select with same parameter used twice', async () => {
@@ -60,7 +76,10 @@ describe('sqlite-code-generator', () => {
 		const actual = await generateTsCode(db, sql, 'insert02', sqliteDbSchema);
 		const expected = readFileSync('tests/sqlite/expected-code/insert02.ts.txt', 'utf-8').replace(/\r/gm, '');
 
-		assert.deepStrictEqual(actual, expected);
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
 	})
 
 	it('update01 - UPDATE mytable1 SET value=? WHERE id=?', () => {
@@ -69,7 +88,10 @@ describe('sqlite-code-generator', () => {
 		const actual = generateTsCode(db, sql, 'update01', sqliteDbSchema);
 		const expected = readFileSync('tests/sqlite/expected-code/update01.ts.txt', 'utf-8').replace(/\r/gm, '');
 
-		assert.deepStrictEqual(actual, expected);//
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
 	})
 
 	it('delete01 - UPDATE mytable1 SET value=? WHERE id=?', () => {
@@ -78,6 +100,9 @@ describe('sqlite-code-generator', () => {
 		const actual = generateTsCode(db, sql, 'delete01', sqliteDbSchema);
 		const expected = readFileSync('tests/sqlite/expected-code/delete01.ts.txt', 'utf-8').replace(/\r/gm, '');
 
-		assert.deepStrictEqual(actual, expected);
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
 	})
 });

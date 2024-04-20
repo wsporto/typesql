@@ -2,8 +2,7 @@ import { SchemaDef, CamelCaseName, TsFieldDescriptor, ParameterDef, TypeSqlDiale
 import fs from "fs";
 import path, { parse } from "path";
 import camelCase from "camelcase";
-import { isLeft } from "fp-ts/lib/Either";
-import { none, Option, some, isNone } from "fp-ts/lib/Option";
+import { Either, isLeft, left, right } from "fp-ts/lib/Either";
 import { converToTsType, MySqlType } from "./mysql-mapping";
 import { parseSql } from "./describe-query";
 import CodeBlockWriter from "code-block-writer";
@@ -638,14 +637,6 @@ function hasStringColumn(columns: TsFieldDescriptor[]) {
     return columns.some(c => c.tsType == 'string');
 }
 
-function generateTsContent(tsDescriptorOption: Option<TsDescriptor>, queryName: string, target: 'node' | 'deno', crud: boolean) {
-
-    if (isNone(tsDescriptorOption)) {
-        return '//Invalid sql';
-    }
-    return generateTsCodeForMySQL(tsDescriptorOption.value, queryName, target, crud);
-}
-
 export function replaceOrderByParam(sql: string) {
     const patern = /(.*order\s+by\s*)(\?)(.\n$)*/i;
     const newSql = sql.replace(patern, "$1${escapeOrderBy(params.orderBy)}$3");
@@ -678,25 +669,30 @@ export async function generateTsFile(client: DatabaseClient, sqlFile: string, db
     const dirPath = parse(sqlFile).dir;
     const queryName = convertToCamelCaseName(fileName);
 
-    const tsContent = client.type == 'mysql' ? await generateTsFileFromContent(client, sqlFile, queryName, sqlContent, 'node', isCrudFile)
+    const tsContentResult = client.type == 'mysql' ? await generateTsFileFromContent(client, queryName, sqlContent, 'node', isCrudFile)
         : generateTsCode(client.client, sqlContent, queryName, dbSchema);
+
+    if (isLeft(tsContentResult)) {
+        console.error('ERROR: ', tsContentResult.left);
+        console.error('at ', sqlFile);
+        return;
+    }
+    const tsContent = tsContentResult.right;
 
     const tsFilePath = path.resolve(dirPath, fileName) + ".ts";
 
     writeFile(tsFilePath, tsContent);
 }
 
-export async function generateTsFileFromContent(client: MySqlDialect, filePath: string, queryName: string, sqlContent: string, target: 'node' | 'deno', crud: boolean = false) {
-    const queryInfo = await parseSql(client, sqlContent);
+export async function generateTsFileFromContent(client: MySqlDialect, queryName: string, sqlContent: string, target: 'node' | 'deno', crud: boolean = false): Promise<Either<string, string>> {
+    const queryInfoResult = await parseSql(client, sqlContent);
 
-    if (isLeft(queryInfo)) {
-        console.error('ERROR: ', queryInfo.left.description);
-        console.error('at ', filePath);
+    if (isLeft(queryInfoResult)) {
+        return left(queryInfoResult.left.description);
     }
-
-    const tsDescriptor = isLeft(queryInfo) ? none : some(generateTsDescriptor(queryInfo.right));
-    const tsContent = generateTsContent(tsDescriptor, queryName, target, crud);
-    return tsContent;
+    const tsDescriptor = generateTsDescriptor(queryInfoResult.right);
+    const tsContent = generateTsCodeForMySQL(tsDescriptor, queryName, target, crud);
+    return right(tsContent);
 }
 
 export type ParamInfo = {

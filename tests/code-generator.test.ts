@@ -5,6 +5,7 @@ import { dbSchema } from "./mysql-query-analyzer/create-schema";
 import { createMysqlClientForTest } from "../src/queryExectutor";
 import { readFileSync } from "fs";
 import { MySqlDialect } from "../src/types";
+import { isLeft } from "fp-ts/lib/Either";
 
 describe('code-generator', () => {
 
@@ -581,7 +582,7 @@ LEFT JOIN posts p on p.fk_user = u.id
 LEFT JOIN roles r on r.fk_user = u.id
 LEFT JOIN comments c on c.fk_post = p.id`
 
-        const actual = await generateTsFileFromContent(client, 'select-users.sql', queryName, sql, 'node');
+        const actual = await generateTsFileFromContent(client, queryName, sql, 'node');
         const expected = `import type { Connection } from 'mysql2/promise';
 
 export type SelectUsersResult = {
@@ -734,8 +735,10 @@ const groupBy = <T, Q>(array: T[], predicate: (value: T, index: number, array: T
         return map;
     }, new Map<Q, T[]>());
 }`
-
-        assert.deepStrictEqual(actual, expected);
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('generate nested with params', async () => {
@@ -751,7 +754,7 @@ FROM users u
 LEFT JOIN posts p on p.fk_user = u.id
 WHERE u.id = :id`
 
-        const actual = await generateTsFileFromContent(client, 'select-users.sql', queryName, sql, 'node');
+        const actual = await generateTsFileFromContent(client, queryName, sql, 'node');
         const expected = `import type { Connection } from 'mysql2/promise';
 
 export type SelectUsersParams = {
@@ -853,7 +856,10 @@ const groupBy = <T, Q>(array: T[], predicate: (value: T, index: number, array: T
         return map;
     }, new Map<Q, T[]>());
 }`
-        assert.deepStrictEqual(actual, expected);
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('generate nested result with many to many relation', async () => {
@@ -869,7 +875,7 @@ FROM surveys s
 INNER JOIN participants p on p.fk_survey = s.id
 INNER JOIN users u on p.fk_user = :user_id`
 
-        const actual = await generateTsFileFromContent(client, 'select-answers.sql', queryName, sql, 'node');
+        const actual = await generateTsFileFromContent(client, queryName, sql, 'node');
         const expected = `import type { Connection } from 'mysql2/promise';
 
 export type SelectAnswersParams = {
@@ -972,7 +978,10 @@ const groupBy = <T, Q>(array: T[], predicate: (value: T, index: number, array: T
     }, new Map<Q, T[]>());
 }`
 
-        assert.deepStrictEqual(actual, expected);
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('generate nested result with many to many relation', async () => {
@@ -987,7 +996,7 @@ INNER JOIN addresses as a1 ON a1.id = c.primaryAddress
 LEFT JOIN addresses as a2 ON a2.id = c.secondaryAddress
 WHERE c.id = :clientId`
 
-        const actual = await generateTsFileFromContent(client, 'select-clients.sql', queryName, sql, 'node');
+        const actual = await generateTsFileFromContent(client, queryName, sql, 'node');
         const expected = `import type { Connection } from 'mysql2/promise';
 
 export type SelectClientsParams = {
@@ -1106,7 +1115,10 @@ const groupBy = <T, Q>(array: T[], predicate: (value: T, index: number, array: T
     }, new Map<Q, T[]>());
 }`
 
-        assert.deepStrictEqual(actual, expected);
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('generate nested result with many to many relation - duplicated field name', async () => {
@@ -1117,7 +1129,7 @@ FROM books b
 INNER JOIN books_authors ba on ba.book_id = b.id
 INNER JOIN authors a on a.id = ba.author_id`
 
-        const actual = await generateTsFileFromContent(client, 'select-clients.sql', queryName, sql, 'node');
+        const actual = await generateTsFileFromContent(client, queryName, sql, 'node');
         const expected = `import type { Connection } from 'mysql2/promise';
 
 export type SelectBooksResult = {
@@ -1231,7 +1243,10 @@ const groupBy = <T, Q>(array: T[], predicate: (value: T, index: number, array: T
     }, new Map<Q, T[]>());
 }`
 
-        assert.deepStrictEqual(actual, expected);
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('dynamic-query-01', async () => {
@@ -1243,11 +1258,14 @@ INNER JOIN mytable2 m2 on m1.id = m2.id
 WHERE m2.name = :name
 AND m2.descr = :description`
 
-        const actual = await generateTsFileFromContent(client, `${queryName}1.sql`, queryName, sql, 'node');
+        const actual = await generateTsFileFromContent(client, queryName, sql, 'node');
         //tests\expected-code\dynamic-query01.ts
         const expected = readFileSync('tests/expected-code/dynamic-query01.ts.txt', 'utf-8').replace(/\r/gm, '');
 
-        assert.deepStrictEqual(actual, expected);
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('dynamic-query-02', async () => {
@@ -1261,11 +1279,14 @@ INNER JOIN ( -- derivated table
 ) m2
 WHERE (:name is NULL or m2.name = :name)`
 
-        const actual = await generateTsFileFromContent(client, `${queryName}.sql`, queryName, sql, 'node');
+        const actual = await generateTsFileFromContent(client, queryName, sql, 'node');
         //tests\expected-code\dynamic-query01.ts
         const expected = readFileSync('tests/expected-code/dynamic-query02.ts.txt', 'utf-8').replace(/\r/gm, '');
 
-        assert.deepStrictEqual(actual, expected);
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('dynamic-query-03 - without parameters', async () => {
@@ -1274,11 +1295,14 @@ WHERE (:name is NULL or m2.name = :name)`
 SELECT t1.id, t1.value
 FROM mytable1 t1`
 
-        const actual = await generateTsFileFromContent(client, `${queryName}.sql`, queryName, sql, 'node');
+        const actual = await generateTsFileFromContent(client, queryName, sql, 'node');
         //tests\expected-code\dynamic-query01.ts
         const expected = readFileSync('tests/expected-code/dynamic-query03.ts.txt', 'utf-8').replace(/\r/gm, '');
 
-        assert.deepStrictEqual(actual, expected);
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('dynamic-query-04 - select *', async () => {
@@ -1289,11 +1313,14 @@ SELECT
 FROM mytable1 m1
 INNER JOIN mytable2 m2 on m2.id = m1.id`
 
-        const actual = await generateTsFileFromContent(client, `${queryName}.sql`, queryName, sql, 'node');
+        const actual = await generateTsFileFromContent(client, queryName, sql, 'node');
         //tests\expected-code\dynamic-query01.ts
         const expected = readFileSync('tests/expected-code/dynamic-query04.ts.txt', 'utf-8').replace(/\r/gm, '');
 
-        assert.deepStrictEqual(actual, expected);
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('dynamic-query-05 - cte', async () => {
@@ -1310,11 +1337,14 @@ FROM mytable1 m1
 INNER JOIN cte m2 on m2.id = m1.id
 WHERE m2.name LIKE concat('%', :name, '%')`
 
-        const actual = await generateTsFileFromContent(client, `${queryName}.sql`, queryName, sql, 'node');
+        const actual = await generateTsFileFromContent(client, queryName, sql, 'node');
         //tests\expected-code\dynamic-query01.ts
         const expected = readFileSync('tests/expected-code/dynamic-query05.ts.txt', 'utf-8').replace(/\r/gm, '');
 
-        assert.deepStrictEqual(actual, expected);
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('dynamic-query-06 - select * ORDER BY ?', async () => {
@@ -1326,11 +1356,14 @@ FROM mytable1 m1
 INNER JOIN mytable2 m2 on m2.id = m1.id
 ORDER BY ?`
 
-        const actual = await generateTsFileFromContent(client, `${queryName}.sql`, queryName, sql, 'node');
+        const actual = await generateTsFileFromContent(client, queryName, sql, 'node');
         //tests\expected-code\dynamic-query01.ts
         const expected = readFileSync('tests/expected-code/dynamic-query06.ts.txt', 'utf-8').replace(/\r/gm, '');
 
-        assert.deepStrictEqual(actual, expected);
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
     })
 
     it('dynamic-query-07 - select * ORDER BY ?', async () => {
@@ -1343,11 +1376,13 @@ FROM mytable1 m1
 INNER JOIN mytable2 m2 on m2.id = m1.id
 ORDER BY ?`
 
-        const actual = await generateTsFileFromContent(client, `${queryName}.sql`, queryName, sql, 'node');
+        const actual = await generateTsFileFromContent(client, queryName, sql, 'node');
         //tests\expected-code\dynamic-query01.ts
         const expected = readFileSync('tests/expected-code/dynamic-query07.ts.txt', 'utf-8').replace(/\r/gm, '');
 
-        assert.deepStrictEqual(actual, expected);
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
     })
-
 })
