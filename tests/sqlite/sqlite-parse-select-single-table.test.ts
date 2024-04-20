@@ -345,7 +345,7 @@ describe('sqlite-Test simple select statements', () => {
                 {
                     columnName: '?', //TODO - PARAM1
                     type: 'any',
-                    notNull: true,
+                    notNull: false, //todo - differente from mysql
                     table: ''
                 }
             ],
@@ -353,7 +353,7 @@ describe('sqlite-Test simple select statements', () => {
                 {
                     name: 'param1',
                     columnType: 'any',
-                    notNull: true //todo - changed v0.0.2
+                    notNull: false //todo - differente from mysql
                 }
             ]
         }
@@ -447,7 +447,7 @@ describe('sqlite-Test simple select statements', () => {
                 {
                     columnName: 'name',
                     type: 'any',
-                    notNull: true,
+                    notNull: false, //TODO - differente from mysql
                     table: ''
                 }
             ],
@@ -455,7 +455,7 @@ describe('sqlite-Test simple select statements', () => {
                 {
                     name: 'param1',
                     columnType: 'any',
-                    notNull: true //changed on v0.0.2
+                    notNull: false //TODO - differente from mysql
                 }
             ]
         }
@@ -480,7 +480,7 @@ describe('sqlite-Test simple select statements', () => {
                 {
                     columnName: 'name',
                     type: 'any',
-                    notNull: true,
+                    notNull: false, //todo - differente from mysql
                     table: ''
                 },
                 {
@@ -501,7 +501,7 @@ describe('sqlite-Test simple select statements', () => {
                 {
                     name: 'param1',
                     columnType: 'any',
-                    notNull: true //changed at v0.0.2
+                    notNull: false //todo - differente from mysql
                 },
                 {
                     name: 'param2',

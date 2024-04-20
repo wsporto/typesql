@@ -43,7 +43,7 @@ export type DeleteStatementResult = {
 
 export function traverseQueryContext(queryContext: QueryContext, dbSchema: ColumnSchema[], namedParameters: string[]) {
     const constraints: Constraint[] = [];
-    const parameters: TypeVar[] = [];
+    const parameters: TypeAndNullInfer[] = [];
 
     const traverseContext: TraverseContext = {
         constraints,
@@ -99,10 +99,8 @@ function traverseSelectStatement(selectStatement: SelectStatementContext, traver
         const allParameters = traverseContext.parameters
             .map((param, index) => {
                 const param2: TypeAndNullInfer = {
-                    name: param.name,
-                    type: param,
-                    notNull: paramInference[index],
-                    table: ''
+                    ...param,
+                    notNull: paramInference[index]
                 }
                 return param2;
             });
@@ -173,7 +171,7 @@ export function traverseInsertStatement(insertStatement: InsertStatementContext,
                 const exprType = traverseExpr(expr, traverseContext);
                 const paramNullabilityExpr = inferParamNullability(expr);
                 traverseContext.parameters.slice(numberParamsBefore).forEach(param => {
-                    paramsNullability[param.id] = paramNullabilityExpr.every(n => n) && column.notNull;
+                    paramsNullability[param.type.id] = paramNullabilityExpr.every(n => n) && column.notNull;
                 })
                 traverseContext.constraints.push({
                     expression: expr.text,
@@ -198,7 +196,7 @@ export function traverseInsertStatement(insertStatement: InsertStatementContext,
             const exprType = traverseExpr(expr, traverseContext);
             const column = findColumn(field, fromColumns);
             traverseContext.parameters.slice(numberParamsBefore).forEach(param => {
-                paramsNullability[param.id] = column.notNull;
+                paramsNullability[param.type.id] = column.notNull;
             })
             traverseContext.constraints.push({
                 expression: expr.text,
@@ -228,8 +226,8 @@ export function traverseInsertStatement(insertStatement: InsertStatementContext,
         })
         const paramNullabilityExpr = inferParamNullabilityQuery(insertQueryExpression);
         traverseContext.parameters.slice(numberParamsBefore).forEach((param, index) => {
-            if (paramsNullability[param.id] == null) {
-                paramsNullability[param.id] = paramNullabilityExpr[index];
+            if (paramsNullability[param.type.id] == null) {
+                paramsNullability[param.type.id] = paramNullabilityExpr[index];
             }
         })
 
@@ -237,7 +235,7 @@ export function traverseInsertStatement(insertStatement: InsertStatementContext,
 
     const typeInfo = generateTypeInfo(traverseContext.parameters, traverseContext.constraints);
     typeInfo.forEach((param, index) => {
-        const paramId = traverseContext.parameters[index].id;
+        const paramId = traverseContext.parameters[index].type.id;
         allParameters.push({
             name: 'param' + (allParameters.length + 1),
             columnType: verifyNotInferred(param),
@@ -289,7 +287,7 @@ function traverseUpdateStatement(updateStatement: UpdateStatementContext, traver
             traverseContext.parameters.slice(paramBeforeExpr, traverseContext.parameters.length).forEach((param, index) => {
                 dataTypes.push({
                     name: namedParamters[paramBeforeExpr + index] || field.name,
-                    type: param,
+                    type: param.type,
                     notNull: column.notNull && paramNullability[index],
                     table: ''
                 })
@@ -307,7 +305,7 @@ function traverseUpdateStatement(updateStatement: UpdateStatementContext, traver
     traverseContext.parameters.slice(0, paramsBefore).forEach((param, index) => {
         whereParameters.push({
             name: namedParamters[index] || 'param' + (whereParameters.length + 1),
-            type: param,
+            type: param.type,
             notNull: paramNullability[index],
             table: ''
         })
@@ -315,7 +313,7 @@ function traverseUpdateStatement(updateStatement: UpdateStatementContext, traver
     traverseContext.parameters.slice(paramsAfter).forEach((param, index) => {
         whereParameters.push({
             name: namedParamters[paramsAfter + index] || 'param' + (whereParameters.length + 1),
-            type: param,
+            type: param.type,
             notNull: paramNullability[paramsAfter + index],
             table: ''
         })
@@ -1215,7 +1213,12 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
     }
     if (simpleExpr instanceof SimpleExprParamMarkerContext) {
         const param = freshVar('?', '?');
-        traverseContext.parameters.push(param);
+        traverseContext.parameters.push({
+            name: param.name,
+            type: param,
+            notNull: false,
+            table: param.table || ''
+        });
         return param;
     }
     if (simpleExpr instanceof SimpleExprLiteralContext) {

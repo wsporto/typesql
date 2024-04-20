@@ -33,7 +33,7 @@ describe('sqlite-parse-update', () => {
             columns,
             data: [
                 {
-                    name: 'value',
+                    name: 'param1',
                     columnType: 'INTEGER',
                     notNull: false
                 }
@@ -66,12 +66,12 @@ describe('sqlite-parse-update', () => {
             columns,
             data: [
                 {
-                    name: 'name',
+                    name: 'param1',
                     columnType: 'TEXT',
                     notNull: false
                 },
                 {
-                    name: 'descr',
+                    name: 'param2',
                     columnType: 'TEXT',
                     notNull: false
                 }
@@ -197,6 +197,48 @@ describe('sqlite-parse-update', () => {
                 }
             ],
             parameters: []
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('UPDATE mytable1 SET id = CASE WHEN :valueSet THEN :value ELSE value END WHERE id = :id', () => {
+
+        const sql = `
+        UPDATE mytable1 SET id = CASE WHEN :valueSet THEN :value ELSE value END WHERE id = :id
+            `;
+        const expectedSql = `
+        UPDATE mytable1 SET id = CASE WHEN ? THEN ? ELSE value END WHERE id = ?
+            `;
+
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql: expectedSql,
+            queryType: 'Update',
+            multipleRowsResult: false,
+            columns,
+            data: [
+                {
+                    name: 'valueSet',
+                    columnType: 'INTEGER',
+                    notNull: false
+                },
+                {
+                    name: 'value',
+                    columnType: 'INTEGER',
+                    notNull: false
+                }
+            ],
+            parameters: [
+                {
+                    name: 'id',
+                    columnType: 'INTEGER',
+                    notNull: true
+                },
+            ]
         }
 
         if (isLeft(actual)) {

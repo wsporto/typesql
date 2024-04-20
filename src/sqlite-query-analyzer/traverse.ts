@@ -252,6 +252,7 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         const functionType = freshVar(expr.getText(), 'TEXT');
         const paramExpr = expr.expr(1);
         const paramType = traverse_expr(paramExpr, traverseContext);
+        paramType.notNull = true;
         traverseContext.constraints.push({
             expression: paramExpr.getText(),
             type1: freshVar(paramExpr.getText(), 'DATE'),
@@ -268,6 +269,7 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         const functionType = freshVar(expr.getText(), 'TEXT');
         const paramExpr = expr.expr(0);
         const paramType = traverse_expr(paramExpr, traverseContext);
+        paramType.notNull = true;
         traverseContext.constraints.push({
             expression: paramExpr.getText(),
             type1: freshVar(paramExpr.getText(), 'DATE'),
@@ -284,7 +286,9 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         const functionType = freshVar(expr.getText(), '?');
         const paramTypes = expr.expr_list().map(paramExpr => {
             const paramType = traverse_expr(paramExpr, traverseContext);
-            paramType.notNull = false;
+            if (paramType.name == '?') {
+                paramType.notNull = false;
+            }
             traverseContext.constraints.push({
                 expression: expr.getText(),
                 type1: functionType,
@@ -342,10 +346,10 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         const type = {
             name: param.name,
             type: param,
-            notNull: true,
+            notNull: false,
             table: param.table || ''
         };
-        traverseContext.parameters.push(type.type);
+        traverseContext.parameters.push(type);
         return type;
 
     }
@@ -377,6 +381,12 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         const exprRight = expr.expr(1);
         const typeLeft = traverse_expr(exprLeft, traverseContext);
         const typeRight = traverse_expr(exprRight, traverseContext);
+        if (typeLeft.name == '?') {
+            typeLeft.notNull = true;
+        }
+        if (typeRight.name == '?') {
+            typeRight.notNull = true;
+        }
         traverseContext.constraints.push({
             expression: expr.getText(),
             type1: typeLeft.type,
@@ -406,6 +416,13 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         const exprRight = expr.expr(1);
         const typeLeft = traverse_expr(exprLeft, traverseContext);
         const typeRight = traverse_expr(exprRight, traverseContext);
+        if (typeLeft.name == '?') {
+            typeLeft.notNull = true;
+        }
+        if (typeRight.name == '?') {
+            typeRight.notNull = true;
+        }
+
         traverseContext.constraints.push({
             expression: expr.getText(),
             type1: typeLeft.type,
@@ -423,6 +440,12 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         const exprType = traverse_expr(expr.expr(0), traverseContext);
         const between1 = traverse_expr(expr.expr(1), traverseContext);
         const between2 = traverse_expr(expr.expr(2), traverseContext);
+        if (between1.name == '?') {
+            between1.notNull = true;
+        }
+        if (between2.name == '?') {
+            between2.notNull = true;
+        }
         traverseContext.constraints.push({
             expression: expr.getText(),
             type1: exprType.type,
@@ -523,6 +546,13 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
                     type2: resultType
                 })
             }
+        });
+        whenTypes.forEach((resultType) => {
+            traverseContext.constraints.push({
+                expression: expr.getText(),
+                type1: freshVar('INTEGER', 'INTEGER'),
+                type2: resultType
+            })
         });
         const type = resultTypes[0];
         return {
@@ -637,10 +667,8 @@ function traverse_insert_stmt(insert_stmt: Insert_stmtContext, traverseContext: 
                     type2: exprType.type
                 });
                 insertColumns.push({
-                    name: param.name,
-                    type: param,
-                    notNull: exprType.notNull && col.notNull,
-                    table: ""
+                    ...param,
+                    notNull: exprType.name == '?' ? col.notNull : param.notNull
                 })
             })
         });
@@ -669,7 +697,7 @@ function traverse_update_stmt(update_stmt: Update_stmtContext, traverseContext: 
     expr_list.forEach((expr, index) => {
         paramsBefore = traverseContext.parameters.length;
         const exprType = traverse_expr(expr, { ...traverseContext, fromColumns });
-        if (expr.start.start < update_stmt.WHERE_().symbol.start) {
+        if (!update_stmt.WHERE_() || expr.start.start < update_stmt.WHERE_().symbol.start) {
 
             const col = columns[index];
             traverseContext.constraints.push({
@@ -679,22 +707,14 @@ function traverse_update_stmt(update_stmt: Update_stmtContext, traverseContext: 
             });
             traverseContext.parameters.slice(paramsBefore).forEach((param, index) => {
                 updateColumns.push({
-                    name: param.name,
-                    type: exprType.type,
-                    notNull: exprType.notNull && col.notNull,
-                    table: ""
+                    ...param,
+                    notNull: param.notNull && col.notNull
                 })
             });
-
         }
         else {
             traverseContext.parameters.slice(paramsBefore).forEach((param, index) => {
-                whereParams.push({
-                    name: param.name,
-                    type: param,
-                    notNull: true,
-                    table: ''
-                })
+                whereParams.push(param)
             });
         }
     });
@@ -713,19 +733,10 @@ function traverse_delete_stmt(delete_stmt: Delete_stmtContext, traverseContext: 
 
     const expr = delete_stmt.expr();
     traverse_expr(expr, { ...traverseContext, fromColumns });
-    const params = traverseContext.parameters.map(param => {
-        const paramResult: TypeAndNullInfer = {
-            name: param.name,
-            type: param,
-            notNull: true,
-            table: param.table || ''
-        }
-        return paramResult;
-    });
 
     const queryResult: DeleteResult = {
         queryType: 'Delete',
-        params: params
+        params: traverseContext.parameters
     }
     return queryResult;
 }

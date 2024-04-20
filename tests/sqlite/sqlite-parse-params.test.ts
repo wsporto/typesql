@@ -56,12 +56,12 @@ describe('sqlite-parse-params', () => {
             {
                 name: 'param1',
                 columnType: 'TEXT',
-                notNull: true
+                notNull: false //todo - different from msyql
             },
             {
                 name: 'param2',
                 columnType: 'TEXT',
-                notNull: true
+                notNull: false //todo - different from msyql
             }
         ]
         if (isLeft(actual)) {

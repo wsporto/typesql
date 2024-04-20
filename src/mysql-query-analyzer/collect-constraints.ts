@@ -6,7 +6,7 @@ import {
     InsertStatementContext, DeleteStatementContext
 } from '@wsporto/ts-mysql-parser';
 
-import { ColumnSchema, ColumnDef, TypeVar, Type, Constraint, SubstitutionHash } from "./types";
+import { ColumnSchema, ColumnDef, TypeVar, Type, Constraint, SubstitutionHash, TypeAndNullInfer } from "./types";
 import { findColumn, splitName } from "./select-columns";
 import { MySqlType, InferType } from "../mysql-mapping";
 import { unify } from "./unify";
@@ -106,12 +106,12 @@ export function getDeleteColumns(deleteStatement: DeleteStatementContext, dbSche
     return columns;
 }
 
-export function generateTypeInfo(namedNodes: TypeVar[], constraints: Constraint[]): InferType[] {
+export function generateTypeInfo(namedNodes: TypeAndNullInfer[], constraints: Constraint[]): InferType[] {
 
     const substitutions: SubstitutionHash = {}
     unify(constraints, substitutions);
 
-    const parameters = namedNodes.map(param => getVarType(substitutions, param));
+    const parameters = namedNodes.map(param => getVarType(substitutions, param.type));
     return parameters;
 }
 

@@ -41,7 +41,7 @@ export type TraverseContext = {
     dbSchema: ColumnSchema[];
     withSchema: ColumnDef[];
     constraints: Constraint[];
-    parameters: TypeVar[];
+    parameters: TypeAndNullInfer[];
     fromColumns: ColumnDef[];
     subQueryColumns: ColumnDef[];
     subQuery: boolean;
