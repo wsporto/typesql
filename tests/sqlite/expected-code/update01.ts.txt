@@ -1,7 +1,7 @@
 import { Database } from 'better-sqlite3';
 
 export type Update01Data = {
-	value?: number;
+	param1?: number;
 }
 
 export type Update01Params = {
@@ -18,5 +18,5 @@ export function update01(db: Database, data: Update01Data, params: Update01Param
 	UPDATE mytable1 SET value=? WHERE id=?
 	`
 	return db.prepare(sql)
-		.run([data.value, params.param1]) as Update01Result;
+		.run([data.param1, params.param1]) as Update01Result;
 }

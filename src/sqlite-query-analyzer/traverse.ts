@@ -669,7 +669,7 @@ function traverse_update_stmt(update_stmt: Update_stmtContext, traverseContext: 
     expr_list.forEach((expr, index) => {
         paramsBefore = traverseContext.parameters.length;
         const exprType = traverse_expr(expr, { ...traverseContext, fromColumns });
-        if (index < columns.length) {
+        if (expr.start.start < update_stmt.WHERE_().symbol.start) {
 
             const col = columns[index];
             traverseContext.constraints.push({
@@ -677,12 +677,15 @@ function traverse_update_stmt(update_stmt: Update_stmtContext, traverseContext: 
                 type1: col.type,
                 type2: exprType.type
             });
-            updateColumns.push({
-                name: col.name,
-                type: exprType.type,
-                notNull: exprType.notNull && col.notNull,
-                table: ""
-            })
+            traverseContext.parameters.slice(paramsBefore).forEach((param, index) => {
+                updateColumns.push({
+                    name: param.name,
+                    type: exprType.type,
+                    notNull: exprType.notNull && col.notNull,
+                    table: ""
+                })
+            });
+
         }
         else {
             traverseContext.parameters.slice(paramsBefore).forEach((param, index) => {
