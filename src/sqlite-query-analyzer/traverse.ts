@@ -146,6 +146,28 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
             selectResult.orderByColumns = orderByColumns;
         }
     }
+    const limit = select_stmt.limit_stmt();
+    if (limit) {
+        const expr_list = limit.expr_list();
+        const expr1 = expr_list[0];
+        const exrp1Type = traverse_expr(expr1, traverseContext);
+        exrp1Type.notNull = true;
+        traverseContext.constraints.push({
+            expression: expr1.getText(),
+            type1: exrp1Type.type,
+            type2: freshVar('INTEGER', 'INTEGER')
+        })
+        if (expr_list.length == 2) {
+            const expr2 = expr_list[1];
+            const exrp2Type = traverse_expr(expr2, traverseContext);
+            exrp2Type.notNull = true;
+            traverseContext.constraints.push({
+                expression: expr2.getText(),
+                type1: exrp2Type.type,
+                type2: freshVar('INTEGER', 'INTEGER')
+            })
+        }
+    }
 
     return selectResult;
 }

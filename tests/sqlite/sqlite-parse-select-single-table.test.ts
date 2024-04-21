@@ -861,4 +861,41 @@ describe('sqlite-Test simple select statements', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     })
+
+    it('SELECT id FROM mytable1 LIMIT ?, ?', () => {
+        const sql = 'SELECT id FROM mytable1 LIMIT ?, ?'
+
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: 'mytable1'
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'INTEGER',
+                    notNull: true
+                },
+                {
+                    name: 'param2',
+                    columnType: 'INTEGER',
+                    notNull: true
+                }
+            ]
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    });
+
 });
