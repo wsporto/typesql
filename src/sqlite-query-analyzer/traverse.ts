@@ -542,23 +542,23 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
     }
 
     if (expr.CASE_()) {
-        const resultTypes: TypeVar[] = []; //then and else
-        const whenTypes: TypeVar[] = [];
+        const resultTypes: TypeAndNullInfer[] = []; //then and else
+        const whenTypes: TypeAndNullInfer[] = [];
         expr.expr_list().forEach((expr_, index) => {
             const type = traverse_expr(expr_, traverseContext);
             if (index % 2 == 0 && (!expr.ELSE_() || index < expr.expr_list().length - 1)) {
-                whenTypes.push(type.type);
+                whenTypes.push(type);
             }
             else {
-                resultTypes.push(type.type);
+                resultTypes.push(type);
             }
         });
         resultTypes.forEach((resultType, index) => {
             if (index > 0) {
                 traverseContext.constraints.push({
                     expression: expr.getText(),
-                    type1: resultTypes[0],
-                    type2: resultType
+                    type1: resultTypes[0].type,
+                    type2: resultType.type
                 })
             }
         });
@@ -566,14 +566,14 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
             traverseContext.constraints.push({
                 expression: expr.getText(),
                 type1: freshVar('INTEGER', 'INTEGER'),
-                type2: whenType
+                type2: whenType.type
             })
         });
         const type = resultTypes[0];
         return {
             name: type.name,
-            type: type,
-            notNull: false,
+            type: type.type,
+            notNull: expr.ELSE_() ? resultTypes.every(type => type.notNull) : false,
             table: type.table || ''
         };
     }
