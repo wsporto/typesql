@@ -684,4 +684,88 @@ describe('sqlite-Test simple select statements', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     })
+
+    it('select value from mytable1 order by ?', () => {
+        const sql = `
+        select value from mytable1 order by ?
+        `;
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'value',
+                    type: 'INTEGER',
+                    notNull: false,
+                    table: 'mytable1'
+                }
+            ],
+            orderByColumns: ['id', 'mytable1.id', 'value', 'mytable1.value'],
+            parameters: []
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('select value as myValue from mytable1 order by ?', () => {
+        const sql = `
+        select value as myValue from mytable1 order by ?
+        `;
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'myValue',
+                    type: 'INTEGER',
+                    notNull: false,
+                    table: 'mytable1'
+                }
+            ],
+            orderByColumns: ['id', 'mytable1.id', 'value', 'mytable1.value', 'myValue'],
+            parameters: []
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('select with order by without parameter', () => {
+        const sql = `
+        select value from mytable1 order by value
+        `;
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'value',
+                    type: 'INTEGER',
+                    notNull: false,
+                    table: 'mytable1'
+                }
+            ],
+            //shouldn't include order by columns because there is no parameters on the order by clause
+            //orderByColumns: ['id', 'value'],
+            parameters: []
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
 });

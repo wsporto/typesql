@@ -481,6 +481,7 @@ export type SelectResult = {
     queryType: 'Select';
     columns: TypeAndNullInfer[];
     multipleRowsResult: boolean;
+    orderByColumns?: string[];
 }
 export type InsertResult = {
     queryType: 'Insert';
@@ -2097,7 +2098,7 @@ function isUniqueKeyComparation(compare: BoolPriContext | PredicateContext, from
     return false; //isUniqueKeyComparation = false
 }
 
-function getOrderByColumns(fromColumns: ColumnDef[], selectColumns: TypeAndNullInfer[]): string[] {
+export function getOrderByColumns(fromColumns: ColumnDef[], selectColumns: TypeAndNullInfer[]): string[] {
     const orderByColumns: string[] = [];
     fromColumns.forEach((col) => {
         const ambiguous = isAmbiguous(fromColumns, col.columnName);

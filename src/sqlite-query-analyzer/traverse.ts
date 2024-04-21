@@ -2,18 +2,14 @@ import { Select_stmtContext, Sql_stmtContext, ExprContext, Table_or_subqueryCont
 import { ColumnDef, TraverseContext, TypeAndNullInfer, TypeVar } from "../mysql-query-analyzer/types";
 import { filterColumns, findColumn, includeColumn, splitName } from "../mysql-query-analyzer/select-columns";
 import { createColumnType, freshVar } from "../mysql-query-analyzer/collect-constraints";
-import { DeleteResult, InsertResult, QuerySpecificationResult, SelectResult, TraverseResult2, UpdateResult } from "../mysql-query-analyzer/traverse";
+import { DeleteResult, InsertResult, QuerySpecificationResult, SelectResult, TraverseResult2, UpdateResult, getOrderByColumns } from "../mysql-query-analyzer/traverse";
 
 export function traverse_Sql_stmtContext(sql_stmt: Sql_stmtContext, traverseContext: TraverseContext): TraverseResult2 {
 
     const select_stmt = sql_stmt.select_stmt();
     if (select_stmt) {
-        const queryResult = traverse_select_stmt(select_stmt, traverseContext);
-        return {
-            queryType: 'Select',
-            columns: queryResult.columns,
-            multipleRowsResult: isMultipleRowResult(select_stmt, queryResult.fromColumns),
-        };
+        const selectResult = traverse_select_stmt(select_stmt, traverseContext);
+        return selectResult;
     }
     const insert_stmt = sql_stmt.insert_stmt();
     if (insert_stmt) {
@@ -33,7 +29,7 @@ export function traverse_Sql_stmtContext(sql_stmt: Sql_stmtContext, traverseCont
     throw Error("traverse_Sql_stmtContext");
 }
 
-function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: TraverseContext): QuerySpecificationResult {
+function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: TraverseContext): SelectResult {
     const common_table_stmt = select_stmt.common_table_stmt();
     if (common_table_stmt) {
         const common_table_expression = common_table_stmt.common_table_expression_list()
@@ -127,7 +123,31 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
         })
     }
 
-    return mainQuery;
+    const selectResult: SelectResult = {
+        queryType: 'Select',
+        columns: mainQuery.columns,
+        multipleRowsResult: isMultipleRowResult(select_stmt, mainQuery.fromColumns),
+    }
+    const order_by_stmt = select_stmt.order_by_stmt();
+    let hasOrderByParameter = false;
+    if (order_by_stmt) {
+        const ordering_term_list = order_by_stmt.ordering_term_list();
+        ordering_term_list.forEach(ordering_term => {
+            const expr = ordering_term.expr();
+            if (expr.getText() == '?') {
+                hasOrderByParameter = true;
+            }
+            // else {
+            //     traverse_expr(expr, traverseContext);
+            // }
+        })
+        if (hasOrderByParameter) {
+            const orderByColumns = getOrderByColumns(mainQuery.fromColumns, mainQuery.columns);
+            selectResult.orderByColumns = orderByColumns;
+        }
+    }
+
+    return selectResult;
 }
 
 function traverse_table_or_subquery(table_or_subquery: Table_or_subqueryContext[], traverseContext: TraverseContext): ColumnDef[] {

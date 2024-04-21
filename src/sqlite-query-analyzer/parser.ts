@@ -83,6 +83,9 @@ function createSchemaDefinition(sql: string, sql_stmtContext: Sql_stmtContext, d
             columns: columnResult,
             parameters: paramsResult,
         }
+        if (queryResult.orderByColumns) {
+            schemaDef.orderByColumns = queryResult.orderByColumns;
+        }
         return right(schemaDef);
     }
     if (queryResult.queryType == 'Insert') {
