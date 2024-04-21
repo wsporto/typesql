@@ -584,7 +584,7 @@ export function isMultipleRowResult(select_stmt: Select_stmtContext, fromColumns
             return false;
         }
         const _whereExpr = select_core._whereExpr;
-        const isSingleResult = _whereExpr && where_is_single_result(_whereExpr, fromColumns);
+        const isSingleResult = select_core.join_clause() == null && _whereExpr && where_is_single_result(_whereExpr, fromColumns);
         if (isSingleResult == true) {
             return false;
         }
