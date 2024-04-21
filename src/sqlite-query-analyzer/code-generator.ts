@@ -7,13 +7,13 @@ import { ParameterDef, SchemaDef, TsFieldDescriptor } from "../types";
 import { SQLiteType } from "./types";
 import { Database } from "better-sqlite3";
 
-export function generateTsCode(db: Database, sql: string, queryName: string, sqliteDbSchema: ColumnSchema[]): Either<string, string> {
+export function generateTsCode(db: Database, sql: string, queryName: string, sqliteDbSchema: ColumnSchema[], isCrud = false): Either<string, string> {
     const queryInfo = prepareAndParse(db, sql, sqliteDbSchema);
     if (isLeft(queryInfo)) {
         return left('//Invalid sql');
     }
     const tsDescriptor = createTsDescriptor(queryInfo.right);
-    const code = generateCodeFromTsDescriptor(queryName, tsDescriptor);
+    const code = generateCodeFromTsDescriptor(queryName, tsDescriptor, isCrud);
     return right(code);
 }
 
@@ -65,7 +65,7 @@ function mapColumnType(sqliteType: SQLiteType) {
     }
 }
 
-function generateCodeFromTsDescriptor(queryName: string, tsDescriptor: TsDescriptor) {
+function generateCodeFromTsDescriptor(queryName: string, tsDescriptor: TsDescriptor, isCrud: boolean) {
 
     const writer = new CodeBlockWriter({
         useTabs: true
@@ -86,15 +86,22 @@ function generateCodeFromTsDescriptor(queryName: string, tsDescriptor: TsDescrip
     const generateOrderBy = tsDescriptor.orderByColumns != null && tsDescriptor.orderByColumns.length > 0;
     const uniqueParams = removeDuplicatedParameters2(tsDescriptor.parameters);
     const uniqueUpdateParams = removeDuplicatedParameters2(tsDescriptor.data || []);
+    const isUpdateCrud = isCrud && queryType == 'Update';
 
     writer.writeLine(`import { Database } from 'better-sqlite3';`);
 
     if (uniqueUpdateParams.length > 0) {
         writer.blankLine();
         writer.write(`export type ${dataTypeName} =`).block(() => {
-            uniqueUpdateParams.forEach((field) => {
+            uniqueUpdateParams.forEach((field, index) => {
                 const optionalOp = field.notNull ? '' : '?';
-                writer.writeLine(`${field.name}${optionalOp}: ${field.tsType};`);
+                if (!isUpdateCrud) {
+                    writer.writeLine(`${field.name}${optionalOp}: ${field.tsType};`);
+                }
+                else if (index % 2 != 0) {//updateCrud-> :nameSet, :name, valueSet, :value...
+                    const orNull = field.notNull ? '' : ' | null';
+                    writer.writeLine(`${field.name}${optionalOp}: ${field.tsType}${orNull};`);
+                }
             });
         });
     }
@@ -122,8 +129,16 @@ function generateCodeFromTsDescriptor(queryName: string, tsDescriptor: TsDescrip
     functionArguments += queryType == 'Update' ? `, data: ${dataTypeName}` : '';
     functionArguments += tsDescriptor.parameters.length > 0 || generateOrderBy ? ', params: ' + paramsTypeName : '';
 
-    const allParameters = (tsDescriptor.data?.map(param => toParamValue(param, 'data')) || [])
-        .concat(tsDescriptor.parameters.map(param => toParamValue(param, 'params')));
+    const allParameters = (tsDescriptor.data?.map((param, index) => {
+        if (isUpdateCrud && index % 2 == 0) {
+            const nextField = tsDescriptor.data![index + 1];
+            return `data.${nextField.name} !== undefined ? 1 : 0`;
+        }
+        else {
+            return 'data.' + toParamValue(param);
+        }
+    }) || [])
+        .concat(tsDescriptor.parameters.map(param => 'params.' + toParamValue(param)));
 
     const queryParams = allParameters.length > 0 ? '[' + allParameters.join(', ') + ']' : '';
 
@@ -173,9 +188,9 @@ function generateCodeFromTsDescriptor(queryName: string, tsDescriptor: TsDescrip
     return writer.toString();
 }
 
-function toParamValue(param: TsFieldDescriptor, paramVar: 'params' | 'data'): string {
+function toParamValue(param: TsFieldDescriptor): string {
     if (param.tsType == 'Date') {
-        return paramVar + '.' + param.name + '.toISOString()';
+        return param.name + '.toISOString()';
     }
-    return paramVar + '.' + param.name;
+    return param.name;
 }

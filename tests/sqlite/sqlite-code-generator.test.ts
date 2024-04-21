@@ -105,4 +105,17 @@ describe('sqlite-code-generator', () => {
 		}
 		assert.deepStrictEqual(actual.right, expected);
 	})
+
+	it('crud-update01 - UPDATE mytable1 SET value=? WHERE id=?', () => {
+		const sql = 'UPDATE mytable1 SET value = CASE WHEN :valueSet THEN :value ELSE value END';
+
+		const isCrud = true;
+		const actual = generateTsCode(db, sql, 'crud-update01', sqliteDbSchema, isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/crud-update01.ts.txt', 'utf-8').replace(/\r/gm, '');//
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	})
 });

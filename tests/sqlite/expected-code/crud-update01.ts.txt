@@ -1,0 +1,18 @@
+import { Database } from 'better-sqlite3';
+
+export type CrudUpdate01Data = {
+	value?: number | null;
+}
+
+export type CrudUpdate01Result = {
+	changes: number;
+	lastInsertRowid: number;
+}
+
+export function crudUpdate01(db: Database, data: CrudUpdate01Data): CrudUpdate01Result {
+	const sql = `
+	UPDATE mytable1 SET value = CASE WHEN ? THEN ? ELSE value END
+	`
+	return db.prepare(sql)
+		.run([data.value !== undefined ? 1 : 0, data.value]) as CrudUpdate01Result;
+}
