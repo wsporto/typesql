@@ -571,13 +571,21 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         });
         const type = resultTypes[0];
         return {
-            name: type.name,
+            name: extractOriginalSql(expr),
             type: type.type,
             notNull: expr.ELSE_() ? resultTypes.every(type => type.notNull) : false,
             table: type.table || ''
         };
     }
     throw Error('traverse_expr not supported:' + expr.getText());
+}
+
+function extractOriginalSql(rule: ExprContext) {
+
+    const startIndex = rule.start.start;
+    const stopIndex = rule.stop?.stop || startIndex;
+    const result = rule.start.getInputStream()?.getText(startIndex, stopIndex);
+    return result;
 }
 
 function traverse_column_name(column_name: Column_nameContext, traverseContext: TraverseContext): TypeAndNullInfer {
