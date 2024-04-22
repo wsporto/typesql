@@ -118,4 +118,17 @@ describe('sqlite-code-generator', () => {
 		}
 		assert.deepStrictEqual(actual.right, expected);
 	})
+
+	it('select05 - SELECT id FROM mytable1 ORDER BY ?', () => {
+		const sql = 'SELECT id FROM mytable1 ORDER BY ?';
+
+		const isCrud = true;
+		const actual = generateTsCode(db, sql, 'select05', sqliteDbSchema, isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/select05.ts.txt', 'utf-8').replace(/\r/gm, '');//
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	})
 });

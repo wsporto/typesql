@@ -1,7 +1,7 @@
 import { Either, isLeft, left, right } from "fp-ts/lib/Either";
 import { ColumnInfo, ColumnSchema } from "../mysql-query-analyzer/types";
 import { prepareAndParse } from "./parser";
-import { TsDescriptor, capitalize, convertToCamelCaseName, removeDuplicatedParameters2 } from "../code-generator";
+import { TsDescriptor, capitalize, convertToCamelCaseName, removeDuplicatedParameters2, replaceOrderByParam } from "../code-generator";
 import CodeBlockWriter from "code-block-writer";
 import { ParameterDef, SchemaDef, TsFieldDescriptor } from "../types";
 import { SQLiteType } from "./types";
@@ -26,6 +26,7 @@ function createTsDescriptor(queryInfo: SchemaDef): TsDescriptor {
         parameterNames: [],
         parameters: queryInfo.parameters.map(param => mapParameterToTsFieldDescriptor(param)),
         data: queryInfo.data?.map(param => mapParameterToTsFieldDescriptor(param)),
+        orderByColumns: queryInfo.orderByColumns
     }
     return tsDescriptor;
 }
@@ -106,13 +107,16 @@ function generateCodeFromTsDescriptor(queryName: string, tsDescriptor: TsDescrip
         });
     }
 
-    if (uniqueParams.length > 0) {
+    if (uniqueParams.length > 0 || generateOrderBy) {
         writer.blankLine();
         writer.write(`export type ${paramsTypeName} =`).block(() => {
             uniqueParams.forEach((field) => {
                 const optionalOp = field.notNull ? '' : '?';
                 writer.writeLine(`${field.name}${optionalOp}: ${field.tsType};`);
             });
+            if (generateOrderBy) {
+                writer.writeLine(`orderBy: [${orderByTypeName}, 'asc' | 'desc'][];`)
+            }
         });
     }
 
@@ -146,7 +150,8 @@ function generateCodeFromTsDescriptor(queryName: string, tsDescriptor: TsDescrip
 
     if (queryType == 'Select') {
         writer.write(`export function ${camelCaseName}(${functionArguments}): ${returnType}`).block(() => {
-            const sqlSplit = sql.split('\n');
+            const processedSql = tsDescriptor.orderByColumns ? replaceOrderByParam(sql) : sql;
+            const sqlSplit = processedSql.split('\n');
             writer.write('const sql = `').newLine();
             sqlSplit.forEach(sqlLine => {
                 writer.indent().write(sqlLine).newLine();
@@ -183,6 +188,20 @@ function generateCodeFromTsDescriptor(queryName: string, tsDescriptor: TsDescrip
             })
             writer.writeLine('return result;');
         });
+    }
+    if (tsDescriptor.orderByColumns) {
+        writer.blankLine();
+        writer.writeLine(`const orderByFragments = [${tsDescriptor.orderByColumns.map(orderBy => `'${orderBy}'`)}] as const;`);
+        writer.blankLine();
+        writer.writeLine(`export type ${orderByTypeName} = typeof orderByFragments[number];`);
+        writer.blankLine();
+        writer.write(`function escapeOrderBy(orderBy: ${paramsTypeName}['orderBy']): string`).block(() => {
+            writer.writeLine(`return orderBy.map(order => \`\${escapeSQL(order[0])} \${order[1] == 'desc' ? 'desc' : 'asc'}\`).join(', ');`)
+        });
+        writer.blankLine();
+        writer.write(`export function escapeSQL(value: string)`).block(() => {
+            writer.writeLine(`return '"' + String(value).replace(/"/g, '""') + '"';`)
+        })
     }
 
     return writer.toString();
