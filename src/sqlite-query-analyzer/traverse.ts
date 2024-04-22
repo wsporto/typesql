@@ -1,5 +1,5 @@
-import { Select_stmtContext, Sql_stmtContext, ExprContext, Table_or_subqueryContext, Sql_stmt_listContext, Select_coreContext, Result_columnContext, Insert_stmtContext, Column_nameContext, Update_stmtContext, Delete_stmtContext } from "@wsporto/ts-mysql-parser/dist/sqlite";
-import { ColumnDef, TraverseContext, TypeAndNullInfer, TypeVar } from "../mysql-query-analyzer/types";
+import { Select_stmtContext, Sql_stmtContext, ExprContext, Table_or_subqueryContext, Result_columnContext, Insert_stmtContext, Column_nameContext, Update_stmtContext, Delete_stmtContext } from "@wsporto/ts-mysql-parser/dist/sqlite";
+import { ColumnDef, TraverseContext, TypeAndNullInfer } from "../mysql-query-analyzer/types";
 import { filterColumns, findColumn, includeColumn, splitName } from "../mysql-query-analyzer/select-columns";
 import { createColumnType, freshVar } from "../mysql-query-analyzer/collect-constraints";
 import { DeleteResult, InsertResult, QuerySpecificationResult, SelectResult, TraverseResult2, UpdateResult, getOrderByColumns } from "../mysql-query-analyzer/traverse";
@@ -104,7 +104,10 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
             traverse_expr(where, { ...traverseContext, fromColumns: columnsResult });
         })
         const querySpecification: QuerySpecificationResult = {
-            columns: listType,
+            columns: listType.map(col => ({
+                ...col,
+                notNull: col.notNull || isNotNull(col.name, whereList[0])
+            })),
             fromColumns: columnsResult //TODO - return isMultipleRowResult instead
         }
         return querySpecification;
@@ -620,6 +623,48 @@ function traverse_column_name(column_name: Column_nameContext, traverseContext: 
         table: column.tableAlias || column.table,
         notNull: column.notNull
     };
+}
+
+export function isNotNull(columnName: string, where: ExprContext | null): boolean {
+    if (where == null) {
+        return false;
+    }
+    if (where.AND_()) {
+        const ifNullList = where.expr_list().map(expr => isNotNull(columnName, expr));
+        const result = ifNullList.some(v => v);
+        return result;
+    }
+    else if (where.OR_()) {
+        const possibleNullList = where.expr_list().map(expr => isNotNull(columnName, expr))
+        const result = possibleNullList.every(v => v)
+        return result;
+    }
+    else {
+        return isNotNullExpr(columnName, where);
+    }
+}
+
+function isNotNullExpr(columnName: string, expr: ExprContext): boolean {
+    if (expr.OPEN_PAR() && expr.CLOSE_PAR()) {
+        const innerExpr = expr.expr(0);
+        return isNotNull(columnName, innerExpr);
+    }
+    if (expr.ASSIGN()
+        || expr.GT()
+        || (expr.IS_() && expr.expr_list().length == 2 && expr.expr(1).getText() == 'notnull')) {
+        const exprLeft = expr.expr(0);
+        const exprRight = expr.expr(1);
+        const column_name_left = exprLeft.column_name();
+        const column_name_right = exprRight.column_name();
+        if (column_name_left || column_name_right) {
+            const columnLeft = column_name_left?.getText();
+            const columnRight = column_name_right?.getText();
+            if (columnLeft == columnName || columnRight == columnName) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 export function isMultipleRowResult(select_stmt: Select_stmtContext, fromColumns: ColumnDef[]) {
