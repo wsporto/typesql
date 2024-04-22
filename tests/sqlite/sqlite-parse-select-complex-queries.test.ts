@@ -232,4 +232,63 @@ describe('sqlite-parse-select-complex-queries', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     })
+
+    it('WITH (query with inner join and parameters)', () => {
+        const sql = `
+        WITH t1 AS
+        (
+            SELECT mytable1.*, mytable2.name
+            FROM mytable1
+            INNER JOIN mytable2 ON mytable1.id = mytable2.id
+            WHERE mytable1.value > ? and mytable2.name  = ?
+        )
+        SELECT t1.*
+        FROM t1
+        ORDER BY t1.value DESC
+        LIMIT 10
+        `
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: 't1'
+                },
+                {
+                    columnName: 'value',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: 't1'
+                },
+                {
+                    columnName: 'name',
+                    type: 'TEXT',
+                    notNull: true,
+                    table: 't1'
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'INTEGER',
+                    notNull: true
+                },
+                {
+                    name: 'param2',
+                    columnType: 'TEXT',
+                    notNull: true
+                }
+            ]
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
 });
