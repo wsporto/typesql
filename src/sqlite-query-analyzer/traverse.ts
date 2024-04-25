@@ -1,11 +1,9 @@
-import { Select_stmtContext, Sql_stmtContext, ExprContext, Table_or_subqueryContext, Result_columnContext, Insert_stmtContext, Column_nameContext, Update_stmtContext, Delete_stmtContext, Join_constraintContext, Table_nameContext, Join_operatorContext, Join_clauseContext } from "@wsporto/ts-mysql-parser/dist/sqlite";
+import { Select_stmtContext, Sql_stmtContext, ExprContext, Table_or_subqueryContext, Result_columnContext, Insert_stmtContext, Column_nameContext, Update_stmtContext, Delete_stmtContext, Join_constraintContext, Table_nameContext } from "@wsporto/ts-mysql-parser/dist/sqlite";
 import { ColumnDef, FieldName, TraverseContext, TypeAndNullInfer } from "../mysql-query-analyzer/types";
-import { filterColumns, findColumn, includeColumn, splitName } from "../mysql-query-analyzer/select-columns";
+import { filterColumns, findColumn, findColumnSchema, includeColumn, splitName } from "../mysql-query-analyzer/select-columns";
 import { createColumnType, freshVar } from "../mysql-query-analyzer/collect-constraints";
 import { DeleteResult, InsertResult, QuerySpecificationResult, SelectResult, TraverseResult2, UpdateResult, getOrderByColumns } from "../mysql-query-analyzer/traverse";
 import { Relation2 } from "./sqlite-describe-nested-query";
-import { TerminalNode } from "antlr4ts/tree";
-import { ParserRuleContext } from "antlr4ts";
 
 export function traverse_Sql_stmtContext(sql_stmt: Sql_stmtContext, traverseContext: TraverseContext): TraverseResult2 {
 
@@ -204,7 +202,8 @@ function traverse_table_or_subquery(table_or_subquery_list: Table_or_subqueryCon
             const relation: Relation2 = {
                 name: tableName.name,
                 alias: table_alias,
-                parentRelation: ''
+                parentRelation: '',
+                cardinality: 'one'
             }
 
             if (join_constraint_list && index > 0) { //index 0 is the FROM (root relation)
@@ -217,6 +216,12 @@ function traverse_table_or_subquery(table_or_subquery_list: Table_or_subqueryCon
                     allJoinColumsn.forEach(joinColumn => {
                         if (joinColumn.prefix != relation.name && joinColumn.prefix != relation.alias) {
                             relation.parentRelation = joinColumn.prefix;
+                        }
+                        if (joinColumn.prefix == relation.name || joinColumn.prefix == relation.alias) {
+                            const column = findColumnSchema(tableName.name, joinColumn.name, traverseContext.dbSchema);
+                            if (column?.columnKey != 'PRI' && column?.columnKey != 'UNI') {
+                                relation.cardinality = 'many'
+                            }
                         }
                     })
                 }
@@ -870,29 +875,13 @@ function traverse_delete_stmt(delete_stmt: Delete_stmtContext, traverseContext: 
     return queryResult;
 }
 
-function getAllColumns<T>(expr: T): FieldName[] {
-    const tokens = getExpressions<Table_nameContext>(<ParserRuleContext>expr, Table_nameContext);
-    const fields = tokens.map(t => {
-        const fieldName = splitName(t.parentCtx?.getText()!);
-        return fieldName;
-    })
-    return fields;
-}
-
-export function getExpressions<T>(ctx: ParserRuleContext, exprType: any): T[] {
-    const tokens: T[] = [];
-    collectExpr(tokens, ctx, exprType);
-    return tokens;
-}
-
-function collectExpr<T>(tokens: T[], parent: ParserRuleContext, exprType: any) {
-
-    if (parent instanceof exprType) {
-        tokens.push(parent as any);
-    }
-    parent.children?.forEach(child => {
-        if (!(child instanceof TerminalNode)) {
-            collectExpr(tokens, <ParserRuleContext>child, exprType);
-        }
-    })
+function getAllColumns(expr: ExprContext): FieldName[] {
+    const columns: FieldName[] = [];
+    if (expr.ASSIGN()) {
+        const expr1 = expr.expr(0);
+        const expr2 = expr.expr(1);
+        columns.push(splitName(expr1.getText()));
+        columns.push(splitName(expr2.getText()));
+    };
+    return columns;
 }

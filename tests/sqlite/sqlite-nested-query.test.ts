@@ -43,7 +43,8 @@ describe('sqlite-nested-query', () => {
 				relations: [
 					{
 						name: 'posts',
-						alias: 'p'
+						alias: 'p',
+						cardinality: 'many',
 					}
 				]
 			},
@@ -109,7 +110,8 @@ describe('sqlite-nested-query', () => {
 				relations: [
 					{
 						name: 'posts',
-						alias: ''
+						alias: '',
+						cardinality: 'many'
 					}
 				]
 			},
@@ -192,11 +194,13 @@ describe('sqlite-nested-query', () => {
 				relations: [
 					{
 						name: 'posts',
-						alias: 'p'
+						alias: 'p',
+						cardinality: 'many'
 					},
 					{
 						name: 'roles',
-						alias: 'r'
+						alias: 'r',
+						cardinality: 'many'
 					}
 				]
 			},
