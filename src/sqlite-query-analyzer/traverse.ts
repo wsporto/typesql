@@ -1,8 +1,11 @@
-import { Select_stmtContext, Sql_stmtContext, ExprContext, Table_or_subqueryContext, Result_columnContext, Insert_stmtContext, Column_nameContext, Update_stmtContext, Delete_stmtContext } from "@wsporto/ts-mysql-parser/dist/sqlite";
-import { ColumnDef, TraverseContext, TypeAndNullInfer } from "../mysql-query-analyzer/types";
+import { Select_stmtContext, Sql_stmtContext, ExprContext, Table_or_subqueryContext, Result_columnContext, Insert_stmtContext, Column_nameContext, Update_stmtContext, Delete_stmtContext, Join_constraintContext, Table_nameContext } from "@wsporto/ts-mysql-parser/dist/sqlite";
+import { ColumnDef, FieldName, TraverseContext, TypeAndNullInfer } from "../mysql-query-analyzer/types";
 import { filterColumns, findColumn, includeColumn, splitName } from "../mysql-query-analyzer/select-columns";
 import { createColumnType, freshVar } from "../mysql-query-analyzer/collect-constraints";
 import { DeleteResult, InsertResult, QuerySpecificationResult, SelectResult, TraverseResult2, UpdateResult, getOrderByColumns } from "../mysql-query-analyzer/traverse";
+import { Relation2 } from "./sqlite-describe-nested-query";
+import { TerminalNode } from "antlr4ts/tree";
+import { ParserRuleContext } from "antlr4ts";
 
 export function traverse_Sql_stmtContext(sql_stmt: Sql_stmtContext, traverseContext: TraverseContext): TraverseResult2 {
 
@@ -29,7 +32,7 @@ export function traverse_Sql_stmtContext(sql_stmt: Sql_stmtContext, traverseCont
     throw Error("traverse_Sql_stmtContext");
 }
 
-function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: TraverseContext): SelectResult {
+function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: TraverseContext, subQuery = false): SelectResult {
     const common_table_stmt = select_stmt.common_table_stmt();
     if (common_table_stmt) {
         const common_table_expression = common_table_stmt.common_table_expression_list()
@@ -57,17 +60,19 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
 
         const table_or_subquery = select_core.table_or_subquery_list();
         if (table_or_subquery) {
-            const fields = traverse_table_or_subquery(table_or_subquery, traverseContext);
+            const fields = traverse_table_or_subquery(table_or_subquery, null, traverseContext);
             columnsResult.push(...fields);
         }
         const join_clause = select_core.join_clause();
         if (join_clause) {
             const join_table_or_subquery = join_clause.table_or_subquery_list();
-            const fields = traverse_table_or_subquery(join_table_or_subquery, traverseContext);
+            const join_constraint_list = join_clause.join_constraint_list();
+            const fields = traverse_table_or_subquery(join_table_or_subquery, join_constraint_list, traverseContext);
             columnsResult.push(...fields);
         }
 
         const result_column = select_core.result_column_list();
+        const fromColumns = subQuery ? traverseContext.fromColumns.concat(columnsResult) : columnsResult;
 
         result_column.forEach(result_column => {
             if (result_column.STAR()) {
@@ -89,7 +94,8 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
             const expr = result_column.expr();
             const alias = result_column.column_alias()?.getText();
             if (expr) {
-                const exprType = traverse_expr(expr, { ...traverseContext, fromColumns: columnsResult });
+
+                const exprType = traverse_expr(expr, { ...traverseContext, fromColumns: fromColumns });
                 if (exprType.type.kind == 'TypeVar') {
                     if (alias) {
                         exprType.name = alias;
@@ -101,7 +107,7 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
 
         const whereList = select_core.expr_list();
         whereList.forEach(where => {
-            traverse_expr(where, { ...traverseContext, fromColumns: columnsResult });
+            traverse_expr(where, { ...traverseContext, fromColumns: fromColumns });
         })
         const querySpecification: QuerySpecificationResult = {
             columns: listType.map(col => ({
@@ -130,6 +136,7 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
         queryType: 'Select',
         columns: mainQuery.columns,
         multipleRowsResult: isMultipleRowResult(select_stmt, mainQuery.fromColumns),
+        relations: traverseContext.relations
     }
     const order_by_stmt = select_stmt.order_by_stmt();
     let hasOrderByParameter = false;
@@ -175,15 +182,37 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
     return selectResult;
 }
 
-function traverse_table_or_subquery(table_or_subquery: Table_or_subqueryContext[], traverseContext: TraverseContext): ColumnDef[] {
+function traverse_table_or_subquery(table_or_subquery_list: Table_or_subqueryContext[], join_constraint_list: Join_constraintContext[] | null, traverseContext: TraverseContext): ColumnDef[] {
     const allFields: ColumnDef[] = [];
-    table_or_subquery.forEach(table_or_subquery => {
+    table_or_subquery_list.forEach((table_or_subquery, index) => {
         const table_name = table_or_subquery.table_name();
         const table_alias = table_or_subquery.table_alias()?.getText();
         if (table_name) {
             const tableName = splitName(table_name.any_name().getText());
             const fields = filterColumns(traverseContext.dbSchema, traverseContext.withSchema, table_alias, tableName);
             allFields.push(...fields);
+
+            const relation: Relation2 = {
+                name: tableName.name,
+                alias: table_alias,
+                parentRelation: ''
+            }
+
+            if (join_constraint_list && index > 0) { //index 0 is the FROM (root relation)
+                const join_constraint = join_constraint_list[index - 1];
+                const expr = join_constraint.expr(); //ON expr
+                if (expr) {
+                    traverse_expr(expr, { ...traverseContext, fromColumns: allFields });
+
+                    const allJoinColumsn = getAllColumns(expr);
+                    allJoinColumsn.forEach(joinColumn => {
+                        if (joinColumn.prefix != relation.name && joinColumn.prefix != relation.alias) {
+                            relation.parentRelation = joinColumn.prefix;
+                        }
+                    })
+                }
+            }
+            traverseContext.relations.push(relation);
         }
         const select_stmt = table_or_subquery.select_stmt();
         if (select_stmt) {
@@ -353,8 +382,9 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
     }
 
     const column_name = expr.column_name();
+    const table_name = expr.table_name();
     if (column_name) {
-        const type = traverse_column_name(column_name, traverseContext);
+        const type = traverse_column_name(column_name, table_name, traverseContext);
         return type;
     }
     const literal = expr.literal_value();
@@ -538,7 +568,7 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
     }
     const select_stmt = expr.select_stmt();
     if (select_stmt) {
-        const subQueryType = traverse_select_stmt(select_stmt, traverseContext);
+        const subQueryType = traverse_select_stmt(select_stmt, traverseContext, true);
         const type = { ...subQueryType.columns[0].type, table: '' };
         return {
             name: type.name,
@@ -613,8 +643,8 @@ function extractOriginalSql(rule: ExprContext) {
     return result;
 }
 
-function traverse_column_name(column_name: Column_nameContext, traverseContext: TraverseContext): TypeAndNullInfer {
-    const fieldName = splitName(column_name.getText());
+function traverse_column_name(column_name: Column_nameContext, table_name: Table_nameContext | null, traverseContext: TraverseContext): TypeAndNullInfer {
+    const fieldName: FieldName = { name: column_name.getText(), prefix: table_name?.getText() || '' }
     const column = findColumn(fieldName, traverseContext.fromColumns);
     const typeVar = freshVar(column.columnName, column.columnType.type, column.tableAlias || column.table);
     return {
@@ -741,7 +771,7 @@ function traverse_insert_stmt(insert_stmt: Insert_stmtContext, traverseContext: 
     const table_name = insert_stmt.table_name();
     const fromColumns = filterColumns(traverseContext.dbSchema, [], '', splitName(table_name.getText()));
     const columns = insert_stmt.column_name_list().map(column_name => {
-        return traverse_column_name(column_name, { ...traverseContext, fromColumns });
+        return traverse_column_name(column_name, null, { ...traverseContext, fromColumns });
     });
     const insertColumns: TypeAndNullInfer[] = [];
     const value_row_list = insert_stmt.values_clause().value_row_list();
@@ -778,7 +808,7 @@ function traverse_update_stmt(update_stmt: Update_stmtContext, traverseContext: 
     const column_name_list = Array.from({ length: update_stmt.ASSIGN_list().length })
         .map((_, i) => update_stmt.column_name(i));
     const columns = column_name_list.map(column_name => {
-        return traverse_column_name(column_name, { ...traverseContext, fromColumns });
+        return traverse_column_name(column_name, null, { ...traverseContext, fromColumns });
     });
     const updateColumns: TypeAndNullInfer[] = [];
     const whereParams: TypeAndNullInfer[] = [];
@@ -829,4 +859,31 @@ function traverse_delete_stmt(delete_stmt: Delete_stmtContext, traverseContext: 
         params: traverseContext.parameters
     }
     return queryResult;
+}
+
+function getAllColumns<T>(expr: T): FieldName[] {
+    const tokens = getExpressions<Table_nameContext>(<ParserRuleContext>expr, Table_nameContext);
+    const fields = tokens.map(t => {
+        const fieldName = splitName(t.parentCtx?.getText()!);
+        return fieldName;
+    })
+    return fields;
+}
+
+export function getExpressions<T>(ctx: ParserRuleContext, exprType: any): T[] {
+    const tokens: T[] = [];
+    collectExpr(tokens, ctx, exprType);
+    return tokens;
+}
+
+function collectExpr<T>(tokens: T[], parent: ParserRuleContext, exprType: any) {
+
+    if (parent instanceof exprType) {
+        tokens.push(parent as any);
+    }
+    parent.children?.forEach(child => {
+        if (!(child instanceof TerminalNode)) {
+            collectExpr(tokens, <ParserRuleContext>child, exprType);
+        }
+    })
 }

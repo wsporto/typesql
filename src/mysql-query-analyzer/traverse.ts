@@ -8,6 +8,7 @@ import { inferNotNull, possibleNull } from "./infer-column-nullability";
 import { inferParamNullability, inferParamNullabilityQuery, inferParamNullabilityQueryExpression } from "./infer-param-nullability";
 import { ParameterDef } from "../types";
 import { getPairWise, getParameterIndexes } from "./util";
+import { Relation2 } from '../sqlite-query-analyzer/sqlite-describe-nested-query';
 
 export type TraverseResult = SelectStatementResult | InsertStatementResult | UpdateStatementResult | DeleteStatementResult;
 
@@ -59,7 +60,8 @@ export function traverseQueryContext(queryContext: QueryContext, dbSchema: Colum
             select: [],
             from: [],
             where: []
-        }
+        },
+        relations: []
     }
 
     const selectStatement = queryContext.simpleStatement()?.selectStatement();
@@ -482,6 +484,7 @@ export type SelectResult = {
     columns: TypeAndNullInfer[];
     multipleRowsResult: boolean;
     orderByColumns?: string[];
+    relations: Relation2[];
 }
 export type InsertResult = {
     queryType: 'Insert';

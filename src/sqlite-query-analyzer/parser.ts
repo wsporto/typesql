@@ -5,9 +5,10 @@ import { traverse_Sql_stmtContext } from "./traverse";
 import { ColumnInfo, ColumnSchema, SubstitutionHash, TraverseContext } from "../mysql-query-analyzer/types";
 import { getVarType } from "../mysql-query-analyzer/collect-constraints";
 import { unify } from "../mysql-query-analyzer/unify";
-import { preprocessSql, verifyNotInferred } from "../describe-query";
+import { hasAnnotation, preprocessSql, verifyNotInferred } from "../describe-query";
 import { explainSql } from "./query-executor";
 import { Database } from "better-sqlite3";
+import { describeNestedQuery } from "./sqlite-describe-nested-query";
 
 export function prepareAndParse(db: Database, sql: string, dbSchema: ColumnSchema[]) {
     const { sql: processedSql } = preprocessSql(sql);
@@ -24,13 +25,13 @@ export function prepareAndParse(db: Database, sql: string, dbSchema: ColumnSchem
 export function parseSql(sql: string, dbSchema: ColumnSchema[]): Either<TypeSqlError, SchemaDef> {
 
     const { sql: processedSql, namedParameters } = preprocessSql(sql);
-
+    const nested = hasAnnotation(sql, '@nested');
     const parser = parseSqlite(processedSql);
     const sql_stmt = parser.sql_stmt();
-    return createSchemaDefinition(processedSql, sql_stmt, dbSchema, namedParameters);
+    return createSchemaDefinition(processedSql, sql_stmt, dbSchema, namedParameters, nested);
 }
 
-function createSchemaDefinition(sql: string, sql_stmtContext: Sql_stmtContext, dbSchema: ColumnSchema[], namedParameters: string[]): Either<TypeSqlError, SchemaDef> {
+function createSchemaDefinition(sql: string, sql_stmtContext: Sql_stmtContext, dbSchema: ColumnSchema[], namedParameters: string[], nestedQuery: boolean): Either<TypeSqlError, SchemaDef> {
 
     const traverseContext: TraverseContext = {
         dbSchema,
@@ -46,7 +47,8 @@ function createSchemaDefinition(sql: string, sql_stmtContext: Sql_stmtContext, d
             select: [],
             from: [],
             where: []
-        }
+        },
+        relations: []
     }
 
     const queryResult = traverse_Sql_stmtContext(sql_stmtContext, traverseContext);
@@ -86,6 +88,11 @@ function createSchemaDefinition(sql: string, sql_stmtContext: Sql_stmtContext, d
         if (queryResult.orderByColumns) {
             schemaDef.orderByColumns = queryResult.orderByColumns;
         }
+        if (nestedQuery) {
+            const nestedResult = describeNestedQuery(columnResult, queryResult.relations);
+            schemaDef.nestedInfo = nestedResult;
+        }
+
         return right(schemaDef);
     }
     if (queryResult.queryType == 'Insert') {

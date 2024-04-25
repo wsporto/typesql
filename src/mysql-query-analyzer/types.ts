@@ -1,5 +1,6 @@
 import { NestedResultInfo } from "../describe-nested-query";
 import { MySqlType, InferType, DbType } from "../mysql-mapping"
+import { Relation2 } from "../sqlite-query-analyzer/sqlite-describe-nested-query";
 import { SQLiteType } from "../sqlite-query-analyzer/types";
 import { ParameterDef } from "../types"
 
@@ -48,6 +49,7 @@ export type TraverseContext = {
     where: boolean;
     currentFragement?: FragmentInfo;
     dynamicSqlInfo: DynamicSqlInfo;
+    relations: Relation2[];
 }
 
 export type Constraint = {

@@ -6,6 +6,7 @@ import { NestedResultInfo } from "./describe-nested-query";
 import { SQLiteType } from "./sqlite-query-analyzer/types";
 import { Database } from "better-sqlite3";
 import { Pool } from "mysql2/promise";
+import { RelationInfo2 } from "./sqlite-query-analyzer/sqlite-describe-nested-query";
 
 export type DBSchema = {
     columns: ColumnSchema[];
@@ -28,6 +29,7 @@ export type SchemaDef = {
     data?: ParameterDef[];
     nestedResultInfo?: NestedResultInfo;
     dynamicSqlQuery?: DynamicSqlInfoResult;
+    nestedInfo?: RelationInfo2[];
 }
 
 export type FieldNullability = {
