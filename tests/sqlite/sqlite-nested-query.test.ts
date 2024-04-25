@@ -76,6 +76,76 @@ describe('sqlite-nested-query', () => {
 		assert.deepStrictEqual(actual.right.nestedInfo, expectedModel);
 	})
 
+	it('SELECT FROM users INNER JOIN posts (without alias)', async () => {
+
+		const sql = `
+		-- @nested
+        SELECT
+            *
+        FROM users
+        INNER JOIN posts on fk_user = users.id
+        `
+		// Expected type:
+		// type User = {
+		//     user_id: string;
+		//     user_name: string;
+		//     p: Post[];
+		// }
+
+		const expectedModel: RelationInfo2[] = [
+			{
+				name: 'users',
+				alias: '',
+				fields: [
+					{
+						name: 'id',
+						index: 0
+					},
+					{
+						name: 'name',
+						index: 1
+					},
+				],
+				relations: [
+					{
+						name: 'posts',
+						alias: ''
+					}
+				]
+			},
+			{
+				name: 'posts',
+				alias: '',
+				fields: [
+					{
+						name: 'id',
+						index: 2
+					},
+					{
+						name: 'title',
+						index: 3
+					},
+					{
+						name: 'body',
+						index: 4
+					},
+					{
+						name: 'fk_user',
+						index: 5
+					}
+				],
+				relations: []
+			}
+		]
+
+		const actual = await parseSql(sql, sqliteDbSchema);
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+
+		assert.deepStrictEqual(actual.right.nestedInfo, expectedModel);
+	})
+
 	it('SELECT FROM users u INNER JOIN posts p', async () => {
 
 		const sql = `

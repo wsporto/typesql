@@ -1,4 +1,4 @@
-import { Select_stmtContext, Sql_stmtContext, ExprContext, Table_or_subqueryContext, Result_columnContext, Insert_stmtContext, Column_nameContext, Update_stmtContext, Delete_stmtContext, Join_constraintContext, Table_nameContext } from "@wsporto/ts-mysql-parser/dist/sqlite";
+import { Select_stmtContext, Sql_stmtContext, ExprContext, Table_or_subqueryContext, Result_columnContext, Insert_stmtContext, Column_nameContext, Update_stmtContext, Delete_stmtContext, Join_constraintContext, Table_nameContext, Join_operatorContext, Join_clauseContext } from "@wsporto/ts-mysql-parser/dist/sqlite";
 import { ColumnDef, FieldName, TraverseContext, TypeAndNullInfer } from "../mysql-query-analyzer/types";
 import { filterColumns, findColumn, includeColumn, splitName } from "../mysql-query-analyzer/select-columns";
 import { createColumnType, freshVar } from "../mysql-query-analyzer/collect-constraints";
@@ -186,7 +186,16 @@ function traverse_table_or_subquery(table_or_subquery_list: Table_or_subqueryCon
     const allFields: ColumnDef[] = [];
     table_or_subquery_list.forEach((table_or_subquery, index) => {
         const table_name = table_or_subquery.table_name();
-        const table_alias = table_or_subquery.table_alias()?.getText();
+        const table_alias_temp = table_or_subquery.table_alias()?.getText() || '';
+
+        //grammar error: select * from table1 inner join table2....; inner is parsed as table_alias
+        let table_alias = table_alias_temp.toLowerCase() == 'left'
+            || table_alias_temp.toLowerCase() == 'right'
+            || table_alias_temp.toLowerCase() == 'full'
+            || table_alias_temp.toLowerCase() == 'outer'
+            || table_alias_temp.toLowerCase() == 'inner'
+            || table_alias_temp.toLowerCase() == 'cross' ? '' : table_alias_temp;
+
         if (table_name) {
             const tableName = splitName(table_name.any_name().getText());
             const fields = filterColumns(traverseContext.dbSchema, traverseContext.withSchema, table_alias, tableName);
