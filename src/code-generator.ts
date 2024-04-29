@@ -1,4 +1,4 @@
-import { SchemaDef, CamelCaseName, TsFieldDescriptor, ParameterDef, TypeSqlDialect, DatabaseClient, MySqlDialect } from "./types";
+import { SchemaDef, CamelCaseName, TsFieldDescriptor, ParameterDef, DatabaseClient, MySqlDialect } from "./types";
 import fs from "fs";
 import path, { parse } from "path";
 import camelCase from "camelcase";
@@ -6,7 +6,7 @@ import { Either, isLeft, left, right } from "fp-ts/lib/Either";
 import { converToTsType, MySqlType } from "./mysql-mapping";
 import { parseSql } from "./describe-query";
 import CodeBlockWriter from "code-block-writer";
-import { NestedTsDescriptor, createNestedTsDescriptor } from "./ts-nested-descriptor";
+import { NestedTsDescriptor, RelationType2, createNestedTsDescriptor } from "./ts-nested-descriptor";
 import { mapToDynamicResultColumns, mapToDynamicParams, mapToDynamicSelectColumns } from "./ts-dynamic-query-descriptor";
 import { ColumnSchema, DynamicSqlInfoResult, FragmentInfoResult } from "./mysql-query-analyzer/types";
 import { EOL } from "os";
@@ -463,7 +463,7 @@ function generateParam(target: 'node' | 'deno', param: ParamInfo) {
     return `params.${param.name}`;
 }
 
-function generateRelationType(capitalizedName: string, relationName: string) {
+export function generateRelationType(capitalizedName: string, relationName: string) {
     return capitalizedName + 'Nested' + capitalizeStr(relationName);
 }
 
@@ -710,6 +710,7 @@ export type TsDescriptor = {
     data?: TsFieldDescriptor[];
     orderByColumns?: string[];
     nestedDescriptor?: NestedTsDescriptor;
+    nestedDescriptor2?: RelationType2[];
     dynamicQuery?: DynamicSqlInfoResult;
 }
 

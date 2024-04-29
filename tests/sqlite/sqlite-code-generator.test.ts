@@ -131,4 +131,24 @@ describe('sqlite-code-generator', () => {
 		}
 		assert.deepStrictEqual(actual.right, expected);
 	})
+
+	it('nested01 - FROM users u INNER JOIN posts p', () => {
+		const sql = `-- @nested
+SELECT 
+	u.id as user_id, 
+	u.name as user_name,
+	p.id as post_id,
+	p.title as post_title
+FROM users u
+INNER JOIN posts p on p.fk_user = u.id`
+
+		const isCrud = true;
+		const actual = generateTsCode(db, sql, 'nested01', sqliteDbSchema, isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/nested01.ts.txt', 'utf-8').replace(/\r/gm, '');//
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	})
 });

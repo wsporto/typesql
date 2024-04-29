@@ -1,9 +1,17 @@
 import { Field, RelationInfo, NestedResultInfo, RelationField } from "./describe-nested-query";
 import { MySqlType, TsType, converToTsType } from "./mysql-mapping";
 import { ColumnInfo } from "./mysql-query-analyzer/types";
+import { RelationField2 } from "./sqlite-query-analyzer/sqlite-describe-nested-query";
 
 export type TsField = {
     type: 'field';
+    name: string;
+    index: number;
+    tsType: TsType;
+    notNull: boolean;
+}
+
+export type TsField2 = {
     name: string;
     index: number;
     tsType: TsType;
@@ -18,6 +26,14 @@ export type TsRelationField = {
     notNull: boolean;
 }
 
+export type TsRelationField2 = {
+    list: boolean;
+    name: string;
+    tsType: string;
+    notNull: boolean;
+    joinColumn: string;
+}
+
 export type FieldType = TsField | TsRelationField;
 
 export type RelationType = {
@@ -26,8 +42,19 @@ export type RelationType = {
     fields: FieldType[];
 }
 
+export type RelationType2 = {
+    name: string;
+    joinColumn?: string;
+    fields: TsField2[];
+    relations: TsRelationField2[];
+}
+
 export type NestedTsDescriptor = {
     relations: RelationType[];
+}
+
+export type NestedTsDescriptor2 = {
+    relations: RelationType2[];
 }
 
 export function createNestedTsDescriptor(columns: ColumnInfo[], nestedResultInfo: NestedResultInfo): NestedTsDescriptor {
@@ -83,6 +110,19 @@ function mapModelColumnToTsRelation(modelColumn: RelationField): TsRelationField
     }
     return field;
 }
+
+export function mapToTsRelation2(relationField: RelationField2): TsRelationField2 {
+
+    const field: TsRelationField2 = {
+        list: relationField.cardinality == 'many' ? true : false,
+        name: relationField.name,
+        tsType: relationField.name + (relationField.cardinality == 'many' ? '[]' : ''),
+        notNull: true,
+        joinColumn: relationField.joinColumn
+    }
+    return field;
+}
+
 // function mapToRelationList(columnsInfo: ColumnInfo[], columns: ModelColumn[]): RelationType[] {
 //     const allRelations = flattenRelations(columns);
 

@@ -44,6 +44,7 @@ describe('sqlite-nested-query', () => {
 					{
 						name: 'posts',
 						alias: 'p',
+						joinColumn: 'user_id',
 						cardinality: 'many',
 					}
 				]
@@ -111,6 +112,7 @@ describe('sqlite-nested-query', () => {
 					{
 						name: 'posts',
 						alias: '',
+						joinColumn: 'id',
 						cardinality: 'many'
 					}
 				]
@@ -191,6 +193,7 @@ describe('sqlite-nested-query', () => {
 					{
 						name: 'users',
 						alias: 'u',
+						joinColumn: 'fk_user',
 						cardinality: 'one'
 					}
 				]
@@ -266,6 +269,7 @@ describe('sqlite-nested-query', () => {
 					{
 						name: 'posts',
 						alias: 'p',
+						joinColumn: 'user_id',
 						cardinality: 'many'
 					}
 				]
@@ -291,6 +295,7 @@ describe('sqlite-nested-query', () => {
 					{
 						name: 'comments',
 						alias: 'c',
+						joinColumn: 'post_id',
 						cardinality: 'many'
 					}
 				]
@@ -363,11 +368,13 @@ describe('sqlite-nested-query', () => {
 					{
 						name: 'posts',
 						alias: 'p',
+						joinColumn: 'user_id',
 						cardinality: 'many'
 					},
 					{
 						name: 'roles',
 						alias: 'r',
+						joinColumn: 'user_id',
 						cardinality: 'many'
 					}
 				]
@@ -461,11 +468,13 @@ describe('sqlite-nested-query', () => {
 					{
 						name: 'posts',
 						alias: 'p',
+						joinColumn: 'user_id',
 						cardinality: 'many'
 					},
 					{
 						name: 'roles',
 						alias: 'r',
+						joinColumn: 'user_id',
 						cardinality: 'many'
 					}
 				]
@@ -491,6 +500,7 @@ describe('sqlite-nested-query', () => {
 					{
 						name: 'comments',
 						alias: 'c',
+						joinColumn: 'post_id',
 						cardinality: 'many'
 					}
 				]
@@ -556,6 +566,7 @@ describe('sqlite-nested-query', () => {
 					{
 						name: 'posts',
 						alias: 'p',
+						joinColumn: 'id',
 						cardinality: 'many',
 					}
 				]

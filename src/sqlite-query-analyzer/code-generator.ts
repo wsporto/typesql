@@ -1,11 +1,13 @@
 import { Either, isLeft, left, right } from "fp-ts/lib/Either";
 import { ColumnInfo, ColumnSchema } from "../mysql-query-analyzer/types";
 import { prepareAndParse } from "./parser";
-import { TsDescriptor, capitalize, convertToCamelCaseName, removeDuplicatedParameters2, replaceOrderByParam } from "../code-generator";
+import { TsDescriptor, capitalize, convertToCamelCaseName, generateRelationType, removeDuplicatedParameters2, renameInvalidNames, replaceOrderByParam } from "../code-generator";
 import CodeBlockWriter from "code-block-writer";
 import { ParameterDef, SchemaDef, TsFieldDescriptor } from "../types";
 import { SQLiteType } from "./types";
 import { Database } from "better-sqlite3";
+import { Field2 } from "./sqlite-describe-nested-query";
+import { RelationType2, TsField2, mapToTsRelation2 } from "../ts-nested-descriptor";
 
 export function generateTsCode(db: Database, sql: string, queryName: string, sqliteDbSchema: ColumnSchema[], isCrud = false): Either<string, string> {
     const queryInfo = prepareAndParse(db, sql, sqliteDbSchema);
@@ -28,7 +30,28 @@ function createTsDescriptor(queryInfo: SchemaDef): TsDescriptor {
         data: queryInfo.data?.map(param => mapParameterToTsFieldDescriptor(param)),
         orderByColumns: queryInfo.orderByColumns
     }
+    if (queryInfo.nestedInfo) {
+        const nestedDescriptor2 = queryInfo.nestedInfo.map(relation => {
+            const tsRelation: RelationType2 = {
+                name: relation.name,
+                fields: relation.fields.map(field => mapFieldToTsField(queryInfo.columns, field)),
+                relations: relation.relations.map(relation => mapToTsRelation2(relation))
+            }
+            return tsRelation;
+        });
+        tsDescriptor.nestedDescriptor2 = nestedDescriptor2;
+    }
     return tsDescriptor;
+}
+
+function mapFieldToTsField(columns: ColumnInfo[], field: Field2): TsField2 {
+    const tsField: TsField2 = {
+        name: field.name,
+        index: field.index,
+        tsType: mapColumnType(columns[field.index].type as SQLiteType),
+        notNull: false
+    }
+    return tsField;
 }
 
 function mapParameterToTsFieldDescriptor(col: ParameterDef) {
@@ -204,6 +227,51 @@ function generateCodeFromTsDescriptor(queryName: string, tsDescriptor: TsDescrip
         })
     }
 
+    if (tsDescriptor.nestedDescriptor2) {
+        const relations = tsDescriptor.nestedDescriptor2;
+        relations.forEach((relation) => {
+            const relationType = generateRelationType(capitalizedName, relation.name);
+            writer.blankLine();
+            writer.write(`export type ${relationType} = `).block(() => {
+                const uniqueNameFields = renameInvalidNames(relation.fields.map(f => f.name));
+                relation.fields.forEach((field, index) => {
+                    writer.writeLine(`${uniqueNameFields[index]}: ${field.tsType};`);
+                })
+                relation.relations.forEach(field => {
+                    const nestedRelationType = generateRelationType(capitalizedName, field.tsType);
+                    const nullableOperator = field.notNull ? '' : '?'
+                    writer.writeLine(`${field.name}${nullableOperator}: ${nestedRelationType};`);
+                })
+            })
+
+        })
+        writer.blankLine();
+
+        relations.forEach((relation, index) => {
+            const relationType = generateRelationType(capitalizedName, relation.name);
+            if (index == 0) {
+                writer.write(`export function ${camelCaseName}Nested(${functionArguments}): ${relationType}[]`).block(() => {
+                    const params = tsDescriptor.parameters.length > 0 ? ', params' : '';
+                    writer.writeLine(`const selectResult = ${camelCaseName}(db${params});`);
+                    writer.write('if (selectResult.length == 0)').block(() => {
+                        writer.writeLine('return [];')
+                    });
+                    writer.writeLine(`return collect${relationType}(selectResult);`)
+                })
+            }
+            writeCollectFunction(writer, relation, tsDescriptor.columns, capitalizedName, resultTypeName);
+        })
+
+        writer.blankLine();
+        writer.write('const groupBy = <T, Q>(array: T[], predicate: (value: T, index: number, array: T[]) => Q) =>').block(() => {
+            writer.write('return array.reduce((map, value, index, array) => ').inlineBlock(() => {
+                writer.writeLine('const key = predicate(value, index, array);');
+                writer.writeLine('map.get(key)?.push(value) ?? map.set(key, [value]);');
+                writer.writeLine('return map;');
+            }).write(', new Map<Q, T[]>());');
+        })
+    }
+
     return writer.toString();
 }
 
@@ -212,4 +280,44 @@ function toParamValue(param: TsFieldDescriptor): string {
         return param.name + '.toISOString()';
     }
     return param.name;
+}
+function writeCollectFunction(
+    writer: CodeBlockWriter,
+    relation: RelationType2,
+    columns: TsFieldDescriptor[],
+    capitalizedName: string,
+    resultTypeName: string) {
+
+    const relationType = generateRelationType(capitalizedName, relation.name);
+    const collectFunctionName = `collect${relationType}`;
+    writer.blankLine();
+    writer.write(`function ${collectFunctionName}(selectResult: ${resultTypeName}[]): ${relationType}[]`).block(() => {
+
+        if (relation.relations.length > 0) {
+            const joinColumn = relation.relations[0].joinColumn;
+            writer.writeLine(`const grouped = groupBy(selectResult.filter(r => r.${joinColumn} != null), r => r.${joinColumn});`)
+            writer.write(`return [...grouped.values()].map(row => (`).inlineBlock(() => {
+                relation.fields.forEach((field, index) => {
+                    const uniqueNameFields = renameInvalidNames(relation.fields.map(f => f.name));
+                    const separator = ',';
+                    const fieldName = columns[field.index].name;
+                    writer.writeLine(`${uniqueNameFields[index]}: row[0].${fieldName}!` + separator);
+                })
+                relation.relations.forEach(fieldRelation => {
+                    const relationType = generateRelationType(capitalizedName, fieldRelation.name);
+                    writer.writeLine(`${fieldRelation.name}: collect${relationType}(selectResult),`);
+                })
+            }).write('))');
+        }
+        else {
+            writer.write(`return selectResult.map(row => (`).inlineBlock(() => {
+                relation.fields.forEach((field, index) => {
+                    const uniqueNameFields = renameInvalidNames(relation.fields.map(f => f.name));
+                    const separator = ',';
+                    const fieldName = columns[field.index].name;
+                    writer.writeLine(`${uniqueNameFields[index]}: row.${fieldName}!` + separator);
+                })
+            }).write('))');
+        }
+    })
 }
