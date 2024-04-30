@@ -603,4 +603,87 @@ describe('sqlite-nested-query', () => {
 
 		assert.deepStrictEqual(actual.right.nestedInfo, expectedModel);
 	})
+
+	it('many to many - books with authors', () => {
+
+		const sql = `
+		-- @nested
+        SELECT *
+        FROM books b
+        INNER JOIN books_authors ba on ba.book_id = b.id
+        INNER JOIN authors a on a.id = ba.author_id
+        `
+
+		//[id(0),title(1),isbn(2),id(3),book_id(4),author_id(5),id(6),fullName(7),shortName(8)]
+		const expectedModel: RelationInfo2[] = [
+			{
+				name: 'books',
+				alias: 'b',
+				fields: [
+					{
+						name: 'id',
+						index: 0
+					},
+					{
+						name: 'title',
+						index: 1
+					},
+					{
+						name: 'isbn',
+						index: 2
+					}
+				],
+				relations: [
+					{
+						name: 'authors',
+						alias: 'a',
+						joinColumn: 'id',
+						cardinality: 'many',
+					}
+				]
+			},
+			{
+				name: 'authors',
+				alias: 'a',
+				fields: [
+					{
+						name: 'id',
+						index: 3
+					},
+					{
+						name: 'book_id',
+						index: 4
+					},
+					{
+						name: 'author_id',
+						index: 5
+					},
+					{
+						name: 'author_ordinal',
+						index: 6
+					},
+					{
+						name: "id",
+						index: 7,
+					},
+					{
+						name: "fullName",
+						index: 8,
+					},
+					{
+						name: "shortName",
+						index: 9,
+					}
+				],
+				relations: []
+			}
+		]
+
+		const actual = parseSql(sql, sqliteDbSchema);
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+
+		assert.deepStrictEqual(actual.right.nestedInfo, expectedModel);
+	})
 })
