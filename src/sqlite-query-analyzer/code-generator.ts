@@ -20,11 +20,12 @@ export function generateTsCode(db: Database, sql: string, queryName: string, sql
 }
 
 function createTsDescriptor(queryInfo: SchemaDef): TsDescriptor {
+    const escapedColumnsNames = renameInvalidNames(queryInfo.columns.map(col => col.columnName));
     const tsDescriptor: TsDescriptor = {
         sql: queryInfo.sql,
         queryType: queryInfo.queryType,
         multipleRowsResult: queryInfo.multipleRowsResult,
-        columns: queryInfo.columns.map(col => mapColumnToTsFieldDescriptor(col)),
+        columns: queryInfo.columns.map((col, index) => mapColumnToTsFieldDescriptor({ ...col, columnName: escapedColumnsNames[index] })),
         parameterNames: [],
         parameters: queryInfo.parameters.map(param => mapParameterToTsFieldDescriptor(param)),
         data: queryInfo.data?.map(param => mapParameterToTsFieldDescriptor(param)),
