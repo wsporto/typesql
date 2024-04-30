@@ -1,6 +1,6 @@
 {
   "name": "typesql-cli",
-  "version": "0.8.0-alpha.9",
+  "version": "0.8.0-alpha.10",
   "description": "",
   "main": "index.js",
   "bin": {
