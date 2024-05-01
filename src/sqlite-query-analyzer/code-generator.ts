@@ -225,7 +225,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
             });
         }
         if (client == 'libsql') {
-            writer.write(`export function ${camelCaseName}(${functionArguments}): Promise<${resultTypeName}>`).block(() => {
+            writer.write(`export async function ${camelCaseName}(${functionArguments}): Promise<${resultTypeName}>`).block(() => {
                 const sqlSplit = sql.split('\n');
                 writer.write('const sql = `').newLine();
                 sqlSplit.forEach(sqlLine => {

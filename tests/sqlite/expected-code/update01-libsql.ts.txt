@@ -13,7 +13,7 @@ export type Update01Result = {
 	lastInsertRowid: number;
 }
 
-export function update01(client: Client, data: Update01Data, params: Update01Params): Promise<Update01Result> {
+export async function update01(client: Client, data: Update01Data, params: Update01Params): Promise<Update01Result> {
 	const sql = `
 	UPDATE mytable1 SET value=? WHERE id=?
 	`

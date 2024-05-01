@@ -5,7 +5,7 @@ export type Insert01Result = {
 	lastInsertRowid: number;
 }
 
-export function insert01(client: Client): Promise<Insert01Result> {
+export async function insert01(client: Client): Promise<Insert01Result> {
 	const sql = `
 	INSERT INTO mytable1(value) values(10)
 	`
