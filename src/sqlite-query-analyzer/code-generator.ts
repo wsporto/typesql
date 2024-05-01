@@ -212,16 +212,31 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
     }
 
     if (queryType == 'Insert' || queryType == 'Update' || queryType == 'Delete') {
-        writer.write(`export function ${camelCaseName}(${functionArguments}): ${resultTypeName}`).block(() => {
-            const sqlSplit = sql.split('\n');
-            writer.write('const sql = `').newLine();
-            sqlSplit.forEach(sqlLine => {
-                writer.indent().write(sqlLine).newLine();
+        if (client == 'sqlite') {
+            writer.write(`export function ${camelCaseName}(${functionArguments}): ${resultTypeName}`).block(() => {
+                const sqlSplit = sql.split('\n');
+                writer.write('const sql = `').newLine();
+                sqlSplit.forEach(sqlLine => {
+                    writer.indent().write(sqlLine).newLine();
+                });
+                writer.indent().write('`').newLine();
+                writer.write('return db.prepare(sql)').newLine();
+                writer.indent().write(`.run(${queryParams}) as ${resultTypeName};`);
             });
-            writer.indent().write('`').newLine();
-            writer.write('return db.prepare(sql)').newLine();
-            writer.indent().write(`.run(${queryParams}) as ${resultTypeName};`);
-        });
+        }
+        if (client == 'libsql') {
+            writer.write(`export function ${camelCaseName}(${functionArguments}): Promise<${resultTypeName}>`).block(() => {
+                const sqlSplit = sql.split('\n');
+                writer.write('const sql = `').newLine();
+                sqlSplit.forEach(sqlLine => {
+                    writer.indent().write(sqlLine).newLine();
+                });
+                writer.indent().write('`').newLine();
+                const executeParams = queryParams != '' ? `{ sql, args: ${queryParams} }` : 'sql';
+                writer.write(`return client.execute(${executeParams})`).newLine();
+                writer.indent().write(`.then(res => res as unknown as ${resultTypeName});`);
+            });
+        }
     }
 
     if (queryType == 'Select') {

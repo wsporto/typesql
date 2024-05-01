@@ -22,7 +22,7 @@ describe('sqlite-code-generator', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	})
 
-	it('select01 - select id, name from mytable2 where id = ?', async () => {
+	it('select01-libsql - select id, name from mytable2 where id = ?', async () => {
 		const sql = `select id, name from mytable2 where id = ?`;
 
 		const actual = await generateTsCode(sql, 'select01', sqliteDbSchema, false, 'libsql');
@@ -46,7 +46,7 @@ describe('sqlite-code-generator', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	})
 
-	it('select02 - select without parameters', async () => {
+	it('select02-libsql - select without parameters', async () => {
 		const sql = `select id from mytable1`;
 
 		const actual = await generateTsCode(sql, 'select02', sqliteDbSchema, false, 'libsql');
@@ -87,6 +87,18 @@ describe('sqlite-code-generator', () => {
 
 		const actual = await generateTsCode(sql, 'insert01', sqliteDbSchema);
 		const expected = readFileSync('tests/sqlite/expected-code/insert01.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	})
+
+	it('insert01-libsql - select with same parameter used twice', async () => {
+		const sql = 'INSERT INTO mytable1(value) values(10)';
+
+		const actual = await generateTsCode(sql, 'insert01', sqliteDbSchema, false, 'libsql');
+		const expected = readFileSync('tests/sqlite/expected-code/insert01-libsql.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error`);

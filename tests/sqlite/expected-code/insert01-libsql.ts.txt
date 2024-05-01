@@ -1,11 +1,11 @@
-import { Database } from 'better-sqlite3';
+import { Client } from '@libsql/client';
 
 export type Insert01Result = {
 	changes: number;
 	lastInsertRowid: number;
 }
 
-export function insert01(db: Database): Insert01Result {
+export function insert01(client: Client): Promise<Insert01Result> {
 	const sql = `
 	INSERT INTO mytable1(value) values(10)
 	`
