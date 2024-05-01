@@ -202,9 +202,9 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
                     writer.indent().write(sqlLine).newLine();
                 });
                 writer.indent().write('`').newLine();
-                const executeParams = 'sql' + (queryParams != '' ? `, args: ${queryParams}` : '');
+                const executeParams = queryParams != '' ? `{ sql, args: ${queryParams} }` : 'sql';
 
-                writer.write(`return client.execute({ ${executeParams} })`).newLine();
+                writer.write(`return client.execute(${executeParams})`).newLine();
                 writer.indent().write(`.then(res => res.toJSON().rows as ${resultTypeName}[])`).newLine();
                 writer.indent().write(`.then(rows => rows.map(row => mapArrayTo${resultTypeName}(row))${tsDescriptor.multipleRowsResult ? '' : '[0]'});`);
             });

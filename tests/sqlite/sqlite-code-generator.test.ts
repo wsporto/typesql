@@ -46,6 +46,18 @@ describe('sqlite-code-generator', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	})
 
+	it('select02 - select without parameters', async () => {
+		const sql = `select id from mytable1`;
+
+		const actual = await generateTsCode(sql, 'select02', sqliteDbSchema, false, 'libsql');
+		const expected = readFileSync('tests/sqlite/expected-code/select02-libsql.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	})
+
 	it('select03 - select with same parameter used twice', async () => {
 		const sql = 'select id from mytable1 where id = :id or id = :id';
 

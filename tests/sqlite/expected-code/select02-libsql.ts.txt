@@ -1,0 +1,21 @@
+import { Client } from '@libsql/client';
+
+export type Select02Result = {
+	id: number;
+}
+
+export async function select02(client: Client): Promise<Select02Result[]> {
+	const sql = `
+	select id from mytable1
+	`
+	return client.execute(sql)
+		.then(res => res.toJSON().rows as Select02Result[])
+		.then(rows => rows.map(row => mapArrayToSelect02Result(row)));
+}
+
+function mapArrayToSelect02Result(data: any) {
+	const result: Select02Result = {
+		id: data[0]
+	}
+	return result;
+}
