@@ -289,14 +289,26 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
         relations.forEach((relation, index) => {
             const relationType = generateRelationType(capitalizedName, relation.name);
             if (index == 0) {
-                writer.write(`export function ${camelCaseName}Nested(${functionArguments}): ${relationType}[]`).block(() => {
-                    const params = tsDescriptor.parameters.length > 0 ? ', params' : '';
-                    writer.writeLine(`const selectResult = ${camelCaseName}(db${params});`);
-                    writer.write('if (selectResult.length == 0)').block(() => {
-                        writer.writeLine('return [];')
-                    });
-                    writer.writeLine(`return collect${relationType}(selectResult);`)
-                })
+                if (client == 'sqlite') {
+                    writer.write(`export function ${camelCaseName}Nested(${functionArguments}): ${relationType}[]`).block(() => {
+                        const params = tsDescriptor.parameters.length > 0 ? ', params' : '';
+                        writer.writeLine(`const selectResult = ${camelCaseName}(db${params});`);
+                        writer.write('if (selectResult.length == 0)').block(() => {
+                            writer.writeLine('return [];')
+                        });
+                        writer.writeLine(`return collect${relationType}(selectResult);`)
+                    })
+                }
+                else if (client == 'libsql') {
+                    writer.write(`export async function ${camelCaseName}Nested(${functionArguments}): Promise<${relationType}[]>`).block(() => {
+                        const params = tsDescriptor.parameters.length > 0 ? ', params' : '';
+                        writer.writeLine(`const selectResult = await ${camelCaseName}(client${params});`);
+                        writer.write('if (selectResult.length == 0)').block(() => {
+                            writer.writeLine('return [];')
+                        });
+                        writer.writeLine(`return collect${relationType}(selectResult);`)
+                    })
+                }
             }
             writeCollectFunction(writer, relation, tsDescriptor.columns, capitalizedName, resultTypeName);
         })

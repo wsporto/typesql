@@ -211,4 +211,24 @@ INNER JOIN posts p on p.fk_user = u.id`
 		}
 		assert.deepStrictEqual(actual.right, expected);
 	})
+
+	it('nested01-libsql - FROM users u INNER JOIN posts p', () => {
+		const sql = `-- @nested
+SELECT 
+	u.id as user_id, 
+	u.name as user_name,
+	p.id as post_id,
+	p.title as post_title
+FROM users u
+INNER JOIN posts p on p.fk_user = u.id`
+
+		const isCrud = false;
+		const actual = generateTsCode(sql, 'nested01', sqliteDbSchema, isCrud, 'libsql');
+		const expected = readFileSync('tests/sqlite/expected-code/nested01-libsql.ts.txt', 'utf-8').replace(/\r/gm, '');//
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	})
 });
