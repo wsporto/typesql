@@ -125,11 +125,11 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
         writer.write(`export type ${dataTypeName} =`).block(() => {
             uniqueUpdateParams.forEach((field, index) => {
                 const optionalOp = field.notNull ? '' : '?';
+                const orNull = field.notNull ? '' : ' | null';
                 if (!isUpdateCrud) {
-                    writer.writeLine(`${field.name}${optionalOp}: ${field.tsType};`);
+                    writer.writeLine(`${field.name}: ${field.tsType}${orNull};`);
                 }
                 else if (index % 2 != 0) {//updateCrud-> :nameSet, :name, valueSet, :value...
-                    const orNull = field.notNull ? '' : ' | null';
                     writer.writeLine(`${field.name}${optionalOp}: ${field.tsType}${orNull};`);
                 }
             });

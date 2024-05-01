@@ -1,7 +1,7 @@
 import { Database } from 'better-sqlite3';
 
 export type Update01Data = {
-	param1?: number;
+	param1: number | null;
 }
 
 export type Update01Params = {
