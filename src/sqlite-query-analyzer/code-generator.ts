@@ -344,7 +344,7 @@ function writeCollectFunction(
                 })
                 relation.relations.forEach(fieldRelation => {
                     const relationType = generateRelationType(capitalizedName, fieldRelation.name);
-                    writer.writeLine(`${fieldRelation.name}: collect${relationType}(selectResult),`);
+                    writer.writeLine(`${fieldRelation.name}: collect${relationType}(row),`);
                 })
             }).write('))');
         }

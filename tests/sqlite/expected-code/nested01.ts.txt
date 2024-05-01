@@ -58,7 +58,7 @@ function collectNested01NestedUsers(selectResult: Nested01Result[]): Nested01Nes
 	return [...grouped.values()].map(row => ({
 		user_id: row[0].user_id!,
 		user_name: row[0].user_name!,
-		posts: collectNested01NestedPosts(selectResult),
+		posts: collectNested01NestedPosts(row),
 	}))
 }
 
