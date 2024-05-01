@@ -130,7 +130,7 @@ describe('sqlite-code-generator', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	})
 
-	it('delete01 - UPDATE mytable1 SET value=? WHERE id=?', () => {
+	it('delete01 - DELETE FROM mytable1 WHERE id=?', () => {
 		const sql = 'DELETE FROM mytable1 WHERE id=?';
 
 		const actual = generateTsCode(sql, 'delete01', sqliteDbSchema);
