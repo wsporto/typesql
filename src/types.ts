@@ -7,6 +7,7 @@ import { SQLiteType } from "./sqlite-query-analyzer/types";
 import { Database } from "better-sqlite3";
 import { Pool } from "mysql2/promise";
 import { RelationInfo2 } from "./sqlite-query-analyzer/sqlite-describe-nested-query";
+import { Client } from "@libsql/client/.";
 
 export type DBSchema = {
     columns: ColumnSchema[];
@@ -108,9 +109,11 @@ export type PreprocessedSql = {
 
 export type CamelCaseName = Brand<string, 'CamelCase'>;
 
-export type DatabaseClient = MySqlDialect | SQLiteDialect;
+export type DatabaseClient = MySqlDialect | SQLiteDialect | LibSqlClient;
 
 export type TypeSqlDialect = DatabaseClient['type'];
+
+export type SQLiteClient = 'sqlite' | 'libsql';
 
 export type MySqlDialect = {
     type: 'mysql';
@@ -125,11 +128,17 @@ export type SQLiteDialect = {
     client: Database;
 }
 
+export type LibSqlClient = {
+    type: 'libsql';
+    client: Client;
+}
+
 export type TypeSqlConfig = {
     databaseUri: string;
     sqlDir: string;
     target: 'node' | 'deno';
     client: TypeSqlDialect;
+    authToken?: string;
     includeCrudTables: string[];
 }
 

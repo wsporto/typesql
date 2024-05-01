@@ -1,21 +1,21 @@
 import { Either, isLeft, left, right } from "fp-ts/lib/Either";
 import { ColumnInfo, ColumnSchema } from "../mysql-query-analyzer/types";
-import { prepareAndParse } from "./parser";
+import { parseSql } from "./parser";
 import { TsDescriptor, capitalize, convertToCamelCaseName, generateRelationType, removeDuplicatedParameters2, renameInvalidNames, replaceOrderByParam } from "../code-generator";
 import CodeBlockWriter from "code-block-writer";
-import { ParameterDef, SchemaDef, TsFieldDescriptor } from "../types";
+import { ParameterDef, SQLiteClient, SchemaDef, TsFieldDescriptor } from "../types";
 import { SQLiteType } from "./types";
 import { Database } from "better-sqlite3";
 import { Field2 } from "./sqlite-describe-nested-query";
 import { RelationType2, TsField2, mapToTsRelation2 } from "../ts-nested-descriptor";
 
-export function generateTsCode(db: Database, sql: string, queryName: string, sqliteDbSchema: ColumnSchema[], isCrud = false): Either<string, string> {
-    const queryInfo = prepareAndParse(db, sql, sqliteDbSchema);
-    if (isLeft(queryInfo)) {
+export function generateTsCode(sql: string, queryName: string, sqliteDbSchema: ColumnSchema[], isCrud = false, client: SQLiteClient = 'sqlite'): Either<string, string> {
+    const schemaDefResult = parseSql(sql, sqliteDbSchema);
+    if (isLeft(schemaDefResult)) {
         return left('//Invalid sql');
     }
-    const tsDescriptor = createTsDescriptor(queryInfo.right);
-    const code = generateCodeFromTsDescriptor(queryName, tsDescriptor, isCrud);
+    const tsDescriptor = createTsDescriptor(schemaDefResult.right);
+    const code = generateCodeFromTsDescriptor(client, queryName, tsDescriptor, isCrud);
     return right(code);
 }
 
@@ -90,7 +90,7 @@ function mapColumnType(sqliteType: SQLiteType) {
     }
 }
 
-function generateCodeFromTsDescriptor(queryName: string, tsDescriptor: TsDescriptor, isCrud: boolean) {
+function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, tsDescriptor: TsDescriptor, isCrud: boolean) {
 
     const writer = new CodeBlockWriter({
         useTabs: true
@@ -113,7 +113,12 @@ function generateCodeFromTsDescriptor(queryName: string, tsDescriptor: TsDescrip
     const uniqueUpdateParams = removeDuplicatedParameters2(tsDescriptor.data || []);
     const isUpdateCrud = isCrud && queryType == 'Update';
 
-    writer.writeLine(`import { Database } from 'better-sqlite3';`);
+    if (client == 'sqlite') {
+        writer.writeLine(`import { Database } from 'better-sqlite3';`);
+    }
+    if (client == 'libsql') {
+        writer.writeLine(`import { Client } from '@libsql/client';`);
+    }
 
     if (uniqueUpdateParams.length > 0) {
         writer.blankLine();
@@ -153,7 +158,7 @@ function generateCodeFromTsDescriptor(queryName: string, tsDescriptor: TsDescrip
     });
     writer.blankLine();
 
-    let functionArguments = `db: Database`;
+    let functionArguments = client == 'sqlite' ? `db: Database` : 'client: Client';
     functionArguments += queryType == 'Update' ? `, data: ${dataTypeName}` : '';
     functionArguments += tsDescriptor.parameters.length > 0 || generateOrderBy ? ', params: ' + paramsTypeName : '';
 
@@ -173,19 +178,37 @@ function generateCodeFromTsDescriptor(queryName: string, tsDescriptor: TsDescrip
     const returnType = tsDescriptor.multipleRowsResult ? `${resultTypeName}[]` : `${resultTypeName} | null`;
 
     if (queryType == 'Select') {
-        writer.write(`export function ${camelCaseName}(${functionArguments}): ${returnType}`).block(() => {
-            const processedSql = tsDescriptor.orderByColumns ? replaceOrderByParam(sql) : sql;
-            const sqlSplit = processedSql.split('\n');
-            writer.write('const sql = `').newLine();
-            sqlSplit.forEach(sqlLine => {
-                writer.indent().write(sqlLine).newLine();
+        if (client == 'sqlite') {
+            writer.write(`export function ${camelCaseName}(${functionArguments}): ${returnType}`).block(() => {
+                const processedSql = tsDescriptor.orderByColumns ? replaceOrderByParam(sql) : sql;
+                const sqlSplit = processedSql.split('\n');
+                writer.write('const sql = `').newLine();
+                sqlSplit.forEach(sqlLine => {
+                    writer.indent().write(sqlLine).newLine();
+                });
+                writer.indent().write('`').newLine();
+                writer.write('return db.prepare(sql)').newLine();
+                writer.indent().write('.raw(true)').newLine();
+                writer.indent().write(`.all(${queryParams})`).newLine();
+                writer.indent().write(`.map(data => mapArrayTo${resultTypeName}(data))${tsDescriptor.multipleRowsResult ? '' : '[0]'};`);
             });
-            writer.indent().write('`').newLine();
-            writer.write('return db.prepare(sql)').newLine();
-            writer.indent().write('.raw(true)').newLine();
-            writer.indent().write(`.all(${queryParams})`).newLine();
-            writer.indent().write(`.map(data => mapArrayTo${resultTypeName}(data))${tsDescriptor.multipleRowsResult ? '' : '[0]'};`);
-        });
+        }
+        if (client == 'libsql') {
+            writer.write(`export async function ${camelCaseName}(${functionArguments}): Promise<${returnType}>`).block(() => {
+                const processedSql = tsDescriptor.orderByColumns ? replaceOrderByParam(sql) : sql;
+                const sqlSplit = processedSql.split('\n');
+                writer.write('const sql = `').newLine();
+                sqlSplit.forEach(sqlLine => {
+                    writer.indent().write(sqlLine).newLine();
+                });
+                writer.indent().write('`').newLine();
+                const executeParams = 'sql' + (queryParams != '' ? `, args: ${queryParams}` : '');
+
+                writer.write(`return client.execute({ ${executeParams} })`).newLine();
+                writer.indent().write(`.then(res => res.toJSON().rows as ${resultTypeName}[])`).newLine();
+                writer.indent().write(`.then(rows => rows.map(row => mapArrayTo${resultTypeName}(row))${tsDescriptor.multipleRowsResult ? '' : '[0]'});`);
+            });
+        }
     }
 
     if (queryType == 'Insert' || queryType == 'Update' || queryType == 'Delete') {

@@ -68,7 +68,7 @@ export async function loadMysqlSchema(conn: Connection, schema: string): Promise
 
 }
 
-export async function loadTableSchema(conn: Connection, schema: string, tableName: string): Promise<Either<TypeSqlError, ColumnSchema[]>> {
+export async function loadMySqlTableSchema(conn: Connection, schema: string, tableName: string): Promise<Either<TypeSqlError, ColumnSchema[]>> {
     const sql = `
     SELECT 
         TABLE_SCHEMA as "schema", 

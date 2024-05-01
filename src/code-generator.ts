@@ -669,8 +669,9 @@ export async function generateTsFile(client: DatabaseClient, sqlFile: string, db
     const dirPath = parse(sqlFile).dir;
     const queryName = convertToCamelCaseName(fileName);
 
+    //TODO - check invalid sql();
     const tsContentResult = client.type == 'mysql' ? await generateTsFileFromContent(client, queryName, sqlContent, 'node', isCrudFile)
-        : generateTsCode(client.client, sqlContent, queryName, dbSchema, isCrudFile);
+        : generateTsCode(sqlContent, queryName, dbSchema, isCrudFile, client.type);
 
     if (isLeft(tsContentResult)) {
         console.error('ERROR: ', tsContentResult.left);

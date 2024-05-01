@@ -4,14 +4,15 @@ import path, { parse } from "path";
 import chokidar from "chokidar";
 import yargs from "yargs";
 import { generateTsFile, writeFile } from "./code-generator";
-import { createMysqlClient, loadMysqlSchema, loadTableSchema, selectTablesFromSchema } from "./queryExectutor";
+import { createMysqlClient, loadMysqlSchema, loadMySqlTableSchema, selectTablesFromSchema } from "./queryExectutor";
 import { generateInsertStatement, generateUpdateStatement, generateDeleteStatement, generateSelectStatement } from "./sql-generator";
 import { ColumnSchema, Table } from "./mysql-query-analyzer/types";
-import { TypeSqlConfig, SqlGenOption, DatabaseClient, TypeSqlDialect } from "./types";
+import { TypeSqlConfig, SqlGenOption, DatabaseClient, TypeSqlDialect, TypeSqlError } from "./types";
 import { Either, isLeft, left } from "fp-ts/lib/Either";
 import CodeBlockWriter from "code-block-writer";
 import { globSync } from "glob";
 import { createSqliteClient, loadDbSchema, selectSqliteTablesFromSchema } from "./sqlite-query-analyzer/query-executor";
+import { createLibSqlClient, loadLibSqlSchema, selectLibsqlTablesFromSchema } from './drivers/libsql';
 
 const CRUD_FOLDER = 'crud';
 
@@ -113,10 +114,10 @@ async function main() {
 
 async function compile(watch: boolean, config: TypeSqlConfig) {
 
-    const { sqlDir, databaseUri, target, client: dialect } = config;
+    const { sqlDir, databaseUri, target, client: dialect, authToken } = config;
     validateDirectories(sqlDir);
 
-    const databaseClientResult = dialect == 'mysql' ? await createMysqlClient(databaseUri) : createSqliteClient(databaseUri);
+    const databaseClientResult = await createClient(databaseUri, dialect, authToken);
     if (isLeft(databaseClientResult)) {
         console.error(`Error: ${databaseClientResult.left.description}.`);
         return;
@@ -125,7 +126,7 @@ async function compile(watch: boolean, config: TypeSqlConfig) {
     const includeCrudTables = config.includeCrudTables || [];
     const databaseClient = databaseClientResult.right;
 
-    const dbSchema = databaseClient.type === 'mysql' ? await loadMysqlSchema(databaseClient.client, databaseClient.schema) : loadDbSchema(databaseClient.client);
+    const dbSchema = await loadSchema(databaseClient);
     if (isLeft(dbSchema)) {
         console.error(`Error: ${dbSchema.left.description}.`);
         return;
@@ -171,7 +172,7 @@ function generateIndexContent(tsFiles: string[]) {
 
 async function writeSql(stmtType: SqlGenOption, tableName: string, queryName: string, config: TypeSqlConfig): Promise<boolean> {
     const { sqlDir, databaseUri, client: dialect } = config;
-    const clientResult = dialect == 'mysql' ? await createMysqlClient(databaseUri) : createSqliteClient(databaseUri);
+    const clientResult = await createClient(databaseUri, dialect);
     if (isLeft(clientResult)) {
         console.error(clientResult.left.name);
         return false;
@@ -179,7 +180,7 @@ async function writeSql(stmtType: SqlGenOption, tableName: string, queryName: st
 
     const client = clientResult.right;
 
-    const columnsOption = client.type == 'mysql' ? await loadTableSchema(client.client, client.schema, tableName) : loadDbSchema(client.client);
+    const columnsOption = await loadTableSchema(client, tableName);
     if (isLeft(columnsOption)) {
         console.error(columnsOption.left.description);
         return false;
@@ -255,11 +256,55 @@ function filterTables(allTables: Table[], includeCrudTables: string[]) {
 }
 
 async function selectAllTables(client: DatabaseClient): Promise<Either<string, Table[]>> {
-    const selectTablesResult = client.type == 'mysql' ? await selectTablesFromSchema(client.client) : selectSqliteTablesFromSchema(client.client);
+    const selectTablesResult = await selectTables(client);
     if (isLeft(selectTablesResult)) {
         return left("Error selecting table names: " + selectTablesResult.left.description);
     }
     return selectTablesResult;
+}
+
+async function createClient(databaseUri: string, dialect: TypeSqlDialect, authToken?: string) {
+    console.log("createClient:", databaseUri, "dialect=", dialect);
+    switch (dialect) {
+        case "mysql":
+            return createMysqlClient(databaseUri);
+        case "sqlite":
+            return createSqliteClient(databaseUri);
+        case "libsql":
+            return createLibSqlClient(databaseUri, authToken || '')
+    }
+}
+async function loadSchema(databaseClient: DatabaseClient): Promise<Either<TypeSqlError, ColumnSchema[]>> {
+    switch (databaseClient.type) {
+        case "mysql":
+            return loadMysqlSchema(databaseClient.client, databaseClient.schema);
+        case "sqlite":
+            return loadDbSchema(databaseClient.client);
+        case "libsql":
+            return loadLibSqlSchema(databaseClient.client);
+    }
+}
+
+async function loadTableSchema(databaseClient: DatabaseClient, tableName: string): Promise<Either<TypeSqlError, ColumnSchema[]>> {
+    switch (databaseClient.type) {
+        case "mysql":
+            return loadMySqlTableSchema(databaseClient.client, databaseClient.schema, tableName);
+        case "sqlite":
+            return await loadDbSchema(databaseClient.client);
+        case "libsql":
+            return loadLibSqlSchema(databaseClient.client);
+    }
+}
+
+async function selectTables(databaseClient: DatabaseClient) {
+    switch (databaseClient.type) {
+        case "mysql":
+            return await selectTablesFromSchema(databaseClient.client);
+        case "sqlite":
+            return selectSqliteTablesFromSchema(databaseClient.client);
+        case "libsql":
+            return selectLibsqlTablesFromSchema(databaseClient.client);
+    }
 }
 
 //https://stackoverflow.com/a/45242825

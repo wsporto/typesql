@@ -1,0 +1,14 @@
+import { Database } from 'better-sqlite3';
+
+export type Insert01Result = {
+	changes: number;
+	lastInsertRowid: number;
+}
+
+export function insert01(db: Database): Insert01Result {
+	const sql = `
+	INSERT INTO mytable1(value) values(10)
+	`
+	return client.execute(sql)
+		.then(res => res as unknown as Insert01Result);
+}
