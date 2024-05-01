@@ -1,0 +1,18 @@
+import { Client } from '@libsql/client';
+
+export type Delete01Params = {
+	param1: number;
+}
+
+export type Delete01Result = {
+	changes: number;
+	lastInsertRowid: number;
+}
+
+export async function delete01(client: Client, params: Delete01Params): Promise<Delete01Result> {
+	const sql = `
+	DELETE FROM mytable1 WHERE id=?
+	`
+	return client.execute({ sql, args: [params.param1] })
+		.then(res => res as unknown as Delete01Result);
+}
