@@ -1,0 +1,22 @@
+import { Client } from '@libsql/client';
+
+export type Update01Data = {
+	param1: number | null;
+}
+
+export type Update01Params = {
+	param1: number;
+}
+
+export type Update01Result = {
+	changes: number;
+	lastInsertRowid: number;
+}
+
+export function update01(client: Client, data: Update01Data, params: Update01Params): Promise<Update01Result> {
+	const sql = `
+	UPDATE mytable1 SET value=? WHERE id=?
+	`
+	return client.execute({ sql, args: [data.param1, params.param1] })
+		.then(res => res as unknown as Update01Result);
+}
