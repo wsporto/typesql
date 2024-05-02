@@ -7,7 +7,7 @@ import { SQLiteType } from "./sqlite-query-analyzer/types";
 import { Database } from "better-sqlite3";
 import { Pool } from "mysql2/promise";
 import { RelationInfo2 } from "./sqlite-query-analyzer/sqlite-describe-nested-query";
-import { Client } from "@libsql/client/.";
+import { Database as LibSQLDatabase } from "libsql";
 
 export type DBSchema = {
     columns: ColumnSchema[];
@@ -130,7 +130,7 @@ export type SQLiteDialect = {
 
 export type LibSqlClient = {
     type: 'libsql';
-    client: Client;
+    client: LibSQLDatabase;
 }
 
 export type TypeSqlConfig = {

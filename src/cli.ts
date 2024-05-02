@@ -12,7 +12,7 @@ import { Either, isLeft, left } from "fp-ts/lib/Either";
 import CodeBlockWriter from "code-block-writer";
 import { globSync } from "glob";
 import { createSqliteClient, loadDbSchema, selectSqliteTablesFromSchema } from "./sqlite-query-analyzer/query-executor";
-import { createLibSqlClient, loadLibSqlSchema, selectLibsqlTablesFromSchema } from './drivers/libsql';
+import { createLibSqlClient } from './drivers/libsql';
 
 const CRUD_FOLDER = 'crud';
 
@@ -279,9 +279,8 @@ async function loadSchema(databaseClient: DatabaseClient): Promise<Either<TypeSq
         case "mysql":
             return loadMysqlSchema(databaseClient.client, databaseClient.schema);
         case "sqlite":
-            return loadDbSchema(databaseClient.client);
         case "libsql":
-            return loadLibSqlSchema(databaseClient.client);
+            return loadDbSchema(databaseClient.client);
     }
 }
 
@@ -290,9 +289,8 @@ async function loadTableSchema(databaseClient: DatabaseClient, tableName: string
         case "mysql":
             return loadMySqlTableSchema(databaseClient.client, databaseClient.schema, tableName);
         case "sqlite":
-            return await loadDbSchema(databaseClient.client);
         case "libsql":
-            return loadLibSqlSchema(databaseClient.client);
+            return await loadDbSchema(databaseClient.client);
     }
 }
 
@@ -301,9 +299,8 @@ async function selectTables(databaseClient: DatabaseClient) {
         case "mysql":
             return await selectTablesFromSchema(databaseClient.client);
         case "sqlite":
-            return selectSqliteTablesFromSchema(databaseClient.client);
         case "libsql":
-            return selectLibsqlTablesFromSchema(databaseClient.client);
+            return selectSqliteTablesFromSchema(databaseClient.client);
     }
 }
 

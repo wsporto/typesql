@@ -3,16 +3,30 @@ import { ColumnInfo, ColumnSchema } from "../mysql-query-analyzer/types";
 import { parseSql } from "./parser";
 import { TsDescriptor, capitalize, convertToCamelCaseName, generateRelationType, removeDuplicatedParameters2, renameInvalidNames, replaceOrderByParam } from "../code-generator";
 import CodeBlockWriter from "code-block-writer";
-import { ParameterDef, SQLiteClient, SchemaDef, TsFieldDescriptor } from "../types";
+import { LibSqlClient, ParameterDef, SQLiteClient, SQLiteDialect, SchemaDef, TsFieldDescriptor, TypeSqlError } from "../types";
 import { SQLiteType } from "./types";
-import { Database } from "better-sqlite3";
 import { Field2 } from "./sqlite-describe-nested-query";
 import { RelationType2, TsField2, mapToTsRelation2 } from "../ts-nested-descriptor";
+import { preprocessSql } from "../describe-query";
+import { explainSql } from "./query-executor";
 
-export function generateTsCode(sql: string, queryName: string, sqliteDbSchema: ColumnSchema[], isCrud = false, client: SQLiteClient = 'sqlite'): Either<string, string> {
+export function validateAndGenerateCode(client: SQLiteDialect | LibSqlClient, sql: string, queryName: string, sqliteDbSchema: ColumnSchema[], isCrud = false): Either<TypeSqlError, string> {
+    const { sql: processedSql } = preprocessSql(sql);
+    const explainSqlResult = explainSql(client.client, processedSql);
+    if (isLeft(explainSqlResult)) {
+        return left({
+            name: 'Invalid sql',
+            description: explainSqlResult.left.description
+        });
+    }
+    const code = generateTsCode(sql, queryName, sqliteDbSchema, isCrud, client.type);
+    return code;
+}
+
+export function generateTsCode(sql: string, queryName: string, sqliteDbSchema: ColumnSchema[], isCrud = false, client: SQLiteClient = 'sqlite'): Either<TypeSqlError, string> {
     const schemaDefResult = parseSql(sql, sqliteDbSchema);
     if (isLeft(schemaDefResult)) {
-        return left('//Invalid sql');
+        return schemaDefResult;
     }
     const tsDescriptor = createTsDescriptor(schemaDefResult.right);
     const code = generateCodeFromTsDescriptor(client, queryName, tsDescriptor, isCrud);

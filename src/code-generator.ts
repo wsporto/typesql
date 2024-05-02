@@ -1,8 +1,8 @@
-import { SchemaDef, CamelCaseName, TsFieldDescriptor, ParameterDef, DatabaseClient, MySqlDialect } from "./types";
+import { SchemaDef, CamelCaseName, TsFieldDescriptor, ParameterDef, DatabaseClient, MySqlDialect, TypeSqlError } from "./types";
 import fs from "fs";
 import path, { parse } from "path";
 import camelCase from "camelcase";
-import { Either, isLeft, left, right } from "fp-ts/lib/Either";
+import { Either, isLeft, right } from "fp-ts/lib/Either";
 import { converToTsType, MySqlType } from "./mysql-mapping";
 import { parseSql } from "./describe-query";
 import CodeBlockWriter from "code-block-writer";
@@ -10,7 +10,7 @@ import { NestedTsDescriptor, RelationType2, createNestedTsDescriptor } from "./t
 import { mapToDynamicResultColumns, mapToDynamicParams, mapToDynamicSelectColumns } from "./ts-dynamic-query-descriptor";
 import { ColumnSchema, DynamicSqlInfoResult, FragmentInfoResult } from "./mysql-query-analyzer/types";
 import { EOL } from "os";
-import { generateTsCode } from "./sqlite-query-analyzer/code-generator";
+import { validateAndGenerateCode } from "./sqlite-query-analyzer/code-generator";
 
 export function generateTsCodeForMySQL(tsDescriptor: TsDescriptor, fileName: string, target: 'node' | 'deno', crud: boolean = false): string {
     const writer = new CodeBlockWriter();
@@ -669,27 +669,26 @@ export async function generateTsFile(client: DatabaseClient, sqlFile: string, db
     const dirPath = parse(sqlFile).dir;
     const queryName = convertToCamelCaseName(fileName);
 
-    //TODO - check invalid sql();
     const tsContentResult = client.type == 'mysql' ? await generateTsFileFromContent(client, queryName, sqlContent, 'node', isCrudFile)
-        : generateTsCode(sqlContent, queryName, dbSchema, isCrudFile, client.type);
+        : validateAndGenerateCode(client, sqlContent, queryName, dbSchema, isCrudFile);
 
+    const tsFilePath = path.resolve(dirPath, fileName) + ".ts";
     if (isLeft(tsContentResult)) {
-        console.error('ERROR: ', tsContentResult.left);
+        console.error('ERROR: ', tsContentResult.left.description);
         console.error('at ', sqlFile);
+        writeFile(tsFilePath, '//Invalid SQL');
         return;
     }
     const tsContent = tsContentResult.right;
 
-    const tsFilePath = path.resolve(dirPath, fileName) + ".ts";
-
     writeFile(tsFilePath, tsContent);
 }
 
-export async function generateTsFileFromContent(client: MySqlDialect, queryName: string, sqlContent: string, target: 'node' | 'deno', crud: boolean = false): Promise<Either<string, string>> {
+export async function generateTsFileFromContent(client: MySqlDialect, queryName: string, sqlContent: string, target: 'node' | 'deno', crud: boolean = false): Promise<Either<TypeSqlError, string>> {
     const queryInfoResult = await parseSql(client, sqlContent);
 
     if (isLeft(queryInfoResult)) {
-        return left(queryInfoResult.left.description);
+        return queryInfoResult;
     }
     const tsDescriptor = generateTsDescriptor(queryInfoResult.right);
     const tsContent = generateTsCodeForMySQL(tsDescriptor, queryName, target, crud);

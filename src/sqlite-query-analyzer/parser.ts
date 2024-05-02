@@ -8,17 +8,6 @@ import { unify } from "../mysql-query-analyzer/unify";
 import { hasAnnotation, preprocessSql, verifyNotInferred } from "../describe-query";
 import { describeNestedQuery } from "./sqlite-describe-nested-query";
 
-// export function prepareAndParse(sql: string, dbSchema: ColumnSchema[]) {
-//     const { sql: processedSql } = preprocessSql(sql);
-//     // const explainSqlResult = explainSql(db, processedSql);
-//     // if (isLeft(explainSqlResult)) {
-//     //     return left({
-//     //         name: 'Invalid sql',
-//     //         description: explainSqlResult.left.description
-//     //     })
-//     // }
-//     return parseSql(sql, dbSchema);
-// }
 
 export function parseSql(sql: string, dbSchema: ColumnSchema[]): Either<TypeSqlError, SchemaDef> {
 
