@@ -1,5 +1,7 @@
 {
     "databaseUri": "mysql://root:password@localhost/mydb",
     "sqlDir": "./sqls",
-    "target": "node"
+    "target": "node",
+    "client": "mysql",
+    "includeCrudTables": []
 }
