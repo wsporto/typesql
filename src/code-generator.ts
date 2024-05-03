@@ -665,6 +665,10 @@ export async function generateTsFile(client: DatabaseClient, sqlFile: string, db
 
     const sqlContent = fs.readFileSync(sqlFile, 'utf8');
 
+    if (sqlContent.trim() == '') { //ignore empty file
+        return;
+    }
+
     const fileName = parse(sqlFile).name;
     const dirPath = parse(sqlFile).dir;
     const queryName = convertToCamelCaseName(fileName);
