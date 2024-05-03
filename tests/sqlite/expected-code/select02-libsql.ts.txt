@@ -9,7 +9,7 @@ export async function select02(client: Client): Promise<Select02Result[]> {
 	select id from mytable1
 	`
 	return client.execute(sql)
-		.then(res => res.toJSON().rows as Select02Result[])
+		.then(res => res.rows)
 		.then(rows => rows.map(row => mapArrayToSelect02Result(row)));
 }
 

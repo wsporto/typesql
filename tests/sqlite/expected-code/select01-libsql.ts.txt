@@ -14,7 +14,7 @@ export async function select01(client: Client, params: Select01Params): Promise<
 	select id, name from mytable2 where id = ?
 	`
 	return client.execute({ sql, args: [params.param1] })
-		.then(res => res.toJSON().rows as Select01Result[])
+		.then(res => res.rows)
 		.then(rows => rows.map(row => mapArrayToSelect01Result(row))[0]);
 }
 

@@ -219,7 +219,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
                 const executeParams = queryParams != '' ? `{ sql, args: ${queryParams} }` : 'sql';
 
                 writer.write(`return client.execute(${executeParams})`).newLine();
-                writer.indent().write(`.then(res => res.toJSON().rows as ${resultTypeName}[])`).newLine();
+                writer.indent().write(`.then(res => res.rows)`).newLine();
                 writer.indent().write(`.then(rows => rows.map(row => mapArrayTo${resultTypeName}(row))${tsDescriptor.multipleRowsResult ? '' : '[0]'});`);
             });
         }
