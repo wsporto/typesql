@@ -686,4 +686,84 @@ describe('sqlite-nested-query', () => {
 
 		assert.deepStrictEqual(actual.right.nestedInfo, expectedModel);
 	})
+
+	it('self relation - clients with primaryAddress and secondaryAddress', () => {
+
+		const sql = `
+		-- @nested
+        SELECT
+            c.id,
+            a1.*,
+            a2.*
+        FROM clients as c
+        INNER JOIN addresses as a1 ON a1.id = c.primaryAddress
+        LEFT JOIN addresses as a2 ON a2.id = c.secondaryAddress
+        WHERE c.id = :clientId
+        `
+
+		//[id(0),id(1),address(2),id(3),address(3)]
+		const expectedModel: RelationInfo2[] = [
+			{
+				name: 'clients',
+				alias: 'c',
+				fields: [
+					{
+						name: 'id',
+						index: 0
+					}
+				],
+				relations: [
+					{
+						name: 'addresses',
+						alias: 'a1',
+						joinColumn: 'primaryAddress',
+						cardinality: 'one',
+					},
+					{
+						name: 'addresses',
+						alias: 'a2',
+						joinColumn: 'secondaryAddress',
+						cardinality: 'one',
+					}
+				]
+			},
+			{
+				name: 'addresses',
+				alias: 'a1',
+				fields: [
+					{
+						name: 'id',
+						index: 1
+					},
+					{
+						name: 'address',
+						index: 2
+					}
+				],
+				relations: []
+			},
+			{
+				name: 'addresses',
+				alias: 'a2',
+				fields: [
+					{
+						name: 'id',
+						index: 3
+					},
+					{
+						name: 'address',
+						index: 4
+					}
+				],
+				relations: []
+			}
+		]
+
+		const actual = parseSql(sql, sqliteDbSchema);
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+
+		assert.deepStrictEqual(actual.right.nestedInfo, expectedModel);
+	})
 })
