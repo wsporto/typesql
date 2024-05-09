@@ -199,15 +199,17 @@ function traverse_table_or_subquery(table_or_subquery_list: Table_or_subqueryCon
 
         if (table_name) {
             const tableName = splitName(table_name.any_name().getText());
+            const asAlias = table_or_subquery.AS_() || false;
             const fields = filterColumns(traverseContext.dbSchema, traverseContext.withSchema, table_alias, tableName);
             allFields.push(...fields);
 
+            const idColumn = fields.find(field => field.columnKey == 'PRI')?.columnName!;
             const relation: Relation2 = {
-                name: tableName.name,
+                name: asAlias ? table_alias : tableName.name,
                 alias: table_alias,
                 parentRelation: '',
                 cardinality: 'one',
-                joinColumn: ''
+                joinColumn: idColumn
             }
 
             if (join_constraint_list && index > 0) { //index 0 is the FROM (root relation)

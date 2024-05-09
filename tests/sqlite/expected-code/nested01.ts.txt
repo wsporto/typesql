@@ -54,7 +54,7 @@ export function nested01Nested(db: Database): Nested01NestedUsers[] {
 }
 
 function collectNested01NestedUsers(selectResult: Nested01Result[]): Nested01NestedUsers[] {
-	const grouped = groupBy(selectResult.filter(r => r.user_id != null), r => r.user_id);
+	const grouped = groupBy(selectResult.filter(r => r.id != null), r => r.id);
 	return [...grouped.values()].map(row => ({
 		user_id: row[0].user_id!,
 		user_name: row[0].user_name!,
@@ -63,9 +63,10 @@ function collectNested01NestedUsers(selectResult: Nested01Result[]): Nested01Nes
 }
 
 function collectNested01NestedPosts(selectResult: Nested01Result[]): Nested01NestedPosts[] {
-	return selectResult.map(row => ({
-		post_id: row.post_id!,
-		post_title: row.post_title!,
+	const grouped = groupBy(selectResult.filter(r => r.user_id != null), r => r.user_id);
+	return [...grouped.values()].map(row => ({
+		post_id: row[0].post_id!,
+		post_title: row[0].post_title!,
 	}))
 }
 

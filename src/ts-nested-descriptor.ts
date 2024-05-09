@@ -31,7 +31,6 @@ export type TsRelationField2 = {
     name: string;
     tsType: string;
     notNull: boolean;
-    joinColumn: string;
 }
 
 export type FieldType = TsField | TsRelationField;
@@ -44,7 +43,7 @@ export type RelationType = {
 
 export type RelationType2 = {
     name: string;
-    joinColumn?: string;
+    joinColumn: string;
     fields: TsField2[];
     relations: TsRelationField2[];
 }
@@ -117,8 +116,7 @@ export function mapToTsRelation2(relationField: RelationField2): TsRelationField
         list: relationField.cardinality == 'many' ? true : false,
         name: relationField.name,
         tsType: relationField.name + (relationField.cardinality == 'many' ? '[]' : ''),
-        notNull: true,
-        joinColumn: relationField.joinColumn
+        notNull: true
     }
     return field;
 }

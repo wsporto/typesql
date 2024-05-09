@@ -13,6 +13,7 @@ export type RelationInfo2 = {
 	name: string;
 	alias: string;
 	fields: Field2[];
+	joinColumn: string;
 	relations: RelationField2[];
 }
 
@@ -24,7 +25,6 @@ export type Field2 = {
 export type RelationField2 = {
 	name: string;
 	alias: string;
-	joinColumn: string;
 	cardinality: Cardinality;
 }
 
@@ -48,8 +48,10 @@ export function describeNestedQuery(columns: ColumnInfo[], relations: Relation2[
 
 	const result = filterJunctionTables.map((relation, index) => {
 		const parent = isJunctionTableMap.get(relation.parentRelation) ? parentRef.get(relation.parentRelation) : undefined;
+		const joinColumn = isJunctionTableMap.get(relation.parentRelation) ? parentRef.get(relation.parentRelation)?.joinColumn! : relation.joinColumn
 
 		const relationInfo: RelationInfo2 = {
+			joinColumn: joinColumn,
 			name: relation.name,
 			alias: relation.alias,
 			fields: columns
@@ -66,8 +68,7 @@ export function describeNestedQuery(columns: ColumnInfo[], relations: Relation2[
 					{
 						name: relation.name,
 						alias: relation.alias,
-						cardinality: isJunctionTableMap.get(relation.parentRelation) ? 'many' : relation.cardinality,
-						joinColumn: isJunctionTableMap.get(relation.parentRelation) ? parentRef.get(relation.parentRelation)?.joinColumn! : relation.joinColumn
+						cardinality: isJunctionTableMap.get(relation.parentRelation) ? 'many' : relation.cardinality
 					}
 				))
 		}

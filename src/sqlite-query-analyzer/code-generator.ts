@@ -48,6 +48,7 @@ function createTsDescriptor(queryInfo: SchemaDef): TsDescriptor {
     if (queryInfo.nestedInfo) {
         const nestedDescriptor2 = queryInfo.nestedInfo.map(relation => {
             const tsRelation: RelationType2 = {
+                joinColumn: relation.joinColumn,
                 name: relation.name,
                 fields: relation.fields.map(field => mapFieldToTsField(queryInfo.columns, field)),
                 relations: relation.relations.map(relation => mapToTsRelation2(relation))
@@ -358,31 +359,19 @@ function writeCollectFunction(
     writer.blankLine();
     writer.write(`function ${collectFunctionName}(selectResult: ${resultTypeName}[]): ${relationType}[]`).block(() => {
 
-        if (relation.relations.length > 0) {
-            const joinColumn = relation.relations[0].joinColumn;
-            writer.writeLine(`const grouped = groupBy(selectResult.filter(r => r.${joinColumn} != null), r => r.${joinColumn});`)
-            writer.write(`return [...grouped.values()].map(row => (`).inlineBlock(() => {
-                relation.fields.forEach((field, index) => {
-                    const uniqueNameFields = renameInvalidNames(relation.fields.map(f => f.name));
-                    const separator = ',';
-                    const fieldName = columns[field.index].name;
-                    writer.writeLine(`${uniqueNameFields[index]}: row[0].${fieldName}!` + separator);
-                })
-                relation.relations.forEach(fieldRelation => {
-                    const relationType = generateRelationType(capitalizedName, fieldRelation.name);
-                    writer.writeLine(`${fieldRelation.name}: collect${relationType}(row),`);
-                })
-            }).write('))');
-        }
-        else {
-            writer.write(`return selectResult.map(row => (`).inlineBlock(() => {
-                relation.fields.forEach((field, index) => {
-                    const uniqueNameFields = renameInvalidNames(relation.fields.map(f => f.name));
-                    const separator = ',';
-                    const fieldName = columns[field.index].name;
-                    writer.writeLine(`${uniqueNameFields[index]}: row.${fieldName}!` + separator);
-                })
-            }).write('))');
-        }
+        writer.writeLine(`const grouped = groupBy(selectResult.filter(r => r.${relation.joinColumn} != null), r => r.${relation.joinColumn});`)
+        writer.write(`return [...grouped.values()].map(row => (`).inlineBlock(() => {
+            relation.fields.forEach((field, index) => {
+                const uniqueNameFields = renameInvalidNames(relation.fields.map(f => f.name));
+                const separator = ',';
+                const fieldName = columns[field.index].name;
+                writer.writeLine(`${uniqueNameFields[index]}: row[0].${fieldName}!` + separator);
+            })
+            relation.relations.forEach(fieldRelation => {
+                const relationType = generateRelationType(capitalizedName, fieldRelation.name);
+                const cardinality = fieldRelation.list ? '' : '[0]'
+                writer.writeLine(`${fieldRelation.name}: collect${relationType}(row)${cardinality},`);
+            })
+        }).write('))');
     })
 }
