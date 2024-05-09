@@ -30,7 +30,6 @@
     "typescript": "^5.4.3"
   },
   "dependencies": {
-    "@libsql/client": "^0.6.0",
     "@wsporto/ts-mysql-parser": "^0.3.0-alpha.5",
     "antlr4ts": "^0.5.0-alpha.3",
     "better-sqlite3": "^9.4.5",
@@ -39,6 +38,7 @@
     "code-block-writer": "^12.0.0",
     "fp-ts": "^2.16.5",
     "glob": "^10.3.12",
+    "libsql": "^0.3.18",
     "moment": "^2.30.1",
     "mysql2": "^3.9.7",
     "yargs": "^17.7.2"
