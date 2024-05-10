@@ -5,6 +5,7 @@ import { generateTsCode } from "../../src/sqlite-query-analyzer/code-generator";
 import { sqliteDbSchema } from "../mysql-query-analyzer/create-schema";
 import Database from "better-sqlite3";
 import { isLeft } from "fp-ts/lib/Either";
+import { loadDbSchema } from "../../src/sqlite-query-analyzer/query-executor";
 
 describe('sqlite-code-generator', () => {
 
@@ -226,6 +227,33 @@ WHERE c.id = :clientId`
 		const isCrud = true;
 		const actual = generateTsCode(sql, 'nested02', sqliteDbSchema, isCrud);
 		const expected = readFileSync('tests/sqlite/expected-code/nested-clients-with-addresses.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	})
+
+	it('nested03 - many to many', () => {
+		const sql = `-- @nested
+SELECT
+	s.id as surveyId,
+	s.name as surveyName,
+	p.id as participantId,
+	u.id as userId,
+	u.name as userName
+FROM surveys s
+INNER JOIN participants p on p.fk_survey = s.id
+INNER JOIN users u on u.id = p.fk_user`;
+
+		const schemaResult = loadDbSchema(db);
+		if (isLeft(schemaResult)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+
+		const isCrud = true;
+		const actual = generateTsCode(sql, 'nested03', schemaResult.right, isCrud, 'libsql');
+		const expected = readFileSync('tests/sqlite/expected-code/nested03-many-to-many.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error`);

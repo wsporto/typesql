@@ -22,3 +22,32 @@ CREATE TABLE roles(
     role TEXT NOT NULL DEFAULT 'user',
     fk_user INTEGER NOT NULL
 );
+
+CREATE TABLE surveys(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL
+);
+
+CREATE TABLE participants(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    fk_user INTEGER NOT NULL,
+    fk_survey INTEGER NOT NULL,
+    FOREIGN KEY (fk_user) REFERENCES users (id),
+    FOREIGN KEY (fk_survey) REFERENCES surveys (id)
+);
+
+CREATE TABLE questions(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    questions TEXT NOT NULL,
+    fk_survey INTEGER NOT NULL,
+    FOREIGN KEY (fk_survey) REFERENCES surveys(id)
+);
+
+CREATE TABLE answers(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    answer VARCHAR(255),
+    fk_user INTEGER NOT NULL,
+    fk_question INTEGER NOT NULL,
+    FOREIGN KEY (fk_user) REFERENCES users (id),
+    FOREIGN KEY (fk_question) REFERENCES questions(id)
+);
