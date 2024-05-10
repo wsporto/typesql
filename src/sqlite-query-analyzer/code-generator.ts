@@ -48,7 +48,7 @@ function createTsDescriptor(queryInfo: SchemaDef): TsDescriptor {
     if (queryInfo.nestedInfo) {
         const nestedDescriptor2 = queryInfo.nestedInfo.map(relation => {
             const tsRelation: RelationType2 = {
-                joinColumn: relation.joinColumn,
+                groupIndex: relation.groupIndex,
                 name: relation.name,
                 fields: relation.fields.map(field => mapFieldToTsField(queryInfo.columns, field)),
                 relations: relation.relations.map(relation => mapToTsRelation2(relation))
@@ -359,7 +359,8 @@ function writeCollectFunction(
     writer.blankLine();
     writer.write(`function ${collectFunctionName}(selectResult: ${resultTypeName}[]): ${relationType}[]`).block(() => {
 
-        writer.writeLine(`const grouped = groupBy(selectResult.filter(r => r.${relation.joinColumn} != null), r => r.${relation.joinColumn});`)
+        const groupBy = columns[relation.groupIndex].name;
+        writer.writeLine(`const grouped = groupBy(selectResult.filter(r => r.${groupBy} != null), r => r.${groupBy});`)
         writer.write(`return [...grouped.values()].map(row => (`).inlineBlock(() => {
             relation.fields.forEach((field, index) => {
                 const uniqueNameFields = renameInvalidNames(relation.fields.map(f => f.name));

@@ -30,7 +30,7 @@ describe('sqlite-nested-query', () => {
 			{
 				name: 'users',
 				alias: 'u',
-				joinColumn: 'id',
+				groupIndex: 0,
 				fields: [
 					{
 						name: 'user_id',
@@ -52,7 +52,7 @@ describe('sqlite-nested-query', () => {
 			{
 				name: 'posts',
 				alias: 'p',
-				joinColumn: 'user_id',
+				groupIndex: 2,
 				fields: [
 					{
 						name: 'post_id',
@@ -99,7 +99,7 @@ describe('sqlite-nested-query', () => {
 			{
 				name: 'users',
 				alias: '',
-				joinColumn: 'id',
+				groupIndex: 0,
 				fields: [
 					{
 						name: 'id',
@@ -121,7 +121,7 @@ describe('sqlite-nested-query', () => {
 			{
 				name: 'posts',
 				alias: '',
-				joinColumn: 'id',
+				groupIndex: 2,
 				fields: [
 					{
 						name: 'id',
@@ -177,7 +177,7 @@ describe('sqlite-nested-query', () => {
 			{
 				name: 'posts',
 				alias: 'p',
-				joinColumn: 'id',
+				groupIndex: 2,
 				fields: [
 					{
 						name: 'post_id',
@@ -203,7 +203,7 @@ describe('sqlite-nested-query', () => {
 			{
 				name: 'users',
 				alias: 'u',
-				joinColumn: 'fk_user',
+				groupIndex: 0,
 				fields: [
 					{
 						name: 'user_id',
@@ -236,6 +236,7 @@ describe('sqlite-nested-query', () => {
             p.id as post_id,
             p.title as post_title,
             p.body  as post_body,
+			c.id as comment_id,
             c.comment as comment
         FROM users u
         INNER JOIN posts p on p.fk_user = u.id
@@ -258,7 +259,7 @@ describe('sqlite-nested-query', () => {
 			{
 				name: 'users',
 				alias: 'u',
-				joinColumn: 'id',
+				groupIndex: 0,
 				fields: [
 					{
 						name: 'user_id',
@@ -280,7 +281,7 @@ describe('sqlite-nested-query', () => {
 			{
 				name: 'posts',
 				alias: 'p',
-				joinColumn: 'user_id',
+				groupIndex: 2,
 				fields: [
 					{
 						name: 'post_id',
@@ -306,11 +307,15 @@ describe('sqlite-nested-query', () => {
 			{
 				name: 'comments',
 				alias: 'c',
-				joinColumn: 'post_id',
+				groupIndex: 5,
 				fields: [
 					{
-						name: 'comment',
+						name: 'comment_id',
 						index: 5
+					},
+					{
+						name: 'comment',
+						index: 6
 					}
 				],
 				relations: []
@@ -335,6 +340,7 @@ describe('sqlite-nested-query', () => {
             p.id as post_id,
             p.title as post_title,
             p.body  as post_body,
+			r.id as role_id,
             r.role
         FROM users u
         INNER JOIN posts p on p.fk_user = u.id
@@ -358,7 +364,7 @@ describe('sqlite-nested-query', () => {
 			{
 				name: 'users',
 				alias: 'u',
-				joinColumn: 'id',
+				groupIndex: 0,
 				fields: [
 					{
 						name: 'user_id',
@@ -385,7 +391,7 @@ describe('sqlite-nested-query', () => {
 			{
 				name: 'posts',
 				alias: 'p',
-				joinColumn: 'user_id',
+				groupIndex: 2,
 				fields: [
 					{
 						name: 'post_id',
@@ -405,11 +411,15 @@ describe('sqlite-nested-query', () => {
 			{
 				name: 'roles',
 				alias: 'r',
-				joinColumn: 'user_id',
+				groupIndex: 5,
 				fields: [
 					{
-						name: 'role',
+						name: 'role_id',
 						index: 5
+					},
+					{
+						name: 'role',
+						index: 6
 					}
 				],
 				relations: []
@@ -434,7 +444,9 @@ describe('sqlite-nested-query', () => {
             p.id as post_id,
             p.title as post_title,
             p.body  as post_body,
+			r.id as role_id,
             r.role,
+			c.id as comment_id,
             c.comment
         FROM users u
         INNER JOIN posts p on p.fk_user = u.id
@@ -459,7 +471,7 @@ describe('sqlite-nested-query', () => {
 			{
 				name: 'users',
 				alias: 'u',
-				joinColumn: 'id',
+				groupIndex: 0,
 				fields: [
 					{
 						name: 'user_id',
@@ -486,7 +498,7 @@ describe('sqlite-nested-query', () => {
 			{
 				name: 'posts',
 				alias: 'p',
-				joinColumn: 'user_id',
+				groupIndex: 2,
 				fields: [
 					{
 						name: 'post_id',
@@ -512,11 +524,15 @@ describe('sqlite-nested-query', () => {
 			{
 				name: 'roles',
 				alias: 'r',
-				joinColumn: 'user_id',
+				groupIndex: 5,
 				fields: [
 					{
-						name: 'role',
+						name: 'role_id',
 						index: 5
+					},
+					{
+						name: 'role',
+						index: 6
 					}
 				],
 				relations: []
@@ -524,11 +540,15 @@ describe('sqlite-nested-query', () => {
 			{
 				name: 'comments',
 				alias: 'c',
-				joinColumn: 'post_id',
+				groupIndex: 7,
 				fields: [
 					{
+						name: 'comment_id',
+						index: 7
+					},
+					{
 						name: 'comment',
-						index: 6
+						index: 8
 					}
 				],
 				relations: []
@@ -558,7 +578,7 @@ describe('sqlite-nested-query', () => {
 			{
 				name: 'users',
 				alias: 'u',
-				joinColumn: 'id',
+				groupIndex: 0,
 				fields: [
 					{
 						name: 'id',
@@ -580,7 +600,7 @@ describe('sqlite-nested-query', () => {
 			{
 				name: 'posts',
 				alias: 'p',
-				joinColumn: 'id',
+				groupIndex: 2,
 				fields: [
 					{
 						name: 'id',
@@ -621,12 +641,12 @@ describe('sqlite-nested-query', () => {
         INNER JOIN authors a on a.id = ba.author_id
         `
 
-		//[id(0),title(1),isbn(2),id(3),book_id(4),author_id(5),id(6),fullName(7),shortName(8)]
+		//[id(0),title(1),isbn(2),id(3),book_id(4),author_id(5),author_ordinal(6), id(7),fullName(8),shortName(9)]
 		const expectedModel: RelationInfo2[] = [
 			{
 				name: 'books',
 				alias: 'b',
-				joinColumn: 'id',
+				groupIndex: 0,
 				fields: [
 					{
 						name: 'id',
@@ -652,7 +672,7 @@ describe('sqlite-nested-query', () => {
 			{
 				name: 'authors',
 				alias: 'a',
-				joinColumn: 'id',
+				groupIndex: 7,
 				fields: [
 					{
 						name: 'id',
@@ -714,7 +734,7 @@ describe('sqlite-nested-query', () => {
 			{
 				name: 'c',
 				alias: 'c',
-				joinColumn: 'id',
+				groupIndex: 0,
 				fields: [
 					{
 						name: 'id',
@@ -737,7 +757,7 @@ describe('sqlite-nested-query', () => {
 			{
 				name: 'a1',
 				alias: 'a1',
-				joinColumn: 'primaryAddress',
+				groupIndex: 1,
 				fields: [
 					{
 						name: 'id',
@@ -753,7 +773,7 @@ describe('sqlite-nested-query', () => {
 			{
 				name: 'a2',
 				alias: 'a2',
-				joinColumn: 'secondaryAddress',
+				groupIndex: 3,
 				fields: [
 					{
 						name: 'id',

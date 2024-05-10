@@ -43,7 +43,7 @@ export type RelationType = {
 
 export type RelationType2 = {
     name: string;
-    joinColumn: string;
+    groupIndex: number;
     fields: TsField2[];
     relations: TsRelationField2[];
 }

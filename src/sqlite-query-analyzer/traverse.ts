@@ -94,9 +94,12 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
             if (expr) {
 
                 const exprType = traverse_expr(expr, { ...traverseContext, fromColumns: fromColumns });
-                traverseContext.relations.filter(relation => relation.joinColumn == exprType.name && relation.parentRelation == exprType.table).forEach(relation => {
-                    relation.joinColumn = alias;
-                });
+                if (alias) {
+                    traverseContext.relations.filter(relation => relation.joinColumn == exprType.name && (relation.name == exprType.table || relation.alias == exprType.table)).forEach(relation => {
+                        relation.joinColumn = alias;
+                    });
+                }
+
                 if (exprType.type.kind == 'TypeVar') {
                     if (alias) {
                         exprType.name = alias;
@@ -222,9 +225,10 @@ function traverse_table_or_subquery(table_or_subquery_list: Table_or_subqueryCon
                     allJoinColumsn.forEach(joinColumn => {
                         if (joinColumn.prefix != relation.name && joinColumn.prefix != relation.alias) {
                             relation.parentRelation = joinColumn.prefix;
-                            relation.joinColumn = joinColumn.name;
+
                         }
                         if (joinColumn.prefix == relation.name || joinColumn.prefix == relation.alias) {
+                            // relation.joinColumn = joinColumn.name;
                             const column = allFields.find(col => col.columnName == joinColumn.name && (col.tableAlias == joinColumn.prefix || col.table == joinColumn.prefix))!;
                             if (column?.columnKey != 'UNI' && column?.columnKey != 'PRI') {
                                 relation.cardinality = 'many'

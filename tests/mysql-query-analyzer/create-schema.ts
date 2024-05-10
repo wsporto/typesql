@@ -499,7 +499,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         column: 'id',
         column_type: 'INTEGER',
         notNull: true,
-        columnKey: '',
+        columnKey: 'PRI',
     },
     {
         schema: '',

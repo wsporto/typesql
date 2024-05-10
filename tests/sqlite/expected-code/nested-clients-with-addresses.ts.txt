@@ -75,7 +75,7 @@ function collectNested02NestedC(selectResult: Nested02Result[]): Nested02NestedC
 }
 
 function collectNested02NestedA1(selectResult: Nested02Result[]): Nested02NestedA1[] {
-	const grouped = groupBy(selectResult.filter(r => r.primaryAddress != null), r => r.primaryAddress);
+	const grouped = groupBy(selectResult.filter(r => r.id_2 != null), r => r.id_2);
 	return [...grouped.values()].map(row => ({
 		id: row[0].id_2!,
 		address: row[0].address!,
@@ -83,7 +83,7 @@ function collectNested02NestedA1(selectResult: Nested02Result[]): Nested02Nested
 }
 
 function collectNested02NestedA2(selectResult: Nested02Result[]): Nested02NestedA2[] {
-	const grouped = groupBy(selectResult.filter(r => r.secondaryAddress != null), r => r.secondaryAddress);
+	const grouped = groupBy(selectResult.filter(r => r.id_3 != null), r => r.id_3);
 	return [...grouped.values()].map(row => ({
 		id: row[0].id_3!,
 		address: row[0].address_2!,

@@ -13,7 +13,7 @@ export type RelationInfo2 = {
 	name: string;
 	alias: string;
 	fields: Field2[];
-	joinColumn: string;
+	groupIndex: number;
 	relations: RelationField2[];
 }
 
@@ -48,10 +48,10 @@ export function describeNestedQuery(columns: ColumnInfo[], relations: Relation2[
 
 	const result = filterJunctionTables.map((relation, index) => {
 		const parent = isJunctionTableMap.get(relation.parentRelation) ? parentRef.get(relation.parentRelation) : undefined;
-		const joinColumn = isJunctionTableMap.get(relation.parentRelation) ? parentRef.get(relation.parentRelation)?.joinColumn! : relation.joinColumn
+		const groupIndex = columns.findIndex(col => col.columnName == relation.joinColumn && (col.table == relation.name || col.table == relation.alias));
 
 		const relationInfo: RelationInfo2 = {
-			joinColumn: joinColumn,
+			groupIndex: groupIndex,
 			name: relation.name,
 			alias: relation.alias,
 			fields: columns
