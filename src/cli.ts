@@ -264,7 +264,6 @@ async function selectAllTables(client: DatabaseClient): Promise<Either<string, T
 }
 
 async function createClient(databaseUri: string, dialect: TypeSqlDialect, authToken?: string) {
-    console.log("createClient:", databaseUri, "dialect=", dialect);
     switch (dialect) {
         case "mysql":
             return createMysqlClient(databaseUri);
