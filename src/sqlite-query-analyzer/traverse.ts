@@ -467,10 +467,21 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         };
     }
     if (expr.PLUS() || expr.MINUS()) {
+        const returnType = freshVar(expr.getText(), 'REAL');
         const exprLeft = expr.expr(0);
         const exprRight = expr.expr(1);
         const typeLeft = traverse_expr(exprLeft, traverseContext);
         const typeRight = traverse_expr(exprRight, traverseContext);
+        traverseContext.constraints.push({
+            expression: exprLeft.getText(),
+            type1: returnType,
+            type2: typeLeft.type
+        })
+        traverseContext.constraints.push({
+            expression: exprRight.getText(),
+            type1: returnType,
+            type2: typeRight.type
+        })
         return {
             ...typeRight,
             notNull: typeLeft.notNull && typeRight.notNull
@@ -806,7 +817,7 @@ function traverse_insert_stmt(insert_stmt: Insert_stmtContext, traverseContext: 
             const exprType = traverse_expr(expr, traverseContext);
             traverseContext.parameters.slice(numberParamsBefore).forEach((param) => {
                 const col = columns[index];
-                traverseContext.constraints.push({
+                traverseContext.constraints.unshift({
                     expression: expr.getText(),
                     type1: col.type,
                     type2: exprType.type

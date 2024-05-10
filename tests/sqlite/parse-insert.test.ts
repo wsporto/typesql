@@ -41,6 +41,7 @@ describe('sqlite-parse-insert', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    //Not valid syntax
     it('insert into mydb.mytable1 (value) values (?)', () => {
 
         const sql = `
@@ -161,6 +162,7 @@ describe('sqlite-parse-insert', () => {
         assert.deepStrictEqual(actual.right.parameters, expected);
     })
 
+    //not supported
     // it('insert into mytable1 (id) values (IFNULL(:id, id))', () => {
 
     //     const sql = `
@@ -204,5 +206,101 @@ describe('sqlite-parse-insert', () => {
             assert.fail(`Shouldn't return an error: ` + actual.left.description);
         }
         assert.deepStrictEqual(actual.right.parameters, expected);
+    })
+
+    // it('insert with inexistent columns names', async () => {
+
+    //     const sql = `
+    //     insert into mytable1 (name) values (?)
+    //         `;
+    //     const actual = await parseSql(client, sql);
+
+    //     if (isRight(actual)) {
+    //         assert.fail(`Should return an error`);
+    //     }
+    //     const expectedError = `Unknown column 'name' in 'field list'`;
+    //     assert.deepStrictEqual(actual.left.description, expectedError);
+    // })
+
+    it('insert into all_types (int_column) values (?+?)', async () => {
+
+        const sql = `insert into all_types (int_column) values (?+?)`;
+        const actual = await parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql: 'insert into all_types (int_column) values (?+?)',
+            queryType: 'Insert',
+            multipleRowsResult: false,
+            columns: [
+                {
+                    columnName: 'changes',
+                    type: 'INTEGER',
+                    notNull: true
+                },
+                {
+                    columnName: 'lastInsertRowid',
+                    type: 'INTEGER',
+                    notNull: true
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'INTEGER',
+                    notNull: false
+                },
+                {
+                    name: 'param2',
+                    columnType: 'INTEGER',
+                    notNull: false
+                }
+            ]
+        }
+
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('insert into all_types (real_column) values (?+?)', async () => {
+
+        const sql = `insert into all_types (real_column) values (?+?)`;
+        const actual = await parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql: 'insert into all_types (real_column) values (?+?)',
+            queryType: 'Insert',
+            multipleRowsResult: false,
+            columns: [
+                {
+                    columnName: 'changes',
+                    type: 'INTEGER',
+                    notNull: true
+                },
+                {
+                    columnName: 'lastInsertRowid',
+                    type: 'INTEGER',
+                    notNull: true
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'REAL',
+                    notNull: false
+                },
+                {
+                    name: 'param2',
+                    columnType: 'REAL',
+                    notNull: false
+                }
+            ]
+        }
+
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
     })
 });

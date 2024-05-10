@@ -116,6 +116,15 @@ function getBestPossibleType(type1: InferType, type2: InferType, max?: boolean, 
         return sqliteDateCoercionOrder[index];
     }
 
+    // Is possible to convert text to date
+    const sqliteNumberCoercionOrder: InferType[] = ['INTEGER', 'REAL'];
+    const sqliteIndexNumberType1 = sqliteNumberCoercionOrder.indexOf(type1);
+    const sqliteIndexNumberType2 = sqliteNumberCoercionOrder.indexOf(type2);
+    if (sqliteIndexNumberType1 != -1 && sqliteIndexNumberType2 != -1) {
+        const index = max ? Math.max(sqliteIndexNumberType1, sqliteIndexNumberType2) : Math.min(sqliteIndexNumberType1, sqliteIndexNumberType2);
+        return sqliteNumberCoercionOrder[index];
+    }
+
     if (coercionType == 'Union') {
         const unionType = unionTypeResult(type1, type2);
         return unionType;
