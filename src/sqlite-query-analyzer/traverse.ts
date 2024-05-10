@@ -810,7 +810,7 @@ function traverse_insert_stmt(insert_stmt: Insert_stmtContext, traverseContext: 
         return traverse_column_name(column_name, null, { ...traverseContext, fromColumns });
     });
     const insertColumns: TypeAndNullInfer[] = [];
-    const value_row_list = insert_stmt.values_clause().value_row_list();
+    const value_row_list = insert_stmt.values_clause()?.value_row_list() || [];
     value_row_list.forEach((value_row) => {
         value_row.expr_list().forEach((expr, index) => {
             const numberParamsBefore = traverseContext.parameters.length;
@@ -829,6 +829,27 @@ function traverse_insert_stmt(insert_stmt: Insert_stmtContext, traverseContext: 
             })
         });
     })
+    const select_stmt = insert_stmt.select_stmt();
+    if (select_stmt) {
+        const numberParamsBefore = traverseContext.parameters.length;
+        const selectResult = traverse_select_stmt(select_stmt, traverseContext);
+        selectResult.columns.forEach((selectColumn, index) => {
+            const col = columns[index];
+            traverseContext.constraints.unshift({
+                expression: col.name,
+                type1: col.type,
+                type2: selectColumn.type
+            });
+        })
+
+        traverseContext.parameters.slice(numberParamsBefore).forEach((param, index) => {
+
+            insertColumns.push({
+                ...param,
+                notNull: columns[index].notNull
+            })
+        })
+    }
 
     const queryResult: InsertResult = {
         queryType: 'Insert',
