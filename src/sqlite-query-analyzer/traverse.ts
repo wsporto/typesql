@@ -531,7 +531,7 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
     if (expr.IS_()) { //is null/is not null
         const expr_ = expr.expr(0);
         traverse_expr(expr_, traverseContext);
-        const type = freshVar(expr.getText(), '?');
+        const type = freshVar(expr.getText(), 'INTEGER');
         return {
             name: type.name,
             type: type,
