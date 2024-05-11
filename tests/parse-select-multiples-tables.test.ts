@@ -897,10 +897,6 @@ describe('Test select with multiples tables', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it.skip('subquery in joined tables', () => {
-
-    })
-
     it('multipleRowsResult=false to LIMIT 1', async () => {
 
         //mytable1 (id, value); mytable2 (id, name, descr)

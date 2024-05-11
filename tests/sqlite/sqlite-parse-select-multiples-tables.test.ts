@@ -679,4 +679,59 @@ describe('sqlite-parse-select-multiples-tables', () => {
 		}
 		assert.deepStrictEqual(actual.right, expected);
 	})
+
+	it('multipleRowsResult=false to LIMIT 1', () => {
+
+		//mytable1 (id, value); mytable2 (id, name, descr)
+		const sql = `
+        SELECT *
+        FROM mytable1 t1
+        INNER JOIN mytable2 t2 on t2.id = t1.id
+        LIMIT 1
+        `
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'INTEGER',
+					notNull: true,
+					table: 't1'
+				},
+				{
+					columnName: 'value',
+					type: 'INTEGER',
+					notNull: false,
+					table: 't1'
+				},
+				{
+					columnName: 'id', //TODO - rename fields
+					type: 'INTEGER',
+					notNull: true,
+					table: 't2'
+				},
+				{
+					columnName: 'name',
+					type: 'TEXT',
+					notNull: false,
+					table: 't2'
+				},
+				{
+					columnName: 'descr',
+					type: 'TEXT',
+					notNull: false,
+					table: 't2'
+				}
+			],
+			parameters: []
+
+		}
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	})
 });
