@@ -9,7 +9,7 @@ export type Nested02Result = {
 	id_2: number;
 	address: string;
 	id_3: number;
-	address_2: string;
+	address_2?: string;
 }
 
 export function nested02(db: Database, params: Nested02Params): Nested02Result[] {

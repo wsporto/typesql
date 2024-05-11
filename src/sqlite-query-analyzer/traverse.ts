@@ -1,4 +1,4 @@
-import { Select_stmtContext, Sql_stmtContext, ExprContext, Table_or_subqueryContext, Result_columnContext, Insert_stmtContext, Column_nameContext, Update_stmtContext, Delete_stmtContext, Join_constraintContext, Table_nameContext } from "@wsporto/ts-mysql-parser/dist/sqlite";
+import { Select_stmtContext, Sql_stmtContext, ExprContext, Table_or_subqueryContext, Result_columnContext, Insert_stmtContext, Column_nameContext, Update_stmtContext, Delete_stmtContext, Join_constraintContext, Table_nameContext, Join_operatorContext } from "@wsporto/ts-mysql-parser/dist/sqlite";
 import { ColumnDef, FieldName, TraverseContext, TypeAndNullInfer } from "../mysql-query-analyzer/types";
 import { filterColumns, findColumn, findColumnSchema, includeColumn, splitName } from "../mysql-query-analyzer/select-columns";
 import { createColumnType, freshVar } from "../mysql-query-analyzer/collect-constraints";
@@ -58,14 +58,15 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
 
         const table_or_subquery = select_core.table_or_subquery_list();
         if (table_or_subquery) {
-            const fields = traverse_table_or_subquery(table_or_subquery, null, traverseContext);
+            const fields = traverse_table_or_subquery(table_or_subquery, null, null, traverseContext);
             columnsResult.push(...fields);
         }
         const join_clause = select_core.join_clause();
         if (join_clause) {
             const join_table_or_subquery = join_clause.table_or_subquery_list();
             const join_constraint_list = join_clause.join_constraint_list();
-            const fields = traverse_table_or_subquery(join_table_or_subquery, join_constraint_list, traverseContext);
+            const join_operator_list = join_clause.join_operator_list();
+            const fields = traverse_table_or_subquery(join_table_or_subquery, join_constraint_list, join_operator_list, traverseContext);
             columnsResult.push(...fields);
         }
 
@@ -186,9 +187,15 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
     return selectResult;
 }
 
-function traverse_table_or_subquery(table_or_subquery_list: Table_or_subqueryContext[], join_constraint_list: Join_constraintContext[] | null, traverseContext: TraverseContext): ColumnDef[] {
+function traverse_table_or_subquery(
+    table_or_subquery_list: Table_or_subqueryContext[],
+    join_constraint_list: Join_constraintContext[] | null,
+    join_operator_list: Join_operatorContext[] | null,
+    traverseContext: TraverseContext): ColumnDef[] {
     const allFields: ColumnDef[] = [];
     table_or_subquery_list.forEach((table_or_subquery, index) => {
+
+        const isLeftJoin = index > 0 && join_operator_list ? join_operator_list[index - 1]?.LEFT_() != null : false;
         const table_name = table_or_subquery.table_name();
         const table_alias_temp = table_or_subquery.table_alias()?.getText() || '';
 
@@ -204,7 +211,12 @@ function traverse_table_or_subquery(table_or_subquery_list: Table_or_subqueryCon
             const tableName = splitName(table_name.any_name().getText());
             const asAlias = table_or_subquery.AS_() || false;
             const fields = filterColumns(traverseContext.dbSchema, traverseContext.withSchema, table_alias, tableName);
-            allFields.push(...fields);
+            if (isLeftJoin) {
+                allFields.push(...fields.map(field => ({ ...field, notNull: false })));
+            }
+            else {
+                allFields.push(...fields);
+            }
 
             const idColumn = fields.find(field => field.columnKey == 'PRI')?.columnName!;
             const relation: Relation2 = {

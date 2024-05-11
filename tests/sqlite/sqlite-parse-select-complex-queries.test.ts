@@ -6,6 +6,56 @@ import { sqliteDbSchema } from "../mysql-query-analyzer/create-schema";
 
 describe('sqlite-parse-select-complex-queries', () => {
 
+    it('parse SELECT t1.name, t2.mycolumn2, t3.mycolumn3, count', () => {
+        //mytable1 (id, value); mytable2 (id, name, descr); mytable3 (id)
+        const sql = `
+        SELECT t1.value, t2.name, t3.id, count(*) AS quantity
+        FROM mytable1 t1
+        INNER JOIN mytable2 t2 ON t2.id = t1.id
+        LEFT JOIN mytable3 t3 ON t3.id = t2.id
+        GROUP BY t1.value, t2.name, t3.id
+        HAVING count(*) > 1
+        `
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'value',
+                    type: 'INTEGER',
+                    notNull: false,
+                    table: 't1'
+                },
+                {
+                    columnName: 'name',
+                    type: 'TEXT',
+                    notNull: false,
+                    table: 't2'
+                },
+                {
+                    columnName: 'id',
+                    type: 'INTEGER',
+                    notNull: false,
+                    table: 't3'
+                },
+                {
+                    columnName: 'quantity',
+                    notNull: true,
+                    type: 'INTEGER',
+                    table: ''
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it('parse a select with UNION', () => {
         const sql = `
         SELECT id FROM mytable1
