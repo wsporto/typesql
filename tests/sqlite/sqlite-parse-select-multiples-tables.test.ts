@@ -557,4 +557,30 @@ describe('sqlite-parse-select-multiples-tables', () => {
 		}
 		assert.deepStrictEqual(actual.right, expected);
 	})
+
+	it('parse a query with extras parenteses', () => {
+
+		const sql = `
+        select name from ((( mytable1, (select * from mytable2) t )))
+        `
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'name',
+					type: 'TEXT',
+					notNull: false,
+					table: 't'
+				}
+			],
+			parameters: []
+		}
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	})
 });

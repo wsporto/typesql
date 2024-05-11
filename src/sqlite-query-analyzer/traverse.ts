@@ -267,6 +267,11 @@ function traverse_table_or_subquery(
                 allFields.push(colDef);
             })
         }
+        const table_or_subquery_list = table_or_subquery.table_or_subquery_list();
+        if (table_or_subquery_list.length > 0) {
+            const fields = traverse_table_or_subquery(table_or_subquery_list, null, null, traverseContext);
+            allFields.push(...fields);
+        }
     })
     return allFields;
 }
