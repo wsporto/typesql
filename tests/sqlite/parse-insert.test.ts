@@ -345,4 +345,47 @@ describe('sqlite-parse-insert', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     })
+
+    it(`INSERT INTO mytable2 (id, name) SELECT id, descr FROM mytable2 WHERE name = ? AND id > ?`, () => {
+
+        const sql = `
+        INSERT INTO mytable2 (id, name)
+        SELECT id, descr
+        FROM mytable2 WHERE name = ? AND id > ?`;
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql: sql,
+            queryType: 'Insert',
+            multipleRowsResult: false,
+            columns: [
+                {
+                    columnName: 'changes',
+                    type: 'INTEGER',
+                    notNull: true
+                },
+                {
+                    columnName: 'lastInsertRowid',
+                    type: 'INTEGER',
+                    notNull: true
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'TEXT',
+                    notNull: true
+                },
+                {
+                    name: 'param2',
+                    columnType: 'INTEGER',
+                    notNull: true
+                }
+            ]
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
 });

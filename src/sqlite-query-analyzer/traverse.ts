@@ -831,7 +831,7 @@ function traverse_insert_stmt(insert_stmt: Insert_stmtContext, traverseContext: 
     })
     const select_stmt = insert_stmt.select_stmt();
     if (select_stmt) {
-        const numberParamsBefore = traverseContext.parameters.length;
+        const columnNullability = new Map<string, boolean>();
         const selectResult = traverse_select_stmt(select_stmt, traverseContext);
         selectResult.columns.forEach((selectColumn, index) => {
             const col = columns[index];
@@ -840,13 +840,14 @@ function traverse_insert_stmt(insert_stmt: Insert_stmtContext, traverseContext: 
                 type1: col.type,
                 type2: selectColumn.type
             });
+            columnNullability.set(selectColumn.type.id, col.notNull);
         })
 
-        traverseContext.parameters.slice(numberParamsBefore).forEach((param, index) => {
+        traverseContext.parameters.forEach(param => {
 
             insertColumns.push({
                 ...param,
-                notNull: columns[index].notNull
+                notNull: columnNullability.get(param.type.id) != null ? columnNullability.get(param.type.id)! : param.notNull
             })
         })
     }
