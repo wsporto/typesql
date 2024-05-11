@@ -388,4 +388,55 @@ describe('sqlite-parse-insert', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     })
+
+    it('insert into all_types (varchar_column, int_column) values (concat(?, ?), ?+?)', () => {
+
+        const sql = `insert into all_types (varchar_column, int_column) values (concat(?, ?), ?+?)`;
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql: 'insert into all_types (varchar_column, int_column) values (concat(?, ?), ?+?)',
+            queryType: 'Insert',
+            multipleRowsResult: false,
+            columns: [
+                {
+                    columnName: 'changes',
+                    type: 'INTEGER',
+                    notNull: true
+                },
+                {
+                    columnName: 'lastInsertRowid',
+                    type: 'INTEGER',
+                    notNull: true
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'TEXT',
+                    notNull: false
+                },
+                {
+                    name: 'param2',
+                    columnType: 'TEXT',
+                    notNull: false
+                },
+                {
+                    name: 'param3',
+                    columnType: 'INTEGER',
+                    notNull: false
+                },
+                {
+                    name: 'param4',
+                    columnType: 'INTEGER',
+                    notNull: false
+                }
+            ]
+        }
+
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
 });
