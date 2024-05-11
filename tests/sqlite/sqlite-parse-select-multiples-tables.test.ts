@@ -583,4 +583,100 @@ describe('sqlite-parse-select-multiples-tables', () => {
 		}
 		assert.deepStrictEqual(actual.right, expected);
 	})
+
+	it('parse a query with duplicated names', () => {
+
+		const sql = `
+        select t1.id, t2.id, t1.value as name, t2.name, t1.id, name as descr
+        from mytable1 t1
+        inner join mytable2 t2 on t1.id = t2.id
+        `
+		const actual = parseSql(sql, sqliteDbSchema);
+		//Add the sufix _2, _3 to the duplicated names
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'INTEGER',
+					notNull: true,
+					table: 't1'
+				},
+				{
+					columnName: 'id', //TODO - rename field
+					type: 'INTEGER',
+					notNull: true,
+					table: 't2'
+				},
+				{
+					columnName: 'name',
+					type: 'INTEGER',
+					notNull: false,
+					table: 't1'
+				},
+				{
+					columnName: 'name', //TODO - rename field
+					type: 'TEXT',
+					notNull: false,
+					table: 't2'
+				},
+				{
+					columnName: 'id', //TODO - rename field
+					type: 'INTEGER',
+					notNull: true,
+					table: 't1'
+				},
+				{
+					columnName: 'descr',
+					type: 'TEXT',
+					notNull: false,
+					table: 't2'
+				}
+			],
+			parameters: []
+		}
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+
+	})
+
+	it('multipleRowsResult must be true with inner join and t1.id = 1', () => {
+
+		const sql = `
+        SELECT t1.id, t1.name
+        FROM mytable2 t1
+        INNER JOIN mytable2 t2 ON t2.id = t1.id
+        WHERE t1.id = 1
+        `
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'INTEGER',
+					notNull: true,
+					table: 't1'
+				},
+				{
+					columnName: 'name',
+					type: 'TEXT',
+					notNull: false,
+					table: 't1'
+				}
+			],
+			parameters: []
+
+		}
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	})
 });

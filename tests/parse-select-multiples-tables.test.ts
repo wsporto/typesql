@@ -793,7 +793,7 @@ describe('Test select with multiples tables', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('multipleRowsResult must be false with inner join and t1.id = 1', async () => {
+    it('multipleRowsResult must be true with inner join and t1.id = 1', async () => {
 
         const sql = `
         SELECT t1.id, t1.name
