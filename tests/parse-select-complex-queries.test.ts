@@ -238,7 +238,7 @@ describe('Test parse complex queries', () => {
     })
 
     //.only
-    it('parse a select with UNION', async () => {
+    it('parse a select with UNION (int_column + int_column, int_column + text_column)', async () => {
         const sql = `
         SELECT id, value FROM mytable1
         UNION
