@@ -207,15 +207,19 @@ function traverse_table_or_subquery(
             || table_alias_temp.toLowerCase() == 'inner'
             || table_alias_temp.toLowerCase() == 'cross' ? '' : table_alias_temp;
 
+        const join_constraint = join_constraint_list && index > 0 ? join_constraint_list[index - 1] : undefined;
+
         if (table_name) {
             const tableName = splitName(table_name.any_name().getText());
             const asAlias = table_or_subquery.AS_() || false;
             const fields = filterColumns(traverseContext.dbSchema, traverseContext.withSchema, table_alias, tableName);
+            const usingFields = join_constraint?.USING_() ? join_constraint?.column_name_list().map(column_name => column_name.getText()) : [];
+            const filteredFields = usingFields.length > 0 ? filterUsingFields(fields, usingFields) : fields;
             if (isLeftJoin) {
-                allFields.push(...fields.map(field => ({ ...field, notNull: false })));
+                allFields.push(...filteredFields.map(field => ({ ...field, notNull: false })));
             }
             else {
-                allFields.push(...fields);
+                allFields.push(...filteredFields);
             }
 
             const idColumn = fields.find(field => field.columnKey == 'PRI')?.columnName!;
@@ -227,8 +231,7 @@ function traverse_table_or_subquery(
                 joinColumn: idColumn
             }
 
-            if (join_constraint_list && index > 0) { //index 0 is the FROM (root relation)
-                const join_constraint = join_constraint_list[index - 1];
+            if (join_constraint) { //index 0 is the FROM (root relation)
                 const expr = join_constraint.expr(); //ON expr
                 if (expr) {
                     traverse_expr(expr, { ...traverseContext, fromColumns: allFields });
@@ -945,4 +948,9 @@ function getAllColumns(expr: ExprContext): FieldName[] {
         columns.push(splitName(expr2.getText()));
     };
     return columns;
+}
+
+function filterUsingFields(fields: ColumnDef[], usingFields: string[]) {
+    const result = fields.filter(field => !usingFields.includes(field.columnName));
+    return result;
 }
