@@ -281,8 +281,8 @@ function traverse_table_or_subquery(
 
 function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): TypeAndNullInfer {
     const function_name = expr.function_name()?.getText().toLowerCase();
-    if (function_name == 'sum' || function_name == 'avg') {
-        const functionType = freshVar(expr.getText(), function_name == 'sum' ? 'NUMERIC' : 'REAL');
+    if (function_name == 'avg') {
+        const functionType = freshVar(expr.getText(), 'REAL');
         const sumParamExpr = expr.expr(0);
         const paramType = traverse_expr(sumParamExpr, traverseContext);
         if (paramType.type.kind == 'TypeVar') {
@@ -293,6 +293,24 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
             type: functionType,
             notNull: paramType.notNull,
             table: functionType.table || ''
+        };
+    }
+    if (function_name == 'sum') {
+        const functionType = freshVar(expr.getText(), 'INTEGER');
+        const sumParamExpr = expr.expr(0);
+        const paramType = traverse_expr(sumParamExpr, traverseContext);
+        traverseContext.constraints.push({
+            expression: expr.getText(),
+            type1: functionType,
+            type2: paramType.type,
+            mostGeneralType: true
+        })
+
+        return {
+            name: expr.getText(),
+            type: functionType,
+            notNull: false,
+            table: paramType.table || ''
         };
     }
     if (function_name == 'min' || function_name == 'max') {
@@ -760,6 +778,10 @@ export function isMultipleRowResult(select_stmt: Select_stmtContext, fromColumns
         const from = select_core.FROM_();
         if (!from) {
             return false;
+        }
+        const groupBy = select_stmt.select_core_list().some(select_core => select_core.GROUP_() != null);
+        if (groupBy) {
+            return true;
         }
         const agreegateFunction = select_core.result_column_list().every(result_column => isAgregateFunction(result_column));
         if (agreegateFunction) {

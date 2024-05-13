@@ -18,7 +18,7 @@ describe('sqlite-parse-select-functions', () => {
             columns: [
                 {
                     columnName: 'total',
-                    type: 'NUMERIC',
+                    type: 'INTEGER',
                     notNull: false,
                     table: 'mytable1'
                 }
@@ -44,7 +44,7 @@ describe('sqlite-parse-select-functions', () => {
             columns: [
                 {
                     columnName: 'total',
-                    type: 'NUMERIC',
+                    type: 'INTEGER',
                     notNull: false,
                     table: 't1'
                 }
@@ -120,7 +120,7 @@ describe('sqlite-parse-select-functions', () => {
             columns: [
                 {
                     columnName: 'sum(2*value)',
-                    type: 'NUMERIC',
+                    type: 'INTEGER',
                     notNull: false,
                     table: ''
                 }
@@ -224,7 +224,7 @@ describe('sqlite-parse-select-functions', () => {
             columns: [
                 {
                     columnName: 'sum(t2.id+(t1.value+2))', //TODO - spaces
-                    type: 'NUMERIC',
+                    type: 'INTEGER',
                     notNull: false,
                     table: ''
                 }

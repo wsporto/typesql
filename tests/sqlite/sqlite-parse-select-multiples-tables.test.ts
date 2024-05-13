@@ -823,6 +823,65 @@ describe('sqlite-parse-select-multiples-tables', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	})
 
+	it('SELECT SUM(ID) as sumById FROM mytable1 t1 GROUP BY id', () => {
+
+		const sql = `
+        SELECT SUM(ID) as sumById
+        FROM mytable1 t1
+        GROUP BY id
+        `;
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'sumById',
+					type: 'INTEGER',
+					notNull: false,
+					table: 't1'
+				}
+			],
+			parameters: []
+
+		}
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	})
+
+	it('SELECT SUM(ID) as sumById FROM all_types t1 GROUP BY id', () => {
+
+		const sql = `
+        SELECT SUM(real_column) as sumById
+        FROM all_types t1
+        GROUP BY int_column
+        `;
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'sumById',
+					type: 'REAL',
+					notNull: false,
+					table: 't1'
+				}
+			],
+			parameters: []
+		}
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	})
+
 	it('SELECT mytable1.id, mytable2.id is not null as hasOwner', () => {
 
 		const sql = `
