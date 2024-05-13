@@ -1,5 +1,5 @@
 import { Select_stmtContext, Sql_stmtContext, ExprContext, Table_or_subqueryContext, Result_columnContext, Insert_stmtContext, Column_nameContext, Update_stmtContext, Delete_stmtContext, Join_constraintContext, Table_nameContext, Join_operatorContext } from "@wsporto/ts-mysql-parser/dist/sqlite";
-import { ColumnDef, FieldName, TraverseContext, TypeAndNullInfer } from "../mysql-query-analyzer/types";
+import { ColumnDef, FieldName, TraverseContext, TypeAndNullInfer, TypeAndNullInferParam } from "../mysql-query-analyzer/types";
 import { filterColumns, findColumn, findColumnSchema, includeColumn, splitName } from "../mysql-query-analyzer/select-columns";
 import { createColumnType, freshVar } from "../mysql-query-analyzer/collect-constraints";
 import { DeleteResult, InsertResult, QuerySpecificationResult, SelectResult, TraverseResult2, UpdateResult, getOrderByColumns } from "../mysql-query-analyzer/traverse";
@@ -463,11 +463,12 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
     const parameter = expr.BIND_PARAMETER();
     if (parameter) {
         const param = freshVar('?', '?');
-        const type = {
+        const type: TypeAndNullInferParam = {
             name: param.name,
             type: param,
             notNull: false,
-            table: param.table || ''
+            table: param.table || '',
+            paramIndex: parameter.symbol.tokenIndex
         };
         traverseContext.parameters.push(type);
         return type;

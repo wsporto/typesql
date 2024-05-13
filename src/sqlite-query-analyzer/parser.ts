@@ -7,6 +7,7 @@ import { getVarType } from "../mysql-query-analyzer/collect-constraints";
 import { unify } from "../mysql-query-analyzer/unify";
 import { hasAnnotation, preprocessSql, verifyNotInferred } from "../describe-query";
 import { describeNestedQuery } from "./sqlite-describe-nested-query";
+import { indexGroupBy } from "../util";
 
 
 export function parseSql(sql: string, dbSchema: ColumnSchema[]): Either<TypeSqlError, SchemaDef> {
@@ -39,6 +40,18 @@ function createSchemaDefinition(sql: string, sql_stmtContext: Sql_stmtContext, d
     }
 
     const queryResult = traverse_Sql_stmtContext(sql_stmtContext, traverseContext);
+    traverseContext.parameters.sort((param1, param2) => param1.paramIndex - param2.paramIndex);
+    const groupedByName = indexGroupBy(namedParameters, p => p);
+
+    groupedByName.forEach(sameNameList => {
+        for (let index = 1; index < sameNameList.length; index++) {
+            traverseContext.constraints.push({
+                expression: traverseContext.parameters[0].name,
+                type1: traverseContext.parameters[0].type,
+                type2: traverseContext.parameters[index].type
+            })
+        }
+    })
 
     const substitutions: SubstitutionHash = {} //TODO - DUPLICADO
     unify(traverseContext.constraints, substitutions);

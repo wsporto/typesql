@@ -1,7 +1,7 @@
 import { BitExprContext, BoolPriContext, ColumnRefContext, DeleteStatementContext, ExprAndContext, ExprContext, ExprIsContext, ExprListContext, ExprNotContext, ExprOrContext, ExprXorContext, FromClauseContext, HavingClauseContext, InsertQueryExpressionContext, InsertStatementContext, PredicateContext, PredicateExprBetweenContext, PredicateExprInContext, PredicateExprLikeContext, PredicateOperationsContext, PrimaryExprAllAnyContext, PrimaryExprCompareContext, PrimaryExprIsNullContext, PrimaryExprPredicateContext, QueryContext, QueryExpressionBodyContext, QueryExpressionContext, QueryExpressionOrParensContext, QueryExpressionParensContext, QuerySpecificationContext, SelectItemContext, SelectItemListContext, SelectStatementContext, SimpleExprCaseContext, SimpleExprCastContext, SimpleExprColumnRefContext, SimpleExprContext, SimpleExprFunctionContext, SimpleExprIntervalContext, SimpleExprListContext, SimpleExprLiteralContext, SimpleExprParamMarkerContext, SimpleExprRuntimeFunctionContext, SimpleExprSubQueryContext, SimpleExprSumContext, SimpleExprWindowingFunctionContext, SingleTableContext, SubqueryContext, TableFactorContext, TableReferenceContext, TableReferenceListParensContext, UpdateStatementContext, WindowFunctionCallContext, WithClauseContext } from '@wsporto/ts-mysql-parser';
 import { verifyNotInferred } from "../describe-query";
 import { extractLimitParameters, extractOrderByParameters, getAllQuerySpecificationsFromSelectStatement, getLimitOptions, isSumExpressContext } from "./parse";
-import { ColumnDef, ColumnSchema, Constraint, DynamicSqlInfo, FieldName, FragmentInfo, ParameterInfo, TraverseContext, Type, TypeAndNullInfer, TypeOperator, TypeVar } from "./types";
+import { ColumnDef, ColumnSchema, Constraint, DynamicSqlInfo, FieldName, FragmentInfo, ParameterInfo, TraverseContext, Type, TypeAndNullInfer, TypeAndNullInferParam, TypeOperator, TypeVar } from "./types";
 import { ExprOrDefault, FixedLengthParams, FunctionParams, VariableLengthParams, createColumnType, createColumnTypeFomColumnSchema, freshVar, generateTypeInfo, getDeleteColumns, getFunctionName, getInsertColumns, getInsertIntoTable, isDateLiteral, isDateTimeLiteral, isTimeLiteral, verifyDateTypesCoercion } from "./collect-constraints";
 import { ExpressionAndOperator, extractFieldsFromUsingClause, extractOriginalSql, findColumn, findColumnOrNull, getColumnName, getExpressions, getSimpleExpressions, getTopLevelAndExpr, splitName } from "./select-columns";
 import { inferNotNull, possibleNull } from "./infer-column-nullability";
@@ -44,7 +44,7 @@ export type DeleteStatementResult = {
 
 export function traverseQueryContext(queryContext: QueryContext, dbSchema: ColumnSchema[], namedParameters: string[]) {
     const constraints: Constraint[] = [];
-    const parameters: TypeAndNullInfer[] = [];
+    const parameters: TypeAndNullInferParam[] = [];
 
     const traverseContext: TraverseContext = {
         constraints,
@@ -1221,7 +1221,8 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
             name: param.name,
             type: param,
             notNull: false,
-            table: param.table || ''
+            table: param.table || '',
+            paramIndex: simpleExpr.start.startIndex
         });
         return param;
     }

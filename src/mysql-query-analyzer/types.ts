@@ -42,7 +42,7 @@ export type TraverseContext = {
     dbSchema: ColumnSchema[];
     withSchema: ColumnDef[];
     constraints: Constraint[];
-    parameters: TypeAndNullInfer[];
+    parameters: TypeAndNullInferParam[];
     fromColumns: ColumnDef[];
     subQueryColumns: ColumnDef[];
     subQuery: boolean;
@@ -165,6 +165,10 @@ export type TypeAndNullInfer = {
     type: TypeVar;
     notNull: boolean;
     table: string;
+}
+
+export type TypeAndNullInferParam = TypeAndNullInfer & {
+    paramIndex: number;
 }
 
 export type TypeAndNullInferResult = {

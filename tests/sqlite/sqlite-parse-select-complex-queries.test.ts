@@ -341,4 +341,52 @@ describe('sqlite-parse-select-complex-queries', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     })
+
+    it('select id, :value from (select id from mytable1 t where t.value = :value) t', () => {
+        const sql = `select id, :value as value from (
+            select id from mytable1 t where t.value = :value
+        ) t`;
+        const expectedSql = `select id, ? as value from (
+            select id from mytable1 t where t.value = ?
+        ) t`;
+
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql: expectedSql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: 't'
+                },
+                {
+                    columnName: 'value',
+                    type: 'INTEGER',
+                    notNull: false, //diff from mysql; TODO - could infer as notNull=true
+                    table: ''
+                }
+            ],
+            parameters: [
+                {
+                    name: 'value',
+                    columnType: 'INTEGER',
+                    notNull: false //diff from mysql
+                },
+                {
+                    name: 'value',
+                    columnType: 'INTEGER',
+                    notNull: true
+                }
+            ]
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
 });
