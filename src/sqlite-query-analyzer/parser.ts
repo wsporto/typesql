@@ -2,7 +2,7 @@ import { Either, right } from "fp-ts/lib/Either";
 import { ParameterDef, SchemaDef, TypeSqlError } from "../types";
 import { Sql_stmtContext, parseSql as parseSqlite } from "@wsporto/ts-mysql-parser/dist/sqlite";
 import { traverse_Sql_stmtContext } from "./traverse";
-import { ColumnInfo, ColumnSchema, SubstitutionHash, TraverseContext } from "../mysql-query-analyzer/types";
+import { ColumnInfo, ColumnSchema, SubstitutionHash, TraverseContext, TypeAndNullInferParam } from "../mysql-query-analyzer/types";
 import { getVarType } from "../mysql-query-analyzer/collect-constraints";
 import { unify } from "../mysql-query-analyzer/unify";
 import { hasAnnotation, preprocessSql, verifyNotInferred } from "../describe-query";
@@ -42,23 +42,31 @@ function createSchemaDefinition(sql: string, sql_stmtContext: Sql_stmtContext, d
     const queryResult = traverse_Sql_stmtContext(sql_stmtContext, traverseContext);
     traverseContext.parameters.sort((param1, param2) => param1.paramIndex - param2.paramIndex);
     const groupedByName = indexGroupBy(namedParameters, p => p);
+    const paramsById = new Map<string, TypeAndNullInferParam>();
+    traverseContext.parameters.forEach(param => {
+        paramsById.set(param.type.id, param);
+    })
 
     groupedByName.forEach(sameNameList => {
+        let notNull = traverseContext.parameters[0].notNull; //param is not null if any param with same name is not null
         for (let index = 1; index < sameNameList.length; index++) {
+            notNull = notNull || traverseContext.parameters[index].notNull;
             traverseContext.constraints.push({
                 expression: traverseContext.parameters[0].name,
                 type1: traverseContext.parameters[0].type,
                 type2: traverseContext.parameters[index].type
             })
         }
+        for (let index = 0; index < sameNameList.length; index++) {
+            traverseContext.parameters[index].notNull = notNull || traverseContext.parameters[index].notNull;
+        }
     })
-
     const substitutions: SubstitutionHash = {} //TODO - DUPLICADO
     unify(traverseContext.constraints, substitutions);
     if (queryResult.queryType == 'Select') {
         const columnResult = queryResult.columns.map((col) => {
             const columnType = getVarType(substitutions, col.type);
-            const columnNotNull = col.notNull;
+            const columnNotNull = paramsById.get(col.type.id) != null ? paramsById.get(col.type.id)?.notNull! : col.notNull;
             const colInfo: ColumnInfo = {
                 columnName: col.name,
                 type: verifyNotInferred(columnType),

@@ -481,7 +481,7 @@ describe('sqlite-parse-select-complex-queries', () => {
                 {
                     columnName: 'value',
                     type: 'INTEGER',
-                    notNull: false, //diff from mysql; TODO - could infer as notNull=true
+                    notNull: true,
                     table: ''
                 }
             ],
@@ -489,10 +489,61 @@ describe('sqlite-parse-select-complex-queries', () => {
                 {
                     name: 'value',
                     columnType: 'INTEGER',
-                    notNull: false //diff from mysql
+                    notNull: true
                 },
                 {
                     name: 'value',
+                    columnType: 'INTEGER',
+                    notNull: true
+                }
+            ]
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('Infer parameter from with clause', () => {
+        const sql = `WITH names AS (
+            SELECT name FROM mytable2 where id = :id
+        )
+        SELECT name, :id as idFilter from names`;
+
+        const expectedSql = `WITH names AS (
+            SELECT name FROM mytable2 where id = ?
+        )
+        SELECT name, ? as idFilter from names`;
+
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql: expectedSql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'name',
+                    type: 'TEXT',
+                    notNull: false,
+                    table: 'names'
+                },
+                {
+                    columnName: 'idFilter',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: ''
+                }
+            ],
+            parameters: [
+                {
+                    name: 'id',
+                    columnType: 'INTEGER',
+                    notNull: true
+                },
+                {
+                    name: 'id',
                     columnType: 'INTEGER',
                     notNull: true
                 }
