@@ -11,7 +11,7 @@ CREATE TABLE mytable2 (
 
 CREATE TABLE mytable3 (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  real_value REAL,
+  double_value REAL,
   name TEXT NOT NULL
 );
 

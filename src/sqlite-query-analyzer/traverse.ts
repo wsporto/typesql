@@ -110,14 +110,33 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
             }
         })
 
-        const whereList = select_core.expr_list();
-        whereList.forEach(where => {
-            traverse_expr(where, { ...traverseContext, fromColumns: fromColumns });
+        const whereExpr = select_core._whereExpr;
+        if (whereExpr) {
+            traverse_expr(whereExpr, { ...traverseContext, fromColumns: fromColumns });
+        }
+        const groupByExprList = select_core._groupByExpr || [];
+        groupByExprList.forEach(groupByExpr => {
+            traverse_expr(groupByExpr, { ...traverseContext, fromColumns: fromColumns.concat(columnsResult) });
         })
+
+        const havingExpr = select_core._havingExpr;
+        if (havingExpr) {
+            const newColumns = listType.map(selectField => {
+                const col: ColumnDef = {
+                    columnName: selectField.name,
+                    table: selectField.table,
+                    columnType: selectField.type,
+                    notNull: selectField.notNull,
+                    columnKey: ""
+                }
+                return col;
+            })
+            traverse_expr(havingExpr, { ...traverseContext, fromColumns: fromColumns.concat(newColumns) });
+        }
         const querySpecification: QuerySpecificationResult = {
             columns: listType.map(col => ({
                 ...col,
-                notNull: col.notNull || isNotNull(col.name, whereList[0])
+                notNull: col.notNull || isNotNull(col.name, whereExpr)
             })),
             fromColumns: columnsResult //TODO - return isMultipleRowResult instead
         }
@@ -296,19 +315,12 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         };
     }
     if (function_name == 'sum') {
-        const functionType = freshVar(expr.getText(), 'INTEGER');
         const sumParamExpr = expr.expr(0);
         const paramType = traverse_expr(sumParamExpr, traverseContext);
-        traverseContext.constraints.push({
-            expression: expr.getText(),
-            type1: functionType,
-            type2: paramType.type,
-            mostGeneralType: true
-        })
 
         return {
             name: expr.getText(),
-            type: functionType,
+            type: paramType.type,
             notNull: false,
             table: paramType.table || ''
         };
@@ -497,12 +509,22 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         const exprRight = expr.expr(1);
         const typeLeft = traverse_expr(exprLeft, traverseContext);
         const typeRight = traverse_expr(exprRight, traverseContext);
-        const type = freshVar(expr.getText(), '?');
+        const returnType = freshVar(expr.getText(), '?');
+        traverseContext.constraints.push({
+            expression: expr.getText(),
+            type1: typeLeft.type,
+            type2: returnType
+        })
+        traverseContext.constraints.push({
+            expression: expr.getText(),
+            type1: typeRight.type,
+            type2: returnType
+        })
         return {
-            name: type.name,
-            type: type,
+            name: returnType.name,
+            type: returnType,
             notNull: typeLeft.notNull && typeRight.notNull,
-            table: type.table || ''
+            table: returnType.table || ''
         };
     }
     if (expr.PLUS() || expr.MINUS()) {

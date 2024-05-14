@@ -56,6 +56,51 @@ describe('sqlite-parse-select-complex-queries', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('HAVING value > ?', () => {
+        const sql = `
+        SELECT
+            name,
+            SUM(double_value) as value
+        FROM mytable3
+        GROUP BY
+            name
+        HAVING
+            value > ?
+        `
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'name',
+                    type: 'TEXT',
+                    notNull: true,
+                    table: 'mytable3'
+                },
+                {
+                    columnName: 'value',
+                    type: 'REAL',
+                    notNull: false,
+                    table: 'mytable3'
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'REAL',
+                    notNull: true
+                }
+            ]
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it('parse a select with UNION', () => {
         const sql = `
         SELECT id FROM mytable1
