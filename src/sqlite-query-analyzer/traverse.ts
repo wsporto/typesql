@@ -116,7 +116,7 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
         }
         const groupByExprList = select_core._groupByExpr || [];
         groupByExprList.forEach(groupByExpr => {
-            traverse_expr(groupByExpr, { ...traverseContext, fromColumns: fromColumns.concat(columnsResult) });
+            traverse_expr(groupByExpr, { ...traverseContext, fromColumns: fromColumns });
         })
 
         const havingExpr = select_core._havingExpr;
@@ -131,12 +131,13 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
                 }
                 return col;
             })
-            traverse_expr(havingExpr, { ...traverseContext, fromColumns: fromColumns.concat(newColumns) });
+            //select have precedence: newColumns.concat(fromColumns) 
+            traverse_expr(havingExpr, { ...traverseContext, fromColumns: newColumns.concat(fromColumns) });
         }
         const querySpecification: QuerySpecificationResult = {
             columns: listType.map(col => ({
                 ...col,
-                notNull: col.notNull || isNotNull(col.name, whereExpr)
+                notNull: col.notNull || isNotNull(col.name, whereExpr) || isNotNull(col.name, havingExpr),
             })),
             fromColumns: columnsResult //TODO - return isMultipleRowResult instead
         }
@@ -564,12 +565,12 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
             type1: typeLeft.type,
             type2: typeRight.type
         })
-        const type = freshVar(expr.getText(), '?');
+        const resultType = freshVar(expr.getText(), '?');
         return {
-            name: type.name,
-            type: type,
+            name: resultType.name,
+            type: resultType,
             notNull: true,
-            table: type.table || ''
+            table: resultType.table || ''
         };
     }
     if (expr.IS_()) { //is null/is not null
@@ -743,10 +744,10 @@ function extractOriginalSql(rule: ExprContext) {
 function traverse_column_name(column_name: Column_nameContext, table_name: Table_nameContext | null, traverseContext: TraverseContext): TypeAndNullInfer {
     const fieldName: FieldName = { name: column_name.getText(), prefix: table_name?.getText() || '' }
     const column = findColumn(fieldName, traverseContext.fromColumns);
-    const typeVar = freshVar(column.columnName, column.columnType.type, column.tableAlias || column.table);
+    // const typeVar = freshVar(column.columnName, column.columnType.type, column.tableAlias || column.table);
     return {
-        name: typeVar.name,
-        type: typeVar,
+        name: fieldName.name,
+        type: column.columnType,
         table: column.tableAlias || column.table,
         notNull: column.notNull
     };
@@ -778,6 +779,7 @@ function isNotNullExpr(columnName: string, expr: ExprContext): boolean {
     }
     if (expr.ASSIGN()
         || expr.GT()
+        || expr.LT()
         || (expr.IS_() && expr.expr_list().length == 2 && expr.expr(1).getText() == 'notnull')) {
         const exprLeft = expr.expr(0);
         const exprRight = expr.expr(1);

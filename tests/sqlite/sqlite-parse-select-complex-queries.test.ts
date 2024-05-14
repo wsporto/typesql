@@ -82,13 +82,84 @@ describe('sqlite-parse-select-complex-queries', () => {
                 {
                     columnName: 'value',
                     type: 'REAL',
-                    notNull: false,
+                    notNull: true, //diff from mysql
                     table: 'mytable3'
                 }
             ],
             parameters: [
                 {
                     name: 'param1',
+                    columnType: 'REAL',
+                    notNull: true
+                }
+            ]
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('HAVING value > ? and ? <', () => {
+        const sql = `
+        SELECT
+            name,
+            SUM(double_value) as value,
+            SUM(double_value * 0.01) as id
+        FROM mytable3
+        WHERE id > ? -- this id is from mytable3 column
+        GROUP BY
+            name
+        HAVING
+            value > ?
+            and id < ? -- this id is from the SELECT alias
+            AND SUM(double_value) = ?
+
+        `
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'name',
+                    type: 'TEXT',
+                    notNull: true,
+                    table: 'mytable3'
+                },
+                {
+                    columnName: 'value',
+                    type: 'REAL',
+                    notNull: true, //diff from mysql
+                    table: 'mytable3'
+                },
+                {
+                    columnName: 'id',
+                    type: 'REAL',
+                    notNull: true, //diff from mysql
+                    table: '' //TODO - could be mytable3?
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'INTEGER',
+                    notNull: true
+                },
+                {
+                    name: 'param2',
+                    columnType: 'REAL',
+                    notNull: true
+                },
+                {
+                    name: 'param3',
+                    columnType: 'REAL',
+                    notNull: true
+                },
+                {
+                    name: 'param4',
                     columnType: 'REAL',
                     notNull: true
                 }

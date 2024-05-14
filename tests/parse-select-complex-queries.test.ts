@@ -106,7 +106,7 @@ describe('Test parse complex queries', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('HAVING value > ? and ? < ', async () => {
+    it('HAVING value > ? and ? <', async () => {
         const sql = `
         SELECT
             name,
