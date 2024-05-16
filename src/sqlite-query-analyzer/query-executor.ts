@@ -16,6 +16,13 @@ export function loadDbSchema(db: DatabaseType): Either<TypeSqlError, ColumnSchem
 	const sql = `
 		WITH all_tables AS (
 			SELECT name FROM sqlite_schema WHERE type = 'table'
+		),
+		uniqueIndex as (
+			SELECT DISTINCT t.name as table_name, ii.name as column_name
+			FROM all_tables t,
+			pragma_index_list(t.name) AS il,
+			pragma_index_info(il.name) AS ii
+		WHERE il.[unique] = 1
 		)
 		SELECT
 			'' AS schema,
@@ -29,8 +36,12 @@ export function loadDbSchema(db: DatabaseType): Either<TypeSqlError, ColumnSchem
 				ELSE 'NUMERIC'
 			END	as column_type,
 			ti.'notnull' or ti.pk = 1 as 'notNull',
-			IIF(ti.pk = 1, 'PRI', '') as columnKey
-		FROM all_tables t INNER JOIN pragma_table_info(t.name) ti
+			CASE WHEN ti.pk = 1 THEN 'PRI'
+			WHEN u.table_name is not null THEN 'UNI' 
+			ELSE '' END as columnKey
+		FROM all_tables t 
+		INNER JOIN pragma_table_info(t.name) ti
+		LEFT JOIN uniqueIndex u on u.table_name = t.name and u.column_name = ti.name
 		`
 	try {
 		const result = db.prepare(sql)
