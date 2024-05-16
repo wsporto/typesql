@@ -891,4 +891,101 @@ describe('sqlite-nested-query', () => {
 
 		assert.deepStrictEqual(actual.right.nestedInfo, expectedModel);
 	})
+
+	it('movies join actors join persons with rating', () => {
+
+		const sql = `
+		-- @nested
+        SELECT 
+			m.id,
+			m.title,
+			a.id,
+			p.id,
+			p.name,
+			(SELECT avg(rating) FROM reviews WHERE movie_id = m.id) AS avg_rating
+		FROM movies m
+		INNER JOIN actors a on a.movie_id = m.id
+		INNER JOIN persons p on p.id = a.person_id
+        `
+
+		//[id(0),title(1),id(2),id(3), name(4),rating(5)]
+		const expectedModel: RelationInfo2[] = [
+			{
+				name: 'movies',
+				alias: 'm',
+				groupIndex: 0,
+				fields: [
+					{
+						name: 'id',
+						index: 0
+					},
+					{
+						name: 'title',
+						index: 1
+					},
+					{
+						name: 'avg_rating',
+						index: 5
+					},
+				],
+				relations: [
+					{
+						name: 'actors',
+						alias: 'a',
+						cardinality: 'many',
+					}
+				]
+			},
+			{
+				name: 'actors',
+				alias: 'a',
+				groupIndex: 2,
+				fields: [
+					{
+						name: 'id',
+						index: 2
+					},
+
+				],
+				relations: [
+					{
+						name: 'persons',
+						alias: 'p',
+						cardinality: 'one',
+					}
+				]
+			},
+			{
+				name: 'persons',
+				alias: 'p',
+				groupIndex: 3,
+				fields: [
+					{
+						name: 'id',
+						index: 3
+					},
+					{
+						name: 'name',
+						index: 4
+					},
+
+				],
+				relations: []
+			}
+		]
+
+		const dbSchema = loadDbSchema(db);
+
+
+		if (isLeft(dbSchema)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+
+		const actual = parseSql(sql, dbSchema.right);
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+
+		assert.deepStrictEqual(actual.right.nestedInfo, expectedModel);
+	})
 })

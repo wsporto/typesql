@@ -59,6 +59,7 @@ export function describeNestedQuery(columns: ColumnInfo[], relations: Relation2[
 				.map((item, index) => ({ item, index }))
 				.filter(col => parent != null && (col.item.table == parent.name || col.item.table == parent.alias)
 					|| col.item.table == relation.name || col.item.table == relation.alias
+					|| relation.parentRelation == '' && col.item.table == ''
 				)
 				.map(col => ({ name: col.item.columnName, index: col.index })),
 			relations: filterJunctionTables.slice(index + 1).filter(child => {

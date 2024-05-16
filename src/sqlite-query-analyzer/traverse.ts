@@ -274,7 +274,9 @@ function traverse_table_or_subquery(
                     })
                 }
             }
-            traverseContext.relations.push(relation);
+            if (!traverseContext.subQuery) {
+                traverseContext.relations.push(relation);
+            }
         }
         const select_stmt = table_or_subquery.select_stmt();
         if (select_stmt) {
@@ -668,7 +670,7 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
     }
     const select_stmt = expr.select_stmt();
     if (select_stmt) {
-        const subQueryType = traverse_select_stmt(select_stmt, traverseContext, true);
+        const subQueryType = traverse_select_stmt(select_stmt, { ...traverseContext, subQuery: true }, true);
         const type = { ...subQueryType.columns[0].type, table: '' };
         return {
             name: type.name,
