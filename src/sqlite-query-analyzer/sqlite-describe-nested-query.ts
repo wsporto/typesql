@@ -7,6 +7,7 @@ export type Relation2 = {
 	joinColumn: string;
 	parentRelation: string;
 	cardinality: Cardinality;
+	parentCardinality: Cardinality;
 }
 
 export type RelationInfo2 = {
@@ -78,8 +79,7 @@ export function describeNestedQuery(columns: ColumnInfo[], relations: Relation2[
 }
 
 function isJunctionTable(relation: Relation2, relations: Relation2[]): boolean {
-	const parentRelation = relations.find(r => r.name == relation.parentRelation || (r.alias != '' && r.alias == relation.parentRelation));
 	const childRelation = relations.find(r => r.parentRelation == relation.name || (r.alias != '' && r.parentRelation == relation.alias));
-	const isJunctionTable = relation.parentRelation != '' && parentRelation?.cardinality == 'one' && childRelation?.cardinality == 'one';
-	return isJunctionTable
+	const isJunctionTable = relation.cardinality == 'many' && childRelation?.parentCardinality == 'many';
+	return isJunctionTable;
 }

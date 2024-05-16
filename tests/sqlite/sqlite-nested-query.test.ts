@@ -3,8 +3,12 @@ import { isLeft } from "fp-ts/lib/Either";
 import { parseSql } from "../../src/sqlite-query-analyzer/parser";
 import { sqliteDbSchema } from "../mysql-query-analyzer/create-schema";
 import { RelationInfo2 } from "../../src/sqlite-query-analyzer/sqlite-describe-nested-query";
+import { loadDbSchema } from "../../src/sqlite-query-analyzer/query-executor";
+import Database from "better-sqlite3";
 
 describe('sqlite-nested-query', () => {
+
+	const db = new Database('./mydb.db');
 
 	it('SELECT FROM users u INNER JOIN posts p', () => {
 
@@ -789,6 +793,98 @@ describe('sqlite-nested-query', () => {
 		]
 
 		const actual = parseSql(sql, sqliteDbSchema);
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+
+		assert.deepStrictEqual(actual.right.nestedInfo, expectedModel);
+	})
+
+	it('movies join actors join persons', () => {
+
+		const sql = `
+		-- @nested
+        SELECT 
+			m.id,
+			m.title,
+			a.id,
+			p.id,
+			p.name
+		FROM movies m
+		INNER JOIN actors a on a.movie_id = m.id
+		INNER JOIN persons p on p.id = a.person_id
+        `
+
+		//[id(0),title(1),id(2),name(3)]
+		const expectedModel: RelationInfo2[] = [
+			{
+				name: 'movies',
+				alias: 'm',
+				groupIndex: 0,
+				fields: [
+					{
+						name: 'id',
+						index: 0
+					},
+					{
+						name: 'title',
+						index: 1
+					}
+				],
+				relations: [
+					{
+						name: 'actors',
+						alias: 'a',
+						cardinality: 'many',
+					}
+				]
+			},
+			{
+				name: 'actors',
+				alias: 'a',
+				groupIndex: 2,
+				fields: [
+					{
+						name: 'id',
+						index: 2
+					},
+
+				],
+				relations: [
+					{
+						name: 'persons',
+						alias: 'p',
+						cardinality: 'one',
+					}
+				]
+			},
+			{
+				name: 'persons',
+				alias: 'p',
+				groupIndex: 3,
+				fields: [
+					{
+						name: 'id',
+						index: 3
+					},
+					{
+						name: 'name',
+						index: 4
+					},
+
+				],
+				relations: []
+			}
+		]
+
+		const dbSchema = loadDbSchema(db);
+
+
+		if (isLeft(dbSchema)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+
+		const actual = parseSql(sql, dbSchema.right);
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error`);
 		}

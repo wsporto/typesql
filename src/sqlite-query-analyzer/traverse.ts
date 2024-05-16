@@ -248,6 +248,7 @@ function traverse_table_or_subquery(
                 alias: table_alias,
                 parentRelation: '',
                 cardinality: 'one',
+                parentCardinality: 'one',
                 joinColumn: idColumn
             }
 
@@ -258,13 +259,14 @@ function traverse_table_or_subquery(
 
                     const allJoinColumsn = getAllColumns(expr);
                     allJoinColumsn.forEach(joinColumn => {
+                        const column = allFields.find(col => col.columnName == joinColumn.name && (col.tableAlias == joinColumn.prefix || col.table == joinColumn.prefix))!;
                         if (joinColumn.prefix != relation.name && joinColumn.prefix != relation.alias) {
                             relation.parentRelation = joinColumn.prefix;
-
+                            if (column?.columnKey != 'UNI' && column?.columnKey != 'PRI') {
+                                relation.parentCardinality = 'many'
+                            }
                         }
                         if (joinColumn.prefix == relation.name || joinColumn.prefix == relation.alias) {
-                            // relation.joinColumn = joinColumn.name;
-                            const column = allFields.find(col => col.columnName == joinColumn.name && (col.tableAlias == joinColumn.prefix || col.table == joinColumn.prefix))!;
                             if (column?.columnKey != 'UNI' && column?.columnKey != 'PRI') {
                                 relation.cardinality = 'many'
                             }
