@@ -668,6 +668,37 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
             table: type.table || ''
         };
     }
+    if (expr.LIKE_()) {
+        const exprLeft = expr.expr(0);
+        const exprRight = expr.expr(1);
+
+        const typeLeft = traverse_expr(exprLeft, traverseContext);
+        const typeRight = traverse_expr(exprRight, traverseContext);
+        if (typeLeft.name == '?') {
+            typeLeft.notNull = true;
+        }
+        if (typeRight.name == '?') {
+            typeRight.notNull = true;
+        }
+
+        traverseContext.constraints.push({
+            expression: expr.getText(),
+            type1: typeLeft.type,
+            type2: typeRight.type
+        })
+        traverseContext.constraints.push({
+            expression: expr.getText(),
+            type1: typeLeft.type,
+            type2: freshVar('LIKE', 'TEXT')
+        })
+        const type = freshVar(expr.getText(), 'INTEGER');
+        return {
+            name: type.name,
+            type: type,
+            notNull: true,
+            table: type.table || ''
+        };
+    }
     const select_stmt = expr.select_stmt();
     if (select_stmt) {
         const subQueryType = traverse_select_stmt(select_stmt, { ...traverseContext, subQuery: true }, true);
