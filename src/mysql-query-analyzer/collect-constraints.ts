@@ -13,7 +13,7 @@ import { unify } from "./unify";
 import { TerminalNode } from "antlr4ts/tree";
 
 let counter = 0;
-export function freshVar(name: string, typeVar: InferType, table?: string, selectItem?: true, list?: true): TypeVar {
+export function freshVar(name: string, typeVar: InferType, table?: string, list?: true): TypeVar {
     const param: TypeVar = {
         kind: 'TypeVar',
         id: (++counter).toString(),
@@ -23,9 +23,6 @@ export function freshVar(name: string, typeVar: InferType, table?: string, selec
     }
     if (list) {
         param.list = true;
-    }
-    if (selectItem) {
-        param.selectItem = true;
     }
     return param;
 }
