@@ -30,7 +30,7 @@ export function freshVar(name: string, typeVar: InferType, table?: string, list?
 export function createColumnType(col: ColumnDef) {
     const columnType: TypeVar = {
         kind: 'TypeVar',
-        id: col.columnType.id,
+        id: (++counter).toString(),
         name: col.columnName,
         type: col.columnType.type,
         table: col.tableAlias || col.table

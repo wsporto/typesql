@@ -650,13 +650,19 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         const inExprLeft = expr.expr(0);
         const inExprRight = expr.expr(1);
         const typeLeft = traverse_expr(inExprLeft, traverseContext);
+        if (typeLeft.name == '?') {
+            typeLeft.notNull = true;
+        }
         inExprRight.children?.forEach(exprRight => {
             if (exprRight instanceof ExprContext) {
                 const typeRight = traverse_expr(exprRight, traverseContext);
+                if (typeRight.name == '?') {
+                    typeRight.notNull = true;
+                }
                 traverseContext.constraints.push({
                     expression: expr.getText(),
                     type1: typeLeft.type,
-                    type2: typeRight.type
+                    type2: { ...typeRight.type, list: true }
                 })
             }
         })

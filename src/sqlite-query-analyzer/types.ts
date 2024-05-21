@@ -1,5 +1,6 @@
 export type SQLiteType =
 	| 'INTEGER'
+	| 'INTEGER[]'
 	| 'TEXT'
 	| 'NUMERIC'
 	| 'REAL'

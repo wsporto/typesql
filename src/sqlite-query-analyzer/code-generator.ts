@@ -92,6 +92,8 @@ function mapColumnType(sqliteType: SQLiteType) {
     switch (sqliteType) {
         case 'INTEGER':
             return 'number';
+        case 'INTEGER[]':
+            return 'number[]';
         case 'TEXT':
             return 'string';
         case 'NUMERIC':

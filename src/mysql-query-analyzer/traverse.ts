@@ -792,9 +792,10 @@ function traverseSelectItemList(selectItemList: SelectItemListContext, traverseC
     const listType: TypeVar[] = [];
     if (selectItemList.MULT_OPERATOR()) {
         traverseContext.fromColumns.forEach(col => {
-            const columnType = createColumnType(col);
-            listType.push(columnType);
+            // const columnType = createColumnType(col);
             const tableName = col.tableAlias || col.table;
+            listType.push({ ...col.columnType, table: tableName });
+
             const fieldFragment: FragmentInfo = {
                 fragment: `${tableName}.${col.columnName}`,
                 fragementWithoutAlias: `${tableName}.${col.columnName}`,

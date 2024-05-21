@@ -759,6 +759,108 @@ describe('sqlite-Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('SELECT * FROM mytable1 t WHERE id in (1, 2, 3, ?)', () => {
+
+        const sql = `
+        SELECT * FROM mytable1 t WHERE id in (1, 2, 3, ?)
+        `
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: 't'
+                },
+                {
+                    columnName: 'value',
+                    type: 'INTEGER',
+                    notNull: false,
+                    table: 't'
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'INTEGER[]',
+                    notNull: true
+                }
+            ]
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('SELECT * FROM mytable1 t WHERE ? in (1, 2, 3)', () => {
+
+        const sql = `
+        SELECT id FROM mytable1 t WHERE ? in (1, 2, 3)
+        `
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: 't'
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'INTEGER',
+                    notNull: true
+                }
+            ]
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it(`SELECT * FROM mytable1 t WHERE ? in ('a', 'b', 'c')`, () => {
+
+        const sql = `
+        SELECT id FROM mytable1 t WHERE ? in ('a', 'b', 'c')
+        `
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: 't'
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'TEXT',
+                    notNull: true
+                }
+            ]
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it('SELECT mytable1.* FROM mytable1', async () => {
         const sql = 'SELECT mytable1.* FROM mytable1';
 
