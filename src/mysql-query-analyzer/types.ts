@@ -11,17 +11,6 @@ export type TypeVar = {
     type: InferType;
     table?: string;
     list?: true;
-    selectItem?: true
-}
-
-export type SQliteTypeVar = {
-    kind: 'TypeVar';
-    id: string;
-    name: string;
-    type: InferType;
-    table?: string;
-    list?: true;
-    selectItem?: true
 }
 
 export type NamedNodes = {
@@ -33,7 +22,6 @@ export type Type = TypeVar | TypeOperator;
 export type TypeOperator = {
     kind: 'TypeOperator';
     types: TypeVar[];
-    selectItem?: true
 };
 
 export type CoercionType = 'Sum' | 'Coalesce' | 'SumFunction' | 'Ceiling' | 'Union' | 'Numeric'; //Numeric means: Don't convert to string
@@ -56,10 +44,8 @@ export type Constraint = {
     type1: Type;
     type2: Type;
     expression: string;
-    aliasConstraint?: true;
     mostGeneralType?: true;
     coercionType?: CoercionType;
-    list?: true;
 }
 
 export type ColumnSchema = GenericColumnSchema<MySqlType> | GenericColumnSchema<SQLiteType>;

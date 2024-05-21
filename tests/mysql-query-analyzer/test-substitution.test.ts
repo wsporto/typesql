@@ -42,7 +42,7 @@ describe.skip('Substitution tests', () => {
             type: 'int'
         }
 
-        const actual = substitute(type1, substitutions, {} as Constraint);
+        const actual = substitute(type1, substitutions);
 
         const expected = type1;
 
@@ -58,13 +58,13 @@ describe.skip('Substitution tests', () => {
             type: 'int'
         }
 
-        const actual = substitute(newInt, substitutions, {} as Constraint);
+        const actual = substitute(newInt, substitutions);
         assert.deepStrictEqual(actual, newInt, "substitution 1");
 
-        const actual2 = substitute(u1, substitutions, {} as Constraint);
+        const actual2 = substitute(u1, substitutions);
         assert.deepStrictEqual(actual2, u1, "substitution 2");
 
-        const actual3 = substitute(u3, substitutions, {} as Constraint);
+        const actual3 = substitute(u3, substitutions);
         assert.deepStrictEqual(actual3, u1, "substitution 3");
     })
 

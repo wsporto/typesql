@@ -1,5 +1,5 @@
 import { InferType } from "../mysql-mapping";
-import { CoercionType, Constraint, SubstitutionHash, Type, TypeVar } from "./types";
+import { CoercionType, Constraint, SubstitutionHash, Type } from "./types";
 
 export function unify(constraints: Constraint[], substitutions: SubstitutionHash) {
     for (const constraint of constraints) {
@@ -8,8 +8,8 @@ export function unify(constraints: Constraint[], substitutions: SubstitutionHash
 }
 
 function unifyOne(constraint: Constraint, substitutions: SubstitutionHash) {
-    const ty1 = substitute(constraint.type1, substitutions, constraint);
-    const ty2 = substitute(constraint.type2, substitutions, constraint);
+    const ty1 = substitute(constraint.type1, substitutions);
+    const ty2 = substitute(constraint.type2, substitutions);
 
     if (ty1.kind == 'TypeOperator' && ty2.kind == 'TypeOperator') {
 
@@ -198,12 +198,12 @@ function getBestPossibleType(type1: InferType, type2: InferType, max?: boolean, 
     throw Error('Type mismatch: ' + type1 + ' and ' + type2);
 }
 
-export function substitute(type: Type, substitutions: SubstitutionHash, constraint: Constraint): Type {
+export function substitute(type: Type, substitutions: SubstitutionHash): Type {
     if (type.kind == 'TypeVar' && type.type != '?') {
         const subs = substitutions[type.id];
         if (subs) {
             if (type.id != subs.id) {
-                return substitute(subs, substitutions, constraint)
+                return substitute(subs, substitutions)
             }
             return subs;
         }
@@ -214,7 +214,7 @@ export function substitute(type: Type, substitutions: SubstitutionHash, constrai
         const subs = substitutions[type.id];
         if (subs) {
             if (type.id != subs.id) {
-                return substitute(subs, substitutions, constraint)
+                return substitute(subs, substitutions)
             }
             return subs;
         }
