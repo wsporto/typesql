@@ -26,7 +26,7 @@ describe('Test simple select statements', () => {
 
     })
 
-    it('parse a basic select', async () => {
+    it('SELECT id FROM mytable1', async () => {
         const sql = `SELECT id FROM mytable1`;
 
         const actual = await parseSql(client, sql);
@@ -78,7 +78,7 @@ describe('Test simple select statements', () => {
 
     })
 
-    it('parse select * from mytable', async () => {
+    it('SELECT * FROM mytable1', async () => {
         const sql = 'SELECT * FROM mytable1';
 
         const actual = await parseSql(client, sql);
@@ -140,7 +140,7 @@ describe('Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('parse select t.* from mytable t', async () => {
+    it('SELECT t.* FROM mytable1 t', async () => {
         const sql = 'SELECT t.* FROM mytable1 t';
 
         const actual = await parseSql(client, sql);
@@ -171,7 +171,7 @@ describe('Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('select mytable1.id from mytable1', async () => {
+    it('SELECT mytable1.id, mytable1.value FROM mytable1', async () => {
         const sql = 'SELECT mytable1.id, mytable1.value FROM mytable1';
 
         const actual = await parseSql(client, sql);
@@ -203,7 +203,7 @@ describe('Test simple select statements', () => {
     })
 
 
-    it('parse select with multiples columns', async () => {
+    it('SELECT id, name, descr as description FROM mytable2', async () => {
 
         const sql = 'SELECT id, name, descr as description FROM mytable2';
 
@@ -242,7 +242,7 @@ describe('Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('parse select distinct column', async () => {//TODO - FALTA
+    it('SELECT distinct id, value FROM mytable1', async () => {
 
         const sql = 'SELECT distinct id, value FROM mytable1';
         const actual = await parseSql(client, sql);
@@ -274,7 +274,7 @@ describe('Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('parse select distinct *', async () => { //FALTA
+    it('parse select distinct *', async () => {
 
         const sql = 'SELECT distinct * FROM mytable1';
         const actual = await parseSql(client, sql);
@@ -332,7 +332,7 @@ describe('Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('parse a select with a single parameter', async () => {
+    it('SELECT * FROM mytable1 WHERE id = ?', async () => {
         const sql = 'SELECT * FROM mytable1 WHERE id = ?';
 
         const actual = await parseSql(client, sql);
@@ -368,7 +368,7 @@ describe('Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('parse a select with a single parameter (not using *)', async () => {
+    it('SELECT id FROM mytable1 WHERE id = ? and value = 10', async () => {
         const sql = 'SELECT id FROM mytable1 WHERE id = ? and value = 10';
 
         const actual = await parseSql(client, sql);
@@ -398,7 +398,7 @@ describe('Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('parse a select with multiples parameters', async () => {
+    it('SELECT value FROM mytable1 WHERE id = ? or value > ?', async () => {
         const sql = 'SELECT value FROM mytable1 WHERE id = ? or value > ?';
 
         const actual = await parseSql(client, sql);
@@ -433,7 +433,7 @@ describe('Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('parse a select with param on column', async () => {
+    it('SELECT ? FROM mytable1', async () => {
         const sql = 'SELECT ? FROM mytable1';
 
         const actual = await parseSql(client, sql);
@@ -499,8 +499,44 @@ describe('Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('SELECT id FROM mytable1 where id = 0 and value between :start and :end', async () => {
+        const sql = 'SELECT id FROM mytable1 where id = 0 and value between :start and :end';
+        const expectedSql = 'SELECT id FROM mytable1 where id = 0 and value between ? and ?'
+
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql: expectedSql,
+            queryType: 'Select',
+            multipleRowsResult: false,
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 'mytable1'
+                }
+            ],
+            parameters: [
+                {
+                    name: 'start',
+                    columnType: 'int',
+                    notNull: true
+                },
+                {
+                    name: 'end',
+                    columnType: 'int',
+                    notNull: true
+                }
+            ]
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     //TODO - no reference to table.
-    it('parse a select with param on column', async () => {
+    it('SELECT ? as name FROM mytable1', async () => {
         const sql = 'SELECT ? as name FROM mytable1';
 
         const actual = await parseSql(client, sql);
@@ -617,7 +653,7 @@ describe('Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('parse a select with table alias and parameter', async () => {
+    it('SELECT t.* FROM mytable1 t WHERE t.id = ?', async () => {
 
         const sql = `
         SELECT t.* FROM mytable1 t WHERE t.id = ?
@@ -655,7 +691,7 @@ describe('Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('parse a select with in operator', async () => {
+    it('SELECT * FROM mytable1 WHERE id in (1, 2, 3)', async () => {
 
         const sql = `
         SELECT * FROM mytable1 WHERE id in (1, 2, 3)
@@ -687,7 +723,7 @@ describe('Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('parse a select with not in operator', async () => {
+    it('SELECT * FROM mytable1 WHERE id not in (1, 2, 3)', async () => {
 
         const sql = `
         SELECT * FROM mytable1 WHERE id not in (1, 2, 3)
@@ -719,7 +755,7 @@ describe('Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('parse a select with in operator (and alias)', async () => {
+    it('SELECT t.* FROM mytable1 t WHERE t.id in (1, 2, 3)', async () => {
 
         const sql = `
         SELECT t.* FROM mytable1 t WHERE t.id in (1, 2, 3)
@@ -751,7 +787,7 @@ describe('Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('parse a select with parameter inside in operator', async () => {
+    it('SELECT * FROM mytable1 t WHERE id in (1, 2, 3, ?)', async () => {
 
         const sql = `
         SELECT * FROM mytable1 t WHERE id in (1, 2, 3, ?)
