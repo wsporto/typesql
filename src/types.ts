@@ -53,6 +53,11 @@ export type ParameterDef = {
     list?: boolean; //id in (?)
 }
 
+export type ParameterNameAndPosition = {
+    name: string;
+    paramPosition: number;
+}
+
 export type FunctionParamContext = {
     type: 'function'
     functionName: string;

@@ -503,7 +503,7 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
             type: param,
             notNull: false,
             table: param.table || '',
-            paramIndex: parameter.symbol.tokenIndex
+            paramIndex: parameter.symbol.start
         };
         traverseContext.parameters.push(type);
         return type;

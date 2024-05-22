@@ -1,5 +1,5 @@
 import { Either, right } from "fp-ts/lib/Either";
-import { ParameterDef, SchemaDef, TypeSqlError } from "../types";
+import { ParameterNameAndPosition, ParameterDef, SchemaDef, TypeSqlError } from "../types";
 import { Sql_stmtContext, parseSql as parseSqlite } from "@wsporto/ts-mysql-parser/dist/sqlite";
 import { traverse_Sql_stmtContext } from "./traverse";
 import { ColumnInfo, ColumnSchema, SubstitutionHash, TraverseContext, TypeAndNullInferParam } from "../mysql-query-analyzer/types";
@@ -8,6 +8,7 @@ import { unify } from "../mysql-query-analyzer/unify";
 import { hasAnnotation, preprocessSql, verifyNotInferred } from "../describe-query";
 import { describeNestedQuery } from "./sqlite-describe-nested-query";
 import { indexGroupBy } from "../util";
+import { replaceListParams } from "./replace-list-params";
 
 
 export function parseSql(sql: string, dbSchema: ColumnSchema[]): Either<TypeSqlError, SchemaDef> {
@@ -86,8 +87,20 @@ function createSchemaDefinition(sql: string, sql_stmtContext: Sql_stmtContext, d
             return colInfo;
         })
 
+        const nameAndParamPosition = paramsResult
+            .filter(param => param.columnType?.endsWith("[]"))
+            .map((param, index) => {
+                const nameAndPosition: ParameterNameAndPosition = {
+                    name: param.name,
+                    paramPosition: traverseContext.parameters[index].paramIndex
+                }
+                return nameAndPosition;
+            })
+
+        const newSql = replaceListParams(sql, nameAndParamPosition);
+
         const schemaDef: SchemaDef = {
-            sql,
+            sql: newSql,
             queryType: queryResult.queryType,
             multipleRowsResult: queryResult.multipleRowsResult,
             columns: columnResult,

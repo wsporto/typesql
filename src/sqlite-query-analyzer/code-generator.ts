@@ -96,10 +96,16 @@ function mapColumnType(sqliteType: SQLiteType) {
             return 'number[]';
         case 'TEXT':
             return 'string';
+        case 'TEXT[]':
+            return 'string[]';
         case 'NUMERIC':
             return 'number';
+        case 'NUMERIC[]':
+            return 'number[]';
         case 'REAL':
             return 'number';
+        case 'REAL[]':
+            return 'number[]';
         case 'DATE':
             return 'Date';
         case 'BLOB':
@@ -185,10 +191,10 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
             return `data.${nextField.name} !== undefined ? 1 : 0`;
         }
         else {
-            return 'data.' + toParamValue(param);
+            return toParamValue('data', param);
         }
     }) || [])
-        .concat(tsDescriptor.parameters.map(param => 'params.' + toParamValue(param)));
+        .concat(tsDescriptor.parameters.map(param => toParamValue('params', param)));
 
     const queryParams = allParameters.length > 0 ? '[' + allParameters.join(', ') + ']' : '';
 
@@ -343,11 +349,14 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
     return writer.toString();
 }
 
-function toParamValue(param: TsFieldDescriptor): string {
+function toParamValue(variableName: string, param: TsFieldDescriptor): string {
     if (param.tsType == 'Date') {
-        return param.name + '.toISOString()';
+        return `${variableName}.${param.name}.toISOString()`;
     }
-    return param.name;
+    if (param.tsType?.endsWith("[]")) {
+        return `...${variableName}.${param.name}`;
+    }
+    return `${variableName}.${param.name}`;
 }
 function writeCollectFunction(
     writer: CodeBlockWriter,

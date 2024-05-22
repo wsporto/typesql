@@ -193,6 +193,22 @@ describe('sqlite-code-generator', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	})
 
+	it('select06 - SELECT id FROM mytable1 ORDER BY ?', () => {//
+		const sql = `SELECT id
+FROM mytable2
+WHERE id IN (:ids)
+AND name IN (:names)`;
+
+		const isCrud = false;
+		const actual = generateTsCode(sql, 'select06', sqliteDbSchema, isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/select06.ts.txt', 'utf-8').replace(/\r/gm, '');//
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	})
+
 	it('nested01 - FROM users u INNER JOIN posts p', () => {
 		const sql = `-- @nested
 SELECT 

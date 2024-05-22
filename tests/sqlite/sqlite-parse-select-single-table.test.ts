@@ -761,12 +761,12 @@ describe('sqlite-Test simple select statements', () => {
 
     it('SELECT * FROM mytable1 t WHERE id in (1, 2, 3, ?)', () => {
 
-        const sql = `
-        SELECT * FROM mytable1 t WHERE id in (1, 2, 3, ?)
-        `
+        const sql = `SELECT * FROM mytable1 t WHERE id in (1, 2, 3, ?)`;
+
+        const expectedSql = `SELECT * FROM mytable1 t WHERE id in (1, 2, 3, \${params.param1.map(() => '?')})`;
         const actual = parseSql(sql, sqliteDbSchema);
         const expected: SchemaDef = {
-            sql,
+            sql: expectedSql,
             queryType: 'Select',
             multipleRowsResult: true,
             columns: [
