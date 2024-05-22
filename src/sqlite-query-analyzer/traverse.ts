@@ -647,25 +647,28 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         return traverse_expr(expr2, traverseContext);
     }
     if (expr.IN_()) {
-        const inExprLeft = expr.expr(0);
-        const inExprRight = expr.expr(1);
+        const exprList = expr.expr_list();
+        const inExprLeft = exprList[0];
         const typeLeft = traverse_expr(inExprLeft, traverseContext);
         if (typeLeft.name == '?') {
             typeLeft.notNull = true;
         }
-        inExprRight.children?.forEach(exprRight => {
-            if (exprRight instanceof ExprContext) {
-                const typeRight = traverse_expr(exprRight, traverseContext);
+        //NOT IN?
+        const inExprRight = expr.NOT_() ? exprList.slice(1) : exprList[1].children || [];
+        inExprRight.forEach((inExpr) => {
+            if (inExpr instanceof ExprContext) {
+                const typeRight = traverse_expr(inExpr, traverseContext);
                 if (typeRight.name == '?') {
                     typeRight.notNull = true;
                 }
                 traverseContext.constraints.push({
                     expression: expr.getText(),
-                    type1: typeLeft.type,
+                    type1: typeLeft!.type,
                     type2: { ...typeRight.type, list: true }
                 })
             }
-        })
+        });
+
         const type = freshVar(expr.getText(), '?');
         return {
             name: type.name,

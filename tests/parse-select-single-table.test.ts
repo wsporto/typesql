@@ -825,6 +825,44 @@ describe('Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('SELECT * FROM mytable1 t WHERE id not in (1, 2, 3, ?)', async () => {
+
+        const sql = `
+        SELECT * FROM mytable1 t WHERE id not in (1, 2, 3, ?)
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'int',
+                    notNull: true,
+                    table: 't'
+                },
+                {
+                    columnName: 'value',
+                    type: 'int',
+                    notNull: false,
+                    table: 't'
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'int[]',
+                    notNull: true
+                }
+            ]
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it('SELECT * FROM mytable1 t WHERE ? in (1, 2, 3)', async () => {
 
         const sql = `

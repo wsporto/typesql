@@ -797,6 +797,44 @@ describe('sqlite-Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('SELECT * FROM mytable1 t WHERE id not in (1, 2, 3, ?)', () => {
+
+        const sql = `SELECT * FROM mytable1 t WHERE id not in (1, 2, 3, ?)`;
+
+        const expectedSql = `SELECT * FROM mytable1 t WHERE id not in (1, 2, 3, \${params.param1.map(() => '?')})`;
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql: expectedSql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: 't'
+                },
+                {
+                    columnName: 'value',
+                    type: 'INTEGER',
+                    notNull: false,
+                    table: 't'
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'INTEGER[]',
+                    notNull: true
+                }
+            ]
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it('SELECT * FROM mytable1 t WHERE ? in (1, 2, 3)', () => {
 
         const sql = `
