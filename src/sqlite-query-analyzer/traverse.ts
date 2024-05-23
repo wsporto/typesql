@@ -260,14 +260,17 @@ function traverse_table_or_subquery(
                     const allJoinColumsn = getAllColumns(expr);
                     allJoinColumsn.forEach(joinColumn => {
                         const column = allFields.find(col => col.columnName == joinColumn.name && (col.tableAlias == joinColumn.prefix || col.table == joinColumn.prefix))!;
+                        const filterUniqueKeys = allFields.filter(col => (joinColumn.prefix == col.table || joinColumn.prefix == col.tableAlias) && (col.columnKey == 'PRI'));
+                        const compositeKey = filterUniqueKeys.find(uni => uni.columnName == column.columnName);
+                        const notUnique = (filterUniqueKeys.length > 1 && compositeKey) || (column?.columnKey != 'UNI' && column?.columnKey != 'PRI');
                         if (joinColumn.prefix != relation.name && joinColumn.prefix != relation.alias) {
                             relation.parentRelation = joinColumn.prefix;
-                            if (column?.columnKey != 'UNI' && column?.columnKey != 'PRI') {
+                            if (notUnique) {
                                 relation.parentCardinality = 'many'
                             }
                         }
                         if (joinColumn.prefix == relation.name || joinColumn.prefix == relation.alias) {
-                            if (column?.columnKey != 'UNI' && column?.columnKey != 'PRI') {
+                            if (notUnique) {
                                 relation.cardinality = 'many'
                             }
                         }

@@ -719,6 +719,89 @@ describe('sqlite-nested-query', () => {
 		assert.deepStrictEqual(actual.right.nestedInfo, expectedModel);
 	})
 
+	it('many to many - chinook', () => {
+
+		const sql = `
+		-- @nested
+        SELECT 
+			p.PlaylistId,
+			p.Name,
+			pt.PlaylistId,
+			pt.TrackId,
+			t.TrackId,
+			t.Name
+		FROM playlists p
+		INNER JOIN playlist_track pt on pt.PlaylistId = p.PlaylistId
+		INNER JOIN tracks t on t.TrackId = pt.TrackId 
+		WHERE p.PlaylistId = 3
+        `
+
+		//[PlaylistId(0),Name(1),PlaylistId(2),TrackId(3),TrackId(4),Name(5)]
+		const expectedModel: RelationInfo2[] = [
+			{
+				name: 'playlists',
+				alias: 'p',
+				groupIndex: 0,
+				fields: [
+					{
+						name: 'PlaylistId',
+						index: 0
+					},
+					{
+						name: 'Name',
+						index: 1
+					}
+				],
+				relations: [
+					{
+						name: 'tracks',
+						alias: 't',
+						cardinality: 'many',
+					}
+				]
+			},
+			{
+				name: 'tracks',
+				alias: 't',
+				groupIndex: 4,
+				fields: [
+					{
+						name: 'PlaylistId',
+						index: 2
+					},
+					{
+						name: 'TrackId',
+						index: 3
+					},
+					{
+						name: 'TrackId',
+						index: 4
+					},
+					{
+						name: 'Name',
+						index: 5
+					}
+				],
+				relations: []
+			}
+		]
+
+		const chinookDb = new Database('./mydb.db');
+		const dbSchema = loadDbSchema(chinookDb);
+
+
+		if (isLeft(dbSchema)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+
+		const actual = parseSql(sql, dbSchema.right);
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+
+		assert.deepStrictEqual(actual.right.nestedInfo, expectedModel);
+	})
+
 	it('self relation - clients with primaryAddress and secondaryAddress', () => {
 
 		const sql = `
