@@ -705,7 +705,7 @@ describe('nested-query', () => {
         assert.deepStrictEqual(actual, expectedModel);
     })
 
-    it('SELECT FROM users u INNER JOIN posts p', async () => {
+    it('SELECT * FROM users u INNER JOIN posts p', async () => {
         const dbSchema = await loadMysqlSchema(client.client, client.schema);
 
         const sql = `

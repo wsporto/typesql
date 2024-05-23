@@ -567,7 +567,7 @@ describe('sqlite-nested-query', () => {
 		assert.deepStrictEqual(actual.right.nestedInfo, expectedModel);
 	})
 
-	it('SELECT FROM users u INNER JOIN posts p', () => {
+	it('SELECT * FROM users u INNER JOIN posts p', () => {
 
 		const sql = `
 		-- @nested
