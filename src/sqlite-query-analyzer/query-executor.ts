@@ -36,7 +36,7 @@ export function loadDbSchema(db: DatabaseType): Either<TypeSqlError, ColumnSchem
 				ELSE 'NUMERIC'
 			END	as column_type,
 			ti.'notnull' or ti.pk = 1 as 'notNull',
-			CASE WHEN ti.pk = 1 THEN 'PRI'
+			CASE WHEN ti.pk >= 1 THEN 'PRI'
 			WHEN u.table_name is not null THEN 'UNI' 
 			ELSE '' END as columnKey
 		FROM all_tables t 
