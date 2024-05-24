@@ -462,8 +462,7 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
     }
     if (function_name == 'row_number'
         || function_name == 'rank'
-        || function_name == 'dense_rank'
-    ) {
+        || function_name == 'dense_rank') {
 
         const functionType = freshVar(expr.getText(), 'INTEGER');
         return {
@@ -474,12 +473,18 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         };
     }
     if (function_name == 'first_value'
-        || function_name == 'last_value'
-    ) {
+        || function_name == 'last_value') {
 
         const paramExpr = expr.expr(0);
         const paramType = traverse_expr(paramExpr, traverseContext);
         return paramType;
+    }
+    if (function_name == 'lead'
+        || function_name == 'lag') {
+
+        const paramExpr = expr.expr(0);
+        const paramType = traverse_expr(paramExpr, traverseContext);
+        return { ...paramType, notNull: false };
     }
     if (function_name) {
         throw Error('traverse_expr: function not supported:' + function_name);
