@@ -893,6 +893,9 @@ export function isMultipleRowResult(select_stmt: Select_stmtContext, fromColumns
 }
 
 function isAgregateFunction(result_column: Result_columnContext) {
+    if (result_column.expr()?.over_clause() != null) { //window function isMultipleRow = true
+        return false;
+    }
     const function_name = result_column.expr()?.function_name()?.getText().toLowerCase();
     return function_name == 'count'
         || function_name == 'sum'

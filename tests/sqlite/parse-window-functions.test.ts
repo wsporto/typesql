@@ -123,4 +123,31 @@ describe('sqlite-parse-window-functions', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('SUM(value) OVER() AS total', () => {
+        const sql = `
+        SELECT
+            SUM(value) OVER() AS total
+        FROM mytable1
+        `
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'total',
+                    type: 'INTEGER',
+                    notNull: false,
+                    table: 'mytable1'
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
 });
