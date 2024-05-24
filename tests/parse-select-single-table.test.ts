@@ -1022,7 +1022,7 @@ describe('Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('parse select with column expression', async () => {
+    it('parse select with column expression 2', async () => {
         const sql = `
         select t2.name > 'a' AS bigger  from mytable2 t2
         `
@@ -1035,7 +1035,7 @@ describe('Test simple select statements', () => {
                 {
                     columnName: 'bigger',
                     type: 'tinyint', //changed at v0.0.2
-                    notNull: false,
+                    notNull: false, //TODO - not null true
                     table: ''
                 }
             ],

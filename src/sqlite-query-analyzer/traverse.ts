@@ -572,7 +572,7 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
             type1: typeLeft.type,
             type2: typeRight.type
         })
-        const resultType = freshVar(expr.getText(), '?');
+        const resultType = freshVar(expr.getText(), 'INTEGER');
         return {
             name: resultType.name,
             type: resultType,

@@ -899,6 +899,56 @@ describe('sqlite-Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('parse select with column expression', () => {
+        const sql = `
+        select t1.id > 1 AS bigger  from mytable1 t1
+        `
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'bigger',
+                    type: 'INTEGER', //changed at v0.0.2
+                    notNull: true,
+                    table: ''
+                }
+            ],
+            parameters: []
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('parse select with column expression 2', () => {
+        const sql = `
+        select t2.name > 'a' AS bigger  from mytable2 t2
+        `
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'bigger',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: ''
+                }
+            ],
+            parameters: []
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it('SELECT mytable1.* FROM mytable1', async () => {
         const sql = 'SELECT mytable1.* FROM mytable1';
 
