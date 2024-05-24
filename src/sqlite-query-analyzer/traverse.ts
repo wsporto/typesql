@@ -460,6 +460,27 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
             table: functionType.table || ''
         };
     }
+    if (function_name == 'row_number'
+        || function_name == 'rank'
+        || function_name == 'dense_rank'
+    ) {
+
+        const functionType = freshVar(expr.getText(), 'INTEGER');
+        return {
+            name: functionType.name,
+            type: functionType,
+            notNull: true,
+            table: functionType.table || ''
+        };
+    }
+    if (function_name == 'first_value'
+        || function_name == 'last_value'
+    ) {
+
+        const paramExpr = expr.expr(0);
+        const paramType = traverse_expr(paramExpr, traverseContext);
+        return paramType;
+    }
     if (function_name) {
         throw Error('traverse_expr: function not supported:' + function_name);
     }
