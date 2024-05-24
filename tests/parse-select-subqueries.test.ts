@@ -132,6 +132,86 @@ describe('Test parse select with subqueries', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('select * from (subquery)', async () => {
+
+        const sql = `
+        select * from (
+            select name, name as id from mytable2
+        ) t2
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'name',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 't2'
+                },
+                {
+                    columnName: 'id',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 't2'
+                }
+            ],
+            parameters: []
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('select * from (subquery) where', async () => {
+
+        const sql = `
+        select * from (
+            select name, name as id from mytable2
+        ) t2
+        WHERE t2.id = ? and t2.name = ?
+        `
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'name',
+                    type: 'varchar',
+                    notNull: true, //if pass null on parameters the result query will be empty
+                    table: 't2'
+                },
+                {
+                    columnName: 'id',
+                    type: 'varchar',
+                    notNull: true, //if pass null on parameters the result query will be empty
+                    table: 't2'
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'varchar',
+                    notNull: true
+                },
+                {
+                    name: 'param2',
+                    columnType: 'varchar',
+                    notNull: true
+                }
+            ]
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it('parse a select with 3-levels nested select', async () => {
         const sql = `
         select id from (

@@ -125,6 +125,86 @@ describe('sqlite-parse-select-subqueries', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('select * from (subquery)', () => {
+
+        const sql = `
+        select * from (
+            select name, name as id from mytable2
+        ) t2
+        `
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'name',
+                    type: 'TEXT',
+                    notNull: false,
+                    table: 't2'
+                },
+                {
+                    columnName: 'id',
+                    type: 'TEXT',
+                    notNull: false,
+                    table: 't2'
+                }
+            ],
+            parameters: []
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('select * from (subquery) where', () => {
+
+        const sql = `
+        select * from (
+            select name, name as id from mytable2
+        ) t2
+        WHERE t2.id = ? and t2.name = ?
+        `
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'name',
+                    type: 'TEXT',
+                    notNull: true,
+                    table: 't2'
+                },
+                {
+                    columnName: 'id',
+                    type: 'TEXT',
+                    notNull: true,
+                    table: 't2'
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'TEXT',
+                    notNull: true
+                },
+                {
+                    name: 'param2',
+                    columnType: 'TEXT',
+                    notNull: true
+                }
+            ]
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it('parse a select with 3-levels nested select', async () => {
         const sql = `
         select id from (
