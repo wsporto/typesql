@@ -14,5 +14,13 @@ export async function delete01(client: Client, params: Delete01Params): Promise<
 	DELETE FROM mytable1 WHERE id=?
 	`
 	return client.execute({ sql, args: [params.param1] })
-		.then(res => res as unknown as Delete01Result);
+		.then(res => mapArrayToDelete01Result(res));
+}
+
+function mapArrayToDelete01Result(data: any) {
+	const result: Delete01Result = {
+		changes: data.changes,
+		lastInsertRowid: data.lastInsertRowid
+	}
+	return result;
 }

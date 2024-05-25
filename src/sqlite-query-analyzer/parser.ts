@@ -118,20 +118,9 @@ function createSchemaDefinition(sql: string, sql_stmtContext: Sql_stmtContext, d
     }
     if (queryResult.queryType == 'Insert') {
 
-        const insertColumnResult: ColumnInfo[] = [
-            {
-                columnName: 'changes',
-                type: 'INTEGER',
-                notNull: true
-            },
-            {
-                columnName: 'lastInsertRowid',
-                type: 'INTEGER',
-                notNull: true
-            }
-        ]
 
-        const paramsResult = queryResult.columns.map((param, index) => {
+
+        const paramsResult = queryResult.parameters.map((param, index) => {
             const columnType = getVarType(substitutions, param.type);
             const columnNotNull = param.notNull;
             const colInfo: ParameterDef = {
@@ -142,12 +131,25 @@ function createSchemaDefinition(sql: string, sql_stmtContext: Sql_stmtContext, d
             return colInfo;
         })
 
+        const columns = queryResult.columns.map(col => {
+            const columnType = getVarType(substitutions, col.type);
+            const colInfo: ColumnInfo = {
+                columnName: col.name,
+                type: verifyNotInferred(columnType),
+                notNull: col.notNull
+            }
+            return colInfo;
+        })
+
         const schemaDef: SchemaDef = {
             sql,
             queryType: queryResult.queryType,
             multipleRowsResult: false,
-            columns: insertColumnResult,
+            columns,
             parameters: paramsResult
+        }
+        if (queryResult.returing) {
+            schemaDef.returning = true;
         }
 
         return right(schemaDef);

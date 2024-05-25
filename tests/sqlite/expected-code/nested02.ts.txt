@@ -1,0 +1,152 @@
+import { Database } from 'better-sqlite3';
+
+export type Nested01Result = {
+	user_id: number;
+	user_name: string;
+	post_id: number;
+	post_title: string;
+	post_body: string;
+	role_id: number;
+	role: string;
+	comment_id: number;
+	comment: string;
+}
+
+export function nested01(db: Database): Nested01Result[] {
+	const sql = `
+	-- @nested
+	SELECT 
+		u.id as user_id, 
+		u.name as user_name,
+		p.id as post_id,
+		p.title as post_title,
+		p.body  as post_body,
+		r.id as role_id,
+		r.role,
+		c.id as comment_id,
+		c.comment 
+	FROM users u
+	INNER JOIN posts p on p.fk_user = u.id
+	INNER JOIN roles r on r.fk_user = u.id
+	INNER JOIN comments c on c.fk_post = p.id
+	`
+	return db.prepare(sql)
+		.raw(true)
+		.all()
+		.map(data => mapArrayToNested01Result(data));
+}
+
+function mapArrayToNested01Result(data: any) {
+	const result: Nested01Result = {
+		user_id: data[0],
+		user_name: data[1],
+		post_id: data[2],
+		post_title: data[3],
+		post_body: data[4],
+		role_id: data[5],
+		role: data[6],
+		comment_id: data[7],
+		comment: data[8]
+	}
+	return result;
+}
+
+export type Nested01NestedUsers = {
+	user_id: number;
+	user_name: string;
+	posts: Nested01NestedPosts[];
+	roles: Nested01NestedRoles[];
+}
+
+export type Nested01NestedPosts = {
+	post_id: number;
+	post_title: string;
+	post_body: string;
+	comments: Nested01NestedComments[];
+}
+
+export type Nested01NestedRoles = {
+	role_id: number;
+	role: string;
+}
+
+export type Nested01NestedComments = {
+	comment_id: number;
+	comment: string;
+}
+
+export function nested01Nested(db: Database): Nested01NestedUsers[] {
+	const selectResult = nested01(db);
+	if (selectResult.length == 0) {
+		return [];
+	}
+	return collectNested01NestedUsers(selectResult);
+}
+
+function collectNested01NestedUsers(selectResult: Nested01Result[]): Nested01NestedUsers[] {
+	const grouped = groupBy(selectResult.filter(r => r.user_id != null), r => r.user_id);
+	return [...grouped.values()].map(r => mapToNested01NestedUsers(r))
+}
+
+function mapToNested01NestedUsers(selectResult: Nested01Result[]): Nested01NestedUsers {
+	const firstRow = selectResult[0];
+	const result: Nested01NestedUsers = {
+		user_id: firstRow.user_id!,
+		user_name: firstRow.user_name!,
+		posts: collectNested01NestedPosts(selectResult),
+		roles: collectNested01NestedRoles(selectResult),
+	}
+	return result;
+}
+
+function collectNested01NestedPosts(selectResult: Nested01Result[]): Nested01NestedPosts[] {
+	const grouped = groupBy(selectResult.filter(r => r.user_id != null), r => r.user_id);
+	return [...grouped.values()].map(r => mapToNested01NestedPosts(r))
+}
+
+function mapToNested01NestedPosts(selectResult: Nested01Result[]): Nested01NestedPosts {
+	const firstRow = selectResult[0];
+	const result: Nested01NestedPosts = {
+		post_id: firstRow.post_id!,
+		post_title: firstRow.post_title!,
+		post_body: firstRow.post_body!,
+		comments: collectNested01NestedComments(selectResult),
+	}
+	return result;
+}
+
+function collectNested01NestedRoles(selectResult: Nested01Result[]): Nested01NestedRoles[] {
+	const grouped = groupBy(selectResult.filter(r => r.user_id != null), r => r.user_id);
+	return [...grouped.values()].map(r => mapToNested01NestedRoles(r))
+}
+
+function mapToNested01NestedRoles(selectResult: Nested01Result[]): Nested01NestedRoles {
+	const firstRow = selectResult[0];
+	const result: Nested01NestedRoles = {
+		role_id: firstRow.role_id!,
+		role: firstRow.role!,
+	}
+	return result;
+}
+
+function collectNested01NestedComments(selectResult: Nested01Result[]): Nested01NestedComments[] {
+	const grouped = groupBy(selectResult.filter(r => r.post_id != null), r => r.post_id);
+	return [...grouped.values()].map(r => mapToNested01NestedComments(r))
+}
+
+function mapToNested01NestedComments(selectResult: Nested01Result[]): Nested01NestedComments {
+	const firstRow = selectResult[0];
+	const result: Nested01NestedComments = {
+		comment_id: firstRow.comment_id!,
+		comment: firstRow.comment!,
+	}
+	return result;
+}
+
+const groupBy = <T, Q>(array: T[], predicate: (value: T, index: number, array: T[]) => Q) => {
+	return array.reduce((map, value, index, array) => {
+		const key = predicate(value, index, array);
+		map.get(key)?.push(value) ?? map.set(key, [value]);
+		return map;
+	}, new Map<Q, T[]>());
+}

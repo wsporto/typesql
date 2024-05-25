@@ -15,7 +15,7 @@ export async function select01(client: Client, params: Select01Params): Promise<
 	`
 	return client.execute({ sql, args: [params.param1] })
 		.then(res => res.rows)
-		.then(rows => rows.map(row => mapArrayToSelect01Result(row))[0]);
+		.then(rows => mapArrayToSelect01Result(rows[0]));
 }
 
 function mapArrayToSelect01Result(data: any) {
