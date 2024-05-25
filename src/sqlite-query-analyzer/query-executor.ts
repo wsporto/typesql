@@ -15,7 +15,14 @@ export function loadDbSchema(db: DatabaseType): Either<TypeSqlError, ColumnSchem
 
 	const sql = `
 		WITH all_tables AS (
-			SELECT name FROM sqlite_schema WHERE type = 'table'
+			SELECT name FROM sqlite_schema 
+			WHERE type = 'table'
+			AND name <> 'sqlite_sequence'
+			AND name <> 'sqlite_stat1'
+			AND name <> '_litestream_seq'
+			AND name <> '_litestream_lock'
+			AND name <> 'libsql_wasm_func_table'
+			AND name <> '_cf_KV'
 		),
 		uniqueIndex as (
 			SELECT DISTINCT t.name as table_name, ii.name as column_name
