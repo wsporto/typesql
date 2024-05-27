@@ -1,4 +1,4 @@
-import { Select_stmtContext, Sql_stmtContext, ExprContext, Table_or_subqueryContext, Result_columnContext, Insert_stmtContext, Column_nameContext, Update_stmtContext, Delete_stmtContext, Join_constraintContext, Table_nameContext, Join_operatorContext } from "@wsporto/ts-mysql-parser/dist/sqlite";
+import { Select_stmtContext, Sql_stmtContext, ExprContext, Table_or_subqueryContext, Result_columnContext, Insert_stmtContext, Column_nameContext, Update_stmtContext, Delete_stmtContext, Join_constraintContext, Table_nameContext, Join_operatorContext, Returning_clauseContext } from "@wsporto/ts-mysql-parser/dist/sqlite";
 import { ColumnDef, FieldName, TraverseContext, TypeAndNullInfer, TypeAndNullInferParam } from "../mysql-query-analyzer/types";
 import { filterColumns, findColumn, findColumnSchema, includeColumn, splitName } from "../mysql-query-analyzer/select-columns";
 import { createColumnType, freshVar } from "../mysql-query-analyzer/collect-constraints";
@@ -995,11 +995,35 @@ function traverse_insert_stmt(insert_stmt: Insert_stmtContext, traverseContext: 
         })
     }
 
+    const returning_clause = insert_stmt.returning_clause();
+    const returninColumns = returning_clause ? traverse_returning_clause(returning_clause, fromColumns) : [];
+
     const queryResult: InsertResult = {
         queryType: 'Insert',
-        columns: insertColumns
+        parameters: insertColumns,
+        columns: returninColumns,
+        returing: returning_clause != null
     }
     return queryResult;
+}
+
+function traverse_returning_clause(returning_clause: Returning_clauseContext, fromColumns: ColumnDef[]) {
+    const result_column_list = returning_clause.result_column_list();
+    const result = result_column_list.flatMap(result_column => {
+        if (result_column.STAR()) {
+            return fromColumns.map(col => {
+                const newCol: TypeAndNullInfer = {
+                    name: col.columnName,
+                    type: col.columnType,
+                    notNull: col.notNull,
+                    table: col.table
+                }
+                return newCol;
+            });
+        }
+        return [];
+    });
+    return result;
 }
 
 function traverse_update_stmt(update_stmt: Update_stmtContext, traverseContext: TraverseContext): UpdateResult {

@@ -1,7 +1,7 @@
 import { Client } from '@libsql/client';
 
 export type Insert01Result = {
-	changes: number;
+	rowsAffected: number;
 	lastInsertRowid: number;
 }
 
@@ -10,5 +10,13 @@ export async function insert01(client: Client): Promise<Insert01Result> {
 	INSERT INTO mytable1(value) values(10)
 	`
 	return client.execute(sql)
-		.then(res => res as unknown as Insert01Result);
+		.then(res => mapArrayToInsert01Result(res));
+}
+
+function mapArrayToInsert01Result(data: any) {
+	const result: Insert01Result = {
+		rowsAffected: data.rowsAffected,
+		lastInsertRowid: data.lastInsertRowid
+	}
+	return result;
 }

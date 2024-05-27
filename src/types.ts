@@ -24,6 +24,7 @@ export type SchemaDef = {
     sql: string;
     queryType: 'Select' | 'Insert' | 'Update' | 'Delete'
     multipleRowsResult: boolean;
+    returning?: true;
     columns: ColumnInfo[]; //TODO - ColumnDef and ParamterDef should be the same
     orderByColumns?: string[];
     parameters: ParameterDef[];

@@ -14,18 +14,7 @@ describe('sqlite-parse-insert', () => {
             multipleRowsResult: false,
             queryType: 'Insert',
             sql: 'insert into mytable1 (value) values (?)',
-            columns: [
-                {
-                    columnName: 'changes',
-                    type: 'INTEGER',
-                    notNull: true
-                },
-                {
-                    columnName: 'lastInsertRowid',
-                    type: 'INTEGER',
-                    notNull: true
-                }
-            ],
+            columns: [],
             parameters: [
                 {
                     name: 'param1',
@@ -230,18 +219,7 @@ describe('sqlite-parse-insert', () => {
             sql: 'insert into all_types (int_column) values (?+?)',
             queryType: 'Insert',
             multipleRowsResult: false,
-            columns: [
-                {
-                    columnName: 'changes',
-                    type: 'INTEGER',
-                    notNull: true
-                },
-                {
-                    columnName: 'lastInsertRowid',
-                    type: 'INTEGER',
-                    notNull: true
-                }
-            ],
+            columns: [],
             parameters: [
                 {
                     name: 'param1',
@@ -271,18 +249,7 @@ describe('sqlite-parse-insert', () => {
             sql: 'insert into all_types (real_column) values (?+?)',
             queryType: 'Insert',
             multipleRowsResult: false,
-            columns: [
-                {
-                    columnName: 'changes',
-                    type: 'INTEGER',
-                    notNull: true
-                },
-                {
-                    columnName: 'lastInsertRowid',
-                    type: 'INTEGER',
-                    notNull: true
-                }
-            ],
+            columns: [],
             parameters: [
                 {
                     name: 'param1',
@@ -314,18 +281,7 @@ describe('sqlite-parse-insert', () => {
             sql: sql,
             queryType: 'Insert',
             multipleRowsResult: false,
-            columns: [
-                {
-                    columnName: 'changes',
-                    type: 'INTEGER',
-                    notNull: true
-                },
-                {
-                    columnName: 'lastInsertRowid',
-                    type: 'INTEGER',
-                    notNull: true
-                }
-            ],
+            columns: [],
             parameters: [
                 {
                     name: 'param1',
@@ -357,18 +313,7 @@ describe('sqlite-parse-insert', () => {
             sql: sql,
             queryType: 'Insert',
             multipleRowsResult: false,
-            columns: [
-                {
-                    columnName: 'changes',
-                    type: 'INTEGER',
-                    notNull: true
-                },
-                {
-                    columnName: 'lastInsertRowid',
-                    type: 'INTEGER',
-                    notNull: true
-                }
-            ],
+            columns: [],
             parameters: [
                 {
                     name: 'param1',
@@ -397,18 +342,7 @@ describe('sqlite-parse-insert', () => {
             sql: 'insert into all_types (varchar_column, int_column) values (concat(?, ?), ?+?)',
             queryType: 'Insert',
             multipleRowsResult: false,
-            columns: [
-                {
-                    columnName: 'changes',
-                    type: 'INTEGER',
-                    notNull: true
-                },
-                {
-                    columnName: 'lastInsertRowid',
-                    type: 'INTEGER',
-                    notNull: true
-                }
-            ],
+            columns: [],
             parameters: [
                 {
                     name: 'param1',
@@ -436,6 +370,42 @@ describe('sqlite-parse-insert', () => {
 
         if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it(`INSERT INTO mytable1 (value) RETURNING *`, async () => {
+
+        const sql = `INSERT INTO mytable1 (value) VALUES (:value) RETURNING *`;
+        const actual = await parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql: 'INSERT INTO mytable1 (value) VALUES (?) RETURNING *',
+            queryType: 'Insert',
+            multipleRowsResult: false,
+            returning: true,
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'INTEGER',
+                    notNull: true
+                },
+                {
+                    columnName: 'value',
+                    type: 'INTEGER',
+                    notNull: false
+                }
+            ],
+            parameters: [
+                {
+                    name: 'value',
+                    columnType: 'INTEGER',
+                    notNull: false
+                }
+            ]
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
         }
         assert.deepStrictEqual(actual.right, expected);
     })

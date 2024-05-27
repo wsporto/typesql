@@ -6,7 +6,6 @@ export type CrudUpdate01Data = {
 
 export type CrudUpdate01Result = {
 	changes: number;
-	lastInsertRowid: number;
 }
 
 export function crudUpdate01(db: Database, data: CrudUpdate01Data): CrudUpdate01Result {

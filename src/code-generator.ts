@@ -557,6 +557,9 @@ export function generateTsDescriptor(queryInfo: SchemaDef): TsDescriptor {
         const dynamicQueryDescriptor = queryInfo.dynamicSqlQuery;
         result.dynamicQuery = dynamicQueryDescriptor;
     }
+    if (queryInfo.returning) {
+        result.returning = queryInfo.returning;
+    }
     return result;
 }
 
@@ -707,6 +710,7 @@ export type ParamInfo = {
 export type TsDescriptor = {
     sql: string;
     queryType: 'Select' | 'Insert' | 'Update' | 'Delete';
+    returning?: true;
     multipleRowsResult: boolean;
     columns: TsFieldDescriptor[];
     parameterNames: ParamInfo[];

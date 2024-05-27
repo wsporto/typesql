@@ -6,7 +6,6 @@ export type Delete01Params = {
 
 export type Delete01Result = {
 	changes: number;
-	lastInsertRowid: number;
 }
 
 export function delete01(db: Database, params: Delete01Params): Delete01Result {

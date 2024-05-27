@@ -119,6 +119,18 @@ describe('sqlite-code-generator', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	})
 
+	it('insert03-libsql - select with same parameter used twice', async () => {
+		const sql = 'INSERT INTO mytable1(value) VALUES(:value) RETURNING *';
+
+		const actual = await generateTsCode(sql, 'insert03', sqliteDbSchema, false, 'libsql');
+		const expected = readFileSync('tests/sqlite/expected-code/insert03-libsql.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	})
+
 	it('update01 - UPDATE mytable1 SET value=? WHERE id=?', () => {
 		const sql = 'UPDATE mytable1 SET value=? WHERE id=?';
 
@@ -155,7 +167,7 @@ describe('sqlite-code-generator', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	})
 
-	it('delete01-libsql - DELETE FROM mytable1 WHERE id=?', () => {//
+	it('delete01-libsql - DELETE FROM mytable1 WHERE id=?', () => {
 		const sql = 'DELETE FROM mytable1 WHERE id=?';
 
 		const actual = generateTsCode(sql, 'delete01', sqliteDbSchema, false, 'libsql');

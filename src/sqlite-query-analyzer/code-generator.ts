@@ -28,18 +28,18 @@ export function generateTsCode(sql: string, queryName: string, sqliteDbSchema: C
     if (isLeft(schemaDefResult)) {
         return schemaDefResult;
     }
-    const tsDescriptor = createTsDescriptor(schemaDefResult.right);
+    const tsDescriptor = createTsDescriptor(schemaDefResult.right, client);
     const code = generateCodeFromTsDescriptor(client, queryName, tsDescriptor, isCrud);
     return right(code);
 }
 
-function createTsDescriptor(queryInfo: SchemaDef): TsDescriptor {
-    const escapedColumnsNames = renameInvalidNames(queryInfo.columns.map(col => col.columnName));
+function createTsDescriptor(queryInfo: SchemaDef, client: SQLiteClient): TsDescriptor {
     const tsDescriptor: TsDescriptor = {
         sql: queryInfo.sql,
         queryType: queryInfo.queryType,
         multipleRowsResult: queryInfo.multipleRowsResult,
-        columns: queryInfo.columns.map((col, index) => mapColumnToTsFieldDescriptor({ ...col, columnName: escapedColumnsNames[index] })),
+        returning: queryInfo.returning,
+        columns: mapColumns(client, queryInfo.queryType, queryInfo.columns, queryInfo.returning),
         parameterNames: [],
         parameters: queryInfo.parameters.map(param => mapParameterToTsFieldDescriptor(param)),
         data: queryInfo.data?.map(param => mapParameterToTsFieldDescriptor(param)),
@@ -58,6 +58,44 @@ function createTsDescriptor(queryInfo: SchemaDef): TsDescriptor {
         tsDescriptor.nestedDescriptor2 = nestedDescriptor2;
     }
     return tsDescriptor;
+}
+
+function mapColumns(client: SQLiteClient, queryType: SchemaDef['queryType'], columns: ColumnInfo[], returning: boolean = false) {
+    const sqliteInsertColumns: TsFieldDescriptor[] = [
+        {
+            name: 'changes',
+            tsType: 'number',
+            notNull: true
+        },
+        {
+            name: 'lastInsertRowid',
+            tsType: 'number',
+            notNull: true
+        }
+    ];
+
+    const libSqlInsertColumns: TsFieldDescriptor[] = [
+        {
+            name: 'rowsAffected',
+            tsType: 'number',
+            notNull: true
+        },
+        {
+            name: 'lastInsertRowid',
+            tsType: 'number',
+            notNull: true
+        }
+    ]
+
+    if (queryType == 'Insert' && !returning) {
+        return client == 'sqlite' ? sqliteInsertColumns : libSqlInsertColumns;
+    }
+    if (queryType == 'Update' || queryType == 'Delete') {
+        return client == 'sqlite' ? [sqliteInsertColumns[0]] : [libSqlInsertColumns[0]]
+    }
+
+    const escapedColumnsNames = renameInvalidNames(columns.map(col => col.columnName));
+    return columns.map((col, index) => mapColumnToTsFieldDescriptor({ ...col, columnName: escapedColumnsNames[index] }))
 }
 
 function mapFieldToTsField(columns: ColumnInfo[], field: Field2): TsField2 {
@@ -198,9 +236,10 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 
     const queryParams = allParameters.length > 0 ? '[' + allParameters.join(', ') + ']' : '';
 
-    const returnType = tsDescriptor.multipleRowsResult ? `${resultTypeName}[]` : `${resultTypeName} | null`;
+    const orNull = queryType == 'Select' ? ' | null' : '';
+    const returnType = tsDescriptor.multipleRowsResult ? `${resultTypeName}[]` : `${resultTypeName}${orNull}`;
 
-    if (queryType == 'Select') {
+    if (queryType == 'Select' || (queryType == 'Insert' && tsDescriptor.returning)) {
         if (client == 'sqlite') {
             writer.write(`export function ${camelCaseName}(${functionArguments}): ${returnType}`).block(() => {
                 const processedSql = tsDescriptor.orderByColumns ? replaceOrderByParam(sql) : sql;
@@ -228,13 +267,30 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
                 const executeParams = queryParams != '' ? `{ sql, args: ${queryParams} }` : 'sql';
 
                 writer.write(`return client.execute(${executeParams})`).newLine();
-                writer.indent().write(`.then(res => res.rows)`).newLine();
-                writer.indent().write(`.then(rows => rows.map(row => mapArrayTo${resultTypeName}(row))${tsDescriptor.multipleRowsResult ? '' : '[0]'});`);
+
+                if (queryType == 'Select') {
+                    writer.indent().write(`.then(res => res.rows)`).newLine();
+                    if (tsDescriptor.multipleRowsResult) {
+                        writer.indent().write(`.then(rows => rows.map(row => mapArrayTo${resultTypeName}(row)));`);
+                    }
+                    else {
+                        writer.indent().write(`.then(rows => mapArrayTo${resultTypeName}(rows[0]));`);
+                    }
+                }
+                if (queryType == 'Insert') {
+                    if (tsDescriptor.returning) {
+                        writer.indent().write(`.then(res => res.rows)`).newLine();
+                        writer.indent().write(`.then(rows => mapArrayTo${resultTypeName}(rows[0]));`);
+                    }
+                    else {
+                        writer.indent().write(`.then(res => mapArrayTo${resultTypeName}(res));`);
+                    }
+                }
             });
         }
     }
 
-    if (queryType == 'Insert' || queryType == 'Update' || queryType == 'Delete') {
+    if (queryType == 'Update' || queryType == 'Delete' || (queryType == 'Insert' && !tsDescriptor.returning)) {
         if (client == 'sqlite') {
             writer.write(`export function ${camelCaseName}(${functionArguments}): ${resultTypeName}`).block(() => {
                 const sqlSplit = sql.split('\n');
@@ -257,18 +313,30 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
                 writer.indent().write('`').newLine();
                 const executeParams = queryParams != '' ? `{ sql, args: ${queryParams} }` : 'sql';
                 writer.write(`return client.execute(${executeParams})`).newLine();
-                writer.indent().write(`.then(res => res as unknown as ${resultTypeName});`);
+                writer.indent().write(`.then(res => mapArrayTo${resultTypeName}(res));`);
             });
         }
     }
 
-    if (queryType == 'Select') {
+    if (queryType == 'Select' || tsDescriptor.returning) {
         writer.blankLine();
         writer.write(`function mapArrayTo${resultTypeName}(data: any) `).block(() => {
             writer.write(`const result: ${resultTypeName} = `).block(() => {
                 tsDescriptor.columns.forEach((col, index) => {
                     const separator = index < tsDescriptor.columns.length - 1 ? ',' : ''
                     writer.writeLine(`${col.name}: data[${index}]${separator}`);
+                })
+            })
+            writer.writeLine('return result;');
+        });
+    }
+    else if (client == 'libsql' && !tsDescriptor.returning) {
+        writer.blankLine();
+        writer.write(`function mapArrayTo${resultTypeName}(data: any) `).block(() => {
+            writer.write(`const result: ${resultTypeName} = `).block(() => {
+                tsDescriptor.columns.forEach((col, index) => {
+                    const separator = index < tsDescriptor.columns.length - 1 ? ',' : ''
+                    writer.writeLine(`${col.name}: data.${col.name}${separator}`);
                 })
             })
             writer.writeLine('return result;');

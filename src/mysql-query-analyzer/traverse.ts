@@ -488,7 +488,9 @@ export type SelectResult = {
 }
 export type InsertResult = {
     queryType: 'Insert';
+    parameters: TypeAndNullInfer[];
     columns: TypeAndNullInfer[];
+    returing: boolean;
 }
 export type UpdateResult = {
     queryType: 'Update';
