@@ -15,18 +15,7 @@ describe('sqlite-parse-delete', () => {
             sql: 'delete from mytable1 where id = ?',
             queryType: 'Delete',
             multipleRowsResult: false,
-            columns: [
-                {
-                    columnName: 'changes',
-                    type: 'INTEGER',
-                    notNull: true
-                },
-                {
-                    columnName: 'lastInsertRowid',
-                    type: 'INTEGER',
-                    notNull: true
-                }
-            ],
+            columns: [],
             parameters: [
                 {
                     name: 'param1',
@@ -51,18 +40,7 @@ describe('sqlite-parse-delete', () => {
             sql: 'delete from mytable1 where id = ?',
             queryType: 'Delete',
             multipleRowsResult: false,
-            columns: [
-                {
-                    columnName: 'changes',
-                    type: 'INTEGER',
-                    notNull: true
-                },
-                {
-                    columnName: 'lastInsertRowid',
-                    type: 'INTEGER',
-                    notNull: true
-                }
-            ],
+            columns: [],
             parameters: [
                 {
                     name: 'id',
@@ -86,18 +64,7 @@ describe('sqlite-parse-delete', () => {
             sql: 'delete from mytable1 where value = 0 or value is null',
             queryType: 'Delete',
             multipleRowsResult: false,
-            columns: [
-                {
-                    columnName: 'changes',
-                    type: 'INTEGER',
-                    notNull: true
-                },
-                {
-                    columnName: 'lastInsertRowid',
-                    type: 'INTEGER',
-                    notNull: true
-                }
-            ],
+            columns: [],
             parameters: []
         }
 

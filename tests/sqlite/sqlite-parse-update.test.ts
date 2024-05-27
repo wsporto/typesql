@@ -3,22 +3,8 @@ import { SchemaDef } from "../../src/types";
 import { isLeft } from "fp-ts/lib/Either";
 import { parseSql } from "../../src/sqlite-query-analyzer/parser";
 import { sqliteDbSchema } from "../mysql-query-analyzer/create-schema";
-import { ColumnInfo } from "../../src/mysql-query-analyzer/types";
 
 describe('sqlite-parse-update', () => {
-
-    const columns: ColumnInfo[] = [
-        {
-            columnName: 'changes',
-            type: 'INTEGER',
-            notNull: true
-        },
-        {
-            columnName: 'lastInsertRowid',
-            type: 'INTEGER',
-            notNull: true
-        }
-    ]
 
     it('update mytable1 set value = ? where id = ?', async () => {
 
@@ -30,7 +16,7 @@ describe('sqlite-parse-update', () => {
             sql,
             queryType: 'Update',
             multipleRowsResult: false,
-            columns,
+            columns: [],
             data: [
                 {
                     name: 'param1',
@@ -63,7 +49,7 @@ describe('sqlite-parse-update', () => {
             sql,
             queryType: 'Update',
             multipleRowsResult: false,
-            columns,
+            columns: [],
             data: [
                 {
                     name: 'param1',
@@ -104,7 +90,7 @@ describe('sqlite-parse-update', () => {
             sql: expectedSql,
             queryType: 'Update',
             multipleRowsResult: false,
-            columns,
+            columns: [],
             data: [
                 {
                     name: 'value',
@@ -146,7 +132,7 @@ describe('sqlite-parse-update', () => {
             sql: expectedSql,
             queryType: 'Update',
             multipleRowsResult: false,
-            columns,
+            columns: [],
             data: [
                 {
                     name: 'value',
@@ -188,7 +174,7 @@ describe('sqlite-parse-update', () => {
             sql: expectedSql,
             queryType: 'Update',
             multipleRowsResult: false,
-            columns,
+            columns: [],
             data: [
                 {
                     name: 'id',
@@ -219,7 +205,7 @@ describe('sqlite-parse-update', () => {
             sql: expectedSql,
             queryType: 'Update',
             multipleRowsResult: false,
-            columns,
+            columns: [],
             data: [
                 {
                     name: 'valueSet',
@@ -261,7 +247,7 @@ describe('sqlite-parse-update', () => {
             sql: expectedSql,
             queryType: 'Update',
             multipleRowsResult: false,
-            columns,
+            columns: [],
             data: [
                 {
                     name: 'nameSet',

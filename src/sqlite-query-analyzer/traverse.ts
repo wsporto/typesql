@@ -995,23 +995,8 @@ function traverse_insert_stmt(insert_stmt: Insert_stmtContext, traverseContext: 
         })
     }
 
-    const defaultResultColumns: TypeAndNullInfer[] = [
-        {
-            name: 'changes',
-            type: freshVar('changes', 'INTEGER'),
-            notNull: true,
-            table: ''
-        },
-        {
-            name: 'lastInsertRowid',
-            type: freshVar('lastInsertRowid', 'INTEGER'),
-            notNull: true,
-            table: ''
-        }
-    ]
-
     const returning_clause = insert_stmt.returning_clause();
-    const returninColumns = returning_clause ? traverse_returning_clause(returning_clause, fromColumns) : defaultResultColumns;
+    const returninColumns = returning_clause ? traverse_returning_clause(returning_clause, fromColumns) : [];
 
     const queryResult: InsertResult = {
         queryType: 'Insert',

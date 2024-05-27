@@ -28,19 +28,18 @@ export function generateTsCode(sql: string, queryName: string, sqliteDbSchema: C
     if (isLeft(schemaDefResult)) {
         return schemaDefResult;
     }
-    const tsDescriptor = createTsDescriptor(schemaDefResult.right);
+    const tsDescriptor = createTsDescriptor(schemaDefResult.right, client);
     const code = generateCodeFromTsDescriptor(client, queryName, tsDescriptor, isCrud);
     return right(code);
 }
 
-function createTsDescriptor(queryInfo: SchemaDef): TsDescriptor {
-    const escapedColumnsNames = renameInvalidNames(queryInfo.columns.map(col => col.columnName));
+function createTsDescriptor(queryInfo: SchemaDef, client: SQLiteClient): TsDescriptor {
     const tsDescriptor: TsDescriptor = {
         sql: queryInfo.sql,
         queryType: queryInfo.queryType,
         multipleRowsResult: queryInfo.multipleRowsResult,
         returning: queryInfo.returning,
-        columns: queryInfo.columns.map((col, index) => mapColumnToTsFieldDescriptor({ ...col, columnName: escapedColumnsNames[index] })),
+        columns: mapColumns(client, queryInfo.queryType, queryInfo.columns, queryInfo.returning),
         parameterNames: [],
         parameters: queryInfo.parameters.map(param => mapParameterToTsFieldDescriptor(param)),
         data: queryInfo.data?.map(param => mapParameterToTsFieldDescriptor(param)),
@@ -59,6 +58,44 @@ function createTsDescriptor(queryInfo: SchemaDef): TsDescriptor {
         tsDescriptor.nestedDescriptor2 = nestedDescriptor2;
     }
     return tsDescriptor;
+}
+
+function mapColumns(client: SQLiteClient, queryType: SchemaDef['queryType'], columns: ColumnInfo[], returning: boolean = false) {
+    const sqliteInsertColumns: TsFieldDescriptor[] = [
+        {
+            name: 'changes',
+            tsType: 'number',
+            notNull: true
+        },
+        {
+            name: 'lastInsertRowid',
+            tsType: 'number',
+            notNull: true
+        }
+    ];
+
+    const libSqlInsertColumns: TsFieldDescriptor[] = [
+        {
+            name: 'rowsAffected',
+            tsType: 'number',
+            notNull: true
+        },
+        {
+            name: 'lastInsertRowid',
+            tsType: 'number',
+            notNull: true
+        }
+    ]
+
+    if (queryType == 'Insert' && !returning) {
+        return client == 'sqlite' ? sqliteInsertColumns : libSqlInsertColumns;
+    }
+    if (queryType == 'Update' || queryType == 'Delete') {
+        return client == 'sqlite' ? [sqliteInsertColumns[0]] : [libSqlInsertColumns[0]]
+    }
+
+    const escapedColumnsNames = renameInvalidNames(columns.map(col => col.columnName));
+    return columns.map((col, index) => mapColumnToTsFieldDescriptor({ ...col, columnName: escapedColumnsNames[index] }))
 }
 
 function mapFieldToTsField(columns: ColumnInfo[], field: Field2): TsField2 {

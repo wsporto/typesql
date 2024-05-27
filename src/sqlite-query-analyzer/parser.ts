@@ -156,19 +156,6 @@ function createSchemaDefinition(sql: string, sql_stmtContext: Sql_stmtContext, d
     }
     if (queryResult.queryType == 'Update') {
 
-        const updateColumnResult: ColumnInfo[] = [
-            {
-                columnName: 'changes',
-                type: 'INTEGER',
-                notNull: true
-            },
-            {
-                columnName: 'lastInsertRowid',
-                type: 'INTEGER',
-                notNull: true
-            }
-        ]
-
         const paramsResult = queryResult.columns.map((param, index) => {
             const columnType = getVarType(substitutions, param.type);
             const columnNotNull = param.notNull;
@@ -195,7 +182,7 @@ function createSchemaDefinition(sql: string, sql_stmtContext: Sql_stmtContext, d
             sql,
             queryType: queryResult.queryType,
             multipleRowsResult: false,
-            columns: updateColumnResult,
+            columns: [],
             data: paramsResult,
             parameters: whereParams
         }
@@ -203,18 +190,6 @@ function createSchemaDefinition(sql: string, sql_stmtContext: Sql_stmtContext, d
         return right(schemaDef);
     }
     if (queryResult.queryType == 'Delete') {
-        const deleteColumnResult: ColumnInfo[] = [
-            {
-                columnName: 'changes',
-                type: 'INTEGER',
-                notNull: true
-            },
-            {
-                columnName: 'lastInsertRowid',
-                type: 'INTEGER',
-                notNull: true
-            }
-        ]
 
         const whereParams = queryResult.params.map((param, index) => {
             const columnType = getVarType(substitutions, param.type);
@@ -231,7 +206,7 @@ function createSchemaDefinition(sql: string, sql_stmtContext: Sql_stmtContext, d
             sql,
             queryType: queryResult.queryType,
             multipleRowsResult: false,
-            columns: deleteColumnResult,
+            columns: [],
             parameters: whereParams
         }
 

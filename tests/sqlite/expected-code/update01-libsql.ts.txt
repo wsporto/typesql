@@ -9,8 +9,7 @@ export type Update01Params = {
 }
 
 export type Update01Result = {
-	changes: number;
-	lastInsertRowid: number;
+	rowsAffected: number;
 }
 
 export async function update01(client: Client, data: Update01Data, params: Update01Params): Promise<Update01Result> {
@@ -23,8 +22,7 @@ export async function update01(client: Client, data: Update01Data, params: Updat
 
 function mapArrayToUpdate01Result(data: any) {
 	const result: Update01Result = {
-		changes: data.changes,
-		lastInsertRowid: data.lastInsertRowid
+		rowsAffected: data.rowsAffected
 	}
 	return result;
 }

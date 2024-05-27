@@ -14,18 +14,7 @@ describe('sqlite-parse-insert', () => {
             multipleRowsResult: false,
             queryType: 'Insert',
             sql: 'insert into mytable1 (value) values (?)',
-            columns: [
-                {
-                    columnName: 'changes',
-                    type: 'INTEGER',
-                    notNull: true
-                },
-                {
-                    columnName: 'lastInsertRowid',
-                    type: 'INTEGER',
-                    notNull: true
-                }
-            ],
+            columns: [],
             parameters: [
                 {
                     name: 'param1',
@@ -230,18 +219,7 @@ describe('sqlite-parse-insert', () => {
             sql: 'insert into all_types (int_column) values (?+?)',
             queryType: 'Insert',
             multipleRowsResult: false,
-            columns: [
-                {
-                    columnName: 'changes',
-                    type: 'INTEGER',
-                    notNull: true
-                },
-                {
-                    columnName: 'lastInsertRowid',
-                    type: 'INTEGER',
-                    notNull: true
-                }
-            ],
+            columns: [],
             parameters: [
                 {
                     name: 'param1',
@@ -271,18 +249,7 @@ describe('sqlite-parse-insert', () => {
             sql: 'insert into all_types (real_column) values (?+?)',
             queryType: 'Insert',
             multipleRowsResult: false,
-            columns: [
-                {
-                    columnName: 'changes',
-                    type: 'INTEGER',
-                    notNull: true
-                },
-                {
-                    columnName: 'lastInsertRowid',
-                    type: 'INTEGER',
-                    notNull: true
-                }
-            ],
+            columns: [],
             parameters: [
                 {
                     name: 'param1',
@@ -314,18 +281,7 @@ describe('sqlite-parse-insert', () => {
             sql: sql,
             queryType: 'Insert',
             multipleRowsResult: false,
-            columns: [
-                {
-                    columnName: 'changes',
-                    type: 'INTEGER',
-                    notNull: true
-                },
-                {
-                    columnName: 'lastInsertRowid',
-                    type: 'INTEGER',
-                    notNull: true
-                }
-            ],
+            columns: [],
             parameters: [
                 {
                     name: 'param1',
@@ -357,18 +313,7 @@ describe('sqlite-parse-insert', () => {
             sql: sql,
             queryType: 'Insert',
             multipleRowsResult: false,
-            columns: [
-                {
-                    columnName: 'changes',
-                    type: 'INTEGER',
-                    notNull: true
-                },
-                {
-                    columnName: 'lastInsertRowid',
-                    type: 'INTEGER',
-                    notNull: true
-                }
-            ],
+            columns: [],
             parameters: [
                 {
                     name: 'param1',
@@ -397,18 +342,7 @@ describe('sqlite-parse-insert', () => {
             sql: 'insert into all_types (varchar_column, int_column) values (concat(?, ?), ?+?)',
             queryType: 'Insert',
             multipleRowsResult: false,
-            columns: [
-                {
-                    columnName: 'changes',
-                    type: 'INTEGER',
-                    notNull: true
-                },
-                {
-                    columnName: 'lastInsertRowid',
-                    type: 'INTEGER',
-                    notNull: true
-                }
-            ],
+            columns: [],
             parameters: [
                 {
                     name: 'param1',
