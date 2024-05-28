@@ -600,7 +600,7 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
             notNull: typeLeft.notNull && typeRight.notNull
         };
     }
-    if (expr.LT2() || expr.GT2() || expr.AMP() || expr.PIPE() || expr.LT() || expr.LT_EQ() || expr.GT() || expr.GT_EQ()) {
+    if (expr.LT2() || expr.GT2() || expr.AMP() || expr.PIPE() || expr.LT() || expr.LT_EQ() || expr.GT() || expr.GT_EQ() || expr.NOT_EQ1() || expr.NOT_EQ2()) {
         const exprLeft = expr.expr(0);
         const exprRight = expr.expr(1);
         const typeLeft = traverse_expr(exprLeft, traverseContext);
@@ -1020,7 +1020,7 @@ function traverse_insert_stmt(insert_stmt: Insert_stmtContext, traverseContext: 
             const column_name = upsert_clause.column_name(index);
             const col = traverse_column_name(column_name, null, { ...traverseContext, fromColumns });
             const expr = upsert_clause.expr(index);
-            const exprType = traverse_expr(expr, traverseContext);
+            const exprType = traverse_expr(expr, { ...traverseContext, fromColumns });
             traverseContext.constraints.push({
                 expression: column_name.getText(),
                 type1: col.type,
