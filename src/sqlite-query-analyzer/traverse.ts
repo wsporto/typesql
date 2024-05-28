@@ -994,6 +994,28 @@ function traverse_insert_stmt(insert_stmt: Insert_stmtContext, traverseContext: 
             })
         })
     }
+    const upsert_clause = insert_stmt.upsert_clause();
+    if (upsert_clause) {
+        const assign_list = upsert_clause.ASSIGN_list();
+        const paramsBefore = traverseContext.parameters.length;
+        assign_list.forEach((_, index) => {
+            const column_name = upsert_clause.column_name(index);
+            const col = traverse_column_name(column_name, null, { ...traverseContext, fromColumns });
+            const expr = upsert_clause.expr(index);
+            const exprType = traverse_expr(expr, traverseContext);
+            traverseContext.constraints.push({
+                expression: column_name.getText(),
+                type1: col.type,
+                type2: exprType.type
+            })
+        });
+        traverseContext.parameters.slice(paramsBefore).forEach(param => {
+            insertColumns.push({
+                ...param,
+                notNull: param.notNull
+            })
+        })
+    }
 
     const returning_clause = insert_stmt.returning_clause();
     const returninColumns = returning_clause ? traverse_returning_clause(returning_clause, fromColumns) : [];

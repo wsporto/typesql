@@ -271,6 +271,43 @@ describe('sqlite-parse-insert', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('ON DUPLICATE KEY UPDATE name = ?', () => {//
+
+        const sql = `
+        INSERT INTO mytable2 (id, name)
+        VALUES (?, ?)
+        ON CONFLICT(id) DO
+        UPDATE SET name = ?`;
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql: sql,
+            queryType: 'Insert',
+            multipleRowsResult: false,
+            columns: [],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'INTEGER',
+                    notNull: true
+                },
+                {
+                    name: 'param2',
+                    columnType: 'TEXT',
+                    notNull: false
+                },
+                {
+                    name: 'param3',
+                    columnType: 'TEXT',
+                    notNull: false
+                }
+            ]
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it(`INSERT INTO mytable2 (id, name) SELECT ?, ?`, async () => {
 
         const sql = `
