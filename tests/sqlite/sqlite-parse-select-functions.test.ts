@@ -6,11 +6,11 @@ import { sqliteDbSchema } from "../mysql-query-analyzer/create-schema";
 
 describe('sqlite-parse-select-functions', () => {
 
-    it('select sum(value) as total from mytable1', async () => {
+    it('select sum(value) as total from mytable1', () => {
         const sql = `
         select sum(value) as total from mytable1
         `
-        const actual = await parseSql(sql, sqliteDbSchema);
+        const actual = parseSql(sql, sqliteDbSchema);
         const expected: SchemaDef = {
             sql,
             queryType: 'Select',
@@ -32,11 +32,11 @@ describe('sqlite-parse-select-functions', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('select sum(t1.value) as total from mytable1 t1', async () => {
+    it('select sum(t1.value) as total from mytable1 t1', () => {
         const sql = `
         select sum(t1.value) as total from mytable1 t1
         `
-        const actual = await parseSql(sql, sqliteDbSchema);
+        const actual = parseSql(sql, sqliteDbSchema);
         const expected: SchemaDef = {
             sql,
             queryType: 'Select',
@@ -58,11 +58,11 @@ describe('sqlite-parse-select-functions', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('select count(id) from mytable1', async () => {
+    it('select count(id) from mytable1', () => {
         const sql = `
         select count(id) from mytable1
         `
-        const actual = await parseSql(sql, sqliteDbSchema);
+        const actual = parseSql(sql, sqliteDbSchema);
         const expected: SchemaDef = {
             sql,
             queryType: 'Select',
@@ -83,11 +83,11 @@ describe('sqlite-parse-select-functions', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('select count(*) from mytable1', async () => {
+    it('select count(*) from mytable1', () => {
         const sql = `
         select count(*) from mytable1
         `
-        const actual = await parseSql(sql, sqliteDbSchema);
+        const actual = parseSql(sql, sqliteDbSchema);
         const expected: SchemaDef = {
             sql,
             queryType: 'Select',
@@ -108,11 +108,11 @@ describe('sqlite-parse-select-functions', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('select sum(2*value) from  mytable1', async () => {
+    it('select sum(2*value) from  mytable1', () => {
         const sql = `
         select sum(2*value) from  mytable1
         `
-        const actual = await parseSql(sql, sqliteDbSchema);
+        const actual = parseSql(sql, sqliteDbSchema);
         const expected: SchemaDef = {
             sql,
             queryType: 'Select',
