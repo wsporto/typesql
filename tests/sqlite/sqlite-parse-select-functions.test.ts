@@ -406,4 +406,145 @@ describe('sqlite-parse-select-functions', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     })
+
+    it(`SELECT IF(1>2,2,3) as result`, () => {
+        const sql = `
+        SELECT IIF(1>2,2,3) as result
+        `
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: false,
+            columns: [
+                {
+                    columnName: 'result',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: ''
+                }
+            ],
+            parameters: []
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    });
+
+    it(`SELECT IF(1>2,'a','b') as result`, () => {
+        const sql = `
+        SELECT IIF(1>2,'a','b') as result
+        `
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: false,
+            columns: [
+                {
+                    columnName: 'result',
+                    type: 'TEXT',
+                    notNull: true,
+                    table: ''
+                }
+            ],
+            parameters: []
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    });
+
+    it(`SELECT IF(1>2, NULL,'b') as result`, () => {
+        const sql = `
+        SELECT IIF(1>2, NULL,'b') as result
+        `
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: false,
+            columns: [
+                {
+                    columnName: 'result',
+                    type: 'TEXT',
+                    notNull: false,
+                    table: ''
+                }
+            ],
+            parameters: []
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    });
+
+    it(`SELECT IF(1>2,'a',NULL) as result`, () => {
+        const sql = `
+        SELECT IIF(1>2,'a',NULL) as result
+        `
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: false,
+            columns: [
+                {
+                    columnName: 'result',
+                    type: 'TEXT',
+                    notNull: false,
+                    table: ''
+                }
+            ],
+            parameters: []
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    });
+
+    it(`SELECT IF(1>2, id, ?) as result FROM mytable1`, async () => {
+        const sql = `
+        SELECT IIF(1>2, id, ?) as result FROM mytable1
+        `
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'result',
+                    type: 'INTEGER',
+                    notNull: false, //diff from mysql
+                    table: 'mytable1' //correct?
+                }
+            ],
+            parameters: [
+                {
+                    columnType: 'INTEGER',
+                    name: 'param1',
+                    notNull: false //diff from mysql
+                }
+            ]
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    });
 });

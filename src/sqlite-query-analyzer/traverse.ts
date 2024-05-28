@@ -486,6 +486,24 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         const paramType = traverse_expr(paramExpr, traverseContext);
         return { ...paramType, notNull: false };
     }
+    if (function_name == 'iif') {
+        const expr1 = expr.expr(0);
+        traverse_expr(expr1, traverseContext);
+
+        const expr2 = expr.expr(1);
+        const expr2Type = traverse_expr(expr2, traverseContext);
+        const expr3 = expr.expr(2);
+        const expr3Type = traverse_expr(expr3, traverseContext);
+        traverseContext.constraints.push({
+            expression: expr.getText(),
+            type1: expr2Type.type,
+            type2: expr3Type.type
+        })
+        return {
+            ...expr2Type,
+            notNull: expr2Type.notNull && expr3Type.notNull
+        }
+    }
     if (function_name) {
         throw Error('traverse_expr: function not supported:' + function_name);
     }
@@ -520,7 +538,7 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         return {
             name: type.name,
             type: type,
-            notNull: true,
+            notNull: literal.NULL_() != null ? false : true,
             table: type.table || ''
         };
     }
