@@ -271,7 +271,7 @@ describe('Test parse select with functions', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('parse a select with MIN function', async () => {
+    it('SELECT MIN(value) FROM mytable1', async () => {
         const sql = `
         SELECT MIN(value) FROM mytable1
         `
