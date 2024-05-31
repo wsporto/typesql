@@ -30,6 +30,35 @@ describe('sqlite-parse-insert', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('insert into mytable1 (id, value) values (:id, :value)', () => {
+
+        const sql = `insert into mytable1 (id, value) values (:id, :value)`;
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            multipleRowsResult: false,
+            queryType: 'Insert',
+            sql: 'insert into mytable1 (id, value) values (?, ?)',
+            columns: [],
+            parameters: [
+                {
+                    name: 'id',
+                    columnType: 'INTEGER',
+                    notNull: false //autoincrement
+                },
+                {
+                    name: 'value',
+                    columnType: 'INTEGER',
+                    notNull: false
+                }
+            ]
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     //Not valid syntax
     it('insert into mydb.mytable1 (value) values (?)', () => {
 
@@ -288,7 +317,7 @@ describe('sqlite-parse-insert', () => {
                 {
                     name: 'param1',
                     columnType: 'INTEGER',
-                    notNull: true
+                    notNull: false //autoincrement
                 },
                 {
                     name: 'param2',
@@ -325,7 +354,7 @@ describe('sqlite-parse-insert', () => {
                 {
                     name: 'param1',
                     columnType: 'INTEGER',
-                    notNull: true
+                    notNull: false //autoincrement
                 },
                 {
                     name: 'param2',
@@ -369,7 +398,7 @@ describe('sqlite-parse-insert', () => {
                 {
                     name: 'param1',
                     columnType: 'INTEGER',
-                    notNull: true
+                    notNull: false //autoincrement
                 },
                 {
                     name: 'param2',
@@ -413,7 +442,7 @@ describe('sqlite-parse-insert', () => {
                 {
                     name: 'param1',
                     columnType: 'INTEGER',
-                    notNull: true
+                    notNull: false //autoincrement
                 },
                 {
                     name: 'param2',
@@ -454,7 +483,7 @@ describe('sqlite-parse-insert', () => {
                 {
                     name: 'param1',
                     columnType: 'INTEGER',
-                    notNull: true
+                    notNull: false
                 },
                 {
                     name: 'param2',

@@ -512,7 +512,12 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
     const table_name = expr.table_name();
     if (column_name) {
         const type = traverse_column_name(column_name, table_name, traverseContext);
-        return type;
+        return {
+            name: type.columnName,
+            type: type.columnType,
+            notNull: type.notNull,
+            table: type.tableAlias || type.table
+        };
     }
     const literal = expr.literal_value();
     if (literal) {
@@ -832,16 +837,11 @@ function extractOriginalSql(rule: ExprContext) {
     return result;
 }
 
-function traverse_column_name(column_name: Column_nameContext, table_name: Table_nameContext | null, traverseContext: TraverseContext): TypeAndNullInfer {
+function traverse_column_name(column_name: Column_nameContext, table_name: Table_nameContext | null, traverseContext: TraverseContext): ColumnDef {
     const fieldName: FieldName = { name: column_name.getText(), prefix: table_name?.getText() || '' }
     const column = findColumn(fieldName, traverseContext.fromColumns);
     // const typeVar = freshVar(column.columnName, column.columnType.type, column.tableAlias || column.table);
-    return {
-        name: fieldName.name,
-        type: column.columnType,
-        table: column.tableAlias || column.table,
-        notNull: column.notNull
-    };
+    return column;
 }
 
 export function isNotNull(columnName: string, where: ExprContext | null): boolean {
@@ -980,12 +980,13 @@ function traverse_insert_stmt(insert_stmt: Insert_stmtContext, traverseContext: 
                 const col = columns[index];
                 traverseContext.constraints.unshift({
                     expression: expr.getText(),
-                    type1: col.type,
+                    type1: col.columnType,
                     type2: exprType.type
                 });
+                const notNullColumn = (col.columnKey == 'PRI' && col.columnType.type == 'INTEGER') ? false : col.notNull;
                 insertColumns.push({
                     ...param,
-                    notNull: exprType.name == '?' ? col.notNull : param.notNull
+                    notNull: exprType.name == '?' ? notNullColumn : param.notNull
                 })
             })
         });
@@ -997,11 +998,12 @@ function traverse_insert_stmt(insert_stmt: Insert_stmtContext, traverseContext: 
         selectResult.columns.forEach((selectColumn, index) => {
             const col = columns[index];
             traverseContext.constraints.unshift({
-                expression: col.name,
-                type1: col.type,
+                expression: col.columnName,
+                type1: col.columnType,
                 type2: selectColumn.type
             });
-            columnNullability.set(selectColumn.type.id, col.notNull);
+            const notNullColumn = (col.columnKey == 'PRI' && col.columnType.type == 'INTEGER') ? false : col.notNull;
+            columnNullability.set(selectColumn.type.id, notNullColumn);
         })
 
         traverseContext.parameters.forEach(param => {
@@ -1023,7 +1025,7 @@ function traverse_insert_stmt(insert_stmt: Insert_stmtContext, traverseContext: 
             const exprType = traverse_expr(expr, { ...traverseContext, fromColumns });
             traverseContext.constraints.push({
                 expression: column_name.getText(),
-                type1: col.type,
+                type1: col.columnType,
                 type2: exprType.type
             })
         });
@@ -1087,7 +1089,7 @@ function traverse_update_stmt(update_stmt: Update_stmtContext, traverseContext: 
             const col = columns[index];
             traverseContext.constraints.push({
                 expression: expr.getText(),
-                type1: col.type,
+                type1: col.columnType,
                 type2: exprType.type
             });
             traverseContext.parameters.slice(paramsBefore).forEach((param, index) => {
