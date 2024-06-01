@@ -1,7 +1,7 @@
 import { Database } from 'better-sqlite3';
 
 export type Insert02Params = {
-	param1?: number;
+	param1?: number | null;
 }
 
 export type Insert02Result = {

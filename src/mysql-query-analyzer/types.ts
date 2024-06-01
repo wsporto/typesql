@@ -56,6 +56,7 @@ export type GenericColumnSchema<DbType> = {
     column: string;
     column_type: DbType;
     columnKey: 'PRI' | 'MUL' | 'UNI' | '';
+    defaultValue?: string;
     notNull: boolean;
     autoincrement?: boolean;
 }
@@ -84,6 +85,7 @@ export type ColumnInfo = {
     type: DbType | 'any';
     notNull: boolean;
     table?: string;
+    defaultValue?: string;
 }
 
 export type FieldInfo = {

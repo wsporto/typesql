@@ -45,7 +45,8 @@ export function loadDbSchema(db: DatabaseType): Either<TypeSqlError, ColumnSchem
 			ti.'notnull' or ti.pk = 1 as 'notNull',
 			CASE WHEN ti.pk >= 1 THEN 'PRI'
 			WHEN u.table_name is not null THEN 'UNI' 
-			ELSE '' END as columnKey
+			ELSE '' END as columnKey,
+			ti.dflt_value as defaultValue
 		FROM all_tables t 
 		INNER JOIN pragma_table_info(t.name) ti
 		LEFT JOIN uniqueIndex u on u.table_name = t.name and u.column_name = ti.name
@@ -53,7 +54,14 @@ export function loadDbSchema(db: DatabaseType): Either<TypeSqlError, ColumnSchem
 	try {
 		const result = db.prepare(sql)
 			.all() as ColumnSchema[];
-		return right(result.map(col => ({ ...col, notNull: !!col.notNull })));
+		return right(result.map(col => {
+			const result = { ...col, notNull: !!col.notNull };
+
+			if (result.defaultValue == null) {
+				delete result.defaultValue;
+			}
+			return result;
+		}));
 	}
 	catch (err_) {
 		const err = err_ as Error;

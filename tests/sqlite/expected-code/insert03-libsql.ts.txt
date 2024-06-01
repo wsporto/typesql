@@ -1,7 +1,7 @@
 import { Client } from '@libsql/client';
 
 export type Insert03Params = {
-	value?: number;
+	value?: number | null;
 }
 
 export type Insert03Result = {

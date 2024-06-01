@@ -447,6 +447,15 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
     },
     {
         schema: '',
+        table: 'all_types',
+        column: 'integer_column_default',
+        column_type: 'INTEGER',
+        notNull: false,
+        columnKey: '',
+        defaultValue: '10'
+    },
+    {
+        schema: '',
         table: 'users',
         column: 'id',
         column_type: 'INTEGER',

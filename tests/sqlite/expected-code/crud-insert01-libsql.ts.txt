@@ -1,8 +1,8 @@
 import { Client } from '@libsql/client';
 
 export type InsertIntoMytable1Params = {
-	id: number;
-	value?: number;
+	id?: number;
+	value?: number | null;
 }
 
 export type InsertIntoMytable1Result = {

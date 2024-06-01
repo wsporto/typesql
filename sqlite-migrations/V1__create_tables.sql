@@ -43,5 +43,6 @@ CREATE TABLE all_types (
     decimal_column DECIMAL(10,5),
     boolean_column BOOLEAN,
     date_column DATE,
-    datetime_column DATETIME
+    datetime_column DATETIME,
+    integer_column_default INTEGER DEFAULT 10
 );

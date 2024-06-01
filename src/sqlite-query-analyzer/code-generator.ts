@@ -24,11 +24,13 @@ export function validateAndGenerateCode(client: SQLiteDialect | LibSqlClient, sq
 }
 
 function mapToColumnInfo(col: ColumnSchema) {
+    const defaultValue = col.columnKey == 'PRI' && col.column_type == 'INTEGER' ? 'AUTOINCREMENT' : col.defaultValue;
     const columnInfo: ColumnInfo = {
         columnName: col.column,
         notNull: col.notNull,
         type: col.column_type,
-        table: col.table
+        table: col.table,
+        defaultValue: defaultValue
     }
     return columnInfo;
 }
@@ -176,7 +178,8 @@ function mapColumnToTsFieldDescriptor(col: ColumnInfo) {
     const tsDesc: TsFieldDescriptor = {
         name: col.columnName,
         tsType: mapColumnType(col.type as SQLiteType),
-        notNull: col.notNull ? col.notNull : false
+        notNull: col.notNull,
+        defaultValue: col.defaultValue
     }
     return tsDesc;
 }
@@ -239,7 +242,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
         writer.blankLine();
         writer.write(`export type ${dataTypeName} =`).block(() => {
             uniqueUpdateParams.forEach(field => {
-                const optionalOp = isCrud ? '?' : '';
+                const optionalOp = isCrud && (!field.notNull || field.defaultValue != null) ? '?' : '';
                 const orNull = field.notNull ? '' : ' | null';
                 writer.writeLine(`${field.name}${optionalOp}: ${field.tsType}${orNull};`);
             });
@@ -250,8 +253,9 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
         writer.blankLine();
         writer.write(`export type ${paramsTypeName} =`).block(() => {
             uniqueParams.forEach((field) => {
-                const optionalOp = field.notNull ? '' : '?';
-                writer.writeLine(`${field.name}${optionalOp}: ${field.tsType};`);
+                const optionalOp = queryType == 'Insert' && (!field.notNull || field.defaultValue != null) ? '?' : '';
+                const orNull = field.notNull ? '' : ' | null';
+                writer.writeLine(`${field.name}${optionalOp}: ${field.tsType}${orNull};`);
             });
             if (generateOrderBy) {
                 writer.writeLine(`orderBy: [${orderByTypeName}, 'asc' | 'desc'][];`)
