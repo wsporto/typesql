@@ -1,4 +1,4 @@
-import { Client } from '@libsql/client';
+import { Client, Transaction } from '@libsql/client';
 
 export type Insert03Params = {
 	value?: number | null;
@@ -9,7 +9,7 @@ export type Insert03Result = {
 	value?: number;
 }
 
-export async function insert03(client: Client, params: Insert03Params): Promise<Insert03Result> {
+export async function insert03(client: Client | Transaction, params: Insert03Params): Promise<Insert03Result> {
 	const sql = `
 	INSERT INTO mytable1(value) VALUES(?) RETURNING *
 	`

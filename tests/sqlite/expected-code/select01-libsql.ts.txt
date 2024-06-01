@@ -1,4 +1,4 @@
-import { Client } from '@libsql/client';
+import { Client, Transaction } from '@libsql/client';
 
 export type Select01Params = {
 	param1: number;
@@ -9,7 +9,7 @@ export type Select01Result = {
 	name?: string;
 }
 
-export async function select01(client: Client, params: Select01Params): Promise<Select01Result | null> {
+export async function select01(client: Client | Transaction, params: Select01Params): Promise<Select01Result | null> {
 	const sql = `
 	select id, name from mytable2 where id = ?
 	`

@@ -1,4 +1,4 @@
-import { Client } from '@libsql/client';
+import { Client, Transaction } from '@libsql/client';
 
 export type Nested01Result = {
 	user_id: number;
@@ -7,7 +7,7 @@ export type Nested01Result = {
 	post_title: string;
 }
 
-export async function nested01(client: Client): Promise<Nested01Result[]> {
+export async function nested01(client: Client | Transaction): Promise<Nested01Result[]> {
 	const sql = `
 	-- @nested
 	SELECT 
@@ -44,7 +44,7 @@ export type Nested01NestedPosts = {
 	post_title: string;
 }
 
-export async function nested01Nested(client: Client): Promise<Nested01NestedUsers[]> {
+export async function nested01Nested(client: Client | Transaction): Promise<Nested01NestedUsers[]> {
 	const selectResult = await nested01(client);
 	if (selectResult.length == 0) {
 		return [];

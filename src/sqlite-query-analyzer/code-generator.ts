@@ -235,7 +235,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
         writer.writeLine(`import { Database } from 'better-sqlite3';`);
     }
     if (client == 'libsql') {
-        writer.writeLine(`import { Client } from '@libsql/client';`);
+        writer.writeLine(`import { Client, Transaction } from '@libsql/client';`);
     }
 
     if (uniqueUpdateParams.length > 0) {
@@ -272,7 +272,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
     });
     writer.blankLine();
 
-    let functionArguments = client == 'sqlite' ? `db: Database` : 'client: Client';
+    let functionArguments = client == 'sqlite' ? `db: Database` : 'client: Client | Transaction';
     functionArguments += queryType == 'Update' ? `, data: ${dataTypeName}` : '';
     functionArguments += tsDescriptor.parameters.length > 0 || generateOrderBy ? ', params: ' + paramsTypeName : '';
 

@@ -1,4 +1,4 @@
-import { Client } from '@libsql/client';
+import { Client, Transaction } from '@libsql/client';
 
 export type UpdateMytable1Data = {
 	value?: number | null;
@@ -12,7 +12,7 @@ export type UpdateMytable1Result = {
 	rowsAffected: number;
 }
 
-export async function updateMytable1(client: Client, data: UpdateMytable1Data, params: UpdateMytable1Params): Promise<UpdateMytable1Result> {
+export async function updateMytable1(client: Client | Transaction, data: UpdateMytable1Data, params: UpdateMytable1Params): Promise<UpdateMytable1Result> {
 
 	const keys = Object.keys(data) as Array<keyof UpdateMytable1Data>;
 	const columns = keys.filter(key => data[key] !== undefined);

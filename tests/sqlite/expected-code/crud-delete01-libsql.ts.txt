@@ -1,4 +1,4 @@
-import { Client } from '@libsql/client';
+import { Client, Transaction } from '@libsql/client';
 
 export type DeleteFromMytable1Params = {
 	id: number;
@@ -8,7 +8,7 @@ export type DeleteFromMytable1Result = {
 	rowsAffected: number;
 }
 
-export async function deleteFromMytable1(client: Client, params: DeleteFromMytable1Params): Promise<DeleteFromMytable1Result> {
+export async function deleteFromMytable1(client: Client | Transaction, params: DeleteFromMytable1Params): Promise<DeleteFromMytable1Result> {
 
 	const sql = `DELETE
 	FROM mytable1
