@@ -1,0 +1,32 @@
+import { Database } from 'better-sqlite3';
+
+export type SelectFromMytable1Params = {
+	id: number;
+}
+
+export type SelectFromMytable1Result = {
+	id: number;
+	value?: number;
+}
+
+export function selectFromMytable1(db: Database, params: SelectFromMytable1Params): SelectFromMytable1Result | null {
+
+	const sql = `SELECT
+		id,
+		value
+	FROM mytable1
+	WHERE id = ?`
+
+	return db.prepare(sql)
+		.raw(true)
+		.all([params.id])
+		.map(data => mapArrayToSelectFromMytable1Result(data))[0];
+}
+
+function mapArrayToSelectFromMytable1Result(data: any) {
+	const result: SelectFromMytable1Result = {
+		id: data[0],
+		value: data[1]
+	}
+	return result;
+}

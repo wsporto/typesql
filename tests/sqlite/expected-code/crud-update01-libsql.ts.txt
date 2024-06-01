@@ -1,4 +1,4 @@
-import { Database } from 'better-sqlite3';
+import { Client } from '@libsql/client';
 
 export type UpdateMytable1Data = {
 	value?: number | null;
@@ -9,10 +9,10 @@ export type UpdateMytable1Params = {
 }
 
 export type UpdateMytable1Result = {
-	changes: number;
+	rowsAffected: number;
 }
 
-export function updateMytable1(db: Database, data: UpdateMytable1Data, params: UpdateMytable1Params): UpdateMytable1Result {
+export async function updateMytable1(client: Client, data: UpdateMytable1Data, params: UpdateMytable1Params): Promise<UpdateMytable1Result> {
 
 	const keys = Object.keys(data) as Array<keyof UpdateMytable1Data>;
 	const columns = keys.filter(key => data[key] !== undefined);
@@ -23,6 +23,13 @@ export function updateMytable1(db: Database, data: UpdateMytable1Data, params: U
 	SET ${columns.map(col => `${col} = ?`).join(', ')}
 	WHERE id = ?`
 
-	return db.prepare(sql)
-		.run(values) as UpdateMytable1Result;
+	return client.execute({ sql, args: values })
+		.then(res => mapArrayToUpdateMytable1Result(res));
+}
+
+function mapArrayToUpdateMytable1Result(data: any) {
+	const result: UpdateMytable1Result = {
+		rowsAffected: data.rowsAffected
+	}
+	return result;
 }

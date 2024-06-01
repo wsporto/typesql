@@ -1,7 +1,7 @@
 import assert from "assert";
 
 import { readFileSync } from "fs";
-import { generateTsCode } from "../../src/sqlite-query-analyzer/code-generator";
+import { generateCrud, generateTsCode } from "../../src/sqlite-query-analyzer/code-generator";
 import { sqliteDbSchema } from "../mysql-query-analyzer/create-schema";
 import Database from "better-sqlite3";
 import { isLeft } from "fp-ts/lib/Either";
@@ -179,25 +179,64 @@ describe('sqlite-code-generator', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	})
 
-	it('crud-update01 - UPDATE mytable1 SET value=? WHERE id=?', () => {
-		const sql = 'UPDATE mytable1 SET value = CASE WHEN :valueSet THEN :value ELSE value END';
+	it('crud-select01', () => {
+		const actual = generateCrud('sqlite', 'Select', 'mytable1', sqliteDbSchema);
+		const expected = readFileSync('tests/sqlite/expected-code/crud-select01.ts.txt', 'utf-8').replace(/\r/gm, '');
+		assert.deepStrictEqual(actual, expected);
+	})
 
-		const isCrud = true;
-		const actual = generateTsCode(sql, 'crud-update01', sqliteDbSchema, isCrud);
-		const expected = readFileSync('tests/sqlite/expected-code/crud-update01.ts.txt', 'utf-8').replace(/\r/gm, '');//
+	it('crud-select01-libsql', () => {
+		const actual = generateCrud('libsql', 'Select', 'mytable1', sqliteDbSchema);
+		const expected = readFileSync('tests/sqlite/expected-code/crud-select01-libsql.ts.txt', 'utf-8').replace(/\r/gm, '');
+		assert.deepStrictEqual(actual, expected);
+	})
 
-		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error`);
-		}
-		assert.deepStrictEqual(actual.right, expected);
+	it('crud-insert01', () => {
+		const actual = generateCrud('sqlite', 'Insert', 'mytable1', sqliteDbSchema);
+		const expected = readFileSync('tests/sqlite/expected-code/crud-insert01.ts.txt', 'utf-8').replace(/\r/gm, '');
+		assert.deepStrictEqual(actual, expected);
+	})
+
+	it('crud-insert01-libsql', () => {
+		const actual = generateCrud('libsql', 'Insert', 'mytable1', sqliteDbSchema);
+		const expected = readFileSync('tests/sqlite/expected-code/crud-insert01-libsql.ts.txt', 'utf-8').replace(/\r/gm, '');
+		assert.deepStrictEqual(actual, expected);
+	})
+
+	it('crud-update01', () => {
+		const actual = generateCrud('sqlite', 'Update', 'mytable1', sqliteDbSchema);
+		const expected = readFileSync('tests/sqlite/expected-code/crud-update01.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		assert.deepStrictEqual(actual, expected);
+	})
+
+	it('crud-update01-libsql', () => {
+		const actual = generateCrud('libsql', 'Update', 'mytable1', sqliteDbSchema);
+		const expected = readFileSync('tests/sqlite/expected-code/crud-update01-libsql.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		assert.deepStrictEqual(actual, expected);
+	})
+
+	it('crud-delete01', () => {
+		const actual = generateCrud('sqlite', 'Delete', 'mytable1', sqliteDbSchema);
+		const expected = readFileSync('tests/sqlite/expected-code/crud-delete01.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		assert.deepStrictEqual(actual, expected);
+	})
+
+	it('crud-delete01-libsql', () => {
+		const actual = generateCrud('libsql', 'Delete', 'mytable1', sqliteDbSchema);
+		const expected = readFileSync('tests/sqlite/expected-code/crud-delete01-libsql.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		assert.deepStrictEqual(actual, expected);
 	})
 
 	it('select05 - SELECT id FROM mytable1 ORDER BY ?', () => {
 		const sql = 'SELECT id FROM mytable1 ORDER BY ?';
 
-		const isCrud = true;
+		const isCrud = false;
 		const actual = generateTsCode(sql, 'select05', sqliteDbSchema, isCrud);
-		const expected = readFileSync('tests/sqlite/expected-code/select05.ts.txt', 'utf-8').replace(/\r/gm, '');//
+		const expected = readFileSync('tests/sqlite/expected-code/select05.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error`);
@@ -213,7 +252,7 @@ AND name IN (:names)`;
 
 		const isCrud = false;
 		const actual = generateTsCode(sql, 'select06', sqliteDbSchema, isCrud);
-		const expected = readFileSync('tests/sqlite/expected-code/select06.ts.txt', 'utf-8').replace(/\r/gm, '');//
+		const expected = readFileSync('tests/sqlite/expected-code/select06.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error`);
@@ -231,7 +270,7 @@ SELECT
 FROM users u
 INNER JOIN posts p on p.fk_user = u.id`
 
-		const isCrud = true;
+		const isCrud = false;
 		const actual = generateTsCode(sql, 'nested01', sqliteDbSchema, isCrud);
 		const expected = readFileSync('tests/sqlite/expected-code/nested01.ts.txt', 'utf-8').replace(/\r/gm, '');
 
@@ -252,7 +291,7 @@ INNER JOIN addresses as a1 ON a1.id = c.primaryAddress
 LEFT JOIN addresses as a2 ON a2.id = c.secondaryAddress
 WHERE c.id = :clientId`
 
-		const isCrud = true;
+		const isCrud = false;
 		const actual = generateTsCode(sql, 'nested02', sqliteDbSchema, isCrud);
 		const expected = readFileSync('tests/sqlite/expected-code/nested-clients-with-addresses.ts.txt', 'utf-8').replace(/\r/gm, '');
 
@@ -279,7 +318,7 @@ INNER JOIN users u on u.id = p.fk_user`;
 			assert.fail(`Shouldn't return an error`);
 		}
 
-		const isCrud = true;
+		const isCrud = false;
 		const actual = generateTsCode(sql, 'nested03', schemaResult.right, isCrud, 'libsql');
 		const expected = readFileSync('tests/sqlite/expected-code/nested03-many-to-many.ts.txt', 'utf-8').replace(/\r/gm, '');
 
@@ -301,7 +340,7 @@ INNER JOIN posts p on p.fk_user = u.id`
 
 		const isCrud = false;
 		const actual = generateTsCode(sql, 'nested01', sqliteDbSchema, isCrud, 'libsql');
-		const expected = readFileSync('tests/sqlite/expected-code/nested01-libsql.ts.txt', 'utf-8').replace(/\r/gm, '');//
+		const expected = readFileSync('tests/sqlite/expected-code/nested01-libsql.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error`);

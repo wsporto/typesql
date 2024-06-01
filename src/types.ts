@@ -20,9 +20,11 @@ export type ParseResult = {
     queryContext: QueryContext;
 }
 
+export type QueryType = 'Select' | 'Insert' | 'Update' | 'Delete';
+
 export type SchemaDef = {
     sql: string;
-    queryType: 'Select' | 'Insert' | 'Update' | 'Delete'
+    queryType: QueryType;
     multipleRowsResult: boolean;
     returning?: true;
     columns: ColumnInfo[]; //TODO - ColumnDef and ParamterDef should be the same

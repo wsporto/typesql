@@ -7,12 +7,13 @@ import { generateTsFile, writeFile } from "./code-generator";
 import { createMysqlClient, loadMysqlSchema, loadMySqlTableSchema, selectTablesFromSchema } from "./queryExectutor";
 import { generateInsertStatement, generateUpdateStatement, generateDeleteStatement, generateSelectStatement } from "./sql-generator";
 import { ColumnSchema, Table } from "./mysql-query-analyzer/types";
-import { TypeSqlConfig, SqlGenOption, DatabaseClient, TypeSqlDialect, TypeSqlError } from "./types";
+import { TypeSqlConfig, SqlGenOption, DatabaseClient, TypeSqlDialect, TypeSqlError, SQLiteClient, QueryType } from "./types";
 import { Either, isLeft, left } from "fp-ts/lib/Either";
 import CodeBlockWriter from "code-block-writer";
 import { globSync } from "glob";
 import { createSqliteClient, loadDbSchema, selectSqliteTablesFromSchema } from "./sqlite-query-analyzer/query-executor";
 import { createLibSqlClient } from './drivers/libsql';
+import { generateCrud } from "./sqlite-query-analyzer/code-generator";
 
 const CRUD_FOLDER = 'crud';
 
@@ -243,11 +244,25 @@ async function generateCrudTables(client: DatabaseClient, sqlFolderPath: string,
         }
 
         const columns = dbSchema.filter(col => col.table == tableName);
-        checkAndGenerateSql(client.type, filePath + "select-from-" + tableName + '.sql', 'select', tableName, columns);
-        checkAndGenerateSql(client.type, filePath + "insert-into-" + tableName + '.sql', 'insert', tableName, columns);
-        checkAndGenerateSql(client.type, filePath + "update-" + tableName + '.sql', 'update', tableName, columns);
-        checkAndGenerateSql(client.type, filePath + "delete-from-" + tableName + '.sql', 'delete', tableName, columns);
+        if (client.type == 'mysql') {
+            checkAndGenerateSql(client.type, filePath + "select-from-" + tableName + '.sql', 'select', tableName, columns);
+            checkAndGenerateSql(client.type, filePath + "insert-into-" + tableName + '.sql', 'insert', tableName, columns);
+            checkAndGenerateSql(client.type, filePath + "update-" + tableName + '.sql', 'update', tableName, columns);
+            checkAndGenerateSql(client.type, filePath + "delete-from-" + tableName + '.sql', 'delete', tableName, columns);
+        }
+        else {
+            generateAndWriteCrud(client.type, filePath + 'select-from-' + tableName + '.ts', 'Select', tableName, dbSchema);
+            generateAndWriteCrud(client.type, filePath + "insert-into-" + tableName + '.ts', 'Insert', tableName, dbSchema);
+            generateAndWriteCrud(client.type, filePath + "update-" + tableName + '.ts', 'Update', tableName, dbSchema);
+            generateAndWriteCrud(client.type, filePath + "delete-from-" + tableName + '.ts', 'Delete', tableName, dbSchema);
+        }
     }
+}
+
+function generateAndWriteCrud(client: SQLiteClient = 'sqlite', filePath: string, queryType: QueryType, tableName: string, columns: ColumnSchema[]) {
+    const content = generateCrud(client, queryType, tableName, columns);
+    writeFile(filePath, content);
+    console.log("Generated file:", filePath);
 }
 
 function filterTables(allTables: Table[], includeCrudTables: string[]) {

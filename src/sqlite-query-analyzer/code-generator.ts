@@ -3,7 +3,7 @@ import { ColumnInfo, ColumnSchema } from "../mysql-query-analyzer/types";
 import { parseSql } from "./parser";
 import { TsDescriptor, capitalize, convertToCamelCaseName, generateRelationType, removeDuplicatedParameters2, renameInvalidNames, replaceOrderByParam } from "../code-generator";
 import CodeBlockWriter from "code-block-writer";
-import { LibSqlClient, ParameterDef, SQLiteClient, SQLiteDialect, SchemaDef, TsFieldDescriptor, TypeSqlError } from "../types";
+import { LibSqlClient, ParameterDef, QueryType, SQLiteClient, SQLiteDialect, SchemaDef, TsFieldDescriptor, TypeSqlError } from "../types";
 import { SQLiteType } from "./types";
 import { Field2 } from "./sqlite-describe-nested-query";
 import { RelationType2, TsField2, mapToTsRelation2 } from "../ts-nested-descriptor";
@@ -21,6 +21,61 @@ export function validateAndGenerateCode(client: SQLiteDialect | LibSqlClient, sq
     }
     const code = generateTsCode(sql, queryName, sqliteDbSchema, isCrud, client.type);
     return code;
+}
+
+function mapToColumnInfo(col: ColumnSchema) {
+    const columnInfo: ColumnInfo = {
+        columnName: col.column,
+        notNull: col.notNull,
+        type: col.column_type,
+        table: col.table
+    }
+    return columnInfo;
+}
+
+export function generateCrud(client: SQLiteClient = 'sqlite', queryType: QueryType, tableName: string, dbSchema: ColumnSchema[]) {
+
+    const columns = dbSchema.filter(col => col.table == tableName);
+
+    const columnInfo = columns.map(col => mapToColumnInfo(col));
+    const keys = columns.filter(col => col.columnKey == 'PRI');
+    if (keys.length == 0) {
+        keys.push(...columns.filter(col => col.columnKey == 'UNI'));
+    }
+    const keyColumnInfo = keys.map(key => mapToColumnInfo(key)).map(col => mapColumnToTsFieldDescriptor(col));
+
+    const resultColumns = mapColumns(client, queryType, columnInfo, false);
+    const params = columnInfo.map(col => mapColumnToTsFieldDescriptor(col));
+
+    const tsDescriptor: TsDescriptor = {
+        sql: '',
+        queryType,
+        multipleRowsResult: false,
+        columns: resultColumns,
+        parameterNames: [],
+        parameters: queryType == 'Insert' ? params : keyColumnInfo,
+        data: queryType == 'Update' ? params.filter(param => param.name != keyColumnInfo[0]?.name) : []
+    }
+
+    const queryName = getQueryName(queryType, tableName);
+
+    const code = generateCodeFromTsDescriptor(client, queryName, tsDescriptor, true, tableName);
+    return code;
+}
+
+function getQueryName(queryType: QueryType, tableName: string) {
+    const camelCaseName = convertToCamelCaseName(tableName);
+    const captitalizedName = capitalize(camelCaseName);
+    switch (queryType) {
+        case "Select":
+            return 'selectFrom' + captitalizedName;
+        case "Insert":
+            return 'insertInto' + captitalizedName;
+        case "Update":
+            return 'update' + captitalizedName;
+        case "Delete":
+            return 'deleteFrom' + captitalizedName;
+    }
 }
 
 export function generateTsCode(sql: string, queryName: string, sqliteDbSchema: ColumnSchema[], isCrud = false, client: SQLiteClient = 'sqlite'): Either<TypeSqlError, string> {
@@ -151,7 +206,7 @@ function mapColumnType(sqliteType: SQLiteType) {
     }
 }
 
-function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, tsDescriptor: TsDescriptor, isCrud: boolean) {
+function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, tsDescriptor: TsDescriptor, isCrud: boolean = false, tableName: string = '') {
 
     const writer = new CodeBlockWriter({
         useTabs: true
@@ -172,7 +227,6 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
     const generateOrderBy = tsDescriptor.orderByColumns != null && tsDescriptor.orderByColumns.length > 0;
     const uniqueParams = removeDuplicatedParameters2(tsDescriptor.parameters);
     const uniqueUpdateParams = removeDuplicatedParameters2(tsDescriptor.data || []);
-    const isUpdateCrud = isCrud && queryType == 'Update';
 
     if (client == 'sqlite') {
         writer.writeLine(`import { Database } from 'better-sqlite3';`);
@@ -184,15 +238,10 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
     if (uniqueUpdateParams.length > 0) {
         writer.blankLine();
         writer.write(`export type ${dataTypeName} =`).block(() => {
-            uniqueUpdateParams.forEach((field, index) => {
-                const optionalOp = field.notNull ? '' : '?';
+            uniqueUpdateParams.forEach(field => {
+                const optionalOp = isCrud ? '?' : '';
                 const orNull = field.notNull ? '' : ' | null';
-                if (!isUpdateCrud) {
-                    writer.writeLine(`${field.name}: ${field.tsType}${orNull};`);
-                }
-                else if (index % 2 != 0) {//updateCrud-> :nameSet, :name, valueSet, :value...
-                    writer.writeLine(`${field.name}${optionalOp}: ${field.tsType}${orNull};`);
-                }
+                writer.writeLine(`${field.name}${optionalOp}: ${field.tsType}${orNull};`);
             });
         });
     }
@@ -212,7 +261,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 
     writer.blankLine();
     writer.write(`export type ${resultTypeName} =`).block(() => {
-        tsDescriptor.columns.forEach((field, index) => {
+        tsDescriptor.columns.forEach(field => {
             const optionalOp = field.notNull ? '' : '?';
             writer.writeLine(`${field.name}${optionalOp}: ${field.tsType};`);
         });
@@ -223,15 +272,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
     functionArguments += queryType == 'Update' ? `, data: ${dataTypeName}` : '';
     functionArguments += tsDescriptor.parameters.length > 0 || generateOrderBy ? ', params: ' + paramsTypeName : '';
 
-    const allParameters = (tsDescriptor.data?.map((param, index) => {
-        if (isUpdateCrud && index % 2 == 0) {
-            const nextField = tsDescriptor.data![index + 1];
-            return `data.${nextField.name} !== undefined ? 1 : 0`;
-        }
-        else {
-            return toParamValue('data', param);
-        }
-    }) || [])
+    const allParameters = (tsDescriptor.data?.map((param) => toParamValue('data', param)) || [])
         .concat(tsDescriptor.parameters.map(param => toParamValue('params', param)));
 
     const queryParams = allParameters.length > 0 ? '[' + allParameters.join(', ') + ']' : '';
@@ -239,7 +280,17 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
     const orNull = queryType == 'Select' ? ' | null' : '';
     const returnType = tsDescriptor.multipleRowsResult ? `${resultTypeName}[]` : `${resultTypeName}${orNull}`;
 
-    if (queryType == 'Select' || (queryType == 'Insert' && tsDescriptor.returning)) {
+    if (isCrud) {
+        const crudFunction = client == 'libsql'
+            ? `async function ${camelCaseName}(${functionArguments}): Promise<${returnType}>`
+            : `function ${camelCaseName}(${functionArguments}): ${returnType}`
+        writer.write(`export ${crudFunction}`).block(() => {
+            const idColumn = tsDescriptor.parameters[0].name;
+            writeExecuteCrudBlock(client, queryType, tableName, tsDescriptor.columns, idColumn, queryParams, paramsTypeName, dataTypeName, resultTypeName, writer);
+        });
+    }
+
+    if (!isCrud && (queryType == 'Select' || (queryType == 'Insert' && tsDescriptor.returning))) {
         if (client == 'sqlite') {
             writer.write(`export function ${camelCaseName}(${functionArguments}): ${returnType}`).block(() => {
                 const processedSql = tsDescriptor.orderByColumns ? replaceOrderByParam(sql) : sql;
@@ -255,7 +306,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
                 writer.indent().write(`.map(data => mapArrayTo${resultTypeName}(data))${tsDescriptor.multipleRowsResult ? '' : '[0]'};`);
             });
         }
-        if (client == 'libsql') {
+        if (!isCrud && client == 'libsql') {
             writer.write(`export async function ${camelCaseName}(${functionArguments}): Promise<${returnType}>`).block(() => {
                 const processedSql = tsDescriptor.orderByColumns ? replaceOrderByParam(sql) : sql;
                 const sqlSplit = processedSql.split('\n');
@@ -290,17 +341,10 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
         }
     }
 
-    if (queryType == 'Update' || queryType == 'Delete' || (queryType == 'Insert' && !tsDescriptor.returning)) {
+    if (!isCrud && (queryType == 'Update' || queryType == 'Delete' || (queryType == 'Insert' && !tsDescriptor.returning))) {
         if (client == 'sqlite') {
             writer.write(`export function ${camelCaseName}(${functionArguments}): ${resultTypeName}`).block(() => {
-                const sqlSplit = sql.split('\n');
-                writer.write('const sql = `').newLine();
-                sqlSplit.forEach(sqlLine => {
-                    writer.indent().write(sqlLine).newLine();
-                });
-                writer.indent().write('`').newLine();
-                writer.write('return db.prepare(sql)').newLine();
-                writer.indent().write(`.run(${queryParams}) as ${resultTypeName};`);
+                writeExecuteBlock(sql, queryParams, resultTypeName, writer);
             });
         }
         if (client == 'libsql') {
@@ -415,6 +459,112 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
     }
 
     return writer.toString();
+}
+
+function writeExecuteBlock(sql: string, queryParams: string, resultTypeName: string, writer: CodeBlockWriter) {
+    const sqlSplit = sql.split('\n');
+    writer.write('const sql = `').newLine();
+    sqlSplit.forEach(sqlLine => {
+        writer.indent().write(sqlLine).newLine();
+    });
+    writer.indent().write('`').newLine();
+    writer.write('return db.prepare(sql)').newLine();
+    writer.indent().write(`.run(${queryParams}) as ${resultTypeName};`);
+}
+
+function writeExecuteCrudBlock(client: SQLiteClient, queryType: QueryType, tableName: string, columns: TsFieldDescriptor[], idColumn: string, queryParams: string, paramTypeName: string, dataTypeName: string, resultTypeName: string, writer: CodeBlockWriter) {
+    switch (queryType) {
+        case "Select":
+            return writeExecutSelectCrudBlock(client, tableName, idColumn, columns, queryParams, resultTypeName, writer);
+        case "Insert":
+            return writeExecuteInsertCrudBlock(client, tableName, paramTypeName, resultTypeName, writer);
+        case "Update":
+            return writeExecuteUpdateCrudBlock(client, tableName, idColumn, dataTypeName, resultTypeName, writer);
+        case "Delete":
+            return writeExecutDeleteCrudBlock(client, tableName, idColumn, queryParams, resultTypeName, writer);
+    }
+}
+
+function writeExecutSelectCrudBlock(client: SQLiteClient, tableName: string, idColumn: string, columns: TsFieldDescriptor[], queryParams: string, resultTypeName: string, writer: CodeBlockWriter) {
+    writer.blankLine();
+    writer.writeLine('const sql = `SELECT');
+    columns.forEach((col, index) => {
+        const separator = index < columns.length - 1 ? ',' : '';
+        writer.indent(2).write(`${col.name}${separator}`).newLine();
+    })
+    writer.indent().write(`FROM ${tableName}`).newLine();
+    writer.indent().write(`WHERE ${idColumn} = ?\``).newLine();
+    writer.blankLine();
+    if (client == 'sqlite') {
+        writer.write('return db.prepare(sql)').newLine();
+        writer.indent().write('.raw(true)').newLine();
+        writer.indent().write(`.all(${queryParams})`).newLine();
+        writer.indent().write(`.map(data => mapArrayTo${resultTypeName}(data))[0];`);
+    }
+    else {
+        writer.write(`return client.execute({ sql, args: ${queryParams} })`).newLine();
+        writer.indent().write(`.then(res => res.rows)`).newLine();
+        writer.indent().write(`.then(rows => mapArrayTo${resultTypeName}(rows[0]));`);
+    }
+}
+
+function writeExecuteInsertCrudBlock(client: SQLiteClient, tableName: string, paramTypeName: string, resultTypeName: string, writer: CodeBlockWriter) {
+    writer.blankLine();
+    writer.writeLine(`const keys = Object.keys(params) as Array<keyof ${paramTypeName}>;`);
+    writer.writeLine(`const columns = keys.filter(key => params[key] !== undefined);`);
+    writer.writeLine(`const values = columns.map(col => params[col]!);`);
+    writer.blankLine();
+    writer.writeLine('const sql = columns.length == 0');
+    writer.indent().write(`? \`INSERT INTO ${tableName} DEFAULT VALUES\``).newLine();
+    writer.indent().write(`: \`INSERT INTO ${tableName}(\${columns.join(',')}) VALUES(\${columns.map(_ => '?').join(',')})\``).newLine();
+    writer.blankLine();
+    if (client == 'sqlite') {
+        writer.write('return db.prepare(sql)').newLine();
+        writer.indent().write(`.run(values) as ${resultTypeName};`);
+    }
+    else {
+        writer.write(`return client.execute({ sql, args: values })`).newLine();
+        writer.indent().write(`.then(res => mapArrayTo${resultTypeName}(res));`).newLine();
+    }
+}
+
+function writeExecuteUpdateCrudBlock(client: SQLiteClient, tableName: string, idColumn: string, paramTypeName: string, resultTypeName: string, writer: CodeBlockWriter) {
+
+    writer.blankLine();
+    writer.writeLine(`const keys = Object.keys(data) as Array<keyof ${paramTypeName}>;`);
+    writer.writeLine(`const columns = keys.filter(key => data[key] !== undefined);`);
+    writer.writeLine(`const values = columns.map(col => data[col]!).concat(params.${idColumn});`);
+    writer.blankLine();
+    writer.writeLine('const sql = `');
+    writer.indent().write(`UPDATE ${tableName}`).newLine();
+    writer.indent().write(`SET \${columns.map(col => \`\${col} = ?\`).join(', ')}`).newLine();
+    writer.indent().write(`WHERE ${idColumn} = ?\``).newLine();
+    writer.blankLine();
+    if (client == 'sqlite') {
+        writer.write('return db.prepare(sql)').newLine();
+        writer.indent().write(`.run(values) as ${resultTypeName};`);
+    }
+    else {
+        writer.write(`return client.execute({ sql, args: values })`).newLine();
+        writer.indent().write(`.then(res => mapArrayTo${resultTypeName}(res));`).newLine();
+    }
+
+}
+
+function writeExecutDeleteCrudBlock(client: SQLiteClient, tableName: string, idColumn: string, queryParams: string, resultTypeName: string, writer: CodeBlockWriter) {
+    writer.blankLine();
+    writer.writeLine('const sql = `DELETE');
+    writer.indent().write(`FROM ${tableName}`).newLine();
+    writer.indent().write(`WHERE ${idColumn} = ?\``).newLine();
+    writer.blankLine();
+    if (client == 'sqlite') {
+        writer.write('return db.prepare(sql)').newLine();
+        writer.indent().write(`.run(${queryParams}) as ${resultTypeName};`).newLine();
+    }
+    else {
+        writer.write(`return client.execute({ sql, args: ${queryParams} })`).newLine();
+        writer.indent().write(`.then(res => mapArrayTo${resultTypeName}(res));`).newLine();
+    }
 }
 
 function toParamValue(variableName: string, param: TsFieldDescriptor): string {
