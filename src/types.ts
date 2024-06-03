@@ -103,7 +103,7 @@ export type TsFieldDescriptor = {
     name: string;
     tsType: string;
     notNull: boolean;
-    defaultValue?: string;
+    optional?: boolean;
 }
 
 export type TypeSqlError = {

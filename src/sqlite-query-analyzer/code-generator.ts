@@ -23,14 +23,14 @@ export function validateAndGenerateCode(client: SQLiteDialect | LibSqlClient, sq
     return code;
 }
 
-function mapToColumnInfo(col: ColumnSchema) {
+function mapToColumnInfo(col: ColumnSchema, checkOptional: boolean) {
     const defaultValue = col.columnKey == 'PRI' && col.column_type == 'INTEGER' ? 'AUTOINCREMENT' : col.defaultValue;
     const columnInfo: ColumnInfo = {
         columnName: col.column,
         notNull: col.notNull,
         type: col.column_type,
         table: col.table,
-        defaultValue: defaultValue
+        optional: checkOptional && (!col.notNull || defaultValue != null)
     }
     return columnInfo;
 }
@@ -39,12 +39,12 @@ export function generateCrud(client: SQLiteClient = 'sqlite', queryType: QueryTy
 
     const columns = dbSchema.filter(col => col.table == tableName);
 
-    const columnInfo = columns.map(col => mapToColumnInfo(col));
+    const columnInfo = columns.map(col => mapToColumnInfo(col, queryType == 'Insert' || queryType == 'Update'));
     const keys = columns.filter(col => col.columnKey == 'PRI');
     if (keys.length == 0) {
         keys.push(...columns.filter(col => col.columnKey == 'UNI'));
     }
-    const keyColumnInfo = keys.map(key => mapToColumnInfo(key)).map(col => mapColumnToTsFieldDescriptor(col));
+    const keyColumnInfo = keys.map(key => mapToColumnInfo(key, false)).map(col => mapColumnToTsFieldDescriptor(col));
 
     const resultColumns = mapColumns(client, queryType, columnInfo, false);
     const params = columnInfo.map(col => mapColumnToTsFieldDescriptor(col));
@@ -179,7 +179,7 @@ function mapColumnToTsFieldDescriptor(col: ColumnInfo) {
         name: col.columnName,
         tsType: mapColumnType(col.type as SQLiteType),
         notNull: col.notNull,
-        defaultValue: col.defaultValue
+        optional: col.optional
     }
     return tsDesc;
 }
@@ -242,7 +242,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
         writer.blankLine();
         writer.write(`export type ${dataTypeName} =`).block(() => {
             uniqueUpdateParams.forEach(field => {
-                const optionalOp = isCrud && (!field.notNull || field.defaultValue != null) ? '?' : '';
+                const optionalOp = field.optional ? '?' : '';
                 const orNull = field.notNull ? '' : ' | null';
                 writer.writeLine(`${field.name}${optionalOp}: ${field.tsType}${orNull};`);
             });
@@ -253,7 +253,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
         writer.blankLine();
         writer.write(`export type ${paramsTypeName} =`).block(() => {
             uniqueParams.forEach((field) => {
-                const optionalOp = queryType == 'Insert' && (!field.notNull || field.defaultValue != null) ? '?' : '';
+                const optionalOp = field.optional ? '?' : '';
                 const orNull = field.notNull ? '' : ' | null';
                 writer.writeLine(`${field.name}${optionalOp}: ${field.tsType}${orNull};`);
             });

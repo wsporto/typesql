@@ -85,7 +85,7 @@ export type ColumnInfo = {
     type: DbType | 'any';
     notNull: boolean;
     table?: string;
-    defaultValue?: string;
+    optional?: boolean;
 }
 
 export type FieldInfo = {
