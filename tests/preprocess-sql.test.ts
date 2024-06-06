@@ -4,6 +4,19 @@ import { PreprocessedSql } from "../src/types";
 
 describe('preprocess-sql', () => {
 
+    it('preprocess sql with one parameter', async () => {
+
+        const sql = 'select * from mytable1 where :id = 10';
+        const actual = preprocessSql(sql);
+
+        const expected: PreprocessedSql = {
+            sql: 'select * from mytable1 where ? = 10',
+            namedParameters: ['id']
+        }
+
+        assert.deepStrictEqual(actual, expected);
+    })
+
     it('preprocess sql with several parameters', async () => {
 
         const sql = 'select * from mytable1 where :id = 10 or :id=1 or : name > 10or:param1>0and :PARAM>0 and :PARAM1>0 and 10>20';
@@ -112,6 +125,20 @@ describe('preprocess-sql', () => {
         assert.deepStrictEqual(actual, false);
     })
 
+    it('@safeIntegers:true in comments', async () => {
 
+        const sql = `
+        -- @safeIntegers:true
+        select * from mytable1`;
 
+        const actual = preprocessSql(sql);
+        const expected: PreprocessedSql = {
+            sql: `
+        -- @safeIntegers:true
+        select * from mytable1`,
+            namedParameters: []
+        }
+
+        assert.deepStrictEqual(actual, expected);
+    })
 });
