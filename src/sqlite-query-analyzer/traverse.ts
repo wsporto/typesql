@@ -387,6 +387,32 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
             table: functionType.table || ''
         };
     }
+    if (function_name == 'round') {
+        const functionType = freshVar(expr.getText(), 'REAL');
+        const param1Expr = expr.expr(0);
+        const param1Type = traverse_expr(param1Expr, traverseContext);
+        traverseContext.constraints.push({
+            expression: expr.getText(),
+            type1: functionType,
+            type2: param1Type.type
+        })
+        const param2Expr = expr.expr(1);
+        if (param2Expr) {
+            const param2Type = traverse_expr(param2Expr, traverseContext);
+            traverseContext.constraints.push({
+                expression: expr.getText(),
+                type1: freshVar(expr.getText(), 'INTEGER'),
+                type2: param2Type.type
+            })
+        }
+
+        return {
+            name: functionType.name,
+            type: functionType,
+            notNull: param1Type.notNull,
+            table: param1Type.table || ''
+        };
+    }
     if (function_name == 'coalesce') {
         const functionType = freshVar(expr.getText(), '?');
         const paramTypes = expr.expr_list().map(paramExpr => {

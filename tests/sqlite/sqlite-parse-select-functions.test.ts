@@ -377,6 +377,61 @@ describe('sqlite-parse-select-functions', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('SELECT round(double_value) FROM mytable3', () => {
+        const sql = `
+        SELECT 
+            round(double_value) AS round1, 
+            round(double_value, ?) AS round2, 
+            round(double_value, 0) AS round3,
+            round(double_value, 1) AS round4 
+        FROM mytable3
+        `
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'round1',
+                    type: 'REAL',
+                    notNull: false,
+                    table: 'mytable3'
+                },
+                {
+                    columnName: 'round2',
+                    type: 'REAL',
+                    notNull: false,
+                    table: 'mytable3'
+                },
+                {
+                    columnName: 'round3',
+                    type: 'REAL',
+                    notNull: false,
+                    table: 'mytable3'
+                },
+                {
+                    columnName: 'round4',
+                    type: 'REAL',
+                    notNull: false,
+                    table: 'mytable3'
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'INTEGER',
+                    notNull: false
+                }
+            ]
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it('SELECT COALESCE (VALUE, ID) FROM mytable1', () => {
         const sql = `
         SELECT COALESCE(VALUE, ID) FROM mytable1
