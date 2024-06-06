@@ -26,7 +26,7 @@ describe('sqlite-code-generator', () => {
 	it('select01-libsql - select id, name from mytable2 where id = ?', async () => {
 		const sql = `select id, name from mytable2 where id = ?`;
 
-		const actual = await generateTsCode(sql, 'select01', sqliteDbSchema, false, 'libsql');
+		const actual = await generateTsCode(sql, 'select01', sqliteDbSchema, false, false, 'libsql');
 		const expected = readFileSync('tests/sqlite/expected-code/select01-libsql.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
@@ -50,7 +50,7 @@ describe('sqlite-code-generator', () => {
 	it('select02-libsql - select without parameters', async () => {
 		const sql = `select id from mytable1`;
 
-		const actual = await generateTsCode(sql, 'select02', sqliteDbSchema, false, 'libsql');
+		const actual = await generateTsCode(sql, 'select02', sqliteDbSchema, false, false, 'libsql');
 		const expected = readFileSync('tests/sqlite/expected-code/select02-libsql.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
@@ -98,7 +98,7 @@ describe('sqlite-code-generator', () => {
 	it('insert01-libsql - select with same parameter used twice', async () => {
 		const sql = 'INSERT INTO mytable1(value) values(10)';
 
-		const actual = await generateTsCode(sql, 'insert01', sqliteDbSchema, false, 'libsql');
+		const actual = await generateTsCode(sql, 'insert01', sqliteDbSchema, false, false, 'libsql');
 		const expected = readFileSync('tests/sqlite/expected-code/insert01-libsql.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
@@ -122,7 +122,7 @@ describe('sqlite-code-generator', () => {
 	it('insert03-libsql - select with same parameter used twice', async () => {
 		const sql = 'INSERT INTO mytable1(value) VALUES(:value) RETURNING *';
 
-		const actual = await generateTsCode(sql, 'insert03', sqliteDbSchema, false, 'libsql');
+		const actual = await generateTsCode(sql, 'insert03', sqliteDbSchema, false, false, 'libsql');
 		const expected = readFileSync('tests/sqlite/expected-code/insert03-libsql.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
@@ -146,7 +146,7 @@ describe('sqlite-code-generator', () => {
 	it('update01-libsql - UPDATE mytable1 SET value=? WHERE id=?', () => {
 		const sql = 'UPDATE mytable1 SET value=? WHERE id=?';
 
-		const actual = generateTsCode(sql, 'update01', sqliteDbSchema, false, 'libsql');
+		const actual = generateTsCode(sql, 'update01', sqliteDbSchema, false, false, 'libsql');
 		const expected = readFileSync('tests/sqlite/expected-code/update01-libsql.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
@@ -170,7 +170,7 @@ describe('sqlite-code-generator', () => {
 	it('delete01-libsql - DELETE FROM mytable1 WHERE id=?', () => {
 		const sql = 'DELETE FROM mytable1 WHERE id=?';
 
-		const actual = generateTsCode(sql, 'delete01', sqliteDbSchema, false, 'libsql');
+		const actual = generateTsCode(sql, 'delete01', sqliteDbSchema, false, false, 'libsql');
 		const expected = readFileSync('tests/sqlite/expected-code/delete01-libsql.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
@@ -260,6 +260,19 @@ AND name IN (:names)`;
 		assert.deepStrictEqual(actual.right, expected);
 	})
 
+	it('select07 - safeIntegers', async () => {
+		const sql = `-- @safeIntegers:true
+select id, value from mytable1 where id = ?`;
+
+		const actual = await generateTsCode(sql, 'select07', sqliteDbSchema, false, true);
+		const expected = readFileSync('tests/sqlite/expected-code/select07-safeIntegers.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	})
+
 	it('nested01 - FROM users u INNER JOIN posts p', () => {
 		const sql = `-- @nested
 SELECT 
@@ -319,7 +332,7 @@ INNER JOIN users u on u.id = p.fk_user`;
 		}
 
 		const isCrud = false;
-		const actual = generateTsCode(sql, 'nested03', schemaResult.right, isCrud, 'libsql');
+		const actual = generateTsCode(sql, 'nested03', schemaResult.right, isCrud, false, 'libsql');
 		const expected = readFileSync('tests/sqlite/expected-code/nested03-many-to-many.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
@@ -339,7 +352,7 @@ FROM users u
 INNER JOIN posts p on p.fk_user = u.id`
 
 		const isCrud = false;
-		const actual = generateTsCode(sql, 'nested01', sqliteDbSchema, isCrud, 'libsql');
+		const actual = generateTsCode(sql, 'nested01', sqliteDbSchema, isCrud, false, 'libsql');
 		const expected = readFileSync('tests/sqlite/expected-code/nested01-libsql.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {

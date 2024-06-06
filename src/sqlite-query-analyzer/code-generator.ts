@@ -10,7 +10,7 @@ import { RelationType2, TsField2, mapToTsRelation2 } from "../ts-nested-descript
 import { preprocessSql } from "../describe-query";
 import { explainSql } from "./query-executor";
 
-export function validateAndGenerateCode(client: SQLiteDialect | LibSqlClient, sql: string, queryName: string, sqliteDbSchema: ColumnSchema[], isCrud = false): Either<TypeSqlError, string> {
+export function validateAndGenerateCode(client: SQLiteDialect | LibSqlClient, sql: string, queryName: string, sqliteDbSchema: ColumnSchema[], isCrud = false, safeIntegers = false): Either<TypeSqlError, string> {
     const { sql: processedSql } = preprocessSql(sql);
     const explainSqlResult = explainSql(client.client, processedSql);
     if (isLeft(explainSqlResult)) {
@@ -19,7 +19,7 @@ export function validateAndGenerateCode(client: SQLiteDialect | LibSqlClient, sq
             description: explainSqlResult.left.description
         });
     }
-    const code = generateTsCode(sql, queryName, sqliteDbSchema, isCrud, client.type);
+    const code = generateTsCode(sql, queryName, sqliteDbSchema, isCrud, safeIntegers, client.type);
     return code;
 }
 
@@ -35,7 +35,7 @@ function mapToColumnInfo(col: ColumnSchema, checkOptional: boolean) {
     return columnInfo;
 }
 
-export function generateCrud(client: SQLiteClient = 'sqlite', queryType: QueryType, tableName: string, dbSchema: ColumnSchema[]) {
+export function generateCrud(client: SQLiteClient = 'sqlite', queryType: QueryType, tableName: string, dbSchema: ColumnSchema[], safeIntegers = false) {
 
     const columns = dbSchema.filter(col => col.table == tableName);
 
@@ -44,10 +44,10 @@ export function generateCrud(client: SQLiteClient = 'sqlite', queryType: QueryTy
     if (keys.length == 0) {
         keys.push(...columns.filter(col => col.columnKey == 'UNI'));
     }
-    const keyColumnInfo = keys.map(key => mapToColumnInfo(key, false)).map(col => mapColumnToTsFieldDescriptor(col));
+    const keyColumnInfo = keys.map(key => mapToColumnInfo(key, false)).map(col => mapColumnToTsFieldDescriptor(col, safeIntegers));
 
     const resultColumns = mapColumns(client, queryType, columnInfo, false);
-    const params = columnInfo.map(col => mapColumnToTsFieldDescriptor(col));
+    const params = columnInfo.map(col => mapColumnToTsFieldDescriptor(col, safeIntegers));
 
     const tsDescriptor: TsDescriptor = {
         sql: '',
@@ -61,7 +61,7 @@ export function generateCrud(client: SQLiteClient = 'sqlite', queryType: QueryTy
 
     const queryName = getQueryName(queryType, tableName);
 
-    const code = generateCodeFromTsDescriptor(client, queryName, tsDescriptor, true, tableName);
+    const code = generateCodeFromTsDescriptor(client, queryName, tsDescriptor, true, safeIntegers, tableName);
     return code;
 }
 
@@ -80,26 +80,26 @@ function getQueryName(queryType: QueryType, tableName: string) {
     }
 }
 
-export function generateTsCode(sql: string, queryName: string, sqliteDbSchema: ColumnSchema[], isCrud = false, client: SQLiteClient = 'sqlite'): Either<TypeSqlError, string> {
+export function generateTsCode(sql: string, queryName: string, sqliteDbSchema: ColumnSchema[], isCrud = false, safeIntegers = false, client: SQLiteClient = 'sqlite'): Either<TypeSqlError, string> {
     const schemaDefResult = parseSql(sql, sqliteDbSchema);
     if (isLeft(schemaDefResult)) {
         return schemaDefResult;
     }
-    const tsDescriptor = createTsDescriptor(schemaDefResult.right, client);
-    const code = generateCodeFromTsDescriptor(client, queryName, tsDescriptor, isCrud);
+    const tsDescriptor = createTsDescriptor(schemaDefResult.right, client, safeIntegers);
+    const code = generateCodeFromTsDescriptor(client, queryName, tsDescriptor, isCrud, safeIntegers);
     return right(code);
 }
 
-function createTsDescriptor(queryInfo: SchemaDef, client: SQLiteClient): TsDescriptor {
+function createTsDescriptor(queryInfo: SchemaDef, client: SQLiteClient, safeIntegers: boolean): TsDescriptor {
     const tsDescriptor: TsDescriptor = {
         sql: queryInfo.sql,
         queryType: queryInfo.queryType,
         multipleRowsResult: queryInfo.multipleRowsResult,
         returning: queryInfo.returning,
-        columns: mapColumns(client, queryInfo.queryType, queryInfo.columns, queryInfo.returning),
+        columns: mapColumns(client, queryInfo.queryType, queryInfo.columns, safeIntegers, queryInfo.returning),
         parameterNames: [],
-        parameters: queryInfo.parameters.map(param => mapParameterToTsFieldDescriptor(param)),
-        data: queryInfo.data?.map(param => mapParameterToTsFieldDescriptor(param)),
+        parameters: queryInfo.parameters.map(param => mapParameterToTsFieldDescriptor(param, safeIntegers)),
+        data: queryInfo.data?.map(param => mapParameterToTsFieldDescriptor(param, safeIntegers)),
         orderByColumns: queryInfo.orderByColumns
     }
     if (queryInfo.nestedInfo) {
@@ -107,7 +107,7 @@ function createTsDescriptor(queryInfo: SchemaDef, client: SQLiteClient): TsDescr
             const tsRelation: RelationType2 = {
                 groupIndex: relation.groupIndex,
                 name: relation.name,
-                fields: relation.fields.map(field => mapFieldToTsField(queryInfo.columns, field)),
+                fields: relation.fields.map(field => mapFieldToTsField(queryInfo.columns, field, safeIntegers)),
                 relations: relation.relations.map(relation => mapToTsRelation2(relation))
             }
             return tsRelation;
@@ -117,7 +117,7 @@ function createTsDescriptor(queryInfo: SchemaDef, client: SQLiteClient): TsDescr
     return tsDescriptor;
 }
 
-function mapColumns(client: SQLiteClient, queryType: SchemaDef['queryType'], columns: ColumnInfo[], returning: boolean = false) {
+function mapColumns(client: SQLiteClient, queryType: SchemaDef['queryType'], columns: ColumnInfo[], safeIntegers: boolean, returning: boolean = false) {
     const sqliteInsertColumns: TsFieldDescriptor[] = [
         {
             name: 'changes',
@@ -152,44 +152,44 @@ function mapColumns(client: SQLiteClient, queryType: SchemaDef['queryType'], col
     }
 
     const escapedColumnsNames = renameInvalidNames(columns.map(col => col.columnName));
-    return columns.map((col, index) => mapColumnToTsFieldDescriptor({ ...col, columnName: escapedColumnsNames[index] }))
+    return columns.map((col, index) => mapColumnToTsFieldDescriptor({ ...col, columnName: escapedColumnsNames[index] }, safeIntegers))
 }
 
-function mapFieldToTsField(columns: ColumnInfo[], field: Field2): TsField2 {
+function mapFieldToTsField(columns: ColumnInfo[], field: Field2, safeIntegers: boolean): TsField2 {
     const tsField: TsField2 = {
         name: field.name,
         index: field.index,
-        tsType: mapColumnType(columns[field.index].type as SQLiteType),
+        tsType: mapColumnType(columns[field.index].type as SQLiteType, safeIntegers),
         notNull: false
     }
     return tsField;
 }
 
-function mapParameterToTsFieldDescriptor(col: ParameterDef) {
+function mapParameterToTsFieldDescriptor(col: ParameterDef, safeIntegers: boolean) {
     const tsDesc: TsFieldDescriptor = {
         name: col.name,
-        tsType: mapColumnType(col.columnType as SQLiteType),
+        tsType: mapColumnType(col.columnType as SQLiteType, safeIntegers),
         notNull: col.notNull ? col.notNull : false
     }
     return tsDesc;
 }
 
-function mapColumnToTsFieldDescriptor(col: ColumnInfo) {
+function mapColumnToTsFieldDescriptor(col: ColumnInfo, safeIntegers: boolean) {
     const tsDesc: TsFieldDescriptor = {
         name: col.columnName,
-        tsType: mapColumnType(col.type as SQLiteType),
+        tsType: mapColumnType(col.type as SQLiteType, safeIntegers),
         notNull: col.notNull,
         optional: col.optional
     }
     return tsDesc;
 }
 
-function mapColumnType(sqliteType: SQLiteType) {
+function mapColumnType(sqliteType: SQLiteType, safeIntegers: boolean) {
     switch (sqliteType) {
         case 'INTEGER':
-            return 'number';
+            return safeIntegers ? 'bigint' : 'number';
         case 'INTEGER[]':
-            return 'number[]';
+            return safeIntegers ? 'bigint[]' : 'number[]';
         case 'TEXT':
             return 'string';
         case 'TEXT[]':
@@ -209,7 +209,7 @@ function mapColumnType(sqliteType: SQLiteType) {
     }
 }
 
-function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, tsDescriptor: TsDescriptor, isCrud: boolean = false, tableName: string = '') {
+function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, tsDescriptor: TsDescriptor, isCrud: boolean, safeIntegers: boolean, tableName: string = '') {
 
     const writer = new CodeBlockWriter({
         useTabs: true
@@ -306,6 +306,9 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
                 writer.indent().write('`').newLine();
                 writer.write('return db.prepare(sql)').newLine();
                 writer.indent().write('.raw(true)').newLine();
+                if (safeIntegers) {
+                    writer.indent().write('.safeIntegers(true)').newLine();
+                }
                 writer.indent().write(`.all(${queryParams})`).newLine();
                 writer.indent().write(`.map(data => mapArrayTo${resultTypeName}(data))${tsDescriptor.multipleRowsResult ? '' : '[0]'};`);
             });

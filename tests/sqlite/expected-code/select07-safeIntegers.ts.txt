@@ -1,0 +1,30 @@
+import { Database } from 'better-sqlite3';
+
+export type Select07Params = {
+	param1: bigint;
+}
+
+export type Select07Result = {
+	id: bigint;
+	value?: bigint;
+}
+
+export function select07(db: Database, params: Select07Params): Select07Result | null {
+	const sql = `
+	-- @safeIntegers:true
+	select id, value from mytable1 where id = ?
+	`
+	return db.prepare(sql)
+		.raw(true)
+		.safeIntegers(true)
+		.all([params.param1])
+		.map(data => mapArrayToSelect07Result(data))[0];
+}
+
+function mapArrayToSelect07Result(data: any) {
+	const result: Select07Result = {
+		id: data[0],
+		value: data[1]
+	}
+	return result;
+}

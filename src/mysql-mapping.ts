@@ -52,6 +52,7 @@ export type MySqlType =
 export type TsType =
     | 'string' | 'string[]'
     | 'number' | 'number[]'
+    | 'bigint' | 'bigint[]'
     | 'boolean' | 'boolean[]'
     | 'Date' | 'Date[]'
     | 'Object' | 'Object[]'

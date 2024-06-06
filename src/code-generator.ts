@@ -4,7 +4,7 @@ import path, { parse } from "path";
 import camelCase from "camelcase";
 import { Either, isLeft, right } from "fp-ts/lib/Either";
 import { converToTsType, MySqlType } from "./mysql-mapping";
-import { parseSql } from "./describe-query";
+import { hasAnnotation, parseSql } from "./describe-query";
 import CodeBlockWriter from "code-block-writer";
 import { NestedTsDescriptor, RelationType2, createNestedTsDescriptor } from "./ts-nested-descriptor";
 import { mapToDynamicResultColumns, mapToDynamicParams, mapToDynamicSelectColumns } from "./ts-dynamic-query-descriptor";
@@ -675,9 +675,10 @@ export async function generateTsFile(client: DatabaseClient, sqlFile: string, db
     const fileName = parse(sqlFile).name;
     const dirPath = parse(sqlFile).dir;
     const queryName = convertToCamelCaseName(fileName);
+    const safeIntegers = hasAnnotation(sqlContent, '@safeIntegers');
 
     const tsContentResult = client.type == 'mysql' ? await generateTsFileFromContent(client, queryName, sqlContent, 'node', isCrudFile)
-        : validateAndGenerateCode(client, sqlContent, queryName, dbSchema, isCrudFile);
+        : validateAndGenerateCode(client, sqlContent, queryName, dbSchema, isCrudFile, safeIntegers);
 
     const tsFilePath = path.resolve(dirPath, fileName) + ".ts";
     if (isLeft(tsContentResult)) {
