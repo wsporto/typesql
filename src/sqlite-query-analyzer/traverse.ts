@@ -898,7 +898,7 @@ export function isMultipleRowResult(select_stmt: Select_stmtContext, fromColumns
         if (groupBy) {
             return true;
         }
-        const agreegateFunction = select_core.result_column_list().every(result_column => isAgregateFunction(result_column));
+        const agreegateFunction = select_core.result_column_list().some(result_column => isAgregateFunction(result_column));
         if (agreegateFunction) {
             return false;
         }
@@ -919,7 +919,18 @@ function isAgregateFunction(result_column: Result_columnContext) {
     if (result_column.expr()?.over_clause() != null) { //window function isMultipleRow = true
         return false;
     }
-    const function_name = result_column.expr()?.function_name()?.getText().toLowerCase();
+    const expr = result_column.expr();
+    const isAgreg = expr && isAgregateFunctionExpr(expr);
+    return isAgreg;
+}
+
+function isAgregateFunctionExpr(expr: ExprContext) {
+    //ex. min(value)/100, 100/min(value)
+    const isAgrr = expr.expr_list().some(expr => isAgregateFunctionExpr(expr));
+    if (isAgrr) {
+        return isAgrr;
+    }
+    const function_name = expr.function_name()?.getText().toLowerCase();
     return function_name == 'count'
         || function_name == 'sum'
         || function_name == 'avg'

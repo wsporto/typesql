@@ -264,6 +264,93 @@ describe('sqlite-parse-select-functions', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    //TODO - add for mysql
+    it('SELECT MIN(value)/100 as min FROM mytable1', () => {
+        const sql = `
+        SELECT MIN(value)/100 as min FROM mytable1
+        `
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: false,
+            columns: [
+                {
+                    columnName: 'min',
+                    type: 'INTEGER',
+                    notNull: false,
+                    table: ''
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    //TODO - add for mysql
+    it('SELECT 100/ifnull(max(value), 10) as value FROM mytable1', () => {
+        const sql = `
+        SELECT 100/ifnull(max(value), 10) as value FROM mytable1
+        `
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: false,
+            columns: [
+                {
+                    columnName: 'value',
+                    type: 'INTEGER',
+                    notNull: false,
+                    table: ''
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    //TODO - add for mysql
+    it('SELECT id, 100/ifnull(max(value), 10) as value FROM mytable1', () => {
+        const sql = `
+        SELECT id, 100/ifnull(max(value), 10) as value FROM mytable1
+        `
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: false,
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: 'mytable1'
+                },
+                {
+                    columnName: 'value',
+                    type: 'INTEGER',
+                    notNull: false,
+                    table: ''
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it('SELECT MIN(name) FROM mytable2', () => {
         const sql = `
         SELECT MIN(name) FROM mytable2
