@@ -1044,6 +1044,38 @@ describe('sqlite-Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('select id from mytable2 where name GLOB ?', () => {
+        const sql = `
+        select id from mytable2 where name GLOB ?
+        `
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: 'mytable2'
+
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'TEXT',
+                    notNull: true
+                }
+            ]
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it('parse select with CASE WHEN', async () => {
 
         const sql = `

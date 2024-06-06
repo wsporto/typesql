@@ -729,7 +729,7 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
             table: type.table || ''
         };
     }
-    if (expr.LIKE_()) {
+    if (expr.LIKE_() || expr.GLOB_()) {
         const exprLeft = expr.expr(0);
         const exprRight = expr.expr(1);
 
@@ -750,7 +750,7 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         traverseContext.constraints.push({
             expression: expr.getText(),
             type1: typeLeft.type,
-            type2: freshVar('LIKE', 'TEXT')
+            type2: freshVar(expr.getText(), 'TEXT')
         })
         const type = freshVar(expr.getText(), 'INTEGER');
         return {
