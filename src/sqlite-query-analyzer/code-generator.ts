@@ -44,10 +44,10 @@ export function generateCrud(client: SQLiteClient = 'sqlite', queryType: QueryTy
     if (keys.length == 0) {
         keys.push(...columns.filter(col => col.columnKey == 'UNI'));
     }
-    const keyColumnInfo = keys.map(key => mapToColumnInfo(key, false)).map(col => mapColumnToTsFieldDescriptor(col));
+    const keyColumnInfo = keys.map(key => mapToColumnInfo(key, false)).map(col => mapColumnToTsFieldDescriptor(col, client));
 
     const resultColumns = mapColumns(client, queryType, columnInfo, false);
-    const params = columnInfo.map(col => mapColumnToTsFieldDescriptor(col));
+    const params = columnInfo.map(col => mapColumnToTsFieldDescriptor(col, client));
 
     const tsDescriptor: TsDescriptor = {
         sql: '',
@@ -98,8 +98,8 @@ function createTsDescriptor(queryInfo: SchemaDef, client: SQLiteClient): TsDescr
         returning: queryInfo.returning,
         columns: mapColumns(client, queryInfo.queryType, queryInfo.columns, queryInfo.returning),
         parameterNames: [],
-        parameters: queryInfo.parameters.map(param => mapParameterToTsFieldDescriptor(param)),
-        data: queryInfo.data?.map(param => mapParameterToTsFieldDescriptor(param)),
+        parameters: queryInfo.parameters.map(param => mapParameterToTsFieldDescriptor(param, client)),
+        data: queryInfo.data?.map(param => mapParameterToTsFieldDescriptor(param, client)),
         orderByColumns: queryInfo.orderByColumns
     }
     if (queryInfo.nestedInfo) {
@@ -107,7 +107,7 @@ function createTsDescriptor(queryInfo: SchemaDef, client: SQLiteClient): TsDescr
             const tsRelation: RelationType2 = {
                 groupIndex: relation.groupIndex,
                 name: relation.name,
-                fields: relation.fields.map(field => mapFieldToTsField(queryInfo.columns, field)),
+                fields: relation.fields.map(field => mapFieldToTsField(queryInfo.columns, field, client)),
                 relations: relation.relations.map(relation => mapToTsRelation2(relation))
             }
             return tsRelation;
@@ -152,39 +152,39 @@ function mapColumns(client: SQLiteClient, queryType: SchemaDef['queryType'], col
     }
 
     const escapedColumnsNames = renameInvalidNames(columns.map(col => col.columnName));
-    return columns.map((col, index) => mapColumnToTsFieldDescriptor({ ...col, columnName: escapedColumnsNames[index] }))
+    return columns.map((col, index) => mapColumnToTsFieldDescriptor({ ...col, columnName: escapedColumnsNames[index] }, client))
 }
 
-function mapFieldToTsField(columns: ColumnInfo[], field: Field2): TsField2 {
+function mapFieldToTsField(columns: ColumnInfo[], field: Field2, client: SQLiteClient): TsField2 {
     const tsField: TsField2 = {
         name: field.name,
         index: field.index,
-        tsType: mapColumnType(columns[field.index].type as SQLiteType),
+        tsType: mapColumnType(columns[field.index].type as SQLiteType, client),
         notNull: false
     }
     return tsField;
 }
 
-function mapParameterToTsFieldDescriptor(col: ParameterDef) {
+function mapParameterToTsFieldDescriptor(col: ParameterDef, client: SQLiteClient) {
     const tsDesc: TsFieldDescriptor = {
         name: col.name,
-        tsType: mapColumnType(col.columnType as SQLiteType),
+        tsType: mapColumnType(col.columnType as SQLiteType, client),
         notNull: col.notNull ? col.notNull : false
     }
     return tsDesc;
 }
 
-function mapColumnToTsFieldDescriptor(col: ColumnInfo) {
+function mapColumnToTsFieldDescriptor(col: ColumnInfo, client: SQLiteClient) {
     const tsDesc: TsFieldDescriptor = {
         name: col.columnName,
-        tsType: mapColumnType(col.type as SQLiteType),
+        tsType: mapColumnType(col.type as SQLiteType, client),
         notNull: col.notNull,
         optional: col.optional
     }
     return tsDesc;
 }
 
-function mapColumnType(sqliteType: SQLiteType) {
+function mapColumnType(sqliteType: SQLiteType, client: SQLiteClient) {
     switch (sqliteType) {
         case 'INTEGER':
             return 'number';
@@ -205,7 +205,7 @@ function mapColumnType(sqliteType: SQLiteType) {
         case 'DATE':
             return 'Date';
         case 'BLOB':
-            return 'any';
+            return client == 'sqlite' ? 'Uint8Array' : 'ArrayBuffer';
     }
 }
 

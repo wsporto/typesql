@@ -55,7 +55,7 @@ export type TsType =
     | 'boolean' | 'boolean[]'
     | 'Date' | 'Date[]'
     | 'Object' | 'Object[]'
-    | 'Buffer'
+    | 'Uint8Array' | 'ArrayBuffer'
     | 'any'
     | 'null'
 
@@ -122,7 +122,7 @@ export function converToTsType(mySqlType: MySqlType | 'any'): TsType {
         case 'mediumblob':
         case 'longblob':
         case 'blob':
-            return 'Buffer'
+            return 'Uint8Array'
         default:
             if (mySqlType.startsWith("enum(")) {
                 const enumValues = mySqlType.substring(mySqlType.indexOf("(") + 1, mySqlType.indexOf(")"));
