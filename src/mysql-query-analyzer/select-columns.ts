@@ -227,7 +227,13 @@ export function findColumn(fieldName: FieldName, columns: ColumnDef[]): ColumnDe
 }
 
 export function findColumnOrNull(fieldName: FieldName, columns: ColumnDef[]): ColumnDef | undefined {
-    //TODO - Put tableAlias always ''
+
+    const found = columns.find(col => col.columnName.toLowerCase() == fieldName.name.toLowerCase() &&
+        (fieldName.prefix == '' || fieldName.prefix == col.tableAlias || fieldName.prefix == col.table));
+    if (found) {
+        return found;
+    }
+
     const functionType = functionAlias.find(col => col.column.toLowerCase() == fieldName.name.toLowerCase());
     if (functionType) {
         const colDef: ColumnDef = {
@@ -239,8 +245,6 @@ export function findColumnOrNull(fieldName: FieldName, columns: ColumnDef[]): Co
         }
         return colDef;
     }
-    const found = columns.find(col => col.columnName.toLowerCase() == fieldName.name.toLowerCase() &&
-        (fieldName.prefix == '' || fieldName.prefix == col.tableAlias || fieldName.prefix == col.table));
 
     return found;
 }

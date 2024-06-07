@@ -15,6 +15,12 @@ CREATE TABLE mytable3 (
   name TEXT NOT NULL
 );
 
+CREATE TABLE mytable4(
+    id TEXT PRIMARY KEY,
+    name TEXT,
+    year INTEGER,
+);
+
 CREATE TABLE all_types (
     int_column INT,
     integer_column INTEGER,

@@ -1385,4 +1385,31 @@ describe('sqlite-Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     });
 
+    //fix: was getting type from year function instead of column
+    it('SELECT year FROM mytable1', async () => {
+        const sql = `SELECT year FROM mytable4`;
+
+        const actual = await parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'year',
+                    type: 'INTEGER',
+                    notNull: false,
+                    table: 'mytable4'
+                }
+            ],
+            parameters: []
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
 });
