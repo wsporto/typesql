@@ -387,6 +387,23 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
             table: functionType.table || ''
         };
     }
+    if (function_name == 'group_concat') {
+        expr.expr_list().forEach(paramExpr => {
+            const param1Type = traverse_expr(paramExpr, traverseContext);
+            traverseContext.constraints.push({
+                expression: expr.getText(),
+                type1: freshVar(expr.getText(), 'TEXT'),
+                type2: param1Type.type
+            })
+        })
+
+        return {
+            name: expr.getText(),
+            type: freshVar(expr.getText(), 'TEXT'),
+            notNull: false,
+            table: ''
+        }
+    }
     if (function_name == 'round') {
         const functionType = freshVar(expr.getText(), 'REAL');
         const param1Expr = expr.expr(0);
@@ -961,7 +978,8 @@ function isAgregateFunctionExpr(expr: ExprContext) {
         || function_name == 'sum'
         || function_name == 'avg'
         || function_name == 'min'
-        || function_name == 'max';
+        || function_name == 'max'
+        || function_name == 'group_concat';
 }
 
 function isLimitOne(select_stmt: Select_stmtContext) {
