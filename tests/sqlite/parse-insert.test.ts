@@ -606,4 +606,28 @@ describe('sqlite-parse-insert', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     })
+
+    it('insert into all_types (blob_column) values (vector(?))', () => {
+
+        const sql = `insert into all_types (blob_column) values (vector(?))`;
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            multipleRowsResult: false,
+            queryType: 'Insert',
+            sql,
+            columns: [],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'TEXT',
+                    notNull: true
+                }
+            ]
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
 });

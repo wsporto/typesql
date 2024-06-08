@@ -547,6 +547,69 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
             notNull: expr2Type.notNull && expr3Type.notNull
         }
     }
+    if (function_name == 'vector') {
+        const functionType = freshVar(expr.getText(), 'BLOB');
+        const param1Expr = expr.expr(0);
+        const param1Type = traverse_expr(param1Expr, traverseContext);
+        param1Type.notNull = true;
+        traverseContext.constraints.push({
+            expression: expr.getText(),
+            type1: freshVar(expr.getText(), 'TEXT'),
+            type2: param1Type.type
+        })
+        return {
+            name: expr.getText(),
+            type: functionType,
+            notNull: true,
+            table: ''
+        };
+    }
+    if (function_name == 'vector_extract') {
+        const functionType = freshVar(expr.getText(), 'TEXT');
+        const param1Expr = expr.expr(0);
+        const param1Type = traverse_expr(param1Expr, traverseContext);
+        traverseContext.constraints.push({
+            expression: expr.getText(),
+            type1: freshVar(expr.getText(), 'BLOB'),
+            type2: param1Type.type
+        })
+        return {
+            name: expr.getText(),
+            type: functionType,
+            notNull: true,
+            table: ''
+        };
+    }
+    if (function_name == 'vector_distance_cos') {
+        const functionType = freshVar(expr.getText(), 'REAL');
+        const param1Expr = expr.expr(0);
+        if (param1Expr) {
+            const param1Type = traverse_expr(param1Expr, traverseContext);
+            param1Type.notNull = true;
+            traverseContext.constraints.push({
+                expression: expr.getText(),
+                type1: freshVar(expr.getText(), 'BLOB'),
+                type2: param1Type.type
+            })
+        }
+
+        const param2Expr = expr.expr(1);
+        if (param2Expr) {
+            const param2Type = traverse_expr(param2Expr, traverseContext);
+            param2Type.notNull = true;
+            traverseContext.constraints.push({
+                expression: expr.getText(),
+                type1: freshVar(expr.getText(), 'TEXT'),
+                type2: param2Type.type
+            })
+        }
+        return {
+            name: expr.getText(),
+            type: functionType,
+            notNull: true,
+            table: ''
+        };
+    }
     if (function_name) {
         throw Error('traverse_expr: function not supported:' + function_name);
     }

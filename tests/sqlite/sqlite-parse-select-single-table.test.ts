@@ -1447,4 +1447,64 @@ describe('sqlite-Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('SELECT vector_extract(blob_column) as vector, vector(:vector), vector_distance_cos(blob_column, :vector) FROM all_types', async () => {
+        const sql = `
+        SELECT vector_extract(blob_column) as vector, 
+        vector(:vector) as embedded, 
+        vector_distance_cos(blob_column, :vector) as vector_distance_cos
+        FROM all_types`;
+
+        const expectedSql = `
+        SELECT vector_extract(blob_column) as vector, 
+        vector(?) as embedded, 
+        vector_distance_cos(blob_column, ?) as vector_distance_cos
+        FROM all_types`;
+
+
+        const actual = await parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql: expectedSql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'vector',
+                    type: 'TEXT',
+                    notNull: true,
+                    table: ''
+                },
+                {
+                    columnName: 'embedded',
+                    type: 'BLOB',
+                    notNull: true,
+                    table: ''
+                },
+                {
+                    columnName: 'vector_distance_cos',
+                    type: 'REAL',
+                    notNull: true,
+                    table: ''
+                }
+            ],
+            parameters: [
+                {
+                    name: 'vector',
+                    columnType: 'TEXT',
+                    notNull: true
+                },
+                {
+                    name: 'vector',
+                    columnType: 'TEXT',
+                    notNull: true
+                }
+            ]
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error:` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
 });
