@@ -1256,6 +1256,41 @@ describe('sqlite-Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('select with order by without parameter', () => {
+        const sql = `
+        select name from mytable2 order by concat(name, ?)
+        `;
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'name',
+                    type: 'TEXT',
+                    notNull: false,
+                    table: 'mytable2'
+                }
+            ],
+            //shouldn't include order by columns because there is no parameters on the order by clause
+            //orderByColumns: ['id', 'value'],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'TEXT',
+                    notNull: false,
+                }
+            ]
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it('order by with case when expression', () => {
         const sql = `
         select value, case when value = 1 then 1 else 2 end as ordering from mytable1 order by ?

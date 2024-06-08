@@ -172,9 +172,9 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
             if (expr.getText() == '?') {
                 hasOrderByParameter = true;
             }
-            // else {
-            //     traverse_expr(expr, traverseContext);
-            // }
+            else {
+                traverse_expr(expr, { ...traverseContext, fromColumns: mainQuery.fromColumns });
+            }
         })
         if (hasOrderByParameter) {
             const orderByColumns = getOrderByColumns(mainQuery.fromColumns, mainQuery.columns);
