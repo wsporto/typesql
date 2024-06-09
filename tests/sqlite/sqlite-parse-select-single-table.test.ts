@@ -899,9 +899,47 @@ describe('sqlite-Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('parse select with column expression', () => {
+    it('SELECT * FROM mytable1 WHERE id = (select id from mytable2 where id = ?)', () => {
+
         const sql = `
-        select t1.id > 1 AS bigger  from mytable1 t1
+        SELECT * FROM mytable1 WHERE id = (select id from mytable2 where id = ?)
+        `
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: false, //changed at v0.3.0
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: 'mytable1'
+                },
+                {
+                    columnName: 'value',
+                    type: 'INTEGER',
+                    notNull: false,
+                    table: 'mytable1'
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'INTEGER',
+                    notNull: true
+                }
+            ]
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('select t1.id > 1 AS bigger from mytable1 t1', () => {
+        const sql = `
+        select t1.id > 1 AS bigger from mytable1 t1
         `
         const actual = parseSql(sql, sqliteDbSchema);
         const expected: SchemaDef = {
@@ -924,9 +962,9 @@ describe('sqlite-Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('parse select with column expression 2', () => {
+    it(`select t2.name > 'a' AS bigger from mytable2 t2`, () => {
         const sql = `
-        select t2.name > 'a' AS bigger  from mytable2 t2
+        select t2.name > 'a' AS bigger from mytable2 t2
         `
         const actual = parseSql(sql, sqliteDbSchema);
         const expected: SchemaDef = {
@@ -942,6 +980,69 @@ describe('sqlite-Test simple select statements', () => {
                 }
             ],
             parameters: []
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('select id from mytable2 where name like ?', () => {
+        const sql = `
+        select id from mytable2 where name like ?
+        `
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: 'mytable2'
+
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'TEXT',
+                    notNull: true
+                }
+            ]
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('select id from mytable2 where ? like name', () => {
+        const sql = `
+        select id from mytable2 where ? like name
+        `
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: 'mytable2'
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'TEXT',
+                    notNull: true
+                }
+            ]
         }
         if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
@@ -1012,38 +1113,6 @@ describe('sqlite-Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('select id from mytable2 where name like ?', () => {
-        const sql = `
-        select id from mytable2 where name like ?
-        `
-        const actual = parseSql(sql, sqliteDbSchema);
-        const expected: SchemaDef = {
-            sql,
-            queryType: 'Select',
-            multipleRowsResult: true,
-            columns: [
-                {
-                    columnName: 'id',
-                    type: 'INTEGER',
-                    notNull: true,
-                    table: 'mytable2'
-
-                }
-            ],
-            parameters: [
-                {
-                    name: 'param1',
-                    columnType: 'TEXT',
-                    notNull: true
-                }
-            ]
-        }
-        if (isLeft(actual)) {
-            assert.fail(`Shouldn't return an error`);
-        }
-        assert.deepStrictEqual(actual.right, expected);
-    })
-
     it('select id from mytable2 where name GLOB ?', () => {
         const sql = `
         select id from mytable2 where name GLOB ?
@@ -1096,6 +1165,40 @@ describe('sqlite-Test simple select statements', () => {
                     columnName: 'id',
                     type: 'TEXT',
                     notNull: false, //not null can't be inferred
+                    table: ''
+                }
+            ],
+            parameters: []
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('parse select with CASE WHEN ... ELSE', () => {
+
+        const sql = `
+        SELECT
+            CASE
+                WHEN id = 1 THEN 'one'
+                WHEN id = 2 THEN 'two'
+                ELSE 'other'
+            END as id
+        FROM mytable1
+        `;
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'TEXT',
+                    notNull: true,
                     table: ''
                 }
             ],

@@ -959,7 +959,7 @@ describe('Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('compare parameter with subquery', async () => {
+    it('SELECT * FROM mytable1 WHERE id = (select id from mytable2 where id = ?)', async () => {
 
         const sql = `
         SELECT * FROM mytable1 WHERE id = (select id from mytable2 where id = ?)
@@ -997,9 +997,9 @@ describe('Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('parse select with column expression', async () => {
+    it('select t1.id > 1 AS bigger from mytable1 t1', async () => {
         const sql = `
-        select t1.id > 1 AS bigger  from mytable1 t1
+        select t1.id > 1 AS bigger from mytable1 t1
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
@@ -1022,9 +1022,9 @@ describe('Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('parse select with column expression 2', async () => {
+    it(`select t2.name > 'a' AS bigger from mytable2 t2`, async () => {
         const sql = `
-        select t2.name > 'a' AS bigger  from mytable2 t2
+        select t2.name > 'a' AS bigger from mytable2 t2
         `
         const actual = await parseSql(client, sql);
         const expected: SchemaDef = {
@@ -1144,7 +1144,7 @@ describe('Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('parse select with CASE WHEN', async () => {
+    it('parse select with CASE WHEN ... ELSE', async () => {
 
         const sql = `
         SELECT
