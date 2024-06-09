@@ -1253,41 +1253,6 @@ describe('sqlite-Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('parse a select with multiples parameters', () => {
-        const sql = 'SELECT value FROM mytable1 WHERE id = ? or value > ?';
-
-        const actual = parseSql(sql, sqliteDbSchema);
-        const expected: SchemaDef = {
-            sql,
-            queryType: 'Select',
-            multipleRowsResult: true,
-            columns: [
-                {
-                    columnName: 'value',
-                    type: 'INTEGER',
-                    notNull: false,
-                    table: 'mytable1'
-                }
-            ],
-            parameters: [
-                {
-                    name: 'param1',
-                    columnType: 'INTEGER',
-                    notNull: true
-                },
-                {
-                    name: 'param2',
-                    columnType: 'INTEGER',
-                    notNull: true
-                }
-            ]
-        }
-        if (isLeft(actual)) {
-            assert.fail(`Shouldn't return an error`);
-        }
-        assert.deepStrictEqual(actual.right, expected);
-    })
-
     it('select value from mytable1 where value is not null', () => {
 
         const sql = `
@@ -1312,6 +1277,34 @@ describe('sqlite-Test simple select statements', () => {
 
         if (isLeft(actual)) {
             assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('select id from mytable1 where 1 = 1', () => {
+
+        const sql = `
+        select id from mytable1 where 1 = 1
+        `;
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: 'mytable1'
+                }
+            ],
+            parameters: []
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
         }
         assert.deepStrictEqual(actual.right, expected);
     })
@@ -1371,7 +1364,7 @@ describe('sqlite-Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('select with order by without parameter', () => {
+    it('select value from mytable1 order by value', () => {
         const sql = `
         select value from mytable1 order by value
         `;
@@ -1391,41 +1384,6 @@ describe('sqlite-Test simple select statements', () => {
             //shouldn't include order by columns because there is no parameters on the order by clause
             //orderByColumns: ['id', 'value'],
             parameters: []
-
-        }
-
-        if (isLeft(actual)) {
-            assert.fail(`Shouldn't return an error`);
-        }
-        assert.deepStrictEqual(actual.right, expected);
-    })
-
-    it('select with order by without parameter', () => {
-        const sql = `
-        select name from mytable2 order by concat(name, ?)
-        `;
-        const actual = parseSql(sql, sqliteDbSchema);
-        const expected: SchemaDef = {
-            sql,
-            queryType: 'Select',
-            multipleRowsResult: true,
-            columns: [
-                {
-                    columnName: 'name',
-                    type: 'TEXT',
-                    notNull: false,
-                    table: 'mytable2'
-                }
-            ],
-            //shouldn't include order by columns because there is no parameters on the order by clause
-            //orderByColumns: ['id', 'value'],
-            parameters: [
-                {
-                    name: 'param1',
-                    columnType: 'TEXT',
-                    notNull: false,
-                }
-            ]
 
         }
 
@@ -1489,6 +1447,41 @@ describe('sqlite-Test simple select statements', () => {
             ],
             orderByColumns: ['id', 't.id', 'value', 't.value', 'ordering'],
             parameters: []
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('select with order by function', () => {
+        const sql = `
+        select name from mytable2 order by concat(name, ?)
+        `;
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'name',
+                    type: 'TEXT',
+                    notNull: false,
+                    table: 'mytable2'
+                }
+            ],
+            //shouldn't include order by columns because there is no parameters on the order by clause
+            //orderByColumns: ['id', 'value'],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'TEXT',
+                    notNull: false,
+                }
+            ]
 
         }
 

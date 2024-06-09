@@ -39,7 +39,7 @@ describe('Parse window functions', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('SELECT (ROW_NUMBER() OVER()) as num', async () => {
+    it('SELECT *, (ROW_NUMBER() OVER()) as num', async () => {
         const sql = `
         SELECT
             *,

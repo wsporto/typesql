@@ -350,6 +350,45 @@ describe('Test parse select with functions', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('parse select without from clause', async () => {
+        const sql = `
+        select 10, CONCAT_WS('a', 'b'), 'a' as name
+        `;
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: false,
+            columns: [
+                {
+                    columnName: '10',
+                    type: 'int',
+                    notNull: true,
+                    table: ''
+                },
+                {
+                    columnName: `CONCAT_WS('a', 'b')`, //If the separator is NULL, the result is NULL.
+                    type: 'varchar',
+                    notNull: true,
+                    table: ''
+                },
+                {
+                    columnName: 'name',
+                    type: 'varchar',
+                    notNull: true,
+                    table: ''
+                }
+            ],
+            parameters: []
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it('parse a select with STR_TO_DATE and CONCAT_WS function', async () => {
         const sql = `
         SELECT STR_TO_DATE(CONCAT_WS('/', ?, ?, ?),'%d/%m/%Y')

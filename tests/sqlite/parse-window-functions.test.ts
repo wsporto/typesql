@@ -34,7 +34,7 @@ describe('sqlite-parse-window-functions', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('SELECT (ROW_NUMBER() OVER()) as num', () => {
+    it('SELECT *, (ROW_NUMBER() OVER()) as num', () => {
         const sql = `
         SELECT
             *,

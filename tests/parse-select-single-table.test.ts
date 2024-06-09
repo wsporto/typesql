@@ -1344,7 +1344,7 @@ describe('Test simple select statements', () => {
         }
 
         if (isLeft(actual)) {
-            assert.fail(`Shouldn't return an error: `, actual.left.description);
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
         }
         assert.deepStrictEqual(actual.right, expected);
     })
@@ -1410,46 +1410,6 @@ describe('Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    //TODO - MOVE TO FUNCTIONS TESTS
-    it('parse select without from clause', async () => {
-        const sql = `
-        select 10, CONCAT_WS('a', 'b'), 'a' as name
-        `;
-        const actual = await parseSql(client, sql);
-        const expected: SchemaDef = {
-            sql,
-            queryType: 'Select',
-            multipleRowsResult: false,
-            columns: [
-                {
-                    columnName: '10',
-                    type: 'int',
-                    notNull: true,
-                    table: ''
-                },
-                {
-                    columnName: `CONCAT_WS('a', 'b')`, //If the separator is NULL, the result is NULL.
-                    type: 'varchar',
-                    notNull: true,
-                    table: ''
-                },
-                {
-                    columnName: 'name',
-                    type: 'varchar',
-                    notNull: true,
-                    table: ''
-                }
-            ],
-            parameters: []
-
-        }
-
-        if (isLeft(actual)) {
-            assert.fail(`Shouldn't return an error`);
-        }
-        assert.deepStrictEqual(actual.right, expected);
-    })
-
     it('select value from mytable1 order by ?', async () => {
         const sql = `
         select value from mytable1 order by ?
@@ -1506,7 +1466,7 @@ describe('Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('select with order by without parameter', async () => {
+    it('select value from mytable1 order by value', async () => {
         const sql = `
         select value from mytable1 order by value
         `;
@@ -1666,7 +1626,7 @@ describe('Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     });
 
-    it('SELECT id FROM mytable1 LIMIT ?, ?', async () => {
+    it(`SELECT id FROM mytable1 LIMIT 'a', ?`, async () => {
         const sql = `SELECT id FROM mytable1 LIMIT 'a', ?`
 
         const actual = await parseSql(client, sql);
@@ -1693,7 +1653,7 @@ describe('Test simple select statements', () => {
 
     })
 
-    it('SELECT bit_column FROM all_types WHERE bit_column = 1', async () => {
+    it('SELECT bit_column FROM all_types WHERE bit_column = 1 or bit_column = ?', async () => {
         const sql = 'SELECT bit_column FROM all_types WHERE bit_column = 1 or bit_column = ?';
 
         const actual = await parseSql(client, sql);
