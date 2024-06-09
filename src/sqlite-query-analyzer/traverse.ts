@@ -825,6 +825,15 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
                     type2: { ...typeRight.type, list: true }
                 })
             }
+            if (inExpr instanceof Select_stmtContext) {
+                const select_stmt_type = traverse_select_stmt(inExpr, traverseContext, true);
+                const selectType = select_stmt_type.columns[0];
+                traverseContext.constraints.push({
+                    expression: expr.getText(),
+                    type1: typeLeft!.type,
+                    type2: { ...selectType.type, list: true }
+                })
+            }
         });
 
         const type = freshVar(expr.getText(), '?');
