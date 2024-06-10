@@ -221,9 +221,13 @@ export function findColumn(fieldName: FieldName, columns: ColumnDef[]): ColumnDe
     const found = findColumnOrNull(fieldName, columns);
 
     if (!found) {
-        throw Error('column not found:' + JSON.stringify(fieldName));
+        throw Error('no such column: ' + formatField(fieldName));
     }
     return found;
+}
+
+function formatField(fieldName: FieldName) {
+    return fieldName.prefix == '' ? fieldName.name : `${fieldName.prefix}.${fieldName.name}`;
 }
 
 export function findColumnOrNull(fieldName: FieldName, columns: ColumnDef[]): ColumnDef | undefined {

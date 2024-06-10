@@ -4,8 +4,10 @@ import { filterColumns, findColumn, findColumnSchema, includeColumn, splitName }
 import { createColumnType, freshVar } from "../mysql-query-analyzer/collect-constraints";
 import { DeleteResult, InsertResult, QuerySpecificationResult, SelectResult, TraverseResult2, UpdateResult, getOrderByColumns } from "../mysql-query-analyzer/traverse";
 import { Relation2 } from "./sqlite-describe-nested-query";
+import { Either, left, right } from 'fp-ts/lib/Either';
+import { TypeSqlError } from '../types';
 
-export function traverse_Sql_stmtContext(sql_stmt: Sql_stmtContext, traverseContext: TraverseContext): TraverseResult2 {
+function traverse_Sql_stmtContext(sql_stmt: Sql_stmtContext, traverseContext: TraverseContext): TraverseResult2 {
 
     const select_stmt = sql_stmt.select_stmt();
     if (select_stmt) {
@@ -28,6 +30,21 @@ export function traverse_Sql_stmtContext(sql_stmt: Sql_stmtContext, traverseCont
         return deleteResult;
     }
     throw Error("traverse_Sql_stmtContext");
+}
+
+export function tryTraverse_Sql_stmtContext(sql_stmt: Sql_stmtContext, traverseContext: TraverseContext): Either<TypeSqlError, TraverseResult2> {
+    try {
+        const traverseResult = traverse_Sql_stmtContext(sql_stmt, traverseContext);
+        return right(traverseResult);
+    }
+    catch (err) {
+        const error = err as Error;
+        return left({
+            name: 'parser error',
+            description: error.message
+        })
+    }
+
 }
 
 function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: TraverseContext, subQuery = false): SelectResult {

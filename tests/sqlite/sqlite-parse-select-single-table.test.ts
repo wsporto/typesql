@@ -1,5 +1,5 @@
 import assert from "assert";
-import { SQLiteDialect, SchemaDef } from "../../src/types";
+import { SQLiteDialect, SchemaDef, TypeSqlError } from "../../src/types";
 import { isLeft } from "fp-ts/lib/Either";
 import { parseSql } from "../../src/sqlite-query-analyzer/parser";
 import { sqliteDbSchema } from "../mysql-query-analyzer/create-schema";
@@ -21,6 +21,27 @@ describe('sqlite-Test simple select statements', () => {
 
         if (isLeft(actual)) {
             assert.deepStrictEqual(actual.left.name, expected);
+        }
+        else {
+            assert.fail('should return an InvalidSqlError');
+        }
+    })
+
+    it('try to parse a empty query', async () => {
+
+        const client: SQLiteDialect = {
+            type: 'sqlite',
+            client: new Database('./mydb.db')
+        }
+        const sql = `SELECT id2 from mytable1`;
+
+        const actual = validateAndGenerateCode(client, sql, 'queryName', sqliteDbSchema);
+        const expected: TypeSqlError = {
+            name: 'Invalid sql',
+            description: 'no such column: id2'
+        }
+        if (isLeft(actual)) {
+            assert.deepStrictEqual(actual.left, expected);
         }
         else {
             assert.fail('should return an InvalidSqlError');

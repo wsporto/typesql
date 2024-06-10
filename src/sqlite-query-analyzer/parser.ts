@@ -1,7 +1,7 @@
-import { Either, right } from "fp-ts/lib/Either";
+import { Either, isLeft, left, right } from "fp-ts/lib/Either";
 import { ParameterNameAndPosition, ParameterDef, SchemaDef, TypeSqlError } from "../types";
 import { Sql_stmtContext, parseSql as parseSqlite } from "@wsporto/ts-mysql-parser/dist/sqlite";
-import { traverse_Sql_stmtContext } from "./traverse";
+import { tryTraverse_Sql_stmtContext } from "./traverse";
 import { ColumnInfo, ColumnSchema, SubstitutionHash, TraverseContext, TypeAndNullInferParam } from "../mysql-query-analyzer/types";
 import { getVarType } from "../mysql-query-analyzer/collect-constraints";
 import { unify } from "../mysql-query-analyzer/unify";
@@ -40,7 +40,11 @@ function createSchemaDefinition(sql: string, sql_stmtContext: Sql_stmtContext, d
         relations: []
     }
 
-    const queryResult = traverse_Sql_stmtContext(sql_stmtContext, traverseContext);
+    const queryResultResult = tryTraverse_Sql_stmtContext(sql_stmtContext, traverseContext);
+    if (isLeft(queryResultResult)) {
+        return queryResultResult;
+    }
+    const queryResult = queryResultResult.right;
     traverseContext.parameters.sort((param1, param2) => param1.paramIndex - param2.paramIndex);
     const groupedByName = indexGroupBy(namedParameters, p => p);
     const paramsById = new Map<string, TypeAndNullInferParam>();
@@ -212,5 +216,8 @@ function createSchemaDefinition(sql: string, sql_stmtContext: Sql_stmtContext, d
 
         return right(schemaDef);
     }
-    throw Error('query not supported: ' + sql_stmtContext.getText());
+    return left({
+        name: 'parse error',
+        description: 'query not supported: ' + sql_stmtContext.getText()
+    });
 }
