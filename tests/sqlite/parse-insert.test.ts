@@ -571,6 +571,102 @@ describe('sqlite-parse-insert', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it(`INSERT INTO mytable3 (double_value, name) VALUES (?, ?), (?, ?), (?, ?)`, () => {
+
+        const sql = `
+        INSERT INTO mytable3 (double_value, name)
+        VALUES (?, ?), (?, ?), (?, ?)`;
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql: sql,
+            queryType: 'Insert',
+            multipleRowsResult: false,
+            columns: [],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'REAL',
+                    notNull: false
+                },
+                {
+                    name: 'param2',
+                    columnType: 'TEXT',
+                    notNull: true
+                },
+                {
+                    name: 'param3',
+                    columnType: 'REAL',
+                    notNull: false
+                },
+                {
+                    name: 'param4',
+                    columnType: 'TEXT',
+                    notNull: true
+                },
+                {
+                    name: 'param5',
+                    columnType: 'REAL',
+                    notNull: false
+                },
+                {
+                    name: 'param6',
+                    columnType: 'TEXT',
+                    notNull: true
+                }
+            ]
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it(`INSERT INTO mytable3 (double_value, name) VALUES (?, ?), (10.5, ?), (?, 'name')`, () => {
+
+        const sql = `
+        INSERT INTO mytable3 (double_value, name)
+        VALUES (:value1, :name1), (10.5, :name2), (:value2, 'name')`;
+        const expectedSql = `
+        INSERT INTO mytable3 (double_value, name)
+        VALUES (?, ?), (10.5, ?), (?, 'name')`;
+
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql: expectedSql,
+            queryType: 'Insert',
+            multipleRowsResult: false,
+            columns: [],
+            parameters: [
+                {
+                    name: 'value1',
+                    columnType: 'REAL',
+                    notNull: false
+                },
+                {
+                    name: 'name1',
+                    columnType: 'TEXT',
+                    notNull: true
+                },
+                {
+                    name: 'name2',
+                    columnType: 'TEXT',
+                    notNull: true
+                },
+                {
+                    name: 'value2',
+                    columnType: 'REAL',
+                    notNull: false
+                }
+            ]
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it(`INSERT INTO mytable1 (value) RETURNING *`, async () => {
 
         const sql = `INSERT INTO mytable1 (value) VALUES (:value) RETURNING *`;
