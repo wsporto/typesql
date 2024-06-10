@@ -23,6 +23,32 @@ describe('sqlite-infer-not-null.test', () => {
 
         assert.deepStrictEqual(actual, expected);
     });
+
+    it('select value from mytable1 where value >= 1', () => {
+
+        const sql = `select value from mytable1 where value >= 1`;
+
+        const result = parseSql(sql, sqliteDbSchema);
+        if (isLeft(result)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        const actual = getColumnNullability(result.right.columns);;
+
+        assert.deepStrictEqual(actual, [true]);
+    })
+
+    it('select value from mytable1 where value <= 1', () => {
+
+        const sql = `select value from mytable1 where value <= 1`;
+
+        const result = parseSql(sql, sqliteDbSchema);
+        if (isLeft(result)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        const actual = getColumnNullability(result.right.columns);;
+
+        assert.deepStrictEqual(actual, [true]);
+    })
 });
 
 function getColumnNullability(columns: ColumnInfo[]) {

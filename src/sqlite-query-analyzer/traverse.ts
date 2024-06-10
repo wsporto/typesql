@@ -1001,8 +1001,8 @@ function isNotNullExpr(columnName: string, expr: ExprContext): boolean {
         return isNotNull(columnName, innerExpr);
     }
     if (expr.ASSIGN()
-        || expr.GT()
-        || expr.LT()
+        || expr.GT() || expr.GT_EQ()
+        || expr.LT() || expr.LT_EQ()
         || (expr.IS_() && expr.expr_list().length == 2 && expr.expr(1).getText() == 'notnull')) {
         const exprLeft = expr.expr(0);
         const exprRight = expr.expr(1);
