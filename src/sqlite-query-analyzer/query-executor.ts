@@ -2,6 +2,7 @@ import { Either, left, right } from "fp-ts/lib/Either";
 import { DatabaseClient, TypeSqlError } from "../types";
 import { ColumnSchema, Table } from "../mysql-query-analyzer/types";
 import Database, { Database as DatabaseType } from 'better-sqlite3';
+import { Database as LibSqlDatabase } from 'libsql';
 
 export function createSqliteClient(databaseUri: string): Either<TypeSqlError, DatabaseClient> {
 	const db = new Database(databaseUri);
@@ -11,7 +12,7 @@ export function createSqliteClient(databaseUri: string): Either<TypeSqlError, Da
 	});
 }
 
-export function loadDbSchema(db: DatabaseType): Either<TypeSqlError, ColumnSchema[]> {
+export function loadDbSchema(db: DatabaseType | LibSqlDatabase): Either<TypeSqlError, ColumnSchema[]> {
 
 	const sql = `
 		WITH all_tables AS (
@@ -52,6 +53,7 @@ export function loadDbSchema(db: DatabaseType): Either<TypeSqlError, ColumnSchem
 		LEFT JOIN uniqueIndex u on u.table_name = t.name and u.column_name = ti.name
 		`
 	try {
+		//@ts-ignore
 		const result = db.prepare(sql)
 			.all() as ColumnSchema[];
 		return right(result.map(col => {
@@ -72,7 +74,7 @@ export function loadDbSchema(db: DatabaseType): Either<TypeSqlError, ColumnSchem
 	}
 }
 
-export function selectSqliteTablesFromSchema(db: DatabaseType): Either<TypeSqlError, Table[]> {
+export function selectSqliteTablesFromSchema(db: DatabaseType | LibSqlDatabase): Either<TypeSqlError, Table[]> {
 	const sql = `
     SELECT 
 		'' as schema,
@@ -83,6 +85,7 @@ export function selectSqliteTablesFromSchema(db: DatabaseType): Either<TypeSqlEr
     `
 
 	try {
+		//@ts-ignore
 		const result = db.prepare(sql)
 			.all() as Table[];
 		return right(result);
@@ -96,8 +99,9 @@ export function selectSqliteTablesFromSchema(db: DatabaseType): Either<TypeSqlEr
 	}
 }
 
-export function explainSql(db: DatabaseType, sql: string): Either<TypeSqlError, boolean> {
+export function explainSql(db: DatabaseType | LibSqlDatabase, sql: string): Either<TypeSqlError, boolean> {
 	try {
+		//@ts-ignore
 		db.prepare(sql);
 		return right(true);
 	}

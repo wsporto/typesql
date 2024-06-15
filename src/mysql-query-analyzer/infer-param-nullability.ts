@@ -1,6 +1,5 @@
-import { SimpleExprParamMarkerContext, PrimaryExprIsNullContext, FunctionCallContext, ExprContext, InsertQueryExpressionContext, SelectStatementContext, QueryExpressionBodyContext, QuerySpecOptionContext, QuerySpecificationContext, QueryExpressionContext } from '@wsporto/ts-mysql-parser';
-import { RuleContext } from "antlr4ts";
-import { ParseTree } from "antlr4ts/tree";
+import { SimpleExprParamMarkerContext, PrimaryExprIsNullContext, FunctionCallContext, ExprContext, InsertQueryExpressionContext, SelectStatementContext, QueryExpressionBodyContext, QuerySpecOptionContext, QuerySpecificationContext, QueryExpressionContext, ParserRuleContext } from '@wsporto/ts-mysql-parser';
+import { RuleContext } from "@wsporto/ts-mysql-parser";
 import { getAllQuerySpecificationsFromSelectStatement } from "./parse";
 
 export function inferParamNullabilityQuery(queryContext: SelectStatementContext | InsertQueryExpressionContext): boolean[] {
@@ -33,13 +32,13 @@ function inferParameterNotNullRule(rule: RuleContext): boolean {
     }
 
     const nullIfFunction = <FunctionCallContext>getParentContext(rule, FunctionCallContext);
-    const functionIdentifier = nullIfFunction?.pureIdentifier()?.text.toLowerCase();
+    const functionIdentifier = nullIfFunction?.pureIdentifier()?.getText().toLowerCase();
     if (functionIdentifier == 'nullif') {
-        const expressionList = nullIfFunction.udfExprList()?.udfExpr();
+        const expressionList = nullIfFunction.udfExprList()?.udfExpr_list();
         if (expressionList && expressionList.length == 2) {
             const firstArg = expressionList[0];
             const secondArg = expressionList[1];
-            if (firstArg.text == '?' && secondArg.text.toLowerCase() == 'null') {
+            if (firstArg.getText() == '?' && secondArg.getText().toLowerCase() == 'null') {
                 return false;
             }
         }
@@ -49,7 +48,7 @@ function inferParameterNotNullRule(rule: RuleContext): boolean {
         return false;
     }
 
-    const parent = rule.parent;
+    const parent = rule.parentCtx;
     if (parent) {
         return inferParameterNotNullRule(parent);
     }
@@ -57,19 +56,19 @@ function inferParameterNotNullRule(rule: RuleContext): boolean {
     return true;
 }
 
-function getAllParameters(tree: ParseTree): SimpleExprParamMarkerContext[] {
+function getAllParameters(tree: ParserRuleContext): SimpleExprParamMarkerContext[] {
     const result: SimpleExprParamMarkerContext[] = [];
     collectSimpleExprParamMarker(tree, result);
     return result;
 }
 
-function collectSimpleExprParamMarker(tree: ParseTree, result: SimpleExprParamMarkerContext[]) {
-    for (let i = 0; i < tree.childCount; i++) {
+function collectSimpleExprParamMarker(tree: ParserRuleContext, result: SimpleExprParamMarkerContext[]) {
+    for (let i = 0; i < tree.getChildCount(); i++) {
         const child = tree.getChild(i);
         if (child instanceof SimpleExprParamMarkerContext) {
             result.push(child);
         }
-        else {
+        else if (child instanceof ParserRuleContext) {
             collectSimpleExprParamMarker(child, result);
         }
     }
@@ -80,7 +79,7 @@ export function getParentContext(ctx: RuleContext | undefined, parentContext: an
         return ctx;
     }
     if (ctx) {
-        return getParentContext(ctx.parent, parentContext);
+        return getParentContext(ctx.parentCtx, parentContext);
     }
     return undefined;
 

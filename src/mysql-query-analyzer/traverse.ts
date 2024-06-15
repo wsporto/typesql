@@ -133,7 +133,7 @@ function traverseSelectStatement(selectStatement: SelectStatementContext, traver
         }
         return traverseResult;
     }
-    throw Error('traverseSelectStatement - not supported: ' + selectStatement.text);
+    throw Error('traverseSelectStatement - not supported: ' + selectStatement.getText());
 }
 
 export function traverseInsertStatement(insertStatement: InsertStatementContext, traverseContext: TraverseContext): InsertStatementResult {
@@ -142,9 +142,9 @@ export function traverseInsertStatement(insertStatement: InsertStatementContext,
     const paramsNullability: { [paramId: string]: boolean } = {};
 
     let exprOrDefaultList: ExprOrDefault[][] = [];
-    const valuesContext = insertStatement.insertFromConstructor()?.insertValues().valueList().values();
+    const valuesContext = insertStatement.insertFromConstructor()?.insertValues().valueList().values_list();
     if (valuesContext) {
-        exprOrDefaultList = valuesContext.map(valueContext => valueContext.children?.filter(valueContext => valueContext instanceof ExprIsContext || valueContext.text == 'DEFAULT') as ExprOrDefault[] || []);
+        exprOrDefaultList = valuesContext.map(valueContext => valueContext.children?.filter(valueContext => valueContext instanceof ExprIsContext || valueContext.getText() == 'DEFAULT') as ExprOrDefault[] || []);
     }
 
     const insertIntoTable = getInsertIntoTable(insertStatement);
@@ -176,7 +176,7 @@ export function traverseInsertStatement(insertStatement: InsertStatementContext,
                     paramsNullability[param.type.id] = paramNullabilityExpr.every(n => n) && column.notNull;
                 })
                 traverseContext.constraints.push({
-                    expression: expr.text,
+                    expression: expr.getText(),
                     //TODO - CHANGING ORDER SHOULDN'T AFFECT THE TYPE INFERENCE
                     type1: exprType.kind == 'TypeOperator' ? exprType.types[0] : exprType,
                     type2: freshVar(column.columnName, column.columnType.type)
@@ -188,9 +188,9 @@ export function traverseInsertStatement(insertStatement: InsertStatementContext,
         })
     })
 
-    const updateList = insertStatement.insertUpdateList()?.updateList().updateElement() || [];
+    const updateList = insertStatement.insertUpdateList()?.updateList().updateElement_list() || [];
     updateList.forEach(updateElement => {
-        const columnName = updateElement.columnRef().text;
+        const columnName = updateElement.columnRef().getText();
         const field = splitName(columnName);
         const expr = updateElement.expr();
         if (expr) {
@@ -201,7 +201,7 @@ export function traverseInsertStatement(insertStatement: InsertStatementContext,
                 paramsNullability[param.type.id] = column.notNull;
             })
             traverseContext.constraints.push({
-                expression: expr.text,
+                expression: expr.getText(),
                 type1: exprType,
                 type2: freshVar(column.columnName, column.columnType.type)
             })
@@ -220,7 +220,7 @@ export function traverseInsertStatement(insertStatement: InsertStatementContext,
                 paramsNullability[type.type.id] = column.notNull;
             }
             traverseContext.constraints.push({
-                expression: insertQueryExpression.text,
+                expression: insertQueryExpression.getText(),
                 type1: type.type,
                 type2: freshVar(column.columnName, column.columnType.type)
             })
@@ -256,7 +256,7 @@ export function traverseInsertStatement(insertStatement: InsertStatementContext,
 
 function traverseUpdateStatement(updateStatement: UpdateStatementContext, traverseContext: TraverseContext, namedParamters: string[]): UpdateStatementResult {
 
-    const updateElement = updateStatement.updateList().updateElement();
+    const updateElement = updateStatement.updateList().updateElement_list();
     const withClause = updateStatement.withClause();
     const withSchema: ColumnDef[] = [];
 
@@ -278,11 +278,11 @@ function traverseUpdateStatement(updateStatement: UpdateStatementContext, traver
         if (expr) {
             const paramBeforeExpr = traverseContext.parameters.length;
             const result = traverseExpr(expr, traverseContext);
-            const columnName = updateElement.columnRef().text;
+            const columnName = updateElement.columnRef().getText();
             const field = splitName(columnName);
             const column = findColumn(field, updateColumns);
             traverseContext.constraints.push({
-                expression: updateStatement.text,
+                expression: updateStatement.getText(),
                 type1: result,
                 type2: column.columnType //freshVar(column.columnName, )
             })
@@ -363,7 +363,7 @@ export function traverseDeleteStatement(deleteStatement: DeleteStatementContext,
 }
 
 export function getUpdateColumns(updateStatement: UpdateStatementContext, traverseContext: TraverseContext) {
-    const tableReferences = updateStatement.tableReferenceList().tableReference();
+    const tableReferences = updateStatement.tableReferenceList().tableReference_list();
     const columns = traverseTableReferenceList(tableReferences, traverseContext, null)
     return columns;
 }
@@ -565,9 +565,9 @@ export function traverseQuerySpecification(querySpec: QuerySpecificationContext,
 
 export function traverseWithClause(withClause: WithClauseContext, traverseContext: TraverseContext) {
     //result1, result2
-    withClause.commonTableExpression().forEach(commonTableExpression => {
-        const cte = commonTableExpression.identifier().text;
-        const recursiveNames = withClause.RECURSIVE_SYMBOL() ? commonTableExpression.columnInternalRefList()?.columnInternalRef().map(t => t.text) || [] : undefined;
+    withClause.commonTableExpression_list().forEach(commonTableExpression => {
+        const cte = commonTableExpression.identifier().getText();
+        const recursiveNames = withClause.RECURSIVE_SYMBOL() ? commonTableExpression.columnInternalRefList()?.columnInternalRef_list().map(t => t.getText()) || [] : undefined;
         const subQuery = commonTableExpression.subquery();
         traverseSubquery(subQuery, traverseContext, cte, recursiveNames); //recursive= true??
         traverseContext.dynamicSqlInfo.with?.push({
@@ -583,7 +583,7 @@ export function traverseWithClause(withClause: WithClauseContext, traverseContex
 }
 
 function traverseFromClause(fromClause: FromClauseContext, traverseContext: TraverseContext): ColumnDef[] {
-    const tableReferenceList = fromClause.tableReferenceList()?.tableReference();
+    const tableReferenceList = fromClause.tableReferenceList()?.tableReference_list();
 
     const fromColumns = tableReferenceList ? traverseTableReferenceList(tableReferenceList, traverseContext, null) : [];
 
@@ -613,7 +613,7 @@ function traverseTableReferenceList(tableReferenceList: TableReferenceContext[],
         }
         const allJoinedColumns: ColumnDef[][] = [];
         let firstLeftJoinIndex = -1;
-        tab.joinedTable().forEach((joined, index) => {
+        tab.joinedTable_list().forEach((joined, index) => {
             if (joined.innerJoinType()?.INNER_SYMBOL() || joined.innerJoinType()?.JOIN_SYMBOL()) {
                 firstLeftJoinIndex = -1; //dont need to add notNull = false to joins
             }
@@ -672,7 +672,7 @@ function traverseTableReferenceList(tableReferenceList: TableReferenceContext[],
                     traverseExpr(onClause, { ...traverseContext, fromColumns: allJoinedColumns.flatMap(c => c).concat(result) })
                     const columns = getExpressions(onClause, SimpleExprColumnRefContext);
                     columns.forEach(columnRef => {
-                        const fieldName = splitName(columnRef.expr.text);
+                        const fieldName = splitName(columnRef.expr.getText());
                         if (innerJoinFragment?.relation != fieldName.prefix) {
                             innerJoinFragment.parentRelation = fieldName.prefix
                         }
@@ -715,7 +715,7 @@ function traverseTableFactor(tableFactor: TableFactorContext, traverseContext: T
 
     const derivadTable = tableFactor.derivedTable();
     if (derivadTable) {
-        const tableAlias = derivadTable.tableAlias()?.identifier().text;
+        const tableAlias = derivadTable.tableAlias()?.identifier().getText();
         if (currentFragment) {
             currentFragment.relation = tableAlias;
         }
@@ -749,7 +749,7 @@ function traverseTableReferenceListParens(ctx: TableReferenceListParensContext, 
 
     const tableReferenceList = ctx.tableReferenceList();
     if (tableReferenceList) {
-        return traverseTableReferenceList(tableReferenceList.tableReference(), traverseContext, null);
+        return traverseTableReferenceList(tableReferenceList.tableReference_list(), traverseContext, null);
     }
 
     const tableReferenceListParens = ctx.tableReferenceListParens();
@@ -762,8 +762,8 @@ function traverseTableReferenceListParens(ctx: TableReferenceListParensContext, 
 }
 
 function traverseSingleTable(singleTable: SingleTableContext, dbSchema: ColumnSchema[], withSchema: ColumnDef[], currentFragment: FragmentInfo | null, withFragments: FragmentInfo[] | undefined): ColumnDef[] {
-    const table = singleTable?.tableRef().text;
-    const tableAlias = singleTable?.tableAlias()?.identifier().text;
+    const table = singleTable?.tableRef().getText();
+    const tableAlias = singleTable?.tableAlias()?.identifier().getText();
     const tableName = splitName(table);
     if (currentFragment) {
         currentFragment.relation = tableAlias || tableName.name;
@@ -816,11 +816,11 @@ function traverseSelectItemList(selectItemList: SelectItemListContext, traverseC
             }
         })
     }
-    selectItemList.selectItem().forEach(selectItem => {
+    selectItemList.selectItem_list().forEach(selectItem => {
         const tableWild = selectItem.tableWild();
         if (tableWild) {
             if (tableWild.MULT_OPERATOR()) {
-                const itemName = splitName(selectItem.text);
+                const itemName = splitName(selectItem.getText());
                 const allColumns = selectAllColumns(itemName.prefix, traverseContext.fromColumns);
                 allColumns.forEach(col => {
                     const columnType = createColumnType(col);
@@ -893,7 +893,7 @@ function traverseExpr(expr: ExprContext, traverseContext: TraverseContext): Type
             });
             const columnsRef = getExpressions(expr, ColumnRefContext);
             columnsRef.forEach(colRef => {
-                const fileName = splitName(colRef.expr.text);
+                const fileName = splitName(colRef.expr.getText());
                 currentFragment.fields.push({
                     field: fileName.name,
                     name: fileName.name,
@@ -910,7 +910,7 @@ function traverseExpr(expr: ExprContext, traverseContext: TraverseContext): Type
         if (expr2) {
             return traverseExpr(expr2, traverseContext);
         }
-        return freshVar(expr.text, 'tinyint');;
+        return freshVar(expr.getText(), 'tinyint');;
     }
     if (expr instanceof ExprAndContext || expr instanceof ExprXorContext || expr instanceof ExprOrContext) {
         const all: ExpressionAndOperator[] = [];
@@ -935,7 +935,7 @@ function traverseExpr(expr: ExprContext, traverseContext: TraverseContext): Type
                 });
                 const columnsRef = getExpressions(andExpression.expr, ColumnRefContext);
                 columnsRef.forEach(colRef => {
-                    const fileName = splitName(colRef.expr.text);
+                    const fileName = splitName(colRef.expr.getText());
                     currentFragment.fields.push({
                         field: fileName.name,
                         name: fileName.name,
@@ -946,10 +946,10 @@ function traverseExpr(expr: ExprContext, traverseContext: TraverseContext): Type
             }
 
         })
-        return freshVar(expr.text, 'tinyint');
+        return freshVar(expr.getText(), 'tinyint');
     }
 
-    throw Error('traverseExpr - not supported: ' + expr.text);
+    throw Error('traverseExpr - not supported: ' + expr.getText());
 }
 
 function traverseBoolPri(boolPri: BoolPriContext, traverseContext: TraverseContext): Type {
@@ -961,7 +961,7 @@ function traverseBoolPri(boolPri: BoolPriContext, traverseContext: TraverseConte
     if (boolPri instanceof PrimaryExprIsNullContext) {
         const boolPri2 = boolPri.boolPri();
         traverseBoolPri(boolPri2, traverseContext);
-        return freshVar(boolPri.text, 'tinyint');
+        return freshVar(boolPri.getText(), 'tinyint');
     }
     if (boolPri instanceof PrimaryExprCompareContext) {
 
@@ -972,13 +972,13 @@ function traverseBoolPri(boolPri: BoolPriContext, traverseContext: TraverseConte
         const typeRight = traversePredicate(compareRight, traverseContext);
 
         traverseContext.constraints.push({
-            expression: boolPri.text,
+            expression: boolPri.getText(),
             type1: typeLeft,
             type2: typeRight
         })
 
 
-        return freshVar(boolPri.text, 'tinyint');
+        return freshVar(boolPri.getText(), 'tinyint');
     }
     if (boolPri instanceof PrimaryExprAllAnyContext) {
         const compareLeft = boolPri.boolPri();
@@ -986,14 +986,14 @@ function traverseBoolPri(boolPri: BoolPriContext, traverseContext: TraverseConte
         const typeLeft = traverseBoolPri(compareLeft, traverseContext);
         const subQueryResult = traverseSubquery(compareRight, traverseContext);
         traverseContext.constraints.push({
-            expression: boolPri.text,
+            expression: boolPri.getText(),
             type1: typeLeft,
             type2: {
                 kind: 'TypeOperator',
                 types: subQueryResult.columns.map(t => t.type)
             }
         })
-        return freshVar(boolPri.text, 'tinyint');
+        return freshVar(boolPri.getText(), 'tinyint');
     }
 
     throw Error('traverseExpr - not supported: ' + boolPri.constructor.name);
@@ -1001,7 +1001,7 @@ function traverseBoolPri(boolPri: BoolPriContext, traverseContext: TraverseConte
 }
 
 function traversePredicate(predicate: PredicateContext, traverseContext: TraverseContext): Type {
-    const bitExpr = predicate.bitExpr()[0]; //TODO - predicate length = 2? [1] == predicateOperations
+    const bitExpr = predicate.bitExpr(0); //TODO - predicate length = 2? [1] == predicateOperations
     const bitExprType = traverseBitExpr(bitExpr, traverseContext);
     const predicateOperations = predicate.predicateOperations();
     if (predicateOperations) {
@@ -1009,7 +1009,7 @@ function traversePredicate(predicate: PredicateContext, traverseContext: Travers
         if (bitExprType.kind == 'TypeOperator' && rightType.kind == 'TypeOperator') {
             rightType.types.forEach((t, i) => {
                 traverseContext.constraints.push({
-                    expression: predicateOperations.text,
+                    expression: predicateOperations.getText(),
                     type1: t, // ? array of id+id
                     type2: bitExprType.types[i],
                     mostGeneralType: true
@@ -1022,7 +1022,7 @@ function traversePredicate(predicate: PredicateContext, traverseContext: Travers
 
             rightType.types.forEach((t, i) => {
                 traverseContext.constraints.push({
-                    expression: predicateOperations.text,
+                    expression: predicateOperations.getText(),
                     type1: bitExprType, // ? array of id+id
                     type2: { ...t, list: true },
                     mostGeneralType: true
@@ -1039,7 +1039,7 @@ function traversePredicate(predicate: PredicateContext, traverseContext: Travers
 
 function traverseExprList(exprList: ExprListContext, traverseContext: TraverseContext): Type {
 
-    const listType = exprList.expr().map(item => {
+    const listType = exprList.expr_list().map(item => {
         const exprType = traverseExpr(item, traverseContext);
         return exprType as TypeVar;
 
@@ -1056,22 +1056,22 @@ function traverseBitExpr(bitExpr: BitExprContext, traverseContext: TraverseConte
     if (simpleExpr) {
         return traverseSimpleExpr(simpleExpr, { ...traverseContext, where: false });
     }
-    if (bitExpr.bitExpr().length == 2) {
+    if (bitExpr.bitExpr_list().length == 2) {
 
 
 
-        const bitExprLeft = bitExpr.bitExpr()[0];
+        const bitExprLeft = bitExpr.bitExpr(0);
         const typeLeftTemp = traverseBitExpr(bitExprLeft, traverseContext);
         const typeLeft = typeLeftTemp.kind == 'TypeOperator' ? typeLeftTemp.types[0] : typeLeftTemp;
         //const newTypeLeft = typeLeft.name == '?'? freshVar('?', 'bigint') : typeLeft;
 
-        const bitExprRight = bitExpr.bitExpr()[1]
+        const bitExprRight = bitExpr.bitExpr(1)
         const typeRightTemp = traverseBitExpr(bitExprRight, traverseContext);
 
         //In the expression 'id + (value + 2) + ?' the '(value+2)' is treated as a SimpleExprListContext and return a TypeOperator
         const typeRight = typeRightTemp.kind == 'TypeOperator' ? typeRightTemp.types[0] : typeRightTemp;
         //const newTypeRight = typeRight.name == '?'? freshVar('?', 'bigint') : typeRight;
-        const bitExprType = freshVar(bitExpr.text, '?');
+        const bitExprType = freshVar(bitExpr.getText(), '?');
         if (typeLeftTemp.kind == 'TypeVar' && typeRightTemp.kind == 'TypeVar' && typeLeftTemp.table == typeRightTemp.table) {
             bitExprType.table = typeLeftTemp.table;
         }
@@ -1100,14 +1100,14 @@ function traverseBitExpr(bitExpr: BitExprContext, traverseContext: TraverseConte
         //     coercionType: 'Sum'
         // })
         traverseContext.constraints.push({
-            expression: bitExprLeft.text,
+            expression: bitExprLeft.getText(),
             type1: bitExprType,
             type2: typeLeft,
             mostGeneralType: true,
             coercionType: 'Sum'
         })
         traverseContext.constraints.push({
-            expression: bitExprRight.text,
+            expression: bitExprRight.getText(),
             type1: bitExprType,
             type2: typeRight,
             mostGeneralType: true,
@@ -1126,12 +1126,12 @@ function traverseBitExpr(bitExpr: BitExprContext, traverseContext: TraverseConte
     }
 
     if (bitExpr.INTERVAL_SYMBOL()) {
-        const bitExpr2 = bitExpr.bitExpr()[0];
+        const bitExpr2 = bitExpr.bitExpr(0);
         const leftType = traverseBitExpr(bitExpr2, traverseContext);
         const expr = bitExpr.expr()!; //expr interval
         traverseExpr(expr, traverseContext);
         traverseContext.constraints.push({
-            expression: bitExpr.text,
+            expression: bitExpr.getText(),
             type1: leftType,
             type2: freshVar('datetime', 'datetime')
         })
@@ -1157,10 +1157,10 @@ function traversePredicateOperations(predicateOperations: PredicateOperationsCon
     }
 
     if (predicateOperations instanceof PredicateExprLikeContext) {
-        const simpleExpr = predicateOperations.simpleExpr()[0];
+        const simpleExpr = predicateOperations.simpleExpr(0);
         const rightType = traverseSimpleExpr(simpleExpr, { ...traverseContext, where: false });
         traverseContext.constraints.push({
-            expression: simpleExpr.text,
+            expression: simpleExpr.getText(),
             type1: parentType,
             type2: rightType
         })
@@ -1174,17 +1174,17 @@ function traversePredicateOperations(predicateOperations: PredicateOperationsCon
         const bitExprType = traverseBitExpr(bitExpr, traverseContext);
         const predicateType = traversePredicate(predicate, traverseContext);
         traverseContext.constraints.push({
-            expression: predicateOperations.text,
+            expression: predicateOperations.getText(),
             type1: parentType,
             type2: bitExprType
         });
         traverseContext.constraints.push({
-            expression: predicateOperations.text,
+            expression: predicateOperations.getText(),
             type1: parentType,
             type2: predicateType
         });
         traverseContext.constraints.push({
-            expression: predicateOperations.text,
+            expression: predicateOperations.getText(),
             type1: bitExprType,
             type2: predicateType
         });
@@ -1196,11 +1196,11 @@ function traversePredicateOperations(predicateOperations: PredicateOperationsCon
 
 function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: TraverseContext): Type {
     if (simpleExpr instanceof SimpleExprColumnRefContext) {
-        const fieldName = splitName(simpleExpr.text);
+        const fieldName = splitName(simpleExpr.getText());
         const column = findColumn(fieldName, traverseContext.fromColumns);
         const typeVar = freshVar(column.columnName, column.columnType.type, column.tableAlias || column.table);
         traverseContext.constraints.push({
-            expression: simpleExpr.text,
+            expression: simpleExpr.getText(),
             type1: typeVar,
             type2: column.columnType,
             mostGeneralType: true
@@ -1225,7 +1225,7 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
             type: param,
             notNull: false,
             table: param.table || '',
-            paramIndex: simpleExpr.start.startIndex
+            paramIndex: simpleExpr.start.start
         });
         return param;
     }
@@ -1233,12 +1233,12 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
         const literal = simpleExpr.literal();
 
         if (literal.textLiteral()) {
-            const text = literal.textLiteral()?.text.slice(1, -1) || ''; //remove quotes
+            const text = literal.textLiteral()?.getText().slice(1, -1) || ''; //remove quotes
             return freshVar(text, 'varchar');
         }
         const numLiteral = literal.numLiteral();
         if (numLiteral) {
-            return freshVar(numLiteral.text, 'int');
+            return freshVar(numLiteral.getText(), 'int');
             // addNamedNode(simpleExpr, freshVar('bigint', 'bigint'), namedNodes)
             // if(numLiteral.INT_NUMBER()) {
             //     const typeInt = freshVar('int', 'int');
@@ -1256,19 +1256,19 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
         }
         const boolLiteral = literal.boolLiteral();
         if (boolLiteral) {
-            return freshVar(boolLiteral.text, 'bit');
+            return freshVar(boolLiteral.getText(), 'bit');
         }
         const nullLiteral = literal.nullLiteral();
         if (nullLiteral) {
-            return freshVar(nullLiteral.text, '?');
+            return freshVar(nullLiteral.getText(), '?');
         }
-        throw Error('literal not supported:' + literal.text);
+        throw Error('literal not supported:' + literal.getText());
         //...
     }
     if (simpleExpr instanceof SimpleExprListContext) {
         const exprList = simpleExpr.exprList();
 
-        const listType = exprList.expr().map(item => {
+        const listType = exprList.expr_list().map(item => {
             const exprType = traverseExpr(item, { ...traverseContext, where: false });
             return exprType as TypeVar;
         })
@@ -1289,25 +1289,25 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
     if (simpleExpr instanceof SimpleExprCaseContext) {
 
         //case when expr then expr else expr
-        const caseType = freshVar(simpleExpr.text, '?');
+        const caseType = freshVar(simpleExpr.getText(), '?');
 
-        simpleExpr.whenExpression().forEach(whenExprCont => {
+        simpleExpr.whenExpression_list().forEach(whenExprCont => {
             const whenExpr = whenExprCont.expr();
             const whenType = traverseExpr(whenExpr, traverseContext);
 
             traverseContext.constraints.push({
-                expression: whenExpr.text,
+                expression: whenExpr.getText(),
                 type1: whenType.kind == 'TypeOperator' ? whenType.types[0] : whenType,
                 type2: freshVar('tinyint', 'tinyint') //bool
             })
         })
 
-        const thenTypes = simpleExpr.thenExpression().map(thenExprCtx => {
+        const thenTypes = simpleExpr.thenExpression_list().map(thenExprCtx => {
             const thenExpr = thenExprCtx.expr();
             const thenType = traverseExpr(thenExpr, traverseContext);
 
             traverseContext.constraints.push({
-                expression: thenExprCtx.text,
+                expression: thenExprCtx.getText(),
                 type1: caseType,
                 type2: thenType.kind == 'TypeOperator' ? thenType.types[0] : thenType,
                 mostGeneralType: true,
@@ -1320,14 +1320,14 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
             const elseType = traverseExpr(elseExpr, traverseContext);
 
             traverseContext.constraints.push({
-                expression: simpleExpr.elseExpression()?.text!,
+                expression: simpleExpr.elseExpression()?.getText()!,
                 type1: caseType,
                 type2: elseType.kind == 'TypeOperator' ? elseType.types[0] : elseType,
                 mostGeneralType: true
             })
             thenTypes.forEach(thenType => {
                 traverseContext.constraints.push({
-                    expression: simpleExpr.elseExpression()?.text!,
+                    expression: simpleExpr.elseExpression()?.getText()!,
                     type1: thenType,
                     type2: elseType.kind == 'TypeOperator' ? elseType.types[0] : elseType,
                     mostGeneralType: true
@@ -1338,13 +1338,13 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
         return caseType;
     }
     if (simpleExpr instanceof SimpleExprIntervalContext) {
-        const exprList = simpleExpr.expr();
+        const exprList = simpleExpr.expr_list();
         const exprLeft = exprList[0];
         const exprRight = exprList[1];
         const typeLeft = traverseExpr(exprLeft, traverseContext);
         const typeRight = traverseExpr(exprRight, traverseContext);
         traverseContext.constraints.push({
-            expression: exprLeft.text,
+            expression: exprLeft.getText(),
             type1: typeLeft,
             type2: freshVar('bigint', 'bigint')
         })
@@ -1352,7 +1352,7 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
             typeRight.type = 'datetime';
         }
         traverseContext.constraints.push({
-            expression: exprRight.text,
+            expression: exprRight.getText(),
             type1: typeRight,
             type2: freshVar('datetime', 'datetime')
         })
@@ -1362,12 +1362,12 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
 
         const sumExpr = simpleExpr.sumExpr();
         if (sumExpr.MAX_SYMBOL() || sumExpr.MIN_SYMBOL()) {
-            const functionType = freshVar(simpleExpr.text, '?');
+            const functionType = freshVar(simpleExpr.getText(), '?');
             const inSumExpr = sumExpr.inSumExpr()?.expr();
             if (inSumExpr) {
                 const inSumExprType = traverseExpr(inSumExpr, traverseContext);
                 traverseContext.constraints.push({
-                    expression: simpleExpr.text,
+                    expression: simpleExpr.getText(),
                     type1: functionType,
                     type2: inSumExprType,
                     mostGeneralType: true
@@ -1376,7 +1376,7 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
             return functionType;
         }
         if (sumExpr.COUNT_SYMBOL()) {
-            const functionType = freshVar(simpleExpr.text, 'bigint');
+            const functionType = freshVar(simpleExpr.getText(), 'bigint');
             const inSumExpr = sumExpr.inSumExpr()?.expr();
             if (inSumExpr) {
                 traverseExpr(inSumExpr, traverseContext);
@@ -1385,12 +1385,12 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
         }
 
         if (sumExpr.SUM_SYMBOL() || sumExpr.AVG_SYMBOL()) {
-            const functionType = freshVar(simpleExpr.text, '?');
+            const functionType = freshVar(simpleExpr.getText(), '?');
             const inSumExpr = sumExpr.inSumExpr()?.expr();
             if (inSumExpr) {
                 const inSumExprType = traverseExpr(inSumExpr, traverseContext);
                 traverseContext.constraints.push({
-                    expression: simpleExpr.text,
+                    expression: simpleExpr.getText(),
                     type1: functionType,
                     type2: inSumExprType,
                     mostGeneralType: true,
@@ -1405,7 +1405,7 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
         if (sumExpr.GROUP_CONCAT_SYMBOL()) {
             const exprList = sumExpr.exprList();
             if (exprList) {
-                exprList.expr().map(item => {
+                exprList.expr_list().map(item => {
                     const exprType = traverseExpr(item, traverseContext);
                     return exprType;
                 })
@@ -1414,7 +1414,7 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
                 in which case the result type is VARCHAR or VARBINARY.
                 */
                 //TODO - Infer TEXT/BLOB or VARCHAR/VARBINARY
-                return freshVar(sumExpr.text, 'varchar');;
+                return freshVar(sumExpr.getText(), 'varchar');;
             }
         }
         throw Error('Expression not supported: ' + sumExpr.constructor.name);
@@ -1422,20 +1422,20 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
     if (simpleExpr instanceof SimpleExprRuntimeFunctionContext) {
         const runtimeFunctionCall = simpleExpr.runtimeFunctionCall();
         if (runtimeFunctionCall.NOW_SYMBOL()) {
-            return freshVar(simpleExpr.text, 'datetime');
+            return freshVar(simpleExpr.getText(), 'datetime');
         }
         if (runtimeFunctionCall.CURDATE_SYMBOL()) {
-            return freshVar(simpleExpr.text, 'date');
+            return freshVar(simpleExpr.getText(), 'date');
         }
         if (runtimeFunctionCall.CURTIME_SYMBOL()) {
-            return freshVar(simpleExpr.text, 'time');
+            return freshVar(simpleExpr.getText(), 'time');
         }
         if (runtimeFunctionCall.REPLACE_SYMBOL()) {
-            const exprList = runtimeFunctionCall.expr();
+            const exprList = runtimeFunctionCall.expr_list();
             exprList.forEach(expr => {
                 const exprType = traverseExpr(expr, traverseContext);
                 traverseContext.constraints.push({
-                    expression: expr.text,
+                    expression: expr.getText(),
                     type1: exprType,
                     type2: freshVar('varchar', 'varchar')
                 })
@@ -1454,13 +1454,13 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
                     paramType.type = 'date'
                 }
                 traverseContext.constraints.push({
-                    expression: expr.text,
+                    expression: expr.getText(),
                     type1: paramType,
-                    type2: freshVar(simpleExpr.text, 'date')
+                    type2: freshVar(simpleExpr.getText(), 'date')
                 })
             }
             const returnType = runtimeFunctionCall.YEAR_SYMBOL() ? 'year' : 'tinyint';
-            return freshVar(simpleExpr.text, returnType);
+            return freshVar(simpleExpr.getText(), returnType);
         }
         if (runtimeFunctionCall.DATE_SYMBOL()) {
             const expr = runtimeFunctionCall.exprWithParentheses()?.expr();
@@ -1473,12 +1473,12 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
                     paramType.type = 'date'
                 }
                 traverseContext.constraints.push({
-                    expression: expr.text,
+                    expression: expr.getText(),
                     type1: paramType,
-                    type2: freshVar(simpleExpr.text, 'date')
+                    type2: freshVar(simpleExpr.getText(), 'date')
                 })
             }
-            return freshVar(simpleExpr.text, 'date');
+            return freshVar(simpleExpr.getText(), 'date');
         }
         if (runtimeFunctionCall.HOUR_SYMBOL() || runtimeFunctionCall.MINUTE_SYMBOL() || runtimeFunctionCall.SECOND_SYMBOL()) {
             const expr = runtimeFunctionCall.exprWithParentheses()?.expr();
@@ -1495,23 +1495,23 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
                 }
 
                 traverseContext.constraints.push({
-                    expression: expr.text,
+                    expression: expr.getText(),
                     type1: paramType,
-                    type2: freshVar(simpleExpr.text, 'time')
+                    type2: freshVar(simpleExpr.getText(), 'time')
                 })
             }
             //HOUR can return values greater than 23. Ex.: SELECT HOUR('272:59:59');
             //https://dev.mysql.com/doc/refman/8.0/en/date-and-time-functions.html#function_hour
             const returnType = runtimeFunctionCall.HOUR_SYMBOL() ? 'int' : 'tinyint';
-            return freshVar(simpleExpr.text, returnType);
+            return freshVar(simpleExpr.getText(), returnType);
         }
         const trimFunction = runtimeFunctionCall.trimFunction();
         if (trimFunction) {
-            const exprList = trimFunction.expr();
+            const exprList = trimFunction.expr_list();
             if (exprList.length == 1) {
                 const exprType = traverseExpr(exprList[0], traverseContext);
                 traverseContext.constraints.push({
-                    expression: exprList[0].text,
+                    expression: exprList[0].getText(),
                     type1: exprType,
                     type2: freshVar('varchar', 'varchar')
                 })
@@ -1520,12 +1520,12 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
                 const exprType = traverseExpr(exprList[0], traverseContext);
                 const expr2Type = traverseExpr(exprList[1], traverseContext);
                 traverseContext.constraints.push({
-                    expression: exprList[0].text,
+                    expression: exprList[0].getText(),
                     type1: exprType,
                     type2: freshVar('varchar', 'varchar')
                 })
                 traverseContext.constraints.push({
-                    expression: exprList[1].text,
+                    expression: exprList[1].getText(),
                     type1: expr2Type,
                     type2: freshVar('varchar', 'varchar')
                 })
@@ -1534,7 +1534,7 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
         }
         const substringFunction = runtimeFunctionCall.substringFunction();
         if (substringFunction) {
-            const exprList = substringFunction.expr();
+            const exprList = substringFunction.expr_list();
             const varcharParam = freshVar('varchar', 'varchar');
             const intParam = freshVar('int', 'int');
             const params: FunctionParams = {
@@ -1552,8 +1552,8 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
 
             //SELECT ADDDATE('2008-01-02', INTERVAL 31 DAY)
             //SELECT ADDDATE('2008-01-02', 31)
-            const expr1 = runtimeFunctionCall.expr()[0];
-            const expr2 = runtimeFunctionCall.expr()[1];
+            const expr1 = runtimeFunctionCall.expr(0);
+            const expr2 = runtimeFunctionCall.expr(1);
             const typeExpr1 = traverseExpr(expr1, traverseContext);
             const typeExpr2 = traverseExpr(expr2, traverseContext);
 
@@ -1562,13 +1562,13 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
             }
 
             traverseContext.constraints.push({
-                expression: expr1.text,
+                expression: expr1.getText(),
                 type1: typeExpr1,
                 type2: freshVar('datetime', 'datetime')
             })
 
             traverseContext.constraints.push({
-                expression: expr2.text,
+                expression: expr2.getText(),
                 type1: typeExpr2,
                 type2: freshVar('bigint', 'bigint')
             })
@@ -1577,7 +1577,7 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
         }
 
         if (runtimeFunctionCall.COALESCE_SYMBOL()) {
-            const exprList = runtimeFunctionCall.exprListWithParentheses()?.exprList().expr();
+            const exprList = runtimeFunctionCall.exprListWithParentheses()?.exprList().expr_list();
             if (exprList) {
                 const paramType = freshVar('COALESCE', 'any');
                 const params: FunctionParams = {
@@ -1587,7 +1587,7 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
                 const paramsTypeList = traverseExprListParameters(exprList, params, traverseContext);
                 paramsTypeList.forEach((typeVar, paramIndex) => {
                     traverseContext.constraints.push({
-                        expression: runtimeFunctionCall.text + '_param' + (paramIndex + 1),
+                        expression: runtimeFunctionCall.getText() + '_param' + (paramIndex + 1),
                         type1: paramType,
                         type2: typeVar,
                         mostGeneralType: true,
@@ -1600,31 +1600,31 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
         //MOD (number, number): number
         if (runtimeFunctionCall.MOD_SYMBOL()) {
             const functionType = freshVar('number', 'number');
-            const exprList = runtimeFunctionCall.expr();
+            const exprList = runtimeFunctionCall.expr_list();
             const param1 = traverseExpr(exprList[0], traverseContext);
             const param2 = traverseExpr(exprList[1], traverseContext);
             traverseContext.constraints.push({
-                expression: simpleExpr.text,
+                expression: simpleExpr.getText(),
                 type1: freshVar('number', 'number'),
                 type2: param1,
                 mostGeneralType: true,
                 coercionType: 'Numeric'
             })
             traverseContext.constraints.push({
-                expression: simpleExpr.text,
+                expression: simpleExpr.getText(),
                 type1: freshVar('number', 'number'),
                 type2: param2,
                 mostGeneralType: true,
                 coercionType: 'Numeric'
             })
             traverseContext.constraints.push({
-                expression: simpleExpr.text,
+                expression: simpleExpr.getText(),
                 type1: functionType,
                 type2: param1,
                 mostGeneralType: true
             })
             traverseContext.constraints.push({
-                expression: simpleExpr.text,
+                expression: simpleExpr.getText(),
                 type1: functionType,
                 type2: param2,
                 mostGeneralType: true
@@ -1632,7 +1632,7 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
             return functionType;
         }
         if (runtimeFunctionCall.IF_SYMBOL()) {
-            const exprList = runtimeFunctionCall.expr();
+            const exprList = runtimeFunctionCall.expr_list();
             const expr1 = exprList[0];
             const expr2 = exprList[1];
             const expr3 = exprList[2];
@@ -1640,20 +1640,20 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
             const expr2Type = traverseExpr(expr2, traverseContext);
             const expr3Type = traverseExpr(expr3, traverseContext);
             traverseContext.constraints.push({
-                expression: runtimeFunctionCall.text,
+                expression: runtimeFunctionCall.getText(),
                 type1: expr2Type,
                 type2: expr3Type,
                 mostGeneralType: true
             })
             return expr2Type;
         }
-        throw Error('Function not supported: ' + runtimeFunctionCall.text);
+        throw Error('Function not supported: ' + runtimeFunctionCall.getText());
     }
     if (simpleExpr instanceof SimpleExprFunctionContext) {
         const functionIdentifier = getFunctionName(simpleExpr);
 
         if (functionIdentifier === 'concat_ws' || functionIdentifier?.toLowerCase() === 'concat') {
-            const varcharType = freshVar(simpleExpr.text, 'varchar');
+            const varcharType = freshVar(simpleExpr.getText(), 'varchar');
             const params: VariableLengthParams = {
                 kind: 'VariableLengthParams',
                 paramType: 'varchar'
@@ -1663,9 +1663,9 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
         }
 
         if (functionIdentifier === 'avg') {
-            const functionType = freshVar(simpleExpr.text, '?');
+            const functionType = freshVar(simpleExpr.getText(), '?');
             traverseContext.constraints.push({
-                expression: simpleExpr.text,
+                expression: simpleExpr.getText(),
                 type1: functionType,
                 type2: freshVar('decimal', 'decimal'),
                 mostGeneralType: true
@@ -1679,7 +1679,7 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
         }
 
         if (functionIdentifier === 'round') {
-            const functionType = freshVar(simpleExpr.text, '?');
+            const functionType = freshVar(simpleExpr.getText(), '?');
             const params: FixedLengthParams = {
                 kind: 'FixedLengthParams',
                 paramsType: [functionType]
@@ -1687,7 +1687,7 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
             const paramsType = walkFunctionParameters(simpleExpr, params, traverseContext);
             //The return value has the same type as the first argument
             traverseContext.constraints.push({
-                expression: simpleExpr.text,
+                expression: simpleExpr.getText(),
                 type1: functionType,
                 type2: paramsType[0], //type of the first parameter
                 mostGeneralType: true
@@ -1702,7 +1702,7 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
                 paramsType: [doubleParam, doubleParam]
             }
             walkFunctionParameters(simpleExpr, params, traverseContext);
-            return freshVar(simpleExpr.text, 'bigint');
+            return freshVar(simpleExpr.getText(), 'bigint');
         }
 
         if (functionIdentifier === 'str_to_date') {
@@ -1712,11 +1712,11 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
                 paramsType: [varcharParam, varcharParam]
             }
             walkFunctionParameters(simpleExpr, params, traverseContext);
-            return freshVar(simpleExpr.text, 'date');
+            return freshVar(simpleExpr.getText(), 'date');
         }
 
         if (functionIdentifier === 'datediff') {
-            const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr();
+            const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr_list();
             if (udfExprList) {
                 udfExprList.forEach((inExpr) => {
                     const expr = inExpr.expr();
@@ -1724,32 +1724,32 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
                     const newType = verifyDateTypesCoercion(exprType);
 
                     traverseContext.constraints.push({
-                        expression: expr.text,
+                        expression: expr.getText(),
                         type1: newType,
                         type2: freshVar('date', 'date'),
                         mostGeneralType: true
                     })
                 })
             }
-            return freshVar(simpleExpr.text, 'bigint');
+            return freshVar(simpleExpr.getText(), 'bigint');
         }
 
         if (functionIdentifier === 'period_add' || functionIdentifier == 'period_diff') {
-            const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr();
+            const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr_list();
             if (udfExprList) {
                 udfExprList.forEach((inExpr) => {
                     const expr = inExpr.expr();
                     const exprType = traverseExpr(expr, traverseContext);
 
                     traverseContext.constraints.push({
-                        expression: expr.text,
+                        expression: expr.getText(),
                         type1: exprType,
                         type2: freshVar('bigint', 'bigint'),
                         mostGeneralType: true
                     })
                 })
             }
-            return freshVar(simpleExpr.text, 'bigint');
+            return freshVar(simpleExpr.getText(), 'bigint');
         }
 
         if (functionIdentifier === 'lpad' || functionIdentifier == 'rpad') {
@@ -1790,11 +1790,11 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
         }
         if (functionIdentifier === 'abs') {
             const functionType = freshVar('number', 'number');
-            const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr();
+            const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr_list();
             udfExprList?.forEach(expr => {
                 const param1 = traverseExpr(expr.expr(), traverseContext);
                 traverseContext.constraints.push({
-                    expression: simpleExpr.text,
+                    expression: simpleExpr.getText(),
                     type1: functionType,
                     type2: param1,
                     mostGeneralType: true,
@@ -1806,11 +1806,11 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
         }
         if (functionIdentifier == 'ceiling' || functionIdentifier == 'ceil') {
             const functionType = freshVar('number', 'number');
-            const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr();
+            const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr_list();
             udfExprList?.forEach(expr => {
                 const param1 = traverseExpr(expr.expr(), traverseContext);
                 traverseContext.constraints.push({
-                    expression: simpleExpr.text,
+                    expression: simpleExpr.getText(),
                     type1: functionType,
                     type2: param1,
                     mostGeneralType: true,
@@ -1822,10 +1822,10 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
         }
         if (functionIdentifier == 'timestampdiff') {
 
-            const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr();
+            const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr_list();
             if (udfExprList) {
                 const [first, ...rest] = udfExprList;
-                const unit = first.text.trim().toLowerCase();
+                const unit = first.getText().trim().toLowerCase();
                 rest.forEach((inExpr, paramIndex) => {
                     const expr = inExpr.expr();
                     const exprType = traverseExpr(expr, traverseContext);
@@ -1833,7 +1833,7 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
 
                     //const expectedType = ['hour', 'minute', 'second'].includes(unit)? 'time' : 'datetime'
                     traverseContext.constraints.push({
-                        expression: expr.text,
+                        expression: expr.getText(),
                         type1: newType,
                         type2: freshVar('datetime', 'datetime'),
                         mostGeneralType: true
@@ -1845,21 +1845,21 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
         }
 
         if (functionIdentifier == 'ifnull' || functionIdentifier == 'nullif') {
-            const functionType = freshVar(simpleExpr.text, '?');
-            const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr();
+            const functionType = freshVar(simpleExpr.getText(), '?');
+            const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr_list();
             if (udfExprList) {
                 const [expr1, expr2] = udfExprList;
 
                 const expr1Type = traverseExpr(expr1.expr(), traverseContext);
                 traverseContext.constraints.push({
-                    expression: expr1.text,
+                    expression: expr1.getText(),
                     type1: functionType,
                     type2: expr1Type
                 })
 
                 const expr2Type = traverseExpr(expr2.expr(), traverseContext);
                 traverseContext.constraints.push({
-                    expression: expr2.text,
+                    expression: expr2.getText(),
                     type1: functionType,
                     type2: expr2Type
                 })
@@ -1871,15 +1871,15 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
         if (functionIdentifier == 'md5' //md5(str) - TODO - have input constraint = string
             || functionIdentifier == 'hex' //md5(n or str)
             || functionIdentifier == 'unhex') { //unhex (str) - TODO - have input constraint = string
-            const functionType = freshVar(simpleExpr.text, 'char');
-            const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr();
+            const functionType = freshVar(simpleExpr.getText(), 'char');
+            const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr_list();
             if (udfExprList) {
                 const [expr1] = udfExprList;
                 const paramType = traverseExpr(expr1.expr(), traverseContext);
                 traverseContext.constraints.push({
-                    expression: expr1.text,
+                    expression: expr1.getText(),
                     type1: paramType,
-                    type2: freshVar(expr1.text, 'varchar')
+                    type2: freshVar(expr1.getText(), 'varchar')
                 })
             }
             return functionType;
@@ -1894,7 +1894,7 @@ function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: Trav
     if (simpleExpr instanceof SimpleExprCastContext) {
         const castType = simpleExpr.castType();
         if (castType.CHAR_SYMBOL()) {
-            return freshVar(castType.text, 'char');
+            return freshVar(castType.getText(), 'char');
         }
     }
 
@@ -1907,7 +1907,7 @@ function traverseWindowFunctionCall(windowFunctionCall: WindowFunctionCallContex
         || windowFunctionCall.DENSE_RANK_SYMBOL()
         || windowFunctionCall.CUME_DIST_SYMBOL()
         || windowFunctionCall.PERCENT_RANK_SYMBOL()) {
-        return freshVar(windowFunctionCall.text, 'bigint');
+        return freshVar(windowFunctionCall.getText(), 'bigint');
     }
     const expr = windowFunctionCall.expr();
     if (expr) {
@@ -1926,7 +1926,7 @@ function traverseExprListParameters(exprList: ExprContext[], params: FunctionPar
         const exprType = traverseExpr(expr, traverseContext);
         const paramType = params.kind == 'FixedLengthParams' ? params.paramsType[paramIndex] : freshVar(params.paramType, params.paramType);
         traverseContext.constraints.push({
-            expression: expr.text,
+            expression: expr.getText(),
             type1: exprType,
             type2: paramType,
             mostGeneralType: true
@@ -1937,7 +1937,7 @@ function traverseExprListParameters(exprList: ExprContext[], params: FunctionPar
 
 function walkFunctionParameters(simpleExprFunction: SimpleExprFunctionContext, params: FunctionParams, traverseContext: TraverseContext) {
     const functionName = getFunctionName(simpleExprFunction);
-    const udfExprList = simpleExprFunction.functionCall().udfExprList()?.udfExpr();
+    const udfExprList = simpleExprFunction.functionCall().udfExprList()?.udfExpr_list();
     if (udfExprList) {
         const paramTypes = udfExprList
             .filter((undefined, paramIndex) => {
@@ -1947,7 +1947,7 @@ function walkFunctionParameters(simpleExprFunction: SimpleExprFunctionContext, p
                 const expr = inExpr.expr();
                 const exprType = traverseExpr(expr, traverseContext);
                 traverseContext.constraints.push({
-                    expression: expr.text,
+                    expression: expr.getText(),
                     type1: exprType,
                     type2: params.kind == 'FixedLengthParams' ? params.paramsType[paramIndex] : freshVar(params.paramType, params.paramType),
                 })
@@ -1955,12 +1955,12 @@ function walkFunctionParameters(simpleExprFunction: SimpleExprFunctionContext, p
             })
         return paramTypes;
     }
-    const exprList = simpleExprFunction.functionCall().exprList()?.expr();
+    const exprList = simpleExprFunction.functionCall().exprList()?.expr_list();
     if (exprList) {
         const paramTypes = exprList.map((inExpr, paramIndex) => {
             const inSumExprType = traverseExpr(inExpr, traverseContext);
             traverseContext.constraints.push({
-                expression: inExpr.text,
+                expression: inExpr.getText(),
                 type1: params.kind == 'FixedLengthParams' ? params.paramsType[paramIndex] : freshVar(params.paramType, params.paramType),
                 type2: inSumExprType,
                 mostGeneralType: true
@@ -2019,10 +2019,10 @@ export function isMultipleRowResult(selectStatement: SelectStatementContext, fro
         if (!fromClause) {
             return false;
         }
-        if (querySpecs[0].selectItemList().childCount == 1) {
+        if (querySpecs[0].selectItemList().getChildCount() == 1) {
             const selectItem = <SelectItemContext>querySpecs[0].selectItemList().getChild(0);
             //if selectItem = * (TerminalNode) childCount = 0; selectItem.expr() throws exception
-            const expr = selectItem.childCount > 0 ? selectItem.expr() : null;
+            const expr = selectItem.getChildCount() > 0 ? selectItem.expr() : null;
             if (expr) {
                 //SUM, MAX... WITHOUT GROUP BY are multipleRowsResult = false
                 const groupBy = querySpecs[0].groupByClause();
@@ -2031,7 +2031,7 @@ export function isMultipleRowResult(selectStatement: SelectStatementContext, fro
                 }
             }
         }
-        const joinedTable = fromClause.tableReferenceList()?.tableReference()[0].joinedTable();
+        const joinedTable = fromClause.tableReferenceList()?.tableReference(0).joinedTable_list();
         if (joinedTable && joinedTable.length > 0) {
             return true;
         }
@@ -2048,10 +2048,10 @@ export function isMultipleRowResult(selectStatement: SelectStatementContext, fro
 
 function isLimitOne(selectStatement: SelectStatementContext) {
     const limitOptions = getLimitOptions(selectStatement);
-    if (limitOptions.length == 1 && limitOptions[0].text == '1') {
+    if (limitOptions.length == 1 && limitOptions[0].getText() == '1') {
         return true;
     }
-    if (limitOptions.length == 2 && limitOptions[1].text == '1') {
+    if (limitOptions.length == 2 && limitOptions[1].getText() == '1') {
         return true;
     }
     return false;
@@ -2080,7 +2080,7 @@ export function verifyMultipleResult2(exprContext: ExprContext, fromColumns: Col
         return true;
     }
     if (exprContext instanceof ExprAndContext) {
-        const oneIsSingleResult = exprContext.expr().some(expr => verifyMultipleResult2(expr, fromColumns) == false)
+        const oneIsSingleResult = exprContext.expr_list().some(expr => verifyMultipleResult2(expr, fromColumns) == false)
         return oneIsSingleResult == false;
     }
     // if (exprContext instanceof ExprXorContext) {
@@ -2096,7 +2096,7 @@ export function verifyMultipleResult2(exprContext: ExprContext, fromColumns: Col
 function isUniqueKeyComparation(compare: BoolPriContext | PredicateContext, fromColumns: ColumnDef[]) {
     const tokens = getSimpleExpressions(compare);
     if (tokens.length == 1 && tokens[0] instanceof SimpleExprColumnRefContext) {
-        const fieldName = splitName(tokens[0].text);
+        const fieldName = splitName(tokens[0].getText());
         const col = findColumn(fieldName, fromColumns);
         if (col.columnKey == 'PRI' || col.columnKey == 'UNI') { //TODO - UNIQUE
             return true; //isUniqueKeyComparation = true

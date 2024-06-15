@@ -28,7 +28,7 @@ export function verifyMultipleResult(exprContext: ExprContext, fromColumns: Colu
         return true;
     }
     if (exprContext instanceof ExprAndContext) {
-        const oneIsSingleResult = exprContext.expr().some(expr => verifyMultipleResult(expr, fromColumns) == false)
+        const oneIsSingleResult = exprContext.expr_list().some(expr => verifyMultipleResult(expr, fromColumns) == false)
         return oneIsSingleResult == false;
     }
     // if (exprContext instanceof ExprXorContext) {
@@ -44,7 +44,7 @@ export function verifyMultipleResult(exprContext: ExprContext, fromColumns: Colu
 function isUniqueKeyComparation(compare: BoolPriContext | PredicateContext, fromColumns: ColumnDef[]) {
     const tokens = getSimpleExpressions(compare);
     if (tokens.length == 1 && tokens[0] instanceof SimpleExprColumnRefContext) {
-        const fieldName = splitName(tokens[0].text);
+        const fieldName = splitName(tokens[0].getText());
         const col = findColumn(fieldName, fromColumns);
         if (col.columnKey == 'PRI' || col.columnKey == 'UNI') { //TODO - UNIQUE
             return true; //isUniqueKeyComparation = true

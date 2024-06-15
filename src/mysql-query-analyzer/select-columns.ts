@@ -1,6 +1,5 @@
-import { ParserRuleContext, RuleContext } from "antlr4ts";
-import { ParseTree, TerminalNode } from "antlr4ts/tree";
-import { Interval } from "antlr4ts/misc/Interval";
+import { ParserRuleContext } from "@wsporto/ts-mysql-parser";
+import { ParseTree } from "@wsporto/ts-mysql-parser";
 
 import {
     JoinedTableContext, SimpleExprLiteralContext, SimpleExprColumnRefContext, SimpleExprListContext, SimpleExprVariableContext,
@@ -53,14 +52,14 @@ export function selectAllColumns(tablePrefix: string, fromColumns: ColumnDef[]) 
 }
 
 export function getColumnName(selectItem: SelectItemContext) {
-    const alias = selectItem.selectAlias()?.identifier()?.text;
+    const alias = selectItem.selectAlias()?.identifier()?.getText();
     if (alias) {
         return alias;
     }
     const tokens = getSimpleExpressions(selectItem);
     let columnName = extractOriginalSql(selectItem.expr()!)!; //TODO VERIFICAR NULL
     if (tokens.length == 1 && tokens[0] instanceof SimpleExprColumnRefContext) {
-        return splitName(tokens[0].text).name;
+        return splitName(tokens[0].getText()).name;
     }
     return columnName;
 }
@@ -68,7 +67,7 @@ export function getColumnName(selectItem: SelectItemContext) {
 export function extractFieldsFromUsingClause(joinedTableContext: JoinedTableContext): string[] {
     const usingFieldsClause = joinedTableContext.identifierListWithParentheses()?.identifierList();
     if (usingFieldsClause) {
-        return usingFieldsClause.text.split(',').map(field => field.trim());
+        return usingFieldsClause.getText().split(',').map(field => field.trim());
     }
     return [];
 }
@@ -255,10 +254,9 @@ export function findColumnOrNull(fieldName: FieldName, columns: ColumnDef[]): Co
 
 export function extractOriginalSql(rule: ParserRuleContext) {
 
-    const startIndex = rule.start.startIndex;
-    const stopIndex = rule.stop?.stopIndex || startIndex;
-    const interval = new Interval(startIndex, stopIndex);
-    const result = rule.start.inputStream?.getText(interval);
+    const startIndex = rule.start.start;
+    const stopIndex = rule.stop?.stop || startIndex;
+    const result = rule.start.getInputStream()?.getText(startIndex, stopIndex);
     return result;
 }
 
@@ -267,14 +265,14 @@ type Expr = {
     isSubQuery: boolean;
 }
 
-export function getExpressions(ctx: RuleContext, exprType: any): Expr[] {
+export function getExpressions(ctx: ParserRuleContext, exprType: any): Expr[] {
 
     const tokens: Expr[] = [];
     collectExpr(tokens, ctx, exprType);
     return tokens;
 }
 
-function collectExpr(tokens: Expr[], parent: ParseTree, exprType: any, isSubQuery = false) {
+function collectExpr(tokens: Expr[], parent: ParserRuleContext, exprType: any, isSubQuery = false) {
 
     if (parent instanceof exprType) {
         tokens.push({
@@ -283,9 +281,9 @@ function collectExpr(tokens: Expr[], parent: ParseTree, exprType: any, isSubQuer
         });
     }
 
-    for (let i = 0; i < parent.childCount; i++) {
+    for (let i = 0; i < parent.getChildCount(); i++) {
         const child = parent.getChild(i);
-        if (!(child instanceof TerminalNode)) {
+        if (child instanceof ParserRuleContext) {
             collectExpr(tokens, child, exprType, (isSubQuery || child instanceof SimpleExprSubQueryContext));
         }
     }
@@ -299,9 +297,9 @@ export type ExpressionAndOperator = {
 export function getTopLevelAndExpr(expr: ExprContext, all: ExpressionAndOperator[]) {
 
     if (expr instanceof ExprAndContext || expr instanceof ExprXorContext || expr instanceof ExprOrContext) {
-        const exprLeft = expr.expr()[0];
+        const exprLeft = expr.expr(0);
         getTopLevelAndExpr(exprLeft, all);
-        const exprRight = expr.expr()[1];
+        const exprRight = expr.expr(1);
         all.push({
             operator: 'AND',
             expr: exprRight
@@ -314,22 +312,22 @@ export function getTopLevelAndExpr(expr: ExprContext, all: ExpressionAndOperator
     }
 }
 
-export function getSimpleExpressions(ctx: RuleContext): ParseTree[] {
+export function getSimpleExpressions(ctx: ParserRuleContext): ParseTree[] {
 
-    const tokens: ParseTree[] = [];
+    const tokens: ParserRuleContext[] = [];
     collectSimpleExpr(tokens, ctx);
     return tokens;
 }
 
-function collectSimpleExpr(tokens: ParseTree[], parent: ParseTree) {
+function collectSimpleExpr(tokens: ParserRuleContext[], parent: ParserRuleContext) {
 
     if (isSimpleExpression(parent)) {
         tokens.push(parent);
     }
 
-    for (let i = 0; i < parent.childCount; i++) {
+    for (let i = 0; i < parent.getChildCount(); i++) {
         const child = parent.getChild(i);
-        if (!(child instanceof TerminalNode)) {
+        if ((child instanceof ParserRuleContext)) {
             collectSimpleExpr(tokens, child);
         }
     }

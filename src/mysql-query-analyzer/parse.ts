@@ -1,5 +1,4 @@
-import MySQLParser, { SqlMode, QueryContext, QuerySpecificationContext, SelectStatementContext, SubqueryContext, QueryExpressionParensContext, QueryExpressionBodyContext, InsertQueryExpressionContext, SelectItemContext, SumExprContext, SimpleExprWindowingFunctionContext, WindowingClauseContext, FunctionCallContext } from '@wsporto/ts-mysql-parser';
-import { ParseTree, TerminalNode } from "antlr4ts/tree";
+import MySQLParser, { SqlMode, QueryContext, QuerySpecificationContext, SelectStatementContext, SubqueryContext, QueryExpressionParensContext, QueryExpressionBodyContext, InsertQueryExpressionContext, SelectItemContext, SumExprContext, SimpleExprWindowingFunctionContext, WindowingClauseContext, FunctionCallContext, ParseTree, TerminalNode, ParserRuleContext } from '@wsporto/ts-mysql-parser';
 import { getVarType } from './collect-constraints';
 import {
     ColumnSchema, TypeInferenceResult, QueryInfoResult, InsertInfoResult, UpdateInfoResult, DeleteInfoResult,
@@ -63,9 +62,9 @@ export function extractOrderByParameters(selectStatement: SelectStatementContext
     return selectStatement.queryExpression()
         ?.orderClause()
         ?.orderList()
-        .orderExpression()
-        .filter(orderExpr => orderExpr.text == '?')
-        .map(orderExpr => orderExpr.text) || [];
+        .orderExpression_list()
+        .filter(orderExpr => orderExpr.getText() == '?')
+        .map(orderExpr => orderExpr.getText()) || [];
 }
 
 export function extractLimitParameters(selectStatement: SelectStatementContext): ParameterInfo[] {
@@ -87,10 +86,10 @@ export function isMultipleRowResult(selectStatement: SelectStatementContext, fro
         if (!fromClause) {
             return false;
         }
-        if (querySpecs[0].selectItemList().childCount == 1) {
+        if (querySpecs[0].selectItemList().getChildCount() == 1) {
             const selectItem = <SelectItemContext>querySpecs[0].selectItemList().getChild(0);
             //if selectItem = * (TerminalNode) childCount = 0; selectItem.expr() throws exception
-            const expr = selectItem.childCount > 0 ? selectItem.expr() : null;
+            const expr = selectItem.getChildCount() > 0 ? selectItem.expr() : null;
             if (expr) {
                 //SUM, MAX... WITHOUT GROUP BY are multipleRowsResult = false
                 const groupBy = querySpecs[0].groupByClause();
@@ -99,7 +98,7 @@ export function isMultipleRowResult(selectStatement: SelectStatementContext, fro
                 }
             }
         }
-        const joinedTable = fromClause.tableReferenceList()?.tableReference()[0].joinedTable();
+        const joinedTable = fromClause.tableReferenceList()?.tableReference(0).joinedTable_list();
         if (joinedTable && joinedTable.length > 0) {
             return true;
         }
@@ -112,10 +111,10 @@ export function isMultipleRowResult(selectStatement: SelectStatementContext, fro
     }
 
     const limitOptions = getLimitOptions(selectStatement);
-    if (limitOptions.length == 1 && limitOptions[0].text == '1') {
+    if (limitOptions.length == 1 && limitOptions[0].getText() == '1') {
         return false;
     }
-    if (limitOptions.length == 2 && limitOptions[1].text == '1') {
+    if (limitOptions.length == 2 && limitOptions[1].getText() == '1') {
         return false;
     }
 
@@ -141,11 +140,11 @@ export function isSumExpressContext(selectItem: ParseTree) {
     }
     //https://dev.mysql.com/doc/refman/8.0/en/aggregate-functions.html
     if (selectItem instanceof FunctionCallContext) {
-        if (selectItem.qualifiedIdentifier()?.text.toLowerCase() == 'avg') {
+        if (selectItem.qualifiedIdentifier()?.getText().toLowerCase() == 'avg') {
             return true;
         }
     }
-    if (selectItem.childCount == 1) {
+    if (selectItem instanceof ParserRuleContext && selectItem.getChildCount() == 1) {
         return isSumExpressContext(selectItem.getChild(0));
     }
     return false;
@@ -155,7 +154,7 @@ export function getLimitOptions(selectStatement: SelectStatementContext) {
     return selectStatement.queryExpression()
         ?.limitClause()
         ?.limitOptions()
-        .limitOption() || []
+        .limitOption_list() || []
 }
 
 export function extractQueryInfo(sql: string, dbSchema: ColumnSchema[]): QueryInfoResult | InsertInfoResult | UpdateInfoResult | DeleteInfoResult {
@@ -280,13 +279,13 @@ export function getAllQuerySpecificationsFromSelectStatement(
     return result;
 }
 
-function collectAllQuerySpecifications(tree: ParseTree, result: QuerySpecificationContext[]) {
-    for (let i = 0; i < tree.childCount; i++) {
+function collectAllQuerySpecifications(tree: ParserRuleContext, result: QuerySpecificationContext[]) {
+    for (let i = 0; i < tree.getChildCount(); i++) {
         const child = tree.getChild(i);
         if (child instanceof QuerySpecificationContext) {
             result.push(child);
         }
-        else {
+        else if (child instanceof ParserRuleContext) {
             collectAllQuerySpecifications(child, result);
         }
     }

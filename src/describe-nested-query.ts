@@ -59,7 +59,7 @@ export function generateNestedInfo(queryContext: QueryContext, dbSchema: ColumnS
                 if (querySpec) {
                     const fromClause = querySpec.fromClause();
                     if (fromClause) {
-                        const tableReferences = fromClause.tableReferenceList()?.tableReference() || [];
+                        const tableReferences = fromClause.tableReferenceList()?.tableReference_list() || [];
                         const modelColumns = tableReferences.map(tableRef => {
                             const nestedResultInfo: NestedResultInfo = {
                                 relations: getResult(tableRef, dbSchema, columns)
@@ -98,7 +98,7 @@ function getRelations(tableRef: TableReferenceContext, dbSchema: ColumnSchema[],
         const tableName = getTableInfoFromTableFactor(tableFactor);
         parentList.push(tableName);
     }
-    const joinedTableList = tableRef.joinedTable();
+    const joinedTableList = tableRef.joinedTable_list();
     joinedTableList.forEach(joined => {
         const onClause = joined.expr();
         const tableName = getTableInfoFromTableJoinedTable(joined);
@@ -188,7 +188,7 @@ function getParentRelations(onExpr: ExprContext, currentRelation: TableName, par
     const tokens = getOnClauseTokens(onExpr);
     for (const token of tokens) {
         if (token instanceof SimpleExprColumnRefContext) {
-            const fieldName = splitName(token.text);
+            const fieldName = splitName(token.getText());
             if (fieldName.prefix != currentRelation.alias && fieldName.prefix != currentRelation.name) {
                 const ref = parentList.find(p => p.name == fieldName.prefix || p.alias == fieldName.prefix)!;
                 result.push(ref);
@@ -216,8 +216,8 @@ function getTableInfoFromTableJoinedTable(joinedTable: JoinedTableContext): Tabl
 function getTableInfoFromTableFactor(tableFactor: TableFactorContext): TableName {
     const singleTable = tableFactor.singleTable();
     if (singleTable) {
-        const table = singleTable.tableRef().text;
-        const tableAlias = singleTable?.tableAlias()?.identifier().text || '';
+        const table = singleTable.tableRef().getText();
+        const tableAlias = singleTable?.tableAlias()?.identifier().getText() || '';
         const asSymbol = singleTable?.tableAlias()?.AS_SYMBOL() != null;
         const tableName = splitName(table);
         const model: TableName = {
@@ -244,7 +244,7 @@ function verifyCardinality(expr: ExprContext, dbSchema: ColumnSchema[], tableNam
     for (const token of tokens) {
         if (token instanceof SimpleExprColumnRefContext) {
 
-            const fieldName = splitName(token.text);
+            const fieldName = splitName(token.getText());
             const column = findColumnSchema(tableName, fieldName.name, dbSchema);
             if (column != null && column.columnKey != 'PRI' && column.columnKey != 'UNI') {
                 return 'many';

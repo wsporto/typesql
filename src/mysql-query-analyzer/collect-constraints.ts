@@ -10,7 +10,7 @@ import { ColumnSchema, ColumnDef, TypeVar, Type, Constraint, SubstitutionHash, T
 import { findColumn, splitName } from "./select-columns";
 import { MySqlType, InferType } from "../mysql-mapping";
 import { unify } from "./unify";
-import { TerminalNode } from "antlr4ts/tree";
+import TerminalNode from "@wsporto/ts-mysql-parser";
 
 let counter = 0;
 export function freshVar(name: string, typeVar: InferType, table?: string, list?: true): TypeVar {
@@ -53,7 +53,7 @@ export type ExprOrDefault = ExprContext | TerminalNode;
 
 
 export function getInsertIntoTable(insertStatement: InsertStatementContext) {
-    const insertIntoTable = splitName(insertStatement.tableRef().text).name;
+    const insertIntoTable = splitName(insertStatement.tableRef().getText()).name;
     return insertIntoTable;
 }
 
@@ -63,10 +63,10 @@ export function getInsertColumns(insertStatement: InsertStatementContext, fromCo
     const insertFields = insertStatement.insertFromConstructor() ||
         insertStatement.insertQueryExpression();
 
-    const fields = insertFields?.fields()?.insertIdentifier().map(insertIdentifier => {
+    const fields = insertFields?.fields()?.insertIdentifier_list().map(insertIdentifier => {
         const colRef = insertIdentifier.columnRef();
         if (colRef) {
-            const fieldName = splitName(colRef.text);
+            const fieldName = splitName(colRef.getText());
             const column = findColumn(fieldName, fromColumns);
             return column;
 
@@ -84,8 +84,8 @@ export function getInsertColumns(insertStatement: InsertStatementContext, fromCo
 
 export function getDeleteColumns(deleteStatement: DeleteStatementContext, dbSchema: ColumnSchema[]): ColumnDef[] {
     //TODO - Use extractColumnsFromTableReferences
-    const tableNameStr = deleteStatement.tableRef()?.text!
-    const tableAlias = deleteStatement.tableAlias()?.text;
+    const tableNameStr = deleteStatement.tableRef()?.getText()!
+    const tableAlias = deleteStatement.tableAlias()?.getText();
     const tableName = splitName(tableNameStr).name;
     const columns = dbSchema
         .filter(col => col.table == tableName)
@@ -163,8 +163,8 @@ export function isDateLiteral(literal: string) {
 }
 
 export function getFunctionName(simpleExprFunction: SimpleExprFunctionContext) {
-    return simpleExprFunction.functionCall().pureIdentifier()?.text.toLowerCase()
-        || simpleExprFunction.functionCall().qualifiedIdentifier()?.text.toLowerCase();
+    return simpleExprFunction.functionCall().pureIdentifier()?.getText().toLowerCase()
+        || simpleExprFunction.functionCall().qualifiedIdentifier()?.getText().toLowerCase();
 }
 
 export type VariableLengthParams = {
