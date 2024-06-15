@@ -391,15 +391,25 @@ function traverseQueryExpression(queryExpression: QueryExpressionContext, traver
         traverseWithClause(withClause, traverseContext);
     }
 
+    let exprResult;
     const queryExpressionBody = queryExpression.queryExpressionBody();
     if (queryExpressionBody) {
-        return traverseQueryExpressionBody(queryExpressionBody, traverseContext, cte, recursiveNames)
+        exprResult = traverseQueryExpressionBody(queryExpressionBody, traverseContext, cte, recursiveNames)
     }
     const queryExpressionParens = queryExpression.queryExpressionParens();
     if (queryExpressionParens) {
-        return traverseQueryExpressionParens(queryExpressionParens, traverseContext, cte, recursiveNames);
+        exprResult = traverseQueryExpressionParens(queryExpressionParens, traverseContext, cte, recursiveNames);
     }
-    throw Error("walkQueryExpression");
+    const orderByClause = queryExpression.orderClause();
+    if (orderByClause) {
+        if (orderByClause.getText().toLowerCase() !== 'orderby?') {
+            orderByClause.orderList().orderExpression_list().forEach(orderByExpr => {
+                traverseExpr(orderByExpr.expr(), { ...traverseContext, fromColumns: exprResult!.fromColumns || [] });
+            });
+        }
+
+    }
+    return exprResult!;
 }
 
 function traverseQueryExpressionParens(queryExpressionParens: QueryExpressionParensContext, traverseContext: TraverseContext, cte?: string, recursiveNames?: string[]): QuerySpecificationResult {

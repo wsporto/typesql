@@ -1560,6 +1560,41 @@ describe('Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('select with order by function', async () => {
+        const sql = `
+        select name from mytable2 order by concat(name, ?)
+        `;
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'name',
+                    type: 'varchar',
+                    notNull: false,
+                    table: 'mytable2'
+                }
+            ],
+            //shouldn't include order by columns because there is no parameters on the order by clause
+            //orderByColumns: ['id', 'value'],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'varchar',
+                    notNull: true,
+                }
+            ]
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it('remove the ordering column from select', async () => {
         const sql = `
         select value from (
