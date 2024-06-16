@@ -1,4 +1,4 @@
-import { Select_stmtContext, Sql_stmtContext, ExprContext, Table_or_subqueryContext, Result_columnContext, Insert_stmtContext, Column_nameContext, Update_stmtContext, Delete_stmtContext, Join_constraintContext, Table_nameContext, Join_operatorContext, Returning_clauseContext } from "@wsporto/ts-mysql-parser/dist/sqlite";
+import { Select_stmtContext, Sql_stmtContext, ExprContext, Table_or_subqueryContext, Result_columnContext, Insert_stmtContext, Column_nameContext, Update_stmtContext, Delete_stmtContext, Join_constraintContext, Table_nameContext, Join_operatorContext, Returning_clauseContext, Select_coreContext } from "@wsporto/ts-mysql-parser/dist/sqlite";
 import { ColumnDef, FieldName, TraverseContext, TypeAndNullInfer, TypeAndNullInferParam } from "../mysql-query-analyzer/types";
 import { filterColumns, findColumn, findColumnSchema, includeColumn, splitName } from "../mysql-query-analyzer/select-columns";
 import { createColumnType, freshVar } from "../mysql-query-analyzer/collect-constraints";
@@ -70,95 +70,7 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
     const select_coreList = select_stmt.select_core_list();
 
     const querySpecResult = select_coreList.map(select_core => {
-        const columnsResult: ColumnDef[] = [];
-        const listType: TypeAndNullInfer[] = [];
-
-        const table_or_subquery = select_core.table_or_subquery_list();
-        if (table_or_subquery) {
-            const fields = traverse_table_or_subquery(table_or_subquery, null, null, traverseContext);
-            columnsResult.push(...fields);
-        }
-        const join_clause = select_core.join_clause();
-        if (join_clause) {
-            const join_table_or_subquery = join_clause.table_or_subquery_list();
-            const join_constraint_list = join_clause.join_constraint_list();
-            const join_operator_list = join_clause.join_operator_list();
-            const fields = traverse_table_or_subquery(join_table_or_subquery, join_constraint_list, join_operator_list, traverseContext);
-            columnsResult.push(...fields);
-        }
-
-        const result_column = select_core.result_column_list();
-        const fromColumns = subQuery ? traverseContext.fromColumns.concat(columnsResult) : columnsResult;
-
-        result_column.forEach(result_column => {
-            if (result_column.STAR()) {
-                const tableName = result_column.table_name()?.getText();
-                columnsResult.forEach(col => {
-                    if (!tableName || includeColumn(col, tableName)) {
-                        const columnType = createColumnType(col);
-                        listType.push({
-                            name: columnType.name,
-                            type: columnType,
-                            notNull: col.notNull,
-                            table: col.tableAlias || col.table
-                        });
-                    }
-
-                })
-            }
-
-            const expr = result_column.expr();
-            const alias = result_column.column_alias()?.getText();
-            if (expr) {
-
-                const exprType = traverse_expr(expr, { ...traverseContext, fromColumns: fromColumns });
-                if (alias) {
-                    traverseContext.relations.filter(relation => relation.joinColumn == exprType.name && (relation.name == exprType.table || relation.alias == exprType.table)).forEach(relation => {
-                        relation.joinColumn = alias;
-                    });
-                }
-
-                if (exprType.type.kind == 'TypeVar') {
-                    if (alias) {
-                        exprType.name = alias;
-                    }
-                    listType.push(exprType);
-                }
-            }
-        })
-
-        const whereExpr = select_core._whereExpr;
-        if (whereExpr) {
-            traverse_expr(whereExpr, { ...traverseContext, fromColumns: fromColumns });
-        }
-        const groupByExprList = select_core._groupByExpr || [];
-        groupByExprList.forEach(groupByExpr => {
-            traverse_expr(groupByExpr, { ...traverseContext, fromColumns: fromColumns });
-        })
-
-        const havingExpr = select_core._havingExpr;
-        if (havingExpr) {
-            const newColumns = listType.map(selectField => {
-                const col: ColumnDef = {
-                    columnName: selectField.name,
-                    table: selectField.table,
-                    columnType: selectField.type,
-                    notNull: selectField.notNull,
-                    columnKey: ""
-                }
-                return col;
-            })
-            //select have precedence: newColumns.concat(fromColumns) 
-            traverse_expr(havingExpr, { ...traverseContext, fromColumns: newColumns.concat(fromColumns) });
-        }
-        const querySpecification: QuerySpecificationResult = {
-            columns: listType.map(col => ({
-                ...col,
-                notNull: col.notNull || isNotNull(col.name, whereExpr) || isNotNull(col.name, havingExpr),
-            })),
-            fromColumns: columnsResult //TODO - return isMultipleRowResult instead
-        }
-        return querySpecification;
+        return traverse_select_core(select_core, traverseContext, subQuery)
     });
 
     const mainQuery = querySpecResult[0];
@@ -222,6 +134,98 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
     }
 
     return selectResult;
+}
+
+function traverse_select_core(select_core: Select_coreContext, traverseContext: TraverseContext, subQuery = false) {
+    const columnsResult: ColumnDef[] = [];
+    const listType: TypeAndNullInfer[] = [];
+
+    const table_or_subquery = select_core.table_or_subquery_list();
+    if (table_or_subquery) {
+        const fields = traverse_table_or_subquery(table_or_subquery, null, null, traverseContext);
+        columnsResult.push(...fields);
+    }
+    const join_clause = select_core.join_clause();
+    if (join_clause) {
+        const join_table_or_subquery = join_clause.table_or_subquery_list();
+        const join_constraint_list = join_clause.join_constraint_list();
+        const join_operator_list = join_clause.join_operator_list();
+        const fields = traverse_table_or_subquery(join_table_or_subquery, join_constraint_list, join_operator_list, traverseContext);
+        columnsResult.push(...fields);
+    }
+
+    const result_column = select_core.result_column_list();
+    const fromColumns = subQuery ? traverseContext.fromColumns.concat(columnsResult) : columnsResult;
+
+    result_column.forEach(result_column => {
+        if (result_column.STAR()) {
+            const tableName = result_column.table_name()?.getText();
+            columnsResult.forEach(col => {
+                if (!tableName || includeColumn(col, tableName)) {
+                    const columnType = createColumnType(col);
+                    listType.push({
+                        name: columnType.name,
+                        type: columnType,
+                        notNull: col.notNull,
+                        table: col.tableAlias || col.table
+                    });
+                }
+
+            })
+        }
+
+        const expr = result_column.expr();
+        const alias = result_column.column_alias()?.getText();
+        if (expr) {
+
+            const exprType = traverse_expr(expr, { ...traverseContext, fromColumns: fromColumns });
+            if (alias) {
+                traverseContext.relations.filter(relation => relation.joinColumn == exprType.name && (relation.name == exprType.table || relation.alias == exprType.table)).forEach(relation => {
+                    relation.joinColumn = alias;
+                });
+            }
+
+            if (exprType.type.kind == 'TypeVar') {
+                if (alias) {
+                    exprType.name = alias;
+                }
+                listType.push(exprType);
+            }
+        }
+    })
+
+    const whereExpr = select_core._whereExpr;
+    if (whereExpr) {
+        traverse_expr(whereExpr, { ...traverseContext, fromColumns: fromColumns });
+    }
+    const groupByExprList = select_core._groupByExpr || [];
+    groupByExprList.forEach(groupByExpr => {
+        traverse_expr(groupByExpr, { ...traverseContext, fromColumns: fromColumns });
+    })
+
+    const havingExpr = select_core._havingExpr;
+    if (havingExpr) {
+        const newColumns = listType.map(selectField => {
+            const col: ColumnDef = {
+                columnName: selectField.name,
+                table: selectField.table,
+                columnType: selectField.type,
+                notNull: selectField.notNull,
+                columnKey: ""
+            }
+            return col;
+        })
+        //select have precedence: newColumns.concat(fromColumns) 
+        traverse_expr(havingExpr, { ...traverseContext, fromColumns: newColumns.concat(fromColumns) });
+    }
+    const querySpecification: QuerySpecificationResult = {
+        columns: listType.map(col => ({
+            ...col,
+            notNull: col.notNull || isNotNull(col.name, whereExpr) || isNotNull(col.name, havingExpr),
+        })),
+        fromColumns: columnsResult //TODO - return isMultipleRowResult instead
+    }
+    return querySpecification;
 }
 
 function traverse_table_or_subquery(
