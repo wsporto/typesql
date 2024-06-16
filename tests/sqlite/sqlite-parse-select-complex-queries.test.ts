@@ -522,6 +522,38 @@ describe('sqlite-parse-select-complex-queries', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('WITH RECURSIVE cte AS (SELECT 1 AS n ...)', () => {
+        const sql = `
+        WITH RECURSIVE cte AS
+        (
+            SELECT 1 AS n
+            UNION ALL
+            SELECT n + 1 FROM cte WHERE n < 3
+        )
+        SELECT * FROM cte
+        `
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'n',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: 'cte'
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it('select id, :value from (select id from mytable1 t where t.value = :value) t', () => {
         const sql = `select id, :value as value from (
             select id from mytable1 t where t.value = :value

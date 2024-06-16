@@ -60,7 +60,7 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
             select_stmt_result.columns.forEach((col, index) => {
                 traverseContext.withSchema.push({
                     table: table_name.getText(),
-                    columnName: recursive ? recursiveNames[index] : col.name,
+                    columnName: recursive ? recursiveNames[index] ?? col.name : col.name,
                     columnType: col.type,
                     columnKey: '',
                     notNull: col.notNull
@@ -73,7 +73,7 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
     const mainQueryResult = traverse_select_core(mainSelect, traverseContext, subQuery, recursive, recursiveNames);
 
     unionSelect.forEach(select_core => {
-        const fromColumns = recursive ? mainQueryResult.columns.map((col, index) => mapTypeAndNullInferToColumnDef(col, recursiveNames[index]!)) : traverseContext.fromColumns;
+        const fromColumns = recursive ? mainQueryResult.columns.map((col, index) => mapTypeAndNullInferToColumnDef(col, recursiveNames[index])) : traverseContext.fromColumns;
         const unionResult = traverse_select_core(select_core, { ...traverseContext, fromColumns }, subQuery, recursive);
         unionResult.columns.forEach((col, colIndex) => {
             mainQueryResult.columns[colIndex].table = '';
@@ -135,9 +135,9 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
     return selectResult;
 }
 
-function mapTypeAndNullInferToColumnDef(col: TypeAndNullInfer, name: string): ColumnDef {
+function mapTypeAndNullInferToColumnDef(col: TypeAndNullInfer, name?: string): ColumnDef {
     return {
-        columnName: name,
+        columnName: name ?? col.name,
         columnType: col.type,
         notNull: col.notNull,
         columnKey: '',
