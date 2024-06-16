@@ -458,6 +458,38 @@ describe('sqlite-parse-select-complex-queries', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('WITH RECURSIVE seq (n)', () => {
+        const sql = `
+        WITH RECURSIVE seq (n) AS
+        (
+            SELECT 1
+            UNION ALL
+            SELECT n + 1 FROM seq WHERE n < 5
+        )
+        SELECT * FROM seq
+        `
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'n',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: 'seq'
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it('select id, :value from (select id from mytable1 t where t.value = :value) t', () => {
         const sql = `select id, :value as value from (
             select id from mytable1 t where t.value = :value

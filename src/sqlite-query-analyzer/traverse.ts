@@ -47,18 +47,20 @@ export function tryTraverse_Sql_stmtContext(sql_stmt: Sql_stmtContext, traverseC
 
 }
 
-function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: TraverseContext, subQuery = false): SelectResult {
+function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: TraverseContext, subQuery = false, recursive: boolean = false, recursiveNames: string[] = []): SelectResult {
     const common_table_stmt = select_stmt.common_table_stmt();
     if (common_table_stmt) {
+        const recursive = common_table_stmt.RECURSIVE_() != null;
         const common_table_expression = common_table_stmt.common_table_expression_list()
         common_table_expression.forEach(common_table_expression => {
             const table_name = common_table_expression.table_name();
+            const recursiveNames = common_table_expression.column_name_list().map(column_name => column_name.getText());
             const select_stmt = common_table_expression.select_stmt();
-            const select_stmt_result = traverse_select_stmt(select_stmt, traverseContext);
-            select_stmt_result.columns.forEach(col => {
+            const select_stmt_result = traverse_select_stmt(select_stmt, traverseContext, subQuery, recursive, recursiveNames);
+            select_stmt_result.columns.forEach((col, index) => {
                 traverseContext.withSchema.push({
                     table: table_name.getText(),
-                    columnName: col.name,
+                    columnName: recursive ? recursiveNames[index] : col.name,
                     columnType: col.type,
                     columnKey: '',
                     notNull: col.notNull
@@ -67,29 +69,26 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
         })
     }
 
-    const select_coreList = select_stmt.select_core_list();
+    const [mainSelect, ...unionSelect] = select_stmt.select_core_list();
+    const mainQueryResult = traverse_select_core(mainSelect, traverseContext, subQuery, recursive, recursiveNames);
 
-    const querySpecResult = select_coreList.map(select_core => {
-        return traverse_select_core(select_core, traverseContext, subQuery)
-    });
-
-    const mainQuery = querySpecResult[0];
-    for (let queryIndex = 1; queryIndex < querySpecResult.length; queryIndex++) {//UNION
-        const unionQuery = querySpecResult[queryIndex];
-        unionQuery.columns.forEach((col, colIndex) => {
-            mainQuery.columns[colIndex].table = '';
+    unionSelect.forEach(select_core => {
+        const fromColumns = recursive ? mainQueryResult.columns.map((col, index) => mapTypeAndNullInferToColumnDef(col, recursiveNames[index]!)) : traverseContext.fromColumns;
+        const unionResult = traverse_select_core(select_core, { ...traverseContext, fromColumns }, subQuery, recursive);
+        unionResult.columns.forEach((col, colIndex) => {
+            mainQueryResult.columns[colIndex].table = '';
             traverseContext.constraints.push({
                 expression: 'UNION',
-                type1: mainQuery.columns[colIndex].type,
+                type1: mainQueryResult.columns[colIndex].type,
                 type2: col.type
             })
         })
-    }
+    });
 
     const selectResult: SelectResult = {
         queryType: 'Select',
-        columns: mainQuery.columns,
-        multipleRowsResult: isMultipleRowResult(select_stmt, mainQuery.fromColumns),
+        columns: mainQueryResult.columns,
+        multipleRowsResult: isMultipleRowResult(select_stmt, mainQueryResult.fromColumns),
         relations: traverseContext.relations
     }
     const order_by_stmt = select_stmt.order_by_stmt();
@@ -102,11 +101,11 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
                 hasOrderByParameter = true;
             }
             else {
-                traverse_expr(expr, { ...traverseContext, fromColumns: mainQuery.fromColumns });
+                traverse_expr(expr, { ...traverseContext, fromColumns: mainQueryResult.fromColumns });
             }
         })
         if (hasOrderByParameter) {
-            const orderByColumns = getOrderByColumns(mainQuery.fromColumns, mainQuery.columns);
+            const orderByColumns = getOrderByColumns(mainQueryResult.fromColumns, mainQueryResult.columns);
             selectResult.orderByColumns = orderByColumns;
         }
     }
@@ -136,7 +135,18 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
     return selectResult;
 }
 
-function traverse_select_core(select_core: Select_coreContext, traverseContext: TraverseContext, subQuery = false) {
+function mapTypeAndNullInferToColumnDef(col: TypeAndNullInfer, name: string): ColumnDef {
+    return {
+        columnName: name,
+        columnType: col.type,
+        notNull: col.notNull,
+        columnKey: '',
+        table: col.table,
+        tableAlias: col.table
+    }
+}
+
+function traverse_select_core(select_core: Select_coreContext, traverseContext: TraverseContext, subQuery = false, recursive: boolean = false, recursiveName?: string[]) {
     const columnsResult: ColumnDef[] = [];
     const listType: TypeAndNullInfer[] = [];
 
@@ -155,7 +165,7 @@ function traverse_select_core(select_core: Select_coreContext, traverseContext: 
     }
 
     const result_column = select_core.result_column_list();
-    const fromColumns = subQuery ? traverseContext.fromColumns.concat(columnsResult) : columnsResult;
+    const fromColumns = subQuery || recursive ? traverseContext.fromColumns.concat(columnsResult) : columnsResult;
 
     result_column.forEach(result_column => {
         if (result_column.STAR()) {
