@@ -418,6 +418,26 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
             table: functionType.table || ''
         };
     }
+    if (function_name == 'length') {
+        const functionType = freshVar(expr.getText(), 'INTEGER');
+        const paramExpr = expr.expr(0);
+        const paramType = traverse_expr(paramExpr, traverseContext);
+        traverseContext.constraints.push({
+            expression: expr.getText(),
+            type1: freshVar(expr.getText(), '?'), //str or blob
+            type2: paramType.type
+        })
+        if (paramType.type.kind == 'TypeVar') {
+            functionType.table = paramType.table
+        }
+
+        return {
+            name: functionType.name,
+            type: functionType,
+            notNull: false,
+            table: functionType.table || ''
+        };
+    }
     if (function_name == 'group_concat') {
         expr.expr_list().forEach(paramExpr => {
             const param1Type = traverse_expr(paramExpr, traverseContext);

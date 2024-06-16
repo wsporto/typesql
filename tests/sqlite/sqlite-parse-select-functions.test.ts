@@ -730,4 +730,35 @@ describe('sqlite-parse-select-functions', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     });
+
+    it(`SELECT LENGTH(concat(name, ?)) FROM mytable2`, () => {
+        const sql = `SELECT LENGTH(concat(name, ?)) as result FROM mytable2`;
+        const actual = parseSql(sql, sqliteDbSchema);
+
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'result',
+                    type: 'INTEGER',
+                    notNull: false,
+                    table: ''
+                }
+            ],
+            parameters: [
+                {
+                    columnType: 'TEXT',
+                    name: 'param1',
+                    notNull: false
+                }
+            ]
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
 });
