@@ -490,6 +490,38 @@ describe('sqlite-parse-select-complex-queries', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('WITH RECURSIVE conc (a)', () => {
+        const sql = `
+        WITH RECURSIVE conc (a) AS
+        (
+            SELECT 'a'
+            UNION ALL
+            SELECT concat(a, 'a') FROM conc WHERE LENGTH(a) < 5
+        )
+        SELECT * FROM conc
+        `
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'a',
+                    type: 'TEXT',
+                    notNull: true,
+                    table: 'conc'
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it('select id, :value from (select id from mytable1 t where t.value = :value) t', () => {
         const sql = `select id, :value as value from (
             select id from mytable1 t where t.value = :value
