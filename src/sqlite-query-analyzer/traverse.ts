@@ -517,7 +517,7 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         };
     }
     if (function_name == 'date' || function_name == 'time' || function_name == 'datetime') {
-        const functionType = freshVar(expr.getText(), 'TEXT');
+        const functionType = freshVar(expr.getText(), 'DATE');
         const paramExpr = expr.expr(0);
         const paramType = traverse_expr(paramExpr, traverseContext);
         paramType.notNull = true;
@@ -742,23 +742,31 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         };
     }
     if (expr.PLUS() || expr.MINUS()) {
-        const returnType = freshVar(expr.getText(), 'REAL');
+        const returnType = freshVar(expr.getText(), 'REAL'); //NUMERIC
         const exprLeft = expr.expr(0);
         const exprRight = expr.expr(1);
         const typeLeft = traverse_expr(exprLeft, traverseContext);
         const typeRight = traverse_expr(exprRight, traverseContext);
+        typeLeft.table = '';
+        typeRight.table = '';
         traverseContext.constraints.push({
             expression: exprLeft.getText(),
             type1: returnType,
             type2: typeLeft.type
         })
-        traverseContext.constraints.push({
-            expression: exprRight.getText(),
-            type1: returnType,
-            type2: typeRight.type
-        })
+        const isDateFunctionContext = (expr.parentCtx instanceof ExprContext)
+            && expr.parentCtx.function_name()?.getText().toLowerCase() == 'date';
+
+        if (!isDateFunctionContext) {
+            traverseContext.constraints.push({
+                expression: exprRight.getText(),
+                type1: returnType,
+                type2: typeRight.type
+            })
+        }
+
         return {
-            ...typeRight,
+            ...typeLeft,
             notNull: typeLeft.notNull && typeRight.notNull
         };
     }

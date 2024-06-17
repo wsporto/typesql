@@ -276,8 +276,8 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
     functionArguments += queryType == 'Update' ? `, data: ${dataTypeName}` : '';
     functionArguments += tsDescriptor.parameters.length > 0 || generateOrderBy ? ', params: ' + paramsTypeName : '';
 
-    const allParameters = (tsDescriptor.data?.map((param) => toParamValue('data', param)) || [])
-        .concat(tsDescriptor.parameters.map(param => toParamValue('params', param)));
+    const allParameters = (tsDescriptor.data?.map((param) => fromDriver('data', param)) || [])
+        .concat(tsDescriptor.parameters.map(param => fromDriver('params', param)));
 
     const queryParams = allParameters.length > 0 ? '[' + allParameters.join(', ') + ']' : '';
 
@@ -372,7 +372,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
             writer.write(`const result: ${resultTypeName} = `).block(() => {
                 tsDescriptor.columns.forEach((col, index) => {
                     const separator = index < tsDescriptor.columns.length - 1 ? ',' : ''
-                    writer.writeLine(`${col.name}: data[${index}]${separator}`);
+                    writer.writeLine(`${col.name}: ${toDriver(`data[${index}]`, col)}${separator}`);
                 })
             })
             writer.writeLine('return result;');
@@ -571,7 +571,14 @@ function writeExecutDeleteCrudBlock(client: SQLiteClient, tableName: string, idC
     }
 }
 
-function toParamValue(variableName: string, param: TsFieldDescriptor): string {
+function toDriver(variableData: string, param: TsFieldDescriptor) {
+    if (param.tsType == 'Date') {
+        return `new Date(${variableData})`;
+    }
+    return variableData;
+}
+
+function fromDriver(variableName: string, param: TsFieldDescriptor): string {
     if (param.tsType == 'Date') {
         return `${variableName}.${param.name}.toISOString()`;
     }

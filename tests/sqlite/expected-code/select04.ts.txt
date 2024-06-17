@@ -6,11 +6,12 @@ export type Select04Params = {
 
 export type Select04Result = {
 	text_column?: string;
+	date?: Date;
 }
 
 export function select04(db: Database, params: Select04Params): Select04Result[] {
 	const sql = `
-	SELECT text_column FROM all_types WHERE date(text_column) = date(?)
+	SELECT text_column, date(text_column) as date FROM all_types WHERE date(text_column) = date(?)
 	`
 	return db.prepare(sql)
 		.raw(true)
@@ -20,7 +21,8 @@ export function select04(db: Database, params: Select04Params): Select04Result[]
 
 function mapArrayToSelect04Result(data: any) {
 	const result: Select04Result = {
-		text_column: data[0]
+		text_column: data[0],
+		date: new Date(data[1])
 	}
 	return result;
 }

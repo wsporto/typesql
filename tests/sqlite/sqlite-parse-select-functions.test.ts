@@ -517,13 +517,13 @@ describe('sqlite-parse-select-functions', () => {
                 },
                 {
                     columnName: `date('2013-05-21')`,
-                    type: 'TEXT',
+                    type: 'DATE',
                     notNull: false, //invalid date
                     table: ''
                 },
                 {
                     columnName: `time('2013-05-21')`,
-                    type: 'TEXT',
+                    type: 'DATE',
                     notNull: false, //invalid date
                     table: ''
                 }
@@ -554,13 +554,13 @@ describe('sqlite-parse-select-functions', () => {
                 },
                 {
                     columnName: `date(?)`,
-                    type: 'TEXT',
+                    type: 'DATE',
                     notNull: false, //invalid date
                     table: ''
                 },
                 {
                     columnName: `time(?)`,
-                    type: 'TEXT',
+                    type: 'DATE',
                     notNull: false, //invalid date
                     table: ''
                 }
@@ -582,6 +582,35 @@ describe('sqlite-parse-select-functions', () => {
                     notNull: true
                 }
             ]
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    /**
+     * The type affinity for DATE is NUMERIC.
+     * To insert into a DATE column you must use julianday(?)
+     */
+    it(`SELECT date(date_column + '+1 day') as result FROM all_types`, () => {
+        const sql = `SELECT date(date_column + '+1 day') as result FROM all_types`;
+
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: `result`,
+                    type: 'DATE',
+                    notNull: false, //invalid date
+                    table: ''
+                }
+            ],
+            parameters: []
 
         }
         if (isLeft(actual)) {
