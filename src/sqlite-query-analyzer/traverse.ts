@@ -533,6 +533,40 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
             table: functionType.table || ''
         };
     }
+    if (function_name == 'julianday') {
+        const functionType = freshVar(expr.getText(), 'REAL');
+        const paramExpr = expr.expr(0);
+        const notNull = paramExpr.getText().toLowerCase() == `'now'` ? true : false;
+        const paramType = traverse_expr(paramExpr, traverseContext);
+        traverseContext.constraints.push({
+            expression: paramExpr.getText(),
+            type1: freshVar(paramExpr.getText(), 'DATE'),
+            type2: paramType.type
+        })
+        return {
+            name: functionType.name,
+            type: functionType,
+            notNull,
+            table: functionType.table || ''
+        };
+    }
+    if (function_name == 'unixepoch') {
+        const functionType = freshVar(expr.getText(), 'INTEGER');
+        const paramExpr = expr.expr(0);
+        const notNull = paramExpr.getText().toLowerCase() == `'now'` ? true : false;
+        const paramType = traverse_expr(paramExpr, traverseContext);
+        traverseContext.constraints.push({
+            expression: paramExpr.getText(),
+            type1: freshVar(paramExpr.getText(), 'DATE'),
+            type2: paramType.type
+        })
+        return {
+            name: functionType.name,
+            type: functionType,
+            notNull,
+            table: functionType.table || ''
+        };
+    }
     if (function_name == 'ifnull') {
         const functionType = freshVar(expr.getText(), '?');
         const paramTypes = expr.expr_list().map(paramExpr => {

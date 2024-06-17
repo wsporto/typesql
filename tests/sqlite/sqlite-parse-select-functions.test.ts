@@ -619,6 +619,118 @@ describe('sqlite-parse-select-functions', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it(`SELECT julianday('now') as result`, () => {
+        const sql = `SELECT julianday('now') as result`;
+
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: false,
+            columns: [
+                {
+                    columnName: `result`,
+                    type: 'REAL',
+                    notNull: true,
+                    table: ''
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it(`SELECT julianday(?) as result`, () => {
+        const sql = `SELECT julianday(?) as result`;
+
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: false,
+            columns: [
+                {
+                    columnName: `result`,
+                    type: 'REAL',
+                    notNull: false,
+                    table: ''
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'DATE',
+                    notNull: false
+                }
+            ]
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it(`SELECT unixepoch('now') as result`, () => {
+        const sql = `SELECT unixepoch('now') as result`;
+
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: false,
+            columns: [
+                {
+                    columnName: `result`,
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: ''
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it.only(`SELECT unixepoch(?) as result`, () => {
+        const sql = `SELECT unixepoch(?) as result`;
+
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: false,
+            columns: [
+                {
+                    columnName: `result`,
+                    type: 'INTEGER',
+                    notNull: false,
+                    table: ''
+                }
+            ],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'DATE',
+                    notNull: false
+                }
+            ]
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it(`SELECT IF(1>2,2,3) as result`, () => {
         const sql = `
         SELECT IIF(1>2,2,3) as result
