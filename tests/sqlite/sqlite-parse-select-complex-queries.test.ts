@@ -592,6 +592,39 @@ describe('sqlite-parse-select-complex-queries', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('WITH RECURSIVE dates (date) AS', () => {
+        const sql = `
+        WITH RECURSIVE dates (date) AS
+            (
+            SELECT MIN(date(date_column)) FROM all_types
+            UNION ALL
+            SELECT date(date, '+1 day') FROM dates
+            WHERE date(date, '+1 day') <= (SELECT MAX(date(date_column)) FROM all_types)
+            )
+        SELECT * FROM dates
+        `
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'date',
+                    type: 'DATE',
+                    notNull: false,
+                    table: 'dates'
+                }
+            ],
+            parameters: []
+
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it('select id, :value from (select id from mytable1 t where t.value = :value) t', () => {
         const sql = `select id, :value as value from (
             select id from mytable1 t where t.value = :value
