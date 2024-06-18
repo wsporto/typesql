@@ -15,14 +15,14 @@ export function select04(db: Database, params: Select04Params): Select04Result[]
 	`
 	return db.prepare(sql)
 		.raw(true)
-		.all([params.date.toISOString()])
+		.all([params.date?.toISOString()])
 		.map(data => mapArrayToSelect04Result(data));
 }
 
 function mapArrayToSelect04Result(data: any) {
 	const result: Select04Result = {
 		text_column: data[0],
-		date: new Date(data[1])
+		date: data[1] != null ? new Date(data[1]) : data[1]
 	}
 	return result;
 }

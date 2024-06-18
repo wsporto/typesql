@@ -573,14 +573,19 @@ function writeExecutDeleteCrudBlock(client: SQLiteClient, tableName: string, idC
 
 function toDriver(variableData: string, param: TsFieldDescriptor) {
     if (param.tsType == 'Date') {
-        return `new Date(${variableData})`;
+        if (param.notNull) {
+            return `new Date(${variableData})`;
+        }
+        else {
+            return `${variableData} != null ? new Date(${variableData}) : ${variableData}`
+        }
     }
     return variableData;
 }
 
 function fromDriver(variableName: string, param: TsFieldDescriptor): string {
     if (param.tsType == 'Date') {
-        return `${variableName}.${param.name}.toISOString()`;
+        return `${variableName}.${param.name}?.toISOString()`;
     }
     if (param.tsType?.endsWith("[]")) {
         return `...${variableName}.${param.name}`;
