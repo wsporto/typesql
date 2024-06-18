@@ -700,7 +700,7 @@ describe('sqlite-parse-select-functions', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it.only(`SELECT unixepoch(?) as result`, () => {
+    it(`SELECT unixepoch(?) as result`, () => {
         const sql = `SELECT unixepoch(?) as result`;
 
         const actual = parseSql(sql, sqliteDbSchema);
