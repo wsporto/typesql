@@ -6,7 +6,7 @@ export type Select06Params = {
 }
 
 export type Select06Result = {
-	id: number[];
+	id: number;
 }
 
 export function select06(db: Database, params: Select06Params): Select06Result[] {

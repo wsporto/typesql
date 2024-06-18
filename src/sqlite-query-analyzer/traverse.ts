@@ -172,10 +172,9 @@ function traverse_select_core(select_core: Select_coreContext, traverseContext: 
             const tableName = result_column.table_name()?.getText();
             columnsResult.forEach(col => {
                 if (!tableName || includeColumn(col, tableName)) {
-                    const columnType = createColumnType(col);
                     listType.push({
-                        name: columnType.name,
-                        type: columnType,
+                        name: col.columnName,
+                        type: col.columnType,
                         notNull: col.notNull,
                         table: col.tableAlias || col.table
                     });

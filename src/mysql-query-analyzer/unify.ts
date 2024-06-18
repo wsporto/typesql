@@ -42,7 +42,7 @@ function unifyOne(constraint: Constraint, substitutions: SubstitutionHash) {
                 }
 
                 substitutions[ty2.id] = { ...ty1, list: ty2.list, type: newType };
-                substitutions[ty1.id] = { ...ty1, list: ty2.list, type: newType };
+                substitutions[ty1.id] = { ...ty1, list: ty1.list, type: newType };
             }
         }
         else {
