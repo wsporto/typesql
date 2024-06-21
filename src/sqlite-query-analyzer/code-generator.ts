@@ -297,9 +297,9 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
             writer.blankLine();
             writer.writeLine(`const NumericOperatorList = ['=', '<>', '>', '<', '>=', '<='] as const;`);
             writer.writeLine(`type NumericOperator = typeof NumericOperatorList[number];`);
-            //if (hasStringColumn(tsDescriptor.columns)) {
-            writer.writeLine(`type StringOperator = '=' | '<>' | '>' | '<' | '>=' | '<=' | 'LIKE';`);
-            //}
+            if (hasStringColumn(tsDescriptor.columns)) {
+                writer.writeLine(`type StringOperator = '=' | '<>' | '>' | '<' | '>=' | '<=' | 'LIKE';`);
+            }
             writer.writeLine(`type SetOperator = 'IN' | 'NOT IN';`);
             writer.writeLine(`type BetweenOperator = 'BETWEEN';`);
             writer.blankLine();

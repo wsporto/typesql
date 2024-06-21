@@ -385,4 +385,19 @@ WHERE (:name is NULL or m2.name = :name)`
 		}
 		assert.deepStrictEqual(actual.right, expected);
 	})
+
+	it('dynamic-query-03', () => {//
+		const sql = `-- @dynamicQuery
+SELECT t1.id, t1.value
+FROM mytable1 t1`
+
+		const isCrud = false;
+		const actual = generateTsCode(sql, 'dynamic-query03', sqliteDbSchema, isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/dynamic-query03.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	})
 });
