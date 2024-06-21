@@ -100,7 +100,6 @@ function createTsDescriptor(queryInfo: SchemaDef, client: SQLiteClient): TsDescr
         returning: queryInfo.returning,
         columns: mapColumns(client, queryInfo.queryType, queryInfo.columns, queryInfo.returning),
         parameterNames: [],
-        //duplicated parameters
         parameters: queryInfo.parameters.map(param => mapParameterToTsFieldDescriptor(param, client)),
         data: queryInfo.data?.map(param => mapParameterToTsFieldDescriptor(param, client)),
         orderByColumns: queryInfo.orderByColumns
@@ -237,7 +236,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 
 
     const orderByField = generateOrderBy ? `orderBy: [${orderByTypeName}, ...${orderByTypeName}[]]` : undefined;
-    const paramsTypes = tsDescriptor.dynamicQuery2 == null ? tsDescriptor.parameters : mapToDynamicParams(tsDescriptor.parameters);
+    const paramsTypes = removeDuplicatedParameters2(tsDescriptor.dynamicQuery2 == null ? tsDescriptor.parameters : mapToDynamicParams(tsDescriptor.parameters));
 
     let functionArguments = client == 'sqlite' ? `db: Database` : 'client: Client | Transaction';
     functionArguments += queryType == 'Update' ? `, data: ${dataTypeName}` : '';
