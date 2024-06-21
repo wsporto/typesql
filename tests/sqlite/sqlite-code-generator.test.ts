@@ -400,4 +400,21 @@ FROM mytable1 t1`
 		}
 		assert.deepStrictEqual(actual.right, expected);
 	})
+
+	it('dynamic-query-04', () => {
+		const sql = `-- @dynamicQuery
+SELECT 
+    *
+FROM mytable1 m1
+INNER JOIN mytable2 m2 on m2.id = m1.id`
+
+		const isCrud = false;
+		const actual = generateTsCode(sql, 'dynamic-query04', sqliteDbSchema, isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/dynamic-query04.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	})
 });

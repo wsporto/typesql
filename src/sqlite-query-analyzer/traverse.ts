@@ -176,15 +176,21 @@ function traverse_select_core(select_core: Select_coreContext, traverseContext: 
         if (result_column.STAR()) {
             const tableName = result_column.table_name()?.getText();
             columnsResult.forEach(col => {
+                const table = col.tableAlias || col.table;
                 if (!tableName || includeColumn(col, tableName)) {
                     listType.push({
                         name: col.columnName,
                         type: col.columnType,
                         notNull: col.notNull,
-                        table: col.tableAlias || col.table
+                        table: table
                     });
                 }
-
+                if (!traverseContext.subQuery) {
+                    traverseContext.dynamicSqlInfo2.select.push({
+                        fragment: `${table}.${col.columnName}`,
+                        fragmentWitoutAlias: `${table}.${col.columnName}`
+                    })
+                }
             })
         }
 
