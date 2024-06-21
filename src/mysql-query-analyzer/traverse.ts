@@ -1,7 +1,7 @@
 import { BitExprContext, BoolPriContext, ColumnRefContext, DeleteStatementContext, ExprAndContext, ExprContext, ExprIsContext, ExprListContext, ExprNotContext, ExprOrContext, ExprXorContext, FromClauseContext, HavingClauseContext, InsertQueryExpressionContext, InsertStatementContext, PredicateContext, PredicateExprBetweenContext, PredicateExprInContext, PredicateExprLikeContext, PredicateOperationsContext, PrimaryExprAllAnyContext, PrimaryExprCompareContext, PrimaryExprIsNullContext, PrimaryExprPredicateContext, QueryContext, QueryExpressionBodyContext, QueryExpressionContext, QueryExpressionOrParensContext, QueryExpressionParensContext, QuerySpecificationContext, SelectItemContext, SelectItemListContext, SelectStatementContext, SimpleExprCaseContext, SimpleExprCastContext, SimpleExprColumnRefContext, SimpleExprContext, SimpleExprFunctionContext, SimpleExprIntervalContext, SimpleExprListContext, SimpleExprLiteralContext, SimpleExprParamMarkerContext, SimpleExprRuntimeFunctionContext, SimpleExprSubQueryContext, SimpleExprSumContext, SimpleExprWindowingFunctionContext, SingleTableContext, SubqueryContext, TableFactorContext, TableReferenceContext, TableReferenceListParensContext, UpdateStatementContext, WindowFunctionCallContext, WithClauseContext } from '@wsporto/ts-mysql-parser';
 import { verifyNotInferred } from "../describe-query";
 import { extractLimitParameters, extractOrderByParameters, getAllQuerySpecificationsFromSelectStatement, getLimitOptions, isSumExpressContext } from "./parse";
-import { ColumnDef, ColumnSchema, Constraint, DynamicSqlInfo, FieldName, FragmentInfo, ParameterInfo, TraverseContext, Type, TypeAndNullInfer, TypeAndNullInferParam, TypeOperator, TypeVar } from "./types";
+import { ColumnDef, ColumnSchema, Constraint, DynamicSqlInfo, DynamicSqlInfo2, FieldName, FragmentInfo, ParameterInfo, TraverseContext, Type, TypeAndNullInfer, TypeAndNullInferParam, TypeOperator, TypeVar } from "./types";
 import { ExprOrDefault, FixedLengthParams, FunctionParams, VariableLengthParams, createColumnType, createColumnTypeFomColumnSchema, freshVar, generateTypeInfo, getDeleteColumns, getFunctionName, getInsertColumns, getInsertIntoTable, isDateLiteral, isDateTimeLiteral, isTimeLiteral, verifyDateTypesCoercion } from "./collect-constraints";
 import { ExpressionAndOperator, extractFieldsFromUsingClause, extractOriginalSql, findColumn, findColumnOrNull, getColumnName, getExpressions, getSimpleExpressions, getTopLevelAndExpr, splitName } from "./select-columns";
 import { inferNotNull, possibleNull } from "./infer-column-nullability";
@@ -57,6 +57,11 @@ export function traverseQueryContext(queryContext: QueryContext, dbSchema: Colum
         withSchema: [],
         dynamicSqlInfo: {
             with: [],
+            select: [],
+            from: [],
+            where: []
+        },
+        dynamicSqlInfo2: {
             select: [],
             from: [],
             where: []
@@ -491,25 +496,32 @@ export type TraverseResult2 = SelectResult | InsertResult | UpdateResult | Delet
 
 export type SelectResult = {
     queryType: 'Select';
+    constraints: Constraint[];
+    parameters: TypeAndNullInferParam[];
     columns: TypeAndNullInfer[];
     multipleRowsResult: boolean;
     orderByColumns?: string[];
     relations: Relation2[];
+    dynamicQueryInfo: DynamicSqlInfo2;
 }
 export type InsertResult = {
     queryType: 'Insert';
-    parameters: TypeAndNullInfer[];
+    constraints: Constraint[];
+    parameters: TypeAndNullInferParam[];
     columns: TypeAndNullInfer[];
     returing: boolean;
 }
 export type UpdateResult = {
     queryType: 'Update';
+    parameters: TypeAndNullInferParam[];
+    constraints: Constraint[];
     columns: TypeAndNullInfer[];
-    params: TypeAndNullInfer[];
+    whereParams: TypeAndNullInferParam[];
 }
 export type DeleteResult = {
+    constraints: Constraint[];
     queryType: 'Delete';
-    params: TypeAndNullInfer[];
+    parameters: TypeAndNullInferParam[];
 }
 
 function renameFromColumns(fromColumns: TypeAndNullInfer[], recursiveNames: string[]): ColumnDef[] {

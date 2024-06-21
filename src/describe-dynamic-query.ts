@@ -1,5 +1,5 @@
 import { splitName } from "./mysql-query-analyzer/select-columns";
-import { DynamicSqlInfo, DynamicSqlInfoResult, FragmentInfo, FragmentInfoResult, TableField } from "./mysql-query-analyzer/types";
+import { ColumnInfo, DynamicSqlInfo, DynamicSqlInfo2, DynamicSqlInfoResult, DynamicSqlInfoResult2, FragmentInfo, FragmentInfoResult, FromFragementResult, FromFragment, TableField, WhereFragment, WhereFragmentResult } from "./mysql-query-analyzer/types";
 
 export function describeDynamicQuery(dynamicQueryInfo: DynamicSqlInfo, namedParameters: string[], orderBy: string[]): DynamicSqlInfoResult {
     const { with: withFragments, select, from, where } = dynamicQueryInfo;
@@ -107,4 +107,66 @@ function addAllChildFields(currentRelation: FragmentInfo, select: FragmentInfo[]
         })
     })
 
+}
+
+export function describeDynamicQuery2(columns: ColumnInfo[], dynamicQueryInfo: DynamicSqlInfo2, namedParameters: string[]): DynamicSqlInfoResult2 {
+    const { select, from, where } = dynamicQueryInfo;
+
+    const result: DynamicSqlInfoResult2 = {
+        select: select,
+        from: transformFromFragments(columns, from, where, namedParameters),
+        where: transformWhereFragments(where, namedParameters)
+    }
+    return result;
+}
+
+function transformFromFragments(columns: ColumnInfo[], fromFragments: FromFragment[], whereFragements: WhereFragment[], namedParameters: string[]): FromFragementResult[] {
+    return fromFragments.map(from => {
+        const dependOnParams = getDepenedOnParams(from, whereFragements).map(paramIndex => namedParameters[paramIndex]);
+        const fromFragmentResult: FromFragementResult = {
+            fragment: from.fragment,
+            dependOnFields: getDependOnFields(columns, from),
+            dependOnParams: [...new Set(dependOnParams)],
+            parameters: from.parameters.map(paramIndex => namedParameters[paramIndex])
+        }
+        return fromFragmentResult;
+    })
+}
+
+function transformWhereFragments(whereFragements: WhereFragment[], namedParameters: string[]): WhereFragmentResult[] {
+    return whereFragements.map(where => {
+        const parameters = where.fields.flatMap(field => field.parameters.map(param => namedParameters[param]));
+        const whereFragmentResult: WhereFragmentResult = {
+            fragment: where.fragment,
+            dependOnParams: [...new Set(parameters)],
+            parameters
+        }
+        return whereFragmentResult;
+    })
+}
+
+function getDependOnFields(columns: ColumnInfo[], relationInfo: { relation: string, parentRelation: string }): number[] {
+    const dependOnFields = columns.flatMap((col, index) => {
+        if (col.table == relationInfo.relation && relationInfo.parentRelation != '') {
+            return index;
+        }
+        return []
+    });
+
+    return dependOnFields;
+}
+
+function getDepenedOnParams(fromFragement: FromFragment, whereFragments: WhereFragment[]): number[] {
+    const params = whereFragments.flatMap(whereFragement => {
+        return whereFragement.fields.flatMap(field => {
+            if (fromFragement.relation == field.dependOnRelation) {
+                return field.parameters
+            }
+            else {
+                return []
+            }
+        })
+    })
+
+    return params;
 }

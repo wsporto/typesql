@@ -11,6 +11,7 @@ import {
 
 import { ColumnDef, ColumnSchema, FieldName } from "./types";
 import { createColumnTypeFomColumnSchema } from "./collect-constraints";
+import { Select_coreContext } from '@wsporto/ts-mysql-parser/dist/sqlite';
 
 export function includeColumn(column: ColumnDef, table: string) {
     return column.table.toLowerCase() == table.toLowerCase() || column.tableAlias?.toLowerCase() == table.toLowerCase();
@@ -284,7 +285,7 @@ function collectExpr(tokens: Expr[], parent: ParserRuleContext, exprType: any, i
     for (let i = 0; i < parent.getChildCount(); i++) {
         const child = parent.getChild(i);
         if (child instanceof ParserRuleContext) {
-            collectExpr(tokens, child, exprType, (isSubQuery || child instanceof SimpleExprSubQueryContext));
+            collectExpr(tokens, child, exprType, (isSubQuery || child instanceof SimpleExprSubQueryContext) || child instanceof Select_coreContext);
         }
     }
 }

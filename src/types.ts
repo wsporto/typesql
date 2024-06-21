@@ -1,6 +1,6 @@
 import { MySqlType } from "./mysql-mapping"
 import { Brand } from "./utility-types"
-import { ColumnInfo, ColumnSchema, DynamicSqlInfoResult } from "./mysql-query-analyzer/types"
+import { ColumnInfo, ColumnSchema, DynamicSqlInfoResult, DynamicSqlInfoResult2 } from "./mysql-query-analyzer/types"
 import { QueryContext } from '@wsporto/ts-mysql-parser';
 import { NestedResultInfo } from "./describe-nested-query";
 import { SQLiteType } from "./sqlite-query-analyzer/types";
@@ -33,6 +33,7 @@ export type SchemaDef = {
     data?: ParameterDef[];
     nestedResultInfo?: NestedResultInfo;
     dynamicSqlQuery?: DynamicSqlInfoResult;
+    dynamicSqlQuery2?: DynamicSqlInfoResult2;
     nestedInfo?: RelationInfo2[];
 }
 

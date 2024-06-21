@@ -8,7 +8,7 @@ import { parseSql } from "./describe-query";
 import CodeBlockWriter from "code-block-writer";
 import { NestedTsDescriptor, RelationType2, createNestedTsDescriptor } from "./ts-nested-descriptor";
 import { mapToDynamicResultColumns, mapToDynamicParams, mapToDynamicSelectColumns } from "./ts-dynamic-query-descriptor";
-import { ColumnSchema, DynamicSqlInfoResult, FragmentInfoResult } from "./mysql-query-analyzer/types";
+import { ColumnSchema, DynamicSqlInfoResult, DynamicSqlInfoResult2, FragmentInfoResult } from "./mysql-query-analyzer/types";
 import { EOL } from "os";
 import { validateAndGenerateCode } from "./sqlite-query-analyzer/code-generator";
 
@@ -449,7 +449,7 @@ function generateDynamicQueryFrom(writer: CodeBlockWriter, sqlVar: string, fragm
     }
 }
 
-function getOperator(type: string) {
+export function getOperator(type: string) {
     if (type == 'number' || type == 'Date') {
         return 'NumericOperator';
     }
@@ -467,7 +467,7 @@ export function generateRelationType(capitalizedName: string, relationName: stri
     return capitalizedName + 'Nested' + capitalizeStr(relationName);
 }
 
-function writeTypeBlock(writer: CodeBlockWriter, fields: TsFieldDescriptor[], typeName: string, updateCrud: boolean, extraField?: string) {
+export function writeTypeBlock(writer: CodeBlockWriter, fields: TsFieldDescriptor[], typeName: string, updateCrud: boolean, extraField?: string) {
     const writeBlockCond = fields.length > 0 || extraField != null;
     if (writeBlockCond) {
         writer.write(`export type ${typeName} =`).block(() => {
@@ -636,7 +636,7 @@ function mapColumnType(columnType: MySqlType | MySqlType[] | 'any'): string {
 
 }
 
-function hasStringColumn(columns: TsFieldDescriptor[]) {
+export function hasStringColumn(columns: TsFieldDescriptor[]) {
     return columns.some(c => c.tsType == 'string');
 }
 
@@ -720,6 +720,7 @@ export type TsDescriptor = {
     nestedDescriptor?: NestedTsDescriptor;
     nestedDescriptor2?: RelationType2[];
     dynamicQuery?: DynamicSqlInfoResult;
+    dynamicQuery2?: DynamicSqlInfoResult2;
 }
 
 function commaSeparator(length: number, index: number) {

@@ -2,26 +2,55 @@ import { Either, isLeft, left, right } from "fp-ts/lib/Either";
 import { ParameterNameAndPosition, ParameterDef, SchemaDef, TypeSqlError } from "../types";
 import { Sql_stmtContext, parseSql as parseSqlite } from "@wsporto/ts-mysql-parser/dist/sqlite";
 import { tryTraverse_Sql_stmtContext } from "./traverse";
-import { ColumnInfo, ColumnSchema, SubstitutionHash, TraverseContext, TypeAndNullInferParam } from "../mysql-query-analyzer/types";
+import { ColumnInfo, ColumnSchema, SubstitutionHash, TraverseContext, TypeAndNullInfer, TypeAndNullInferParam } from "../mysql-query-analyzer/types";
 import { getVarType } from "../mysql-query-analyzer/collect-constraints";
 import { unify } from "../mysql-query-analyzer/unify";
 import { hasAnnotation, preprocessSql, verifyNotInferred } from "../describe-query";
 import { describeNestedQuery } from "./sqlite-describe-nested-query";
 import { indexGroupBy } from "../util";
 import { replaceListParams } from "./replace-list-params";
+import { TraverseResult2 } from '../mysql-query-analyzer/traverse';
+import { describeDynamicQuery2 } from '../describe-dynamic-query';
 
+type ParseAndTraverseResult = {
+    traverseResult: TraverseResult2;
+    namedParameters: string[];
+    nested: boolean;
+    dynamicQuery: boolean;
+    processedSql: string;
+}
+
+export function traverseSql(sql: string, dbSchema: ColumnSchema[]): Either<TypeSqlError, ParseAndTraverseResult> {
+    const { sql: processedSql, namedParameters } = preprocessSql(sql);
+    const nested = hasAnnotation(sql, '@nested');
+    const dynamicQuery = hasAnnotation(sql, '@dynamicQuery');
+    const parser = parseSqlite(processedSql);
+    const sql_stmt = parser.sql_stmt();
+    const traverseResult = traverseQuery(sql_stmt, dbSchema, namedParameters);
+    if (isLeft(traverseResult)) {
+        return traverseResult;
+    }
+    const result: ParseAndTraverseResult = {
+        traverseResult: traverseResult.right,
+        namedParameters,
+        nested,
+        processedSql,
+        dynamicQuery
+    }
+    return right(result);
+}
 
 export function parseSql(sql: string, dbSchema: ColumnSchema[]): Either<TypeSqlError, SchemaDef> {
 
-    const { sql: processedSql, namedParameters } = preprocessSql(sql);
-    const nested = hasAnnotation(sql, '@nested');
-    const parser = parseSqlite(processedSql);
-    const sql_stmt = parser.sql_stmt();
-    return createSchemaDefinition(processedSql, sql_stmt, dbSchema, namedParameters, nested);
+    const parseAndTraverseResult = traverseSql(sql, dbSchema);
+    if (isLeft(parseAndTraverseResult)) {
+        return parseAndTraverseResult;
+    }
+    const { traverseResult, processedSql, namedParameters, nested, dynamicQuery } = parseAndTraverseResult.right;
+    return createSchemaDefinition(processedSql, traverseResult, namedParameters, nested, dynamicQuery);
 }
 
-function createSchemaDefinition(sql: string, sql_stmtContext: Sql_stmtContext, dbSchema: ColumnSchema[], namedParameters: string[], nestedQuery: boolean): Either<TypeSqlError, SchemaDef> {
-
+function traverseQuery(sql_stmtContext: Sql_stmtContext, dbSchema: ColumnSchema[], namedParameters: string[]) {
     const traverseContext: TraverseContext = {
         dbSchema,
         withSchema: [],
@@ -37,37 +66,42 @@ function createSchemaDefinition(sql: string, sql_stmtContext: Sql_stmtContext, d
             from: [],
             where: []
         },
+        dynamicSqlInfo2: {
+            select: [],
+            from: [],
+            where: []
+        },
         relations: []
     }
 
     const queryResultResult = tryTraverse_Sql_stmtContext(sql_stmtContext, traverseContext);
-    if (isLeft(queryResultResult)) {
-        return queryResultResult;
-    }
-    const queryResult = queryResultResult.right;
-    traverseContext.parameters.sort((param1, param2) => param1.paramIndex - param2.paramIndex);
+    return queryResultResult;
+}
+
+function createSchemaDefinition(sql: string, queryResult: TraverseResult2, namedParameters: string[], nestedQuery: boolean, dynamicQuery: boolean): Either<TypeSqlError, SchemaDef> {
+
     const groupedByName = indexGroupBy(namedParameters, p => p);
-    const paramsById = new Map<string, TypeAndNullInferParam>();
-    traverseContext.parameters.forEach(param => {
+    const paramsById = new Map<string, TypeAndNullInfer>();
+    queryResult.parameters.forEach(param => {
         paramsById.set(param.type.id, param);
     })
 
     groupedByName.forEach(sameNameList => {
-        let notNull = traverseContext.parameters[0].notNull; //param is not null if any param with same name is not null
+        let notNull = queryResult.parameters[0].notNull; //param is not null if any param with same name is not null
         for (let index = 1; index < sameNameList.length; index++) {
-            notNull = notNull || traverseContext.parameters[index].notNull;
-            traverseContext.constraints.push({
-                expression: traverseContext.parameters[0].name,
-                type1: traverseContext.parameters[0].type,
-                type2: traverseContext.parameters[index].type
+            notNull = notNull || queryResult.parameters[index].notNull;
+            queryResult.constraints.push({
+                expression: queryResult.parameters[0].name,
+                type1: queryResult.parameters[0].type,
+                type2: queryResult.parameters[index].type
             })
         }
         for (let index = 0; index < sameNameList.length; index++) {
-            traverseContext.parameters[index].notNull = notNull || traverseContext.parameters[index].notNull;
+            queryResult.parameters[index].notNull = notNull || queryResult.parameters[index].notNull;
         }
     })
     const substitutions: SubstitutionHash = {} //TODO - DUPLICADO
-    unify(traverseContext.constraints, substitutions);
+    unify(queryResult.constraints, substitutions);
     if (queryResult.queryType == 'Select') {
         const columnResult = queryResult.columns.map((col) => {
             const columnType = getVarType(substitutions, col.type);
@@ -80,7 +114,7 @@ function createSchemaDefinition(sql: string, sql_stmtContext: Sql_stmtContext, d
             }
             return colInfo;
         })
-        const paramsResult = traverseContext.parameters.map((param, index) => {
+        const paramsResult = queryResult.parameters.map((param, index) => {
             const columnType = getVarType(substitutions, param.type);
             const columnNotNull = param.notNull;
             const colInfo: ParameterDef = {
@@ -96,7 +130,7 @@ function createSchemaDefinition(sql: string, sql_stmtContext: Sql_stmtContext, d
             .map((param, index) => {
                 const nameAndPosition: ParameterNameAndPosition = {
                     name: param.name,
-                    paramPosition: traverseContext.parameters[index].paramIndex
+                    paramPosition: queryResult.parameters[index].paramIndex
                 }
                 return nameAndPosition;
             })
@@ -116,6 +150,10 @@ function createSchemaDefinition(sql: string, sql_stmtContext: Sql_stmtContext, d
         if (nestedQuery) {
             const nestedResult = describeNestedQuery(columnResult, queryResult.relations);
             schemaDef.nestedInfo = nestedResult;
+        }
+        if (dynamicQuery) {
+            const dynamicSqlInfo = describeDynamicQuery2(columnResult, queryResult.dynamicQueryInfo, namedParameters);
+            schemaDef.dynamicSqlQuery2 = dynamicSqlInfo;
         }
 
         return right(schemaDef);
@@ -170,7 +208,7 @@ function createSchemaDefinition(sql: string, sql_stmtContext: Sql_stmtContext, d
             }
             return colInfo;
         })
-        const whereParams = queryResult.params.map((param, index) => {
+        const whereParams = queryResult.whereParams.map((param, index) => {
             const columnType = getVarType(substitutions, param.type);
             const columnNotNull = param.notNull;
             const paramIndex = index + queryResult.columns.length;
@@ -195,7 +233,7 @@ function createSchemaDefinition(sql: string, sql_stmtContext: Sql_stmtContext, d
     }
     if (queryResult.queryType == 'Delete') {
 
-        const whereParams = queryResult.params.map((param, index) => {
+        const whereParams = queryResult.parameters.map((param, index) => {
             const columnType = getVarType(substitutions, param.type);
             const columnNotNull = param.notNull;
             const colInfo: ParameterDef = {
@@ -218,6 +256,6 @@ function createSchemaDefinition(sql: string, sql_stmtContext: Sql_stmtContext, d
     }
     return left({
         name: 'parse error',
-        description: 'query not supported: ' + sql_stmtContext.getText()
+        description: 'query not supported'
     });
 }

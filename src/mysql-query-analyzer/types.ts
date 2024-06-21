@@ -37,6 +37,7 @@ export type TraverseContext = {
     where: boolean;
     currentFragement?: FragmentInfo;
     dynamicSqlInfo: DynamicSqlInfo;
+    dynamicSqlInfo2: DynamicSqlInfo2;
     relations: Relation2[];
 }
 
@@ -137,6 +138,51 @@ export type DynamicSqlInfoResult = {
     select: FragmentInfoResult[];
     from: FragmentInfoResult[];
     where: FragmentInfoResult[];
+}
+
+export type DynamicSqlInfo2 = {
+    select: SelectFragment[];
+    from: FromFragment[];
+    where: WhereFragment[];
+}
+
+export type SelectFragment = {
+    fragment: string;
+    fragmentWitoutAlias?: string;
+}
+export type FromFragment = {
+    fragment: string;
+    relation: string;
+    parentRelation: string;
+    parameters: number[];
+}
+export type WhereFragment = {
+    fragment: string;
+    fields: WhereFragementField[];
+}
+
+export type WhereFragementField = {
+    parameters: number[];
+    dependOnRelation: string;
+}
+
+export type DynamicSqlInfoResult2 = {
+    select: SelectFragment[];
+    from: FromFragementResult[];
+    where: WhereFragmentResult[];
+}
+
+export type FromFragementResult = {
+    fragment: string;
+    dependOnFields: number[];
+    dependOnParams: string[];
+    parameters: string[];
+}
+
+export type WhereFragmentResult = {
+    fragment: string;
+    dependOnParams: string[];
+    parameters: string[];
 }
 
 export type SubstitutionHash = {
