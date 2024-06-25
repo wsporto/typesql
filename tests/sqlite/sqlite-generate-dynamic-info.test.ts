@@ -42,6 +42,7 @@ describe('sqlite-generate-dynamic-info', () => {
 					relationName: 'mytable1',
 					relationAlias: 'm1',
 					parentRelation: '',
+					fields: ['id', 'value'],
 					parameters: []
 				},
 				{
@@ -49,6 +50,7 @@ describe('sqlite-generate-dynamic-info', () => {
 					relationName: 'mytable2',
 					relationAlias: 'm2',
 					parentRelation: 'm1',
+					fields: ['id', 'name', 'descr'],
 					parameters: []
 				}
 			],
@@ -118,6 +120,7 @@ describe('sqlite-generate-dynamic-info', () => {
 					relationName: 'mytable1',
 					dependOnFields: [],
 					dependOnParams: [],
+					dependOnOrderBy: [],
 					parameters: []
 				},
 				{
@@ -125,6 +128,7 @@ describe('sqlite-generate-dynamic-info', () => {
 					relationName: 'mytable2',
 					dependOnFields: [2, 3],
 					dependOnParams: ['name', 'description'],
+					dependOnOrderBy: [],
 					parameters: []
 				}
 			],
@@ -179,6 +183,7 @@ describe('sqlite-generate-dynamic-info', () => {
 					relationName: 'mytable1',
 					relationAlias: 'm1',
 					parentRelation: '',
+					fields: ['id', 'value'],
 					parameters: []
 				},
 				{
@@ -189,6 +194,7 @@ describe('sqlite-generate-dynamic-info', () => {
 					relationName: '',
 					relationAlias: 'm2',
 					parentRelation: 'm1',
+					fields: ['id', 'name'],
 					parameters: [0]
 				}
 			],
@@ -243,6 +249,7 @@ describe('sqlite-generate-dynamic-info', () => {
 					relationName: 'mytable1',
 					dependOnFields: [],
 					dependOnParams: [],
+					dependOnOrderBy: [],
 					parameters: []
 				},
 				{
@@ -253,6 +260,7 @@ describe('sqlite-generate-dynamic-info', () => {
 					relationName: '',
 					dependOnFields: [1],
 					dependOnParams: ['name'],
+					dependOnOrderBy: [],
 					parameters: ['subqueryName']
 				}
 			],
@@ -313,6 +321,7 @@ describe('sqlite-generate-dynamic-info', () => {
 					relationName: 'mytable1',
 					relationAlias: 'm1',
 					parentRelation: '',
+					fields: ['id', 'value'],
 					parameters: []
 				},
 				{
@@ -320,6 +329,7 @@ describe('sqlite-generate-dynamic-info', () => {
 					relationName: 'cte',
 					relationAlias: 'm2',
 					parentRelation: 'm1',
+					fields: ['id', 'name'],
 					parameters: []
 				}
 			],
@@ -368,6 +378,7 @@ describe('sqlite-generate-dynamic-info', () => {
 					relationName: 'cte',
 					dependOnFields: [1],
 					dependOnParams: ['name'],
+					dependOnOrderBy: [],
 					parameters: []
 				}
 			],
@@ -387,6 +398,7 @@ describe('sqlite-generate-dynamic-info', () => {
 					relationName: 'mytable1',
 					dependOnFields: [],
 					dependOnParams: [],
+					dependOnOrderBy: [],
 					parameters: []
 				},
 				{
@@ -394,6 +406,7 @@ describe('sqlite-generate-dynamic-info', () => {
 					relationName: 'cte',
 					dependOnFields: [1], //m2.name
 					dependOnParams: ['name'],
+					dependOnOrderBy: [],
 					parameters: []
 				}
 			],

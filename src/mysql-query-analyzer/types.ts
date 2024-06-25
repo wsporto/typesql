@@ -163,6 +163,7 @@ export type FromFragment = {
     relationAlias: string;
     relationName: string;
     parentRelation: string;
+    fields: string[];
     parameters: number[];
 }
 export type WhereFragment = {
@@ -188,6 +189,7 @@ export type FromFragementResult = {
     dependOnFields: number[];
     dependOnParams: string[];
     parameters: string[];
+    dependOnOrderBy: string[];
 }
 
 export type WhereFragmentResult = {

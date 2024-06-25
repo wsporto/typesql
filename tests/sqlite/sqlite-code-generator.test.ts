@@ -440,4 +440,41 @@ WHERE m2.name LIKE concat('%', :name, '%')`
 		}
 		assert.deepStrictEqual(actual.right, expected);
 	})
+
+	it('dynamic-query-06', () => {
+		const sql = `-- @dynamicQuery
+SELECT 
+    *
+FROM mytable1 m1
+INNER JOIN mytable2 m2 on m2.id = m1.id
+ORDER BY ?`
+
+		const isCrud = false;
+		const actual = generateTsCode(sql, 'dynamic-query06', sqliteDbSchema, isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/dynamic-query06.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	})
+
+	it('dynamic-query-07', () => {
+		const sql = `-- @dynamicQuery
+SELECT 
+    m1.id as myId,
+    m2.name
+FROM mytable1 m1
+INNER JOIN mytable2 m2 on m2.id = m1.id
+ORDER BY ?`
+
+		const isCrud = false;
+		const actual = generateTsCode(sql, 'dynamic-query07', sqliteDbSchema, isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/dynamic-query07.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	})
 });

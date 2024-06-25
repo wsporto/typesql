@@ -235,7 +235,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
     const uniqueUpdateParams = removeDuplicatedParameters2(tsDescriptor.data || []);
 
 
-    const orderByField = generateOrderBy ? `orderBy: [${orderByTypeName}, ...${orderByTypeName}[]]` : undefined;
+    const orderByField = generateOrderBy ? `orderBy: [${orderByTypeName}, 'asc' | 'desc'][]` : undefined;
     const paramsTypes = removeDuplicatedParameters2(tsDescriptor.dynamicQuery2 == null ? tsDescriptor.parameters : mapToDynamicParams(tsDescriptor.parameters));
 
     let functionArguments = client == 'sqlite' ? `db: Database` : 'client: Client | Transaction';
@@ -285,15 +285,6 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
                 });
             })
             writer.write(' as const;');
-            if (orderByField != null) {
-                writer.blankLine();
-                writer.write(`const orderByFragments = `).inlineBlock(() => {
-                    tsDescriptor.orderByColumns?.forEach((col) => {
-                        writer.writeLine(`'${col}': \`${col}\`,`);
-                    });
-                })
-                writer.write(' as const;');
-            }
             writer.blankLine();
             writer.writeLine(`const NumericOperatorList = ['=', '<>', '>', '<', '>=', '<='] as const;`);
             writer.writeLine(`type NumericOperator = typeof NumericOperatorList[number];`);
@@ -310,21 +301,12 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
                     writer.writeLine(`| ['${col.name}', BetweenOperator, ${col.tsType} | null, ${col.tsType} | null]`);
                 })
             });
-
-            if (orderByField != null) {
-                writer.blankLine();
-                writer.write(`function orderByToObject(${orderByField})`).block(() => {
-                    writer.writeLine(`const obj = {} as any;`);
-                    writer.write(`orderBy?.forEach(order => `).inlineBlock(() => {
-                        writer.writeLine(`obj[order.column] = true;`);
-                    });
-                    writer.write(');');
-                    writer.writeLine(`return obj;`);
-                })
-            }
             writer.blankLine();
             writer.write(`export function ${camelCaseName}(${functionArguments}): ${returnType}`).block(() => {
                 writer.write('const where = whereConditionsToObject(params?.where);').newLine();
+                if (orderByField != null) {
+                    writer.writeLine(`const orderBy = orderByToObject(params.orderBy);`)
+                }
                 writer.write('const paramsValues: any = [];').newLine();
                 const hasCte = (tsDescriptor.dynamicQuery2?.with.length || 0) > 0;
                 if (hasCte) {
@@ -336,7 +318,8 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
                         }
                         const paramConditions = withFragment.dependOnParams.map(param => 'params.params?.' + param + ' != null');
                         const whereConditions = withFragment.dependOnFields.map(fieldIndex => 'where.' + tsDescriptor.columns[fieldIndex].name + ' != null');
-                        const allConditions = [...selectConditions, ...paramConditions, ...whereConditions];//, ...orderByConditions];
+                        const orderByConditions = withFragment.dependOnOrderBy?.map(orderBy => 'orderBy[\'' + orderBy + '\'] != null') || [];
+                        const allConditions = [...selectConditions, ...paramConditions, ...whereConditions, ...orderByConditions];
                         const paramValues = withFragment.parameters.map(param => 'params?.params?.' + param);
                         writer.write(`if (${allConditions.join(EOL + '\t|| ')})`).block(() => {
                             writer.write(`withClause += EOL + \`${withFragment.fragment}\`;`);
@@ -367,7 +350,8 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
                         }
                         const paramConditions = from.dependOnParams.map(param => 'params.params?.' + param + ' != null');
                         const whereConditions = from.dependOnFields.map(fieldIndex => 'where.' + tsDescriptor.columns[fieldIndex].name + ' != null');
-                        const allConditions = [...selectConditions, ...paramConditions, ...whereConditions];//, ...orderByConditions];
+                        const orderByConditions = from.dependOnOrderBy?.map(orderBy => 'orderBy[\'' + orderBy + '\'] != null') || [];
+                        const allConditions = [...selectConditions, ...paramConditions, ...whereConditions, ...orderByConditions];
                         const paramValues = from.parameters.map(param => 'params?.params?.' + param);
                         writer.write(`if (${allConditions.join(EOL + '\t|| ')})`).block(() => {
                             writer.write(`sql += EOL + \`${from.fragment}\`;`);
@@ -401,6 +385,9 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
                     })
                 })
                 writer.write(');').newLine();
+                if (tsDescriptor.orderByColumns) {
+                    writer.writeLine('sql += EOL + `ORDER BY ${escapeOrderBy(params.orderBy)}`;')
+                }
                 writer.write('return db.prepare(sql)').newLine();
                 writer.indent().write('.raw(true)').newLine();
                 writer.indent().write(`.all(paramsValues)`).newLine();
@@ -438,6 +425,17 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
                 writer.write(');');
                 writer.writeLine(`return obj;`);
             })
+            if (orderByField != null) {
+                writer.blankLine();
+                writer.write(`function orderByToObject(orderBy: ${dynamicParamsTypeName}['orderBy'])`).block(() => {
+                    writer.writeLine(`const obj = {} as any;`);
+                    writer.write(`orderBy?.forEach(order => `).inlineBlock(() => {
+                        writer.writeLine(`obj[order[0]] = true;`);
+                    });
+                    writer.write(');');
+                    writer.writeLine(`return obj;`);
+                })
+            }
             writer.blankLine();
             writer.write(`type WhereConditionResult = `).block(() => {
                 writer.writeLine('sql: string;');
@@ -629,18 +627,22 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
         });
     }
     if (tsDescriptor.orderByColumns) {
+        const orderByType = tsDescriptor.dynamicQuery2 == null ? paramsTypeName : dynamicParamsTypeName;
+        if (orderByField != null) {
+            writer.blankLine();
+            writer.write(`const orderByFragments = `).inlineBlock(() => {
+                tsDescriptor.orderByColumns?.forEach((col) => {
+                    writer.writeLine(`'${col}': \`${col}\`,`);
+                });
+            })
+            writer.write(' as const;');
+        }
         writer.blankLine();
-        writer.writeLine(`const orderByFragments = [${tsDescriptor.orderByColumns.map(orderBy => `'${orderBy}'`)}] as const;`);
+        writer.writeLine(`export type ${orderByTypeName} = keyof typeof orderByFragments;`);
         writer.blankLine();
-        writer.writeLine(`export type ${orderByTypeName} = typeof orderByFragments[number];`);
-        writer.blankLine();
-        writer.write(`function escapeOrderBy(orderBy: ${paramsTypeName}['orderBy']): string`).block(() => {
-            writer.writeLine(`return orderBy.map(order => \`\${escapeSQL(order[0])} \${order[1] == 'desc' ? 'desc' : 'asc'}\`).join(', ');`)
+        writer.write(`function escapeOrderBy(orderBy: ${orderByType}['orderBy']): string`).block(() => {
+            writer.writeLine(`return orderBy.map(order => \`\${orderByFragments[order[0]]} \${order[1] == 'desc' ? 'desc' : 'asc'}\`).join(', ');`)
         });
-        writer.blankLine();
-        writer.write(`export function escapeSQL(value: string)`).block(() => {
-            writer.writeLine(`return '"' + String(value).replace(/"/g, '""') + '"';`)
-        })
     }
 
     if (tsDescriptor.nestedDescriptor2) {

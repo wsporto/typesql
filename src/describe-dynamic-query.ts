@@ -109,10 +109,10 @@ function addAllChildFields(currentRelation: FragmentInfo, select: FragmentInfo[]
 
 }
 
-export function describeDynamicQuery2(columns: ColumnInfo[], dynamicQueryInfo: DynamicSqlInfo2, namedParameters: string[]): DynamicSqlInfoResult2 {
+export function describeDynamicQuery2(columns: ColumnInfo[], dynamicQueryInfo: DynamicSqlInfo2, namedParameters: string[], orderByColumns: string[]): DynamicSqlInfoResult2 {
     const { with: withFragments, select, from, where } = dynamicQueryInfo;
 
-    const fromResult = transformFromFragments(columns, from, where, namedParameters);
+    const fromResult = transformFromFragments(columns, from, where, namedParameters, orderByColumns);
 
     const result: DynamicSqlInfoResult2 = {
         with: transformWithFragmnts(withFragments, fromResult, namedParameters),
@@ -128,25 +128,37 @@ function transformWithFragmnts(withFragments: WithFragment[], fromFragments: Fro
         const fromDependOn = fromFragments.filter(from => from.relationName == withFragment.relationName);
         const dependOnFields = fromDependOn.flatMap(from => from.dependOnFields);
         const dependOnParams = fromDependOn.flatMap(from => from.dependOnParams);
+        const dependOnOrderBy = fromDependOn.flatMap(from => from.dependOnOrderBy);
         const fromFragmentResult: FromFragementResult = {
             fragment: withFragment.fragment,
             relationName: withFragment.relationName,
             dependOnFields,
             dependOnParams,
+            dependOnOrderBy,
             parameters: withFragment.parameters.map(paramIndex => namedParameters[paramIndex])
         }
         return fromFragmentResult;
     })
 }
 
-function transformFromFragments(columns: ColumnInfo[], fromFragments: FromFragment[], whereFragements: WhereFragment[], namedParameters: string[]): FromFragementResult[] {
+function transformFromFragments(columns: ColumnInfo[], fromFragments: FromFragment[], whereFragements: WhereFragment[], namedParameters: string[], orderByColumns: string[]): FromFragementResult[] {
+
     return fromFragments.map(from => {
+        const orderBy = orderByColumns.flatMap(orderBy => {
+            const orderByField = splitName(orderBy);
+            const found = from.fields.find(field => field == orderByField.name && (from.relationAlias == orderByField.prefix || from.relationName == orderByField.prefix || orderByField.prefix == ''));
+            if (found) {
+                return orderBy;
+            }
+            return [];
+        })
         const dependOnParams = getDepenedOnParams(from, whereFragements).map(paramIndex => namedParameters[paramIndex]);
         const fromFragmentResult: FromFragementResult = {
             fragment: from.fragment,
             relationName: from.relationName,
             dependOnFields: getDependOnFields(columns, from),
             dependOnParams: [...new Set(dependOnParams)],
+            dependOnOrderBy: orderBy,
             parameters: from.parameters.map(paramIndex => namedParameters[paramIndex])
         }
         return fromFragmentResult;

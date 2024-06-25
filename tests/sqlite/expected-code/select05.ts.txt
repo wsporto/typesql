@@ -25,14 +25,15 @@ function mapArrayToSelect05Result(data: any) {
 	return result;
 }
 
-const orderByFragments = ['id','mytable1.id','value','mytable1.value'] as const;
+const orderByFragments = {
+	'id': `id`,
+	'mytable1.id': `mytable1.id`,
+	'value': `value`,
+	'mytable1.value': `mytable1.value`,
+} as const;
 
-export type Select05OrderBy = typeof orderByFragments[number];
+export type Select05OrderBy = keyof typeof orderByFragments;
 
 function escapeOrderBy(orderBy: Select05Params['orderBy']): string {
-	return orderBy.map(order => `${escapeSQL(order[0])} ${order[1] == 'desc' ? 'desc' : 'asc'}`).join(', ');
-}
-
-export function escapeSQL(value: string) {
-	return '"' + String(value).replace(/"/g, '""') + '"';
+	return orderBy.map(order => `${orderByFragments[order[0]]} ${order[1] == 'desc' ? 'desc' : 'asc'}`).join(', ');
 }

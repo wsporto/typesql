@@ -1,0 +1,173 @@
+import { Database } from 'better-sqlite3';
+import { EOL } from 'os';
+
+export type DynamicQuery07DynamicParams = {
+	select?: DynamicQuery07Select;
+	where?: DynamicQuery07Where[];
+	orderBy: [DynamicQuery07OrderBy, 'asc' | 'desc'][];
+}
+
+export type DynamicQuery07Result = {
+	myId?: number;
+	name?: string;
+}
+
+export type DynamicQuery07Select = {
+	myId?: boolean;
+	name?: boolean;
+}
+
+const selectFragments = {
+	myId: `m1.id`,
+	name: `m2.name`,
+} as const;
+
+const NumericOperatorList = ['=', '<>', '>', '<', '>=', '<='] as const;
+type NumericOperator = typeof NumericOperatorList[number];
+type StringOperator = '=' | '<>' | '>' | '<' | '>=' | '<=' | 'LIKE';
+type SetOperator = 'IN' | 'NOT IN';
+type BetweenOperator = 'BETWEEN';
+
+export type DynamicQuery07Where =
+	| ['myId', NumericOperator, number | null]
+	| ['myId', SetOperator, number[]]
+	| ['myId', BetweenOperator, number | null, number | null]
+	| ['name', StringOperator, string | null]
+	| ['name', SetOperator, string[]]
+	| ['name', BetweenOperator, string | null, string | null]
+
+export function dynamicQuery07(db: Database, params: DynamicQuery07DynamicParams): DynamicQuery07Result[] {
+	const where = whereConditionsToObject(params?.where);
+	const orderBy = orderByToObject(params.orderBy);
+	const paramsValues: any = [];
+	let sql = 'SELECT';
+	if (params?.select == null || params.select.myId) {
+		sql = appendSelect(sql, `m1.id as myId`);
+	}
+	if (params?.select == null || params.select.name) {
+		sql = appendSelect(sql, `m2.name`);
+	}
+	sql += EOL + `FROM mytable1 m1`;
+	if (params?.select == null
+		|| params.select.name
+		|| where.name != null
+		|| orderBy['m2.id'] != null
+		|| orderBy['name'] != null
+		|| orderBy['m2.name'] != null
+		|| orderBy['descr'] != null
+		|| orderBy['m2.descr'] != null) {
+		sql += EOL + `INNER JOIN mytable2 m2 on m2.id = m1.id`;
+	}
+	sql += EOL + `WHERE 1 = 1`;
+	params?.where?.forEach(condition => {
+		const where = whereCondition(condition);
+		if (where?.hasValue) {
+			sql += EOL + 'AND ' + where.sql;
+			paramsValues.push(...where.values);
+		}
+	});
+	sql += EOL + `ORDER BY ${escapeOrderBy(params.orderBy)}`;
+	return db.prepare(sql)
+		.raw(true)
+		.all(paramsValues)
+		.map(data => mapArrayToDynamicQuery07Result(data, params?.select));
+}
+
+function mapArrayToDynamicQuery07Result(data: any, select?: DynamicQuery07Select) {
+	const result = {} as DynamicQuery07Result;
+	let rowIndex = 0;
+	if (select == null || select.myId) {
+		result.myId = data[rowIndex++];
+	}
+	if (select == null || select.name) {
+		result.name = data[rowIndex++];
+	}
+	return result;
+}
+
+function appendSelect(sql: string, selectField: string) {
+	if (sql == 'SELECT') {
+		return sql + EOL + selectField;
+	}
+	else {
+		return sql + ', ' + EOL + selectField;
+	}
+}
+
+function whereConditionsToObject(whereConditions?: DynamicQuery07Where[]) {
+	const obj = {} as any;
+	whereConditions?.forEach(condition => {
+		const where = whereCondition(condition);
+		if (where?.hasValue) {
+			obj[condition[0]] = true;
+		}
+	});
+	return obj;
+}
+
+function orderByToObject(orderBy: DynamicQuery07DynamicParams['orderBy']) {
+	const obj = {} as any;
+	orderBy?.forEach(order => {
+		obj[order[0]] = true;
+	});
+	return obj;
+}
+
+type WhereConditionResult = {
+	sql: string;
+	hasValue: boolean;
+	values: any[];
+}
+
+function whereCondition(condition: DynamicQuery07Where): WhereConditionResult | undefined {
+
+	const selectFragment = selectFragments[condition[0]];
+	const operator = condition[1];
+
+	if (operator == 'LIKE') {
+		return {
+			sql: `${selectFragment} LIKE concat('%', ?, '%')`,
+			hasValue: condition[2] != null,
+			values: [condition[2]]
+		}
+	}
+	if (operator == 'BETWEEN') {
+		return {
+			sql: `${selectFragment} BETWEEN ? AND ?`,
+			hasValue: condition[2] != null && condition[3] != null,
+			values: [condition[2], condition[3]]
+		}
+	}
+	if (operator == 'IN' || operator == 'NOT IN') {
+		return {
+			sql: `${selectFragment} ${operator} (?)`,
+			hasValue: condition[2] != null && condition[2].length > 0,
+			values: [condition[2]]
+		}
+	}
+	if (NumericOperatorList.includes(operator)) {
+		return {
+			sql: `${selectFragment} ${operator} ?`,
+			hasValue: condition[2] != null,
+			values: [condition[2]]
+		}
+	}
+}
+
+const orderByFragments = {
+	'm1.id': `m1.id`,
+	'value': `value`,
+	'm1.value': `m1.value`,
+	'm2.id': `m2.id`,
+	'name': `name`,
+	'm2.name': `m2.name`,
+	'descr': `descr`,
+	'm2.descr': `m2.descr`,
+	'myId': `myId`,
+} as const;
+
+export type DynamicQuery07OrderBy = keyof typeof orderByFragments;
+
+function escapeOrderBy(orderBy: DynamicQuery07DynamicParams['orderBy']): string {
+	return orderBy.map(order => `${orderByFragments[order[0]]} ${order[1] == 'desc' ? 'desc' : 'asc'}`).join(', ');
+}

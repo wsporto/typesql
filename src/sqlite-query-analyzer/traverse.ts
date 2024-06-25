@@ -331,7 +331,7 @@ function traverse_table_or_subquery(
         if (select_stmt) {
             const subQueryResult = traverse_select_stmt(select_stmt, { ...traverseContext, subQuery: true });
 
-            subQueryResult.columns.forEach(t => {
+            tableOrSubqueryFields = subQueryResult.columns.map(t => {
                 const colDef: ColumnDef = {
                     table: t.table ? tableAlias || '' : '',
                     columnName: t.name,
@@ -340,8 +340,9 @@ function traverse_table_or_subquery(
                     notNull: t.notNull,
                     tableAlias: tableAlias
                 }
-                allFields.push(colDef);
+                return colDef;
             })
+            allFields.push(...tableOrSubqueryFields);
         }
         const table_or_subquery_list2 = table_or_subquery.table_or_subquery_list();
         if (table_or_subquery_list2.length > 0) {
@@ -398,6 +399,7 @@ function traverse_table_or_subquery(
                 relationName: relation.name,
                 relationAlias: relation.alias,
                 parentRelation: relation.parentRelation,
+                fields: tableOrSubqueryFields.map(field => field.columnName),
                 parameters: params
             })
         }
