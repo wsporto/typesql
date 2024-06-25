@@ -67,6 +67,7 @@ function traverseQuery(sql_stmtContext: Sql_stmtContext, dbSchema: ColumnSchema[
             where: []
         },
         dynamicSqlInfo2: {
+            with: [],
             select: [],
             from: [],
             where: []

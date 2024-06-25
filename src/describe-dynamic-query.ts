@@ -1,5 +1,5 @@
 import { splitName } from "./mysql-query-analyzer/select-columns";
-import { ColumnInfo, DynamicSqlInfo, DynamicSqlInfo2, DynamicSqlInfoResult, DynamicSqlInfoResult2, FragmentInfo, FragmentInfoResult, FromFragementResult, FromFragment, TableField, WhereFragment, WhereFragmentResult } from "./mysql-query-analyzer/types";
+import { ColumnInfo, DynamicSqlInfo, DynamicSqlInfo2, DynamicSqlInfoResult, DynamicSqlInfoResult2, FragmentInfo, FragmentInfoResult, FromFragementResult, FromFragment, TableField, WhereFragment, WhereFragmentResult, WithFragment } from "./mysql-query-analyzer/types";
 
 export function describeDynamicQuery(dynamicQueryInfo: DynamicSqlInfo, namedParameters: string[], orderBy: string[]): DynamicSqlInfoResult {
     const { with: withFragments, select, from, where } = dynamicQueryInfo;
@@ -110,14 +110,33 @@ function addAllChildFields(currentRelation: FragmentInfo, select: FragmentInfo[]
 }
 
 export function describeDynamicQuery2(columns: ColumnInfo[], dynamicQueryInfo: DynamicSqlInfo2, namedParameters: string[]): DynamicSqlInfoResult2 {
-    const { select, from, where } = dynamicQueryInfo;
+    const { with: withFragments, select, from, where } = dynamicQueryInfo;
+
+    const fromResult = transformFromFragments(columns, from, where, namedParameters);
 
     const result: DynamicSqlInfoResult2 = {
+        with: transformWithFragmnts(withFragments, fromResult, namedParameters),
         select: select,
-        from: transformFromFragments(columns, from, where, namedParameters),
+        from: fromResult,
         where: transformWhereFragments(where, namedParameters)
     }
     return result;
+}
+
+function transformWithFragmnts(withFragments: WithFragment[], fromFragments: FromFragementResult[], namedParameters: string[]): FromFragementResult[] {
+    return withFragments.map(withFragment => {
+        const fromDependOn = fromFragments.filter(from => from.relationName == withFragment.relationName);
+        const dependOnFields = fromDependOn.flatMap(from => from.dependOnFields);
+        const dependOnParams = fromDependOn.flatMap(from => from.dependOnParams);
+        const fromFragmentResult: FromFragementResult = {
+            fragment: withFragment.fragment,
+            relationName: withFragment.relationName,
+            dependOnFields,
+            dependOnParams,
+            parameters: withFragment.parameters.map(paramIndex => namedParameters[paramIndex])
+        }
+        return fromFragmentResult;
+    })
 }
 
 function transformFromFragments(columns: ColumnInfo[], fromFragments: FromFragment[], whereFragements: WhereFragment[], namedParameters: string[]): FromFragementResult[] {
@@ -125,6 +144,7 @@ function transformFromFragments(columns: ColumnInfo[], fromFragments: FromFragme
         const dependOnParams = getDepenedOnParams(from, whereFragements).map(paramIndex => namedParameters[paramIndex]);
         const fromFragmentResult: FromFragementResult = {
             fragment: from.fragment,
+            relationName: from.relationName,
             dependOnFields: getDependOnFields(columns, from),
             dependOnParams: [...new Set(dependOnParams)],
             parameters: from.parameters.map(paramIndex => namedParameters[paramIndex])
@@ -145,9 +165,9 @@ function transformWhereFragments(whereFragements: WhereFragment[], namedParamete
     })
 }
 
-function getDependOnFields(columns: ColumnInfo[], relationInfo: { relation: string, parentRelation: string }): number[] {
+function getDependOnFields(columns: ColumnInfo[], relationInfo: { relationName: string, relationAlias: string, parentRelation: string }): number[] {
     const dependOnFields = columns.flatMap((col, index) => {
-        if (col.table == relationInfo.relation && relationInfo.parentRelation != '') {
+        if ((col.table == relationInfo.relationName || col.table == relationInfo.relationAlias) && relationInfo.parentRelation != '') {
             return index;
         }
         return []
@@ -159,7 +179,7 @@ function getDependOnFields(columns: ColumnInfo[], relationInfo: { relation: stri
 function getDepenedOnParams(fromFragement: FromFragment, whereFragments: WhereFragment[]): number[] {
     const params = whereFragments.flatMap(whereFragement => {
         return whereFragement.fields.flatMap(field => {
-            if (fromFragement.relation == field.dependOnRelation) {
+            if (fromFragement.relationAlias == field.dependOnRelation) {
                 return field.parameters
             }
             else {

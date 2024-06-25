@@ -62,6 +62,7 @@ export function traverseQueryContext(queryContext: QueryContext, dbSchema: Colum
             where: []
         },
         dynamicSqlInfo2: {
+            with: [],
             select: [],
             from: [],
             where: []

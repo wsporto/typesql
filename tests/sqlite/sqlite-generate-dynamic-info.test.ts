@@ -17,6 +17,7 @@ describe('sqlite-generate-dynamic-info', () => {
 
 		const actual = traverseSql(sql, sqliteDbSchema);
 		const expected: DynamicSqlInfo2 = {
+			with: [],
 			select: [
 				{
 					fragment: 'm1.id',
@@ -38,13 +39,15 @@ describe('sqlite-generate-dynamic-info', () => {
 			from: [
 				{
 					fragment: 'FROM mytable1 m1',
-					relation: 'm1',
+					relationName: 'mytable1',
+					relationAlias: 'm1',
 					parentRelation: '',
 					parameters: []
 				},
 				{
 					fragment: 'INNER JOIN mytable2 m2 on m1.id = m2.id',
-					relation: 'm2',
+					relationName: 'mytable2',
+					relationAlias: 'm2',
 					parentRelation: 'm1',
 					parameters: []
 				}
@@ -90,6 +93,7 @@ describe('sqlite-generate-dynamic-info', () => {
 
 		const actual = parseSql(sql, sqliteDbSchema);
 		const expected: DynamicSqlInfoResult2 = {
+			with: [],
 			select: [
 				{
 					fragment: 'm1.id',
@@ -111,12 +115,14 @@ describe('sqlite-generate-dynamic-info', () => {
 			from: [
 				{
 					fragment: 'FROM mytable1 m1',
+					relationName: 'mytable1',
 					dependOnFields: [],
 					dependOnParams: [],
 					parameters: []
 				},
 				{
 					fragment: 'INNER JOIN mytable2 m2 on m1.id = m2.id',
+					relationName: 'mytable2',
 					dependOnFields: [2, 3],
 					dependOnParams: ['name', 'description'],
 					parameters: []
@@ -156,6 +162,7 @@ describe('sqlite-generate-dynamic-info', () => {
 
 		const actual = traverseSql(sql, sqliteDbSchema);
 		const expected: DynamicSqlInfo2 = {
+			with: [],
 			select: [
 				{
 					fragment: 'm1.id',
@@ -169,7 +176,8 @@ describe('sqlite-generate-dynamic-info', () => {
 			from: [
 				{
 					fragment: 'FROM mytable1 m1',
-					relation: 'm1',
+					relationName: 'mytable1',
+					relationAlias: 'm1',
 					parentRelation: '',
 					parameters: []
 				},
@@ -178,7 +186,8 @@ describe('sqlite-generate-dynamic-info', () => {
 			SELECT id, name from mytable2 m 
 			WHERE m.name = ?
 		) m2 on m2.id = m1.id`,
-					relation: 'm2',
+					relationName: '',
+					relationAlias: 'm2',
 					parentRelation: 'm1',
 					parameters: [0]
 				}
@@ -217,6 +226,7 @@ describe('sqlite-generate-dynamic-info', () => {
 
 		const actual = parseSql(sql, sqliteDbSchema);
 		const expected: DynamicSqlInfoResult2 = {
+			with: [],
 			select: [
 				{
 					fragment: 'm1.id',
@@ -230,6 +240,7 @@ describe('sqlite-generate-dynamic-info', () => {
 			from: [
 				{
 					fragment: 'FROM mytable1 m1',
+					relationName: 'mytable1',
 					dependOnFields: [],
 					dependOnParams: [],
 					parameters: []
@@ -239,6 +250,7 @@ describe('sqlite-generate-dynamic-info', () => {
 			SELECT id, name from mytable2 m 
 			WHERE m.name = ?
 		) m2 on m2.id = m1.id`,
+					relationName: '',
 					dependOnFields: [1],
 					dependOnParams: ['name'],
 					parameters: ['subqueryName']
@@ -259,4 +271,146 @@ describe('sqlite-generate-dynamic-info', () => {
 		}
 		assert.deepStrictEqual(actual.right.dynamicSqlQuery2, expected);
 	})
+
+	it('dynamic-traverse-result-05', () => {
+
+		const sql = `-- @dynamicQuery
+		WITH 
+			cte as (
+				select id, name from mytable2
+			)
+		SELECT 
+			m1.id,
+			m2.name
+		FROM mytable1 m1
+		INNER JOIN cte m2 on m2.id = m1.id
+		WHERE m2.name LIKE concat('%', :name, '%')`
+
+		const actual = traverseSql(sql, sqliteDbSchema);
+		const expected: DynamicSqlInfo2 = {
+			with: [
+				{
+					fragment: `cte as (
+				select id, name from mytable2
+			)`,
+					relationName: 'cte',
+					parameters: []
+				}
+			],
+			select: [
+				{
+					fragment: 'm1.id',
+					fragmentWitoutAlias: 'm1.id',
+				},
+				{
+					fragment: 'm2.name',
+					fragmentWitoutAlias: 'm2.name',
+				}
+			],
+			from: [
+				{
+					fragment: 'FROM mytable1 m1',
+					relationName: 'mytable1',
+					relationAlias: 'm1',
+					parentRelation: '',
+					parameters: []
+				},
+				{
+					fragment: 'INNER JOIN cte m2 on m2.id = m1.id',
+					relationName: 'cte',
+					relationAlias: 'm2',
+					parentRelation: 'm1',
+					parameters: []
+				}
+			],
+			where: [
+				{
+					fragment: `AND m2.name LIKE concat('%', ?, '%')`,
+					fields: [
+						{
+							parameters: [0],
+							dependOnRelation: 'm2'
+						}
+					]
+				}
+			]
+
+		}
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert(actual.right.traverseResult.queryType == 'Select');
+		assert.deepStrictEqual(actual.right.traverseResult.dynamicQueryInfo, expected);
+	})
+
+	it('dynamic-info-result05', () => {
+
+		const sql = `-- @dynamicQuery
+		WITH 
+			cte as (
+				select id, name from mytable2
+			)
+		SELECT 
+			m1.id,
+			m2.name
+		FROM mytable1 m1
+		INNER JOIN cte m2 on m2.id = m1.id
+		WHERE m2.name LIKE concat('%', :name, '%')`
+
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: DynamicSqlInfoResult2 = {
+			with: [
+				{
+					fragment: `cte as (
+				select id, name from mytable2
+			)`,
+					relationName: 'cte',
+					dependOnFields: [1],
+					dependOnParams: ['name'],
+					parameters: []
+				}
+			],
+			select: [
+				{
+					fragment: 'm1.id',
+					fragmentWitoutAlias: 'm1.id',
+				},
+				{
+					fragment: 'm2.name',
+					fragmentWitoutAlias: 'm2.name',
+				}
+			],
+			from: [
+				{
+					fragment: 'FROM mytable1 m1',
+					relationName: 'mytable1',
+					dependOnFields: [],
+					dependOnParams: [],
+					parameters: []
+				},
+				{
+					fragment: `INNER JOIN cte m2 on m2.id = m1.id`,
+					relationName: 'cte',
+					dependOnFields: [1], //m2.name
+					dependOnParams: ['name'],
+					parameters: []
+				}
+			],
+			where: [
+				{
+					fragment: `AND m2.name LIKE concat('%', ?, '%')`,
+					dependOnParams: ['name'],
+					parameters: ['name']
+				}
+			]
+
+		}
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert.deepStrictEqual(actual.right.dynamicSqlQuery2, expected);
+	})
+
 })

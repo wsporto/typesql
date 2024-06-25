@@ -417,4 +417,27 @@ INNER JOIN mytable2 m2 on m2.id = m1.id`
 		}
 		assert.deepStrictEqual(actual.right, expected);
 	})
+
+	it('dynamic-query-05', () => {
+		const sql = `-- @dynamicQuery
+    WITH 
+    cte as (
+            select id, name from mytable2
+        )
+SELECT 
+    m1.id,
+    m2.name
+FROM mytable1 m1
+INNER JOIN cte m2 on m2.id = m1.id
+WHERE m2.name LIKE concat('%', :name, '%')`
+
+		const isCrud = false;
+		const actual = generateTsCode(sql, 'cte', sqliteDbSchema, isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/dynamic-query05.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	})
 });

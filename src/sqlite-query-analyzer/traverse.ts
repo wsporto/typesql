@@ -57,7 +57,7 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
             const table_name = common_table_expression.table_name();
             const recursiveNames = common_table_expression.column_name_list().map(column_name => column_name.getText());
             const select_stmt = common_table_expression.select_stmt();
-            const select_stmt_result = traverse_select_stmt(select_stmt, traverseContext, subQuery, recursive, recursiveNames);
+            const select_stmt_result = traverse_select_stmt(select_stmt, { ...traverseContext, subQuery: true }, subQuery, recursive, recursiveNames);
             select_stmt_result.columns.forEach((col, index) => {
                 traverseContext.withSchema.push({
                     table: table_name.getText(),
@@ -66,6 +66,11 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
                     columnKey: '',
                     notNull: col.notNull
                 });
+            })
+            traverseContext.dynamicSqlInfo2.with.push({
+                fragment: extractOriginalSql(common_table_expression),
+                relationName: table_name.getText(),
+                parameters: []
             })
         })
     }
@@ -226,7 +231,8 @@ function traverse_select_core(select_core: Select_coreContext, traverseContext: 
     if (whereExpr) {
         traverse_expr(whereExpr, { ...traverseContext, fromColumns: fromColumns });
         if (!traverseContext.subQuery) {
-            whereExpr.expr_list().forEach(whereCond => {
+            const whereFragmentExprList = getWhereFragmentExpressions(whereExpr);
+            whereFragmentExprList.forEach(whereCond => {
                 const expressionList = getExpressions(whereCond, ExprContext);
                 const paramsIds = expressionList.filter(expr => (expr.expr as ExprContext).BIND_PARAMETER() != null).map(expr => (expr.expr as ExprContext).BIND_PARAMETER().symbol.start);
                 const params = getParamsIndexes(traverseContext.parameters, paramsIds);
@@ -389,7 +395,8 @@ function traverse_table_or_subquery(
 
             traverseContext.dynamicSqlInfo2.from.push({
                 fragment: fragment,
-                relation: relation.alias || relation.name,
+                relationName: relation.name,
+                relationAlias: relation.alias,
                 parentRelation: relation.parentRelation,
                 parameters: params
             })
@@ -1434,5 +1441,25 @@ function getParamsIndexes(parameters: TypeAndNullInferParam[], paramsIds: number
         map.set(param.paramIndex, index)
     })
     return paramsIds.map(id => map.get(id)!);
+}
+
+function getWhereFragmentExpressions(whereExpr: ExprContext): ExprContext[] {
+
+    const exprList: ExprContext[] = [];
+
+    const likeExpr = whereExpr.LIKE_();
+    if (likeExpr) {
+        addExpr(exprList, likeExpr.parentCtx);
+    }
+    if (!whereExpr.LIKE_()) {
+        exprList.push(...whereExpr.expr_list());
+    }
+    return exprList;
+}
+
+function addExpr(exprList: ExprContext[], parentCtx: ParserRuleContext) {
+    if (parentCtx instanceof ExprContext) {
+        exprList.push(parentCtx);
+    }
 }
 

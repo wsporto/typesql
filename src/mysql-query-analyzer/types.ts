@@ -141,6 +141,7 @@ export type DynamicSqlInfoResult = {
 }
 
 export type DynamicSqlInfo2 = {
+    with: WithFragment[];
     select: SelectFragment[];
     from: FromFragment[];
     where: WhereFragment[];
@@ -150,9 +151,17 @@ export type SelectFragment = {
     fragment: string;
     fragmentWitoutAlias?: string;
 }
+
+export type WithFragment = {
+    fragment: string;
+    relationName: string;
+    parameters: number[];
+}
+
 export type FromFragment = {
     fragment: string;
-    relation: string;
+    relationAlias: string;
+    relationName: string;
     parentRelation: string;
     parameters: number[];
 }
@@ -167,6 +176,7 @@ export type WhereFragementField = {
 }
 
 export type DynamicSqlInfoResult2 = {
+    with: FromFragementResult[];
     select: SelectFragment[];
     from: FromFragementResult[];
     where: WhereFragmentResult[];
@@ -174,6 +184,7 @@ export type DynamicSqlInfoResult2 = {
 
 export type FromFragementResult = {
     fragment: string;
+    relationName: string;
     dependOnFields: number[];
     dependOnParams: string[];
     parameters: string[];

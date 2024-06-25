@@ -326,7 +326,30 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
             writer.write(`export function ${camelCaseName}(${functionArguments}): ${returnType}`).block(() => {
                 writer.write('const where = whereConditionsToObject(params?.where);').newLine();
                 writer.write('const paramsValues: any = [];').newLine();
-                writer.write(`let sql = 'SELECT';`).newLine();
+                const hasCte = (tsDescriptor.dynamicQuery2?.with.length || 0) > 0;
+                if (hasCte) {
+                    writer.writeLine(`let withClause = '';`);
+                    tsDescriptor.dynamicQuery2?.with.forEach((withFragment, index) => {
+                        const selectConditions = withFragment.dependOnFields.map(fieldIndex => 'params.select.' + tsDescriptor.columns[fieldIndex].name);
+                        if (selectConditions.length > 0) {
+                            selectConditions.unshift('params?.select == null');
+                        }
+                        const paramConditions = withFragment.dependOnParams.map(param => 'params.params?.' + param + ' != null');
+                        const whereConditions = withFragment.dependOnFields.map(fieldIndex => 'where.' + tsDescriptor.columns[fieldIndex].name + ' != null');
+                        const allConditions = [...selectConditions, ...paramConditions, ...whereConditions];//, ...orderByConditions];
+                        const paramValues = withFragment.parameters.map(param => 'params?.params?.' + param);
+                        writer.write(`if (${allConditions.join(EOL + '\t|| ')})`).block(() => {
+                            writer.write(`withClause += EOL + \`${withFragment.fragment}\`;`);
+                            paramValues.forEach(paramValues => {
+                                writer.writeLine(`paramsValues.push(${paramValues});`);
+                            })
+                        })
+                    })
+                    writer.write(`let sql = 'WITH ' + withClause + EOL + 'SELECT';`).newLine();
+                }
+                else {
+                    writer.write(`let sql = 'SELECT';`).newLine();
+                }
                 tsDescriptor.dynamicQuery2?.select.forEach((select, index) => {
                     writer.write(`if (params?.select == null || params.select.${tsDescriptor.columns[index].name})`).block(() => {
                         writer.writeLine(`sql = appendSelect(sql, \`${select.fragment}\`);`)
