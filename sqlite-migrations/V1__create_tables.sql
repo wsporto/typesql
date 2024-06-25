@@ -18,7 +18,7 @@ CREATE TABLE mytable3 (
 CREATE TABLE mytable4(
     id TEXT PRIMARY KEY,
     name TEXT,
-    year INTEGER,
+    year INTEGER
 );
 
 CREATE TABLE all_types (
