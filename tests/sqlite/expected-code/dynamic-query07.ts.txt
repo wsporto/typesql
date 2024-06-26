@@ -140,9 +140,9 @@ function whereCondition(condition: DynamicQuery07Where): WhereConditionResult | 
 	}
 	if (operator == 'IN' || operator == 'NOT IN') {
 		return {
-			sql: `${selectFragment} ${operator} (?)`,
+			sql: `${selectFragment} ${operator} (${condition[2]?.map(_ => '?').join(', ')})`,
 			hasValue: condition[2] != null && condition[2].length > 0,
-			values: [condition[2]]
+			values: condition[2]
 		}
 	}
 	if (NumericOperatorList.includes(operator)) {

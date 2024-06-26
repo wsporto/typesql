@@ -141,9 +141,14 @@ function transformWithFragmnts(withFragments: WithFragment[], fromFragments: Fro
     })
 }
 
+type FromFragmentTempResult = FromFragementResult & {
+    parentRelation: string;
+    relationAlias: string;
+}
+
 function transformFromFragments(columns: ColumnInfo[], fromFragments: FromFragment[], whereFragements: WhereFragment[], namedParameters: string[], orderByColumns: string[]): FromFragementResult[] {
 
-    return fromFragments.map(from => {
+    const fromResult = fromFragments.map(from => {
         const orderBy = orderByColumns.flatMap(orderBy => {
             const orderByField = splitName(orderBy);
             const found = from.fields.find(field => field == orderByField.name && (from.relationAlias == orderByField.prefix || from.relationName == orderByField.prefix || orderByField.prefix == ''));
@@ -153,9 +158,11 @@ function transformFromFragments(columns: ColumnInfo[], fromFragments: FromFragme
             return [];
         })
         const dependOnParams = getDepenedOnParams(from, whereFragements).map(paramIndex => namedParameters[paramIndex]);
-        const fromFragmentResult: FromFragementResult = {
+        const fromFragmentResult: FromFragmentTempResult = {
             fragment: from.fragment,
             relationName: from.relationName,
+            relationAlias: from.relationAlias,
+            parentRelation: from.parentRelation,
             dependOnFields: getDependOnFields(columns, from),
             dependOnParams: [...new Set(dependOnParams)],
             dependOnOrderBy: orderBy,
@@ -163,6 +170,24 @@ function transformFromFragments(columns: ColumnInfo[], fromFragments: FromFragme
         }
         return fromFragmentResult;
     })
+
+    const withChildren = fromResult.map(parentFrom => {
+        const actualAndChildRelations = fromResult.filter(childFrom => (childFrom.parentRelation == parentFrom.relationAlias && parentFrom.parentRelation != '') || childFrom.relationName == parentFrom.relationName);
+        const dependOnFields = actualAndChildRelations.flatMap(from => from.dependOnFields);
+        const dependOnParams = actualAndChildRelations.flatMap(from => from.dependOnParams);
+        const dependOnOrderBy = actualAndChildRelations.flatMap(from => from.dependOnOrderBy);
+        const result: FromFragementResult = {
+            fragment: parentFrom.fragment,
+            relationName: parentFrom.relationName,
+            dependOnFields,
+            dependOnParams,
+            dependOnOrderBy,
+            parameters: parentFrom.parameters
+        }
+        return result;
+    })
+    return withChildren;
+
 }
 
 function transformWhereFragments(whereFragements: WhereFragment[], namedParameters: string[]): WhereFragmentResult[] {

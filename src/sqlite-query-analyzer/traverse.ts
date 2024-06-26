@@ -189,12 +189,12 @@ function traverse_select_core(select_core: Select_coreContext, traverseContext: 
                         notNull: col.notNull,
                         table: table
                     });
-                }
-                if (!traverseContext.subQuery) {
-                    traverseContext.dynamicSqlInfo2.select.push({
-                        fragment: `${table}.${col.columnName}`,
-                        fragmentWitoutAlias: `${table}.${col.columnName}`
-                    })
+                    if (!traverseContext.subQuery) {
+                        traverseContext.dynamicSqlInfo2.select.push({
+                            fragment: `${table}.${col.columnName}`,
+                            fragmentWitoutAlias: `${table}.${col.columnName}`
+                        })
+                    }
                 }
             })
         }
