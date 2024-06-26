@@ -366,6 +366,24 @@ AND m2.descr = :description`
 		assert.deepStrictEqual(actual.right, expected);
 	})
 
+	it('dynamic-query-01-libsql', () => {
+		const sql = `-- @dynamicQuery
+SELECT m1.id, m1.value, m2.name, m2.descr as description
+FROM mytable1 m1
+INNER JOIN mytable2 m2 on m1.id = m2.id
+WHERE m2.name = :name
+AND m2.descr = :description`
+
+		const isCrud = false;
+		const actual = generateTsCode(sql, 'dynamic-query-01', sqliteDbSchema, isCrud, 'libsql');
+		const expected = readFileSync('tests/sqlite/expected-code/dynamic-query01-libsql.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	})
+
 	it('dynamic-query-02', () => {
 		const sql = `-- @dynamicQuery
 SELECT m1.id, m2.name

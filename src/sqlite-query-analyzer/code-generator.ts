@@ -257,232 +257,242 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 
     if (client == 'sqlite') {
         writer.writeLine(`import { Database } from 'better-sqlite3';`);
-        if (tsDescriptor.dynamicQuery2 != null) {
-            writer.writeLine(`import { EOL } from 'os';`);
+    }
+    if (client == 'libsql') {
+        writer.writeLine(`import { Client, Transaction } from '@libsql/client';`);
+    }
+    if (tsDescriptor.dynamicQuery2 != null) {
+        writer.writeLine(`import { EOL } from 'os';`);
 
-            writer.blankLine();
+        writer.blankLine();
 
-            writer.write(`export type ${dynamicParamsTypeName} = `).block(() => {
-                writer.writeLine(`select?: ${selectColumnsTypeName};`);
-                if (paramsTypes.length > 0) {
-                    writer.writeLine(`params?: ${paramsTypeName};`);
-                }
-                writer.writeLine(`where?: ${whereTypeName}[];`);
-                if (orderByField) {
-                    writer.writeLine(`${orderByField};`);
-                }
+        writer.write(`export type ${dynamicParamsTypeName} = `).block(() => {
+            writer.writeLine(`select?: ${selectColumnsTypeName};`);
+            if (paramsTypes.length > 0) {
+                writer.writeLine(`params?: ${paramsTypeName};`);
+            }
+            writer.writeLine(`where?: ${whereTypeName}[];`);
+            if (orderByField) {
+                writer.writeLine(`${orderByField};`);
+            }
+        })
+        writer.blankLine();
+        writeTypeBlock(writer, paramsTypes, paramsTypeName, false, tsDescriptor.dynamicQuery2 ? undefined : orderByField);
+        const resultTypes = tsDescriptor.dynamicQuery2 == null ? tsDescriptor.columns : mapToDynamicResultColumns(tsDescriptor.columns);
+        writeTypeBlock(writer, resultTypes, resultTypeName, false);
+        const selectFields = mapToDynamicSelectColumns(tsDescriptor.columns);
+        writeTypeBlock(writer, selectFields, selectColumnsTypeName, false);
+        writer.write(`const selectFragments = `).inlineBlock(() => {
+            tsDescriptor.dynamicQuery2?.select.forEach((fragment, index) => {
+                const field = tsDescriptor.columns[index].name;
+                writer.writeLine(`${field}: \`${fragment.fragmentWitoutAlias}\`,`);
+            });
+        })
+        writer.write(' as const;');
+        writer.blankLine();
+        writer.writeLine(`const NumericOperatorList = ['=', '<>', '>', '<', '>=', '<='] as const;`);
+        writer.writeLine(`type NumericOperator = typeof NumericOperatorList[number];`);
+        if (hasStringColumn(tsDescriptor.columns)) {
+            writer.writeLine(`type StringOperator = '=' | '<>' | '>' | '<' | '>=' | '<=' | 'LIKE';`);
+        }
+        writer.writeLine(`type SetOperator = 'IN' | 'NOT IN';`);
+        writer.writeLine(`type BetweenOperator = 'BETWEEN';`);
+        writer.blankLine();
+        writer.write(`export type ${whereTypeName} =`).indent(() => {
+            tsDescriptor.columns.forEach(col => {
+                writer.writeLine(`| ['${col.name}', ${getOperator(col.tsType)}, ${col.tsType} | null]`);
+                writer.writeLine(`| ['${col.name}', SetOperator, ${col.tsType}[]]`);
+                writer.writeLine(`| ['${col.name}', BetweenOperator, ${col.tsType} | null, ${col.tsType} | null]`);
             })
-            writer.blankLine();
-            writeTypeBlock(writer, paramsTypes, paramsTypeName, false, tsDescriptor.dynamicQuery2 ? undefined : orderByField);
-            const resultTypes = tsDescriptor.dynamicQuery2 == null ? tsDescriptor.columns : mapToDynamicResultColumns(tsDescriptor.columns);
-            writeTypeBlock(writer, resultTypes, resultTypeName, false);
-            const selectFields = mapToDynamicSelectColumns(tsDescriptor.columns);
-            writeTypeBlock(writer, selectFields, selectColumnsTypeName, false);
-            writer.write(`const selectFragments = `).inlineBlock(() => {
-                tsDescriptor.dynamicQuery2?.select.forEach((fragment, index) => {
-                    const field = tsDescriptor.columns[index].name;
-                    writer.writeLine(`${field}: \`${fragment.fragmentWitoutAlias}\`,`);
+        });
+        writer.blankLine();
+        const asyncModified = client == 'libsql' ? 'async ' : '';
+        const returnTypeModifier = client == 'libsql' ? `Promise<${returnType}>` : returnType;
+        writer.write(`export ${asyncModified}function ${camelCaseName}(${functionArguments}): ${returnTypeModifier}`).block(() => {
+            writer.write('const where = whereConditionsToObject(params?.where);').newLine();
+            if (orderByField != null) {
+                writer.writeLine(`const orderBy = orderByToObject(params.orderBy);`)
+            }
+            writer.write('const paramsValues: any = [];').newLine();
+            const hasCte = (tsDescriptor.dynamicQuery2?.with.length || 0) > 0;
+            if (hasCte) {
+                writer.writeLine(`let withClause = '';`);
+                tsDescriptor.dynamicQuery2?.with.forEach((withFragment, index) => {
+                    const selectConditions = withFragment.dependOnFields.map(fieldIndex => 'params.select.' + tsDescriptor.columns[fieldIndex].name);
+                    if (selectConditions.length > 0) {
+                        selectConditions.unshift('params?.select == null');
+                    }
+                    const paramConditions = withFragment.dependOnParams.map(param => 'params.params?.' + param + ' != null');
+                    const whereConditions = withFragment.dependOnFields.map(fieldIndex => 'where.' + tsDescriptor.columns[fieldIndex].name + ' != null');
+                    const orderByConditions = withFragment.dependOnOrderBy?.map(orderBy => 'orderBy[\'' + orderBy + '\'] != null') || [];
+                    const allConditions = [...selectConditions, ...paramConditions, ...whereConditions, ...orderByConditions];
+                    const paramValues = withFragment.parameters.map(param => 'params?.params?.' + param);
+                    writer.write(`if (${allConditions.join(EOL + '\t|| ')})`).block(() => {
+                        writer.write(`withClause += EOL + \`${withFragment.fragment}\`;`);
+                        paramValues.forEach(paramValues => {
+                            writer.writeLine(`paramsValues.push(${paramValues});`);
+                        })
+                    })
+                })
+                writer.write(`let sql = 'WITH ' + withClause + EOL + 'SELECT';`).newLine();
+            }
+            else {
+                writer.write(`let sql = 'SELECT';`).newLine();
+            }
+            tsDescriptor.dynamicQuery2?.select.forEach((select, index) => {
+                writer.write(`if (params?.select == null || params.select.${tsDescriptor.columns[index].name})`).block(() => {
+                    writer.writeLine(`sql = appendSelect(sql, \`${select.fragment}\`);`)
                 });
             })
-            writer.write(' as const;');
-            writer.blankLine();
-            writer.writeLine(`const NumericOperatorList = ['=', '<>', '>', '<', '>=', '<='] as const;`);
-            writer.writeLine(`type NumericOperator = typeof NumericOperatorList[number];`);
-            if (hasStringColumn(tsDescriptor.columns)) {
-                writer.writeLine(`type StringOperator = '=' | '<>' | '>' | '<' | '>=' | '<=' | 'LIKE';`);
-            }
-            writer.writeLine(`type SetOperator = 'IN' | 'NOT IN';`);
-            writer.writeLine(`type BetweenOperator = 'BETWEEN';`);
-            writer.blankLine();
-            writer.write(`export type ${whereTypeName} =`).indent(() => {
-                tsDescriptor.columns.forEach(col => {
-                    writer.writeLine(`| ['${col.name}', ${getOperator(col.tsType)}, ${col.tsType} | null]`);
-                    writer.writeLine(`| ['${col.name}', SetOperator, ${col.tsType}[]]`);
-                    writer.writeLine(`| ['${col.name}', BetweenOperator, ${col.tsType} | null, ${col.tsType} | null]`);
-                })
-            });
-            writer.blankLine();
-            writer.write(`export function ${camelCaseName}(${functionArguments}): ${returnType}`).block(() => {
-                writer.write('const where = whereConditionsToObject(params?.where);').newLine();
-                if (orderByField != null) {
-                    writer.writeLine(`const orderBy = orderByToObject(params.orderBy);`)
-                }
-                writer.write('const paramsValues: any = [];').newLine();
-                const hasCte = (tsDescriptor.dynamicQuery2?.with.length || 0) > 0;
-                if (hasCte) {
-                    writer.writeLine(`let withClause = '';`);
-                    tsDescriptor.dynamicQuery2?.with.forEach((withFragment, index) => {
-                        const selectConditions = withFragment.dependOnFields.map(fieldIndex => 'params.select.' + tsDescriptor.columns[fieldIndex].name);
-                        if (selectConditions.length > 0) {
-                            selectConditions.unshift('params?.select == null');
-                        }
-                        const paramConditions = withFragment.dependOnParams.map(param => 'params.params?.' + param + ' != null');
-                        const whereConditions = withFragment.dependOnFields.map(fieldIndex => 'where.' + tsDescriptor.columns[fieldIndex].name + ' != null');
-                        const orderByConditions = withFragment.dependOnOrderBy?.map(orderBy => 'orderBy[\'' + orderBy + '\'] != null') || [];
-                        const allConditions = [...selectConditions, ...paramConditions, ...whereConditions, ...orderByConditions];
-                        const paramValues = withFragment.parameters.map(param => 'params?.params?.' + param);
-                        writer.write(`if (${allConditions.join(EOL + '\t|| ')})`).block(() => {
-                            writer.write(`withClause += EOL + \`${withFragment.fragment}\`;`);
-                            paramValues.forEach(paramValues => {
-                                writer.writeLine(`paramsValues.push(${paramValues});`);
-                            })
-                        })
-                    })
-                    writer.write(`let sql = 'WITH ' + withClause + EOL + 'SELECT';`).newLine();
+
+            tsDescriptor.dynamicQuery2?.from.forEach((from, index) => {
+                if (index == 0) {
+                    writer.writeLine(`sql += EOL + \`${from.fragment}\`;`);
                 }
                 else {
-                    writer.write(`let sql = 'SELECT';`).newLine();
-                }
-                tsDescriptor.dynamicQuery2?.select.forEach((select, index) => {
-                    writer.write(`if (params?.select == null || params.select.${tsDescriptor.columns[index].name})`).block(() => {
-                        writer.writeLine(`sql = appendSelect(sql, \`${select.fragment}\`);`)
-                    });
-                })
-
-                tsDescriptor.dynamicQuery2?.from.forEach((from, index) => {
-                    if (index == 0) {
-                        writer.writeLine(`sql += EOL + \`${from.fragment}\`;`);
+                    const selectConditions = from.dependOnFields.map(fieldIndex => 'params.select.' + tsDescriptor.columns[fieldIndex].name);
+                    if (selectConditions.length > 0) {
+                        selectConditions.unshift('params?.select == null');
                     }
-                    else {
-                        const selectConditions = from.dependOnFields.map(fieldIndex => 'params.select.' + tsDescriptor.columns[fieldIndex].name);
-                        if (selectConditions.length > 0) {
-                            selectConditions.unshift('params?.select == null');
-                        }
-                        const paramConditions = from.dependOnParams.map(param => 'params.params?.' + param + ' != null');
-                        const whereConditions = from.dependOnFields.map(fieldIndex => 'where.' + tsDescriptor.columns[fieldIndex].name + ' != null');
-                        const orderByConditions = from.dependOnOrderBy?.map(orderBy => 'orderBy[\'' + orderBy + '\'] != null') || [];
-                        const allConditions = [...selectConditions, ...paramConditions, ...whereConditions, ...orderByConditions];
-                        const paramValues = from.parameters.map(param => 'params?.params?.' + param);
-                        writer.write(`if (${allConditions.join(EOL + '\t|| ')})`).block(() => {
-                            writer.write(`sql += EOL + \`${from.fragment}\`;`);
-                            paramValues.forEach(paramValues => {
-                                writer.writeLine(`paramsValues.push(${paramValues});`);
-                            })
+                    const paramConditions = from.dependOnParams.map(param => 'params.params?.' + param + ' != null');
+                    const whereConditions = from.dependOnFields.map(fieldIndex => 'where.' + tsDescriptor.columns[fieldIndex].name + ' != null');
+                    const orderByConditions = from.dependOnOrderBy?.map(orderBy => 'orderBy[\'' + orderBy + '\'] != null') || [];
+                    const allConditions = [...selectConditions, ...paramConditions, ...whereConditions, ...orderByConditions];
+                    const paramValues = from.parameters.map(param => 'params?.params?.' + param);
+                    writer.write(`if (${allConditions.join(EOL + '\t|| ')})`).block(() => {
+                        writer.write(`sql += EOL + \`${from.fragment}\`;`);
+                        paramValues.forEach(paramValues => {
+                            writer.writeLine(`paramsValues.push(${paramValues});`);
                         })
-                    }
-                })
-                writer.writeLine(`sql += EOL + \`WHERE 1 = 1\`;`);
-                tsDescriptor.dynamicQuery2?.where.forEach(fragment => {
-                    const ifParamConditions = fragment.dependOnParams.map(param => 'params?.params?.' + param + ' != null');
-                    const paramValues = fragment.parameters.map(param => 'params.params.' + param);
-                    if (ifParamConditions.length > 0) {
-                        writer.write(`if (${ifParamConditions.join(' || ')})`).block(() => {
-                            writer.writeLine(`sql += EOL + \`${fragment.fragment}\`;`);
-                            paramValues.forEach(paramValues => {
-                                writer.writeLine(`paramsValues.push(${paramValues});`);
-                            })
-                        })
-                    }
-                    else {
-                        writer.writeLine(`sql += EOL + '${fragment.fragment}';`);
-                    }
-                })
-                writer.write(`params?.where?.forEach(condition => `).inlineBlock(() => {
-                    writer.writeLine(`const where = whereCondition(condition);`)
-                    writer.write(`if (where?.hasValue)`).block(() => {
-                        writer.writeLine(`sql += EOL + 'AND ' + where.sql;`)
-                        writer.write(`paramsValues.push(...where.values);`)
                     })
-                })
-                writer.write(');').newLine();
-                if (tsDescriptor.orderByColumns) {
-                    writer.writeLine('sql += EOL + `ORDER BY ${escapeOrderBy(params.orderBy)}`;')
                 }
+            })
+            writer.writeLine(`sql += EOL + \`WHERE 1 = 1\`;`);
+            tsDescriptor.dynamicQuery2?.where.forEach(fragment => {
+                const ifParamConditions = fragment.dependOnParams.map(param => 'params?.params?.' + param + ' != null');
+                const paramValues = fragment.parameters.map(param => 'params.params.' + param);
+                if (ifParamConditions.length > 0) {
+                    writer.write(`if (${ifParamConditions.join(' || ')})`).block(() => {
+                        writer.writeLine(`sql += EOL + \`${fragment.fragment}\`;`);
+                        paramValues.forEach(paramValues => {
+                            writer.writeLine(`paramsValues.push(${paramValues});`);
+                        })
+                    })
+                }
+                else {
+                    writer.writeLine(`sql += EOL + '${fragment.fragment}';`);
+                }
+            })
+            writer.write(`params?.where?.forEach(condition => `).inlineBlock(() => {
+                writer.writeLine(`const where = whereCondition(condition);`)
+                writer.write(`if (where?.hasValue)`).block(() => {
+                    writer.writeLine(`sql += EOL + 'AND ' + where.sql;`)
+                    writer.write(`paramsValues.push(...where.values);`)
+                })
+            })
+            writer.write(');').newLine();
+            if (tsDescriptor.orderByColumns) {
+                writer.writeLine('sql += EOL + `ORDER BY ${escapeOrderBy(params.orderBy)}`;')
+            }
+            if (client == 'sqlite') {
                 writer.write('return db.prepare(sql)').newLine();
                 writer.indent().write('.raw(true)').newLine();
                 writer.indent().write(`.all(paramsValues)`).newLine();
                 writer.indent().write(`.map(data => mapArrayTo${resultTypeName}(data, params?.select))${tsDescriptor.multipleRowsResult ? '' : '[0]'};`);
+            }
+            if (client == 'libsql') {
+                writer.write('return client.execute({ sql, args: paramsValues })').newLine();
+                writer.indent().write('.then(res => res.rows)').newLine();
+                writer.indent().write(`.then(rows => rows.map(row => mapArrayTo${resultTypeName}(row, params?.select)))${tsDescriptor.multipleRowsResult ? '' : '[0]'};`);
+            }
+
+        });
+        writer.blankLine();
+        writer.write(`function mapArrayTo${resultTypeName}(data: any, select?: ${selectColumnsTypeName})`).block(() => {
+            writer.writeLine(`const result = {} as ${resultTypeName};`);
+            writer.writeLine(`let rowIndex = 0;`);
+            tsDescriptor.columns.forEach((tsField) => {
+                writer.write(`if (select == null || select.${tsField.name})`).block(() => {
+                    writer.writeLine(`result.${tsField.name} = data[rowIndex++];`);
+                })
+            })
+            writer.write('return result;');
+        })
+        writer.blankLine();
+        writer.write(`function appendSelect(sql: string, selectField: string)`).block(() => {
+            writer.write(`if (sql == 'SELECT')`).block(() => {
+                writer.writeLine(`return sql + EOL + selectField;`);
+            })
+            writer.write(`else`).block(() => {
+                writer.writeLine(`return sql + ', ' + EOL + selectField;`);
+            })
+        })
+        writer.blankLine();
+        writer.write(`function whereConditionsToObject(whereConditions?: ${whereTypeName}[])`).block(() => {
+            writer.writeLine(`const obj = {} as any;`);
+            writer.write(`whereConditions?.forEach(condition => `).inlineBlock(() => {
+                writer.writeLine(`const where = whereCondition(condition);`)
+                writer.write(`if (where?.hasValue) `).block(() => {
+                    writer.writeLine(`obj[condition[0]] = true;`);
+                })
             });
+            writer.write(');');
+            writer.writeLine(`return obj;`);
+        })
+        if (orderByField != null) {
             writer.blankLine();
-            writer.write(`function mapArrayTo${resultTypeName}(data: any, select?: ${selectColumnsTypeName})`).block(() => {
-                writer.writeLine(`const result = {} as ${resultTypeName};`);
-                writer.writeLine(`let rowIndex = 0;`);
-                tsDescriptor.columns.forEach((tsField) => {
-                    writer.write(`if (select == null || select.${tsField.name})`).block(() => {
-                        writer.writeLine(`result.${tsField.name} = data[rowIndex++];`);
-                    })
-                })
-                writer.write('return result;');
-            })
-            writer.blankLine();
-            writer.write(`function appendSelect(sql: string, selectField: string)`).block(() => {
-                writer.write(`if (sql == 'SELECT')`).block(() => {
-                    writer.writeLine(`return sql + EOL + selectField;`);
-                })
-                writer.write(`else`).block(() => {
-                    writer.writeLine(`return sql + ', ' + EOL + selectField;`);
-                })
-            })
-            writer.blankLine();
-            writer.write(`function whereConditionsToObject(whereConditions?: ${whereTypeName}[])`).block(() => {
+            writer.write(`function orderByToObject(orderBy: ${dynamicParamsTypeName}['orderBy'])`).block(() => {
                 writer.writeLine(`const obj = {} as any;`);
-                writer.write(`whereConditions?.forEach(condition => `).inlineBlock(() => {
-                    writer.writeLine(`const where = whereCondition(condition);`)
-                    writer.write(`if (where?.hasValue) `).block(() => {
-                        writer.writeLine(`obj[condition[0]] = true;`);
-                    })
+                writer.write(`orderBy?.forEach(order => `).inlineBlock(() => {
+                    writer.writeLine(`obj[order[0]] = true;`);
                 });
                 writer.write(');');
                 writer.writeLine(`return obj;`);
             })
-            if (orderByField != null) {
-                writer.blankLine();
-                writer.write(`function orderByToObject(orderBy: ${dynamicParamsTypeName}['orderBy'])`).block(() => {
-                    writer.writeLine(`const obj = {} as any;`);
-                    writer.write(`orderBy?.forEach(order => `).inlineBlock(() => {
-                        writer.writeLine(`obj[order[0]] = true;`);
-                    });
-                    writer.write(');');
-                    writer.writeLine(`return obj;`);
-                })
-            }
+        }
+        writer.blankLine();
+        writer.write(`type WhereConditionResult = `).block(() => {
+            writer.writeLine('sql: string;');
+            writer.writeLine('hasValue: boolean;');
+            writer.writeLine('values: any[];');
+        })
+        writer.blankLine();
+        writer.write(`function whereCondition(condition: ${whereTypeName}): WhereConditionResult | undefined `).block(() => {
             writer.blankLine();
-            writer.write(`type WhereConditionResult = `).block(() => {
-                writer.writeLine('sql: string;');
-                writer.writeLine('hasValue: boolean;');
-                writer.writeLine('values: any[];');
-            })
+            writer.writeLine('const selectFragment = selectFragments[condition[0]];');
+            writer.writeLine('const operator = condition[1];');
             writer.blankLine();
-            writer.write(`function whereCondition(condition: ${whereTypeName}): WhereConditionResult | undefined `).block(() => {
-                writer.blankLine();
-                writer.writeLine('const selectFragment = selectFragments[condition[0]];');
-                writer.writeLine('const operator = condition[1];');
-                writer.blankLine();
-                if (hasStringColumn(tsDescriptor.columns)) {
-                    writer.write(`if (operator == 'LIKE') `).block(() => {
-                        writer.write(`return `).block(() => {
-                            writer.writeLine('sql: `${selectFragment} LIKE concat(\'%\', ?, \'%\')`,');
-                            writer.writeLine('hasValue: condition[2] != null,');
-                            writer.writeLine('values: [condition[2]]');
-                        });
-                    });
-                }
-                writer.write(`if (operator == 'BETWEEN') `).block(() => {
+            if (hasStringColumn(tsDescriptor.columns)) {
+                writer.write(`if (operator == 'LIKE') `).block(() => {
                     writer.write(`return `).block(() => {
-                        writer.writeLine('sql: `${selectFragment} BETWEEN ? AND ?`,');
-                        writer.writeLine('hasValue: condition[2] != null && condition[3] != null,');
-                        writer.writeLine('values: [condition[2], condition[3]]');
-                    });
-                });
-                writer.write(`if (operator == 'IN' || operator == 'NOT IN') `).block(() => {
-                    writer.write(`return `).block(() => {
-                        writer.writeLine('sql: `${selectFragment} ${operator} (?)`,');
-                        writer.writeLine('hasValue: condition[2] != null && condition[2].length > 0,');
-                        writer.writeLine('values: [condition[2]]');
-                    });
-                });
-                writer.write(`if (NumericOperatorList.includes(operator)) `).block(() => {
-                    writer.write(`return `).block(() => {
-                        writer.writeLine('sql: `${selectFragment} ${operator} ?`,');
+                        writer.writeLine('sql: `${selectFragment} LIKE concat(\'%\', ?, \'%\')`,');
                         writer.writeLine('hasValue: condition[2] != null,');
                         writer.writeLine('values: [condition[2]]');
                     });
                 });
-            })
-        }
-    }
-    if (client == 'libsql') {
-        writer.writeLine(`import { Client, Transaction } from '@libsql/client';`);
+            }
+            writer.write(`if (operator == 'BETWEEN') `).block(() => {
+                writer.write(`return `).block(() => {
+                    writer.writeLine('sql: `${selectFragment} BETWEEN ? AND ?`,');
+                    writer.writeLine('hasValue: condition[2] != null && condition[3] != null,');
+                    writer.writeLine('values: [condition[2], condition[3]]');
+                });
+            });
+            writer.write(`if (operator == 'IN' || operator == 'NOT IN') `).block(() => {
+                writer.write(`return `).block(() => {
+                    writer.writeLine('sql: `${selectFragment} ${operator} (${condition[2]?.map(_ => \'?\').join(\', \')})`,');
+                    writer.writeLine('hasValue: condition[2] != null && condition[2].length > 0,');
+                    writer.writeLine('values: condition[2]');
+                });
+            });
+            writer.write(`if (NumericOperatorList.includes(operator)) `).block(() => {
+                writer.write(`return `).block(() => {
+                    writer.writeLine('sql: `${selectFragment} ${operator} ?`,');
+                    writer.writeLine('hasValue: condition[2] != null,');
+                    writer.writeLine('values: [condition[2]]');
+                });
+            });
+        })
     }
     if (tsDescriptor.dynamicQuery2 == null) {
         if (uniqueUpdateParams.length > 0) {
@@ -614,7 +624,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
             writer.writeLine('return result;');
         });
     }
-    else if (client == 'libsql' && !tsDescriptor.returning) {
+    else if (client == 'libsql' && !tsDescriptor.returning && tsDescriptor.dynamicQuery2 == null) {
         writer.blankLine();
         writer.write(`function mapArrayTo${resultTypeName}(data: any) `).block(() => {
             writer.write(`const result: ${resultTypeName} = `).block(() => {
