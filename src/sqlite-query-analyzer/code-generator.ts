@@ -256,10 +256,10 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
     const queryParams = allParameters.length > 0 ? '[' + allParameters.join(', ') + ']' : '';
 
     if (client == 'sqlite') {
-        writer.writeLine(`import { Database } from 'better-sqlite3';`);
+        writer.writeLine(`import type { Database } from 'better-sqlite3';`);
     }
     if (client == 'libsql') {
-        writer.writeLine(`import { Client, Transaction } from '@libsql/client';`);
+        writer.writeLine(`import type { Client, Transaction } from '@libsql/client';`);
     }
     if (tsDescriptor.dynamicQuery2 != null) {
         writer.writeLine(`import { EOL } from 'os';`);

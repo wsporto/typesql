@@ -1,4 +1,4 @@
-import { Client, Transaction } from '@libsql/client';
+import type { Client, Transaction } from '@libsql/client';
 
 export type Update01Data = {
 	param1: number | null;

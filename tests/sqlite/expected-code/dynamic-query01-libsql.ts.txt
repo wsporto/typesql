@@ -1,4 +1,4 @@
-import { Client, Transaction } from '@libsql/client';
+import type { Client, Transaction } from '@libsql/client';
 import { EOL } from 'os';
 
 export type DynamicQuery01DynamicParams = {
