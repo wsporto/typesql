@@ -168,12 +168,8 @@ export type FromFragment = {
 }
 export type WhereFragment = {
     fragment: string;
-    fields: WhereFragementField[];
-}
-
-export type WhereFragementField = {
+    dependOnRelations: string[];
     parameters: number[];
-    dependOnRelation: string;
 }
 
 export type DynamicSqlInfoResult2 = {

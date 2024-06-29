@@ -1,5 +1,5 @@
 import { Select_stmtContext, Sql_stmtContext, ExprContext, Table_or_subqueryContext, Result_columnContext, Insert_stmtContext, Column_nameContext, Update_stmtContext, Delete_stmtContext, Join_constraintContext, Table_nameContext, Join_operatorContext, Returning_clauseContext, Select_coreContext } from "@wsporto/ts-mysql-parser/dist/sqlite";
-import { ColumnDef, FieldName, FromFragment, TraverseContext, TypeAndNullInfer, TypeAndNullInferParam, WhereFragementField } from "../mysql-query-analyzer/types";
+import { ColumnDef, FieldName, FromFragment, TraverseContext, TypeAndNullInfer, TypeAndNullInferParam } from "../mysql-query-analyzer/types";
 import { filterColumns, findColumn, findColumnSchema, getExpressions, includeColumn, splitName } from "../mysql-query-analyzer/select-columns";
 import { createColumnType, freshVar } from "../mysql-query-analyzer/collect-constraints";
 import { DeleteResult, InsertResult, QuerySpecificationResult, SelectResult, TraverseResult2, UpdateResult, getOrderByColumns } from "../mysql-query-analyzer/traverse";
@@ -236,23 +236,19 @@ function traverse_select_core(select_core: Select_coreContext, traverseContext: 
                 const expressionList = getExpressions(whereCond, ExprContext);
                 const paramsIds = expressionList.filter(expr => (expr.expr as ExprContext).BIND_PARAMETER() != null).map(expr => (expr.expr as ExprContext).BIND_PARAMETER().symbol.start);
                 const params = getParamsIndexes(traverseContext.parameters, paramsIds);
-
                 const columnsRef = getExpressions(whereCond, Column_nameContext);
-                const cols = columnsRef.filter(expr => !expr.isSubQuery).map(colRef => {
-                    const fieldName = splitName(colRef.expr.getText());
+                const relations = columnsRef.filter(expr => !expr.isSubQuery).map(colRef => {
+                    const fieldName = splitName((colRef.expr as ExprContext).parentCtx!.getText());
                     const column = findColumn(fieldName, fromColumns);
-                    const fields: WhereFragementField = {
-                        parameters: params,
-                        dependOnRelation: column.tableAlias || column.table
-                    }
-                    return fields;
+                    return column.tableAlias || column.table;
                 })
 
                 const openPar = whereExpr.OPEN_PAR() != null ? '(' : '';
                 const closePar = whereExpr.CLOSE_PAR() != null ? ')' : '';
                 traverseContext.dynamicSqlInfo2.where.push({
                     fragment: `AND ${openPar}${extractOriginalSql(whereCond)}${closePar}`,
-                    fields: cols
+                    dependOnRelations: relations,
+                    parameters: params
                 })
             });
         }

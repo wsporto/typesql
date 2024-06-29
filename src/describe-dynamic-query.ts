@@ -192,7 +192,7 @@ function transformFromFragments(columns: ColumnInfo[], fromFragments: FromFragme
 
 function transformWhereFragments(whereFragements: WhereFragment[], namedParameters: string[]): WhereFragmentResult[] {
     return whereFragements.map(where => {
-        const parameters = where.fields.flatMap(field => field.parameters.map(param => namedParameters[param]));
+        const parameters = where.parameters.map(param => namedParameters[param]);
         const whereFragmentResult: WhereFragmentResult = {
             fragment: where.fragment,
             dependOnParams: [...new Set(parameters)],
@@ -215,14 +215,12 @@ function getDependOnFields(columns: ColumnInfo[], relationInfo: { relationName: 
 
 function getDepenedOnParams(fromFragement: FromFragment, whereFragments: WhereFragment[]): number[] {
     const params = whereFragments.flatMap(whereFragement => {
-        return whereFragement.fields.flatMap(field => {
-            if (fromFragement.relationAlias == field.dependOnRelation) {
-                return field.parameters
-            }
-            else {
-                return []
-            }
-        })
+        if (fromFragement.parentRelation != '' && whereFragement.dependOnRelations.includes(fromFragement.relationAlias)) {
+            return whereFragement.parameters
+        }
+        else {
+            return []
+        }
     })
 
     return params;

@@ -57,24 +57,15 @@ describe('sqlite-generate-dynamic-info', () => {
 			where: [
 				{
 					fragment: 'AND m2.name = ?',
-					fields: [
-						{
-							parameters: [0],
-							dependOnRelation: 'm2'
-						}
-					]
+					dependOnRelations: ['m2'],
+					parameters: [0]
 				},
 				{
 					fragment: 'AND m2.descr = ?',
-					fields: [
-						{
-							parameters: [1],
-							dependOnRelation: 'm2'
-						}
-					]
+					dependOnRelations: ['m2'],
+					parameters: [1]
 				},
 			]
-
 		}
 
 		if (isLeft(actual)) {
@@ -144,7 +135,6 @@ describe('sqlite-generate-dynamic-info', () => {
 					parameters: ['description']
 				},
 			]
-
 		}
 
 		if (isLeft(actual)) {
@@ -201,17 +191,12 @@ describe('sqlite-generate-dynamic-info', () => {
 			where: [
 				{
 					fragment: 'AND (? is NULL or m2.name = ?)',
-					fields: [
-						{
-							parameters: [1, 2],
-							dependOnRelation: 'm2'
-						}
-					]
+					dependOnRelations: ['m2'],
+					parameters: [1, 2]
 				}
 			]
 
 		}
-
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error`);
 		}
@@ -271,7 +256,6 @@ describe('sqlite-generate-dynamic-info', () => {
 					parameters: ['name', 'name']
 				}
 			]
-
 		}
 
 		if (isLeft(actual)) {
@@ -336,15 +320,10 @@ describe('sqlite-generate-dynamic-info', () => {
 			where: [
 				{
 					fragment: `AND m2.name LIKE concat('%', ?, '%')`,
-					fields: [
-						{
-							parameters: [0],
-							dependOnRelation: 'm2'
-						}
-					]
+					dependOnRelations: ['m2'],
+					parameters: [0]
 				}
 			]
-
 		}
 
 		if (isLeft(actual)) {
@@ -417,7 +396,6 @@ describe('sqlite-generate-dynamic-info', () => {
 					parameters: ['name']
 				}
 			]
-
 		}
 
 		if (isLeft(actual)) {
@@ -487,7 +465,6 @@ describe('sqlite-generate-dynamic-info', () => {
 				}
 			],
 			where: []
-
 		}
 
 		if (isLeft(actual)) {
@@ -557,6 +534,126 @@ describe('sqlite-generate-dynamic-info', () => {
 				}
 			],
 			where: []
+		}
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert.deepStrictEqual(actual.right.dynamicSqlQuery2, expected);
+	})
+
+	it('dynamic-traverse-result-06', () => {
+
+		const sql = `-- @dynamicQuery
+		select t2.name, t3.name as name2
+		from mytable2 t2
+		inner join mytable3 t3 on t3.id = t2.id
+		where (concat('%', t2.name, '%') = :name OR concat('%', t3.name, '%') = :name)`
+
+		const actual = traverseSql(sql, sqliteDbSchema);
+		const expected: DynamicSqlInfo2 = {
+			with: [],
+			select: [
+				{
+					fragment: 't2.name',
+					fragmentWitoutAlias: 't2.name',
+				},
+				{
+					fragment: 't3.name as name2',
+					fragmentWitoutAlias: 't3.name',
+				}
+			],
+			from: [
+				{
+					fragment: 'FROM mytable2 t2',
+					relationName: 'mytable2',
+					relationAlias: 't2',
+					parentRelation: '',
+					fields: ['id', 'name', 'descr'],
+					parameters: []
+				},
+				{
+					fragment: 'inner join mytable3 t3 on t3.id = t2.id',
+					relationName: 'mytable3',
+					relationAlias: 't3',
+					parentRelation: 't2',
+					fields: ['id', 'double_value', 'name'],
+					parameters: []
+				}
+			],
+			where: [
+				{
+					fragment: `AND (concat('%', t2.name, '%') = ? OR concat('%', t3.name, '%') = ?)`,
+					dependOnRelations: ['t2', 't3'],
+					parameters: [0, 1]
+					// fields: [
+					// 	{
+					// 		dependOnRelation: 't2',
+					// 		parameters: [0]
+					// 	},
+					// 	{
+					// 		dependOnRelation: 't3',
+					// 		parameters: [1]
+					// 	}
+					// ]
+				}
+			]
+
+		}
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert(actual.right.traverseResult.queryType == 'Select');
+		assert.deepStrictEqual(actual.right.traverseResult.dynamicQueryInfo, expected);
+	})
+
+	it('dynamic-info-result06', () => {
+
+		const sql = `-- @dynamicQuery
+		select t2.name, t3.name as name2
+		from mytable2 t2
+		inner join mytable3 t3 on t3.id = t2.id
+		where (concat('%', t2.name, '%') = :name OR concat('%', t3.name, '%') = :name)`
+
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: DynamicSqlInfoResult2 = {
+			with: [],
+			select: [
+				{
+					fragment: 't2.name',
+					fragmentWitoutAlias: 't2.name',
+				},
+				{
+					fragment: 't3.name as name2',
+					fragmentWitoutAlias: 't3.name',
+				}
+			],
+			from: [
+				{
+					fragment: 'FROM mytable2 t2',
+					relationName: 'mytable2',
+					dependOnFields: [],
+					dependOnParams: [],
+					dependOnOrderBy: [],
+					parameters: []
+				},
+				{
+					fragment: 'inner join mytable3 t3 on t3.id = t2.id',
+					relationName: 'mytable3',
+					dependOnFields: [1],
+					dependOnParams: ['name'],
+					dependOnOrderBy: [],
+					parameters: []
+				}
+			],
+			where: [
+				{
+					fragment: `AND (concat('%', t2.name, '%') = ? OR concat('%', t3.name, '%') = ?)`,
+					dependOnParams: ['name'],
+					parameters: ['name', 'name']
+				}
+			]
 
 		}
 
