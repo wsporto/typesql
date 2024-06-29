@@ -86,12 +86,14 @@ export function cte(db: Database, params?: CteDynamicParams): CteResult[] {
 
 function mapArrayToCteResult(data: any, select?: CteSelect) {
 	const result = {} as CteResult;
-	let rowIndex = 0;
+	let rowIndex = -1;
 	if (select == null || select.id) {
-		result.id = data[rowIndex++];
+		rowIndex++;
+		result.id = data[rowIndex];
 	}
 	if (select == null || select.name) {
-		result.name = data[rowIndex++];
+		rowIndex++;
+		result.name = data[rowIndex];
 	}
 	return result;
 }

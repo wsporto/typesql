@@ -495,4 +495,18 @@ ORDER BY ?`
 		}
 		assert.deepStrictEqual(actual.right, expected);
 	})
+
+	it('dynamic-query-08 - date', () => {
+		const sql = `-- @dynamicQuery
+SELECT text_column, date(text_column) as date FROM all_types`
+
+		const isCrud = false;
+		const actual = generateTsCode(sql, 'dynamic-query08', sqliteDbSchema, isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/dynamic-query08-date.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	})
 });

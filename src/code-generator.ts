@@ -640,6 +640,10 @@ export function hasStringColumn(columns: TsFieldDescriptor[]) {
     return columns.some(c => c.tsType == 'string');
 }
 
+export function hasDateColumn(columns: TsFieldDescriptor[]) {
+    return columns.some(c => c.tsType == 'Date');
+}
+
 export function replaceOrderByParam(sql: string) {
     const patern = /(.*order\s+by\s*)(\?)(.\n$)*/i;
     const newSql = sql.replace(patern, "$1${escapeOrderBy(params.orderBy)}$3");

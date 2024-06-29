@@ -106,21 +106,26 @@ export function dynamicQuery06(db: Database, params: DynamicQuery06DynamicParams
 
 function mapArrayToDynamicQuery06Result(data: any, select?: DynamicQuery06Select) {
 	const result = {} as DynamicQuery06Result;
-	let rowIndex = 0;
+	let rowIndex = -1;
 	if (select == null || select.id) {
-		result.id = data[rowIndex++];
+		rowIndex++;
+		result.id = data[rowIndex];
 	}
 	if (select == null || select.value) {
-		result.value = data[rowIndex++];
+		rowIndex++;
+		result.value = data[rowIndex];
 	}
 	if (select == null || select.id_2) {
-		result.id_2 = data[rowIndex++];
+		rowIndex++;
+		result.id_2 = data[rowIndex];
 	}
 	if (select == null || select.name) {
-		result.name = data[rowIndex++];
+		rowIndex++;
+		result.name = data[rowIndex];
 	}
 	if (select == null || select.descr) {
-		result.descr = data[rowIndex++];
+		rowIndex++;
+		result.descr = data[rowIndex];
 	}
 	return result;
 }

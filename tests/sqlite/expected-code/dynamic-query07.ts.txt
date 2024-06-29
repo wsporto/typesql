@@ -75,12 +75,14 @@ export function dynamicQuery07(db: Database, params: DynamicQuery07DynamicParams
 
 function mapArrayToDynamicQuery07Result(data: any, select?: DynamicQuery07Select) {
 	const result = {} as DynamicQuery07Result;
-	let rowIndex = 0;
+	let rowIndex = -1;
 	if (select == null || select.myId) {
-		result.myId = data[rowIndex++];
+		rowIndex++;
+		result.myId = data[rowIndex];
 	}
 	if (select == null || select.name) {
-		result.name = data[rowIndex++];
+		rowIndex++;
+		result.name = data[rowIndex];
 	}
 	return result;
 }

@@ -83,12 +83,14 @@ export function derivatedTable(db: Database, params?: DerivatedTableDynamicParam
 
 function mapArrayToDerivatedTableResult(data: any, select?: DerivatedTableSelect) {
 	const result = {} as DerivatedTableResult;
-	let rowIndex = 0;
+	let rowIndex = -1;
 	if (select == null || select.id) {
-		result.id = data[rowIndex++];
+		rowIndex++;
+		result.id = data[rowIndex];
 	}
 	if (select == null || select.name) {
-		result.name = data[rowIndex++];
+		rowIndex++;
+		result.name = data[rowIndex];
 	}
 	return result;
 }

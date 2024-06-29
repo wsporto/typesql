@@ -1,0 +1,145 @@
+import type { Database } from 'better-sqlite3';
+import { EOL } from 'os';
+
+export type DynamicQuery08DynamicParams = {
+	select?: DynamicQuery08Select;
+	where?: DynamicQuery08Where[];
+}
+
+export type DynamicQuery08Result = {
+	text_column?: string;
+	date?: Date;
+}
+
+export type DynamicQuery08Select = {
+	text_column?: boolean;
+	date?: boolean;
+}
+
+const selectFragments = {
+	text_column: `text_column`,
+	date: `date(text_column)`,
+} as const;
+
+const NumericOperatorList = ['=', '<>', '>', '<', '>=', '<='] as const;
+type NumericOperator = typeof NumericOperatorList[number];
+type StringOperator = '=' | '<>' | '>' | '<' | '>=' | '<=' | 'LIKE';
+type SetOperator = 'IN' | 'NOT IN';
+type BetweenOperator = 'BETWEEN';
+
+export type DynamicQuery08Where =
+	| ['text_column', StringOperator, string | null]
+	| ['text_column', SetOperator, string[]]
+	| ['text_column', BetweenOperator, string | null, string | null]
+	| ['date', NumericOperator, Date | null]
+	| ['date', SetOperator, Date[]]
+	| ['date', BetweenOperator, Date | null, Date | null]
+
+export function dynamicQuery08(db: Database, params?: DynamicQuery08DynamicParams): DynamicQuery08Result[] {
+	const where = whereConditionsToObject(params?.where);
+	const paramsValues: any = [];
+	let sql = 'SELECT';
+	if (params?.select == null || params.select.text_column) {
+		sql = appendSelect(sql, `text_column`);
+	}
+	if (params?.select == null || params.select.date) {
+		sql = appendSelect(sql, `date(text_column) as date`);
+	}
+	sql += EOL + `FROM all_types`;
+	sql += EOL + `WHERE 1 = 1`;
+	params?.where?.forEach(condition => {
+		const where = whereCondition(condition);
+		if (where?.hasValue) {
+			sql += EOL + 'AND ' + where.sql;
+			paramsValues.push(...where.values);
+		}
+	});
+	return db.prepare(sql)
+		.raw(true)
+		.all(paramsValues)
+		.map(data => mapArrayToDynamicQuery08Result(data, params?.select));
+}
+
+function mapArrayToDynamicQuery08Result(data: any, select?: DynamicQuery08Select) {
+	const result = {} as DynamicQuery08Result;
+	let rowIndex = -1;
+	if (select == null || select.text_column) {
+		rowIndex++;
+		result.text_column = data[rowIndex];
+	}
+	if (select == null || select.date) {
+		rowIndex++;
+		result.date = data[rowIndex] != null ? new Date(data[rowIndex]) : data[rowIndex];
+	}
+	return result;
+}
+
+function appendSelect(sql: string, selectField: string) {
+	if (sql == 'SELECT') {
+		return sql + EOL + selectField;
+	}
+	else {
+		return sql + ', ' + EOL + selectField;
+	}
+}
+
+function whereConditionsToObject(whereConditions?: DynamicQuery08Where[]) {
+	const obj = {} as any;
+	whereConditions?.forEach(condition => {
+		const where = whereCondition(condition);
+		if (where?.hasValue) {
+			obj[condition[0]] = true;
+		}
+	});
+	return obj;
+}
+
+type WhereConditionResult = {
+	sql: string;
+	hasValue: boolean;
+	values: any[];
+}
+
+function whereCondition(condition: DynamicQuery08Where): WhereConditionResult | undefined {
+
+	const selectFragment = selectFragments[condition[0]];
+	const operator = condition[1];
+
+	if (operator == 'LIKE') {
+		return {
+			sql: `${selectFragment} LIKE concat('%', ?, '%')`,
+			hasValue: condition[2] != null,
+			values: [condition[2]]
+		}
+	}
+	if (operator == 'BETWEEN') {
+		const value1 = isDate(condition[2]) ? condition[2]?.toISOString() : condition[2];
+		const value2 = isDate(condition[3]) ? condition[3]?.toISOString() : condition[3];
+		const param = isDate(condition[2]) && isDate(condition[3]) ? 'date(?)' : '?';
+		return {
+			sql: `${selectFragment} BETWEEN ${param} AND ${param}`,
+			hasValue: value1 != null && value2 != null,
+			values: [value1, value2]
+		}
+	}
+	if (operator == 'IN' || operator == 'NOT IN') {
+		return {
+			sql: `${selectFragment} ${operator} (${condition[2]?.map(value => isDate(value) ? 'date(?)' : '?').join(', ')})`,
+			hasValue: condition[2] != null && condition[2].length > 0,
+			values: condition[2].map(value => isDate(value) ? value.toISOString() : value)
+		}
+	}
+	if (NumericOperatorList.includes(operator)) {
+		const value = isDate(condition[2]) ? condition[2]?.toISOString() : condition[2];
+		const param = isDate(condition[2]) ? 'date(?)' : '?';
+		return {
+			sql: `${selectFragment} ${operator} ${param}`,
+			hasValue: value != null,
+			values: [value]
+		}
+	}
+}
+
+function isDate(value: any): value is Date {
+	return value instanceof Date;
+}
