@@ -244,23 +244,23 @@ function traverse_select_core(select_core: Select_coreContext, traverseContext: 
             })
         }
     }
+    const newColumns = listType.map(selectField => {
+        const col: ColumnDef = {
+            columnName: selectField.name,
+            table: selectField.table,
+            columnType: selectField.type,
+            notNull: selectField.notNull,
+            columnKey: ""
+        }
+        return col;
+    })
     const groupByExprList = select_core._groupByExpr || [];
     groupByExprList.forEach(groupByExpr => {
-        traverse_expr(groupByExpr, { ...traverseContext, fromColumns: fromColumns });
+        traverse_expr(groupByExpr, { ...traverseContext, fromColumns: newColumns.concat(fromColumns) });
     })
 
     const havingExpr = select_core._havingExpr;
     if (havingExpr) {
-        const newColumns = listType.map(selectField => {
-            const col: ColumnDef = {
-                columnName: selectField.name,
-                table: selectField.table,
-                columnType: selectField.type,
-                notNull: selectField.notNull,
-                columnKey: ""
-            }
-            return col;
-        })
         //select have precedence: newColumns.concat(fromColumns) 
         traverse_expr(havingExpr, { ...traverseContext, fromColumns: newColumns.concat(fromColumns) });
     }

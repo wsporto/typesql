@@ -1304,6 +1304,41 @@ describe('sqlite-Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('SELECT id as id2, SUM(ID) as sumById FROM mytable1 t1 GROUP BY id2', () => {
+
+        const sql = `
+        SELECT id as id2, SUM(ID) as sumById
+        FROM mytable1 t1
+        GROUP BY id2;
+        `;
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'id2',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: 't1'
+                },
+                {
+                    columnName: 'sumById',
+                    type: 'INTEGER',
+                    notNull: false,
+                    table: 't1'
+                }
+            ],
+            parameters: []
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it('SELECT SUM(ID) as sumById FROM all_types t1 GROUP BY id', () => {
 
         const sql = `
