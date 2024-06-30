@@ -1447,6 +1447,42 @@ describe('sqlite-Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('order by with case when expression2', () => {
+        const sql = `
+            select 
+            id, 
+            case when name = 'a' then 1 else 0 end as sort
+        from mytable2 t2
+        order by sort asc
+        `;
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: 't2'
+                },
+                {
+                    columnName: 'sort',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: ''
+                }
+            ],
+            parameters: []
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it('order by with subselect', () => {
         const sql = `
         select value from (

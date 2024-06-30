@@ -77,9 +77,9 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
 
     const [mainSelect, ...unionSelect] = select_stmt.select_core_list();
     const mainQueryResult = traverse_select_core(mainSelect, traverseContext, subQuery, recursive, recursiveNames);
+    const fromColumns = recursive ? mainQueryResult.columns.map((col, index) => mapTypeAndNullInferToColumnDef(col, recursiveNames[index])) : traverseContext.fromColumns;
 
     unionSelect.forEach(select_core => {
-        const fromColumns = recursive ? mainQueryResult.columns.map((col, index) => mapTypeAndNullInferToColumnDef(col, recursiveNames[index])) : traverseContext.fromColumns;
         const unionResult = traverse_select_core(select_core, { ...traverseContext, fromColumns }, subQuery, recursive);
         unionResult.columns.forEach((col, colIndex) => {
             mainQueryResult.columns[colIndex].table = '';
@@ -104,6 +104,7 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
     const order_by_stmt = select_stmt.order_by_stmt();
     let hasOrderByParameter = false;
     if (order_by_stmt) {
+        const selectColumns = mainQueryResult.columns.map((col, index) => mapTypeAndNullInferToColumnDef(col, recursiveNames[index]));
         const ordering_term_list = order_by_stmt.ordering_term_list();
         ordering_term_list.forEach(ordering_term => {
             const expr = ordering_term.expr();
@@ -111,7 +112,7 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
                 hasOrderByParameter = true;
             }
             else {
-                traverse_expr(expr, { ...traverseContext, fromColumns: mainQueryResult.fromColumns });
+                traverse_expr(expr, { ...traverseContext, fromColumns: fromColumns.concat(selectColumns) });
             }
         })
         if (hasOrderByParameter) {
