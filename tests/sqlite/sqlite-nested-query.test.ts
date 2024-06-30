@@ -2,9 +2,10 @@ import assert from "assert";
 import { isLeft } from "fp-ts/lib/Either";
 import { parseSql } from "../../src/sqlite-query-analyzer/parser";
 import { sqliteDbSchema } from "../mysql-query-analyzer/create-schema";
-import { RelationInfo2 } from "../../src/sqlite-query-analyzer/sqlite-describe-nested-query";
+import { RelationInfo2, describeNestedQuery } from "../../src/sqlite-query-analyzer/sqlite-describe-nested-query";
 import { loadDbSchema } from "../../src/sqlite-query-analyzer/query-executor";
 import Database from "better-sqlite3";
+import { TypeSqlError } from '../../src/types';
 
 describe('sqlite-nested-query', () => {
 
@@ -1070,5 +1071,28 @@ describe('sqlite-nested-query', () => {
 		}
 
 		assert.deepStrictEqual(actual.right.nestedInfo, expectedModel);
+	})
+
+	it('nested query - join column not selected', () => {
+
+		const sql = `-- @nested
+SELECT 
+	t2.id,
+	t2.name
+FROM mytable1 t1
+INNER JOIN mytable2 t2 on t2.id = t1.id `
+
+
+		const actual = parseSql(sql, sqliteDbSchema);
+		if (!isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+
+		const expectedError: TypeSqlError = {
+			name: 'Error during nested result creation',
+			description: 'Must select the join column: t1.id'
+		}
+
+		assert.deepStrictEqual(actual.left, expectedError);
 	})
 })

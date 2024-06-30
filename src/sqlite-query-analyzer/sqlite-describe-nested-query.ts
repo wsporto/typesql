@@ -1,5 +1,7 @@
+import { Either, left, right } from 'fp-ts/lib/Either';
 import { Cardinality } from "../describe-nested-query";
 import { ColumnInfo } from "../mysql-query-analyzer/types";
+import { TypeSqlError } from '../types';
 
 export type Relation2 = {
 	name: string;
@@ -36,7 +38,7 @@ export type NestedRelation = {
 	relations?: NestedRelation[];
 }
 
-export function describeNestedQuery(columns: ColumnInfo[], relations: Relation2[]): RelationInfo2[] {
+export function describeNestedQuery(columns: ColumnInfo[], relations: Relation2[]): Either<TypeSqlError, RelationInfo2[]> {
 	const isJunctionTableMap = new Map<string, boolean>();
 	const parentRef = new Map<string, Relation2>();
 	relations.forEach(relation => {
@@ -46,10 +48,18 @@ export function describeNestedQuery(columns: ColumnInfo[], relations: Relation2[
 		parentRef.set(relationId, relation);
 	})
 	const filterJunctionTables = relations.filter(relation => !isJunctionTableMap.get(relation.alias || relation.name));
+	const result: RelationInfo2[] = [];
 
-	const result = filterJunctionTables.map((relation, index) => {
+	for (let [index, relation] of filterJunctionTables.entries()) {
 		const parent = isJunctionTableMap.get(relation.parentRelation) ? parentRef.get(relation.parentRelation) : undefined;
 		const groupIndex = columns.findIndex(col => col.columnName == relation.joinColumn && (col.table == relation.name || col.table == relation.alias));
+		if (groupIndex == -1) {
+			const error: TypeSqlError = {
+				name: 'Error during nested result creation',
+				description: `Must select the join column: ${relation.alias || relation.name}.${relation.joinColumn}`
+			}
+			return left(error);
+		}
 
 		const relationInfo: RelationInfo2 = {
 			groupIndex: groupIndex,
@@ -74,9 +84,9 @@ export function describeNestedQuery(columns: ColumnInfo[], relations: Relation2[
 					}
 				))
 		}
-		return relationInfo;
-	})
-	return result;
+		result.push(relationInfo)
+	}
+	return right(result);
 }
 
 function isJunctionTable(relation: Relation2, relations: Relation2[]): boolean {

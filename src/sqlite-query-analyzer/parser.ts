@@ -150,7 +150,10 @@ function createSchemaDefinition(sql: string, queryResult: TraverseResult2, named
         }
         if (nestedQuery) {
             const nestedResult = describeNestedQuery(columnResult, queryResult.relations);
-            schemaDef.nestedInfo = nestedResult;
+            if (isLeft(nestedResult)) {
+                return nestedResult;
+            }
+            schemaDef.nestedInfo = nestedResult.right;
         }
         if (dynamicQuery) {
             const dynamicSqlInfo = describeDynamicQuery2(queryResult.dynamicQueryInfo, namedParameters, queryResult.orderByColumns || []);
