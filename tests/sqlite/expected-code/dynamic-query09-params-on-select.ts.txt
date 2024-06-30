@@ -1,0 +1,159 @@
+import type { Database } from 'better-sqlite3';
+import { EOL } from 'os';
+
+export type DynamicQuery09DynamicParams = {
+	select?: DynamicQuery09Select;
+	params?: DynamicQuery09Params;
+	where?: DynamicQuery09Where[];
+}
+
+export type DynamicQuery09Params = {
+	name?: string | null;
+}
+
+export type DynamicQuery09Result = {
+	id?: number;
+	double_value?: number;
+	likeName?: number;
+}
+
+export type DynamicQuery09Select = {
+	id?: boolean;
+	double_value?: boolean;
+	likeName?: boolean;
+}
+
+const selectFragments = {
+	id: `t2.id`,
+	double_value: `t3.double_value`,
+	likeName: `? is null OR concat('%', t2.name, t3.name, '%') LIKE ?`,
+} as const;
+
+const NumericOperatorList = ['=', '<>', '>', '<', '>=', '<='] as const;
+type NumericOperator = typeof NumericOperatorList[number];
+type SetOperator = 'IN' | 'NOT IN';
+type BetweenOperator = 'BETWEEN';
+
+export type DynamicQuery09Where =
+	| ['id', NumericOperator, number | null]
+	| ['id', SetOperator, number[]]
+	| ['id', BetweenOperator, number | null, number | null]
+	| ['double_value', NumericOperator, number | null]
+	| ['double_value', SetOperator, number[]]
+	| ['double_value', BetweenOperator, number | null, number | null]
+	| ['likeName', NumericOperator, number | null]
+	| ['likeName', SetOperator, number[]]
+	| ['likeName', BetweenOperator, number | null, number | null]
+
+export function dynamicQuery09(db: Database, params?: DynamicQuery09DynamicParams): DynamicQuery09Result[] {
+	const where = whereConditionsToObject(params?.where);
+	const paramsValues: any = [];
+	let sql = 'SELECT';
+	if (params?.select == null || params.select.id) {
+		sql = appendSelect(sql, `t2.id`);
+	}
+	if (params?.select == null || params.select.double_value) {
+		sql = appendSelect(sql, `t3.double_value`);
+	}
+	if (params?.select == null || params.select.likeName) {
+		sql = appendSelect(sql, `? is null OR concat('%', t2.name, t3.name, '%') LIKE ? as likeName`);
+		paramsValues.push(params?.params?.name ?? null);
+		paramsValues.push(params?.params?.name ?? null);
+	}
+	sql += EOL + `FROM mytable2 t2`;
+	if (params?.select == null
+		|| params.select.double_value
+		|| params.select.likeName
+		|| where.double_value != null
+		|| where.likeName != null) {
+		sql += EOL + `INNER JOIN mytable3 t3 on t3.id = t2.id`;
+	}
+	sql += EOL + `WHERE 1 = 1`;
+	params?.where?.forEach(condition => {
+		const where = whereCondition(condition);
+		if (condition[0] == 'likeName') {
+			paramsValues.push(params?.params?.name ?? null);
+			paramsValues.push(params?.params?.name ?? null);
+		}
+		if (where?.hasValue) {
+			sql += EOL + 'AND ' + where.sql;
+			paramsValues.push(...where.values);
+		}
+	});
+	return db.prepare(sql)
+		.raw(true)
+		.all(paramsValues)
+		.map(data => mapArrayToDynamicQuery09Result(data, params?.select));
+}
+
+function mapArrayToDynamicQuery09Result(data: any, select?: DynamicQuery09Select) {
+	const result = {} as DynamicQuery09Result;
+	let rowIndex = -1;
+	if (select == null || select.id) {
+		rowIndex++;
+		result.id = data[rowIndex];
+	}
+	if (select == null || select.double_value) {
+		rowIndex++;
+		result.double_value = data[rowIndex];
+	}
+	if (select == null || select.likeName) {
+		rowIndex++;
+		result.likeName = data[rowIndex];
+	}
+	return result;
+}
+
+function appendSelect(sql: string, selectField: string) {
+	if (sql == 'SELECT') {
+		return sql + EOL + selectField;
+	}
+	else {
+		return sql + ', ' + EOL + selectField;
+	}
+}
+
+function whereConditionsToObject(whereConditions?: DynamicQuery09Where[]) {
+	const obj = {} as any;
+	whereConditions?.forEach(condition => {
+		const where = whereCondition(condition);
+		if (where?.hasValue) {
+			obj[condition[0]] = true;
+		}
+	});
+	return obj;
+}
+
+type WhereConditionResult = {
+	sql: string;
+	hasValue: boolean;
+	values: any[];
+}
+
+function whereCondition(condition: DynamicQuery09Where): WhereConditionResult | undefined {
+
+	const selectFragment = selectFragments[condition[0]];
+	const operator = condition[1];
+
+	if (operator == 'BETWEEN') {
+		return {
+			sql: `${selectFragment} BETWEEN ? AND ?`,
+			hasValue: condition[2] != null && condition[3] != null,
+			values: [condition[2], condition[3]]
+		}
+	}
+	if (operator == 'IN' || operator == 'NOT IN') {
+		return {
+			sql: `${selectFragment} ${operator} (${condition[2]?.map(_ => '?').join(', ')})`,
+			hasValue: condition[2] != null && condition[2].length > 0,
+			values: condition[2]
+		}
+	}
+	if (NumericOperatorList.includes(operator)) {
+		return {
+			sql: `${selectFragment} ${operator} ?`,
+			hasValue: condition[2] != null,
+			values: [condition[2]]
+		}
+	}
+}

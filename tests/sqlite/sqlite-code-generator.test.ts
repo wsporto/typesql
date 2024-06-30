@@ -509,4 +509,23 @@ SELECT text_column, date(text_column) as date FROM all_types`
 		}
 		assert.deepStrictEqual(actual.right, expected);
 	})
+
+	it('dynamic-query-09 - params on select', () => {
+		const sql = `-- @dynamicQuery
+SELECT 
+	t2.id, 
+	t3.double_value, 
+	:name is null OR concat('%', t2.name, t3.name, '%') LIKE :name as likeName
+FROM mytable2 t2
+INNER JOIN mytable3 t3 on t3.id = t2.id`
+
+		const isCrud = false;
+		const actual = generateTsCode(sql, 'dynamic-query09', sqliteDbSchema, isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/dynamic-query09-params-on-select.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	})
 });
