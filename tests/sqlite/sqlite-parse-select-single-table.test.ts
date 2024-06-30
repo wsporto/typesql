@@ -1339,7 +1339,7 @@ describe('sqlite-Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
-    it('SELECT SUM(ID) as sumById FROM all_types t1 GROUP BY id', () => {
+    it('SELECT SUM(real_column) as sumById FROM all_types t1 GROUP BY int_column', () => {
 
         const sql = `
         SELECT SUM(real_column) as sumById
