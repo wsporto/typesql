@@ -192,7 +192,9 @@ function traverse_select_core(select_core: Select_coreContext, traverseContext: 
                     if (!traverseContext.subQuery) {
                         traverseContext.dynamicSqlInfo2.select.push({
                             fragment: `${table}.${col.columnName}`,
-                            fragmentWitoutAlias: `${table}.${col.columnName}`
+                            fragmentWitoutAlias: `${table}.${col.columnName}`,
+                            dependOnRelations: [table],
+                            parameters: []
                         })
                     }
                 }
@@ -218,12 +220,14 @@ function traverse_select_core(select_core: Select_coreContext, traverseContext: 
             }
 
             if (!traverseContext.subQuery) {
+                const { relations, params } = extractRelationsAndParams(expr, fromColumns, traverseContext.parameters);
                 traverseContext.dynamicSqlInfo2.select.push({
                     fragment: extractOriginalSql(result_column),
-                    fragmentWitoutAlias: expr.getText()
+                    fragmentWitoutAlias: extractOriginalSql(expr),
+                    dependOnRelations: [...new Set(relations)],
+                    parameters: params
                 })
             }
-
         }
     })
 
@@ -231,26 +235,12 @@ function traverse_select_core(select_core: Select_coreContext, traverseContext: 
     if (whereExpr) {
         traverse_expr(whereExpr, { ...traverseContext, fromColumns: fromColumns });
         if (!traverseContext.subQuery) {
-            const whereFragmentExprList = getWhereFragmentExpressions(whereExpr);
-            whereFragmentExprList.forEach(whereCond => {
-                const expressionList = getExpressions(whereCond, ExprContext);
-                const paramsIds = expressionList.filter(expr => (expr.expr as ExprContext).BIND_PARAMETER() != null).map(expr => (expr.expr as ExprContext).BIND_PARAMETER().symbol.start);
-                const params = getParamsIndexes(traverseContext.parameters, paramsIds);
-                const columnsRef = getExpressions(whereCond, Column_nameContext);
-                const relations = columnsRef.filter(expr => !expr.isSubQuery).map(colRef => {
-                    const fieldName = splitName((colRef.expr as ExprContext).parentCtx!.getText());
-                    const column = findColumn(fieldName, fromColumns);
-                    return column.tableAlias || column.table;
-                })
-
-                const openPar = whereExpr.OPEN_PAR() != null ? '(' : '';
-                const closePar = whereExpr.CLOSE_PAR() != null ? ')' : '';
-                traverseContext.dynamicSqlInfo2.where.push({
-                    fragment: `AND ${openPar}${extractOriginalSql(whereCond)}${closePar}`,
-                    dependOnRelations: relations,
-                    parameters: params
-                })
-            });
+            const { relations, params } = extractRelationsAndParams(whereExpr, fromColumns, traverseContext.parameters);
+            traverseContext.dynamicSqlInfo2.where.push({
+                fragment: `AND ${extractOriginalSql(whereExpr)}`,
+                dependOnRelations: [...new Set(relations)], //remove duplicated
+                parameters: params
+            })
         }
     }
     const groupByExprList = select_core._groupByExpr || [];
@@ -281,6 +271,23 @@ function traverse_select_core(select_core: Select_coreContext, traverseContext: 
         fromColumns: columnsResult //TODO - return isMultipleRowResult instead
     }
     return querySpecification;
+}
+
+function extractRelationsAndParams(expr: ExprContext, fromColumns: ColumnDef[], parameters: TypeAndNullInferParam[]) {
+    const columnsRef = getExpressions(expr, Column_nameContext);
+    const relations = columnsRef.filter(expr => !expr.isSubQuery).map(colRef => {
+        const fieldName = splitName((colRef.expr as ExprContext).parentCtx!.getText());
+        const column = findColumn(fieldName, fromColumns);
+        return column.tableAlias || column.table;
+    })
+    const expressionList = getExpressions(expr, ExprContext);
+    const paramsIds = expressionList.filter(expr => (expr.expr as ExprContext).BIND_PARAMETER() != null).map(expr => (expr.expr as ExprContext).BIND_PARAMETER().symbol.start);
+    const params = getParamsIndexes(parameters, paramsIds);
+
+    return {
+        relations,
+        params
+    }
 }
 
 function traverse_table_or_subquery(

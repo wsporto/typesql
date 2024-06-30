@@ -322,10 +322,9 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
                     if (selectConditions.length > 0) {
                         selectConditions.unshift('params?.select == null');
                     }
-                    const paramConditions = withFragment.dependOnParams.map(param => 'params.params?.' + param + ' != null');
                     const whereConditions = withFragment.dependOnFields.map(fieldIndex => 'where.' + tsDescriptor.columns[fieldIndex].name + ' != null');
                     const orderByConditions = withFragment.dependOnOrderBy?.map(orderBy => 'orderBy[\'' + orderBy + '\'] != null') || [];
-                    const allConditions = [...selectConditions, ...paramConditions, ...whereConditions, ...orderByConditions];
+                    const allConditions = [...selectConditions, ...whereConditions, ...orderByConditions];
                     const paramValues = withFragment.parameters.map(param => 'params?.params?.' + param);
                     writer.write(`if (${allConditions.join(EOL + '\t|| ')})`).block(() => {
                         writer.write(`withClause += EOL + \`${withFragment.fragment}\`;`);
@@ -342,6 +341,9 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
             tsDescriptor.dynamicQuery2?.select.forEach((select, index) => {
                 writer.write(`if (params?.select == null || params.select.${tsDescriptor.columns[index].name})`).block(() => {
                     writer.writeLine(`sql = appendSelect(sql, \`${select.fragment}\`);`)
+                    select.parameters.forEach(param => {
+                        writer.writeLine(`paramsValues.push(params?.params?.${param} ?? null);`)
+                    })
                 });
             })
 
@@ -354,10 +356,9 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
                     if (selectConditions.length > 0) {
                         selectConditions.unshift('params?.select == null');
                     }
-                    const paramConditions = from.dependOnParams.map(param => 'params.params?.' + param + ' != null');
                     const whereConditions = from.dependOnFields.map(fieldIndex => 'where.' + tsDescriptor.columns[fieldIndex].name + ' != null');
                     const orderByConditions = from.dependOnOrderBy?.map(orderBy => 'orderBy[\'' + orderBy + '\'] != null') || [];
-                    const allConditions = [...selectConditions, ...paramConditions, ...whereConditions, ...orderByConditions];
+                    const allConditions = [...selectConditions, ...whereConditions, ...orderByConditions];
                     const paramValues = from.parameters.map(param => 'params?.params?.' + param);
                     writer.write(`if (${allConditions.join(EOL + '\t|| ')})`).block(() => {
                         writer.write(`sql += EOL + \`${from.fragment}\`;`);
@@ -369,22 +370,23 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
             })
             writer.writeLine(`sql += EOL + \`WHERE 1 = 1\`;`);
             tsDescriptor.dynamicQuery2?.where.forEach(fragment => {
-                const ifParamConditions = fragment.dependOnParams.map(param => 'params?.params?.' + param + ' != null');
-                const paramValues = fragment.parameters.map(param => 'params.params.' + param);
-                if (ifParamConditions.length > 0) {
-                    writer.write(`if (${ifParamConditions.join(' || ')})`).block(() => {
-                        writer.writeLine(`sql += EOL + \`${fragment.fragment}\`;`);
-                        paramValues.forEach(paramValues => {
-                            writer.writeLine(`paramsValues.push(${paramValues});`);
-                        })
-                    })
-                }
-                else {
-                    writer.writeLine(`sql += EOL + '${fragment.fragment}';`);
-                }
+                const paramValues = fragment.parameters.map(param => 'params?.params?.' + param + ' ?? null');
+                writer.writeLine(`sql += EOL + \`${fragment.fragment}\`;`);
+                paramValues.forEach(paramValues => {
+                    writer.writeLine(`paramsValues.push(${paramValues});`);
+                })
             })
             writer.write(`params?.where?.forEach(condition => `).inlineBlock(() => {
                 writer.writeLine(`const where = whereCondition(condition);`)
+                tsDescriptor.dynamicQuery2?.select.forEach((select, index) => {
+                    if (select.parameters.length > 0) {
+                        writer.write(`if (condition[0] == '${tsDescriptor.columns[index].name}')`).block(() => {
+                            select.parameters.forEach(param => {
+                                writer.writeLine(`paramsValues.push(params?.params?.${param} ?? null);`);
+                            })
+                        })
+                    }
+                });
                 writer.write(`if (where?.hasValue)`).block(() => {
                     writer.writeLine(`sql += EOL + 'AND ' + where.sql;`)
                     writer.write(`paramsValues.push(...where.values);`)

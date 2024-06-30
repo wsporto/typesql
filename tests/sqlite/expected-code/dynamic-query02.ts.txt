@@ -54,7 +54,6 @@ export function derivatedTable(db: Database, params?: DerivatedTableDynamicParam
 	sql += EOL + `FROM mytable1 m1`;
 	if (params?.select == null
 		|| params.select.name
-		|| params.params?.name != null
 		|| where.name != null) {
 		sql += EOL + `INNER JOIN ( -- derivated table
 	SELECT id, name from mytable2 m 
@@ -63,11 +62,9 @@ export function derivatedTable(db: Database, params?: DerivatedTableDynamicParam
 		paramsValues.push(params?.params?.subqueryName);
 	}
 	sql += EOL + `WHERE 1 = 1`;
-	if (params?.params?.name != null) {
-		sql += EOL + `AND (? is NULL or m2.name = ?)`;
-		paramsValues.push(params.params.name);
-		paramsValues.push(params.params.name);
-	}
+	sql += EOL + `AND (? is NULL or m2.name = ?)`;
+	paramsValues.push(params?.params?.name ?? null);
+	paramsValues.push(params?.params?.name ?? null);
 	params?.where?.forEach(condition => {
 		const where = whereCondition(condition);
 		if (where?.hasValue) {

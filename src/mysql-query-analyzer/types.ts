@@ -150,6 +150,8 @@ export type DynamicSqlInfo2 = {
 export type SelectFragment = {
     fragment: string;
     fragmentWitoutAlias?: string;
+    dependOnRelations: string[];
+    parameters: number[];
 }
 
 export type WithFragment = {
@@ -174,23 +176,27 @@ export type WhereFragment = {
 
 export type DynamicSqlInfoResult2 = {
     with: FromFragementResult[];
-    select: SelectFragment[];
+    select: SelectFragmentResult[];
     from: FromFragementResult[];
     where: WhereFragmentResult[];
+}
+
+export type SelectFragmentResult = {
+    fragment: string;
+    fragmentWitoutAlias?: string;
+    parameters: string[];
 }
 
 export type FromFragementResult = {
     fragment: string;
     relationName: string;
     dependOnFields: number[];
-    dependOnParams: string[];
     parameters: string[];
     dependOnOrderBy: string[];
 }
 
 export type WhereFragmentResult = {
     fragment: string;
-    dependOnParams: string[];
     parameters: string[];
 }
 

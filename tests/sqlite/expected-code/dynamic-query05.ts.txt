@@ -46,7 +46,6 @@ export function cte(db: Database, params?: CteDynamicParams): CteResult[] {
 	let withClause = '';
 	if (params?.select == null
 		|| params.select.name
-		|| params.params?.name != null
 		|| where.name != null) {
 		withClause += EOL + `cte as (
             select id, name from mytable2
@@ -62,15 +61,12 @@ export function cte(db: Database, params?: CteDynamicParams): CteResult[] {
 	sql += EOL + `FROM mytable1 m1`;
 	if (params?.select == null
 		|| params.select.name
-		|| params.params?.name != null
 		|| where.name != null) {
 		sql += EOL + `INNER JOIN cte m2 on m2.id = m1.id`;
 	}
 	sql += EOL + `WHERE 1 = 1`;
-	if (params?.params?.name != null) {
-		sql += EOL + `AND m2.name LIKE concat('%', ?, '%')`;
-		paramsValues.push(params.params.name);
-	}
+	sql += EOL + `AND m2.name LIKE concat('%', ?, '%')`;
+	paramsValues.push(params?.params?.name ?? null);
 	params?.where?.forEach(condition => {
 		const where = whereCondition(condition);
 		if (where?.hasValue) {

@@ -153,7 +153,7 @@ function createSchemaDefinition(sql: string, queryResult: TraverseResult2, named
             schemaDef.nestedInfo = nestedResult;
         }
         if (dynamicQuery) {
-            const dynamicSqlInfo = describeDynamicQuery2(columnResult, queryResult.dynamicQueryInfo, namedParameters, queryResult.orderByColumns || []);
+            const dynamicSqlInfo = describeDynamicQuery2(queryResult.dynamicQueryInfo, namedParameters, queryResult.orderByColumns || []);
             schemaDef.dynamicSqlQuery2 = dynamicSqlInfo;
         }
 

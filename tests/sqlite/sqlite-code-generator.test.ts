@@ -404,7 +404,7 @@ WHERE (:name is NULL or m2.name = :name)`
 		assert.deepStrictEqual(actual.right, expected);
 	})
 
-	it('dynamic-query-03', () => {//
+	it('dynamic-query-03', () => {
 		const sql = `-- @dynamicQuery
 SELECT t1.id, t1.value
 FROM mytable1 t1`

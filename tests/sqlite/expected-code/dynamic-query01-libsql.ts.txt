@@ -73,21 +73,15 @@ export async function dynamicQuery01(client: Client | Transaction, params?: Dyna
 	if (params?.select == null
 		|| params.select.name
 		|| params.select.description
-		|| params.params?.name != null
-		|| params.params?.description != null
 		|| where.name != null
 		|| where.description != null) {
 		sql += EOL + `INNER JOIN mytable2 m2 on m1.id = m2.id`;
 	}
 	sql += EOL + `WHERE 1 = 1`;
-	if (params?.params?.name != null) {
-		sql += EOL + `AND m2.name = ?`;
-		paramsValues.push(params.params.name);
-	}
-	if (params?.params?.description != null) {
-		sql += EOL + `AND m2.descr = ?`;
-		paramsValues.push(params.params.description);
-	}
+	sql += EOL + `AND m2.name = ?
+AND m2.descr = ?`;
+	paramsValues.push(params?.params?.name ?? null);
+	paramsValues.push(params?.params?.description ?? null);
 	params?.where?.forEach(condition => {
 		const where = whereCondition(condition);
 		if (where?.hasValue) {

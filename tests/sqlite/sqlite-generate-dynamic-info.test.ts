@@ -2,7 +2,7 @@ import assert from "assert";
 import { isLeft } from "fp-ts/lib/Either";
 import { parseSql, traverseSql } from "../../src/sqlite-query-analyzer/parser";
 import { sqliteDbSchema } from "../mysql-query-analyzer/create-schema";
-import { DynamicSqlInfo, DynamicSqlInfo2, DynamicSqlInfoResult2 } from '../../src/mysql-query-analyzer/types';
+import { DynamicSqlInfo2, DynamicSqlInfoResult2 } from '../../src/mysql-query-analyzer/types';
 
 describe('sqlite-generate-dynamic-info', () => {
 
@@ -22,18 +22,26 @@ describe('sqlite-generate-dynamic-info', () => {
 				{
 					fragment: 'm1.id',
 					fragmentWitoutAlias: 'm1.id',
+					dependOnRelations: ['m1'],
+					parameters: []
 				},
 				{
 					fragment: 'm1.value',
 					fragmentWitoutAlias: 'm1.value',
+					dependOnRelations: ['m1'],
+					parameters: []
 				},
 				{
 					fragment: 'm2.name',
 					fragmentWitoutAlias: 'm2.name',
+					dependOnRelations: ['m2'],
+					parameters: []
 				},
 				{
 					fragment: 'm2.descr as description',
 					fragmentWitoutAlias: 'm2.descr',
+					dependOnRelations: ['m2'],
+					parameters: []
 				},
 			],
 			from: [
@@ -56,15 +64,11 @@ describe('sqlite-generate-dynamic-info', () => {
 			],
 			where: [
 				{
-					fragment: 'AND m2.name = ?',
+					fragment: `AND m2.name = ?
+		OR m2.descr = ?`,
 					dependOnRelations: ['m2'],
-					parameters: [0]
-				},
-				{
-					fragment: 'AND m2.descr = ?',
-					dependOnRelations: ['m2'],
-					parameters: [1]
-				},
+					parameters: [0, 1]
+				}
 			]
 		}
 
@@ -91,18 +95,22 @@ describe('sqlite-generate-dynamic-info', () => {
 				{
 					fragment: 'm1.id',
 					fragmentWitoutAlias: 'm1.id',
+					parameters: []
 				},
 				{
 					fragment: 'm1.value',
 					fragmentWitoutAlias: 'm1.value',
+					parameters: []
 				},
 				{
 					fragment: 'm2.name',
 					fragmentWitoutAlias: 'm2.name',
+					parameters: []
 				},
 				{
 					fragment: 'm2.descr as description',
 					fragmentWitoutAlias: 'm2.descr',
+					parameters: []
 				},
 			],
 			from: [
@@ -110,7 +118,6 @@ describe('sqlite-generate-dynamic-info', () => {
 					fragment: 'FROM mytable1 m1',
 					relationName: 'mytable1',
 					dependOnFields: [],
-					dependOnParams: [],
 					dependOnOrderBy: [],
 					parameters: []
 				},
@@ -118,22 +125,16 @@ describe('sqlite-generate-dynamic-info', () => {
 					fragment: 'INNER JOIN mytable2 m2 on m1.id = m2.id',
 					relationName: 'mytable2',
 					dependOnFields: [2, 3],
-					dependOnParams: ['name', 'description'],
 					dependOnOrderBy: [],
 					parameters: []
 				}
 			],
 			where: [
 				{
-					fragment: 'AND m2.name = ?',
-					dependOnParams: ['name'],
-					parameters: ['name']
-				},
-				{
-					fragment: 'AND m2.descr = ?',
-					dependOnParams: ['description'],
-					parameters: ['description']
-				},
+					fragment: `AND m2.name = ?
+		OR m2.descr = ?`,
+					parameters: ['name', 'description']
+				}
 			]
 		}
 
@@ -161,10 +162,14 @@ describe('sqlite-generate-dynamic-info', () => {
 				{
 					fragment: 'm1.id',
 					fragmentWitoutAlias: 'm1.id',
+					dependOnRelations: ['m1'],
+					parameters: []
 				},
 				{
 					fragment: 'm2.name',
 					fragmentWitoutAlias: 'm2.name',
+					dependOnRelations: ['m2'],
+					parameters: []
 				},
 			],
 			from: [
@@ -222,10 +227,12 @@ describe('sqlite-generate-dynamic-info', () => {
 				{
 					fragment: 'm1.id',
 					fragmentWitoutAlias: 'm1.id',
+					parameters: []
 				},
 				{
 					fragment: 'm2.name',
 					fragmentWitoutAlias: 'm2.name',
+					parameters: []
 				}
 			],
 			from: [
@@ -233,7 +240,6 @@ describe('sqlite-generate-dynamic-info', () => {
 					fragment: 'FROM mytable1 m1',
 					relationName: 'mytable1',
 					dependOnFields: [],
-					dependOnParams: [],
 					dependOnOrderBy: [],
 					parameters: []
 				},
@@ -244,7 +250,6 @@ describe('sqlite-generate-dynamic-info', () => {
 		) m2 on m2.id = m1.id`,
 					relationName: '',
 					dependOnFields: [1],
-					dependOnParams: ['name'],
 					dependOnOrderBy: [],
 					parameters: ['subqueryName']
 				}
@@ -252,7 +257,6 @@ describe('sqlite-generate-dynamic-info', () => {
 			where: [
 				{
 					fragment: 'AND (? is NULL or m2.name = ?)',
-					dependOnParams: ['name'],
 					parameters: ['name', 'name']
 				}
 			]
@@ -293,10 +297,14 @@ describe('sqlite-generate-dynamic-info', () => {
 				{
 					fragment: 'm1.id',
 					fragmentWitoutAlias: 'm1.id',
+					dependOnRelations: ['m1'],
+					parameters: []
 				},
 				{
 					fragment: 'm2.name',
 					fragmentWitoutAlias: 'm2.name',
+					dependOnRelations: ['m2'],
+					parameters: []
 				}
 			],
 			from: [
@@ -356,7 +364,6 @@ describe('sqlite-generate-dynamic-info', () => {
 			)`,
 					relationName: 'cte',
 					dependOnFields: [1],
-					dependOnParams: ['name'],
 					dependOnOrderBy: [],
 					parameters: []
 				}
@@ -365,10 +372,12 @@ describe('sqlite-generate-dynamic-info', () => {
 				{
 					fragment: 'm1.id',
 					fragmentWitoutAlias: 'm1.id',
+					parameters: []
 				},
 				{
 					fragment: 'm2.name',
 					fragmentWitoutAlias: 'm2.name',
+					parameters: []
 				}
 			],
 			from: [
@@ -376,7 +385,6 @@ describe('sqlite-generate-dynamic-info', () => {
 					fragment: 'FROM mytable1 m1',
 					relationName: 'mytable1',
 					dependOnFields: [],
-					dependOnParams: [],
 					dependOnOrderBy: [],
 					parameters: []
 				},
@@ -384,7 +392,6 @@ describe('sqlite-generate-dynamic-info', () => {
 					fragment: `INNER JOIN cte m2 on m2.id = m1.id`,
 					relationName: 'cte',
 					dependOnFields: [1], //m2.name
-					dependOnParams: ['name'],
 					dependOnOrderBy: [],
 					parameters: []
 				}
@@ -392,7 +399,6 @@ describe('sqlite-generate-dynamic-info', () => {
 			where: [
 				{
 					fragment: `AND m2.name LIKE concat('%', ?, '%')`,
-					dependOnParams: ['name'],
 					parameters: ['name']
 				}
 			]
@@ -420,22 +426,32 @@ describe('sqlite-generate-dynamic-info', () => {
 				{
 					fragment: 'm1.id',
 					fragmentWitoutAlias: 'm1.id',
+					dependOnRelations: ['m1'],
+					parameters: []
 				},
 				{
 					fragment: 'm1.value',
 					fragmentWitoutAlias: 'm1.value',
+					dependOnRelations: ['m1'],
+					parameters: []
 				},
 				{
 					fragment: 'm3.id',
 					fragmentWitoutAlias: 'm3.id',
+					dependOnRelations: ['m3'],
+					parameters: []
 				},
 				{
 					fragment: 'm3.double_value',
 					fragmentWitoutAlias: 'm3.double_value',
+					dependOnRelations: ['m3'],
+					parameters: []
 				},
 				{
 					fragment: 'm3.name',
 					fragmentWitoutAlias: 'm3.name',
+					dependOnRelations: ['m3'],
+					parameters: []
 				},
 			],
 			from: [
@@ -489,22 +505,27 @@ describe('sqlite-generate-dynamic-info', () => {
 				{
 					fragment: 'm1.id',
 					fragmentWitoutAlias: 'm1.id',
+					parameters: []
 				},
 				{
 					fragment: 'm1.value',
 					fragmentWitoutAlias: 'm1.value',
+					parameters: []
 				},
 				{
 					fragment: 'm3.id',
 					fragmentWitoutAlias: 'm3.id',
+					parameters: []
 				},
 				{
 					fragment: 'm3.double_value',
 					fragmentWitoutAlias: 'm3.double_value',
+					parameters: []
 				},
 				{
 					fragment: 'm3.name',
 					fragmentWitoutAlias: 'm3.name',
+					parameters: []
 				}
 			],
 			from: [
@@ -512,7 +533,6 @@ describe('sqlite-generate-dynamic-info', () => {
 					fragment: 'FROM mytable1 m1',
 					relationName: 'mytable1',
 					dependOnFields: [],
-					dependOnParams: [],
 					dependOnOrderBy: [],
 					parameters: []
 				},
@@ -520,7 +540,6 @@ describe('sqlite-generate-dynamic-info', () => {
 					fragment: 'INNER JOIN mytable2 m2 on m2.id = m1.id',
 					relationName: 'mytable2',
 					dependOnFields: [2, 3, 4],
-					dependOnParams: [],
 					dependOnOrderBy: [],
 					parameters: []
 				},
@@ -528,7 +547,6 @@ describe('sqlite-generate-dynamic-info', () => {
 					fragment: 'INNER JOIN mytable3 m3 on m3.id = m2.id',
 					relationName: 'mytable3',
 					dependOnFields: [2, 3, 4],
-					dependOnParams: [],
 					dependOnOrderBy: [],
 					parameters: []
 				}
@@ -557,10 +575,14 @@ describe('sqlite-generate-dynamic-info', () => {
 				{
 					fragment: 't2.name',
 					fragmentWitoutAlias: 't2.name',
+					dependOnRelations: ['t2'],
+					parameters: []
 				},
 				{
 					fragment: 't3.name as name2',
 					fragmentWitoutAlias: 't3.name',
+					dependOnRelations: ['t3'],
+					parameters: []
 				}
 			],
 			from: [
@@ -586,16 +608,6 @@ describe('sqlite-generate-dynamic-info', () => {
 					fragment: `AND (concat('%', t2.name, '%') = ? OR concat('%', t3.name, '%') = ?)`,
 					dependOnRelations: ['t2', 't3'],
 					parameters: [0, 1]
-					// fields: [
-					// 	{
-					// 		dependOnRelation: 't2',
-					// 		parameters: [0]
-					// 	},
-					// 	{
-					// 		dependOnRelation: 't3',
-					// 		parameters: [1]
-					// 	}
-					// ]
 				}
 			]
 
@@ -623,10 +635,12 @@ describe('sqlite-generate-dynamic-info', () => {
 				{
 					fragment: 't2.name',
 					fragmentWitoutAlias: 't2.name',
+					parameters: []
 				},
 				{
 					fragment: 't3.name as name2',
 					fragmentWitoutAlias: 't3.name',
+					parameters: []
 				}
 			],
 			from: [
@@ -634,7 +648,6 @@ describe('sqlite-generate-dynamic-info', () => {
 					fragment: 'FROM mytable2 t2',
 					relationName: 'mytable2',
 					dependOnFields: [],
-					dependOnParams: [],
 					dependOnOrderBy: [],
 					parameters: []
 				},
@@ -642,7 +655,6 @@ describe('sqlite-generate-dynamic-info', () => {
 					fragment: 'inner join mytable3 t3 on t3.id = t2.id',
 					relationName: 'mytable3',
 					dependOnFields: [1],
-					dependOnParams: ['name'],
 					dependOnOrderBy: [],
 					parameters: []
 				}
@@ -650,11 +662,237 @@ describe('sqlite-generate-dynamic-info', () => {
 			where: [
 				{
 					fragment: `AND (concat('%', t2.name, '%') = ? OR concat('%', t3.name, '%') = ?)`,
-					dependOnParams: ['name'],
 					parameters: ['name', 'name']
 				}
 			]
+		}
 
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert.deepStrictEqual(actual.right.dynamicSqlQuery2, expected);
+	})
+
+	it('dynamic-traverse-result: where t3.id > 1', () => {
+
+		const sql = `-- @dynamicQuery
+		select t2.name, t3.name as name2
+		from mytable2 t2
+		inner join mytable3 t3 on t3.id = t2.id
+		where t3.id > 1`
+
+		const actual = traverseSql(sql, sqliteDbSchema);
+		const expected: DynamicSqlInfo2 = {
+			with: [],
+			select: [
+				{
+					fragment: 't2.name',
+					fragmentWitoutAlias: 't2.name',
+					dependOnRelations: ['t2'],
+					parameters: []
+				},
+				{
+					fragment: 't3.name as name2',
+					fragmentWitoutAlias: 't3.name',
+					dependOnRelations: ['t3'],
+					parameters: []
+				}
+			],
+			from: [
+				{
+					fragment: 'FROM mytable2 t2',
+					relationName: 'mytable2',
+					relationAlias: 't2',
+					parentRelation: '',
+					fields: ['id', 'name', 'descr'],
+					parameters: []
+				},
+				{
+					fragment: 'inner join mytable3 t3 on t3.id = t2.id',
+					relationName: 'mytable3',
+					relationAlias: 't3',
+					parentRelation: 't2',
+					fields: ['id', 'double_value', 'name'],
+					parameters: []
+				}
+			],
+			where: [
+				{
+					fragment: `AND t3.id > 1`,
+					dependOnRelations: ['t3'],
+					parameters: []
+				}
+			]
+		}
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert(actual.right.traverseResult.queryType == 'Select');
+		assert.deepStrictEqual(actual.right.traverseResult.dynamicQueryInfo, expected);
+	})
+
+	it('dynamic-info-result: where t3.id > 1', () => {
+
+		const sql = `-- @dynamicQuery
+		select t2.name, t3.name as name2
+		from mytable2 t2
+		inner join mytable3 t3 on t3.id = t2.id
+		where t3.id > 1`
+
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: DynamicSqlInfoResult2 = {
+			with: [],
+			select: [
+				{
+					fragment: 't2.name',
+					fragmentWitoutAlias: 't2.name',
+					parameters: []
+				},
+				{
+					fragment: 't3.name as name2',
+					fragmentWitoutAlias: 't3.name',
+					parameters: []
+				}
+			],
+			from: [
+				{
+					fragment: 'FROM mytable2 t2',
+					relationName: 'mytable2',
+					dependOnFields: [],
+					dependOnOrderBy: [],
+					parameters: []
+				},
+				{
+					fragment: 'inner join mytable3 t3 on t3.id = t2.id',
+					relationName: 'mytable3',
+					dependOnFields: [1],
+					dependOnOrderBy: [],
+					parameters: []
+				}
+			],
+			where: [
+				{
+					fragment: `AND t3.id > 1`,
+					parameters: []
+				}
+			]
+		}
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert.deepStrictEqual(actual.right.dynamicSqlQuery2, expected);
+	})
+
+	it('dynamic-traverse-result: SELECT with parameters', () => {
+
+		const sql = `-- @dynamicQuery
+		SELECT 
+			t2.id, 
+			t3.double_value, 
+			:name is null OR concat('%', t2.name, t3.name, '%') LIKE :name as likeName
+		FROM mytable2 t2
+		INNER JOIN mytable3 t3 on t3.id = t2.id`
+
+		const actual = traverseSql(sql, sqliteDbSchema);
+		const expected: DynamicSqlInfo2 = {
+			with: [],
+			select: [
+				{
+					fragment: 't2.id',
+					fragmentWitoutAlias: 't2.id',
+					dependOnRelations: ['t2'],
+					parameters: []
+				},
+				{
+					fragment: 't3.double_value',
+					fragmentWitoutAlias: 't3.double_value',
+					dependOnRelations: ['t3'],
+					parameters: []
+				},
+				{
+					fragment: `? is null OR concat('%', t2.name, t3.name, '%') LIKE ? as likeName`,
+					fragmentWitoutAlias: `? is null OR concat('%', t2.name, t3.name, '%') LIKE ?`,
+					dependOnRelations: ['t2', 't3'],
+					parameters: [0, 1]
+				}
+			],
+			from: [
+				{
+					fragment: 'FROM mytable2 t2',
+					relationName: 'mytable2',
+					relationAlias: 't2',
+					parentRelation: '',
+					fields: ['id', 'name', 'descr'],
+					parameters: []
+				},
+				{
+					fragment: 'INNER JOIN mytable3 t3 on t3.id = t2.id',
+					relationName: 'mytable3',
+					relationAlias: 't3',
+					parentRelation: 't2',
+					fields: ['id', 'double_value', 'name'],
+					parameters: []
+				}
+			],
+			where: []
+		}
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert(actual.right.traverseResult.queryType == 'Select');
+		assert.deepStrictEqual(actual.right.traverseResult.dynamicQueryInfo, expected);
+	})
+
+	it(`dynamic-info-result: SELECT with parameters`, () => {
+
+		const sql = `-- @dynamicQuery
+		SELECT 
+			t2.id, 
+			t3.double_value, 
+			:name is null OR concat('%', t2.name, t3.name, '%') LIKE :name as likeName
+		FROM mytable2 t2
+		INNER JOIN mytable3 t3 on t3.id = t2.id`
+
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: DynamicSqlInfoResult2 = {
+			with: [],
+			select: [
+				{
+					fragment: 't2.id',
+					fragmentWitoutAlias: 't2.id',
+					parameters: []
+				},
+				{
+					fragment: 't3.double_value',
+					fragmentWitoutAlias: 't3.double_value',
+					parameters: []
+				},
+				{
+					fragment: `? is null OR concat('%', t2.name, t3.name, '%') LIKE ? as likeName`,
+					fragmentWitoutAlias: `? is null OR concat('%', t2.name, t3.name, '%') LIKE ?`,
+					parameters: ['name', 'name']
+				},
+			],
+			from: [
+				{
+					fragment: 'FROM mytable2 t2',
+					relationName: 'mytable2',
+					dependOnFields: [],
+					dependOnOrderBy: [],
+					parameters: []
+				},
+				{
+					fragment: 'INNER JOIN mytable3 t3 on t3.id = t2.id',
+					relationName: 'mytable3',
+					dependOnFields: [1, 2],
+					dependOnOrderBy: [],
+					parameters: []
+				}
+			],
+			where: []
 		}
 
 		if (isLeft(actual)) {
