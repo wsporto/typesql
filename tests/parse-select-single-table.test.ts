@@ -1219,6 +1219,36 @@ describe('Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('SELECT SUM(ID) as sumById FROM mytable1 t1 GROUP BY id', async () => {
+
+        const sql = `
+        SELECT SUM(ID) as sumById
+        FROM mytable1 t1
+        GROUP BY id
+        `;
+        const actual = await parseSql(client, sql);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'sumById',
+                    type: 'decimal',
+                    notNull: false,
+                    table: 't1'
+                }
+            ],
+            parameters: []
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it('parse select using ANY operator', async () => {
 
         const sql = `
