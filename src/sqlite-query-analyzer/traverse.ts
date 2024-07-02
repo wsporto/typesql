@@ -978,10 +978,21 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
         if (typeLeft.name == '?') {
             typeLeft.notNull = true;
         }
-        //NOT IN?
-        const inExprRight = expr.NOT_() ? exprList.slice(1) : exprList[1].children || [];
-        inExprRight.forEach((inExpr) => {
-            if (inExpr instanceof ExprContext) {
+
+        if (expr.NOT_()) {
+            //NOT IN (SELECT...)
+            const select_stmt = expr.select_stmt();
+            if (select_stmt) {
+                const select_stmt_type = traverse_select_stmt(select_stmt, traverseContext, true);
+                const selectType = select_stmt_type.columns[0];
+                traverseContext.constraints.push({
+                    expression: expr.getText(),
+                    type1: typeLeft!.type,
+                    type2: { ...selectType.type, list: true }
+                })
+            }
+            //NOT IN (1, 2, 3)
+            exprList.slice(1).forEach(inExpr => {
                 const typeRight = traverse_expr(inExpr, traverseContext);
                 if (typeRight.name == '?') {
                     typeRight.notNull = true;
@@ -991,17 +1002,34 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
                     type1: typeLeft!.type,
                     type2: { ...typeRight.type, list: true }
                 })
-            }
-            if (inExpr instanceof Select_stmtContext) {
-                const select_stmt_type = traverse_select_stmt(inExpr, traverseContext, true);
-                const selectType = select_stmt_type.columns[0];
+            });
+        }
+        else {
+            const rightExpr = exprList[1];
+            //IN (SELECT...)
+            const select_stmt2 = rightExpr.select_stmt();
+            if (select_stmt2) {
+                const select_stmt_type = traverse_select_stmt(select_stmt2, traverseContext, true);
+                const selectType2 = select_stmt_type.columns[0];
                 traverseContext.constraints.push({
                     expression: expr.getText(),
                     type1: typeLeft!.type,
-                    type2: { ...selectType.type, list: true }
+                    type2: { ...selectType2.type, list: true }
                 })
             }
-        });
+            //IN (1, 2, 3)
+            rightExpr.expr_list().forEach(inExpr2 => {
+                const typeRight = traverse_expr(inExpr2, traverseContext);
+                if (typeRight.name == '?') {
+                    typeRight.notNull = true;
+                }
+                traverseContext.constraints.push({
+                    expression: expr.getText(),
+                    type1: typeLeft!.type,
+                    type2: { ...typeRight.type, list: true }
+                })
+            })
+        }
 
         const type = freshVar(expr.getText(), '?');
         return {

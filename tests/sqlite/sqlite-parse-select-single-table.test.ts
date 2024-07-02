@@ -856,6 +856,70 @@ describe('sqlite-Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('SELECT id FROM mytable1 t WHERE id in (select id from mytable2 where id > :id)', () => {
+
+        const sql = `SELECT id FROM mytable1 t WHERE id in (select id from mytable2 where id > :id)`;
+
+        const expectedSql = `SELECT id FROM mytable1 t WHERE id in (select id from mytable2 where id > ?)`;
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql: expectedSql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: 't'
+                }
+            ],
+            parameters: [
+                {
+                    name: 'id',
+                    columnType: 'INTEGER',
+                    notNull: true
+                }
+            ]
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
+    it('SELECT id FROM mytable1 t WHERE id not in (select id from mytable2 where id > :id)', () => {
+
+        const sql = `SELECT id FROM mytable1 t WHERE id not in (select id from mytable2 where id > :id)`;
+
+        const expectedSql = `SELECT id FROM mytable1 t WHERE id not in (select id from mytable2 where id > ?)`;
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql: expectedSql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: 't'
+                }
+            ],
+            parameters: [
+                {
+                    name: 'id',
+                    columnType: 'INTEGER',
+                    notNull: true
+                }
+            ]
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it('SELECT * FROM mytable1 t WHERE ? in (1, 2, 3)', () => {
 
         const sql = `
