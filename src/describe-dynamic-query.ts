@@ -110,7 +110,7 @@ function addAllChildFields(currentRelation: FragmentInfo, select: FragmentInfo[]
 }
 
 export function describeDynamicQuery2(dynamicQueryInfo: DynamicSqlInfo2, namedParameters: string[], orderByColumns: string[]): DynamicSqlInfoResult2 {
-    const { with: withFragments, select, from, where } = dynamicQueryInfo;
+    const { with: withFragments, select, from, where, limitOffset } = dynamicQueryInfo;
 
     const fromResult = transformFromFragments(from, select, namedParameters, orderByColumns);
 
@@ -119,6 +119,12 @@ export function describeDynamicQuery2(dynamicQueryInfo: DynamicSqlInfo2, namedPa
         select: transformSelectFragments(select, namedParameters),
         from: fromResult,
         where: transformWhereFragments(where, namedParameters)
+    }
+    if (limitOffset) {
+        result.limitOffset = {
+            fragment: limitOffset.fragment,
+            parameters: limitOffset.parameters.map(paramIndex => namedParameters[paramIndex])
+        }
     }
     return result;
 }

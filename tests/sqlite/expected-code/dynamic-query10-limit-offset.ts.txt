@@ -1,0 +1,153 @@
+import type { Database } from 'better-sqlite3';
+import { EOL } from 'os';
+
+export type DynamicQuery10DynamicParams = {
+	select?: DynamicQuery10Select;
+	params?: DynamicQuery10Params;
+	where?: DynamicQuery10Where[];
+}
+
+export type DynamicQuery10Params = {
+	name?: string | null;
+	limit?: number | null;
+	offset?: number | null;
+}
+
+export type DynamicQuery10Result = {
+	id?: number;
+	name?: string;
+}
+
+export type DynamicQuery10Select = {
+	id?: boolean;
+	name?: boolean;
+}
+
+const selectFragments = {
+	id: `t1.id`,
+	name: `t2.name`,
+} as const;
+
+const NumericOperatorList = ['=', '<>', '>', '<', '>=', '<='] as const;
+type NumericOperator = typeof NumericOperatorList[number];
+type StringOperator = '=' | '<>' | '>' | '<' | '>=' | '<=' | 'LIKE';
+type SetOperator = 'IN' | 'NOT IN';
+type BetweenOperator = 'BETWEEN';
+
+export type DynamicQuery10Where =
+	| ['id', NumericOperator, number | null]
+	| ['id', SetOperator, number[]]
+	| ['id', BetweenOperator, number | null, number | null]
+	| ['name', StringOperator, string | null]
+	| ['name', SetOperator, string[]]
+	| ['name', BetweenOperator, string | null, string | null]
+
+export function dynamicQuery10(db: Database, params?: DynamicQuery10DynamicParams): DynamicQuery10Result[] {
+	const where = whereConditionsToObject(params?.where);
+	const paramsValues: any = [];
+	let sql = 'SELECT';
+	if (params?.select == null || params.select.id) {
+		sql = appendSelect(sql, `t1.id`);
+	}
+	if (params?.select == null || params.select.name) {
+		sql = appendSelect(sql, `t2.name`);
+	}
+	sql += EOL + `FROM mytable1 t1`;
+	if (params?.select == null
+		|| params.select.name
+		|| where.name != null) {
+		sql += EOL + `INNER JOIN mytable2 t2 on t2.id = t1.id`;
+	}
+	sql += EOL + `WHERE 1 = 1`;
+	sql += EOL + `AND name = ?`;
+	paramsValues.push(params?.params?.name ?? null);
+	params?.where?.forEach(condition => {
+		const where = whereCondition(condition);
+		if (where?.hasValue) {
+			sql += EOL + 'AND ' + where.sql;
+			paramsValues.push(...where.values);
+		}
+	});
+	sql += EOL + `LIMIT ? OFFSET ?`;
+	paramsValues.push(params?.params?.limit ?? null);
+	paramsValues.push(params?.params?.offset ?? null);
+	return db.prepare(sql)
+		.raw(true)
+		.all(paramsValues)
+		.map(data => mapArrayToDynamicQuery10Result(data, params?.select));
+}
+
+function mapArrayToDynamicQuery10Result(data: any, select?: DynamicQuery10Select) {
+	const result = {} as DynamicQuery10Result;
+	let rowIndex = -1;
+	if (select == null || select.id) {
+		rowIndex++;
+		result.id = data[rowIndex];
+	}
+	if (select == null || select.name) {
+		rowIndex++;
+		result.name = data[rowIndex];
+	}
+	return result;
+}
+
+function appendSelect(sql: string, selectField: string) {
+	if (sql == 'SELECT') {
+		return sql + EOL + selectField;
+	}
+	else {
+		return sql + ', ' + EOL + selectField;
+	}
+}
+
+function whereConditionsToObject(whereConditions?: DynamicQuery10Where[]) {
+	const obj = {} as any;
+	whereConditions?.forEach(condition => {
+		const where = whereCondition(condition);
+		if (where?.hasValue) {
+			obj[condition[0]] = true;
+		}
+	});
+	return obj;
+}
+
+type WhereConditionResult = {
+	sql: string;
+	hasValue: boolean;
+	values: any[];
+}
+
+function whereCondition(condition: DynamicQuery10Where): WhereConditionResult | undefined {
+
+	const selectFragment = selectFragments[condition[0]];
+	const operator = condition[1];
+
+	if (operator == 'LIKE') {
+		return {
+			sql: `${selectFragment} LIKE concat('%', ?, '%')`,
+			hasValue: condition[2] != null,
+			values: [condition[2]]
+		}
+	}
+	if (operator == 'BETWEEN') {
+		return {
+			sql: `${selectFragment} BETWEEN ? AND ?`,
+			hasValue: condition[2] != null && condition[3] != null,
+			values: [condition[2], condition[3]]
+		}
+	}
+	if (operator == 'IN' || operator == 'NOT IN') {
+		return {
+			sql: `${selectFragment} ${operator} (${condition[2]?.map(_ => '?').join(', ')})`,
+			hasValue: condition[2] != null && condition[2].length > 0,
+			values: condition[2]
+		}
+	}
+	if (NumericOperatorList.includes(operator)) {
+		return {
+			sql: `${selectFragment} ${operator} ?`,
+			hasValue: condition[2] != null,
+			values: [condition[2]]
+		}
+	}
+}

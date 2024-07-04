@@ -145,6 +145,7 @@ export type DynamicSqlInfo2 = {
     select: SelectFragment[];
     from: FromFragment[];
     where: WhereFragment[];
+    limitOffset?: LimitOffset;
 }
 
 export type SelectFragment = {
@@ -174,11 +175,17 @@ export type WhereFragment = {
     parameters: number[];
 }
 
+export type LimitOffset = {
+    fragment: string;
+    parameters: number[];
+}
+
 export type DynamicSqlInfoResult2 = {
     with: FromFragementResult[];
     select: SelectFragmentResult[];
     from: FromFragementResult[];
     where: WhereFragmentResult[];
+    limitOffset?: LimitOffsetResult;
 }
 
 export type SelectFragmentResult = {
@@ -196,6 +203,11 @@ export type FromFragementResult = {
 }
 
 export type WhereFragmentResult = {
+    fragment: string;
+    parameters: string[];
+}
+
+export type LimitOffsetResult = {
     fragment: string;
     parameters: string[];
 }

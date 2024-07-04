@@ -528,4 +528,24 @@ INNER JOIN mytable3 t3 on t3.id = t2.id`
 		}
 		assert.deepStrictEqual(actual.right, expected);
 	})
+
+	it('dynamic-query-10 - limit offset', () => {
+		const sql = `-- @dynamicQuery
+SELECT 
+	t1.id, 
+	t2.name
+FROM mytable1 t1
+INNER JOIN mytable2 t2 on t2.id = t1.id
+WHERE name = :name
+LIMIT :limit OFFSET :offset`
+
+		const isCrud = false;
+		const actual = generateTsCode(sql, 'dynamic-query10', sqliteDbSchema, isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/dynamic-query10-limit-offset.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	})
 });

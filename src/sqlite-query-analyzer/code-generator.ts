@@ -396,6 +396,13 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
             if (tsDescriptor.orderByColumns) {
                 writer.writeLine('sql += EOL + `ORDER BY ${escapeOrderBy(params.orderBy)}`;')
             }
+            const limitOffset = tsDescriptor.dynamicQuery2?.limitOffset;
+            if (limitOffset) {
+                writer.writeLine(`sql += EOL + \`${limitOffset.fragment}\`;`);
+                limitOffset.parameters.forEach(param => {
+                    writer.writeLine(`paramsValues.push(params?.params?.${param} ?? null);`)
+                })
+            }
             if (client == 'sqlite') {
                 writer.write('return db.prepare(sql)').newLine();
                 writer.indent().write('.raw(true)').newLine();

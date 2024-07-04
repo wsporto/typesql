@@ -122,8 +122,13 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
     }
     const limit = select_stmt.limit_stmt();
     if (limit) {
+        traverseContext.dynamicSqlInfo2.limitOffset = {
+            fragment: extractOriginalSql(limit),
+            parameters: []
+        }
         const expr_list = limit.expr_list();
         const expr1 = expr_list[0];
+        const paramsBefore = traverseContext.parameters.length;
         const exrp1Type = traverse_expr(expr1, traverseContext);
         exrp1Type.notNull = true;
         traverseContext.constraints.push({
@@ -141,6 +146,9 @@ function traverse_select_stmt(select_stmt: Select_stmtContext, traverseContext: 
                 type2: freshVar('INTEGER', 'INTEGER')
             })
         }
+        traverseContext.parameters.slice(paramsBefore).forEach((_, index) => {
+            traverseContext.dynamicSqlInfo2.limitOffset?.parameters.push(paramsBefore + index)
+        });
     }
 
     return selectResult;
