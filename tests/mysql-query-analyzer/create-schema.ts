@@ -246,7 +246,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         notNull: false
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'all_types',
         column: 'int_column',
         column_type: 'INTEGER',
@@ -254,7 +254,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'all_types',
         column: 'integer_column',
         column_type: 'INTEGER',
@@ -262,7 +262,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'all_types',
         column: 'tinyiny_column',
         column_type: 'INTEGER',
@@ -270,7 +270,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'all_types',
         column: 'smallint_column',
         column_type: 'INTEGER',
@@ -278,7 +278,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'all_types',
         column: 'mediumint_column',
         column_type: 'INTEGER',
@@ -286,7 +286,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'all_types',
         column: 'bigint_column',
         column_type: 'INTEGER',
@@ -294,7 +294,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'all_types',
         column: 'unsignedbigint_column',
         column_type: 'INTEGER',
@@ -302,7 +302,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'all_types',
         column: 'int2_column',
         column_type: 'INTEGER',
@@ -310,7 +310,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'all_types',
         column: 'int8_column',
         column_type: 'INTEGER',
@@ -318,7 +318,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'all_types',
         column: 'character_column',
         column_type: 'TEXT',
@@ -326,7 +326,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'all_types',
         column: 'varchar_column',
         column_type: 'TEXT',
@@ -334,7 +334,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'all_types',
         column: 'varyingcharacter_column',
         column_type: 'TEXT',
@@ -342,7 +342,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'all_types',
         column: 'nchar_column',
         column_type: 'TEXT',
@@ -350,7 +350,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'all_types',
         column: 'native_character_column',
         column_type: 'TEXT',
@@ -358,7 +358,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'all_types',
         column: 'nvarchar_column',
         column_type: 'TEXT',
@@ -366,7 +366,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'all_types',
         column: 'text_column',
         column_type: 'TEXT',
@@ -374,7 +374,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'all_types',
         column: 'clob_column',
         column_type: 'TEXT',
@@ -382,7 +382,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'all_types',
         column: 'blob_column',
         column_type: 'BLOB',
@@ -390,7 +390,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'all_types',
         column: 'blob_column2',
         column_type: 'BLOB',
@@ -398,7 +398,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'all_types',
         column: 'real_column',
         column_type: 'REAL',
@@ -406,7 +406,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'all_types',
         column: 'double_column',
         column_type: 'REAL',
@@ -414,7 +414,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'all_types',
         column: 'doubleprecision_column',
         column_type: 'REAL',
@@ -422,7 +422,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'all_types',
         column: 'float_column',
         column_type: 'REAL',
@@ -430,7 +430,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'all_types',
         column: 'numeric_column',
         column_type: 'NUMERIC',
@@ -438,7 +438,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'all_types',
         column: 'decimal_column',
         column_type: 'NUMERIC',
@@ -446,7 +446,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'all_types',
         column: 'boolean_column',
         column_type: 'NUMERIC',
@@ -454,7 +454,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'all_types',
         column: 'date_column',
         column_type: 'NUMERIC',
@@ -462,7 +462,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'all_types',
         column: 'datetime_column',
         column_type: 'NUMERIC',
@@ -470,7 +470,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'all_types',
         column: 'integer_column_default',
         column_type: 'INTEGER',
@@ -479,7 +479,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         defaultValue: '10'
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'users',
         column: 'id',
         column_type: 'INTEGER',
@@ -487,7 +487,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: 'PRI',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'users',
         column: 'name',
         column_type: 'TEXT',
@@ -495,7 +495,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'posts',
         column: 'id',
         column_type: 'INTEGER',
@@ -503,7 +503,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: 'PRI',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'posts',
         column: 'title',
         column_type: 'TEXT',
@@ -511,7 +511,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'posts',
         column: 'body',
         column_type: 'TEXT',
@@ -519,7 +519,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'posts',
         column: 'fk_user',
         column_type: 'INTEGER',
@@ -527,7 +527,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'roles',
         column: 'id',
         column_type: 'INTEGER',
@@ -535,7 +535,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: 'PRI',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'roles',
         column: 'role',
         column_type: 'TEXT',
@@ -543,7 +543,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'roles',
         column: 'fk_user',
         column_type: 'INTEGER',
@@ -551,7 +551,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'comments',
         column: 'id',
         column_type: 'INTEGER',
@@ -559,7 +559,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: 'PRI',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'comments',
         column: 'comment',
         column_type: 'TEXT',
@@ -567,7 +567,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'comments',
         column: 'fk_user',
         column_type: 'INTEGER',
@@ -575,7 +575,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'comments',
         column: 'fk_post',
         column_type: 'INTEGER',
@@ -583,7 +583,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'books',
         column: 'id',
         column_type: 'INTEGER',
@@ -591,7 +591,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: 'PRI',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'books',
         column: 'title',
         column_type: 'TEXT',
@@ -599,7 +599,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'books',
         column: 'isbn',
         column_type: 'TEXT',
@@ -607,7 +607,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'authors',
         column: 'id',
         column_type: 'INTEGER',
@@ -615,7 +615,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: 'PRI',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'authors',
         column: 'fullName',
         column_type: 'TEXT',
@@ -623,7 +623,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'authors',
         column: 'shortName',
         column_type: 'TEXT',
@@ -631,7 +631,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'books_authors',
         column: 'id',
         column_type: 'INTEGER',
@@ -639,7 +639,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: 'PRI',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'books_authors',
         column: 'book_id',
         column_type: 'INTEGER',
@@ -647,7 +647,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'books_authors',
         column: 'author_id',
         column_type: 'INTEGER',
@@ -655,7 +655,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'books_authors',
         column: 'author_ordinal',
         column_type: 'INTEGER',
@@ -663,7 +663,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'clients',
         column: 'id',
         column_type: 'INTEGER',
@@ -671,7 +671,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: 'PRI',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'clients',
         column: 'primaryAddress',
         column_type: 'INTEGER',
@@ -679,7 +679,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'clients',
         column: 'secondaryAddress',
         column_type: 'INTEGER',
@@ -687,7 +687,7 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: '',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'addresses',
         column: 'id',
         column_type: 'INTEGER',
@@ -695,11 +695,27 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
         columnKey: 'PRI',
     },
     {
-        schema: '',
+        schema: 'main',
         table: 'addresses',
         column: 'address',
         column_type: 'TEXT',
         notNull: true,
         columnKey: '',
+    },
+    {
+        schema: 'users',
+        table: 'users',
+        column: 'id',
+        column_type: 'INTEGER',
+        notNull: true,
+        columnKey: 'PRI',
+    },
+    {
+        schema: 'users',
+        table: 'users',
+        column: 'username',
+        column_type: 'TEXT',
+        notNull: true,
+        columnKey: 'UNI',
     }
 ]

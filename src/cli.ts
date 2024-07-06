@@ -115,10 +115,10 @@ async function main() {
 
 async function compile(watch: boolean, config: TypeSqlConfig) {
 
-    const { sqlDir, databaseUri, target, client: dialect, authToken } = config;
+    const { sqlDir, databaseUri, target, client: dialect, attach, authToken } = config;
     validateDirectories(sqlDir);
 
-    const databaseClientResult = await createClient(databaseUri, dialect, authToken);
+    const databaseClientResult = await createClient(databaseUri, dialect, attach, authToken);
     if (isLeft(databaseClientResult)) {
         console.error(`Error: ${databaseClientResult.left.description}.`);
         return;
@@ -278,14 +278,14 @@ async function selectAllTables(client: DatabaseClient): Promise<Either<string, T
     return selectTablesResult;
 }
 
-async function createClient(databaseUri: string, dialect: TypeSqlDialect, authToken?: string) {
+async function createClient(databaseUri: string, dialect: TypeSqlDialect, attach?: string[], authToken?: string) {
     switch (dialect) {
         case "mysql":
             return createMysqlClient(databaseUri);
         case "sqlite":
-            return createSqliteClient(databaseUri);
+            return createSqliteClient(databaseUri, attach || []);
         case "libsql":
-            return createLibSqlClient(databaseUri, authToken || '')
+            return createLibSqlClient(databaseUri, attach || [], authToken || '')
     }
 }
 async function loadSchema(databaseClient: DatabaseClient): Promise<Either<TypeSqlError, ColumnSchema[]>> {

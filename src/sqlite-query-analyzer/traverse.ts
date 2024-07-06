@@ -326,9 +326,13 @@ function traverse_table_or_subquery(
         const asAlias = table_or_subquery.AS_() || false;
         const tableAlias = table_or_subquery.table_alias()?.getText();
         const tableOrSubqueryName = table_name ? table_name.any_name().getText() : '';
+        const schema = table_or_subquery.schema_name()?.getText() || '';
 
         if (table_name) {
-            const tableName = splitName(table_name.any_name().getText());
+            const tableName: FieldName = {
+                name: table_name.getText(),
+                prefix: schema
+            };
             tableOrSubqueryFields = filterColumns(traverseContext.dbSchema, traverseContext.withSchema, table_alias, tableName);
             const usingFields = join_constraint?.USING_() ? join_constraint?.column_name_list().map(column_name => column_name.getText()) : [];
             const filteredFields = usingFields.length > 0 ? filterUsingFields(tableOrSubqueryFields, usingFields) : tableOrSubqueryFields;

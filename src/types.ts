@@ -149,6 +149,7 @@ export type TypeSqlConfig = {
     target: 'node' | 'deno';
     client: TypeSqlDialect;
     authToken?: string;
+    attach?: string[];
     includeCrudTables: string[];
 }
 

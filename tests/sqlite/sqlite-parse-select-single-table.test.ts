@@ -1799,6 +1799,70 @@ describe('sqlite-Test simple select statements', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it('attach - select * from users.users', async () => {
+        const sql = `SELECT * FROM users.users`;
+
+        const actual = await parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: 'users'
+                },
+                {
+                    columnName: 'username',
+                    type: 'TEXT',
+                    notNull: true,
+                    table: 'users'
+                }
+            ],
+            parameters: []
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    });
+
+    it('attach - select * from users', async () => {
+        const sql = `SELECT * FROM users`;
+
+        const actual = await parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: 'users'
+                },
+                {
+                    columnName: 'name',
+                    type: 'TEXT',
+                    notNull: true,
+                    table: 'users'
+                }
+            ],
+            parameters: []
+
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it('SELECT vector_extract(blob_column) as vector, vector(:vector), vector_distance_cos(blob_column, :vector) FROM all_types', async () => {
         const sql = `
         SELECT vector_extract(blob_column) as vector, 

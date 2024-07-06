@@ -18,8 +18,9 @@ export function includeColumn(column: ColumnDef, table: string) {
 }
 
 export function filterColumns(dbSchema: ColumnSchema[], withSchema: ColumnDef[], tableAlias: string | undefined, table: FieldName): ColumnDef[] {
+    const schemaName = table.prefix == '' ? dbSchema.find(col => col.table == table.name)?.schema : table.prefix; //find first
     const tableColumns1 = dbSchema
-        .filter(schema => schema.table.toLowerCase() == table.name.toLowerCase() && (schema.schema == table.prefix || table.prefix == ''))
+        .filter(schema => schema.table.toLowerCase() == table.name.toLowerCase() && (schema.schema == schemaName))
         .map(tableColumn => {
 
             //name and colum are the same on the leaf table

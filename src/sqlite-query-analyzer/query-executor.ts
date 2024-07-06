@@ -1,11 +1,15 @@
-import { Either, left, right } from "fp-ts/lib/Either";
+import { Either, isLeft, left, right } from "fp-ts/lib/Either";
 import { DatabaseClient, TypeSqlError } from "../types";
 import { ColumnSchema, Table } from "../mysql-query-analyzer/types";
 import Database, { Database as DatabaseType } from 'better-sqlite3';
 import { Database as LibSqlDatabase } from 'libsql';
+import { SQLiteType } from './types';
 
-export function createSqliteClient(databaseUri: string): Either<TypeSqlError, DatabaseClient> {
+export function createSqliteClient(databaseUri: string, attachList: string[]): Either<TypeSqlError, DatabaseClient> {
 	const db = new Database(databaseUri);
+	attachList.forEach(attach => {
+		db.exec(`attach database ${attach}`);
+	})
 	return right({
 		type: 'sqlite',
 		client: db
@@ -14,64 +18,97 @@ export function createSqliteClient(databaseUri: string): Either<TypeSqlError, Da
 
 export function loadDbSchema(db: DatabaseType | LibSqlDatabase): Either<TypeSqlError, ColumnSchema[]> {
 
-	const sql = `
-		WITH all_tables AS (
-			SELECT name FROM sqlite_schema 
-			WHERE type = 'table'
-			AND name <> 'sqlite_sequence'
-			AND name <> 'sqlite_stat1'
-			AND name <> '_litestream_seq'
-			AND name <> '_litestream_lock'
-			AND name <> 'libsql_wasm_func_table'
-			AND name <> '_cf_KV'
-		),
-		uniqueIndex as (
-			SELECT DISTINCT t.name as table_name, ii.name as column_name
-			FROM all_tables t,
-			pragma_index_list(t.name) AS il,
-			pragma_index_info(il.name) AS ii
-		WHERE il.[unique] = 1
-		)
-		SELECT
-			'' AS schema,
-			t.name as 'table',
-			ti.name as 'column', 
-			CASE 
-				WHEN ti.type LIKE '%INT%' THEN 'INTEGER'
-				WHEN ti.type LIKE '%CHAR%' OR ti.type LIKE '%CLOB%' OR ti.type like '%TEXT%' THEN 'TEXT'
-				WHEN ti.type LIKE '%BLOB%' OR ti.type = '' THEN 'BLOB'
-				WHEN ti.type LIKE '%REAL%' OR ti.type LIKE '%FLOA%' OR ti.type like '%DOUB%' THEN 'REAL'
-				ELSE 'NUMERIC'
-			END	as column_type,
-			ti.'notnull' or ti.pk = 1 as 'notNull',
-			CASE WHEN ti.pk >= 1 THEN 'PRI'
-			WHEN u.table_name is not null THEN 'UNI' 
-			ELSE '' END as columnKey,
-			ti.dflt_value as defaultValue
-		FROM all_tables t 
-		INNER JOIN pragma_table_info(t.name) ti
-		LEFT JOIN uniqueIndex u on u.table_name = t.name and u.column_name = ti.name
-		`
-	try {
-		//@ts-ignore
-		const result = db.prepare(sql)
-			.all() as ColumnSchema[];
-		return right(result.map(col => {
-			const result = { ...col, notNull: !!col.notNull };
+	//@ts-ignore
+	const database_list = db.prepare('select name from pragma_database_list').all().map((col: any) => col.name) as string[];
+	const result: ColumnSchema[] = [];
+	for (let schema of database_list) {
+		const schemaResult = loadDbSchemaForSchema(db, schema);
+		if (isLeft(schemaResult)) {
+			return schemaResult;
+		}
+		result.push(...schemaResult.right);
+	}
 
-			if (result.defaultValue == null) {
-				delete result.defaultValue;
+	return right(result);
+}
+
+type TableInfo = {
+	name: string;
+	type: string;
+	notnull: number;
+	dflt_value: string;
+	pk: number;
+}
+
+export function getTableInfo(db: DatabaseType | LibSqlDatabase, schema: string, table: string): TableInfo[] {
+	//@ts-ignore
+	const tableInfo = db.prepare(`PRAGMA ${schema}.table_info('${table}')`).all() as TableInfo[];
+	return tableInfo;
+}
+
+export function getIndexInfo(db: DatabaseType | LibSqlDatabase, schema: string, table: string) {
+	const map = new Map<string, true>();
+	//@ts-ignore
+	const indexList = db.prepare(`PRAGMA ${schema}.index_list('${table}')`).all() as { name: string; unique: number }[];
+	for (let index of indexList) {
+		//@ts-ignore
+		const indexedColumns = db.prepare(`PRAGMA ${schema}.index_info('${index.name}')`).all().map(res => res.name) as string[];
+		for (let column of indexedColumns) {
+			map.set(column, true);
+		}
+	}
+	return map;
+}
+
+export function getTables(db: DatabaseType | LibSqlDatabase, schema: string) {
+	//@ts-ignore
+	const tables = db.prepare(`SELECT name FROM ${schema}.sqlite_schema`).all().map(res => res.name) as string[];
+	return tables;
+}
+
+function checkAffinity(type: string): SQLiteType {
+	if (type.includes('INT')) {
+		return 'INTEGER';
+	}
+	if (type.includes('CHAR') || type.includes('CLOB') || type.includes('TEXT')) {
+		return 'TEXT';
+	}
+	if (type == '' || type.includes('BLOB')) {
+		return 'BLOB';
+	}
+	if (type.includes('REAL') || type.includes('FLOA') || type.includes('DOUB')) {
+		return 'REAL';
+	}
+	else {
+		return 'NUMERIC';
+	}
+}
+
+function loadDbSchemaForSchema(db: DatabaseType | LibSqlDatabase, schema: '' | string = ''): Either<TypeSqlError, ColumnSchema[]> {
+
+	const tables = getTables(db, schema);
+
+	const result = tables.flatMap(tableName => {
+		const tableInfoList = getTableInfo(db, schema, tableName);
+		const tableIndexInfo = getIndexInfo(db, schema, tableName);
+		const columnSchema = tableInfoList.map(tableInfo => {
+			const col: ColumnSchema = {
+				column: tableInfo.name,
+				column_type: checkAffinity(tableInfo.type),
+				columnKey: tableInfo.pk >= 1 ? 'PRI' : tableIndexInfo.get(tableInfo.name) != null ? 'UNI' : '',
+				notNull: tableInfo.notnull == 1 || tableInfo.pk >= 1,
+				schema,
+				table: tableName
 			}
-			return result;
-		}));
-	}
-	catch (err_) {
-		const err = err_ as Error;
-		return left({
-			name: err.name,
-			description: err.message
-		})
-	}
+			if (tableInfo.dflt_value != null) {
+				col.defaultValue = tableInfo.dflt_value;
+			}
+			return col;
+
+		});
+		return columnSchema;
+	})
+	return right(result);
 }
 
 export function selectSqliteTablesFromSchema(db: DatabaseType | LibSqlDatabase): Either<TypeSqlError, Table[]> {

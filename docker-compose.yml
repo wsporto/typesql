@@ -25,3 +25,10 @@ services:
     volumes:
       - .:/flyway/db
       - ./sqlite-migrations:/flyway/sql
+  sqlite-attached-flyway:
+    image: flyway/flyway:7.15
+    container_name: "sqlite_attached_flyway"
+    command: -url=jdbc:sqlite:/flyway/db/users.db migrate
+    volumes:
+      - .:/flyway/db
+      - ./sqlite-attached-migrations:/flyway/sql
