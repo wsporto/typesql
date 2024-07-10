@@ -1,16 +1,17 @@
-import assert from "assert";
-import { createMysqlClientForTest } from "../src/queryExectutor";
-import { isLeft } from "fp-ts/lib/Either";
-import { parseSql } from "../src/describe-query";
-import { DynamicSqlInfoResult } from "../src/mysql-query-analyzer/types";
-import { MySqlDialect } from "../src/types";
+import assert from 'node:assert';
+import { createMysqlClientForTest } from '../src/queryExectutor';
+import { isLeft } from 'fp-ts/lib/Either';
+import { parseSql } from '../src/describe-query';
+import type { DynamicSqlInfoResult } from '../src/mysql-query-analyzer/types';
+import type { MySqlDialect } from '../src/types';
 
 describe('dynamic-query', () => {
-
 	let client!: MySqlDialect;
 	before(async () => {
-		client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
-	})
+		client = await createMysqlClientForTest(
+			'mysql://root:password@localhost/mydb'
+		);
+	});
 
 	it('WHERE m2.name = :name AND m2.descr = :description', async () => {
 		const sql = `
@@ -21,7 +22,7 @@ describe('dynamic-query', () => {
         WHERE m2.name = :name
         AND m2.descr = :description
 
-        `
+        `;
 		const sqlFragments: DynamicSqlInfoResult = {
 			select: [
 				{
@@ -81,15 +82,15 @@ describe('dynamic-query', () => {
 					parameters: ['description']
 				}
 			]
-		}
+		};
 
 		const actual = await parseSql(client, sql);
 		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error`);
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
 		}
 
 		assert.deepStrictEqual(actual.right.dynamicSqlQuery, sqlFragments);
-	})
+	});
 
 	it('WHERE m2.id = 1 AND m2.name = :name AND m2.descr = :description', async () => {
 		const sql = `
@@ -101,7 +102,7 @@ describe('dynamic-query', () => {
             AND m2.name = :name
             AND m2.descr = :description
 
-        `
+        `;
 		const sqlFragments: DynamicSqlInfoResult = {
 			select: [
 				{
@@ -167,15 +168,15 @@ describe('dynamic-query', () => {
 					parameters: ['description']
 				}
 			]
-		}
+		};
 
 		const actual = await parseSql(client, sql);
 		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error: ` + actual.left.description);
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
 		}
 
 		assert.deepStrictEqual(actual.right.dynamicSqlQuery, sqlFragments);
-	})
+	});
 
 	it('WHERE m2.id in (:ids)', async () => {
 		const sql = `
@@ -184,7 +185,7 @@ describe('dynamic-query', () => {
         FROM mytable1 m1
         INNER JOIN mytable2 m2 on m1.id = m2.id
         WHERE m2.id in (:ids)
-        `
+        `;
 		const sqlFragments: DynamicSqlInfoResult = {
 			select: [
 				{
@@ -231,15 +232,15 @@ describe('dynamic-query', () => {
 					parameters: ['ids']
 				}
 			]
-		}
+		};
 
 		const actual = await parseSql(client, sql);
 		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error: ` + actual.left.description);
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
 		}
 
 		assert.deepStrictEqual(actual.right.dynamicSqlQuery, sqlFragments);
-	})
+	});
 
 	it('mytable1 m1 INNER JOIN mytable2 ... INNER JOIN mytable3', async () => {
 		const sql = `
@@ -249,7 +250,7 @@ describe('dynamic-query', () => {
             INNER JOIN mytable2 m2 on m2.id = m1.id
             INNER JOIN mytable3 m3 on m3.id = m2.id
             WHERE m3.id in (:ids)
-            `
+            `;
 		const sqlFragments: DynamicSqlInfoResult = {
 			select: [
 				{
@@ -302,15 +303,15 @@ describe('dynamic-query', () => {
 					parameters: ['ids']
 				}
 			]
-		}
+		};
 
 		const actual = await parseSql(client, sql);
 		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error: ` + actual.left.description);
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
 		}
 
 		assert.deepStrictEqual(actual.right.dynamicSqlQuery, sqlFragments);
-	})
+	});
 
 	it('WHERE m2.name = :name AND m2.descr = :description', async () => {
 		const sql = `
@@ -319,7 +320,7 @@ describe('dynamic-query', () => {
         FROM mytable1 m1
         INNER JOIN mytable2 m2 on m1.id = m2.id
         WHERE m2.name = concat('A', :name, 'B', :name, :name2)
-        `
+        `;
 		const sqlFragments: DynamicSqlInfoResult = {
 			select: [
 				{
@@ -359,15 +360,15 @@ describe('dynamic-query', () => {
 					parameters: ['name', 'name', 'name2']
 				}
 			]
-		}
+		};
 
 		const actual = await parseSql(client, sql);
 		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error`);
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
 		}
 
 		assert.deepStrictEqual(actual.right.dynamicSqlQuery, sqlFragments);
-	})
+	});
 
 	it(`m2.name like concat('%', :name, '%')`, async () => {
 		const sql = `
@@ -376,7 +377,7 @@ describe('dynamic-query', () => {
         FROM mytable1 m1
         INNER JOIN mytable2 m2 on m1.id = m2.id
         WHERE m2.name like concat('%', :name, '%')
-        `
+        `;
 		const sqlFragments: DynamicSqlInfoResult = {
 			select: [
 				{
@@ -416,15 +417,15 @@ describe('dynamic-query', () => {
 					parameters: ['name']
 				}
 			]
-		}
+		};
 
 		const actual = await parseSql(client, sql);
 		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error`);
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
 		}
 
 		assert.deepStrictEqual(actual.right.dynamicSqlQuery, sqlFragments);
-	})
+	});
 
 	it(`SELECT concat(m1.value, ': ', m2.name) as valueAndName`, async () => {
 		const sql = `
@@ -432,7 +433,7 @@ describe('dynamic-query', () => {
         SELECT m1.id, m1.value, m2.name, concat(m1.value, ': ', m2.name) as valueAndName
         FROM mytable1 m1
         INNER JOIN mytable2 m2 on m1.id = m2.id
-        `
+        `;
 		const sqlFragments: DynamicSqlInfoResult = {
 			select: [
 				{
@@ -479,15 +480,15 @@ describe('dynamic-query', () => {
 				}
 			],
 			where: []
-		}
+		};
 
 		const actual = await parseSql(client, sql);
 		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error`);
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
 		}
 
 		assert.deepStrictEqual(actual.right.dynamicSqlQuery, sqlFragments);
-	})
+	});
 
 	it(`SELECT concat(m1.value, ': ', m2.name) as valueAndName`, async () => {
 		const sql = `
@@ -496,7 +497,7 @@ describe('dynamic-query', () => {
         FROM mytable1 m1
         INNER JOIN mytable2 m2 on m1.id = m2.id
         WHERE lower(m2.name) like lower(concat('%', :name, '%'))
-        `
+        `;
 		const sqlFragments: DynamicSqlInfoResult = {
 			select: [
 				{
@@ -543,17 +544,17 @@ describe('dynamic-query', () => {
 					parameters: ['name']
 				}
 			]
-		}
+		};
 
 		const actual = await parseSql(client, sql);
 		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error`);
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
 		}
 
 		assert.deepStrictEqual(actual.right.dynamicSqlQuery, sqlFragments);
-	})
+	});
 
-	it(`(select name from mytable1 where id = 1) as subQuery`, async () => {
+	it('(select name from mytable1 where id = 1) as subQuery', async () => {
 		const sql = `
         -- @dynamicQuery
         SELECT
@@ -563,7 +564,7 @@ describe('dynamic-query', () => {
         FROM mytable1 m1
         INNER JOIN mytable2 m2 on m1.id = m2.id
         WHERE m2.name = :name
-        `
+        `;
 		const sqlFragments: DynamicSqlInfoResult = {
 			select: [
 				{
@@ -604,23 +605,23 @@ describe('dynamic-query', () => {
 			],
 			where: [
 				{
-					fragment: `AND m2.name = ?`,
+					fragment: 'AND m2.name = ?',
 					dependOnFields: [],
 					dependOnParams: ['name'],
 					parameters: ['name']
 				}
 			]
-		}
+		};
 
 		const actual = await parseSql(client, sql);
 		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error: ` + actual.left.description);
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
 		}
 
 		assert.deepStrictEqual(actual.right.dynamicSqlQuery, sqlFragments);
-	})
+	});
 
-	it(`(select name from mytable1 where id = m2.id) as subQuery`, async () => {
+	it('(select name from mytable1 where id = m2.id) as subQuery', async () => {
 		const sql = `
         -- @dynamicQuery
         SELECT
@@ -630,7 +631,7 @@ describe('dynamic-query', () => {
         FROM mytable1 m1
         INNER JOIN mytable2 m2 on m1.id = m2.id
         WHERE m2.name = :name
-        `
+        `;
 		const sqlFragments: DynamicSqlInfoResult = {
 			select: [
 				{
@@ -671,23 +672,23 @@ describe('dynamic-query', () => {
 			],
 			where: [
 				{
-					fragment: `AND m2.name = ?`,
+					fragment: 'AND m2.name = ?',
 					dependOnFields: [],
 					dependOnParams: ['name'],
 					parameters: ['name']
 				}
 			]
-		}
+		};
 
 		const actual = await parseSql(client, sql);
 		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error`);
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
 		}
 
 		assert.deepStrictEqual(actual.right.dynamicSqlQuery, sqlFragments);
-	})
+	});
 
-	it(`(select name from mytable1 where id = m2.id) as subQuery`, async () => {
+	it('(select name from mytable1 where id = m2.id) as subQuery', async () => {
 		const sql = `
         -- @dynamicQuery
         SELECT
@@ -697,7 +698,7 @@ describe('dynamic-query', () => {
         FROM mytable1 m1
         INNER JOIN mytable2 m2 on m1.id = m2.id
         WHERE m2.name = :name
-        `
+        `;
 		const sqlFragments: DynamicSqlInfoResult = {
 			select: [
 				{
@@ -715,8 +716,10 @@ describe('dynamic-query', () => {
 					parameters: []
 				},
 				{
-					fragment: '(select name from mytable1 m3 where m3.id = m2.id) as subQuery',
-					fragmentWitoutAlias: '(select name from mytable1 m3 where m3.id = m2.id)',
+					fragment:
+						'(select name from mytable1 m3 where m3.id = m2.id) as subQuery',
+					fragmentWitoutAlias:
+						'(select name from mytable1 m3 where m3.id = m2.id)',
 					dependOnFields: [2],
 					dependOnParams: [],
 					parameters: []
@@ -738,23 +741,23 @@ describe('dynamic-query', () => {
 			],
 			where: [
 				{
-					fragment: `AND m2.name = ?`,
+					fragment: 'AND m2.name = ?',
 					dependOnFields: [],
 					dependOnParams: ['name'],
 					parameters: ['name']
 				}
 			]
-		}
+		};
 
 		const actual = await parseSql(client, sql);
 		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error ` + actual.left.description);
+			assert.fail(`Shouldn't return an error ${actual.left.description}`);
 		}
 
 		assert.deepStrictEqual(actual.right.dynamicSqlQuery, sqlFragments);
-	})
+	});
 
-	it(`INNER JOIN (SELECT FROM ...)`, async () => {
+	it('INNER JOIN (SELECT FROM ...)', async () => {
 		const sql = `
         -- @dynamicQuery
         SELECT
@@ -766,7 +769,7 @@ describe('dynamic-query', () => {
             WHERE m.name = :subqueryName
         ) m2
         WHERE m2.name = :name
-        `
+        `;
 		const sqlFragments: DynamicSqlInfoResult = {
 			select: [
 				{
@@ -803,21 +806,21 @@ describe('dynamic-query', () => {
 			],
 			where: [
 				{
-					fragment: `AND m2.name = ?`,
+					fragment: 'AND m2.name = ?',
 					dependOnFields: [],
 					dependOnParams: ['name'],
 					parameters: ['name']
 				}
 			]
-		}
+		};
 
 		const actual = await parseSql(client, sql);
 		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error`);
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
 		}
 
 		assert.deepStrictEqual(actual.right.dynamicSqlQuery, sqlFragments);
-	})
+	});
 
 	it(`SELECT concat(m1.value, ': ', m2.name) as valueAndName`, async () => {
 		const sql = `
@@ -828,7 +831,7 @@ describe('dynamic-query', () => {
         FROM mytable1 m1
         INNER JOIN mytable2 m2 on m1.id = m2.id
         WHERE (:name is null OR m2.name = :name)
-        `
+        `;
 		const sqlFragments: DynamicSqlInfoResult = {
 			select: [
 				{
@@ -862,30 +865,30 @@ describe('dynamic-query', () => {
 			],
 			where: [
 				{
-					fragment: `AND (? is null OR m2.name = ?)`,
+					fragment: 'AND (? is null OR m2.name = ?)',
 					dependOnFields: [],
 					dependOnParams: ['name', 'name'],
 					parameters: ['name', 'name']
 				}
 			]
-		}
+		};
 
 		const actual = await parseSql(client, sql);
 		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error`);
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
 		}
 
 		assert.deepStrictEqual(actual.right.dynamicSqlQuery, sqlFragments);
-	})
+	});
 
-	it(`SELECT * FROM mytable1 m1`, async () => {
+	it('SELECT * FROM mytable1 m1', async () => {
 		const sql = `
         -- @dynamicQuery
         SELECT
            *
         FROM mytable1 m1
         INNER JOIN mytable2 m2 on m2.id = m1.id
-        `
+        `;
 		const sqlFragments: DynamicSqlInfoResult = {
 			select: [
 				{
@@ -922,7 +925,7 @@ describe('dynamic-query', () => {
 					dependOnFields: [4],
 					dependOnParams: [],
 					parameters: []
-				},
+				}
 			],
 			from: [
 				{
@@ -939,23 +942,23 @@ describe('dynamic-query', () => {
 				}
 			],
 			where: []
-		}
+		};
 
 		const actual = await parseSql(client, sql);
 		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error`);
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
 		}
 
 		assert.deepStrictEqual(actual.right.dynamicSqlQuery, sqlFragments);
-	})
+	});
 
-	it(`SELECT m1.id, name, descr as description FROM mytable1 m1`, async () => {
+	it('SELECT m1.id, name, descr as description FROM mytable1 m1', async () => {
 		const sql = `-- @dynamicQuery
 SELECT
 	m1.id, name, descr as description
 FROM mytable1 m1
 INNER JOIN mytable2 m2 on m2.id = m1.id
-        `
+        `;
 		const sqlFragments: DynamicSqlInfoResult = {
 			select: [
 				{
@@ -995,17 +998,17 @@ INNER JOIN mytable2 m2 on m2.id = m1.id
 				}
 			],
 			where: []
-		}
+		};
 
 		const actual = await parseSql(client, sql);
 		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error`);
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
 		}
 
 		assert.deepStrictEqual(actual.right.dynamicSqlQuery, sqlFragments);
-	})
+	});
 
-	it(`SELECT m1.id, name, descr as description FROM mytable1 m1`, async () => {
+	it('SELECT m1.id, name, descr as description FROM mytable1 m1', async () => {
 		const sql = `-- @dynamicQuery
 WITH cte as (
 	select id, name from mytable2
@@ -1016,7 +1019,7 @@ SELECT
 FROM mytable1 m1
 INNER JOIN cte m2 on m2.id = m1.id
 WHERE m2.name LIKE :name
-        `
+        `;
 		const sqlFragments: DynamicSqlInfoResult = {
 			with: [
 				{
@@ -1060,25 +1063,25 @@ WHERE m2.name LIKE :name
 			],
 			where: [
 				{
-					fragment: `AND m2.name LIKE ?`,
+					fragment: 'AND m2.name LIKE ?',
 					dependOnFields: [],
 					dependOnParams: ['name'],
 					parameters: ['name']
 				}
 			]
-		}
+		};
 
 		const actual = await parseSql(client, sql);
 		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error`);
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
 		}
 
 		assert.deepStrictEqual(actual.right.dynamicSqlQuery, sqlFragments);
-	})
+	});
 
-	it(`SELECT m1.id, name, descr as description FROM mytable1 m1`, async () => {
+	it('SELECT m1.id, name, descr as description FROM mytable1 m1', async () => {
 		const sql = `-- @dynamicQuery
-SELECT id, exists(SELECT 1 FROM mytable2 where id = t1.id) as has from mytable1 t1`
+SELECT id, exists(SELECT 1 FROM mytable2 where id = t1.id) as has from mytable1 t1`;
 
 		const sqlFragments: DynamicSqlInfoResult = {
 			select: [
@@ -1091,7 +1094,8 @@ SELECT id, exists(SELECT 1 FROM mytable2 where id = t1.id) as has from mytable1 
 				},
 				{
 					fragment: 'exists(SELECT 1 FROM mytable2 where id = t1.id) as has',
-					fragmentWitoutAlias: 'exists(SELECT 1 FROM mytable2 where id = t1.id)',
+					fragmentWitoutAlias:
+						'exists(SELECT 1 FROM mytable2 where id = t1.id)',
 					dependOnFields: [1],
 					dependOnParams: [],
 					parameters: []
@@ -1106,13 +1110,13 @@ SELECT id, exists(SELECT 1 FROM mytable2 where id = t1.id) as has from mytable1 
 				}
 			],
 			where: []
-		}
+		};
 
 		const actual = await parseSql(client, sql);
 		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error`);
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
 		}
 
 		assert.deepStrictEqual(actual.right.dynamicSqlQuery, sqlFragments);
-	})
+	});
 });

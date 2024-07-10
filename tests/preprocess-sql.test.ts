@@ -1,144 +1,133 @@
-import assert from "assert";
-import { hasAnnotation, preprocessSql } from "../src/describe-query";
-import { PreprocessedSql } from "../src/types";
+import assert from 'node:assert';
+import { hasAnnotation, preprocessSql } from '../src/describe-query';
+import type { PreprocessedSql } from '../src/types';
 
 describe('preprocess-sql', () => {
+	it('preprocess sql with one parameter', async () => {
+		const sql = 'select * from mytable1 where :id = 10';
+		const actual = preprocessSql(sql);
 
-    it('preprocess sql with one parameter', async () => {
+		const expected: PreprocessedSql = {
+			sql: 'select * from mytable1 where ? = 10',
+			namedParameters: ['id']
+		};
 
-        const sql = 'select * from mytable1 where :id = 10';
-        const actual = preprocessSql(sql);
+		assert.deepStrictEqual(actual, expected);
+	});
 
-        const expected: PreprocessedSql = {
-            sql: 'select * from mytable1 where ? = 10',
-            namedParameters: ['id']
-        }
+	it('preprocess sql with several parameters', async () => {
+		const sql =
+			'select * from mytable1 where :id = 10 or :id=1 or : name > 10or:param1>0and :PARAM>0 and :PARAM1>0 and 10>20';
+		const actual = preprocessSql(sql);
 
-        assert.deepStrictEqual(actual, expected);
-    })
+		const expected: PreprocessedSql = {
+			sql: 'select * from mytable1 where ? = 10 or ?=1 or : name > 10or?>0and ?>0 and ?>0 and 10>20',
+			namedParameters: ['id', 'id', 'param1', 'PARAM', 'PARAM1']
+		};
 
-    it('preprocess sql with several parameters', async () => {
+		assert.deepStrictEqual(actual, expected);
+	});
 
-        const sql = 'select * from mytable1 where :id = 10 or :id=1 or : name > 10or:param1>0and :PARAM>0 and :PARAM1>0 and 10>20';
-        const actual = preprocessSql(sql);
+	it('preprocess sql with undescore and dollar in the param name', async () => {
+		const sql = 'select * from mytable1 where id = :emp_id or id = :$1';
+		const actual = preprocessSql(sql);
 
-        const expected: PreprocessedSql = {
-            sql: 'select * from mytable1 where ? = 10 or ?=1 or : name > 10or?>0and ?>0 and ?>0 and 10>20',
-            namedParameters: ['id', 'id', 'param1', 'PARAM', 'PARAM1']
-        }
+		const expected: PreprocessedSql = {
+			sql: 'select * from mytable1 where id = ? or id = ?',
+			namedParameters: ['emp_id', '$1']
+		};
 
-        assert.deepStrictEqual(actual, expected);
-    })
+		assert.deepStrictEqual(actual, expected);
+	});
 
-    it('preprocess sql with undescore and dollar in the param name', async () => {
+	it('preprocess sql without parameters', async () => {
+		const sql = 'select * from mytable1';
+		const actual = preprocessSql(sql);
 
-        const sql = 'select * from mytable1 where id = :emp_id or id = :$1';
-        const actual = preprocessSql(sql);
+		const expected: PreprocessedSql = {
+			sql: 'select * from mytable1',
+			namedParameters: []
+		};
 
-        const expected: PreprocessedSql = {
-            sql: 'select * from mytable1 where id = ? or id = ?',
-            namedParameters: ['emp_id', '$1']
-        }
+		assert.deepStrictEqual(actual, expected);
+	});
 
-        assert.deepStrictEqual(actual, expected);
-    })
+	it('preprocess with string literal', async () => {
+		const sql = `SELECT HOUR('13:01:02')`;
+		const actual = preprocessSql(sql);
 
-    it('preprocess sql without parameters', async () => {
+		const expected: PreprocessedSql = {
+			sql: `SELECT HOUR('13:01:02')`,
+			namedParameters: []
+		};
 
-        const sql = 'select * from mytable1';
-        const actual = preprocessSql(sql);
+		assert.deepStrictEqual(actual, expected);
+	});
 
-        const expected: PreprocessedSql = {
-            sql: 'select * from mytable1',
-            namedParameters: []
-        }
+	it('preprocess with string literal', async () => {
+		const sql = `SELECT HOUR("13:01:02")`;
+		const actual = preprocessSql(sql);
 
-        assert.deepStrictEqual(actual, expected);
-    })
+		const expected: PreprocessedSql = {
+			sql: `SELECT HOUR("13:01:02")`,
+			namedParameters: []
+		};
 
-    it('preprocess with string literal', async () => {
+		assert.deepStrictEqual(actual, expected);
+	});
 
-        const sql = `SELECT HOUR('13:01:02')`;
-        const actual = preprocessSql(sql);
+	it.skip('preprocess sql with invalid parameter names', async () => {
+		const sql = 'select * from mytable1 where :1 > 0 or :=0 or :111 > 0';
+		const actual = preprocessSql(sql);
 
-        const expected: PreprocessedSql = {
-            sql: `SELECT HOUR('13:01:02')`,
-            namedParameters: []
-        }
+		const expected: PreprocessedSql = {
+			sql: 'select * from mytable1',
+			namedParameters: []
+		};
 
-        assert.deepStrictEqual(actual, expected);
-    })
+		assert.deepStrictEqual(actual, expected);
+	});
 
-    it('preprocess with string literal', async () => {
-
-        const sql = `SELECT HOUR("13:01:02")`;
-        const actual = preprocessSql(sql);
-
-        const expected: PreprocessedSql = {
-            sql: `SELECT HOUR("13:01:02")`,
-            namedParameters: []
-        }
-
-        assert.deepStrictEqual(actual, expected);
-    })
-
-    it.skip('preprocess sql with invalid parameter names', async () => {
-
-        const sql = 'select * from mytable1 where :1 > 0 or :=0 or :111 > 0';
-        const actual = preprocessSql(sql);
-
-        const expected: PreprocessedSql = {
-            sql: 'select * from mytable1',
-            namedParameters: []
-        }
-
-        assert.deepStrictEqual(actual, expected);
-    })
-
-    it('verify @nested comment', async () => {
-
-        const sql = `
+	it('verify @nested comment', async () => {
+		const sql = `
         -- @nested
         `;
-        const actual = hasAnnotation(sql, "@nested");
+		const actual = hasAnnotation(sql, '@nested');
 
-        assert.deepStrictEqual(actual, true);
-    })
+		assert.deepStrictEqual(actual, true);
+	});
 
-    it('verify without @nested comment', async () => {
-
-        const sql = `
+	it('verify without @nested comment', async () => {
+		const sql = `
         SELECT * FROM mytable1
         `;
-        const actual = hasAnnotation(sql, "@nested");
+		const actual = hasAnnotation(sql, '@nested');
 
-        assert.deepStrictEqual(actual, false);
-    })
+		assert.deepStrictEqual(actual, false);
+	});
 
-    it('verify without @nested not int comment', async () => {
-
-        const sql = `
+	it('verify without @nested not int comment', async () => {
+		const sql = `
         SELECT id as @nested FROM mytable1
         `;
-        const actual = hasAnnotation(sql, "@nested");
+		const actual = hasAnnotation(sql, '@nested');
 
-        assert.deepStrictEqual(actual, false);
-    })
+		assert.deepStrictEqual(actual, false);
+	});
 
-    it('@safeIntegers:true in comments', async () => {
-
-        const sql = `
+	it('@safeIntegers:true in comments', async () => {
+		const sql = `
         -- @safeIntegers:true
         select * from mytable1`;
 
-        const actual = preprocessSql(sql);
-        const expected: PreprocessedSql = {
-            sql: `
+		const actual = preprocessSql(sql);
+		const expected: PreprocessedSql = {
+			sql: `
         -- @safeIntegers:true
         select * from mytable1`,
-            namedParameters: []
-        }
+			namedParameters: []
+		};
 
-        assert.deepStrictEqual(actual, expected);
-    })
+		assert.deepStrictEqual(actual, expected);
+	});
 });
