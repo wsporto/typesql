@@ -138,8 +138,8 @@ function traverse_select_stmt(
 	);
 	const fromColumns = recursive
 		? mainQueryResult.columns.map((col, index) =>
-				mapTypeAndNullInferToColumnDef(col, recursiveNames[index])
-			)
+			mapTypeAndNullInferToColumnDef(col, recursiveNames[index])
+		)
 		: traverseContext.fromColumns;
 
 	unionSelect.forEach((select_core) => {
@@ -460,11 +460,11 @@ function traverse_table_or_subquery(
 		//grammar error: select * from table1 inner join table2....; inner is parsed as table_alias
 		const table_alias =
 			table_alias_temp.toLowerCase() === 'left' ||
-			table_alias_temp.toLowerCase() === 'right' ||
-			table_alias_temp.toLowerCase() === 'full' ||
-			table_alias_temp.toLowerCase() === 'outer' ||
-			table_alias_temp.toLowerCase() === 'inner' ||
-			table_alias_temp.toLowerCase() === 'cross'
+				table_alias_temp.toLowerCase() === 'right' ||
+				table_alias_temp.toLowerCase() === 'full' ||
+				table_alias_temp.toLowerCase() === 'outer' ||
+				table_alias_temp.toLowerCase() === 'inner' ||
+				table_alias_temp.toLowerCase() === 'cross'
 				? ''
 				: table_alias_temp;
 
@@ -492,8 +492,8 @@ function traverse_table_or_subquery(
 			);
 			const usingFields = join_constraint?.USING_()
 				? join_constraint
-						?.column_name_list()
-						.map((column_name) => column_name.getText())
+					?.column_name_list()
+					.map((column_name) => column_name.getText())
 				: [];
 			const filteredFields =
 				usingFields.length > 0
@@ -599,13 +599,11 @@ function traverse_table_or_subquery(
 			traverseContext.relations.push(relation);
 
 			//dynamic query
-			const fragment = `${
-				join_operator_list != null && index > 0
-					? extractOriginalSql(join_operator_list[index - 1])
-					: 'FROM'
-			} ${extractOriginalSql(table_or_subquery_list[index])}${
-				join_constraint != null ? ` ${extractOriginalSql(join_constraint)}` : ''
-			}`;
+			const fragment = `${join_operator_list != null && index > 0
+				? extractOriginalSql(join_operator_list[index - 1])
+				: 'FROM'
+				} ${extractOriginalSql(table_or_subquery_list[index])}${join_constraint != null ? ` ${extractOriginalSql(join_constraint)}` : ''
+				}`;
 
 			const params = traverseContext.parameters
 				.slice(numParamsBefore)
