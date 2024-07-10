@@ -19,6 +19,7 @@
     "access": "public"
   },
   "devDependencies": {
+    "@biomejs/biome": "^1.8.3",
     "@types/better-sqlite3": "^7.6.9",
     "@types/camelcase": "^5.2.0",
     "@types/mocha": "^10.0.6",
