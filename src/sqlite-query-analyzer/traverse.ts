@@ -1654,7 +1654,9 @@ function traverse_insert_stmt(
 				fromColumns
 			});
 			const expr = upsert_clause.expr(index);
-			const exprType = traverse_expr(expr, { ...traverseContext, fromColumns });
+			const table_name = expr.table_name();
+			const excludedColumns = table_name && table_name.getText() === 'excluded' ? fromColumns.map(col => ({ ...col, table: 'excluded' })) : []
+			const exprType = traverse_expr(expr, { ...traverseContext, fromColumns: fromColumns.concat(excludedColumns) });
 			traverseContext.constraints.push({
 				expression: column_name.getText(),
 				type1: col.columnType,

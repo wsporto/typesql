@@ -337,6 +337,38 @@ describe('sqlite-parse-insert', () => {
         assert.deepStrictEqual(actual.right, expected);
     })
 
+    it.only('ON DUPLICATE KEY UPDATE name = excluded.name', () => {
+
+        const sql = `
+        INSERT INTO mytable2 (id, name)
+        VALUES (?, ?)
+        ON CONFLICT(id) DO
+        UPDATE SET name = excluded.name`;
+        const actual = parseSql(sql, sqliteDbSchema);
+        const expected: SchemaDef = {
+            sql: sql,
+            queryType: 'Insert',
+            multipleRowsResult: false,
+            columns: [],
+            parameters: [
+                {
+                    name: 'param1',
+                    columnType: 'INTEGER',
+                    notNull: false //autoincrement
+                },
+                {
+                    name: 'param2',
+                    columnType: 'TEXT',
+                    notNull: false
+                }
+            ]
+        }
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
+
     it('ON DUPLICATE KEY UPDATE name = concat(?, ?)', () => {
 
         const sql = `
