@@ -902,4 +902,39 @@ describe('sqlite-parse-select-functions', () => {
         }
         assert.deepStrictEqual(actual.right, expected);
     })
+
+    it(`SELECT id, random() as rand FROM mytable1 ORDER BY random()`, () => {
+        const sql = `
+        SELECT id, random() as rand 
+        FROM mytable1
+        ORDER BY random() 
+        `;
+        const actual = parseSql(sql, sqliteDbSchema);
+
+        const expected: SchemaDef = {
+            sql,
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    columnName: 'id',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: 'mytable1'
+                },
+                {
+                    columnName: 'rand',
+                    type: 'INTEGER',
+                    notNull: true,
+                    table: ''
+                }
+            ],
+            parameters: []
+        }
+
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ` + actual.left.description);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    })
 });

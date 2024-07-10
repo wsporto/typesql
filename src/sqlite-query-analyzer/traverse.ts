@@ -743,6 +743,15 @@ function traverse_expr(
 			table: ''
 		};
 	}
+	if (function_name === 'random') {
+		const functionType = freshVar(expr.getText(), 'INTEGER');
+		return {
+			name: functionType.name,
+			type: functionType,
+			notNull: true,
+			table: ''
+		};
+	}
 	if (function_name === 'round') {
 		const functionType = freshVar(expr.getText(), 'REAL');
 		const param1Expr = expr.expr(0);
