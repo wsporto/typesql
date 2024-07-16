@@ -50,7 +50,7 @@ describe('code-generator', () => {
 			]
 		};
 
-		const actual = generateTsCode(tsDescriptor, queryName, 'node');
+		const actual = generateTsCode(tsDescriptor, queryName);
 		const expected = `import type { Connection } from 'mysql2/promise';
 
 export type GetPersonParams = {
@@ -111,7 +111,7 @@ function mapArrayToGetPersonResult(data: any) {
 			]
 		};
 
-		const actual = generateTsCode(tsDescriptor, queryName, 'node');
+		const actual = generateTsCode(tsDescriptor, queryName);
 		const expected = `import type { Connection } from 'mysql2/promise';
 
 export type GetPersonParams = {
@@ -149,7 +149,7 @@ function mapArrayToGetPersonResult(data: any) {
 		const sql = 'update mytable2 set name= :name, descr= :descr where id = :id';
 		const schemaDef = describeSql(dbSchema, sql);
 		const tsDescriptor = generateTsDescriptor(schemaDef);
-		const actual = generateTsCode(tsDescriptor, queryName, 'node');
+		const actual = generateTsCode(tsDescriptor, queryName);
 		const expected = `import type { Connection } from 'mysql2/promise';
 
 export type UpdatePersonData = {
@@ -196,7 +196,7 @@ export async function updatePerson(connection: Connection, data: UpdatePersonDat
 			orderByColumns: ['id', 'name']
 		};
 
-		const actual = generateTsCode(tsDescriptor, queryName, 'node');
+		const actual = generateTsCode(tsDescriptor, queryName);
 		const expected = `import type { Connection } from 'mysql2/promise';
 
 export type SelectPersonParams = {
@@ -294,20 +294,28 @@ function escapeOrderBy(orderBy: SelectPersonOrderBy[]): string {
 
 		const schemaDef = describeSql(dbSchema, sql);
 		const tsDescriptor = generateTsDescriptor(schemaDef);
-		const actual = generateTsCode(tsDescriptor, 'select-id', 'deno');
-		const expected = `import { Client } from "https://deno.land/x/mysql/mod.ts";
+		const actual = generateTsCode(tsDescriptor, 'select-id');
+		const expected = `import type { Connection } from 'mysql2/promise';
 
 export type SelectIdResult = {
     id: number;
 }
 
-export async function selectId(client: Client): Promise<SelectIdResult[]> {
+export async function selectId(connection: Connection): Promise<SelectIdResult[]> {
     const sql = \`
     SELECT id FROM mytable1
     \`
 
-    return client.query(sql)
-        .then(res => res);
+    return connection.query({sql, rowsAsArray: true})
+        .then(res => res[0] as any[])
+        .then(res => res.map(data => mapArrayToSelectIdResult(data)));
+}
+
+function mapArrayToSelectIdResult(data: any) {
+    const result: SelectIdResult = {
+        id: data[0]
+    }
+    return result;
 }`;
 
 		assert.deepStrictEqual(actual, expected);
@@ -317,8 +325,8 @@ export async function selectId(client: Client): Promise<SelectIdResult[]> {
 		const sql = 'SELECT id from mytable1 where id = ? and value in (?)'; //returns single row result
 		const schemaDef = describeSql(dbSchema, sql);
 		const tsDescriptor = generateTsDescriptor(schemaDef);
-		const actual = generateTsCode(tsDescriptor, 'selectId', 'deno');
-		const expected = `import { Client } from "https://deno.land/x/mysql/mod.ts";
+		const actual = generateTsCode(tsDescriptor, 'selectId');
+		const expected = `import type { Connection } from 'mysql2/promise';
 
 export type SelectIdParams = {
     param1: number;
@@ -329,13 +337,22 @@ export type SelectIdResult = {
     id: number;
 }
 
-export async function selectId(client: Client, params: SelectIdParams): Promise<SelectIdResult | null> {
+export async function selectId(connection: Connection, params: SelectIdParams): Promise<SelectIdResult | null> {
     const sql = \`
     SELECT id from mytable1 where id = ? and value in (?)
     \`
 
-    return client.query(sql, [params.param1, params.param2])
+    return connection.query({sql, rowsAsArray: true}, [params.param1, params.param2.length == 0? null : params.param2])
+        .then(res => res[0] as any[])
+        .then(res => res.map(data => mapArrayToSelectIdResult(data)))
         .then(res => res[0]);
+}
+
+function mapArrayToSelectIdResult(data: any) {
+    const result: SelectIdResult = {
+        id: data[0]
+    }
+    return result;
 }`;
 
 		assert.deepStrictEqual(actual, expected);
@@ -345,7 +362,7 @@ export async function selectId(client: Client, params: SelectIdParams): Promise<
 		const sql = 'SELECT id from mytable1 where id = :id or id = :id';
 		const schemaDef = describeSql(dbSchema, sql);
 		const tsDescriptor = generateTsDescriptor(schemaDef);
-		const actual = generateTsCode(tsDescriptor, 'selectId', 'node');
+		const actual = generateTsCode(tsDescriptor, 'selectId');
 		const expected = `import type { Connection } from 'mysql2/promise';
 
 export type SelectIdParams = {
@@ -380,8 +397,8 @@ function mapArrayToSelectIdResult(data: any) {
 		const sql = 'UPDATE mytable1 SET value = ?';
 		const schemaDef = describeSql(dbSchema, sql);
 		const tsDescriptor = generateTsDescriptor(schemaDef);
-		const actual = generateTsCode(tsDescriptor, 'update-value', 'deno');
-		const expected = `import { Client } from "https://deno.land/x/mysql/mod.ts";
+		const actual = generateTsCode(tsDescriptor, 'update-value');
+		const expected = `import type { Connection } from 'mysql2/promise';
 
 export type UpdateValueData = {
     value?: number;
@@ -391,13 +408,13 @@ export type UpdateValueResult = {
     affectedRows: number;
 }
 
-export async function updateValue(client: Client, data: UpdateValueData): Promise<UpdateValueResult> {
+export async function updateValue(connection: Connection, data: UpdateValueData): Promise<UpdateValueResult> {
     const sql = \`
     UPDATE mytable1 SET value = ?
     \`
 
-    return client.query(sql, [data.value])
-        .then(res => res);
+    return connection.query(sql, [data.value])
+        .then(res => res[0] as UpdateValueResult);
 }`;
 
 		assert.deepStrictEqual(actual, expected);
@@ -407,9 +424,9 @@ export async function updateValue(client: Client, data: UpdateValueData): Promis
 		const sql = 'UPDATE mytable1 SET value = ? WHERE id = ?';
 		const schemaDef = describeSql(dbSchema, sql);
 		const tsDescriptor = generateTsDescriptor(schemaDef);
-		const actual = generateTsCode(tsDescriptor, 'update-value', 'deno');
+		const actual = generateTsCode(tsDescriptor, 'update-value');
 
-		const expected = `import { Client } from "https://deno.land/x/mysql/mod.ts";
+		const expected = `import type { Connection } from 'mysql2/promise';
 
 export type UpdateValueData = {
     value?: number;
@@ -423,13 +440,13 @@ export type UpdateValueResult = {
     affectedRows: number;
 }
 
-export async function updateValue(client: Client, data: UpdateValueData, params: UpdateValueParams): Promise<UpdateValueResult> {
+export async function updateValue(connection: Connection, data: UpdateValueData, params: UpdateValueParams): Promise<UpdateValueResult> {
     const sql = \`
     UPDATE mytable1 SET value = ? WHERE id = ?
     \`
 
-    return client.query(sql, [data.value, params.param1])
-        .then(res => res);
+    return connection.query(sql, [data.value, params.param1])
+        .then(res => res[0] as UpdateValueResult);
 }`;
 
 		assert.deepStrictEqual(actual, expected);
@@ -439,8 +456,8 @@ export async function updateValue(client: Client, data: UpdateValueData, params:
 		const sql = 'SELECT id from mytable1 ORDER BY ?';
 		const schemaDef = describeSql(dbSchema, sql);
 		const tsDescriptor = generateTsDescriptor(schemaDef);
-		const actual = generateTsCode(tsDescriptor, 'selectId', 'deno');
-		const expected = `import { Client } from "https://deno.land/x/mysql/mod.ts";
+		const actual = generateTsCode(tsDescriptor, 'selectId');
+		const expected = `import type { Connection } from 'mysql2/promise';
 
 export type SelectIdParams = {
     orderBy: [SelectIdOrderBy, ...SelectIdOrderBy[]];
@@ -450,13 +467,21 @@ export type SelectIdResult = {
     id: number;
 }
 
-export async function selectId(client: Client, params: SelectIdParams): Promise<SelectIdResult[]> {
+export async function selectId(connection: Connection, params: SelectIdParams): Promise<SelectIdResult[]> {
     const sql = \`
     SELECT id from mytable1 ORDER BY \${escapeOrderBy(params.orderBy)}
     \`
 
-    return client.query(sql)
-        .then(res => res);
+    return connection.query({sql, rowsAsArray: true})
+        .then(res => res[0] as any[])
+        .then(res => res.map(data => mapArrayToSelectIdResult(data)));
+}
+
+function mapArrayToSelectIdResult(data: any) {
+    const result: SelectIdResult = {
+        id: data[0]
+    }
+    return result;
 }
 
 export type SelectIdOrderBy = {
@@ -476,20 +501,28 @@ function escapeOrderBy(orderBy: SelectIdOrderBy[]): string {
 
 		const schemaDef = describeSql(dbSchema, sql);
 		const tsDescriptor = generateTsDescriptor(schemaDef);
-		const actual = generateTsCode(tsDescriptor, 'select-id', 'deno');
-		const expected = `import { Client } from "https://deno.land/x/mysql/mod.ts";
+		const actual = generateTsCode(tsDescriptor, 'select-id');
+		const expected = `import type { Connection } from 'mysql2/promise';
 
 export type SelectIdResult = {
     id: number;
 }
 
-export async function selectId(client: Client): Promise<SelectIdResult[]> {
+export async function selectId(connection: Connection): Promise<SelectIdResult[]> {
     const sql = \`
     SELECT id FROM \\\`my table\\\`
     \`
 
-    return client.query(sql)
-        .then(res => res);
+    return connection.query({sql, rowsAsArray: true})
+        .then(res => res[0] as any[])
+        .then(res => res.map(data => mapArrayToSelectIdResult(data)));
+}
+
+function mapArrayToSelectIdResult(data: any) {
+    const result: SelectIdResult = {
+        id: data[0]
+    }
+    return result;
 }`;
 
 		assert.deepStrictEqual(actual, expected);
@@ -526,7 +559,7 @@ export async function selectId(client: Client): Promise<SelectIdResult[]> {
 
 		const schemaDef = describeSql(dbSchema, sql);
 		const tsDescriptor = generateTsDescriptor(schemaDef);
-		const actual = generateTsCode(tsDescriptor, 'select-id', 'node');
+		const actual = generateTsCode(tsDescriptor, 'select-id');
 		const expected = `import type { Connection } from 'mysql2/promise';
 
 export type SelectIdParams = {
@@ -576,12 +609,7 @@ LEFT JOIN posts p on p.fk_user = u.id
 LEFT JOIN roles r on r.fk_user = u.id
 LEFT JOIN comments c on c.fk_post = p.id`;
 
-		const actual = await generateTsFileFromContent(
-			client,
-			queryName,
-			sql,
-			'node'
-		);
+		const actual = await generateTsFileFromContent(client, queryName, sql);
 		const expected = `import type { Connection } from 'mysql2/promise';
 
 export type SelectUsersResult = {
@@ -753,12 +781,7 @@ FROM users u
 LEFT JOIN posts p on p.fk_user = u.id
 WHERE u.id = :id`;
 
-		const actual = await generateTsFileFromContent(
-			client,
-			queryName,
-			sql,
-			'node'
-		);
+		const actual = await generateTsFileFromContent(client, queryName, sql);
 		const expected = `import type { Connection } from 'mysql2/promise';
 
 export type SelectUsersParams = {
@@ -879,12 +902,7 @@ FROM surveys s
 INNER JOIN participants p on p.fk_survey = s.id
 INNER JOIN users u on p.fk_user = :user_id`;
 
-		const actual = await generateTsFileFromContent(
-			client,
-			queryName,
-			sql,
-			'node'
-		);
+		const actual = await generateTsFileFromContent(client, queryName, sql);
 		const expected = `import type { Connection } from 'mysql2/promise';
 
 export type SelectAnswersParams = {
@@ -1005,12 +1023,7 @@ INNER JOIN addresses as a1 ON a1.id = c.primaryAddress
 LEFT JOIN addresses as a2 ON a2.id = c.secondaryAddress
 WHERE c.id = :clientId`;
 
-		const actual = await generateTsFileFromContent(
-			client,
-			queryName,
-			sql,
-			'node'
-		);
+		const actual = await generateTsFileFromContent(client, queryName, sql);
 		const expected = `import type { Connection } from 'mysql2/promise';
 
 export type SelectClientsParams = {
@@ -1143,12 +1156,7 @@ FROM books b
 INNER JOIN books_authors ba on ba.book_id = b.id
 INNER JOIN authors a on a.id = ba.author_id`;
 
-		const actual = await generateTsFileFromContent(
-			client,
-			queryName,
-			sql,
-			'node'
-		);
+		const actual = await generateTsFileFromContent(client, queryName, sql);
 		const expected = `import type { Connection } from 'mysql2/promise';
 
 export type SelectBooksResult = {
@@ -1277,12 +1285,7 @@ INNER JOIN mytable2 m2 on m1.id = m2.id
 WHERE m2.name = :name
 AND m2.descr = :description`;
 
-		const actual = await generateTsFileFromContent(
-			client,
-			queryName,
-			sql,
-			'node'
-		);
+		const actual = await generateTsFileFromContent(client, queryName, sql);
 		//tests\expected-code\dynamic-query01.ts
 		const expected = readFileSync(
 			'tests/expected-code/dynamic-query01.ts.txt',
@@ -1306,12 +1309,7 @@ INNER JOIN ( -- derivated table
 ) m2
 WHERE (:name is NULL or m2.name = :name)`;
 
-		const actual = await generateTsFileFromContent(
-			client,
-			queryName,
-			sql,
-			'node'
-		);
+		const actual = await generateTsFileFromContent(client, queryName, sql);
 		//tests\expected-code\dynamic-query01.ts
 		const expected = readFileSync(
 			'tests/expected-code/dynamic-query02.ts.txt',
@@ -1330,12 +1328,7 @@ WHERE (:name is NULL or m2.name = :name)`;
 SELECT t1.id, t1.value
 FROM mytable1 t1`;
 
-		const actual = await generateTsFileFromContent(
-			client,
-			queryName,
-			sql,
-			'node'
-		);
+		const actual = await generateTsFileFromContent(client, queryName, sql);
 		//tests\expected-code\dynamic-query01.ts
 		const expected = readFileSync(
 			'tests/expected-code/dynamic-query03.ts.txt',
@@ -1356,12 +1349,7 @@ SELECT
 FROM mytable1 m1
 INNER JOIN mytable2 m2 on m2.id = m1.id`;
 
-		const actual = await generateTsFileFromContent(
-			client,
-			queryName,
-			sql,
-			'node'
-		);
+		const actual = await generateTsFileFromContent(client, queryName, sql);
 		//tests\expected-code\dynamic-query01.ts
 		const expected = readFileSync(
 			'tests/expected-code/dynamic-query04.ts.txt',
@@ -1388,12 +1376,7 @@ FROM mytable1 m1
 INNER JOIN cte m2 on m2.id = m1.id
 WHERE m2.name LIKE concat('%', :name, '%')`;
 
-		const actual = await generateTsFileFromContent(
-			client,
-			queryName,
-			sql,
-			'node'
-		);
+		const actual = await generateTsFileFromContent(client, queryName, sql);
 		//tests\expected-code\dynamic-query01.ts
 		const expected = readFileSync(
 			'tests/expected-code/dynamic-query05.ts.txt',
@@ -1415,12 +1398,7 @@ FROM mytable1 m1
 INNER JOIN mytable2 m2 on m2.id = m1.id
 ORDER BY ?`;
 
-		const actual = await generateTsFileFromContent(
-			client,
-			queryName,
-			sql,
-			'node'
-		);
+		const actual = await generateTsFileFromContent(client, queryName, sql);
 		//tests\expected-code\dynamic-query01.ts
 		const expected = readFileSync(
 			'tests/expected-code/dynamic-query06.ts.txt',
@@ -1443,12 +1421,7 @@ FROM mytable1 m1
 INNER JOIN mytable2 m2 on m2.id = m1.id
 ORDER BY ?`;
 
-		const actual = await generateTsFileFromContent(
-			client,
-			queryName,
-			sql,
-			'node'
-		);
+		const actual = await generateTsFileFromContent(client, queryName, sql);
 		//tests\expected-code\dynamic-query01.ts
 		const expected = readFileSync(
 			'tests/expected-code/dynamic-query07.ts.txt',

@@ -28,7 +28,7 @@ export async function createMysqlClient(
 		const databaseVersion = await getDatabaseVersion(pool);
 
 		return right({
-			type: 'mysql',
+			type: 'mysql2',
 			client: pool,
 			databaseVersion,
 			schema,

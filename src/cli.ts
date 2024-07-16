@@ -53,8 +53,7 @@ function parseArgs() {
 			const config: TypeSqlConfig = {
 				databaseUri: 'mysql://root:password@localhost/mydb',
 				sqlDir: './sqls',
-				target: 'node',
-				client: 'mysql',
+				client: 'mysql2',
 				includeCrudTables: []
 			};
 			const configPath = './typesql.json';
@@ -134,8 +133,7 @@ function validateDirectories(dir: string) {
 function watchDirectories(
 	client: DatabaseClient,
 	dirPath: string,
-	dbSchema: ColumnSchema[],
-	target: 'node' | 'deno'
+	dbSchema: ColumnSchema[]
 ) {
 	const dirGlob = `${dirPath}/**/*.sql`;
 
@@ -146,10 +144,10 @@ function watchDirectories(
 			}
 		})
 		.on('add', (path) =>
-			rewiteFiles(client, path, dbSchema, target, isCrudFile(dirPath, path))
+			rewiteFiles(client, path, dbSchema, isCrudFile(dirPath, path))
 		)
 		.on('change', (path) =>
-			rewiteFiles(client, path, dbSchema, target, isCrudFile(dirPath, path))
+			rewiteFiles(client, path, dbSchema, isCrudFile(dirPath, path))
 		);
 }
 
@@ -157,7 +155,6 @@ async function rewiteFiles(
 	client: DatabaseClient,
 	path: string,
 	dbSchema: ColumnSchema[],
-	target: 'node' | 'deno',
 	isCrudFile: boolean
 ) {
 	await generateTsFile(client, path, dbSchema, isCrudFile);
@@ -173,7 +170,6 @@ async function compile(watch: boolean, config: TypeSqlConfig) {
 	const {
 		sqlDir,
 		databaseUri,
-		target,
 		client: dialect,
 		attach,
 		authToken
@@ -224,7 +220,7 @@ async function compile(watch: boolean, config: TypeSqlConfig) {
 
 	if (watch) {
 		console.log('watching mode!');
-		watchDirectories(databaseClient, sqlDir, dbSchema.right, target);
+		watchDirectories(databaseClient, sqlDir, dbSchema.right);
 	} else {
 		// databaseClient.client.closeConnection();
 	}
@@ -352,7 +348,7 @@ async function generateCrudTables(
 		}
 
 		const columns = dbSchema.filter((col) => col.table === tableName);
-		if (client.type === 'mysql') {
+		if (client.type === 'mysql2') {
 			checkAndGenerateSql(
 				client.type,
 				`${filePath}select-from-${tableName}.sql`,
@@ -431,8 +427,8 @@ function filterTables(allTables: Table[], includeCrudTables: string[]) {
 	return selectAll
 		? allTables
 		: allTables.filter(
-				(t) => includeCrudTables.find((t2) => t.table === t2) != null
-			);
+			(t) => includeCrudTables.find((t2) => t.table === t2) != null
+		);
 }
 
 async function selectAllTables(
@@ -454,9 +450,9 @@ async function createClient(
 	authToken?: string
 ) {
 	switch (dialect) {
-		case 'mysql':
+		case 'mysql2':
 			return createMysqlClient(databaseUri);
-		case 'sqlite':
+		case 'better-sqlite3':
 			return createSqliteClient(databaseUri, attach || []);
 		case 'libsql':
 			return createLibSqlClient(databaseUri, attach || [], authToken || '');
@@ -466,9 +462,9 @@ async function loadSchema(
 	databaseClient: DatabaseClient
 ): Promise<Either<TypeSqlError, ColumnSchema[]>> {
 	switch (databaseClient.type) {
-		case 'mysql':
+		case 'mysql2':
 			return loadMysqlSchema(databaseClient.client, databaseClient.schema);
-		case 'sqlite':
+		case 'better-sqlite3':
 		case 'libsql':
 			return loadDbSchema(databaseClient.client);
 	}
@@ -479,13 +475,13 @@ async function loadTableSchema(
 	tableName: string
 ): Promise<Either<TypeSqlError, ColumnSchema[]>> {
 	switch (databaseClient.type) {
-		case 'mysql':
+		case 'mysql2':
 			return loadMySqlTableSchema(
 				databaseClient.client,
 				databaseClient.schema,
 				tableName
 			);
-		case 'sqlite':
+		case 'better-sqlite3':
 		case 'libsql':
 			return await loadDbSchema(databaseClient.client);
 	}
@@ -493,9 +489,9 @@ async function loadTableSchema(
 
 async function selectTables(databaseClient: DatabaseClient) {
 	switch (databaseClient.type) {
-		case 'mysql':
+		case 'mysql2':
 			return await selectTablesFromSchema(databaseClient.client);
-		case 'sqlite':
+		case 'better-sqlite3':
 		case 'libsql':
 			return selectSqliteTablesFromSchema(databaseClient.client);
 	}

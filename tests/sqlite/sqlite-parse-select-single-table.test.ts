@@ -9,7 +9,7 @@ import { validateAndGenerateCode } from '../../src/sqlite-query-analyzer/code-ge
 describe('sqlite-Test simple select statements', () => {
 	it('try to parse a empty query', async () => {
 		const client: SQLiteDialect = {
-			type: 'sqlite',
+			type: 'better-sqlite3',
 			client: new Database('./mydb.db')
 		};
 		const sql = '';
@@ -31,7 +31,7 @@ describe('sqlite-Test simple select statements', () => {
 
 	it('try to parse a empty query', async () => {
 		const client: SQLiteDialect = {
-			type: 'sqlite',
+			type: 'better-sqlite3',
 			client: new Database('./mydb.db')
 		};
 		const sql = 'SELECT id2 from mytable1';

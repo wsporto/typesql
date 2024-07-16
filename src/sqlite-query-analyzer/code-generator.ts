@@ -60,8 +60,8 @@ export function validateAndGenerateCode(
 		sql,
 		queryName,
 		sqliteDbSchema,
-		isCrud,
-		client.type
+		client.type,
+		isCrud
 	);
 	return code;
 }
@@ -149,8 +149,8 @@ export function generateTsCode(
 	sql: string,
 	queryName: string,
 	sqliteDbSchema: ColumnSchema[],
-	isCrud = false,
-	client: SQLiteClient = 'sqlite'
+	client: SQLiteClient,
+	isCrud = false
 ): Either<TypeSqlError, string> {
 	const schemaDefResult = parseSql(sql, sqliteDbSchema);
 	if (isLeft(schemaDefResult)) {
@@ -243,10 +243,12 @@ function mapColumns(
 	];
 
 	if (queryType === 'Insert' && !returning) {
-		return client === 'sqlite' ? sqliteInsertColumns : libSqlInsertColumns;
+		return client === 'better-sqlite3'
+			? sqliteInsertColumns
+			: libSqlInsertColumns;
 	}
 	if (queryType === 'Update' || queryType === 'Delete') {
-		return client === 'sqlite'
+		return client === 'better-sqlite3'
 			? [sqliteInsertColumns[0]]
 			: [libSqlInsertColumns[0]];
 	}
@@ -319,7 +321,7 @@ function mapColumnType(sqliteType: SQLiteType, client: SQLiteClient) {
 		case 'DATE':
 			return 'Date';
 		case 'BLOB':
-			return client === 'sqlite' ? 'Uint8Array' : 'ArrayBuffer';
+			return client === 'better-sqlite3' ? 'Uint8Array' : 'ArrayBuffer';
 	}
 }
 
@@ -364,7 +366,9 @@ function generateCodeFromTsDescriptor(
 	);
 
 	let functionArguments =
-		client === 'sqlite' ? 'db: Database' : 'client: Client | Transaction';
+		client === 'better-sqlite3'
+			? 'db: Database'
+			: 'client: Client | Transaction';
 	functionArguments += queryType === 'Update' ? `, data: ${dataTypeName}` : '';
 	if (tsDescriptor.dynamicQuery2 == null) {
 		functionArguments +=
@@ -387,7 +391,7 @@ function generateCodeFromTsDescriptor(
 	const queryParams =
 		allParameters.length > 0 ? `[${allParameters.join(', ')}]` : '';
 
-	if (client === 'sqlite') {
+	if (client === 'better-sqlite3') {
 		writer.writeLine(`import type { Database } from 'better-sqlite3';`);
 	}
 	if (client === 'libsql') {
@@ -619,7 +623,7 @@ function generateCodeFromTsDescriptor(
 						);
 					});
 				}
-				if (client === 'sqlite') {
+				if (client === 'better-sqlite3') {
 					writer.write('return db.prepare(sql)').newLine();
 					writer.indent().write('.raw(true)').newLine();
 					writer.indent().write('.all(paramsValues)').newLine();
@@ -890,7 +894,7 @@ function generateCodeFromTsDescriptor(
 		(queryType === 'Select' ||
 			(queryType === 'Insert' && tsDescriptor.returning))
 	) {
-		if (client === 'sqlite') {
+		if (client === 'better-sqlite3') {
 			writer
 				.write(
 					`export function ${camelCaseName}(${functionArguments}): ${returnType}`
@@ -971,7 +975,7 @@ function generateCodeFromTsDescriptor(
 			queryType === 'Delete' ||
 			(queryType === 'Insert' && !tsDescriptor.returning))
 	) {
-		if (client === 'sqlite') {
+		if (client === 'better-sqlite3') {
 			writer
 				.write(
 					`export function ${camelCaseName}(${functionArguments}): ${resultTypeName}`
@@ -1099,7 +1103,7 @@ function generateCodeFromTsDescriptor(
 		relations.forEach((relation, index) => {
 			const relationType = generateRelationType(capitalizedName, relation.name);
 			if (index === 0) {
-				if (client === 'sqlite') {
+				if (client === 'better-sqlite3') {
 					writer
 						.write(
 							`export function ${camelCaseName}Nested(${functionArguments}): ${relationType}[]`
@@ -1250,7 +1254,7 @@ function writeExecutSelectCrudBlock(
 	writer.indent().write(`FROM ${tableName}`).newLine();
 	writer.indent().write(`WHERE ${idColumn} = ?\``).newLine();
 	writer.blankLine();
-	if (client === 'sqlite') {
+	if (client === 'better-sqlite3') {
 		writer.write('return db.prepare(sql)').newLine();
 		writer.indent().write('.raw(true)').newLine();
 		writer.indent().write(`.all(${queryParams})`).newLine();
@@ -1296,7 +1300,7 @@ function writeExecuteInsertCrudBlock(
 		)
 		.newLine();
 	writer.blankLine();
-	if (client === 'sqlite') {
+	if (client === 'better-sqlite3') {
 		writer.write('return db.prepare(sql)').newLine();
 		writer.indent().write(`.run(values) as ${resultTypeName};`);
 	} else {
@@ -1335,7 +1339,7 @@ function writeExecuteUpdateCrudBlock(
 		.newLine();
 	writer.indent().write(`WHERE ${idColumn} = ?\``).newLine();
 	writer.blankLine();
-	if (client === 'sqlite') {
+	if (client === 'better-sqlite3') {
 		writer.write('return db.prepare(sql)').newLine();
 		writer.indent().write(`.run(values) as ${resultTypeName};`);
 	} else {
@@ -1360,7 +1364,7 @@ function writeExecutDeleteCrudBlock(
 	writer.indent().write(`FROM ${tableName}`).newLine();
 	writer.indent().write(`WHERE ${idColumn} = ?\``).newLine();
 	writer.blankLine();
-	if (client === 'sqlite') {
+	if (client === 'better-sqlite3') {
 		writer.write('return db.prepare(sql)').newLine();
 		writer
 			.indent()

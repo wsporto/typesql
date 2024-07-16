@@ -36,7 +36,6 @@ import { validateAndGenerateCode } from './sqlite-query-analyzer/code-generator'
 export function generateTsCodeForMySQL(
 	tsDescriptor: TsDescriptor,
 	fileName: string,
-	target: 'node' | 'deno',
 	crud = false
 ): string {
 	const writer = new CodeBlockWriter();
@@ -56,15 +55,9 @@ export function generateTsCodeForMySQL(
 		tsDescriptor.orderByColumns.length > 0;
 
 	// Import declarations
-	if (target === 'deno') {
-		writer.writeLine(
-			`import { Client } from "https://deno.land/x/mysql/mod.ts";`
-		);
-	} else {
-		writer.writeLine(`import type { Connection } from 'mysql2/promise';`);
-		if (tsDescriptor.dynamicQuery != null) {
-			writer.writeLine(`import { EOL } from 'os';`);
-		}
+	writer.writeLine(`import type { Connection } from 'mysql2/promise';`);
+	if (tsDescriptor.dynamicQuery != null) {
+		writer.writeLine(`import { EOL } from 'os';`);
 	}
 	writer.blankLine();
 
@@ -162,8 +155,7 @@ export function generateTsCodeForMySQL(
 			? ' | null'
 			: '';
 
-	let functionArguments =
-		target === 'deno' ? 'client: Client' : 'connection: Connection';
+	let functionArguments = 'connection: Connection';
 	functionArguments +=
 		tsDescriptor.data && tsDescriptor.data.length > 0
 			? `, data: ${dataTypeName}`
@@ -179,18 +171,16 @@ export function generateTsCodeForMySQL(
 
 	const allParameters = tsDescriptor.data
 		? tsDescriptor.data.map((field, index) => {
-				//:nameIsSet, :name, :valueIsSet, :value....
-				if (crud && index % 2 === 0) {
-					const nextField = tsDescriptor.data![index + 1];
-					return `data.${nextField.name} !== undefined`;
-				}
-				return `data.${field.name}`;
-			})
+			//:nameIsSet, :name, :valueIsSet, :value....
+			if (crud && index % 2 === 0) {
+				const nextField = tsDescriptor.data![index + 1];
+				return `data.${nextField.name} !== undefined`;
+			}
+			return `data.${field.name}`;
+		})
 		: [];
 	allParameters.push(
-		...tsDescriptor.parameterNames.map((paramName) =>
-			generateParam(target, paramName)
-		)
+		...tsDescriptor.parameterNames.map((paramName) => generateParam(paramName))
 	);
 
 	const queryParams =
@@ -295,51 +285,44 @@ export function generateTsCodeForMySQL(
 			const singleRowSelect =
 				tsDescriptor.queryType === 'Select' &&
 				tsDescriptor.multipleRowsResult === false;
-			if (target === 'deno') {
-				writer.writeLine(`return client.query(sql${queryParams})`);
-				writer
-					.indent()
-					.write(`.then(res => res${singleRowSelect ? '[0]' : ''});`);
+			if (tsDescriptor.queryType === 'Select') {
+				if (tsDescriptor.dynamicQuery == null) {
+					writer.writeLine(
+						`return connection.query({sql, rowsAsArray: true}${queryParams})`
+					);
+					writer.indent().write('.then(res => res[0] as any[])');
+					writer
+						.newLine()
+						.indent()
+						.write(
+							`.then(res => res.map(data => mapArrayTo${resultTypeName}(data)))`
+						);
+				} else {
+					writer.writeLine(
+						'return connection.query({ sql, rowsAsArray: true }, paramsValues)'
+					);
+					writer.indent().write('.then(res => res[0] as any[])');
+					writer
+						.newLine()
+						.indent()
+						.write(
+							`.then(res => res.map(data => mapArrayTo${resultTypeName}(data, params?.select)))`
+						);
+				}
 			} else {
-				if (tsDescriptor.queryType === 'Select') {
-					if (tsDescriptor.dynamicQuery == null) {
-						writer.writeLine(
-							`return connection.query({sql, rowsAsArray: true}${queryParams})`
-						);
-						writer.indent().write('.then(res => res[0] as any[])');
-						writer
-							.newLine()
-							.indent()
-							.write(
-								`.then(res => res.map(data => mapArrayTo${resultTypeName}(data)))`
-							);
-					} else {
-						writer.writeLine(
-							'return connection.query({ sql, rowsAsArray: true }, paramsValues)'
-						);
-						writer.indent().write('.then(res => res[0] as any[])');
-						writer
-							.newLine()
-							.indent()
-							.write(
-								`.then(res => res.map(data => mapArrayTo${resultTypeName}(data, params?.select)))`
-							);
-					}
-				} else {
-					writer.writeLine(`return connection.query(sql${queryParams})`);
-					writer.indent().write(`.then(res => res[0] as ${resultTypeName})`);
-				}
-				if (
-					tsDescriptor.queryType === 'Select' &&
-					tsDescriptor.multipleRowsResult === false
-				) {
-					writer.newLine().indent().write('.then(res => res[0]);');
-				} else {
-					writer.write(';');
-				}
+				writer.writeLine(`return connection.query(sql${queryParams})`);
+				writer.indent().write(`.then(res => res[0] as ${resultTypeName})`);
+			}
+			if (
+				tsDescriptor.queryType === 'Select' &&
+				tsDescriptor.multipleRowsResult === false
+			) {
+				writer.newLine().indent().write('.then(res => res[0]);');
+			} else {
+				writer.write(';');
 			}
 		});
-	if (target === 'node' && tsDescriptor.queryType === 'Select') {
+	if (tsDescriptor.queryType === 'Select') {
 		writer.blankLine();
 		if (tsDescriptor.dynamicQuery == null) {
 			writer
@@ -642,8 +625,8 @@ function generateDynamicQueryFrom(
 	);
 	const orderByConditions = includeOrderBy
 		? fragment.dependOnOrderBy?.map(
-				(orderBy) => `orderBy['${orderBy}'] != null`
-			) || []
+			(orderBy) => `orderBy['${orderBy}'] != null`
+		) || []
 		: [];
 	const allConditions = [
 		...selectConditions,
@@ -676,8 +659,8 @@ export function getOperator(type: string) {
 	return 'StringOperator';
 }
 
-function generateParam(target: 'node' | 'deno', param: ParamInfo) {
-	if (target === 'node' && param.isList) {
+function generateParam(param: ParamInfo) {
+	if (param.isList) {
 		return `params.${param.name}.length == 0? null : params.${param.name}`;
 	}
 	return `params.${param.name}`;
@@ -921,21 +904,20 @@ export async function generateTsFile(
 	const queryName = convertToCamelCaseName(fileName);
 
 	const tsContentResult =
-		client.type === 'mysql'
+		client.type === 'mysql2'
 			? await generateTsFileFromContent(
-					client,
-					queryName,
-					sqlContent,
-					'node',
-					isCrudFile
-				)
+				client,
+				queryName,
+				sqlContent,
+				isCrudFile
+			)
 			: validateAndGenerateCode(
-					client,
-					sqlContent,
-					queryName,
-					dbSchema,
-					isCrudFile
-				);
+				client,
+				sqlContent,
+				queryName,
+				dbSchema,
+				isCrudFile
+			);
 
 	const tsFilePath = `${path.resolve(dirPath, fileName)}.ts`;
 	if (isLeft(tsContentResult)) {
@@ -953,7 +935,6 @@ export async function generateTsFileFromContent(
 	client: MySqlDialect,
 	queryName: string,
 	sqlContent: string,
-	target: 'node' | 'deno',
 	crud = false
 ): Promise<Either<TypeSqlError, string>> {
 	const queryInfoResult = await parseSql(client, sqlContent);
@@ -962,12 +943,7 @@ export async function generateTsFileFromContent(
 		return queryInfoResult;
 	}
 	const tsDescriptor = generateTsDescriptor(queryInfoResult.right);
-	const tsContent = generateTsCodeForMySQL(
-		tsDescriptor,
-		queryName,
-		target,
-		crud
-	);
+	const tsContent = generateTsCodeForMySQL(tsDescriptor, queryName, crud);
 	return right(tsContent);
 }
 

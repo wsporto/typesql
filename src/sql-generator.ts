@@ -121,14 +121,14 @@ export function generateDeleteStatement(
 //Permitted characters in unquoted identifiers: ASCII: [0-9,a-z,A-Z$_]
 function escapeTableName(dialect: TypeSqlDialect, tableName: string) {
 	const validPattern = /^[a-zA-Z0-9_$]+$/g;
-	if (dialect === 'mysql' && !validPattern.test(tableName)) {
+	if (dialect === 'mysql2' && !validPattern.test(tableName)) {
 		return `\`${tableName}\``;
 	}
 	return tableName;
 }
 
 function escapeColumn(dialect: TypeSqlDialect, column: string): string {
-	if (dialect === 'mysql') {
+	if (dialect === 'mysql2') {
 		return `\`${column}\``;
 	}
 	return `${column}`;

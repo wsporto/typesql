@@ -131,10 +131,10 @@ export type DatabaseClient = MySqlDialect | SQLiteDialect | LibSqlClient;
 
 export type TypeSqlDialect = DatabaseClient['type'];
 
-export type SQLiteClient = 'sqlite' | 'libsql';
+export type SQLiteClient = SQLiteDialect['type'] | LibSqlClient['type'];
 
 export type MySqlDialect = {
-	type: 'mysql';
+	type: 'mysql2';
 	client: Pool;
 	databaseVersion: string;
 	schema: string;
@@ -142,7 +142,7 @@ export type MySqlDialect = {
 };
 
 export type SQLiteDialect = {
-	type: 'sqlite';
+	type: 'better-sqlite3';
 	client: Database;
 };
 
@@ -154,7 +154,6 @@ export type LibSqlClient = {
 export type TypeSqlConfig = {
 	databaseUri: string;
 	sqlDir: string;
-	target: 'node' | 'deno';
 	client: TypeSqlDialect;
 	authToken?: string;
 	attach?: string[];

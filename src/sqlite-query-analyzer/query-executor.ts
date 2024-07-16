@@ -14,7 +14,7 @@ export function createSqliteClient(
 		db.exec(`attach database ${attach}`);
 	}
 	return right({
-		type: 'sqlite',
+		type: 'better-sqlite3',
 		client: db
 	});
 }
