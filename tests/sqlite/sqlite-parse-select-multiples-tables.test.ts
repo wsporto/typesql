@@ -753,7 +753,7 @@ describe('sqlite-parse-select-multiples-tables', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
-	it('multipleRowsResult must be true with inner join and t1.id = 1', () => {
+	it('multipleRowsResult must be true with inner join WHERE t1.id = 1', () => {
 		const sql = `
         SELECT t1.id, t1.name
         FROM mytable2 t1
