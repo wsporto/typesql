@@ -290,6 +290,7 @@ async function createClient(databaseUri: string, dialect: TypeSqlDialect, attach
 		case 'mysql2':
 			return createMysqlClient(databaseUri);
 		case 'better-sqlite3':
+		case 'bun:sqlite':
 			return createSqliteClient(databaseUri, attach || []);
 		case 'libsql':
 			return createLibSqlClient(databaseUri, attach || [], authToken || '');

@@ -1,0 +1,25 @@
+import type { Database } from 'bun:sqlite';
+
+export type Select03Params = {
+	id: number;
+}
+
+export type Select03Result = {
+	id: number;
+}
+
+export function select03(db: Database, params: Select03Params): Select03Result[] {
+	const sql = `
+	select id from mytable1 where id = ? or id = ?
+	`
+	return db.prepare(sql)
+		.values(params.id, params.id)
+		.map(data => mapArrayToSelect03Result(data));
+}
+
+function mapArrayToSelect03Result(data: any) {
+	const result: Select03Result = {
+		id: data[0]
+	}
+	return result;
+}

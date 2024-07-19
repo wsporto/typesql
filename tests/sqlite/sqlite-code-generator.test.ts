@@ -34,6 +34,18 @@ describe('sqlite-code-generator', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('select01-bun - select id, name from mytable2 where id = ?', async () => {
+		const sql = 'select id, name from mytable2 where id = ?';
+
+		const actual = await generateTsCode(sql, 'select01', sqliteDbSchema, 'bun:sqlite', false);
+		const expected = readFileSync('tests/sqlite/expected-code/select01-bun.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('select02 - select without parameters', async () => {
 		const sql = 'select id from mytable1';
 
@@ -58,6 +70,18 @@ describe('sqlite-code-generator', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('select02-bun - select without parameters', async () => {
+		const sql = 'select id from mytable1';
+
+		const actual = await generateTsCode(sql, 'select02', sqliteDbSchema, 'bun:sqlite');
+		const expected = readFileSync('tests/sqlite/expected-code/select02-bun.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('select03 - select with same parameter used twice', async () => {
 		const sql = 'select id from mytable1 where id = :id or id = :id';
 
@@ -70,11 +94,35 @@ describe('sqlite-code-generator', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('select03-bun - select with same parameter used twice', async () => {
+		const sql = 'select id from mytable1 where id = :id or id = :id';
+
+		const actual = await generateTsCode(sql, 'select03', sqliteDbSchema, 'bun:sqlite');
+		const expected = readFileSync('tests/sqlite/expected-code/select03-bun.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('select04 - select with same parameter used twice', async () => {
 		const sql = 'SELECT text_column, date(text_column) as date FROM all_types WHERE date(text_column) = date(:date)';
 
 		const actual = await generateTsCode(sql, 'select04', sqliteDbSchema, 'better-sqlite3');
 		const expected = readFileSync('tests/sqlite/expected-code/select04.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('select04-bun - select with same parameter used twice', async () => {
+		const sql = 'SELECT text_column, date(text_column) as date FROM all_types WHERE date(text_column) = date(:date)';
+
+		const actual = await generateTsCode(sql, 'select04', sqliteDbSchema, 'bun:sqlite');
+		const expected = readFileSync('tests/sqlite/expected-code/select04-bun.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -236,6 +284,19 @@ describe('sqlite-code-generator', () => {
 		const isCrud = false;
 		const actual = generateTsCode(sql, 'select05', sqliteDbSchema, 'better-sqlite3', isCrud);
 		const expected = readFileSync('tests/sqlite/expected-code/select05.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('select05-bun - SELECT id FROM mytable1 ORDER BY ?', () => {
+		const sql = 'SELECT id FROM mytable1 ORDER BY ?';
+
+		const isCrud = false;
+		const actual = generateTsCode(sql, 'select05', sqliteDbSchema, 'bun:sqlite', isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/select05-bun.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);

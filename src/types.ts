@@ -120,9 +120,9 @@ export type CamelCaseName = Brand<string, 'CamelCase'>;
 
 export type DatabaseClient = MySqlDialect | SQLiteDialect | LibSqlClient;
 
-export type TypeSqlDialect = DatabaseClient['type'];
+export type TypeSqlDialect = DatabaseClient['type'] | 'bun:sqlite';
 
-export type SQLiteClient = SQLiteDialect['type'] | LibSqlClient['type'];
+export type SQLiteClient = SQLiteDialect['type'] | LibSqlClient['type'] | 'bun:sqlite';
 
 export type MySqlDialect = {
 	type: 'mysql2';
