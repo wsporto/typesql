@@ -148,8 +148,7 @@ describe('Infer column nullability', () => {
 	});
 
 	it('SELECT concat(id, id, value) FROM mytable1', () => {
-		const sql =
-			'SELECT concat(id, id, value) FROM mytable1 where value is not null';
+		const sql = 'SELECT concat(id, id, value) FROM mytable1 where value is not null';
 		const actual = parseAndInferNotNull(sql, dbSchema);
 
 		const expected = [true];
@@ -239,8 +238,7 @@ describe('Infer column nullability', () => {
 	});
 
 	it('SELECT case when id = 1 then id else value end FROM mytable1 WHERE value is not null', () => {
-		const sql =
-			'SELECT case when id = 1 then id else value end FROM mytable1 WHERE value is not null';
+		const sql = 'SELECT case when id = 1 then id else value end FROM mytable1 WHERE value is not null';
 		const actual = parseAndInferNotNull(sql, dbSchema);
 
 		const expected = [true];
@@ -250,8 +248,7 @@ describe('Infer column nullability', () => {
 
 	//verify not null on from ( where value is  not null)
 	it('select quantity from mytable1, (select count(*) as quantity from mytable2) t2', () => {
-		const sql =
-			'select quantity from mytable1, (select count(*) as quantity from mytable2) t2';
+		const sql = 'select quantity from mytable1, (select count(*) as quantity from mytable2) t2';
 		const actual = parseAndInferNotNull(sql, dbSchema);
 
 		const expected = [true];
@@ -261,8 +258,7 @@ describe('Infer column nullability', () => {
 
 	//TODO - consulta inválida; pq passou nos testes?
 	it.skip('SELECT name from mytable1 (SELECT name from mytable2 where name is not null)', () => {
-		const sql =
-			'SELECT name from mytable1 (SELECT name from mytable2 where name is not null)';
+		const sql = 'SELECT name from mytable1 (SELECT name from mytable2 where name is not null)';
 		const actual = parseAndInferNotNull(sql, dbSchema);
 
 		const expected = [true];
@@ -272,8 +268,7 @@ describe('Infer column nullability', () => {
 
 	//TODO - pq passou nos testes
 	it('SELECT name from (SELECT name from mytable2 where name is not null) t', () => {
-		const sql =
-			'SELECT name from (SELECT name from mytable2 where name is not null) t';
+		const sql = 'SELECT name from (SELECT name from mytable2 where name is not null) t';
 		const actual = parseAndInferNotNull(sql, dbSchema);
 
 		const expected = [true];
@@ -282,8 +277,7 @@ describe('Infer column nullability', () => {
 	});
 
 	it('SELECT name from (SELECT name from mytable2) t WHERE name is not null', () => {
-		const sql =
-			'SELECT name from (SELECT name from mytable2) t WHERE name is not null';
+		const sql = 'SELECT name from (SELECT name from mytable2) t WHERE name is not null';
 		const actual = parseAndInferNotNull(sql, dbSchema);
 
 		const expected = [true];
@@ -324,8 +318,7 @@ describe('Infer column nullability', () => {
 	});
 
 	it('SELECT TRIM(LEADING ? FROM ?), TRIM(TRAILING ? FROM ?), TRIM(BOTH ? FROM ?)', () => {
-		const sql =
-			'SELECT TRIM (?), TRIM(LEADING ? FROM ?), TRIM(TRAILING ? FROM ?), TRIM(BOTH ? FROM ?)';
+		const sql = 'SELECT TRIM (?), TRIM(LEADING ? FROM ?), TRIM(TRAILING ? FROM ?), TRIM(BOTH ? FROM ?)';
 		const actual = parseAndInferNotNull(sql, dbSchema);
 
 		const expected = [true, true, true, true];
@@ -347,8 +340,7 @@ describe('Infer column nullability', () => {
 	});
 
 	it('SELECT SUBSTRING(?, ?), SUBSTRING(?, ?, ?)', () => {
-		const sql =
-			'SELECT SUBSTRING(?, ?), SUBSTRING(?, ?, ?), SUBSTR(?, ?), SUBSTR(?, ?, ?)';
+		const sql = 'SELECT SUBSTRING(?, ?), SUBSTRING(?, ?, ?), SUBSTR(?, ?), SUBSTR(?, ?, ?)';
 		const actual = parseAndInferNotNull(sql, dbSchema);
 
 		const expected = [true, true, true, true];
@@ -375,29 +367,13 @@ describe('Infer column nullability', () => {
 		`;
 		const actual = parseAndInferNotNull(sql, dbSchema);
 
-		const expected = [
-			true,
-			true,
-			false,
-			false,
-			false,
-			false,
-			false,
-			true,
-			true,
-			false,
-			false,
-			false,
-			false,
-			false
-		];
+		const expected = [true, true, false, false, false, false, false, true, true, false, false, false, false, false];
 
 		assert.deepStrictEqual(actual, expected);
 	});
 
 	it('SELECT YEAR(?), MONTH(?), DAY(?), HOUR(?), MINUTE(?), SECOND(?)', () => {
-		const sql =
-			'SELECT YEAR(?), MONTH(?), DAY(?), HOUR(?), MINUTE(?), SECOND(?)';
+		const sql = 'SELECT YEAR(?), MONTH(?), DAY(?), HOUR(?), MINUTE(?), SECOND(?)';
 		const actual = parseAndInferNotNull(sql, dbSchema);
 
 		const expected = [true, true, true, true, true, true];
@@ -406,8 +382,7 @@ describe('Infer column nullability', () => {
 	});
 
 	it('SELECT COALESCE(id, id, id+id), COALESCE(value, id+value), COALESCE(value, id+value, id+id) from mytable1', () => {
-		const sql =
-			'SELECT COALESCE(id, id, id+id), COALESCE(value, id+value), COALESCE(value, id+value, id+id) from mytable1';
+		const sql = 'SELECT COALESCE(id, id, id+id), COALESCE(value, id+value), COALESCE(value, id+value, id+id) from mytable1';
 		const actual = parseAndInferNotNull(sql, dbSchema);
 
 		const expected = [true, false, true];

@@ -24,13 +24,7 @@ export type TypeOperator = {
 	types: TypeVar[];
 };
 
-export type CoercionType =
-	| 'Sum'
-	| 'Coalesce'
-	| 'SumFunction'
-	| 'Ceiling'
-	| 'Union'
-	| 'Numeric'; //Numeric means: Don't convert to string
+export type CoercionType = 'Sum' | 'Coalesce' | 'SumFunction' | 'Ceiling' | 'Union' | 'Numeric'; //Numeric means: Don't convert to string
 
 export type TraverseContext = {
 	dbSchema: ColumnSchema[];
@@ -55,9 +49,7 @@ export type Constraint = {
 	coercionType?: CoercionType;
 };
 
-export type ColumnSchema =
-	| GenericColumnSchema<MySqlType>
-	| GenericColumnSchema<SQLiteType>;
+export type ColumnSchema = GenericColumnSchema<MySqlType> | GenericColumnSchema<SQLiteType>;
 
 export type GenericColumnSchema<DbType> = {
 	schema: string;

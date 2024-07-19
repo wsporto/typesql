@@ -29,11 +29,7 @@ import type {
 	SubstitutionHash
 } from './types';
 import { inferParamNullabilityQuery } from './infer-param-nullability';
-import {
-	hasAnnotation,
-	preprocessSql,
-	verifyNotInferred
-} from '../describe-query';
+import { hasAnnotation, preprocessSql, verifyNotInferred } from '../describe-query';
 import { verifyMultipleResult } from './verify-multiple-result';
 import { unify } from './unify';
 import { type SelectStatementResult, traverseQueryContext } from './traverse';
@@ -56,10 +52,7 @@ export function parse(sql: string): QueryContext {
 }
 
 //TODO - withSchema DEFAULT VALUE []
-export function parseAndInfer(
-	sql: string,
-	dbSchema: ColumnSchema[]
-): TypeInferenceResult {
+export function parseAndInfer(sql: string, dbSchema: ColumnSchema[]): TypeInferenceResult {
 	const result = extractQueryInfo(sql, dbSchema);
 	if (result.kind === 'Select') {
 		return {
@@ -88,9 +81,7 @@ export function parseAndInferParamNullability(sql: string): boolean[] {
 	return inferParamNullabilityQuery(selectStatement);
 }
 
-export function extractOrderByParameters(
-	selectStatement: SelectStatementContext
-) {
+export function extractOrderByParameters(selectStatement: SelectStatementContext) {
 	return (
 		selectStatement
 			.queryExpression()
@@ -102,9 +93,7 @@ export function extractOrderByParameters(
 	);
 }
 
-export function extractLimitParameters(
-	selectStatement: SelectStatementContext
-): ParameterInfo[] {
+export function extractLimitParameters(selectStatement: SelectStatementContext): ParameterInfo[] {
 	return (
 		getLimitOptions(selectStatement)
 			.filter((limit) => limit.PARAM_MARKER())
@@ -118,12 +107,8 @@ export function extractLimitParameters(
 	);
 }
 
-export function isMultipleRowResult(
-	selectStatement: SelectStatementContext,
-	fromColumns: ColumnDef[]
-) {
-	const querySpecs =
-		getAllQuerySpecificationsFromSelectStatement(selectStatement);
+export function isMultipleRowResult(selectStatement: SelectStatementContext, fromColumns: ColumnDef[]) {
+	const querySpecs = getAllQuerySpecificationsFromSelectStatement(selectStatement);
 	if (querySpecs.length === 1) {
 		//UNION queries are multipleRowsResult = true
 		const fromClause = querySpecs[0].fromClause();
@@ -131,9 +116,7 @@ export function isMultipleRowResult(
 			return false;
 		}
 		if (querySpecs[0].selectItemList().getChildCount() === 1) {
-			const selectItem = <SelectItemContext>(
-				querySpecs[0].selectItemList().getChild(0)
-			);
+			const selectItem = <SelectItemContext>querySpecs[0].selectItemList().getChild(0);
 			//if selectItem = * (TerminalNode) childCount = 0; selectItem.expr() throws exception
 			const expr = selectItem.getChildCount() > 0 ? selectItem.expr() : null;
 			if (expr) {
@@ -144,17 +127,13 @@ export function isMultipleRowResult(
 				}
 			}
 		}
-		const joinedTable = fromClause
-			.tableReferenceList()
-			?.tableReference(0)
-			.joinedTable_list();
+		const joinedTable = fromClause.tableReferenceList()?.tableReference(0).joinedTable_list();
 		if (joinedTable && joinedTable.length > 0) {
 			return true;
 		}
 
 		const whereClauseExpr = querySpecs[0].whereClause()?.expr();
-		const isMultipleRowResult =
-			whereClauseExpr && verifyMultipleResult(whereClauseExpr, fromColumns);
+		const isMultipleRowResult = whereClauseExpr && verifyMultipleResult(whereClauseExpr, fromColumns);
 		if (isMultipleRowResult === false) {
 			return false;
 		}
@@ -172,10 +151,7 @@ export function isMultipleRowResult(
 }
 
 export function isSumExpressContext(selectItem: ParseTree) {
-	if (
-		selectItem instanceof SimpleExprWindowingFunctionContext ||
-		selectItem instanceof TerminalNode
-	) {
+	if (selectItem instanceof SimpleExprWindowingFunctionContext || selectItem instanceof TerminalNode) {
 		return false;
 	}
 
@@ -196,23 +172,14 @@ export function isSumExpressContext(selectItem: ParseTree) {
 			return true;
 		}
 	}
-	if (
-		selectItem instanceof ParserRuleContext &&
-		selectItem.getChildCount() === 1
-	) {
+	if (selectItem instanceof ParserRuleContext && selectItem.getChildCount() === 1) {
 		return isSumExpressContext(selectItem.getChild(0));
 	}
 	return false;
 }
 
 export function getLimitOptions(selectStatement: SelectStatementContext) {
-	return (
-		selectStatement
-			.queryExpression()
-			?.limitClause()
-			?.limitOptions()
-			.limitOption_list() || []
-	);
+	return selectStatement.queryExpression()?.limitClause()?.limitOptions().limitOption_list() || [];
 }
 
 export function extractQueryInfo(
@@ -228,19 +195,11 @@ export function extractQueryInfo(
 	if (traverseResult.type === 'Select') {
 		const queryInfoResult = extractSelectQueryInfo(traverseResult);
 		if (gererateNested) {
-			const nestedInfo = generateNestedInfo(
-				tree,
-				dbSchema,
-				queryInfoResult.columns
-			);
+			const nestedInfo = generateNestedInfo(tree, dbSchema, queryInfoResult.columns);
 			queryInfoResult.nestedResultInfo = nestedInfo;
 		}
 		if (gererateDynamicQuery) {
-			const dynamicQuery = describeDynamicQuery(
-				traverseResult.dynamicSqlInfo,
-				namedParameters,
-				queryInfoResult.orderByColumns || []
-			);
+			const dynamicQuery = describeDynamicQuery(traverseResult.dynamicSqlInfo, namedParameters, queryInfoResult.orderByColumns || []);
 			queryInfoResult.dynamicQuery = dynamicQuery;
 		}
 
@@ -295,9 +254,7 @@ export function extractQueryInfo(
 	throw Error('Not supported');
 }
 
-function extractSelectQueryInfo(
-	traverseResult: SelectStatementResult
-): QueryInfoResult {
+function extractSelectQueryInfo(traverseResult: SelectStatementResult): QueryInfoResult {
 	const substitutions: SubstitutionHash = {}; //TODO - DUPLICADO
 	unify(traverseResult.constraints, substitutions);
 
@@ -340,11 +297,7 @@ function extractSelectQueryInfo(
 }
 
 export function getAllQuerySpecificationsFromSelectStatement(
-	selectStatement:
-		| SelectStatementContext
-		| QueryExpressionBodyContext
-		| InsertQueryExpressionContext
-		| SubqueryContext
+	selectStatement: SelectStatementContext | QueryExpressionBodyContext | InsertQueryExpressionContext | SubqueryContext
 ) {
 	const result: QuerySpecificationContext[] = [];
 
@@ -352,10 +305,7 @@ export function getAllQuerySpecificationsFromSelectStatement(
 	return result;
 }
 
-function collectAllQuerySpecifications(
-	tree: ParserRuleContext,
-	result: QuerySpecificationContext[]
-) {
+function collectAllQuerySpecifications(tree: ParserRuleContext, result: QuerySpecificationContext[]) {
 	for (let i = 0; i < tree.getChildCount(); i++) {
 		const child = tree.getChild(i);
 		if (child instanceof QuerySpecificationContext) {

@@ -5,10 +5,7 @@ import Database, { type Database as DatabaseType } from 'better-sqlite3';
 import type { Database as LibSqlDatabase } from 'libsql';
 import type { SQLiteType } from './types';
 
-export function createSqliteClient(
-	databaseUri: string,
-	attachList: string[]
-): Either<TypeSqlError, DatabaseClient> {
+export function createSqliteClient(databaseUri: string, attachList: string[]): Either<TypeSqlError, DatabaseClient> {
 	const db = new Database(databaseUri);
 	for (const attach of attachList) {
 		db.exec(`attach database ${attach}`);
@@ -19,9 +16,7 @@ export function createSqliteClient(
 	});
 }
 
-export function loadDbSchema(
-	db: DatabaseType | LibSqlDatabase
-): Either<TypeSqlError, ColumnSchema[]> {
+export function loadDbSchema(db: DatabaseType | LibSqlDatabase): Either<TypeSqlError, ColumnSchema[]> {
 	const database_list = db
 		//@ts-ignore
 		.prepare('select name from pragma_database_list')
@@ -47,11 +42,7 @@ type TableInfo = {
 	pk: number;
 };
 
-export function getTableInfo(
-	db: DatabaseType | LibSqlDatabase,
-	schema: string,
-	table: string
-): TableInfo[] {
+export function getTableInfo(db: DatabaseType | LibSqlDatabase, schema: string, table: string): TableInfo[] {
 	const tableInfo = db
 		//@ts-ignore
 		.prepare(`PRAGMA ${schema}.table_info('${table}')`)
@@ -59,11 +50,7 @@ export function getTableInfo(
 	return tableInfo;
 }
 
-export function getIndexInfo(
-	db: DatabaseType | LibSqlDatabase,
-	schema: string,
-	table: string
-) {
+export function getIndexInfo(db: DatabaseType | LibSqlDatabase, schema: string, table: string) {
 	const map = new Map<string, true>();
 	const indexList = db
 		//@ts-ignore
@@ -107,10 +94,7 @@ function checkAffinity(type: string): SQLiteType {
 	return 'NUMERIC';
 }
 
-function loadDbSchemaForSchema(
-	db: DatabaseType | LibSqlDatabase,
-	schema: '' | string = ''
-): Either<TypeSqlError, ColumnSchema[]> {
+function loadDbSchemaForSchema(db: DatabaseType | LibSqlDatabase, schema: '' | string = ''): Either<TypeSqlError, ColumnSchema[]> {
 	const tables = getTables(db, schema);
 
 	const result = tables.flatMap((tableName) => {
@@ -120,12 +104,7 @@ function loadDbSchemaForSchema(
 			const col: ColumnSchema = {
 				column: tableInfo.name,
 				column_type: checkAffinity(tableInfo.type),
-				columnKey:
-					tableInfo.pk >= 1
-						? 'PRI'
-						: tableIndexInfo.get(tableInfo.name) != null
-							? 'UNI'
-							: '',
+				columnKey: tableInfo.pk >= 1 ? 'PRI' : tableIndexInfo.get(tableInfo.name) != null ? 'UNI' : '',
 				notNull: tableInfo.notnull === 1 || tableInfo.pk >= 1,
 				schema,
 				table: tableName
@@ -140,9 +119,7 @@ function loadDbSchemaForSchema(
 	return right(result);
 }
 
-export function selectSqliteTablesFromSchema(
-	db: DatabaseType | LibSqlDatabase
-): Either<TypeSqlError, Table[]> {
+export function selectSqliteTablesFromSchema(db: DatabaseType | LibSqlDatabase): Either<TypeSqlError, Table[]> {
 	const sql = `
     SELECT 
 		'' as schema,
@@ -165,10 +142,7 @@ export function selectSqliteTablesFromSchema(
 	}
 }
 
-export function explainSql(
-	db: DatabaseType | LibSqlDatabase,
-	sql: string
-): Either<TypeSqlError, boolean> {
+export function explainSql(db: DatabaseType | LibSqlDatabase, sql: string): Either<TypeSqlError, boolean> {
 	try {
 		//@ts-ignore
 		db.prepare(sql);

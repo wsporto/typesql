@@ -12,10 +12,7 @@ import {
 import { getSimpleExpressions, splitName, findColumn } from './select-columns';
 import type { ColumnDef } from './types';
 
-export function verifyMultipleResult(
-	exprContext: ExprContext,
-	fromColumns: ColumnDef[]
-): boolean {
+export function verifyMultipleResult(exprContext: ExprContext, fromColumns: ColumnDef[]): boolean {
 	if (exprContext instanceof ExprIsContext) {
 		const boolPri = exprContext.boolPri();
 
@@ -23,10 +20,7 @@ export function verifyMultipleResult(
 			if (boolPri.compOp().EQUAL_OPERATOR()) {
 				const compareLeft = boolPri.boolPri();
 				const compareRight = boolPri.predicate();
-				if (
-					isUniqueKeyComparation(compareLeft, fromColumns) ||
-					isUniqueKeyComparation(compareRight, fromColumns)
-				) {
+				if (isUniqueKeyComparation(compareLeft, fromColumns) || isUniqueKeyComparation(compareRight, fromColumns)) {
 					return false; //multipleRow = false
 				}
 			}
@@ -38,9 +32,7 @@ export function verifyMultipleResult(
 		return true;
 	}
 	if (exprContext instanceof ExprAndContext) {
-		const oneIsSingleResult = exprContext
-			.expr_list()
-			.some((expr) => verifyMultipleResult(expr, fromColumns) === false);
+		const oneIsSingleResult = exprContext.expr_list().some((expr) => verifyMultipleResult(expr, fromColumns) === false);
 		return oneIsSingleResult === false;
 	}
 	// if (exprContext instanceof ExprXorContext) {
@@ -53,10 +45,7 @@ export function verifyMultipleResult(
 	throw Error(`Unknow type:${exprContext.constructor.name}`);
 }
 
-function isUniqueKeyComparation(
-	compare: BoolPriContext | PredicateContext,
-	fromColumns: ColumnDef[]
-) {
+function isUniqueKeyComparation(compare: BoolPriContext | PredicateContext, fromColumns: ColumnDef[]) {
 	const tokens = getSimpleExpressions(compare);
 	if (tokens.length === 1 && tokens[0] instanceof SimpleExprColumnRefContext) {
 		const fieldName = splitName(tokens[0].getText());

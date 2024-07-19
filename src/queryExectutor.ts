@@ -8,9 +8,7 @@ const connectionNotOpenError: TypeSqlError = {
 	description: 'The database connection is not open.'
 };
 
-export async function createMysqlClientForTest(
-	databaseUri: string
-): Promise<MySqlDialect> {
+export async function createMysqlClientForTest(databaseUri: string): Promise<MySqlDialect> {
 	const client = await createMysqlClient(databaseUri);
 	if (isLeft(client)) {
 		throw Error('Error createMysqlClientForTest');
@@ -18,9 +16,7 @@ export async function createMysqlClientForTest(
 	return client.right;
 }
 
-export async function createMysqlClient(
-	databaseUri: string
-): Promise<Either<TypeSqlError, MySqlDialect>> {
+export async function createMysqlClient(databaseUri: string): Promise<Either<TypeSqlError, MySqlDialect>> {
 	try {
 		const pool = await createPool(databaseUri);
 		//@ts-ignore
@@ -49,10 +45,7 @@ async function getDatabaseVersion(conn: Connection) {
 	return mySqlVersion;
 }
 
-export async function loadMysqlSchema(
-	conn: Connection,
-	schema: string
-): Promise<Either<TypeSqlError, ColumnSchema[]>> {
+export async function loadMysqlSchema(conn: Connection, schema: string): Promise<Either<TypeSqlError, ColumnSchema[]>> {
 	const sql = `
         SELECT 
             TABLE_SCHEMA as "schema", TABLE_NAME as "table", 
@@ -98,9 +91,7 @@ export async function loadMySqlTableSchema(
 	});
 }
 
-export async function selectTablesFromSchema(
-	conn: Connection
-): Promise<Either<TypeSqlError, Table[]>> {
+export async function selectTablesFromSchema(conn: Connection): Promise<Either<TypeSqlError, Table[]>> {
 	const sql = `
     SELECT 
         table_schema as "schema",
@@ -116,10 +107,7 @@ export async function selectTablesFromSchema(
 	});
 }
 
-export async function explainSql(
-	pool: Pool,
-	sql: string
-): Promise<Either<TypeSqlError, boolean>> {
+export async function explainSql(pool: Pool, sql: string): Promise<Either<TypeSqlError, boolean>> {
 	const conn = await pool.getConnection();
 	return conn
 		.prepare(sql)

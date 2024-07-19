@@ -7,9 +7,7 @@ import { isLeft, isRight } from 'fp-ts/lib/Either';
 describe('Test select with multiples tables', () => {
 	let client!: MySqlDialect;
 	before(async () => {
-		client = await createMysqlClientForTest(
-			'mysql://root:password@localhost/mydb'
-		);
+		client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
 	});
 
 	it('parse a basic with inner join', async () => {

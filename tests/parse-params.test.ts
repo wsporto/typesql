@@ -8,9 +8,7 @@ import { isLeft } from 'fp-ts/lib/Either';
 describe('Test parse parameters', () => {
 	let client!: MySqlDialect;
 	before(async () => {
-		client = await createMysqlClientForTest(
-			'mysql://root:password@localhost/mydb'
-		);
+		client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
 	});
 
 	it('SELECT ? from mytable1', async () => {

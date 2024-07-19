@@ -14,12 +14,7 @@ describe('sqlite-Test simple select statements', () => {
 		};
 		const sql = '';
 
-		const actual = validateAndGenerateCode(
-			client,
-			sql,
-			'queryName',
-			sqliteDbSchema
-		);
+		const actual = validateAndGenerateCode(client, sql, 'queryName', sqliteDbSchema);
 		const expected = 'Invalid sql';
 
 		if (isLeft(actual)) {
@@ -36,12 +31,7 @@ describe('sqlite-Test simple select statements', () => {
 		};
 		const sql = 'SELECT id2 from mytable1';
 
-		const actual = validateAndGenerateCode(
-			client,
-			sql,
-			'queryName',
-			sqliteDbSchema
-		);
+		const actual = validateAndGenerateCode(client, sql, 'queryName', sqliteDbSchema);
 		const expected: TypeSqlError = {
 			name: 'Invalid sql',
 			description: 'no such column: id2'
@@ -512,10 +502,8 @@ describe('sqlite-Test simple select statements', () => {
 
 	it('SELECT id FROM mytable1 where id = 0 and value between :start and :end', () => {
 		//todo - new
-		const sql =
-			'SELECT id FROM mytable1 where id = 0 and value between :start and :end';
-		const expectedSql =
-			'SELECT id FROM mytable1 where id = 0 and value between ? and ?';
+		const sql = 'SELECT id FROM mytable1 where id = 0 and value between :start and :end';
+		const expectedSql = 'SELECT id FROM mytable1 where id = 0 and value between ? and ?';
 
 		const actual = parseSql(sql, sqliteDbSchema);
 		const expected: SchemaDef = {
@@ -844,11 +832,9 @@ describe('sqlite-Test simple select statements', () => {
 	});
 
 	it('SELECT id FROM mytable1 t WHERE id in (select id from mytable2 where id > :id)', () => {
-		const sql =
-			'SELECT id FROM mytable1 t WHERE id in (select id from mytable2 where id > :id)';
+		const sql = 'SELECT id FROM mytable1 t WHERE id in (select id from mytable2 where id > :id)';
 
-		const expectedSql =
-			'SELECT id FROM mytable1 t WHERE id in (select id from mytable2 where id > ?)';
+		const expectedSql = 'SELECT id FROM mytable1 t WHERE id in (select id from mytable2 where id > ?)';
 		const actual = parseSql(sql, sqliteDbSchema);
 		const expected: SchemaDef = {
 			sql: expectedSql,
@@ -877,11 +863,9 @@ describe('sqlite-Test simple select statements', () => {
 	});
 
 	it('SELECT id FROM mytable1 t WHERE id not in (select id from mytable2 where id > :id)', () => {
-		const sql =
-			'SELECT id FROM mytable1 t WHERE id not in (select id from mytable2 where id > :id)';
+		const sql = 'SELECT id FROM mytable1 t WHERE id not in (select id from mytable2 where id > :id)';
 
-		const expectedSql =
-			'SELECT id FROM mytable1 t WHERE id not in (select id from mytable2 where id > ?)';
+		const expectedSql = 'SELECT id FROM mytable1 t WHERE id not in (select id from mytable2 where id > ?)';
 		const actual = parseSql(sql, sqliteDbSchema);
 		const expected: SchemaDef = {
 			sql: expectedSql,
@@ -1500,13 +1484,7 @@ describe('sqlite-Test simple select statements', () => {
 					table: 'mytable1'
 				}
 			],
-			orderByColumns: [
-				'id',
-				'mytable1.id',
-				'value',
-				'mytable1.value',
-				'myValue'
-			],
+			orderByColumns: ['id', 'mytable1.id', 'value', 'mytable1.value', 'myValue'],
 			parameters: []
 		};
 
@@ -1567,13 +1545,7 @@ describe('sqlite-Test simple select statements', () => {
 					table: ''
 				}
 			],
-			orderByColumns: [
-				'id',
-				'mytable1.id',
-				'value',
-				'mytable1.value',
-				'ordering'
-			],
+			orderByColumns: ['id', 'mytable1.id', 'value', 'mytable1.value', 'ordering'],
 			parameters: []
 		};
 
@@ -1701,13 +1673,7 @@ describe('sqlite-Test simple select statements', () => {
 					table: 't'
 				}
 			],
-			orderByColumns: [
-				'id',
-				't.id',
-				'value',
-				't.value',
-				'case when value = 1 then 1 else 2 end'
-			],
+			orderByColumns: ['id', 't.id', 'value', 't.value', 'case when value = 1 then 1 else 2 end'],
 			parameters: []
 		};
 

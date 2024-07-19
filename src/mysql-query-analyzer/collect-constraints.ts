@@ -1,33 +1,15 @@
 import moment from 'moment';
 
-import type {
-	SimpleExprFunctionContext,
-	ExprContext,
-	InsertStatementContext,
-	DeleteStatementContext
-} from '@wsporto/ts-mysql-parser';
+import type { SimpleExprFunctionContext, ExprContext, InsertStatementContext, DeleteStatementContext } from '@wsporto/ts-mysql-parser';
 
-import type {
-	ColumnSchema,
-	ColumnDef,
-	TypeVar,
-	Type,
-	Constraint,
-	SubstitutionHash,
-	TypeAndNullInfer
-} from './types';
+import type { ColumnSchema, ColumnDef, TypeVar, Type, Constraint, SubstitutionHash, TypeAndNullInfer } from './types';
 import { findColumn, splitName } from './select-columns';
 import type { MySqlType, InferType } from '../mysql-mapping';
 import { unify } from './unify';
 import type TerminalNode from '@wsporto/ts-mysql-parser';
 
 let counter = 0;
-export function freshVar(
-	name: string,
-	typeVar: InferType,
-	table?: string,
-	list?: true
-): TypeVar {
+export function freshVar(name: string, typeVar: InferType, table?: string, list?: true): TypeVar {
 	const param: TypeVar = {
 		kind: 'TypeVar',
 		id: (++counter).toString(),
@@ -70,15 +52,10 @@ export function getInsertIntoTable(insertStatement: InsertStatementContext) {
 	return insertIntoTable;
 }
 
-export function getInsertColumns(
-	insertStatement: InsertStatementContext,
-	fromColumns: ColumnDef[]
-) {
+export function getInsertColumns(insertStatement: InsertStatementContext, fromColumns: ColumnDef[]) {
 	const insertIntoTable = getInsertIntoTable(insertStatement);
 
-	const insertFields =
-		insertStatement.insertFromConstructor() ||
-		insertStatement.insertQueryExpression();
+	const insertFields = insertStatement.insertFromConstructor() || insertStatement.insertQueryExpression();
 
 	const fields = insertFields
 		?.fields()
@@ -100,10 +77,7 @@ export function getInsertColumns(
 	return fields;
 }
 
-export function getDeleteColumns(
-	deleteStatement: DeleteStatementContext,
-	dbSchema: ColumnSchema[]
-): ColumnDef[] {
+export function getDeleteColumns(deleteStatement: DeleteStatementContext, dbSchema: ColumnSchema[]): ColumnDef[] {
 	//TODO - Use extractColumnsFromTableReferences
 	const tableNameStr = deleteStatement.tableRef()?.getText()!;
 	const tableAlias = deleteStatement.tableAlias()?.getText();
@@ -124,23 +98,15 @@ export function getDeleteColumns(
 	return columns;
 }
 
-export function generateTypeInfo(
-	namedNodes: TypeAndNullInfer[],
-	constraints: Constraint[]
-): InferType[] {
+export function generateTypeInfo(namedNodes: TypeAndNullInfer[], constraints: Constraint[]): InferType[] {
 	const substitutions: SubstitutionHash = {};
 	unify(constraints, substitutions);
 
-	const parameters = namedNodes.map((param) =>
-		getVarType(substitutions, param.type)
-	);
+	const parameters = namedNodes.map((param) => getVarType(substitutions, param.type));
 	return parameters;
 }
 
-export function getVarType(
-	substitutions: SubstitutionHash,
-	typeVar: Type
-): InferType {
+export function getVarType(substitutions: SubstitutionHash, typeVar: Type): InferType {
 	if (typeVar.kind === 'TypeVar') {
 		// if (typeVar.type != '?') {
 		//     return typeVar.type;
@@ -150,8 +116,7 @@ export function getVarType(
 			if (subs.id !== typeVar.id) {
 				return getVarType(substitutions, subs);
 			}
-			const resultType =
-				subs.list || typeVar.list ? `${subs.type}[]` : subs.type;
+			const resultType = subs.list || typeVar.list ? `${subs.type}[]` : subs.type;
 			return resultType as MySqlType;
 		}
 		// if (!subs) {
@@ -177,10 +142,7 @@ export function verifyDateTypesCoercion(type: Type) {
 }
 
 export function isTimeLiteral(literal: string) {
-	return (
-		moment(literal, 'HH:mm:ss', true).isValid() ||
-		moment(literal, 'HH:mm', true).isValid()
-	);
+	return moment(literal, 'HH:mm:ss', true).isValid() || moment(literal, 'HH:mm', true).isValid();
 }
 
 export function isDateTimeLiteral(literal: string) {
@@ -193,16 +155,8 @@ export function isDateLiteral(literal: string) {
 
 export function getFunctionName(simpleExprFunction: SimpleExprFunctionContext) {
 	return (
-		simpleExprFunction
-			.functionCall()
-			.pureIdentifier()
-			?.getText()
-			.toLowerCase() ||
-		simpleExprFunction
-			.functionCall()
-			.qualifiedIdentifier()
-			?.getText()
-			.toLowerCase()
+		simpleExprFunction.functionCall().pureIdentifier()?.getText().toLowerCase() ||
+		simpleExprFunction.functionCall().qualifiedIdentifier()?.getText().toLowerCase()
 	);
 }
 

@@ -1,17 +1,12 @@
 import assert from 'node:assert';
-import {
-	createMysqlClientForTest,
-	loadMysqlSchema
-} from '../src/queryExectutor';
+import { createMysqlClientForTest, loadMysqlSchema } from '../src/queryExectutor';
 import { isLeft } from 'fp-ts/lib/Either';
 import type { MySqlDialect } from '../src/types';
 
 describe('load-schema', () => {
 	let client!: MySqlDialect;
 	before(async () => {
-		client = await createMysqlClientForTest(
-			'mysql://root:password@localhost/mydb'
-		);
+		client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
 	});
 
 	it('filter schema', async () => {

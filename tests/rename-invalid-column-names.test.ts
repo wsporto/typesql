@@ -1,10 +1,5 @@
 import assert from 'node:assert';
-import {
-	renameInvalidNames,
-	escapeInvalidTsField,
-	generateTsDescriptor,
-	removeDuplicatedParameters
-} from '../src/code-generator';
+import { renameInvalidNames, escapeInvalidTsField, generateTsDescriptor, removeDuplicatedParameters } from '../src/code-generator';
 import type { ParameterDef, SchemaDef } from '../src/types';
 
 describe('rename invalid names', () => {
@@ -95,11 +90,7 @@ describe('rename invalid names', () => {
 			actual.parameters.map((col) => col.name),
 			['name']
 		); //remove duplicated parameters
-		assert.deepStrictEqual(actual.orderByColumns, [
-			'id',
-			'count(*)',
-			`concat(name, ' ', name)`
-		]);
+		assert.deepStrictEqual(actual.orderByColumns, ['id', 'count(*)', `concat(name, ' ', name)`]);
 	});
 
 	it('removeDuplicatedParameters: notNull (true) and notNull (false)', async () => {

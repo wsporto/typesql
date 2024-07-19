@@ -7,9 +7,7 @@ import { isLeft } from 'fp-ts/lib/Either';
 describe('infer-not-null', () => {
 	let client!: MySqlDialect;
 	before(async () => {
-		client = await createMysqlClientForTest(
-			'mysql://root:password@localhost/mydb'
-		);
+		client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
 	});
 
 	it('select value from mytable1 where value is not null', async () => {
@@ -950,8 +948,7 @@ describe('infer-not-null', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName:
-						'id + (select id from mytable2 where id = 10 and id is not null)',
+					columnName: 'id + (select id from mytable2 where id = 10 and id is not null)',
 					type: 'bigint',
 					notNull: false,
 					table: ''

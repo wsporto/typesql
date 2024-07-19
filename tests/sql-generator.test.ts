@@ -1,11 +1,6 @@
 import assert from 'node:assert';
 import type { ColumnSchema } from '../src/mysql-query-analyzer/types';
-import {
-	generateInsertStatement,
-	generateSelectStatement,
-	generateUpdateStatement,
-	generateDeleteStatement
-} from '../src/sql-generator';
+import { generateInsertStatement, generateSelectStatement, generateUpdateStatement, generateDeleteStatement } from '../src/sql-generator';
 
 describe('code-generator', () => {
 	const columns: ColumnSchema[] = [

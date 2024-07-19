@@ -1,10 +1,7 @@
 import type { InferType } from '../mysql-mapping';
 import type { CoercionType, Constraint, SubstitutionHash, Type } from './types';
 
-export function unify(
-	constraints: Constraint[],
-	substitutions: SubstitutionHash
-) {
+export function unify(constraints: Constraint[], substitutions: SubstitutionHash) {
 	for (const constraint of constraints) {
 		unifyOne(constraint, substitutions);
 	}
@@ -27,12 +24,7 @@ function unifyOne(constraint: Constraint, substitutions: SubstitutionHash) {
 		// if (ty1.id == ty2.id) return;
 		if (ty1.type !== '?') {
 			if (ty2.type !== '?') {
-				const bestType = getBestPossibleType(
-					ty1.type,
-					ty2.type,
-					constraint.mostGeneralType,
-					constraint.coercionType
-				);
+				const bestType = getBestPossibleType(ty1.type, ty2.type, constraint.mostGeneralType, constraint.coercionType);
 				substitutions[ty1.id] = { ...ty1, type: bestType };
 			} else {
 				//type2 = ?
@@ -103,12 +95,7 @@ function getSumFunctionType(type: InferType): InferType {
 	return 'double';
 }
 
-function getBestPossibleType(
-	type1: InferType,
-	type2: InferType,
-	max?: boolean,
-	coercionType?: CoercionType
-): InferType {
+function getBestPossibleType(type1: InferType, type2: InferType, max?: boolean, coercionType?: CoercionType): InferType {
 	// Is possible to convert text to date
 	const sqliteDateCoercionOrder: InferType[] = ['TEXT', 'DATE'];
 	const sqliteIndexDateType1 = sqliteDateCoercionOrder.indexOf(type1);
@@ -123,9 +110,7 @@ function getBestPossibleType(
 	const sqliteIndexNumberType1 = sqliteNumberCoercionOrder.indexOf(type1);
 	const sqliteIndexNumberType2 = sqliteNumberCoercionOrder.indexOf(type2);
 	if (sqliteIndexNumberType1 !== -1 && sqliteIndexNumberType2 !== -1) {
-		const index = max
-			? Math.max(sqliteIndexNumberType1, sqliteIndexNumberType2)
-			: Math.min(sqliteIndexNumberType1, sqliteIndexNumberType2);
+		const index = max ? Math.max(sqliteIndexNumberType1, sqliteIndexNumberType2) : Math.min(sqliteIndexNumberType1, sqliteIndexNumberType2);
 		return sqliteNumberCoercionOrder[index];
 	}
 
@@ -140,10 +125,7 @@ function getBestPossibleType(
 		}
 		return 'double';
 	}
-	if (
-		coercionType === 'Ceiling' &&
-		(type1 === 'decimal' || type2 === 'decimal')
-	) {
+	if (coercionType === 'Ceiling' && (type1 === 'decimal' || type2 === 'decimal')) {
 		//ceiling(decimal) returns bigint
 		return 'bigint';
 	}
@@ -154,42 +136,20 @@ function getBestPossibleType(
 		return coercionType === 'Coalesce' ? 'any' : type1;
 	}
 
-	if (
-		coercionType === 'Sum' &&
-		isNumericType(type1) &&
-		isNumericType(type2) &&
-		(type1 === 'number' || type2 === 'number')
-	)
-		return 'double';
-	if (coercionType === 'Sum' && max && type1 === 'int' && type2 === 'int')
-		return 'bigint';
-	if (coercionType === 'Sum' && max && type1 === 'date' && type2 === 'date')
-		return 'bigint';
+	if (coercionType === 'Sum' && isNumericType(type1) && isNumericType(type2) && (type1 === 'number' || type2 === 'number')) return 'double';
+	if (coercionType === 'Sum' && max && type1 === 'int' && type2 === 'int') return 'bigint';
+	if (coercionType === 'Sum' && max && type1 === 'date' && type2 === 'date') return 'bigint';
 
 	//enum
 	if (type1 === type2) {
 		return type1;
 	}
 
-	const order: InferType[] = [
-		'number',
-		'bit',
-		'tinyint',
-		'year',
-		'smallint',
-		'int',
-		'bigint',
-		'decimal',
-		'float',
-		'double',
-		'varchar'
-	];
+	const order: InferType[] = ['number', 'bit', 'tinyint', 'year', 'smallint', 'int', 'bigint', 'decimal', 'float', 'double', 'varchar'];
 	const indexType1 = order.indexOf(type1);
 	const indexType2 = order.indexOf(type2);
 	if (indexType1 !== -1 && indexType2 !== -1) {
-		const index = max
-			? Math.max(indexType1, indexType2)
-			: Math.min(indexType1, indexType2);
+		const index = max ? Math.max(indexType1, indexType2) : Math.min(indexType1, indexType2);
 		const resultType = order[index];
 		if (resultType === 'varchar' && coercionType === 'Numeric') {
 			throw Error(`Type mismatch: ${type1} and ${type2}`);
@@ -198,20 +158,11 @@ function getBestPossibleType(
 	}
 	const newType1 = type1.startsWith('enum(') ? 'char' : type1;
 	const newType2 = type2.startsWith('enum(') ? 'char' : type2;
-	const order2: InferType[] = [
-		'char',
-		'varchar',
-		'tinytext',
-		'mediumtext',
-		'text',
-		'longtext'
-	];
+	const order2: InferType[] = ['char', 'varchar', 'tinytext', 'mediumtext', 'text', 'longtext'];
 	const indexStrType1 = order2.indexOf(newType1);
 	const indexStrType2 = order2.indexOf(newType2);
 	if (indexStrType1 !== -1 && indexStrType2 !== -1) {
-		const index = max
-			? Math.max(indexStrType1, indexStrType2)
-			: Math.min(indexStrType1, indexStrType2);
+		const index = max ? Math.max(indexStrType1, indexStrType2) : Math.min(indexStrType1, indexStrType2);
 		return order2[index];
 	}
 
@@ -220,9 +171,7 @@ function getBestPossibleType(
 	const indexDateType1 = dateTypeOrder.indexOf(type1);
 	const indexDateType2 = dateTypeOrder.indexOf(type2);
 	if (indexDateType1 !== -1 && indexDateType2 !== -1) {
-		const index = max
-			? Math.max(indexDateType1, indexDateType2)
-			: Math.min(indexDateType1, indexDateType2);
+		const index = max ? Math.max(indexDateType1, indexDateType2) : Math.min(indexDateType1, indexDateType2);
 		return dateTypeOrder[index];
 	}
 
@@ -231,9 +180,7 @@ function getBestPossibleType(
 	const indexDateLiteralType1 = dateTypeLiteralOrder.indexOf(type1);
 	const indexDateLiteralType2 = dateTypeLiteralOrder.indexOf(type2);
 	if (indexDateLiteralType1 !== -1 && indexDateLiteralType2 !== -1) {
-		const index = max
-			? Math.max(indexDateLiteralType1, indexDateLiteralType2)
-			: Math.min(indexDateLiteralType1, indexDateLiteralType2);
+		const index = max ? Math.max(indexDateLiteralType1, indexDateLiteralType2) : Math.min(indexDateLiteralType1, indexDateLiteralType2);
 		return dateTypeLiteralOrder[index];
 	}
 	throw Error(`Type mismatch: ${type1} and ${type2}`);
@@ -266,17 +213,7 @@ export function substitute(type: Type, substitutions: SubstitutionHash): Type {
 }
 
 function isNumericType(type: InferType) {
-	const numericTypes = [
-		'number',
-		'tinyint',
-		'year',
-		'smallint',
-		'int',
-		'bigint',
-		'decimal',
-		'float',
-		'double'
-	];
+	const numericTypes = ['number', 'tinyint', 'year', 'smallint', 'int', 'bigint', 'decimal', 'float', 'double'];
 	return numericTypes.indexOf(type) >= 0;
 }
 

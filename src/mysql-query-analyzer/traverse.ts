@@ -109,20 +109,12 @@ import {
 	splitName
 } from './select-columns';
 import { inferNotNull, possibleNull } from './infer-column-nullability';
-import {
-	inferParamNullability,
-	inferParamNullabilityQuery,
-	inferParamNullabilityQueryExpression
-} from './infer-param-nullability';
+import { inferParamNullability, inferParamNullabilityQuery, inferParamNullabilityQueryExpression } from './infer-param-nullability';
 import type { ParameterDef } from '../types';
 import { getPairWise, getParameterIndexes } from './util';
 import type { Relation2 } from '../sqlite-query-analyzer/sqlite-describe-nested-query';
 
-export type TraverseResult =
-	| SelectStatementResult
-	| InsertStatementResult
-	| UpdateStatementResult
-	| DeleteStatementResult;
+export type TraverseResult = SelectStatementResult | InsertStatementResult | UpdateStatementResult | DeleteStatementResult;
 
 export type SelectStatementResult = {
 	type: 'Select';
@@ -154,11 +146,7 @@ export type DeleteStatementResult = {
 	parameters: ParameterDef[];
 };
 
-export function traverseQueryContext(
-	queryContext: QueryContext,
-	dbSchema: ColumnSchema[],
-	namedParameters: string[]
-) {
+export function traverseQueryContext(queryContext: QueryContext, dbSchema: ColumnSchema[], namedParameters: string[]) {
 	const constraints: Constraint[] = [];
 	const parameters: TypeAndNullInferParam[] = [];
 
@@ -188,11 +176,7 @@ export function traverseQueryContext(
 
 	const selectStatement = queryContext.simpleStatement()?.selectStatement();
 	if (selectStatement) {
-		const typeInfer = traverseSelectStatement(
-			selectStatement,
-			traverseContext,
-			namedParameters
-		);
+		const typeInfer = traverseSelectStatement(selectStatement, traverseContext, namedParameters);
 		return typeInfer;
 	}
 	const insertStatement = queryContext.simpleStatement()?.insertStatement();
@@ -201,11 +185,7 @@ export function traverseQueryContext(
 	}
 	const updateStatement = queryContext.simpleStatement()?.updateStatement();
 	if (updateStatement) {
-		const typeInfer = traverseUpdateStatement(
-			updateStatement,
-			traverseContext,
-			namedParameters
-		);
+		const typeInfer = traverseUpdateStatement(updateStatement, traverseContext, namedParameters);
 		return typeInfer;
 	}
 	const deleteStatement = queryContext.simpleStatement()?.deleteStatement();
@@ -228,8 +208,7 @@ function traverseSelectStatement(
 		const orderByParameters = extractOrderByParameters(selectStatement);
 		const limitParameters = extractLimitParameters(selectStatement);
 
-		const paramInference =
-			inferParamNullabilityQueryExpression(queryExpression);
+		const paramInference = inferParamNullabilityQueryExpression(queryExpression);
 
 		const allParameters = traverseContext.parameters.map((param, index) => {
 			const param2: TypeAndNullInfer = {
@@ -238,9 +217,7 @@ function traverseSelectStatement(
 			};
 			return param2;
 		});
-		const paramIndexes = getParameterIndexes(
-			namedParameters.slice(0, allParameters.length)
-		); //for [a, a, b, a] will return a: [0, 1, 3]; b: [2]
+		const paramIndexes = getParameterIndexes(namedParameters.slice(0, allParameters.length)); //for [a, a, b, a] will return a: [0, 1, 3]; b: [2]
 		paramIndexes.forEach((paramIndex) => {
 			getPairWise(paramIndex.indexes, (cur, next) => {
 				//for [0, 1, 3] will return [0, 1], [1, 3]
@@ -262,40 +239,26 @@ function traverseSelectStatement(
 			isMultiRow,
 			dynamicSqlInfo: traverseContext.dynamicSqlInfo
 		};
-		const orderByColumns =
-			orderByParameters.length > 0
-				? getOrderByColumns(result.fromColumns, result.columns)
-				: undefined;
+		const orderByColumns = orderByParameters.length > 0 ? getOrderByColumns(result.fromColumns, result.columns) : undefined;
 		if (orderByColumns) {
 			traverseResult.orderByColumns = orderByColumns;
 		}
 		return traverseResult;
 	}
-	throw Error(
-		`traverseSelectStatement - not supported: ${selectStatement.getText()}`
-	);
+	throw Error(`traverseSelectStatement - not supported: ${selectStatement.getText()}`);
 }
 
-export function traverseInsertStatement(
-	insertStatement: InsertStatementContext,
-	traverseContext: TraverseContext
-): InsertStatementResult {
+export function traverseInsertStatement(insertStatement: InsertStatementContext, traverseContext: TraverseContext): InsertStatementResult {
 	const allParameters: ParameterDef[] = [];
 	const paramsNullability: { [paramId: string]: boolean } = {};
 
 	let exprOrDefaultList: ExprOrDefault[][] = [];
-	const valuesContext = insertStatement
-		.insertFromConstructor()
-		?.insertValues()
-		.valueList()
-		.values_list();
+	const valuesContext = insertStatement.insertFromConstructor()?.insertValues().valueList().values_list();
 	if (valuesContext) {
 		exprOrDefaultList = valuesContext.map(
 			(valueContext) =>
 				(valueContext.children?.filter(
-					(valueContext) =>
-						valueContext instanceof ExprIsContext ||
-						valueContext.getText() === 'DEFAULT'
+					(valueContext) => valueContext instanceof ExprIsContext || valueContext.getText() === 'DEFAULT'
 				) as ExprOrDefault[]) || []
 		);
 	}
@@ -325,17 +288,13 @@ export function traverseInsertStatement(
 				const numberParamsBefore = traverseContext.parameters.length;
 				const exprType = traverseExpr(expr, traverseContext);
 				const paramNullabilityExpr = inferParamNullability(expr);
-				traverseContext.parameters
-					.slice(numberParamsBefore)
-					.forEach((param) => {
-						paramsNullability[param.type.id] =
-							paramNullabilityExpr.every((n) => n) && column.notNull;
-					});
+				traverseContext.parameters.slice(numberParamsBefore).forEach((param) => {
+					paramsNullability[param.type.id] = paramNullabilityExpr.every((n) => n) && column.notNull;
+				});
 				traverseContext.constraints.push({
 					expression: expr.getText(),
 					//TODO - CHANGING ORDER SHOULDN'T AFFECT THE TYPE INFERENCE
-					type1:
-						exprType.kind === 'TypeOperator' ? exprType.types[0] : exprType,
+					type1: exprType.kind === 'TypeOperator' ? exprType.types[0] : exprType,
 					type2: freshVar(column.columnName, column.columnType.type)
 				});
 			} else {
@@ -343,8 +302,7 @@ export function traverseInsertStatement(
 		});
 	});
 
-	const updateList =
-		insertStatement.insertUpdateList()?.updateList().updateElement_list() || [];
+	const updateList = insertStatement.insertUpdateList()?.updateList().updateElement_list() || [];
 	updateList.forEach((updateElement) => {
 		const columnName = updateElement.columnRef().getText();
 		const field = splitName(columnName);
@@ -368,10 +326,7 @@ export function traverseInsertStatement(
 	if (insertQueryExpression) {
 		//TODO - REMOVE numberParamsBefore (walk first insertQueryExpression)
 		const numberParamsBefore = traverseContext.parameters.length;
-		const exprTypes = traverseInsertQueryExpression(
-			insertQueryExpression,
-			traverseContext
-		);
+		const exprTypes = traverseInsertQueryExpression(insertQueryExpression, traverseContext);
 
 		exprTypes.columns.forEach((type, index) => {
 			const column = insertColumns[index];
@@ -384,22 +339,15 @@ export function traverseInsertStatement(
 				type2: freshVar(column.columnName, column.columnType.type)
 			});
 		});
-		const paramNullabilityExpr = inferParamNullabilityQuery(
-			insertQueryExpression
-		);
-		traverseContext.parameters
-			.slice(numberParamsBefore)
-			.forEach((param, index) => {
-				if (paramsNullability[param.type.id] == null) {
-					paramsNullability[param.type.id] = paramNullabilityExpr[index];
-				}
-			});
+		const paramNullabilityExpr = inferParamNullabilityQuery(insertQueryExpression);
+		traverseContext.parameters.slice(numberParamsBefore).forEach((param, index) => {
+			if (paramsNullability[param.type.id] == null) {
+				paramsNullability[param.type.id] = paramNullabilityExpr[index];
+			}
+		});
 	}
 
-	const typeInfo = generateTypeInfo(
-		traverseContext.parameters,
-		traverseContext.constraints
-	);
+	const typeInfo = generateTypeInfo(traverseContext.parameters, traverseContext.constraints);
 	typeInfo.forEach((param, index) => {
 		const paramId = traverseContext.parameters[index].type.id;
 		allParameters.push({
@@ -452,16 +400,14 @@ function traverseUpdateStatement(
 				type1: result,
 				type2: column.columnType //freshVar(column.columnName, )
 			});
-			traverseContext.parameters
-				.slice(paramBeforeExpr, traverseContext.parameters.length)
-				.forEach((param, index) => {
-					dataTypes.push({
-						name: namedParamters[paramBeforeExpr + index] || field.name,
-						type: param.type,
-						notNull: column.notNull && paramNullability[index],
-						table: ''
-					});
+			traverseContext.parameters.slice(paramBeforeExpr, traverseContext.parameters.length).forEach((param, index) => {
+				dataTypes.push({
+					name: namedParamters[paramBeforeExpr + index] || field.name,
+					type: param.type,
+					notNull: column.notNull && paramNullability[index],
+					table: ''
 				});
+			});
 		}
 	});
 
@@ -481,9 +427,7 @@ function traverseUpdateStatement(
 	});
 	traverseContext.parameters.slice(paramsAfter).forEach((param, index) => {
 		whereParameters.push({
-			name:
-				namedParamters[paramsAfter + index] ||
-				`param${whereParameters.length + 1}`,
+			name: namedParamters[paramsAfter + index] || `param${whereParameters.length + 1}`,
 			type: param.type,
 			notNull: paramNullability[paramsAfter + index],
 			table: ''
@@ -500,24 +444,15 @@ function traverseUpdateStatement(
 	return typeInferenceResult;
 }
 
-export function traverseDeleteStatement(
-	deleteStatement: DeleteStatementContext,
-	traverseContext: TraverseContext
-): DeleteStatementResult {
+export function traverseDeleteStatement(deleteStatement: DeleteStatementContext, traverseContext: TraverseContext): DeleteStatementResult {
 	const whereExpr = deleteStatement.whereClause()?.expr();
-	const deleteColumns = getDeleteColumns(
-		deleteStatement,
-		traverseContext.dbSchema
-	);
+	const deleteColumns = getDeleteColumns(deleteStatement, traverseContext.dbSchema);
 	traverseContext.fromColumns = deleteColumns;
 	const allParameters: ParameterDef[] = [];
 
 	if (whereExpr) {
 		traverseExpr(whereExpr, traverseContext);
-		const typeInfo = generateTypeInfo(
-			traverseContext.parameters,
-			traverseContext.constraints
-		);
+		const typeInfo = generateTypeInfo(traverseContext.parameters, traverseContext.constraints);
 
 		const paramNullability = inferParamNullability(whereExpr);
 		typeInfo.forEach((param, paramIndex) => {
@@ -537,18 +472,9 @@ export function traverseDeleteStatement(
 	return typeInferenceResult;
 }
 
-export function getUpdateColumns(
-	updateStatement: UpdateStatementContext,
-	traverseContext: TraverseContext
-) {
-	const tableReferences = updateStatement
-		.tableReferenceList()
-		.tableReference_list();
-	const columns = traverseTableReferenceList(
-		tableReferences,
-		traverseContext,
-		null
-	);
+export function getUpdateColumns(updateStatement: UpdateStatementContext, traverseContext: TraverseContext) {
+	const tableReferences = updateStatement.tableReferenceList().tableReference_list();
+	const columns = traverseTableReferenceList(tableReferences, traverseContext, null);
 	return columns;
 }
 
@@ -556,12 +482,8 @@ function traverseInsertQueryExpression(
 	insertQueryExpression: InsertQueryExpressionContext,
 	traverseContext: TraverseContext
 ): QuerySpecificationResult {
-	const queryExpressionOrParens =
-		insertQueryExpression.queryExpressionOrParens();
-	return traverseQueryExpressionOrParens(
-		queryExpressionOrParens,
-		traverseContext
-	);
+	const queryExpressionOrParens = insertQueryExpression.queryExpressionOrParens();
+	return traverseQueryExpressionOrParens(queryExpressionOrParens, traverseContext);
 }
 
 function traverseQueryExpressionOrParens(
@@ -593,21 +515,11 @@ function traverseQueryExpression(
 	let exprResult: QuerySpecificationResult;
 	const queryExpressionBody = queryExpression.queryExpressionBody();
 	if (queryExpressionBody) {
-		exprResult = traverseQueryExpressionBody(
-			queryExpressionBody,
-			traverseContext,
-			cte,
-			recursiveNames
-		);
+		exprResult = traverseQueryExpressionBody(queryExpressionBody, traverseContext, cte, recursiveNames);
 	}
 	const queryExpressionParens = queryExpression.queryExpressionParens();
 	if (queryExpressionParens) {
-		exprResult = traverseQueryExpressionParens(
-			queryExpressionParens,
-			traverseContext,
-			cte,
-			recursiveNames
-		);
+		exprResult = traverseQueryExpressionParens(queryExpressionParens, traverseContext, cte, recursiveNames);
 	}
 	const orderByClause = queryExpression.orderClause();
 	if (orderByClause) {
@@ -634,21 +546,11 @@ function traverseQueryExpressionParens(
 ): QuerySpecificationResult {
 	const queryExpression = queryExpressionParens.queryExpression();
 	if (queryExpression) {
-		return traverseQueryExpression(
-			queryExpression,
-			traverseContext,
-			cte,
-			recursiveNames
-		);
+		return traverseQueryExpression(queryExpression, traverseContext, cte, recursiveNames);
 	}
 	const queryExpressionParens2 = queryExpressionParens.queryExpressionParens();
 	if (queryExpressionParens2) {
-		return traverseQueryExpressionParens(
-			queryExpressionParens,
-			traverseContext,
-			cte,
-			recursiveNames
-		);
+		return traverseQueryExpressionParens(queryExpressionParens, traverseContext, cte, recursiveNames);
 	}
 	throw Error('walkQueryExpressionParens');
 }
@@ -664,20 +566,14 @@ function traverseQueryExpressionBody(
 	cte?: string,
 	recursiveNames?: string[]
 ): QuerySpecificationResult {
-	const allQueries =
-		getAllQuerySpecificationsFromSelectStatement(queryExpressionBody);
+	const allQueries = getAllQuerySpecificationsFromSelectStatement(queryExpressionBody);
 	const [first, ...unionQuerySpec] = allQueries;
 	const mainQueryResult = traverseQuerySpecification(first, traverseContext);
 
 	const resultTypes = mainQueryResult.columns.map((t, index) =>
 		unionQuerySpec.length === 0
 			? t.type
-			: createUnionVar(
-					t.type,
-					recursiveNames && recursiveNames.length > 0
-						? recursiveNames[index]
-						: t.name
-				)
+			: createUnionVar(t.type, recursiveNames && recursiveNames.length > 0 ? recursiveNames[index] : t.name)
 	); //TODO mover para traversequeryspecificat?
 	if (cte) {
 		resultTypes.forEach((col, index) => {
@@ -693,13 +589,8 @@ function traverseQueryExpressionBody(
 	}
 
 	for (let queryIndex = 0; queryIndex < unionQuerySpec.length; queryIndex++) {
-		const columnNames =
-			recursiveNames && recursiveNames.length > 0
-				? recursiveNames
-				: mainQueryResult.columns.map((col) => col.name);
-		const newFromColumns = recursiveNames
-			? renameFromColumns(mainQueryResult.columns, columnNames)
-			: [];
+		const columnNames = recursiveNames && recursiveNames.length > 0 ? recursiveNames : mainQueryResult.columns.map((col) => col.name);
+		const newFromColumns = recursiveNames ? renameFromColumns(mainQueryResult.columns, columnNames) : [];
 		const unionQuery = unionQuerySpec[queryIndex];
 		const unionResult = traverseQuerySpecification(unionQuery, {
 			...traverseContext,
@@ -707,9 +598,7 @@ function traverseQueryExpressionBody(
 		});
 
 		resultTypes.forEach((t2, index) => {
-			mainQueryResult.columns[index].notNull =
-				mainQueryResult.columns[index].notNull &&
-				unionResult.columns[index].notNull;
+			mainQueryResult.columns[index].notNull = mainQueryResult.columns[index].notNull && unionResult.columns[index].notNull;
 			traverseContext.constraints.push({
 				expression: 'union',
 				coercionType: 'Union',
@@ -741,11 +630,7 @@ export type QuerySpecificationResult = {
 };
 
 //sqlite
-export type TraverseResult2 =
-	| SelectResult
-	| InsertResult
-	| UpdateResult
-	| DeleteResult;
+export type TraverseResult2 = SelectResult | InsertResult | UpdateResult | DeleteResult;
 
 export type SelectResult = {
 	queryType: 'Select';
@@ -777,10 +662,7 @@ export type DeleteResult = {
 	parameters: TypeAndNullInferParam[];
 };
 
-function renameFromColumns(
-	fromColumns: TypeAndNullInfer[],
-	recursiveNames: string[]
-): ColumnDef[] {
+function renameFromColumns(fromColumns: TypeAndNullInfer[], recursiveNames: string[]): ColumnDef[] {
 	const newFromColumns = fromColumns.map((col, index) => {
 		const newCol: ColumnDef = {
 			table: '',
@@ -799,20 +681,13 @@ export function traverseQuerySpecification(
 	traverseContext: TraverseContext
 ): QuerySpecificationResult {
 	const fromClause = querySpec.fromClause();
-	const fromColumnsFrom = fromClause
-		? traverseFromClause(fromClause, traverseContext)
-		: [];
-	const allColumns = traverseContext.subQuery
-		? traverseContext.fromColumns.concat(fromColumnsFrom)
-		: fromColumnsFrom; //(... where id = t1.id)
-	const selectItemListResult = traverseSelectItemList(
-		querySpec.selectItemList(),
-		{
-			...traverseContext,
-			fromColumns: allColumns,
-			subQueryColumns: fromColumnsFrom
-		}
-	);
+	const fromColumnsFrom = fromClause ? traverseFromClause(fromClause, traverseContext) : [];
+	const allColumns = traverseContext.subQuery ? traverseContext.fromColumns.concat(fromColumnsFrom) : fromColumnsFrom; //(... where id = t1.id)
+	const selectItemListResult = traverseSelectItemList(querySpec.selectItemList(), {
+		...traverseContext,
+		fromColumns: allColumns,
+		subQueryColumns: fromColumnsFrom
+	});
 
 	const whereClause = querySpec.whereClause();
 	//TODO - HAVING, BLAH
@@ -826,11 +701,7 @@ export function traverseQuerySpecification(
 		});
 	}
 
-	const columnNullability = inferNotNull(
-		querySpec,
-		traverseContext.dbSchema,
-		allColumns
-	);
+	const columnNullability = inferNotNull(querySpec, traverseContext.dbSchema, allColumns);
 
 	const columns = selectItemListResult.types.map((t, index) => {
 		const resultType: TypeAndNullInfer = {
@@ -865,10 +736,7 @@ export function traverseQuerySpecification(
 	};
 }
 
-export function traverseWithClause(
-	withClause: WithClauseContext,
-	traverseContext: TraverseContext
-) {
+export function traverseWithClause(withClause: WithClauseContext, traverseContext: TraverseContext) {
 	//result1, result2
 	withClause.commonTableExpression_list().forEach((commonTableExpression) => {
 		const cte = commonTableExpression.identifier().getText();
@@ -892,17 +760,10 @@ export function traverseWithClause(
 	});
 }
 
-function traverseFromClause(
-	fromClause: FromClauseContext,
-	traverseContext: TraverseContext
-): ColumnDef[] {
-	const tableReferenceList = fromClause
-		.tableReferenceList()
-		?.tableReference_list();
+function traverseFromClause(fromClause: FromClauseContext, traverseContext: TraverseContext): ColumnDef[] {
+	const tableReferenceList = fromClause.tableReferenceList()?.tableReference_list();
 
-	const fromColumns = tableReferenceList
-		? traverseTableReferenceList(tableReferenceList, traverseContext, null)
-		: [];
+	const fromColumns = tableReferenceList ? traverseTableReferenceList(tableReferenceList, traverseContext, null) : [];
 
 	return fromColumns;
 }
@@ -919,11 +780,7 @@ function traverseTableReferenceList(
 		const tableFactor = tab.tableFactor();
 		if (tableFactor) {
 			const paramBefore = traverseContext.parameters.length;
-			const fields = traverseTableFactor(
-				tableFactor,
-				traverseContext,
-				currentFragment
-			);
+			const fields = traverseTableFactor(tableFactor, traverseContext, currentFragment);
 			const paramsAfter = traverseContext.parameters.length;
 			result.push(...fields);
 			fragements.push({
@@ -931,20 +788,14 @@ function traverseTableReferenceList(
 				fields: [], //fields.map(field => ({ field: field.columnName, name: field.columnName, table: field.table })),
 				dependOnFields: [],
 				dependOnParams: [],
-				parameters: Array.from(
-					{ length: paramsAfter - paramBefore },
-					(x, i) => i + paramBefore
-				),
+				parameters: Array.from({ length: paramsAfter - paramBefore }, (x, i) => i + paramBefore),
 				dependOn: []
 			});
 		}
 		const allJoinedColumns: ColumnDef[][] = [];
 		let firstLeftJoinIndex = -1;
 		tab.joinedTable_list().forEach((joined, index) => {
-			if (
-				joined.innerJoinType()?.INNER_SYMBOL() ||
-				joined.innerJoinType()?.JOIN_SYMBOL()
-			) {
+			if (joined.innerJoinType()?.INNER_SYMBOL() || joined.innerJoinType()?.JOIN_SYMBOL()) {
 				firstLeftJoinIndex = -1; //dont need to add notNull = false to joins
 			} else if (firstLeftJoinIndex === -1) {
 				firstLeftJoinIndex = index; //add notNull = false to all joins after the first left join
@@ -964,17 +815,10 @@ function traverseTableReferenceList(
 
 				const usingFields = extractFieldsFromUsingClause(joined);
 				const paramsBefore = traverseContext.parameters.length;
-				const joinedFields = traverseTableReferenceList(
-					[tableReferences],
-					traverseContext,
-					innerJoinFragment
-				);
+				const joinedFields = traverseTableReferenceList([tableReferences], traverseContext, innerJoinFragment);
 				const paramsAfter = traverseContext.parameters.length;
 				//doesn't duplicate the fields of the USING clause. Ex. INNER JOIN mytable2 USING(id);
-				const joinedFieldsFiltered =
-					usingFields.length > 0
-						? filterUsingFields(joinedFields, usingFields)
-						: joinedFields;
+				const joinedFieldsFiltered = usingFields.length > 0 ? filterUsingFields(joinedFields, usingFields) : joinedFields;
 				allJoinedColumns.push(joinedFieldsFiltered);
 
 				innerJoinFragment.fields = [
@@ -984,10 +828,7 @@ function traverseTableReferenceList(
 						name: f.columnName
 					}))
 				];
-				innerJoinFragment.parameters = Array.from(
-					{ length: paramsAfter - paramsBefore },
-					(x, i) => i + paramsAfter - 1
-				);
+				innerJoinFragment.parameters = Array.from({ length: paramsAfter - paramsBefore }, (x, i) => i + paramsAfter - 1);
 				fragements.push(innerJoinFragment);
 
 				const onClause = joined.expr(); //ON expr
@@ -1083,43 +924,26 @@ function traverseTableFactor(
 	}
 	const tableReferenceListParens = tableFactor.tableReferenceListParens();
 	if (tableReferenceListParens) {
-		const listParens = traverseTableReferenceListParens(
-			tableReferenceListParens,
-			traverseContext
-		);
+		const listParens = traverseTableReferenceListParens(tableReferenceListParens, traverseContext);
 		return listParens;
 	}
-	throw Error(
-		`traverseTableFactor - not supported: ${tableFactor.constructor.name}`
-	);
+	throw Error(`traverseTableFactor - not supported: ${tableFactor.constructor.name}`);
 }
 
 //tableReferenceList | tableReferenceListParens
-function traverseTableReferenceListParens(
-	ctx: TableReferenceListParensContext,
-	traverseContext: TraverseContext
-): ColumnDef[] {
+function traverseTableReferenceListParens(ctx: TableReferenceListParensContext, traverseContext: TraverseContext): ColumnDef[] {
 	const tableReferenceList = ctx.tableReferenceList();
 	if (tableReferenceList) {
-		return traverseTableReferenceList(
-			tableReferenceList.tableReference_list(),
-			traverseContext,
-			null
-		);
+		return traverseTableReferenceList(tableReferenceList.tableReference_list(), traverseContext, null);
 	}
 
 	const tableReferenceListParens = ctx.tableReferenceListParens();
 
 	if (tableReferenceListParens) {
-		return traverseTableReferenceListParens(
-			tableReferenceListParens,
-			traverseContext
-		);
+		return traverseTableReferenceListParens(tableReferenceListParens, traverseContext);
 	}
 
-	throw Error(
-		`traverseTableReferenceListParens - not supported: ${ctx.constructor.name}`
-	);
+	throw Error(`traverseTableReferenceListParens - not supported: ${ctx.constructor.name}`);
 }
 
 function traverseSingleTable(
@@ -1153,27 +977,16 @@ function traverseSubquery(
 	const queryExpressionParens = subQuery.queryExpressionParens();
 	const queryExpression = queryExpressionParens.queryExpression();
 	if (queryExpression) {
-		return traverseQueryExpression(
-			queryExpression,
-			{ ...traverseContext, subQuery: true },
-			cte,
-			recursiveNames
-		);
+		return traverseQueryExpression(queryExpression, { ...traverseContext, subQuery: true }, cte, recursiveNames);
 	}
 	const queryExpressionParens2 = queryExpressionParens.queryExpressionParens();
 	if (queryExpressionParens2) {
-		return traverseQueryExpressionParens(
-			queryExpressionParens2,
-			traverseContext
-		);
+		return traverseQueryExpressionParens(queryExpressionParens2, traverseContext);
 	}
 	throw Error(`traverseSubquery - not expected: ${subQuery.constructor.name}`);
 }
 
-function traverseSelectItemList(
-	selectItemList: SelectItemListContext,
-	traverseContext: TraverseContext
-): TypeOperator {
+function traverseSelectItemList(selectItemList: SelectItemListContext, traverseContext: TraverseContext): TypeOperator {
 	const listType: TypeVar[] = [];
 	if (selectItemList.MULT_OPERATOR()) {
 		traverseContext.fromColumns.forEach((col) => {
@@ -1206,10 +1019,7 @@ function traverseSelectItemList(
 		if (tableWild) {
 			if (tableWild.MULT_OPERATOR()) {
 				const itemName = splitName(selectItem.getText());
-				const allColumns = selectAllColumns(
-					itemName.prefix,
-					traverseContext.fromColumns
-				);
+				const allColumns = selectAllColumns(itemName.prefix, traverseContext.fromColumns);
 				allColumns.forEach((col) => {
 					const columnType = createColumnType(col);
 					listType.push(columnType);
@@ -1229,9 +1039,7 @@ function traverseSelectItemList(
 			};
 			const exprType = traverseExpr(expr, {
 				...traverseContext,
-				currentFragement: traverseContext.subQuery
-					? traverseContext.currentFragement
-					: selectFragment
+				currentFragement: traverseContext.subQuery ? traverseContext.currentFragement : selectFragment
 			});
 			if (!traverseContext.subQuery) {
 				traverseContext.dynamicSqlInfo.select?.push(selectFragment);
@@ -1255,18 +1063,12 @@ function traverseSelectItemList(
 	return result;
 }
 
-function traverseHavingClause(
-	havingClause: HavingClauseContext,
-	traverseContext: TraverseContext
-) {
+function traverseHavingClause(havingClause: HavingClauseContext, traverseContext: TraverseContext) {
 	const havingExpr = havingClause.expr();
 	traverseExpr(havingExpr, traverseContext);
 }
 
-function traverseExpr(
-	expr: ExprContext,
-	traverseContext: TraverseContext
-): Type {
+function traverseExpr(expr: ExprContext, traverseContext: TraverseContext): Type {
 	if (expr instanceof ExprIsContext) {
 		const boolPri = expr.boolPri();
 
@@ -1308,11 +1110,7 @@ function traverseExpr(
 		}
 		return freshVar(expr.getText(), 'tinyint');
 	}
-	if (
-		expr instanceof ExprAndContext ||
-		expr instanceof ExprXorContext ||
-		expr instanceof ExprOrContext
-	) {
+	if (expr instanceof ExprAndContext || expr instanceof ExprXorContext || expr instanceof ExprOrContext) {
 		const all: ExpressionAndOperator[] = [];
 		getTopLevelAndExpr(expr, all);
 		all.forEach((andExpression) => {
@@ -1327,10 +1125,7 @@ function traverseExpr(
 					parameters: [],
 					dependOn: []
 				};
-				const paramsRight = getExpressions(
-					andExpression.expr,
-					SimpleExprParamMarkerContext
-				);
+				const paramsRight = getExpressions(andExpression.expr, SimpleExprParamMarkerContext);
 				paramsRight.forEach((_) => {
 					currentFragment.dependOnParams.push(paramsCount);
 					paramsCount++;
@@ -1353,10 +1148,7 @@ function traverseExpr(
 	throw Error(`traverseExpr - not supported: ${expr.getText()}`);
 }
 
-function traverseBoolPri(
-	boolPri: BoolPriContext,
-	traverseContext: TraverseContext
-): Type {
+function traverseBoolPri(boolPri: BoolPriContext, traverseContext: TraverseContext): Type {
 	if (boolPri instanceof PrimaryExprPredicateContext) {
 		const predicate = boolPri.predicate();
 		const predicateType = traversePredicate(predicate, traverseContext);
@@ -1401,23 +1193,13 @@ function traverseBoolPri(
 	throw Error(`traverseExpr - not supported: ${boolPri.constructor.name}`);
 }
 
-function traversePredicate(
-	predicate: PredicateContext,
-	traverseContext: TraverseContext
-): Type {
+function traversePredicate(predicate: PredicateContext, traverseContext: TraverseContext): Type {
 	const bitExpr = predicate.bitExpr(0); //TODO - predicate length = 2? [1] == predicateOperations
 	const bitExprType = traverseBitExpr(bitExpr, traverseContext);
 	const predicateOperations = predicate.predicateOperations();
 	if (predicateOperations) {
-		const rightType = traversePredicateOperations(
-			predicateOperations,
-			bitExprType,
-			traverseContext
-		);
-		if (
-			bitExprType.kind === 'TypeOperator' &&
-			rightType.kind === 'TypeOperator'
-		) {
+		const rightType = traversePredicateOperations(predicateOperations, bitExprType, traverseContext);
+		if (bitExprType.kind === 'TypeOperator' && rightType.kind === 'TypeOperator') {
 			rightType.types.forEach((t, i) => {
 				traverseContext.constraints.push({
 					expression: predicateOperations.getText(),
@@ -1444,10 +1226,7 @@ function traversePredicate(
 	return bitExprType;
 }
 
-function traverseExprList(
-	exprList: ExprListContext,
-	traverseContext: TraverseContext
-): Type {
+function traverseExprList(exprList: ExprListContext, traverseContext: TraverseContext): Type {
 	const listType = exprList.expr_list().map((item) => {
 		const exprType = traverseExpr(item, traverseContext);
 		return exprType as TypeVar;
@@ -1459,10 +1238,7 @@ function traverseExprList(
 	return type;
 }
 
-function traverseBitExpr(
-	bitExpr: BitExprContext,
-	traverseContext: TraverseContext
-): Type {
+function traverseBitExpr(bitExpr: BitExprContext, traverseContext: TraverseContext): Type {
 	const simpleExpr = bitExpr.simpleExpr();
 	if (simpleExpr) {
 		return traverseSimpleExpr(simpleExpr, { ...traverseContext, where: false });
@@ -1470,27 +1246,17 @@ function traverseBitExpr(
 	if (bitExpr.bitExpr_list().length === 2) {
 		const bitExprLeft = bitExpr.bitExpr(0);
 		const typeLeftTemp = traverseBitExpr(bitExprLeft, traverseContext);
-		const typeLeft =
-			typeLeftTemp.kind === 'TypeOperator'
-				? typeLeftTemp.types[0]
-				: typeLeftTemp;
+		const typeLeft = typeLeftTemp.kind === 'TypeOperator' ? typeLeftTemp.types[0] : typeLeftTemp;
 		//const newTypeLeft = typeLeft.name == '?'? freshVar('?', 'bigint') : typeLeft;
 
 		const bitExprRight = bitExpr.bitExpr(1);
 		const typeRightTemp = traverseBitExpr(bitExprRight, traverseContext);
 
 		//In the expression 'id + (value + 2) + ?' the '(value+2)' is treated as a SimpleExprListContext and return a TypeOperator
-		const typeRight =
-			typeRightTemp.kind === 'TypeOperator'
-				? typeRightTemp.types[0]
-				: typeRightTemp;
+		const typeRight = typeRightTemp.kind === 'TypeOperator' ? typeRightTemp.types[0] : typeRightTemp;
 		//const newTypeRight = typeRight.name == '?'? freshVar('?', 'bigint') : typeRight;
 		const bitExprType = freshVar(bitExpr.getText(), '?');
-		if (
-			typeLeftTemp.kind === 'TypeVar' &&
-			typeRightTemp.kind === 'TypeVar' &&
-			typeLeftTemp.table === typeRightTemp.table
-		) {
+		if (typeLeftTemp.kind === 'TypeVar' && typeRightTemp.kind === 'TypeVar' && typeLeftTemp.table === typeRightTemp.table) {
 			bitExprType.table = typeLeftTemp.table;
 		}
 		//PRECISA?
@@ -1620,18 +1386,11 @@ function traversePredicateOperations(
 	throw Error(`Not supported: ${predicateOperations.constructor.name}`);
 }
 
-function traverseSimpleExpr(
-	simpleExpr: SimpleExprContext,
-	traverseContext: TraverseContext
-): Type {
+function traverseSimpleExpr(simpleExpr: SimpleExprContext, traverseContext: TraverseContext): Type {
 	if (simpleExpr instanceof SimpleExprColumnRefContext) {
 		const fieldName = splitName(simpleExpr.getText());
 		const column = findColumn(fieldName, traverseContext.fromColumns);
-		const typeVar = freshVar(
-			column.columnName,
-			column.columnType.type,
-			column.tableAlias || column.table
-		);
+		const typeVar = freshVar(column.columnName, column.columnType.type, column.tableAlias || column.table);
 		traverseContext.constraints.push({
 			expression: simpleExpr.getText(),
 			type1: typeVar,
@@ -1640,18 +1399,11 @@ function traverseSimpleExpr(
 		});
 		if (traverseContext.currentFragement != null) {
 			if (!traverseContext.subQuery) {
-				traverseContext.currentFragement.dependOn.push(
-					column.tableAlias || column.table
-				);
+				traverseContext.currentFragement.dependOn.push(column.tableAlias || column.table);
 			} else {
-				const subQueryColumn = findColumnOrNull(
-					fieldName,
-					traverseContext.subQueryColumns
-				);
+				const subQueryColumn = findColumnOrNull(fieldName, traverseContext.subQueryColumns);
 				if (subQueryColumn == null) {
-					traverseContext.currentFragement.dependOn.push(
-						column.tableAlias || column.table
-					);
+					traverseContext.currentFragement.dependOn.push(column.tableAlias || column.table);
 				}
 			}
 		}
@@ -1766,8 +1518,7 @@ function traverseSimpleExpr(
 				traverseContext.constraints.push({
 					expression: simpleExpr.elseExpression()?.getText()!,
 					type1: thenType,
-					type2:
-						elseType.kind === 'TypeOperator' ? elseType.types[0] : elseType,
+					type2: elseType.kind === 'TypeOperator' ? elseType.types[0] : elseType,
 					mostGeneralType: true
 				});
 			});
@@ -1785,10 +1536,7 @@ function traverseSimpleExpr(
 			type1: typeLeft,
 			type2: freshVar('bigint', 'bigint')
 		});
-		if (
-			typeRight.kind === 'TypeVar' &&
-			(isDateLiteral(typeRight.name) || isDateTimeLiteral(typeRight.name))
-		) {
+		if (typeRight.kind === 'TypeVar' && (isDateLiteral(typeRight.name) || isDateTimeLiteral(typeRight.name))) {
 			typeRight.type = 'datetime';
 		}
 		traverseContext.constraints.push({
@@ -1882,11 +1630,7 @@ function traverseSimpleExpr(
 			return freshVar('varchar', 'varchar');
 		}
 
-		if (
-			runtimeFunctionCall.YEAR_SYMBOL() ||
-			runtimeFunctionCall.MONTH_SYMBOL() ||
-			runtimeFunctionCall.DAY_SYMBOL()
-		) {
+		if (runtimeFunctionCall.YEAR_SYMBOL() || runtimeFunctionCall.MONTH_SYMBOL() || runtimeFunctionCall.DAY_SYMBOL()) {
 			const expr = runtimeFunctionCall.exprWithParentheses()?.expr();
 			if (expr) {
 				const paramType = traverseExpr(expr, traverseContext);
@@ -1923,11 +1667,7 @@ function traverseSimpleExpr(
 			}
 			return freshVar(simpleExpr.getText(), 'date');
 		}
-		if (
-			runtimeFunctionCall.HOUR_SYMBOL() ||
-			runtimeFunctionCall.MINUTE_SYMBOL() ||
-			runtimeFunctionCall.SECOND_SYMBOL()
-		) {
+		if (runtimeFunctionCall.HOUR_SYMBOL() || runtimeFunctionCall.MINUTE_SYMBOL() || runtimeFunctionCall.SECOND_SYMBOL()) {
 			const expr = runtimeFunctionCall.exprWithParentheses()?.expr();
 			if (expr) {
 				const paramType = traverseExpr(expr, traverseContext);
@@ -2005,10 +1745,7 @@ function traverseSimpleExpr(
 			const typeExpr1 = traverseExpr(expr1, traverseContext);
 			const typeExpr2 = traverseExpr(expr2, traverseContext);
 
-			if (
-				typeExpr1.kind === 'TypeVar' &&
-				(isDateLiteral(typeExpr1.name) || isDateTimeLiteral(typeExpr1.name))
-			) {
+			if (typeExpr1.kind === 'TypeVar' && (isDateLiteral(typeExpr1.name) || isDateTimeLiteral(typeExpr1.name))) {
 				typeExpr1.type = 'datetime';
 			}
 
@@ -2028,21 +1765,14 @@ function traverseSimpleExpr(
 		}
 
 		if (runtimeFunctionCall.COALESCE_SYMBOL()) {
-			const exprList = runtimeFunctionCall
-				.exprListWithParentheses()
-				?.exprList()
-				.expr_list();
+			const exprList = runtimeFunctionCall.exprListWithParentheses()?.exprList().expr_list();
 			if (exprList) {
 				const paramType = freshVar('COALESCE', 'any');
 				const params: FunctionParams = {
 					kind: 'VariableLengthParams',
 					paramType: '?'
 				};
-				const paramsTypeList = traverseExprListParameters(
-					exprList,
-					params,
-					traverseContext
-				);
+				const paramsTypeList = traverseExprListParameters(exprList, params, traverseContext);
 				paramsTypeList.forEach((typeVar, paramIndex) => {
 					traverseContext.constraints.push({
 						expression: `${runtimeFunctionCall.getText()}_param${paramIndex + 1}`,
@@ -2110,10 +1840,7 @@ function traverseSimpleExpr(
 	if (simpleExpr instanceof SimpleExprFunctionContext) {
 		const functionIdentifier = getFunctionName(simpleExpr);
 
-		if (
-			functionIdentifier === 'concat_ws' ||
-			functionIdentifier?.toLowerCase() === 'concat'
-		) {
+		if (functionIdentifier === 'concat_ws' || functionIdentifier?.toLowerCase() === 'concat') {
 			const varcharType = freshVar(simpleExpr.getText(), 'varchar');
 			const params: VariableLengthParams = {
 				kind: 'VariableLengthParams',
@@ -2145,11 +1872,7 @@ function traverseSimpleExpr(
 				kind: 'FixedLengthParams',
 				paramsType: [functionType]
 			};
-			const paramsType = walkFunctionParameters(
-				simpleExpr,
-				params,
-				traverseContext
-			);
+			const paramsType = walkFunctionParameters(simpleExpr, params, traverseContext);
 			//The return value has the same type as the first argument
 			traverseContext.constraints.push({
 				expression: simpleExpr.getText(),
@@ -2181,10 +1904,7 @@ function traverseSimpleExpr(
 		}
 
 		if (functionIdentifier === 'datediff') {
-			const udfExprList = simpleExpr
-				.functionCall()
-				.udfExprList()
-				?.udfExpr_list();
+			const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr_list();
 			if (udfExprList) {
 				udfExprList.forEach((inExpr) => {
 					const expr = inExpr.expr();
@@ -2202,14 +1922,8 @@ function traverseSimpleExpr(
 			return freshVar(simpleExpr.getText(), 'bigint');
 		}
 
-		if (
-			functionIdentifier === 'period_add' ||
-			functionIdentifier === 'period_diff'
-		) {
-			const udfExprList = simpleExpr
-				.functionCall()
-				.udfExprList()
-				?.udfExpr_list();
+		if (functionIdentifier === 'period_add' || functionIdentifier === 'period_diff') {
+			const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr_list();
 			if (udfExprList) {
 				udfExprList.forEach((inExpr) => {
 					const expr = inExpr.expr();
@@ -2255,10 +1969,7 @@ function traverseSimpleExpr(
 			return varcharParam;
 		}
 
-		if (
-			functionIdentifier === 'length' ||
-			functionIdentifier === 'char_length'
-		) {
+		if (functionIdentifier === 'length' || functionIdentifier === 'char_length') {
 			const varcharParam = freshVar('varchar', 'varchar');
 			const params: FixedLengthParams = {
 				kind: 'FixedLengthParams',
@@ -2269,10 +1980,7 @@ function traverseSimpleExpr(
 		}
 		if (functionIdentifier === 'abs') {
 			const functionType = freshVar('number', 'number');
-			const udfExprList = simpleExpr
-				.functionCall()
-				.udfExprList()
-				?.udfExpr_list();
+			const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr_list();
 			udfExprList?.forEach((expr) => {
 				const param1 = traverseExpr(expr.expr(), traverseContext);
 				traverseContext.constraints.push({
@@ -2288,10 +1996,7 @@ function traverseSimpleExpr(
 		}
 		if (functionIdentifier === 'ceiling' || functionIdentifier === 'ceil') {
 			const functionType = freshVar('number', 'number');
-			const udfExprList = simpleExpr
-				.functionCall()
-				.udfExprList()
-				?.udfExpr_list();
+			const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr_list();
 			udfExprList?.forEach((expr) => {
 				const param1 = traverseExpr(expr.expr(), traverseContext);
 				traverseContext.constraints.push({
@@ -2306,10 +2011,7 @@ function traverseSimpleExpr(
 			return functionType;
 		}
 		if (functionIdentifier === 'timestampdiff') {
-			const udfExprList = simpleExpr
-				.functionCall()
-				.udfExprList()
-				?.udfExpr_list();
+			const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr_list();
 			if (udfExprList) {
 				const [first, ...rest] = udfExprList;
 				const unit = first.getText().trim().toLowerCase();
@@ -2332,10 +2034,7 @@ function traverseSimpleExpr(
 
 		if (functionIdentifier === 'ifnull' || functionIdentifier === 'nullif') {
 			const functionType = freshVar(simpleExpr.getText(), '?');
-			const udfExprList = simpleExpr
-				.functionCall()
-				.udfExprList()
-				?.udfExpr_list();
+			const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr_list();
 			if (udfExprList) {
 				const [expr1, expr2] = udfExprList;
 
@@ -2363,10 +2062,7 @@ function traverseSimpleExpr(
 		) {
 			//unhex (str) - TODO - have input constraint = string
 			const functionType = freshVar(simpleExpr.getText(), 'char');
-			const udfExprList = simpleExpr
-				.functionCall()
-				.udfExprList()
-				?.udfExpr_list();
+			const udfExprList = simpleExpr.functionCall().udfExprList()?.udfExpr_list();
 			if (udfExprList) {
 				const [expr1] = udfExprList;
 				const paramType = traverseExpr(expr1.expr(), traverseContext);
@@ -2392,15 +2088,10 @@ function traverseSimpleExpr(
 		}
 	}
 
-	throw Error(
-		`traverseSimpleExpr - not supported: ${simpleExpr.constructor.name}`
-	);
+	throw Error(`traverseSimpleExpr - not supported: ${simpleExpr.constructor.name}`);
 }
 
-function traverseWindowFunctionCall(
-	windowFunctionCall: WindowFunctionCallContext,
-	traverseContext: TraverseContext
-) {
+function traverseWindowFunctionCall(windowFunctionCall: WindowFunctionCallContext, traverseContext: TraverseContext) {
 	if (
 		windowFunctionCall.ROW_NUMBER_SYMBOL() ||
 		windowFunctionCall.RANK_SYMBOL() ||
@@ -2419,22 +2110,13 @@ function traverseWindowFunctionCall(
 		const expr = exprWithParentheses.expr();
 		return traverseExpr(expr, traverseContext);
 	}
-	throw Error(
-		`No support for expression${windowFunctionCall.constructor.name}`
-	);
+	throw Error(`No support for expression${windowFunctionCall.constructor.name}`);
 }
 
-function traverseExprListParameters(
-	exprList: ExprContext[],
-	params: FunctionParams,
-	traverseContext: TraverseContext
-) {
+function traverseExprListParameters(exprList: ExprContext[], params: FunctionParams, traverseContext: TraverseContext) {
 	return exprList.map((expr, paramIndex) => {
 		const exprType = traverseExpr(expr, traverseContext);
-		const paramType =
-			params.kind === 'FixedLengthParams'
-				? params.paramsType[paramIndex]
-				: freshVar(params.paramType, params.paramType);
+		const paramType = params.kind === 'FixedLengthParams' ? params.paramsType[paramIndex] : freshVar(params.paramType, params.paramType);
 		traverseContext.constraints.push({
 			expression: expr.getText(),
 			type1: exprType,
@@ -2445,16 +2127,9 @@ function traverseExprListParameters(
 	});
 }
 
-function walkFunctionParameters(
-	simpleExprFunction: SimpleExprFunctionContext,
-	params: FunctionParams,
-	traverseContext: TraverseContext
-) {
+function walkFunctionParameters(simpleExprFunction: SimpleExprFunctionContext, params: FunctionParams, traverseContext: TraverseContext) {
 	const functionName = getFunctionName(simpleExprFunction);
-	const udfExprList = simpleExprFunction
-		.functionCall()
-		.udfExprList()
-		?.udfExpr_list();
+	const udfExprList = simpleExprFunction.functionCall().udfExprList()?.udfExpr_list();
 	if (udfExprList) {
 		const paramTypes = udfExprList
 			.filter((_, paramIndex) => {
@@ -2466,10 +2141,7 @@ function walkFunctionParameters(
 				traverseContext.constraints.push({
 					expression: expr.getText(),
 					type1: exprType,
-					type2:
-						params.kind === 'FixedLengthParams'
-							? params.paramsType[paramIndex]
-							: freshVar(params.paramType, params.paramType)
+					type2: params.kind === 'FixedLengthParams' ? params.paramsType[paramIndex] : freshVar(params.paramType, params.paramType)
 				});
 				return exprType;
 			});
@@ -2481,10 +2153,7 @@ function walkFunctionParameters(
 			const inSumExprType = traverseExpr(inExpr, traverseContext);
 			traverseContext.constraints.push({
 				expression: inExpr.getText(),
-				type1:
-					params.kind === 'FixedLengthParams'
-						? params.paramsType[paramIndex]
-						: freshVar(params.paramType, params.paramType),
+				type1: params.kind === 'FixedLengthParams' ? params.paramsType[paramIndex] : freshVar(params.paramType, params.paramType),
 				type2: inSumExprType,
 				mostGeneralType: true
 			});
@@ -2505,11 +2174,7 @@ export function filterColumns(
 		.filter((t) => t.table.toLowerCase() === table.name.toLowerCase())
 		.map((s) => ({ ...s, tableAlias: tableAlias }));
 	const tableColumns1 = dbSchema
-		.filter(
-			(schema) =>
-				schema.table.toLowerCase() === table.name.toLowerCase() &&
-				(schema.schema === table.prefix || table.prefix === '')
-		)
+		.filter((schema) => schema.table.toLowerCase() === table.name.toLowerCase() && (schema.schema === table.prefix || table.prefix === ''))
 		.map((tableColumn) => {
 			//name and colum are the same on the leaf table
 			const r: ColumnDef = {
@@ -2526,16 +2191,9 @@ export function filterColumns(
 	return result;
 }
 
-export function selectAllColumns(
-	tablePrefix: string,
-	fromColumns: ColumnDef[]
-): ColumnDef[] {
+export function selectAllColumns(tablePrefix: string, fromColumns: ColumnDef[]): ColumnDef[] {
 	return fromColumns.filter((column) => {
-		if (
-			tablePrefix === '' ||
-			tablePrefix === column.tableAlias ||
-			tablePrefix === column.table
-		) {
+		if (tablePrefix === '' || tablePrefix === column.tableAlias || tablePrefix === column.table) {
 			return true;
 		}
 		return false;
@@ -2552,15 +2210,11 @@ function filterUsingFields(joinedFields: ColumnDef[], usingFields: string[]) {
 	});
 }
 
-export function isMultipleRowResult(
-	selectStatement: SelectStatementContext,
-	fromColumns: ColumnDef[]
-) {
+export function isMultipleRowResult(selectStatement: SelectStatementContext, fromColumns: ColumnDef[]) {
 	if (isLimitOne(selectStatement)) {
 		return false;
 	}
-	const querySpecs =
-		getAllQuerySpecificationsFromSelectStatement(selectStatement);
+	const querySpecs = getAllQuerySpecificationsFromSelectStatement(selectStatement);
 	if (querySpecs.length === 1) {
 		//UNION queries are multipleRowsResult = true
 		const fromClause = querySpecs[0].fromClause();
@@ -2568,9 +2222,7 @@ export function isMultipleRowResult(
 			return false;
 		}
 		if (querySpecs[0].selectItemList().getChildCount() === 1) {
-			const selectItem = <SelectItemContext>(
-				querySpecs[0].selectItemList().getChild(0)
-			);
+			const selectItem = <SelectItemContext>querySpecs[0].selectItemList().getChild(0);
 			//if selectItem = * (TerminalNode) childCount = 0; selectItem.expr() throws exception
 			const expr = selectItem.getChildCount() > 0 ? selectItem.expr() : null;
 			if (expr) {
@@ -2581,17 +2233,13 @@ export function isMultipleRowResult(
 				}
 			}
 		}
-		const joinedTable = fromClause
-			.tableReferenceList()
-			?.tableReference(0)
-			.joinedTable_list();
+		const joinedTable = fromClause.tableReferenceList()?.tableReference(0).joinedTable_list();
 		if (joinedTable && joinedTable.length > 0) {
 			return true;
 		}
 
 		const whereClauseExpr = querySpecs[0].whereClause()?.expr();
-		const isMultipleRowResult =
-			whereClauseExpr && verifyMultipleResult2(whereClauseExpr, fromColumns);
+		const isMultipleRowResult = whereClauseExpr && verifyMultipleResult2(whereClauseExpr, fromColumns);
 		if (isMultipleRowResult === false) {
 			return false;
 		}
@@ -2611,10 +2259,7 @@ function isLimitOne(selectStatement: SelectStatementContext) {
 	return false;
 }
 
-export function verifyMultipleResult2(
-	exprContext: ExprContext,
-	fromColumns: ColumnDef[]
-): boolean {
+export function verifyMultipleResult2(exprContext: ExprContext, fromColumns: ColumnDef[]): boolean {
 	if (exprContext instanceof ExprIsContext) {
 		const boolPri = exprContext.boolPri();
 
@@ -2622,10 +2267,7 @@ export function verifyMultipleResult2(
 			if (boolPri.compOp().EQUAL_OPERATOR()) {
 				const compareLeft = boolPri.boolPri();
 				const compareRight = boolPri.predicate();
-				if (
-					isUniqueKeyComparation(compareLeft, fromColumns) ||
-					isUniqueKeyComparation(compareRight, fromColumns)
-				) {
+				if (isUniqueKeyComparation(compareLeft, fromColumns) || isUniqueKeyComparation(compareRight, fromColumns)) {
 					return false; //multipleRow = false
 				}
 			}
@@ -2637,9 +2279,7 @@ export function verifyMultipleResult2(
 		return true;
 	}
 	if (exprContext instanceof ExprAndContext) {
-		const oneIsSingleResult = exprContext
-			.expr_list()
-			.some((expr) => verifyMultipleResult2(expr, fromColumns) === false);
+		const oneIsSingleResult = exprContext.expr_list().some((expr) => verifyMultipleResult2(expr, fromColumns) === false);
 		return oneIsSingleResult === false;
 	}
 	// if (exprContext instanceof ExprXorContext) {
@@ -2652,10 +2292,7 @@ export function verifyMultipleResult2(
 	throw Error(`Unknow type:${exprContext.constructor.name}`);
 }
 
-function isUniqueKeyComparation(
-	compare: BoolPriContext | PredicateContext,
-	fromColumns: ColumnDef[]
-) {
+function isUniqueKeyComparation(compare: BoolPriContext | PredicateContext, fromColumns: ColumnDef[]) {
 	const tokens = getSimpleExpressions(compare);
 	if (tokens.length === 1 && tokens[0] instanceof SimpleExprColumnRefContext) {
 		const fieldName = splitName(tokens[0].getText());
@@ -2668,17 +2305,12 @@ function isUniqueKeyComparation(
 	return false; //isUniqueKeyComparation = false
 }
 
-export function getOrderByColumns(
-	fromColumns: ColumnDef[],
-	selectColumns: TypeAndNullInfer[]
-): string[] {
+export function getOrderByColumns(fromColumns: ColumnDef[], selectColumns: TypeAndNullInfer[]): string[] {
 	const orderByColumns: string[] = [];
 	fromColumns.forEach((col) => {
 		const ambiguous = isAmbiguous(fromColumns, col.columnName);
 		if (!ambiguous) {
-			const exists = orderByColumns.find(
-				(orderBy) => orderBy === col.columnName
-			);
+			const exists = orderByColumns.find((orderBy) => orderBy === col.columnName);
 			if (!exists) {
 				orderByColumns.push(col.columnName);
 			}
@@ -2690,9 +2322,7 @@ export function getOrderByColumns(
 		}
 	});
 	selectColumns.forEach((col) => {
-		const duplicated = selectColumns.filter(
-			(orderBy) => orderBy.name === col.name
-		);
+		const duplicated = selectColumns.filter((orderBy) => orderBy.name === col.name);
 		if (duplicated.length <= 1) {
 			const exists = orderByColumns.find((orderBy) => orderBy === col.name);
 			if (!exists) {

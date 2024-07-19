@@ -14,20 +14,8 @@ import {
 	type Returning_clauseContext,
 	type Select_coreContext
 } from '@wsporto/ts-mysql-parser/dist/sqlite';
-import type {
-	ColumnDef,
-	FieldName,
-	TraverseContext,
-	TypeAndNullInfer,
-	TypeAndNullInferParam
-} from '../mysql-query-analyzer/types';
-import {
-	filterColumns,
-	findColumn,
-	getExpressions,
-	includeColumn,
-	splitName
-} from '../mysql-query-analyzer/select-columns';
+import type { ColumnDef, FieldName, TraverseContext, TypeAndNullInfer, TypeAndNullInferParam } from '../mysql-query-analyzer/types';
+import { filterColumns, findColumn, getExpressions, includeColumn, splitName } from '../mysql-query-analyzer/select-columns';
 import { freshVar } from '../mysql-query-analyzer/collect-constraints';
 import {
 	type DeleteResult,
@@ -43,10 +31,7 @@ import { type Either, left, right } from 'fp-ts/lib/Either';
 import type { TypeSqlError } from '../types';
 import type { ParserRuleContext } from '@wsporto/ts-mysql-parser';
 
-function traverse_Sql_stmtContext(
-	sql_stmt: Sql_stmtContext,
-	traverseContext: TraverseContext
-): TraverseResult2 {
+function traverse_Sql_stmtContext(sql_stmt: Sql_stmtContext, traverseContext: TraverseContext): TraverseResult2 {
 	const select_stmt = sql_stmt.select_stmt();
 	if (select_stmt) {
 		const selectResult = traverse_select_stmt(select_stmt, traverseContext);
@@ -96,13 +81,10 @@ function traverse_select_stmt(
 	const common_table_stmt = select_stmt.common_table_stmt();
 	if (common_table_stmt) {
 		const recursive = common_table_stmt.RECURSIVE_() != null;
-		const common_table_expression =
-			common_table_stmt.common_table_expression_list();
+		const common_table_expression = common_table_stmt.common_table_expression_list();
 		common_table_expression.forEach((common_table_expression) => {
 			const table_name = common_table_expression.table_name();
-			const recursiveNames = common_table_expression
-				.column_name_list()
-				.map((column_name) => column_name.getText());
+			const recursiveNames = common_table_expression.column_name_list().map((column_name) => column_name.getText());
 			const select_stmt = common_table_expression.select_stmt();
 			const select_stmt_result = traverse_select_stmt(
 				select_stmt,
@@ -114,7 +96,7 @@ function traverse_select_stmt(
 			select_stmt_result.columns.forEach((col, index) => {
 				traverseContext.withSchema.push({
 					table: table_name.getText(),
-					columnName: recursive ? recursiveNames[index] ?? col.name : col.name,
+					columnName: recursive ? (recursiveNames[index] ?? col.name) : col.name,
 					columnType: col.type,
 					columnKey: '',
 					notNull: col.notNull
@@ -129,26 +111,13 @@ function traverse_select_stmt(
 	}
 
 	const [mainSelect, ...unionSelect] = select_stmt.select_core_list();
-	const mainQueryResult = traverse_select_core(
-		mainSelect,
-		traverseContext,
-		subQuery,
-		recursive,
-		recursiveNames
-	);
+	const mainQueryResult = traverse_select_core(mainSelect, traverseContext, subQuery, recursive, recursiveNames);
 	const fromColumns = recursive
-		? mainQueryResult.columns.map((col, index) =>
-				mapTypeAndNullInferToColumnDef(col, recursiveNames[index])
-			)
+		? mainQueryResult.columns.map((col, index) => mapTypeAndNullInferToColumnDef(col, recursiveNames[index]))
 		: traverseContext.fromColumns;
 
 	unionSelect.forEach((select_core) => {
-		const unionResult = traverse_select_core(
-			select_core,
-			{ ...traverseContext, fromColumns },
-			subQuery,
-			recursive
-		);
+		const unionResult = traverse_select_core(select_core, { ...traverseContext, fromColumns }, subQuery, recursive);
 		unionResult.columns.forEach((col, colIndex) => {
 			mainQueryResult.columns[colIndex].table = '';
 			traverseContext.constraints.push({
@@ -159,17 +128,12 @@ function traverse_select_stmt(
 		});
 	});
 
-	const sortedParameters = traverseContext.parameters.sort(
-		(param1, param2) => param1.paramIndex - param2.paramIndex
-	);
+	const sortedParameters = traverseContext.parameters.sort((param1, param2) => param1.paramIndex - param2.paramIndex);
 	const selectResult: SelectResult = {
 		queryType: 'Select',
 		parameters: sortedParameters,
 		columns: mainQueryResult.columns,
-		multipleRowsResult: isMultipleRowResult(
-			select_stmt,
-			mainQueryResult.fromColumns
-		),
+		multipleRowsResult: isMultipleRowResult(select_stmt, mainQueryResult.fromColumns),
 		relations: traverseContext.relations,
 		dynamicQueryInfo: traverseContext.dynamicSqlInfo2,
 		constraints: traverseContext.constraints
@@ -177,9 +141,7 @@ function traverse_select_stmt(
 	const order_by_stmt = select_stmt.order_by_stmt();
 	let hasOrderByParameter = false;
 	if (order_by_stmt) {
-		const selectColumns = mainQueryResult.columns.map((col, index) =>
-			mapTypeAndNullInferToColumnDef(col, recursiveNames[index])
-		);
+		const selectColumns = mainQueryResult.columns.map((col, index) => mapTypeAndNullInferToColumnDef(col, recursiveNames[index]));
 		const ordering_term_list = order_by_stmt.ordering_term_list();
 		ordering_term_list.forEach((ordering_term) => {
 			const expr = ordering_term.expr();
@@ -193,10 +155,7 @@ function traverse_select_stmt(
 			}
 		});
 		if (hasOrderByParameter) {
-			const orderByColumns = getOrderByColumns(
-				mainQueryResult.fromColumns,
-				mainQueryResult.columns
-			);
+			const orderByColumns = getOrderByColumns(mainQueryResult.fromColumns, mainQueryResult.columns);
 			selectResult.orderByColumns = orderByColumns;
 		}
 	}
@@ -227,19 +186,14 @@ function traverse_select_stmt(
 			});
 		}
 		traverseContext.parameters.slice(paramsBefore).forEach((_, index) => {
-			traverseContext.dynamicSqlInfo2.limitOffset?.parameters.push(
-				paramsBefore + index
-			);
+			traverseContext.dynamicSqlInfo2.limitOffset?.parameters.push(paramsBefore + index);
 		});
 	}
 
 	return selectResult;
 }
 
-function mapTypeAndNullInferToColumnDef(
-	col: TypeAndNullInfer,
-	name?: string
-): ColumnDef {
+function mapTypeAndNullInferToColumnDef(col: TypeAndNullInfer, name?: string): ColumnDef {
 	return {
 		columnName: name ?? col.name,
 		columnType: col.type,
@@ -262,12 +216,7 @@ function traverse_select_core(
 
 	const table_or_subquery = select_core.table_or_subquery_list();
 	if (table_or_subquery) {
-		const fields = traverse_table_or_subquery(
-			table_or_subquery,
-			null,
-			null,
-			traverseContext
-		);
+		const fields = traverse_table_or_subquery(table_or_subquery, null, null, traverseContext);
 		columnsResult.push(...fields);
 	}
 	const join_clause = select_core.join_clause();
@@ -275,20 +224,12 @@ function traverse_select_core(
 		const join_table_or_subquery = join_clause.table_or_subquery_list();
 		const join_constraint_list = join_clause.join_constraint_list();
 		const join_operator_list = join_clause.join_operator_list();
-		const fields = traverse_table_or_subquery(
-			join_table_or_subquery,
-			join_constraint_list,
-			join_operator_list,
-			traverseContext
-		);
+		const fields = traverse_table_or_subquery(join_table_or_subquery, join_constraint_list, join_operator_list, traverseContext);
 		columnsResult.push(...fields);
 	}
 
 	const result_column = select_core.result_column_list();
-	const fromColumns =
-		subQuery || recursive
-			? traverseContext.fromColumns.concat(columnsResult)
-			: columnsResult;
+	const fromColumns = subQuery || recursive ? traverseContext.fromColumns.concat(columnsResult) : columnsResult;
 
 	result_column.forEach((result_column) => {
 		if (result_column.STAR()) {
@@ -324,10 +265,7 @@ function traverse_select_core(
 			if (alias) {
 				traverseContext.relations
 					.filter(
-						(relation) =>
-							relation.joinColumn === exprType.name &&
-							(relation.name === exprType.table ||
-								relation.alias === exprType.table)
+						(relation) => relation.joinColumn === exprType.name && (relation.name === exprType.table || relation.alias === exprType.table)
 					)
 					.forEach((relation) => {
 						relation.joinColumn = alias;
@@ -342,11 +280,7 @@ function traverse_select_core(
 			}
 
 			if (!traverseContext.subQuery) {
-				const { relations, params } = extractRelationsAndParams(
-					expr,
-					fromColumns,
-					traverseContext.parameters
-				);
+				const { relations, params } = extractRelationsAndParams(expr, fromColumns, traverseContext.parameters);
 				traverseContext.dynamicSqlInfo2.select.push({
 					fragment: extractOriginalSql(result_column),
 					fragmentWitoutAlias: extractOriginalSql(expr),
@@ -359,13 +293,12 @@ function traverse_select_core(
 
 	const whereExpr = select_core._whereExpr;
 	if (whereExpr) {
-		traverse_expr(whereExpr, { ...traverseContext, fromColumns: fromColumns });
+		traverse_expr(whereExpr, {
+			...traverseContext,
+			fromColumns: fromColumns
+		});
 		if (!traverseContext.subQuery) {
-			const { relations, params } = extractRelationsAndParams(
-				whereExpr,
-				fromColumns,
-				traverseContext.parameters
-			);
+			const { relations, params } = extractRelationsAndParams(whereExpr, fromColumns, traverseContext.parameters);
 			traverseContext.dynamicSqlInfo2.where.push({
 				fragment: `AND ${extractOriginalSql(whereExpr)}`,
 				dependOnRelations: [...new Set(relations)], //remove duplicated
@@ -402,28 +335,19 @@ function traverse_select_core(
 	const querySpecification: QuerySpecificationResult = {
 		columns: listType.map((col) => ({
 			...col,
-			notNull:
-				col.notNull ||
-				isNotNull(col.name, whereExpr) ||
-				isNotNull(col.name, havingExpr)
+			notNull: col.notNull || isNotNull(col.name, whereExpr) || isNotNull(col.name, havingExpr)
 		})),
 		fromColumns: columnsResult //TODO - return isMultipleRowResult instead
 	};
 	return querySpecification;
 }
 
-function extractRelationsAndParams(
-	expr: ExprContext,
-	fromColumns: ColumnDef[],
-	parameters: TypeAndNullInferParam[]
-) {
+function extractRelationsAndParams(expr: ExprContext, fromColumns: ColumnDef[], parameters: TypeAndNullInferParam[]) {
 	const columnsRef = getExpressions(expr, Column_nameContext);
 	const relations = columnsRef
 		.filter((expr) => !expr.isSubQuery)
 		.map((colRef) => {
-			const fieldName = splitName(
-				(colRef.expr as ExprContext).parentCtx!.getText()
-			);
+			const fieldName = splitName((colRef.expr as ExprContext).parentCtx!.getText());
 			const column = findColumn(fieldName, fromColumns);
 			return column.tableAlias || column.table;
 		});
@@ -449,10 +373,7 @@ function traverse_table_or_subquery(
 	table_or_subquery_list.forEach((table_or_subquery, index) => {
 		const numParamsBefore = traverseContext.parameters.length;
 
-		const isLeftJoin =
-			index > 0 && join_operator_list
-				? join_operator_list[index - 1]?.LEFT_() != null
-				: false;
+		const isLeftJoin = index > 0 && join_operator_list ? join_operator_list[index - 1]?.LEFT_() != null : false;
 		const table_name = table_or_subquery.table_name();
 		const table_alias_temp = table_or_subquery.table_alias()?.getText() || '';
 		let tableOrSubqueryFields: ColumnDef[] = [];
@@ -468,15 +389,10 @@ function traverse_table_or_subquery(
 				? ''
 				: table_alias_temp;
 
-		const join_constraint =
-			join_constraint_list && index > 0
-				? join_constraint_list[index - 1]
-				: undefined;
+		const join_constraint = join_constraint_list && index > 0 ? join_constraint_list[index - 1] : undefined;
 		const asAlias = table_or_subquery.AS_() || false;
 		const tableAlias = table_or_subquery.table_alias()?.getText();
-		const tableOrSubqueryName = table_name
-			? table_name.any_name().getText()
-			: '';
+		const tableOrSubqueryName = table_name ? table_name.any_name().getText() : '';
 		const schema = table_or_subquery.schema_name()?.getText() || '';
 
 		if (table_name) {
@@ -484,24 +400,15 @@ function traverse_table_or_subquery(
 				name: table_name.getText(),
 				prefix: schema
 			};
-			tableOrSubqueryFields = filterColumns(
-				traverseContext.dbSchema,
-				traverseContext.withSchema,
-				table_alias,
-				tableName
-			);
-			const usingFields = join_constraint?.USING_()
-				? join_constraint
-						?.column_name_list()
-						.map((column_name) => column_name.getText())
-				: [];
-			const filteredFields =
-				usingFields.length > 0
-					? filterUsingFields(tableOrSubqueryFields, usingFields)
-					: tableOrSubqueryFields;
+			tableOrSubqueryFields = filterColumns(traverseContext.dbSchema, traverseContext.withSchema, table_alias, tableName);
+			const usingFields = join_constraint?.USING_() ? join_constraint?.column_name_list().map((column_name) => column_name.getText()) : [];
+			const filteredFields = usingFields.length > 0 ? filterUsingFields(tableOrSubqueryFields, usingFields) : tableOrSubqueryFields;
 			if (isLeftJoin) {
 				allFields.push(
-					...filteredFields.map((field) => ({ ...field, notNull: false }))
+					...filteredFields.map((field) => ({
+						...field,
+						notNull: false
+					}))
 				);
 			} else {
 				allFields.push(...filteredFields);
@@ -529,17 +436,10 @@ function traverse_table_or_subquery(
 		}
 		const table_or_subquery_list2 = table_or_subquery.table_or_subquery_list();
 		if (table_or_subquery_list2.length > 0) {
-			tableOrSubqueryFields = traverse_table_or_subquery(
-				table_or_subquery_list2,
-				null,
-				null,
-				traverseContext
-			);
+			tableOrSubqueryFields = traverse_table_or_subquery(table_or_subquery_list2, null, null, traverseContext);
 			allFields.push(...tableOrSubqueryFields);
 		}
-		const idColumn = tableOrSubqueryFields.find(
-			(field) => field.columnKey === 'PRI'
-		)?.columnName!;
+		const idColumn = tableOrSubqueryFields.find((field) => field.columnKey === 'PRI')?.columnName!;
 		const relation: Relation2 = {
 			name: asAlias ? table_alias : tableOrSubqueryName,
 			alias: table_alias,
@@ -553,41 +453,28 @@ function traverse_table_or_subquery(
 			//index 0 is the FROM (root relation)
 			const expr = join_constraint.expr(); //ON expr
 			if (expr) {
-				traverse_expr(expr, { ...traverseContext, fromColumns: allFields });
+				traverse_expr(expr, {
+					...traverseContext,
+					fromColumns: allFields
+				});
 
 				const allJoinColumsn = getAllColumns(expr);
 				allJoinColumsn.forEach((joinColumn) => {
 					const column = allFields.find(
-						(col) =>
-							col.columnName === joinColumn.name &&
-							(col.tableAlias === joinColumn.prefix ||
-								col.table === joinColumn.prefix)
+						(col) => col.columnName === joinColumn.name && (col.tableAlias === joinColumn.prefix || col.table === joinColumn.prefix)
 					)!;
 					const filterUniqueKeys = allFields.filter(
-						(col) =>
-							(joinColumn.prefix === col.table ||
-								joinColumn.prefix === col.tableAlias) &&
-							col.columnKey === 'PRI'
+						(col) => (joinColumn.prefix === col.table || joinColumn.prefix === col.tableAlias) && col.columnKey === 'PRI'
 					);
-					const compositeKey = filterUniqueKeys.find(
-						(uni) => uni.columnName === column.columnName
-					);
-					const notUnique =
-						(filterUniqueKeys.length > 1 && compositeKey) ||
-						(column?.columnKey !== 'UNI' && column?.columnKey !== 'PRI');
-					if (
-						joinColumn.prefix !== relation.name &&
-						joinColumn.prefix !== relation.alias
-					) {
+					const compositeKey = filterUniqueKeys.find((uni) => uni.columnName === column.columnName);
+					const notUnique = (filterUniqueKeys.length > 1 && compositeKey) || (column?.columnKey !== 'UNI' && column?.columnKey !== 'PRI');
+					if (joinColumn.prefix !== relation.name && joinColumn.prefix !== relation.alias) {
 						relation.parentRelation = joinColumn.prefix;
 						if (notUnique) {
 							relation.parentCardinality = 'many';
 						}
 					}
-					if (
-						joinColumn.prefix === relation.name ||
-						joinColumn.prefix === relation.alias
-					) {
+					if (joinColumn.prefix === relation.name || joinColumn.prefix === relation.alias) {
 						if (notUnique) {
 							relation.cardinality = 'many';
 						}
@@ -600,16 +487,10 @@ function traverse_table_or_subquery(
 
 			//dynamic query
 			const fragment = `${
-				join_operator_list != null && index > 0
-					? extractOriginalSql(join_operator_list[index - 1])
-					: 'FROM'
-			} ${extractOriginalSql(table_or_subquery_list[index])}${
-				join_constraint != null ? ` ${extractOriginalSql(join_constraint)}` : ''
-			}`;
+				join_operator_list != null && index > 0 ? extractOriginalSql(join_operator_list[index - 1]) : 'FROM'
+			} ${extractOriginalSql(table_or_subquery_list[index])}${join_constraint != null ? ` ${extractOriginalSql(join_constraint)}` : ''}`;
 
-			const params = traverseContext.parameters
-				.slice(numParamsBefore)
-				.map((_, index) => index + numParamsBefore);
+			const params = traverseContext.parameters.slice(numParamsBefore).map((_, index) => index + numParamsBefore);
 
 			traverseContext.dynamicSqlInfo2.from.push({
 				fragment: fragment,
@@ -624,10 +505,7 @@ function traverse_table_or_subquery(
 	return allFields;
 }
 
-function traverse_expr(
-	expr: ExprContext,
-	traverseContext: TraverseContext
-): TypeAndNullInfer {
+function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): TypeAndNullInfer {
 	const function_name = expr.function_name()?.getText().toLowerCase();
 	if (function_name === 'avg') {
 		const functionType = freshVar(expr.getText(), 'REAL');
@@ -815,11 +693,7 @@ function traverse_expr(
 			table: functionType.table || ''
 		};
 	}
-	if (
-		function_name === 'date' ||
-		function_name === 'time' ||
-		function_name === 'datetime'
-	) {
+	if (function_name === 'date' || function_name === 'time' || function_name === 'datetime') {
 		const functionType = freshVar(expr.getText(), 'DATE');
 		const paramExpr = expr.expr(0);
 		const paramType = traverse_expr(paramExpr, traverseContext);
@@ -891,11 +765,7 @@ function traverse_expr(
 			table: functionType.table || ''
 		};
 	}
-	if (
-		function_name === 'row_number' ||
-		function_name === 'rank' ||
-		function_name === 'dense_rank'
-	) {
+	if (function_name === 'row_number' || function_name === 'rank' || function_name === 'dense_rank') {
 		const functionType = freshVar(expr.getText(), 'INTEGER');
 		return {
 			name: functionType.name,
@@ -1088,8 +958,7 @@ function traverse_expr(
 			type2: typeLeft.type
 		});
 		const isDateFunctionContext =
-			expr.parentCtx instanceof ExprContext &&
-			expr.parentCtx.function_name()?.getText().toLowerCase() === 'date';
+			expr.parentCtx instanceof ExprContext && expr.parentCtx.function_name()?.getText().toLowerCase() === 'date';
 
 		if (!isDateFunctionContext) {
 			traverseContext.constraints.push({
@@ -1222,11 +1091,7 @@ function traverse_expr(
 			//NOT IN (SELECT...)
 			const select_stmt = expr.select_stmt();
 			if (select_stmt) {
-				const select_stmt_type = traverse_select_stmt(
-					select_stmt,
-					traverseContext,
-					true
-				);
+				const select_stmt_type = traverse_select_stmt(select_stmt, traverseContext, true);
 				const selectType = select_stmt_type.columns[0];
 				traverseContext.constraints.push({
 					expression: expr.getText(),
@@ -1251,11 +1116,7 @@ function traverse_expr(
 			//IN (SELECT...)
 			const select_stmt2 = rightExpr.select_stmt();
 			if (select_stmt2) {
-				const select_stmt_type = traverse_select_stmt(
-					select_stmt2,
-					traverseContext,
-					true
-				);
+				const select_stmt_type = traverse_select_stmt(select_stmt2, traverseContext, true);
 				const selectType2 = select_stmt_type.columns[0];
 				traverseContext.constraints.push({
 					expression: expr.getText(),
@@ -1318,11 +1179,7 @@ function traverse_expr(
 	}
 	const select_stmt = expr.select_stmt();
 	if (select_stmt) {
-		const subQueryType = traverse_select_stmt(
-			select_stmt,
-			{ ...traverseContext, subQuery: true },
-			true
-		);
+		const subQueryType = traverse_select_stmt(select_stmt, { ...traverseContext, subQuery: true }, true);
 		const type = { ...subQueryType.columns[0].type, table: '' };
 		return {
 			name: type.name,
@@ -1355,10 +1212,7 @@ function traverse_expr(
 		const whenTypes: TypeAndNullInfer[] = [];
 		expr.expr_list().forEach((expr_, index) => {
 			const type = traverse_expr(expr_, traverseContext);
-			if (
-				index % 2 === 0 &&
-				(!expr.ELSE_() || index < expr.expr_list().length - 1)
-			) {
+			if (index % 2 === 0 && (!expr.ELSE_() || index < expr.expr_list().length - 1)) {
 				whenTypes.push(type);
 			} else {
 				resultTypes.push(type);
@@ -1412,24 +1266,17 @@ function traverse_column_name(
 	return column;
 }
 
-export function isNotNull(
-	columnName: string,
-	where: ExprContext | null
-): boolean {
+export function isNotNull(columnName: string, where: ExprContext | null): boolean {
 	if (where == null) {
 		return false;
 	}
 	if (where.AND_()) {
-		const ifNullList = where
-			.expr_list()
-			.map((expr) => isNotNull(columnName, expr));
+		const ifNullList = where.expr_list().map((expr) => isNotNull(columnName, expr));
 		const result = ifNullList.some((v) => v);
 		return result;
 	}
 	if (where.OR_()) {
-		const possibleNullList = where
-			.expr_list()
-			.map((expr) => isNotNull(columnName, expr));
+		const possibleNullList = where.expr_list().map((expr) => isNotNull(columnName, expr));
 		const result = possibleNullList.every((v) => v);
 		return result;
 	}
@@ -1447,9 +1294,7 @@ function isNotNullExpr(columnName: string, expr: ExprContext): boolean {
 		expr.GT_EQ() ||
 		expr.LT() ||
 		expr.LT_EQ() ||
-		(expr.IS_() &&
-			expr.expr_list().length === 2 &&
-			expr.expr(1).getText() === 'notnull')
+		(expr.IS_() && expr.expr_list().length === 2 && expr.expr(1).getText() === 'notnull')
 	) {
 		const exprLeft = expr.expr(0);
 		const exprRight = expr.expr(1);
@@ -1466,10 +1311,7 @@ function isNotNullExpr(columnName: string, expr: ExprContext): boolean {
 	return false;
 }
 
-export function isMultipleRowResult(
-	select_stmt: Select_stmtContext,
-	fromColumns: ColumnDef[]
-) {
+export function isMultipleRowResult(select_stmt: Select_stmtContext, fromColumns: ColumnDef[]) {
 	if (select_stmt.select_core_list().length === 1) {
 		//UNION queries are multipleRowsResult = true
 		const select_core = select_stmt.select_core(0);
@@ -1477,23 +1319,16 @@ export function isMultipleRowResult(
 		if (!from) {
 			return false;
 		}
-		const groupBy = select_stmt
-			.select_core_list()
-			.some((select_core) => select_core.GROUP_() != null);
+		const groupBy = select_stmt.select_core_list().some((select_core) => select_core.GROUP_() != null);
 		if (groupBy) {
 			return true;
 		}
-		const agreegateFunction = select_core
-			.result_column_list()
-			.some((result_column) => isAgregateFunction(result_column));
+		const agreegateFunction = select_core.result_column_list().some((result_column) => isAgregateFunction(result_column));
 		if (agreegateFunction) {
 			return false;
 		}
 		const _whereExpr = select_core._whereExpr;
-		const isSingleResult =
-			select_core.join_clause() == null &&
-			_whereExpr &&
-			where_is_single_result(_whereExpr, fromColumns);
+		const isSingleResult = select_core.join_clause() == null && _whereExpr && where_is_single_result(_whereExpr, fromColumns);
 		if (isSingleResult === true) {
 			return false;
 		}
@@ -1540,29 +1375,21 @@ function isLimitOne(select_stmt: Select_stmtContext) {
 	return false;
 }
 
-function where_is_single_result(
-	whereExpr: ExprContext,
-	fromColumns: ColumnDef[]
-): boolean {
+function where_is_single_result(whereExpr: ExprContext, fromColumns: ColumnDef[]): boolean {
 	if (whereExpr.ASSIGN()) {
 		const isSingleResult = is_single_result(whereExpr, fromColumns);
 		return isSingleResult;
 	}
 	const expr_list = whereExpr.expr_list();
 	const onlyAnd = !whereExpr.OR_();
-	const oneSingle = expr_list.some((expr) =>
-		is_single_result(expr, fromColumns)
-	);
+	const oneSingle = expr_list.some((expr) => is_single_result(expr, fromColumns));
 	if (onlyAnd && oneSingle) {
 		return true;
 	}
 	return false;
 }
 
-function is_single_result(
-	expr: ExprContext,
-	fromColumns: ColumnDef[]
-): boolean {
+function is_single_result(expr: ExprContext, fromColumns: ColumnDef[]): boolean {
 	const expr1 = expr.expr(0);
 	const expr2 = expr.expr(1); //TODO: 1 = id
 	const column_name = expr1?.column_name();
@@ -1576,17 +1403,9 @@ function is_single_result(
 	return false;
 }
 
-function traverse_insert_stmt(
-	insert_stmt: Insert_stmtContext,
-	traverseContext: TraverseContext
-): InsertResult {
+function traverse_insert_stmt(insert_stmt: Insert_stmtContext, traverseContext: TraverseContext): InsertResult {
 	const table_name = insert_stmt.table_name();
-	const fromColumns = filterColumns(
-		traverseContext.dbSchema,
-		[],
-		'',
-		splitName(table_name.getText())
-	);
+	const fromColumns = filterColumns(traverseContext.dbSchema, [], '', splitName(table_name.getText()));
 	const columns = insert_stmt.column_name_list().map((column_name) => {
 		return traverse_column_name(column_name, null, {
 			...traverseContext,
@@ -1606,10 +1425,7 @@ function traverse_insert_stmt(
 					type1: col.columnType,
 					type2: exprType.type
 				});
-				const notNullColumn =
-					col.columnKey === 'PRI' && col.columnType.type === 'INTEGER'
-						? false
-						: col.notNull;
+				const notNullColumn = col.columnKey === 'PRI' && col.columnType.type === 'INTEGER' ? false : col.notNull;
 				insertColumns.push({
 					...param,
 					notNull: exprType.name === '?' ? notNullColumn : param.notNull
@@ -1628,20 +1444,14 @@ function traverse_insert_stmt(
 				type1: col.columnType,
 				type2: selectColumn.type
 			});
-			const notNullColumn =
-				col.columnKey === 'PRI' && col.columnType.type === 'INTEGER'
-					? false
-					: col.notNull;
+			const notNullColumn = col.columnKey === 'PRI' && col.columnType.type === 'INTEGER' ? false : col.notNull;
 			columnNullability.set(selectColumn.type.id, notNullColumn);
 		});
 
 		traverseContext.parameters.forEach((param) => {
 			insertColumns.push({
 				...param,
-				notNull:
-					columnNullability.get(param.type.id) != null
-						? columnNullability.get(param.type.id)!
-						: param.notNull
+				notNull: columnNullability.get(param.type.id) != null ? columnNullability.get(param.type.id)! : param.notNull
 			});
 		});
 	}
@@ -1658,9 +1468,7 @@ function traverse_insert_stmt(
 			const expr = upsert_clause.expr(index);
 			const table_name = expr.table_name();
 			const excludedColumns =
-				table_name && table_name.getText() === 'excluded'
-					? fromColumns.map((col) => ({ ...col, table: 'excluded' }))
-					: [];
+				table_name && table_name.getText() === 'excluded' ? fromColumns.map((col) => ({ ...col, table: 'excluded' })) : [];
 			const exprType = traverse_expr(expr, {
 				...traverseContext,
 				fromColumns: fromColumns.concat(excludedColumns)
@@ -1680,9 +1488,7 @@ function traverse_insert_stmt(
 	}
 
 	const returning_clause = insert_stmt.returning_clause();
-	const returninColumns = returning_clause
-		? traverse_returning_clause(returning_clause, fromColumns)
-		: [];
+	const returninColumns = returning_clause ? traverse_returning_clause(returning_clause, fromColumns) : [];
 
 	const queryResult: InsertResult = {
 		queryType: 'Insert',
@@ -1694,10 +1500,7 @@ function traverse_insert_stmt(
 	return queryResult;
 }
 
-function traverse_returning_clause(
-	returning_clause: Returning_clauseContext,
-	fromColumns: ColumnDef[]
-) {
+function traverse_returning_clause(returning_clause: Returning_clauseContext, fromColumns: ColumnDef[]) {
 	const result_column_list = returning_clause.result_column_list();
 	const result = result_column_list.flatMap((result_column) => {
 		if (result_column.STAR()) {
@@ -1716,17 +1519,9 @@ function traverse_returning_clause(
 	return result;
 }
 
-function traverse_update_stmt(
-	update_stmt: Update_stmtContext,
-	traverseContext: TraverseContext
-): UpdateResult {
+function traverse_update_stmt(update_stmt: Update_stmtContext, traverseContext: TraverseContext): UpdateResult {
 	const table_name = update_stmt.qualified_table_name().getText();
-	const fromColumns = filterColumns(
-		traverseContext.dbSchema,
-		[],
-		'',
-		splitName(table_name)
-	);
+	const fromColumns = filterColumns(traverseContext.dbSchema, [], '', splitName(table_name));
 
 	const column_name_list = Array.from({
 		length: update_stmt.ASSIGN_list().length
@@ -1743,11 +1538,11 @@ function traverse_update_stmt(
 	let paramsBefore = traverseContext.parameters.length;
 	expr_list.forEach((expr, index) => {
 		paramsBefore = traverseContext.parameters.length;
-		const exprType = traverse_expr(expr, { ...traverseContext, fromColumns });
-		if (
-			!update_stmt.WHERE_() ||
-			expr.start.start < update_stmt.WHERE_().symbol.start
-		) {
+		const exprType = traverse_expr(expr, {
+			...traverseContext,
+			fromColumns
+		});
+		if (!update_stmt.WHERE_() || expr.start.start < update_stmt.WHERE_().symbol.start) {
 			const col = columns[index];
 			traverseContext.constraints.push({
 				expression: expr.getText(),
@@ -1777,17 +1572,9 @@ function traverse_update_stmt(
 	return queryResult;
 }
 
-function traverse_delete_stmt(
-	delete_stmt: Delete_stmtContext,
-	traverseContext: TraverseContext
-): DeleteResult {
+function traverse_delete_stmt(delete_stmt: Delete_stmtContext, traverseContext: TraverseContext): DeleteResult {
 	const table_name = delete_stmt.qualified_table_name().getText();
-	const fromColumns = filterColumns(
-		traverseContext.dbSchema,
-		[],
-		'',
-		splitName(table_name)
-	);
+	const fromColumns = filterColumns(traverseContext.dbSchema, [], '', splitName(table_name));
 
 	const expr = delete_stmt.expr();
 	traverse_expr(expr, { ...traverseContext, fromColumns });
@@ -1812,15 +1599,10 @@ function getAllColumns(expr: ExprContext): FieldName[] {
 }
 
 function filterUsingFields(fields: ColumnDef[], usingFields: string[]) {
-	const result = fields.filter(
-		(field) => !usingFields.includes(field.columnName)
-	);
+	const result = fields.filter((field) => !usingFields.includes(field.columnName));
 	return result;
 }
-function getParamsIndexes(
-	parameters: TypeAndNullInferParam[],
-	paramsIds: number[]
-): number[] {
+function getParamsIndexes(parameters: TypeAndNullInferParam[], paramsIds: number[]): number[] {
 	const map = new Map<number, number>();
 	parameters.forEach((param, index) => {
 		map.set(param.paramIndex, index);

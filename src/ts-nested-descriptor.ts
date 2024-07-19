@@ -1,9 +1,4 @@
-import type {
-	Field,
-	RelationInfo,
-	NestedResultInfo,
-	RelationField
-} from './describe-nested-query';
+import type { Field, RelationInfo, NestedResultInfo, RelationField } from './describe-nested-query';
 import { type MySqlType, type TsType, converToTsType } from './mysql-mapping';
 import type { ColumnInfo } from './mysql-query-analyzer/types';
 import type { RelationField2 } from './sqlite-query-analyzer/sqlite-describe-nested-query';
@@ -61,22 +56,14 @@ export type NestedTsDescriptor2 = {
 	relations: RelationType2[];
 };
 
-export function createNestedTsDescriptor(
-	columns: ColumnInfo[],
-	nestedResultInfo: NestedResultInfo
-): NestedTsDescriptor {
+export function createNestedTsDescriptor(columns: ColumnInfo[], nestedResultInfo: NestedResultInfo): NestedTsDescriptor {
 	const result: NestedTsDescriptor = {
-		relations: nestedResultInfo.relations.map((r) =>
-			mapColumnToNestedField(columns, r)
-		)
+		relations: nestedResultInfo.relations.map((r) => mapColumnToNestedField(columns, r))
 	};
 	return result;
 }
 
-function mapColumnToNestedField(
-	columns: ColumnInfo[],
-	modelColumn: RelationInfo
-): RelationType {
+function mapColumnToNestedField(columns: ColumnInfo[], modelColumn: RelationInfo): RelationType {
 	const relation: RelationType = {
 		name: modelColumn.name,
 		groupKeyIndex: modelColumn.groupKeyIndex,
@@ -85,10 +72,7 @@ function mapColumnToNestedField(
 	return relation;
 }
 
-function mapToField(
-	columns: ColumnInfo[],
-	field: Field | RelationField
-): FieldType {
+function mapToField(columns: ColumnInfo[], field: Field | RelationField): FieldType {
 	const fieldType = field.type;
 	if (fieldType === 'field') {
 		return mapModelColumnToTsField(columns, field);
@@ -99,10 +83,7 @@ function mapToField(
 	return fieldType satisfies never;
 }
 
-function mapModelColumnToTsField(
-	columns: ColumnInfo[],
-	modelColumn: Field
-): TsField {
+function mapModelColumnToTsField(columns: ColumnInfo[], modelColumn: Field): TsField {
 	const column = columns.find((col) => col.columnName === modelColumn.name)!;
 	const tsType = converToTsType(column.type as MySqlType);
 
@@ -116,9 +97,7 @@ function mapModelColumnToTsField(
 	return field;
 }
 
-function mapModelColumnToTsRelation(
-	modelColumn: RelationField
-): TsRelationField {
+function mapModelColumnToTsRelation(modelColumn: RelationField): TsRelationField {
 	const field: TsRelationField = {
 		type: 'relation',
 		list: modelColumn.cardinality === 'many',
@@ -129,14 +108,11 @@ function mapModelColumnToTsRelation(
 	return field;
 }
 
-export function mapToTsRelation2(
-	relationField: RelationField2
-): TsRelationField2 {
+export function mapToTsRelation2(relationField: RelationField2): TsRelationField2 {
 	const field: TsRelationField2 = {
 		list: relationField.cardinality === 'many',
 		name: relationField.name,
-		tsType:
-			relationField.name + (relationField.cardinality === 'many' ? '[]' : ''),
+		tsType: relationField.name + (relationField.cardinality === 'many' ? '[]' : ''),
 		notNull: true
 	};
 	return field;

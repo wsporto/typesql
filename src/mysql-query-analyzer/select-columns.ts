@@ -40,10 +40,7 @@ import { createColumnTypeFomColumnSchema } from './collect-constraints';
 import { Select_coreContext } from '@wsporto/ts-mysql-parser/dist/sqlite';
 
 export function includeColumn(column: ColumnDef, table: string) {
-	return (
-		column.table.toLowerCase() === table.toLowerCase() ||
-		column.tableAlias?.toLowerCase() === table.toLowerCase()
-	);
+	return column.table.toLowerCase() === table.toLowerCase() || column.tableAlias?.toLowerCase() === table.toLowerCase();
 }
 
 export function filterColumns(
@@ -52,16 +49,9 @@ export function filterColumns(
 	tableAlias: string | undefined,
 	table: FieldName
 ): ColumnDef[] {
-	const schemaName =
-		table.prefix === ''
-			? dbSchema.find((col) => col.table === table.name)?.schema
-			: table.prefix; //find first
+	const schemaName = table.prefix === '' ? dbSchema.find((col) => col.table === table.name)?.schema : table.prefix; //find first
 	const tableColumns1 = dbSchema
-		.filter(
-			(schema) =>
-				schema.table.toLowerCase() === table.name.toLowerCase() &&
-				schema.schema === schemaName
-		)
+		.filter((schema) => schema.table.toLowerCase() === table.name.toLowerCase() && schema.schema === schemaName)
 		.map((tableColumn) => {
 			//name and colum are the same on the leaf table
 			const r: ColumnDef = {
@@ -74,34 +64,21 @@ export function filterColumns(
 			};
 			return r;
 		});
-	const result = tableColumns1
-		.concat(
-			withSchema.filter(
-				(schema) => schema.table.toLowerCase() === table.name.toLowerCase()
-			)
-		)
-		.map((col) => {
-			const r: ColumnDef = {
-				...col,
-				table: table.name,
-				tableAlias: tableAlias
-			};
-			return r;
-		});
+	const result = tableColumns1.concat(withSchema.filter((schema) => schema.table.toLowerCase() === table.name.toLowerCase())).map((col) => {
+		const r: ColumnDef = {
+			...col,
+			table: table.name,
+			tableAlias: tableAlias
+		};
+		return r;
+	});
 	return result;
 }
 
-export function selectAllColumns(
-	tablePrefix: string,
-	fromColumns: ColumnDef[]
-) {
+export function selectAllColumns(tablePrefix: string, fromColumns: ColumnDef[]) {
 	const allColumns: ColumnDef[] = []; //TODO - FILTER
 	fromColumns.forEach((column) => {
-		if (
-			tablePrefix === '' ||
-			tablePrefix === column.tableAlias ||
-			tablePrefix === column.table
-		) {
+		if (tablePrefix === '' || tablePrefix === column.tableAlias || tablePrefix === column.table) {
 			allColumns.push(column);
 		}
 	});
@@ -121,12 +98,8 @@ export function getColumnName(selectItem: SelectItemContext) {
 	return columnName;
 }
 
-export function extractFieldsFromUsingClause(
-	joinedTableContext: JoinedTableContext
-): string[] {
-	const usingFieldsClause = joinedTableContext
-		.identifierListWithParentheses()
-		?.identifierList();
+export function extractFieldsFromUsingClause(joinedTableContext: JoinedTableContext): string[] {
+	const usingFieldsClause = joinedTableContext.identifierListWithParentheses()?.identifierList();
 	if (usingFieldsClause) {
 		return usingFieldsClause
 			.getText()
@@ -150,8 +123,7 @@ export function splitName(fieldName: string): FieldName {
 }
 
 function removeBackStick(name: string) {
-	const withoutBackStick =
-		name.startsWith('`') && name.endsWith('`') ? name.slice(1, -1) : name;
+	const withoutBackStick = name.startsWith('`') && name.endsWith('`') ? name.slice(1, -1) : name;
 	return withoutBackStick;
 }
 
@@ -270,23 +242,14 @@ export const functionAlias: ColumnSchema[] = [
 	}
 ];
 
-export function findColumnSchema(
-	tableName: string,
-	columnName: string,
-	dbSchema: ColumnSchema[]
-) {
+export function findColumnSchema(tableName: string, columnName: string, dbSchema: ColumnSchema[]) {
 	const found = dbSchema.find(
-		(col) =>
-			col.table.toLowerCase() === tableName.toLowerCase() &&
-			col.column.toLowerCase() === columnName.toLowerCase()
+		(col) => col.table.toLowerCase() === tableName.toLowerCase() && col.column.toLowerCase() === columnName.toLowerCase()
 	);
 	return found;
 }
 
-export function findColumn(
-	fieldName: FieldName,
-	columns: ColumnDef[]
-): ColumnDef {
+export function findColumn(fieldName: FieldName, columns: ColumnDef[]): ColumnDef {
 	const found = findColumnOrNull(fieldName, columns);
 
 	if (!found) {
@@ -296,29 +259,20 @@ export function findColumn(
 }
 
 function formatField(fieldName: FieldName) {
-	return fieldName.prefix === ''
-		? fieldName.name
-		: `${fieldName.prefix}.${fieldName.name}`;
+	return fieldName.prefix === '' ? fieldName.name : `${fieldName.prefix}.${fieldName.name}`;
 }
 
-export function findColumnOrNull(
-	fieldName: FieldName,
-	columns: ColumnDef[]
-): ColumnDef | undefined {
+export function findColumnOrNull(fieldName: FieldName, columns: ColumnDef[]): ColumnDef | undefined {
 	const found = columns.find(
 		(col) =>
 			col.columnName.toLowerCase() === fieldName.name.toLowerCase() &&
-			(fieldName.prefix === '' ||
-				fieldName.prefix === col.tableAlias ||
-				fieldName.prefix === col.table)
+			(fieldName.prefix === '' || fieldName.prefix === col.tableAlias || fieldName.prefix === col.table)
 	);
 	if (found) {
 		return found;
 	}
 
-	const functionType = functionAlias.find(
-		(col) => col.column.toLowerCase() === fieldName.name.toLowerCase()
-	);
+	const functionType = functionAlias.find((col) => col.column.toLowerCase() === fieldName.name.toLowerCase());
 	if (functionType) {
 		const colDef: ColumnDef = {
 			columnName: functionType.column,
@@ -351,12 +305,7 @@ export function getExpressions(ctx: ParserRuleContext, exprType: any): Expr[] {
 	return tokens;
 }
 
-function collectExpr(
-	tokens: Expr[],
-	parent: ParserRuleContext,
-	exprType: any,
-	isSubQuery = false
-) {
+function collectExpr(tokens: Expr[], parent: ParserRuleContext, exprType: any, isSubQuery = false) {
 	if (parent instanceof exprType) {
 		tokens.push({
 			expr: parent,
@@ -367,14 +316,7 @@ function collectExpr(
 	for (let i = 0; i < parent.getChildCount(); i++) {
 		const child = parent.getChild(i);
 		if (child instanceof ParserRuleContext) {
-			collectExpr(
-				tokens,
-				child,
-				exprType,
-				isSubQuery ||
-					child instanceof SimpleExprSubQueryContext ||
-					child instanceof Select_coreContext
-			);
+			collectExpr(tokens, child, exprType, isSubQuery || child instanceof SimpleExprSubQueryContext || child instanceof Select_coreContext);
 		}
 	}
 }
@@ -384,15 +326,8 @@ export type ExpressionAndOperator = {
 	expr: ExprContext;
 };
 
-export function getTopLevelAndExpr(
-	expr: ExprContext,
-	all: ExpressionAndOperator[]
-) {
-	if (
-		expr instanceof ExprAndContext ||
-		expr instanceof ExprXorContext ||
-		expr instanceof ExprOrContext
-	) {
+export function getTopLevelAndExpr(expr: ExprContext, all: ExpressionAndOperator[]) {
+	if (expr instanceof ExprAndContext || expr instanceof ExprXorContext || expr instanceof ExprOrContext) {
 		const exprLeft = expr.expr(0);
 		getTopLevelAndExpr(exprLeft, all);
 		const exprRight = expr.expr(1);
@@ -414,10 +349,7 @@ export function getSimpleExpressions(ctx: ParserRuleContext): ParseTree[] {
 	return tokens;
 }
 
-function collectSimpleExpr(
-	tokens: ParserRuleContext[],
-	parent: ParserRuleContext
-) {
+function collectSimpleExpr(tokens: ParserRuleContext[], parent: ParserRuleContext) {
 	if (isSimpleExpression(parent)) {
 		tokens.push(parent);
 	}

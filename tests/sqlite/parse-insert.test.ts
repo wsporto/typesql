@@ -544,8 +544,7 @@ describe('sqlite-parse-insert', () => {
 	});
 
 	it('insert into all_types (varchar_column, int_column) values (concat(?, ?), ?+?)', () => {
-		const sql =
-			'insert into all_types (varchar_column, int_column) values (concat(?, ?), ?+?)';
+		const sql = 'insert into all_types (varchar_column, int_column) values (concat(?, ?), ?+?)';
 		const actual = parseSql(sql, sqliteDbSchema);
 		const expected: SchemaDef = {
 			sql: 'insert into all_types (varchar_column, int_column) values (concat(?, ?), ?+?)',

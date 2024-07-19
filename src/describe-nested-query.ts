@@ -7,11 +7,7 @@ import {
 	type TableReferenceContext
 } from '@wsporto/ts-mysql-parser';
 import { extractQueryInfo, parse } from './mysql-query-analyzer/parse';
-import {
-	findColumnSchema,
-	getSimpleExpressions,
-	splitName
-} from './mysql-query-analyzer/select-columns';
+import { findColumnSchema, getSimpleExpressions, splitName } from './mysql-query-analyzer/select-columns';
 import type { ColumnInfo, ColumnSchema } from './mysql-query-analyzer/types';
 import { preprocessSql } from './describe-query';
 
@@ -50,10 +46,7 @@ export type TableName = {
 };
 
 //utility for tests
-export function describeNestedQuery(
-	sql: string,
-	dbSchema: ColumnSchema[]
-): NestedResultInfo {
+export function describeNestedQuery(sql: string, dbSchema: ColumnSchema[]): NestedResultInfo {
 	const { sql: processedSql } = preprocessSql(sql);
 	const queryContext = parse(processedSql);
 	const queryInfo = extractQueryInfo(sql, dbSchema);
@@ -61,11 +54,7 @@ export function describeNestedQuery(
 	return generateNestedInfo(queryContext, dbSchema, columns);
 }
 
-export function generateNestedInfo(
-	queryContext: QueryContext,
-	dbSchema: ColumnSchema[],
-	columns: ColumnInfo[]
-): NestedResultInfo {
+export function generateNestedInfo(queryContext: QueryContext, dbSchema: ColumnSchema[], columns: ColumnInfo[]): NestedResultInfo {
 	const selectStatement = queryContext.simpleStatement()?.selectStatement();
 	if (selectStatement) {
 		const queryExpression = selectStatement.queryExpression();
@@ -76,8 +65,7 @@ export function generateNestedInfo(
 				if (querySpec) {
 					const fromClause = querySpec.fromClause();
 					if (fromClause) {
-						const tableReferences =
-							fromClause.tableReferenceList()?.tableReference_list() || [];
+						const tableReferences = fromClause.tableReferenceList()?.tableReference_list() || [];
 						const modelColumns = tableReferences.map((tableRef) => {
 							const nestedResultInfo: NestedResultInfo = {
 								relations: getResult(tableRef, dbSchema, columns)
@@ -101,20 +89,12 @@ type Relation = {
 	junctionChildTable: string;
 };
 
-function getResult(
-	tableRef: TableReferenceContext,
-	dbSchema: ColumnSchema[],
-	columns: ColumnInfo[]
-) {
+function getResult(tableRef: TableReferenceContext, dbSchema: ColumnSchema[], columns: ColumnInfo[]) {
 	const relations = getRelations(tableRef, dbSchema, columns);
 	return relations;
 }
 
-function getRelations(
-	tableRef: TableReferenceContext,
-	dbSchema: ColumnSchema[],
-	columns: ColumnInfo[]
-) {
+function getRelations(tableRef: TableReferenceContext, dbSchema: ColumnSchema[], columns: ColumnInfo[]) {
 	const relations: Relation[] = [];
 	const tableFactor = tableRef.tableFactor();
 	const parentList: TableName[] = [];
@@ -127,12 +107,8 @@ function getRelations(
 	for (const joined of joinedTableList) {
 		const onClause = joined.expr();
 		const tableName = getTableInfoFromTableJoinedTable(joined);
-		const parentRelations = onClause
-			? getParentRelations(onClause, tableName, parentList)
-			: [];
-		const cardinality = onClause
-			? verifyCardinality(onClause, dbSchema, tableName.name)
-			: '';
+		const parentRelations = onClause ? getParentRelations(onClause, tableName, parentList) : [];
+		const cardinality = onClause ? verifyCardinality(onClause, dbSchema, tableName.name) : '';
 		parentList.push(tableName);
 		for (const parent of parentRelations) {
 			relations.push({
@@ -146,16 +122,11 @@ function getRelations(
 	}
 	for (let index = 0; index < relations.length; index++) {
 		const relation = relations[index];
-		const [isJunction, childRelationName] = isJunctionTable(
-			relation,
-			relations
-		);
+		const [isJunction, childRelationName] = isJunctionTable(relation, relations);
 		if (isJunction) {
 			relation.isJunctionTable = true;
 			relation.junctionChildTable = childRelationName;
-			const relationItem = parentList.find(
-				(r) => r.name === relation.child.name
-			)!;
+			const relationItem = parentList.find((r) => r.name === relation.child.name)!;
 			relationItem.isJunctionTable = true;
 		}
 	}
@@ -165,21 +136,12 @@ function getRelations(
 		.filter(({ r }) => r.isJunctionTable === false)
 		.map(({ r, index }) => {
 			const relationFields = relations
-				.filter(
-					(r2) =>
-						r2.parent.name === r.name ||
-						(r.alias !== '' && r2.parent.alias === r.alias)
-				)
+				.filter((r2) => r2.parent.name === r.name || (r.alias !== '' && r2.parent.alias === r.alias))
 				.map((relation) => {
 					//relation many always have not null array (possible empty)
 					const nullable =
 						relation.cardinality === 'one' &&
-						columns.some(
-							(c) =>
-								(c.table === relation.child.name ||
-									c.table === relation.child.alias) &&
-								c.notNull === false
-						);
+						columns.some((c) => (c.table === relation.child.name || c.table === relation.child.alias) && c.notNull === false);
 
 					const field: ModelColumn = {
 						type: 'relation',
@@ -191,9 +153,7 @@ function getRelations(
 				});
 
 			const previousRelation = parentList[index - 1];
-			const junctionRelation = previousRelation?.isJunctionTable
-				? previousRelation
-				: undefined;
+			const junctionRelation = previousRelation?.isJunctionTable ? previousRelation : undefined;
 
 			const fields: ModelColumn[] = columns
 				.map((col, index) => ({ col, index })) //keep index
@@ -201,9 +161,7 @@ function getRelations(
 					({ col }) =>
 						col.table === r.name ||
 						col.table === r.alias ||
-						(junctionRelation != null &&
-							(col.table === junctionRelation?.name ||
-								col.table === junctionRelation?.alias))
+						(junctionRelation != null && (col.table === junctionRelation?.name || col.table === junctionRelation?.alias))
 				)
 				.map(({ col, index }) => {
 					const f: ModelColumn = {
@@ -218,9 +176,7 @@ function getRelations(
 				name: r.asSymbol ? r.alias : r.name,
 				// tableName: r.name,
 				// tableAlias: r.alias,
-				groupKeyIndex: columns.findIndex(
-					(col) => col.table === r.name || col.table === r.alias
-				),
+				groupKeyIndex: columns.findIndex((col) => col.table === r.name || col.table === r.alias),
 				columns: fields.concat(relationFields)
 			};
 			return relationInfo;
@@ -238,23 +194,14 @@ function getRelationName(relation: Relation) {
 	return relation.child.name;
 }
 
-function getParentRelations(
-	onExpr: ExprContext,
-	currentRelation: TableName,
-	parentList: TableName[]
-) {
+function getParentRelations(onExpr: ExprContext, currentRelation: TableName, parentList: TableName[]) {
 	const result: TableName[] = [];
 	const tokens = getOnClauseTokens(onExpr);
 	for (const token of tokens) {
 		if (token instanceof SimpleExprColumnRefContext) {
 			const fieldName = splitName(token.getText());
-			if (
-				fieldName.prefix !== currentRelation.alias &&
-				fieldName.prefix !== currentRelation.name
-			) {
-				const ref = parentList.find(
-					(p) => p.name === fieldName.prefix || p.alias === fieldName.prefix
-				)!;
+			if (fieldName.prefix !== currentRelation.alias && fieldName.prefix !== currentRelation.name) {
+				const ref = parentList.find((p) => p.name === fieldName.prefix || p.alias === fieldName.prefix)!;
 				result.push(ref);
 			}
 		}
@@ -262,9 +209,7 @@ function getParentRelations(
 	return result;
 }
 
-function getTableInfoFromTableJoinedTable(
-	joinedTable: JoinedTableContext
-): TableName {
+function getTableInfoFromTableJoinedTable(joinedTable: JoinedTableContext): TableName {
 	const onClause = joinedTable.expr();
 	const tableRef = joinedTable.tableReference();
 	if (tableRef) {
@@ -277,9 +222,7 @@ function getTableInfoFromTableJoinedTable(
 	throw Error('getTableInfoFromTableJoinedTable');
 }
 
-function getTableInfoFromTableFactor(
-	tableFactor: TableFactorContext
-): TableName {
+function getTableInfoFromTableFactor(tableFactor: TableFactorContext): TableName {
 	const singleTable = tableFactor.singleTable();
 	if (singleTable) {
 		const table = singleTable.tableRef().getText();
@@ -297,34 +240,21 @@ function getTableInfoFromTableFactor(
 	throw Error('createModelFromTableFactor');
 }
 
-function isJunctionTable(
-	relation: Relation,
-	relations: Relation[]
-): [boolean, string] {
+function isJunctionTable(relation: Relation, relations: Relation[]): [boolean, string] {
 	const parentRelation = relations.find((r) => r.child === relation.parent);
 	const childRelation = relations.find((r) => r.parent === relation.child);
 	const childRelationCardinality = childRelation?.cardinality;
-	const isJunctionTable =
-		(parentRelation == null || parentRelation.cardinality === 'one') &&
-		childRelationCardinality === 'one';
+	const isJunctionTable = (parentRelation == null || parentRelation.cardinality === 'one') && childRelationCardinality === 'one';
 	return [isJunctionTable, childRelation?.child.name!];
 }
 
-function verifyCardinality(
-	expr: ExprContext,
-	dbSchema: ColumnSchema[],
-	tableName: string
-): Cardinality {
+function verifyCardinality(expr: ExprContext, dbSchema: ColumnSchema[], tableName: string): Cardinality {
 	const tokens = getOnClauseTokens(expr);
 	for (const token of tokens) {
 		if (token instanceof SimpleExprColumnRefContext) {
 			const fieldName = splitName(token.getText());
 			const column = findColumnSchema(tableName, fieldName.name, dbSchema);
-			if (
-				column != null &&
-				column.columnKey !== 'PRI' &&
-				column.columnKey !== 'UNI'
-			) {
+			if (column != null && column.columnKey !== 'PRI' && column.columnKey !== 'UNI') {
 				return 'many';
 			}
 		}

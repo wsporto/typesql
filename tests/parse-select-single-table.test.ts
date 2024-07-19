@@ -7,9 +7,7 @@ import { createMysqlClientForTest } from '../src/queryExectutor';
 describe('Test simple select statements', () => {
 	let client!: MySqlDialect;
 	before(async () => {
-		client = await createMysqlClientForTest(
-			'mysql://root:password@localhost/mydb'
-		);
+		client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
 	});
 
 	it('try to parse a empty query', async () => {
@@ -483,10 +481,8 @@ describe('Test simple select statements', () => {
 	});
 
 	it('SELECT id FROM mytable1 where id = 0 and value between :start and :end', async () => {
-		const sql =
-			'SELECT id FROM mytable1 where id = 0 and value between :start and :end';
-		const expectedSql =
-			'SELECT id FROM mytable1 where id = 0 and value between ? and ?';
+		const sql = 'SELECT id FROM mytable1 where id = 0 and value between :start and :end';
+		const expectedSql = 'SELECT id FROM mytable1 where id = 0 and value between ? and ?';
 
 		const actual = await parseSql(client, sql);
 		const expected: SchemaDef = {
@@ -1437,13 +1433,7 @@ describe('Test simple select statements', () => {
 					table: 'mytable1'
 				}
 			],
-			orderByColumns: [
-				'id',
-				'mytable1.id',
-				'value',
-				'mytable1.value',
-				'myValue'
-			],
+			orderByColumns: ['id', 'mytable1.id', 'value', 'mytable1.value', 'myValue'],
 			parameters: []
 		};
 
@@ -1504,13 +1494,7 @@ describe('Test simple select statements', () => {
 					table: ''
 				}
 			],
-			orderByColumns: [
-				'id',
-				'mytable1.id',
-				'value',
-				'mytable1.value',
-				'ordering'
-			],
+			orderByColumns: ['id', 'mytable1.id', 'value', 'mytable1.value', 'ordering'],
 			parameters: []
 		};
 
@@ -1602,13 +1586,7 @@ describe('Test simple select statements', () => {
 					table: 't'
 				}
 			],
-			orderByColumns: [
-				'id',
-				't.id',
-				'value',
-				't.value',
-				'case when value = 1 then 1 else 2 end'
-			],
+			orderByColumns: ['id', 't.id', 'value', 't.value', 'case when value = 1 then 1 else 2 end'],
 			parameters: []
 		};
 
@@ -1680,8 +1658,7 @@ describe('Test simple select statements', () => {
 	});
 
 	it('SELECT bit_column FROM all_types WHERE bit_column = 1 or bit_column = ?', async () => {
-		const sql =
-			'SELECT bit_column FROM all_types WHERE bit_column = 1 or bit_column = ?';
+		const sql = 'SELECT bit_column FROM all_types WHERE bit_column = 1 or bit_column = ?';
 
 		const actual = await parseSql(client, sql);
 		const expected: SchemaDef = {

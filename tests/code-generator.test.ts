@@ -17,9 +17,7 @@ import { isLeft } from 'fp-ts/lib/Either';
 describe('code-generator', () => {
 	let client!: MySqlDialect;
 	before(async () => {
-		client = await createMysqlClientForTest(
-			'mysql://root:password@localhost/mydb'
-		);
+		client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
 	});
 
 	it('generate main function with parameters', () => {
@@ -554,8 +552,7 @@ function mapArrayToSelectIdResult(data: any) {
 	});
 
 	it('test code generation with duplicated parameters', () => {
-		const sql =
-			'SELECT id from mytable1 where (id = :id or id = :id) and value = :value';
+		const sql = 'SELECT id from mytable1 where (id = :id or id = :id) and value = :value';
 
 		const schemaDef = describeSql(dbSchema, sql);
 		const tsDescriptor = generateTsDescriptor(schemaDef);
@@ -1287,10 +1284,7 @@ AND m2.descr = :description`;
 
 		const actual = await generateTsFileFromContent(client, queryName, sql);
 		//tests\expected-code\dynamic-query01.ts
-		const expected = readFileSync(
-			'tests/expected-code/dynamic-query01.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const expected = readFileSync('tests/expected-code/dynamic-query01.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -1311,10 +1305,7 @@ WHERE (:name is NULL or m2.name = :name)`;
 
 		const actual = await generateTsFileFromContent(client, queryName, sql);
 		//tests\expected-code\dynamic-query01.ts
-		const expected = readFileSync(
-			'tests/expected-code/dynamic-query02.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const expected = readFileSync('tests/expected-code/dynamic-query02.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -1330,10 +1321,7 @@ FROM mytable1 t1`;
 
 		const actual = await generateTsFileFromContent(client, queryName, sql);
 		//tests\expected-code\dynamic-query01.ts
-		const expected = readFileSync(
-			'tests/expected-code/dynamic-query03.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const expected = readFileSync('tests/expected-code/dynamic-query03.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -1351,10 +1339,7 @@ INNER JOIN mytable2 m2 on m2.id = m1.id`;
 
 		const actual = await generateTsFileFromContent(client, queryName, sql);
 		//tests\expected-code\dynamic-query01.ts
-		const expected = readFileSync(
-			'tests/expected-code/dynamic-query04.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const expected = readFileSync('tests/expected-code/dynamic-query04.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -1378,10 +1363,7 @@ WHERE m2.name LIKE concat('%', :name, '%')`;
 
 		const actual = await generateTsFileFromContent(client, queryName, sql);
 		//tests\expected-code\dynamic-query01.ts
-		const expected = readFileSync(
-			'tests/expected-code/dynamic-query05.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const expected = readFileSync('tests/expected-code/dynamic-query05.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -1400,10 +1382,7 @@ ORDER BY ?`;
 
 		const actual = await generateTsFileFromContent(client, queryName, sql);
 		//tests\expected-code\dynamic-query01.ts
-		const expected = readFileSync(
-			'tests/expected-code/dynamic-query06.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const expected = readFileSync('tests/expected-code/dynamic-query06.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -1423,10 +1402,7 @@ ORDER BY ?`;
 
 		const actual = await generateTsFileFromContent(client, queryName, sql);
 		//tests\expected-code\dynamic-query01.ts
-		const expected = readFileSync(
-			'tests/expected-code/dynamic-query07.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const expected = readFileSync('tests/expected-code/dynamic-query07.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);

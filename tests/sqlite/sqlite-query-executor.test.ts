@@ -25,9 +25,7 @@ describe('sqlite-query-executor', () => {
 		if (isLeft(dbSchema)) {
 			assert.fail(`Shouldn't return an error`);
 		}
-		const actual = dbSchema.right.filter(
-			(col) => col.table === 'playlist_track'
-		);
+		const actual = dbSchema.right.filter((col) => col.table === 'playlist_track');
 		const expected: ColumnSchema[] = [
 			{
 				schema: 'main',
@@ -59,11 +57,7 @@ describe('sqlite-query-executor', () => {
 			assert.fail(`Shouldn't return an error`);
 		}
 
-		const actual = dbSchema.right.filter(
-			(col) =>
-				col.table === 'mytable1' ||
-				(col.table === 'users' && col.schema === 'users')
-		);
+		const actual = dbSchema.right.filter((col) => col.table === 'mytable1' || (col.table === 'users' && col.schema === 'users'));
 		const expected: ColumnSchema[] = [
 			{
 				column: 'id',

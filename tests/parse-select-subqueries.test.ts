@@ -7,9 +7,7 @@ import { isLeft } from 'fp-ts/lib/Either';
 describe('Test parse select with subqueries', () => {
 	let client!: MySqlDialect;
 	before(async () => {
-		client = await createMysqlClientForTest(
-			'mysql://root:password@localhost/mydb'
-		);
+		client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
 	});
 
 	//.only
@@ -447,8 +445,7 @@ describe('Test parse select with subqueries', () => {
 	});
 
 	it('select name from mytable2 where not exists ( select id from mytable1 where id = :a and value = :b)', async () => {
-		const sql =
-			'select name from mytable2 where not exists ( select id from mytable1 where id = :a and value = :b)';
+		const sql = 'select name from mytable2 where not exists ( select id from mytable1 where id = :a and value = :b)';
 		const actual = await parseSql(client, sql);
 		const expected: SchemaDef = {
 			sql: 'select name from mytable2 where not exists ( select id from mytable1 where id = ? and value = ?)',

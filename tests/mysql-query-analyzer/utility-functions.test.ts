@@ -1,9 +1,6 @@
 import assert from 'node:assert';
 import type { ColumnDef } from '../../src/mysql-query-analyzer/types';
-import {
-	splitName,
-	findColumn
-} from '../../src/mysql-query-analyzer/select-columns';
+import { splitName, findColumn } from '../../src/mysql-query-analyzer/select-columns';
 import { getParameterIndexes } from '../../src/mysql-query-analyzer/util';
 import { freshVar } from '../../src/mysql-query-analyzer/collect-constraints';
 import { unionTypeResult } from '../../src/mysql-query-analyzer/unify';
@@ -31,34 +28,19 @@ describe('Utility functions tests', () => {
 	it('test unionTypeResult', () => {
 		assert.deepStrictEqual(unionTypeResult('tinyint', 'tinyint'), 'tinyint');
 		assert.deepStrictEqual(unionTypeResult('tinyint', 'smallint'), 'smallint');
-		assert.deepStrictEqual(
-			unionTypeResult('tinyint', 'mediumint'),
-			'mediumint'
-		);
+		assert.deepStrictEqual(unionTypeResult('tinyint', 'mediumint'), 'mediumint');
 		assert.deepStrictEqual(unionTypeResult('tinyint', 'int'), 'int');
 		assert.deepStrictEqual(unionTypeResult('tinyint', 'bigint'), 'bigint');
 
 		assert.deepStrictEqual(unionTypeResult('smallint', 'tinyint'), 'smallint');
 		assert.deepStrictEqual(unionTypeResult('smallint', 'smallint'), 'smallint');
-		assert.deepStrictEqual(
-			unionTypeResult('smallint', 'mediumint'),
-			'mediumint'
-		);
+		assert.deepStrictEqual(unionTypeResult('smallint', 'mediumint'), 'mediumint');
 		assert.deepStrictEqual(unionTypeResult('smallint', 'int'), 'int');
 		assert.deepStrictEqual(unionTypeResult('smallint', 'bigint'), 'bigint');
 
-		assert.deepStrictEqual(
-			unionTypeResult('mediumint', 'tinyint'),
-			'mediumint'
-		);
-		assert.deepStrictEqual(
-			unionTypeResult('mediumint', 'smallint'),
-			'mediumint'
-		);
-		assert.deepStrictEqual(
-			unionTypeResult('mediumint', 'mediumint'),
-			'mediumint'
-		);
+		assert.deepStrictEqual(unionTypeResult('mediumint', 'tinyint'), 'mediumint');
+		assert.deepStrictEqual(unionTypeResult('mediumint', 'smallint'), 'mediumint');
+		assert.deepStrictEqual(unionTypeResult('mediumint', 'mediumint'), 'mediumint');
 		assert.deepStrictEqual(unionTypeResult('mediumint', 'int'), 'int');
 		assert.deepStrictEqual(unionTypeResult('mediumint', 'bigint'), 'bigint');
 

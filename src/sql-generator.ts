@@ -2,11 +2,7 @@ import type { ColumnSchema } from './mysql-query-analyzer/types';
 import CodeBlockWriter from 'code-block-writer';
 import type { TypeSqlDialect } from './types';
 
-export function generateSelectStatement(
-	dialect: TypeSqlDialect,
-	tableName: string,
-	columns: ColumnSchema[]
-) {
+export function generateSelectStatement(dialect: TypeSqlDialect, tableName: string, columns: ColumnSchema[]) {
 	const keys = columns.filter((col) => col.columnKey === 'PRI');
 	if (keys.length === 0) {
 		keys.push(...columns.filter((col) => col.columnKey === 'UNI'));
@@ -25,19 +21,13 @@ export function generateSelectStatement(
 
 	if (keys.length > 0) {
 		writer.write('WHERE ');
-		writer.write(
-			`${escapeColumn(dialect, keys[0].column)} = :${keys[0].column}`
-		);
+		writer.write(`${escapeColumn(dialect, keys[0].column)} = :${keys[0].column}`);
 	}
 
 	return writer.toString();
 }
 
-export function generateInsertStatement(
-	dialect: TypeSqlDialect,
-	tableName: string,
-	dbSchema: ColumnSchema[]
-) {
+export function generateInsertStatement(dialect: TypeSqlDialect, tableName: string, dbSchema: ColumnSchema[]) {
 	const columns = dbSchema.filter((col) => !col.autoincrement);
 
 	const writer = new CodeBlockWriter();
@@ -62,11 +52,7 @@ export function generateInsertStatement(
 	return writer.toString();
 }
 
-export function generateUpdateStatement(
-	dialect: TypeSqlDialect,
-	tableName: string,
-	dbSchema: ColumnSchema[]
-) {
+export function generateUpdateStatement(dialect: TypeSqlDialect, tableName: string, dbSchema: ColumnSchema[]) {
 	const columns = dbSchema.filter((col) => !col.autoincrement);
 	const keys = dbSchema.filter((col) => col.columnKey === 'PRI');
 	if (keys.length === 0) {
@@ -88,19 +74,13 @@ export function generateUpdateStatement(
 	});
 	if (keys.length > 0) {
 		writer.writeLine('WHERE');
-		writer
-			.indent()
-			.write(`${escapeColumn(dialect, keys[0].column)} = :${keys[0].column}`);
+		writer.indent().write(`${escapeColumn(dialect, keys[0].column)} = :${keys[0].column}`);
 	}
 
 	return writer.toString();
 }
 
-export function generateDeleteStatement(
-	dialect: TypeSqlDialect,
-	tableName: string,
-	dbSchema: ColumnSchema[]
-) {
+export function generateDeleteStatement(dialect: TypeSqlDialect, tableName: string, dbSchema: ColumnSchema[]) {
 	const keys = dbSchema.filter((col) => col.columnKey === 'PRI');
 	if (keys.length === 0) {
 		keys.push(...dbSchema.filter((col) => col.columnKey === 'UNI'));
@@ -111,9 +91,7 @@ export function generateDeleteStatement(
 	writer.writeLine(`DELETE FROM ${escapeTableName(dialect, tableName)}`);
 	if (keys.length > 0) {
 		writer.write('WHERE ');
-		writer.write(
-			`${escapeColumn(dialect, keys[0].column)} = :${keys[0].column}`
-		);
+		writer.write(`${escapeColumn(dialect, keys[0].column)} = :${keys[0].column}`);
 	}
 	return writer.toString();
 }

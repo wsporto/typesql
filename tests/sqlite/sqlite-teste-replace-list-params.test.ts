@@ -7,15 +7,13 @@ describe('sqlite-teste-replace-list-params', () => {
 		const sql = 'SELECT id FROM mytable1 WHERE id in (?)';
 		const newSql = replaceListParams(sql, getParamIndices(sql));
 
-		const expected =
-			"SELECT id FROM mytable1 WHERE id in (${params.param1.map(() => '?')})";
+		const expected = "SELECT id FROM mytable1 WHERE id in (${params.param1.map(() => '?')})";
 
 		assert.deepStrictEqual(newSql, expected);
 	});
 
 	it('multiples parameters', async () => {
-		const sql =
-			'SELECT id FROM mytable1 WHERE id in (?) and value in (1, 2, ?)';
+		const sql = 'SELECT id FROM mytable1 WHERE id in (?) and value in (1, 2, ?)';
 		const newSql = replaceListParams(sql, getParamIndices(sql));
 
 		const expected =

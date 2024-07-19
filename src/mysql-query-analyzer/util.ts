@@ -24,10 +24,7 @@ export function getParameterIndexes(namedParameters: string[]): ParamIndexes[] {
 	return paramIndex;
 }
 
-export function getPairWise(
-	indexes: number[],
-	func: (cur: number, next: number) => void
-) {
+export function getPairWise(indexes: number[], func: (cur: number, next: number) => void) {
 	for (let i = 0; i < indexes.length - 1; i++) {
 		func(indexes[i], indexes[i + 1]);
 	}

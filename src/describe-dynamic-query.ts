@@ -16,11 +16,7 @@ import type {
 	WithFragment
 } from './mysql-query-analyzer/types';
 
-export function describeDynamicQuery(
-	dynamicQueryInfo: DynamicSqlInfo,
-	namedParameters: string[],
-	orderBy: string[]
-): DynamicSqlInfoResult {
+export function describeDynamicQuery(dynamicQueryInfo: DynamicSqlInfo, namedParameters: string[], orderBy: string[]): DynamicSqlInfoResult {
 	const { with: withFragments, select, from, where } = dynamicQueryInfo;
 
 	const selectFragments = select.map((fragment, index) => {
@@ -34,32 +30,12 @@ export function describeDynamicQuery(
 		return fragmentResult;
 	});
 	const withFragements = withFragments?.map((fragment) =>
-		transformFrom(
-			fragment,
-			withFragments,
-			select,
-			from,
-			where,
-			namedParameters,
-			orderBy
-		)
+		transformFrom(fragment, withFragments, select, from, where, namedParameters, orderBy)
 	);
-	const fromFragements = from.map((fragment) =>
-		transformFrom(
-			fragment,
-			undefined,
-			select,
-			from,
-			where,
-			namedParameters,
-			orderBy
-		)
-	);
+	const fromFragements = from.map((fragment) => transformFrom(fragment, undefined, select, from, where, namedParameters, orderBy));
 
 	const whereFragements = where.map((fragment) => {
-		const params = fragment.dependOnParams.map(
-			(paramIndex) => namedParameters[paramIndex]
-		);
+		const params = fragment.dependOnParams.map((paramIndex) => namedParameters[paramIndex]);
 		const fragmentResult: FragmentInfoResult = {
 			fragment: fragment.fragment,
 			dependOnFields: [],
@@ -93,28 +69,20 @@ function transformFrom(
 		addAllChildFields(fragment, from, withFragments);
 	}
 
-	const filteredWhere = where.filter((whereFragment) =>
-		includeAny(whereFragment.fields, fragment.fields)
-	);
-	const hasUnconditional = filteredWhere.some(
-		(fragment) => fragment.dependOnParams.length === 0
-	);
+	const filteredWhere = where.filter((whereFragment) => includeAny(whereFragment.fields, fragment.fields));
+	const hasUnconditional = filteredWhere.some((fragment) => fragment.dependOnParams.length === 0);
 
 	if (hasUnconditional) {
 		return {
 			fragment: fragment.fragment,
 			dependOnFields: [],
 			dependOnParams: [],
-			parameters: fragment.parameters.map(
-				(paramIndex) => namedParameters[paramIndex]
-			)
+			parameters: fragment.parameters.map((paramIndex) => namedParameters[paramIndex])
 		};
 	}
 
 	const fieldIndex = select.flatMap((selectField, index) => {
-		const found = selectField.dependOn.find((dependsOn) =>
-			fragment.dependOn.includes(dependsOn)
-		);
+		const found = selectField.dependOn.find((dependsOn) => fragment.dependOn.includes(dependsOn));
 		if (found) {
 			return index;
 		}
@@ -124,9 +92,7 @@ function transformFrom(
 	const orderBy = orderByColumns.flatMap((orderBy) => {
 		const orderByField = splitName(orderBy);
 		const found = fragment.fields.find(
-			(field) =>
-				field.name === orderByField.name &&
-				(field.table === orderByField.prefix || orderByField.prefix === '')
+			(field) => field.name === orderByField.name && (field.table === orderByField.prefix || orderByField.prefix === '')
 		);
 		if (found) {
 			return orderBy;
@@ -134,16 +100,12 @@ function transformFrom(
 		return [];
 	});
 
-	const params = filteredWhere
-		.flatMap((fragment) => fragment.dependOnParams)
-		.map((paramIndex) => namedParameters[paramIndex]);
+	const params = filteredWhere.flatMap((fragment) => fragment.dependOnParams).map((paramIndex) => namedParameters[paramIndex]);
 	const fragmentResult: FragmentInfoResult = {
 		fragment: fragment.fragment,
 		dependOnFields: fieldIndex,
 		dependOnParams: [...new Set(params)],
-		parameters: fragment.parameters.map(
-			(paramIndex) => namedParameters[paramIndex]
-		)
+		parameters: fragment.parameters.map((paramIndex) => namedParameters[paramIndex])
 	};
 	if (orderBy.length > 0) {
 		fragmentResult.dependOnOrderBy = orderBy;
@@ -152,16 +114,10 @@ function transformFrom(
 }
 
 function includeAny(fields: TableField[], fields2: TableField[]) {
-	return fields.some((f) =>
-		fields2.find((f2) => f2.field === f.field && f2.table === f.table)
-	);
+	return fields.some((f) => fields2.find((f2) => f2.field === f.field && f2.table === f.table));
 }
 
-function addAllChildFields(
-	currentRelation: FragmentInfo,
-	select: FragmentInfo[],
-	withFragments: FragmentInfo[] | undefined
-) {
+function addAllChildFields(currentRelation: FragmentInfo, select: FragmentInfo[], withFragments: FragmentInfo[] | undefined) {
 	currentRelation.dependOn.push(`${currentRelation.relation}`);
 	select.forEach((fragment) => {
 		if (fragment.parentRelation === currentRelation.relation) {
@@ -182,20 +138,9 @@ export function describeDynamicQuery2(
 	namedParameters: string[],
 	orderByColumns: string[]
 ): DynamicSqlInfoResult2 {
-	const {
-		with: withFragments,
-		select,
-		from,
-		where,
-		limitOffset
-	} = dynamicQueryInfo;
+	const { with: withFragments, select, from, where, limitOffset } = dynamicQueryInfo;
 
-	const fromResult = transformFromFragments(
-		from,
-		select,
-		namedParameters,
-		orderByColumns
-	);
+	const fromResult = transformFromFragments(from, select, namedParameters, orderByColumns);
 
 	const result: DynamicSqlInfoResult2 = {
 		with: transformWithFragmnts(withFragments, fromResult, namedParameters),
@@ -206,24 +151,17 @@ export function describeDynamicQuery2(
 	if (limitOffset) {
 		result.limitOffset = {
 			fragment: limitOffset.fragment,
-			parameters: limitOffset.parameters.map(
-				(paramIndex) => namedParameters[paramIndex]
-			)
+			parameters: limitOffset.parameters.map((paramIndex) => namedParameters[paramIndex])
 		};
 	}
 	return result;
 }
 
-function transformSelectFragments(
-	selectFragments: SelectFragment[],
-	namedParameters: string[]
-): SelectFragmentResult[] {
+function transformSelectFragments(selectFragments: SelectFragment[], namedParameters: string[]): SelectFragmentResult[] {
 	return selectFragments.map((select) => ({
 		fragment: select.fragment,
 		fragmentWitoutAlias: select.fragmentWitoutAlias,
-		parameters: select.parameters.map(
-			(paramIndex) => namedParameters[paramIndex]
-		)
+		parameters: select.parameters.map((paramIndex) => namedParameters[paramIndex])
 	}));
 }
 
@@ -233,21 +171,15 @@ function transformWithFragmnts(
 	namedParameters: string[]
 ): FromFragementResult[] {
 	return withFragments.map((withFragment) => {
-		const fromDependOn = fromFragments.filter(
-			(from) => from.relationName === withFragment.relationName
-		);
+		const fromDependOn = fromFragments.filter((from) => from.relationName === withFragment.relationName);
 		const dependOnFields = fromDependOn.flatMap((from) => from.dependOnFields);
-		const dependOnOrderBy = fromDependOn.flatMap(
-			(from) => from.dependOnOrderBy
-		);
+		const dependOnOrderBy = fromDependOn.flatMap((from) => from.dependOnOrderBy);
 		const fromFragmentResult: FromFragementResult = {
 			fragment: withFragment.fragment,
 			relationName: withFragment.relationName,
 			dependOnFields,
 			dependOnOrderBy,
-			parameters: withFragment.parameters.map(
-				(paramIndex) => namedParameters[paramIndex]
-			)
+			parameters: withFragment.parameters.map((paramIndex) => namedParameters[paramIndex])
 		};
 		return fromFragmentResult;
 	});
@@ -270,9 +202,7 @@ function transformFromFragments(
 			const found = from.fields.find(
 				(field) =>
 					field === orderByField.name &&
-					(from.relationAlias === orderByField.prefix ||
-						from.relationName === orderByField.prefix ||
-						orderByField.prefix === '')
+					(from.relationAlias === orderByField.prefix || from.relationName === orderByField.prefix || orderByField.prefix === '')
 			);
 			if (found) {
 				return orderBy;
@@ -285,14 +215,9 @@ function transformFromFragments(
 			relationName: from.relationName,
 			relationAlias: from.relationAlias,
 			parentRelation: from.parentRelation,
-			dependOnFields: getDependOnFields(
-				{ relationName, relationAlias, parentRelation },
-				selectFragments
-			),
+			dependOnFields: getDependOnFields({ relationName, relationAlias, parentRelation }, selectFragments),
 			dependOnOrderBy: orderBy,
-			parameters: from.parameters.map(
-				(paramIndex) => namedParameters[paramIndex]
-			)
+			parameters: from.parameters.map((paramIndex) => namedParameters[paramIndex])
 		};
 		return fromFragmentResult;
 	});
@@ -300,16 +225,11 @@ function transformFromFragments(
 	const withChildren = fromResult.map((parentFrom) => {
 		const actualAndChildRelations = fromResult.filter(
 			(childFrom) =>
-				(childFrom.parentRelation === parentFrom.relationAlias &&
-					parentFrom.parentRelation !== '') ||
+				(childFrom.parentRelation === parentFrom.relationAlias && parentFrom.parentRelation !== '') ||
 				childFrom.relationName === parentFrom.relationName
 		);
-		const dependOnFields = actualAndChildRelations.flatMap(
-			(from) => from.dependOnFields
-		);
-		const dependOnOrderBy = actualAndChildRelations.flatMap(
-			(from) => from.dependOnOrderBy
-		);
+		const dependOnFields = actualAndChildRelations.flatMap((from) => from.dependOnFields);
+		const dependOnOrderBy = actualAndChildRelations.flatMap((from) => from.dependOnOrderBy);
 		const result: FromFragementResult = {
 			fragment: parentFrom.fragment,
 			relationName: parentFrom.relationName,
@@ -322,10 +242,7 @@ function transformFromFragments(
 	return withChildren;
 }
 
-function transformWhereFragments(
-	whereFragements: WhereFragment[],
-	namedParameters: string[]
-): WhereFragmentResult[] {
+function transformWhereFragments(whereFragements: WhereFragment[], namedParameters: string[]): WhereFragmentResult[] {
 	return whereFragements.map((where) => {
 		const parameters = where.parameters.map((param) => namedParameters[param]);
 		const whereFragmentResult: WhereFragmentResult = {

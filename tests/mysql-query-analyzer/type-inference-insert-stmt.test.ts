@@ -1,10 +1,7 @@
 import assert from 'node:assert';
 import { parseAndInfer } from '../../src/mysql-query-analyzer/parse';
 import { dbSchema } from './create-schema';
-import type {
-	TypeInferenceResult,
-	ColumnSchema
-} from '../../src/mysql-query-analyzer/types';
+import type { TypeInferenceResult, ColumnSchema } from '../../src/mysql-query-analyzer/types';
 
 describe('type-inference test', () => {
 	it('SELECT id FROM mytable1', () => {
@@ -32,8 +29,7 @@ describe('type-inference test', () => {
 	});
 
 	it('INSERT INTO alltypes (double_column, int_column, varchar_column) VALUES (?, ?, ?)', () => {
-		const sql =
-			'INSERT INTO all_types (double_column, int_column, varchar_column) VALUES (?, ?, ?)';
+		const sql = 'INSERT INTO all_types (double_column, int_column, varchar_column) VALUES (?, ?, ?)';
 		const actual = parseAndInfer(sql, dbSchema);
 
 		const expected: TypeInferenceResult = {

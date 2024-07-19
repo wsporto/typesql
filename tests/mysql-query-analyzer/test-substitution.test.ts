@@ -1,10 +1,6 @@
 import assert from 'node:assert';
 import { substitute, unify } from '../../src/mysql-query-analyzer/unify';
-import type {
-	Constraint,
-	SubstitutionHash,
-	TypeVar
-} from '../../src/mysql-query-analyzer/types';
+import type { Constraint, SubstitutionHash, TypeVar } from '../../src/mysql-query-analyzer/types';
 
 describe.skip('Substitution tests', () => {
 	const u1: TypeVar = {

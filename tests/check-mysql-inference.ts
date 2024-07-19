@@ -39,15 +39,9 @@ async function main() {
 	];
 
 	//https://stackoverflow.com/questions/43241174/javascript-generating-all-combinations-of-elements-in-a-single-array-in-pairs
-	const combinations = allTypes.flatMap((v, i) =>
-		allTypes.slice(i + 1).map((w) => ({ first: v, second: w }))
-	);
-	const firstUnionColumns = combinations
-		.map((c) => c.first + generateAlias(c))
-		.join(', ');
-	const secondUnionColumns = combinations
-		.map((c) => c.second + generateAlias(c))
-		.join(', ');
+	const combinations = allTypes.flatMap((v, i) => allTypes.slice(i + 1).map((w) => ({ first: v, second: w })));
+	const firstUnionColumns = combinations.map((c) => c.first + generateAlias(c)).join(', ');
+	const secondUnionColumns = combinations.map((c) => c.second + generateAlias(c)).join(', ');
 
 	const generateSql = `
         SELECT ${firstUnionColumns} FROM all_types
@@ -56,22 +50,12 @@ async function main() {
 	// console.log("generatedSql=", generateSql);
 
 	const result: any = await conn.prepare(generateSql);
-	const resultArray: [{ name: string; type: string }] =
-		result.statement.columns.map(
-			(col: {
-				name: string;
-				columnType: number;
-				columnLength: number;
-				flags: number;
-			}) => ({
-				name: col.name,
-				type: convertTypeCodeToMysqlType(
-					col.columnType,
-					col.flags,
-					col.columnLength
-				)
-			})
-		);
+	const resultArray: [{ name: string; type: string }] = result.statement.columns.map(
+		(col: { name: string; columnType: number; columnLength: number; flags: number }) => ({
+			name: col.name,
+			type: convertTypeCodeToMysqlType(col.columnType, col.flags, col.columnLength)
+		})
+	);
 	const resultHash = resultArray.reduce((map, obj) => {
 		map[obj.name] = obj.type;
 		return map;

@@ -7,9 +7,7 @@ import { isLeft } from 'fp-ts/lib/Either';
 describe('Test parse complex queries', () => {
 	let client!: MySqlDialect;
 	before(async () => {
-		client = await createMysqlClientForTest(
-			'mysql://root:password@localhost/mydb'
-		);
+		client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
 	});
 
 	it('parse SELECT t1.name, t2.mycolumn2, t3.mycolumn3, count', async () => {

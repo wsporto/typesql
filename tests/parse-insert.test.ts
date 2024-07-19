@@ -7,9 +7,7 @@ import { isLeft, isRight } from 'fp-ts/lib/Either';
 describe('parse insert statements', () => {
 	let client!: MySqlDialect;
 	before(async () => {
-		client = await createMysqlClientForTest(
-			'mysql://root:password@localhost/mydb'
-		);
+		client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
 	});
 
 	it('insert into mytable1 (value) values (?)', async () => {
@@ -547,8 +545,7 @@ describe('parse insert statements', () => {
 	});
 
 	it('insert into all_types (varchar_column, int_column) values (concat(?, ?), ?+?)', async () => {
-		const sql =
-			'insert into all_types (varchar_column, int_column) values (concat(?, ?), ?+?)';
+		const sql = 'insert into all_types (varchar_column, int_column) values (concat(?, ?), ?+?)';
 		const actual = await parseSql(client, sql);
 		const expected: SchemaDef = {
 			sql: 'insert into all_types (varchar_column, int_column) values (concat(?, ?), ?+?)',

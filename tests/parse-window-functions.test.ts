@@ -7,9 +7,7 @@ import { isLeft } from 'fp-ts/lib/Either';
 describe('Parse window functions', () => {
 	let client!: MySqlDialect;
 	before(async () => {
-		client = await createMysqlClientForTest(
-			'mysql://root:password@localhost/mydb'
-		);
+		client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
 	});
 
 	it('SELECT ROW_NUMBER() OVER() as num', async () => {

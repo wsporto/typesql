@@ -2,18 +2,13 @@ import assert from 'node:assert';
 import { isLeft } from 'fp-ts/lib/Either';
 import { parseSql } from '../src/describe-query';
 import type { ColumnInfo } from '../src/mysql-query-analyzer/types';
-import {
-	createMysqlClientForTest,
-	loadMysqlSchema
-} from '../src/queryExectutor';
+import { createMysqlClientForTest, loadMysqlSchema } from '../src/queryExectutor';
 import type { MySqlDialect } from '../src/types';
 
 describe('type-mapping', () => {
 	let client!: MySqlDialect;
 	before(async () => {
-		client = await createMysqlClientForTest(
-			'mysql://root:password@localhost/mydb'
-		);
+		client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
 	});
 
 	it('select table with all types', async () => {
@@ -230,9 +225,7 @@ describe('type-mapping', () => {
 			assert.fail(`Shouldn't return an error`);
 		}
 		const expected = schema.right
-			.filter((colInfo) =>
-				actualColumns.find((col) => col.name === colInfo.column)
-			)
+			.filter((colInfo) => actualColumns.find((col) => col.name === colInfo.column))
 			.map((col) => {
 				const nameAndType = {
 					name: col.column,

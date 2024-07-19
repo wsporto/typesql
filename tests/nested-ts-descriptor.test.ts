@@ -1,23 +1,15 @@
 import assert from 'node:assert';
 import { describeNestedQuery } from '../src/describe-nested-query';
-import {
-	createMysqlClientForTest,
-	loadMysqlSchema
-} from '../src/queryExectutor';
+import { createMysqlClientForTest, loadMysqlSchema } from '../src/queryExectutor';
 import { isLeft } from 'fp-ts/lib/Either';
 import { extractQueryInfo } from '../src/mysql-query-analyzer/parse';
-import {
-	type NestedTsDescriptor,
-	createNestedTsDescriptor
-} from '../src/ts-nested-descriptor';
+import { type NestedTsDescriptor, createNestedTsDescriptor } from '../src/ts-nested-descriptor';
 import type { MySqlDialect } from '../src/types';
 
 describe('Test nested-ts-descriptor', () => {
 	let client!: MySqlDialect;
 	before(async () => {
-		client = await createMysqlClientForTest(
-			'mysql://root:password@localhost/mydb'
-		);
+		client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
 	});
 
 	it('SELECT FROM users u INNER JOIN posts p', async () => {

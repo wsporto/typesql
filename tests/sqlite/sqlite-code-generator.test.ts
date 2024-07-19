@@ -1,10 +1,7 @@
 import assert from 'node:assert';
 
 import { readFileSync } from 'node:fs';
-import {
-	generateCrud,
-	generateTsCode
-} from '../../src/sqlite-query-analyzer/code-generator';
+import { generateCrud, generateTsCode } from '../../src/sqlite-query-analyzer/code-generator';
 import { sqliteDbSchema } from '../mysql-query-analyzer/create-schema';
 import Database from 'better-sqlite3';
 import { isLeft } from 'fp-ts/lib/Either';
@@ -16,16 +13,8 @@ describe('sqlite-code-generator', () => {
 	it('select01 - select id, name from mytable2 where id = ?', async () => {
 		const sql = 'select id, name from mytable2 where id = ?';
 
-		const actual = await generateTsCode(
-			sql,
-			'select01',
-			sqliteDbSchema,
-			'better-sqlite3'
-		);
-		const expected = readFileSync(
-			'tests/sqlite/expected-code/select01.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const actual = await generateTsCode(sql, 'select01', sqliteDbSchema, 'better-sqlite3');
+		const expected = readFileSync('tests/sqlite/expected-code/select01.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -36,17 +25,8 @@ describe('sqlite-code-generator', () => {
 	it('select01-libsql - select id, name from mytable2 where id = ?', async () => {
 		const sql = 'select id, name from mytable2 where id = ?';
 
-		const actual = await generateTsCode(
-			sql,
-			'select01',
-			sqliteDbSchema,
-			'libsql',
-			false
-		);
-		const expected = readFileSync(
-			'tests/sqlite/expected-code/select01-libsql.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const actual = await generateTsCode(sql, 'select01', sqliteDbSchema, 'libsql', false);
+		const expected = readFileSync('tests/sqlite/expected-code/select01-libsql.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -57,16 +37,8 @@ describe('sqlite-code-generator', () => {
 	it('select02 - select without parameters', async () => {
 		const sql = 'select id from mytable1';
 
-		const actual = await generateTsCode(
-			sql,
-			'select02',
-			sqliteDbSchema,
-			'better-sqlite3'
-		);
-		const expected = readFileSync(
-			'tests/sqlite/expected-code/select02.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const actual = await generateTsCode(sql, 'select02', sqliteDbSchema, 'better-sqlite3');
+		const expected = readFileSync('tests/sqlite/expected-code/select02.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -77,17 +49,8 @@ describe('sqlite-code-generator', () => {
 	it('select02-libsql - select without parameters', async () => {
 		const sql = 'select id from mytable1';
 
-		const actual = await generateTsCode(
-			sql,
-			'select02',
-			sqliteDbSchema,
-			'libsql',
-			false
-		);
-		const expected = readFileSync(
-			'tests/sqlite/expected-code/select02-libsql.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const actual = await generateTsCode(sql, 'select02', sqliteDbSchema, 'libsql', false);
+		const expected = readFileSync('tests/sqlite/expected-code/select02-libsql.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -98,16 +61,8 @@ describe('sqlite-code-generator', () => {
 	it('select03 - select with same parameter used twice', async () => {
 		const sql = 'select id from mytable1 where id = :id or id = :id';
 
-		const actual = await generateTsCode(
-			sql,
-			'select03',
-			sqliteDbSchema,
-			'better-sqlite3'
-		);
-		const expected = readFileSync(
-			'tests/sqlite/expected-code/select03.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const actual = await generateTsCode(sql, 'select03', sqliteDbSchema, 'better-sqlite3');
+		const expected = readFileSync('tests/sqlite/expected-code/select03.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -116,19 +71,10 @@ describe('sqlite-code-generator', () => {
 	});
 
 	it('select04 - select with same parameter used twice', async () => {
-		const sql =
-			'SELECT text_column, date(text_column) as date FROM all_types WHERE date(text_column) = date(:date)';
+		const sql = 'SELECT text_column, date(text_column) as date FROM all_types WHERE date(text_column) = date(:date)';
 
-		const actual = await generateTsCode(
-			sql,
-			'select04',
-			sqliteDbSchema,
-			'better-sqlite3'
-		);
-		const expected = readFileSync(
-			'tests/sqlite/expected-code/select04.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const actual = await generateTsCode(sql, 'select04', sqliteDbSchema, 'better-sqlite3');
+		const expected = readFileSync('tests/sqlite/expected-code/select04.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -139,16 +85,8 @@ describe('sqlite-code-generator', () => {
 	it('insert01 - select with same parameter used twice', async () => {
 		const sql = 'INSERT INTO mytable1(value) values(10)';
 
-		const actual = await generateTsCode(
-			sql,
-			'insert01',
-			sqliteDbSchema,
-			'better-sqlite3'
-		);
-		const expected = readFileSync(
-			'tests/sqlite/expected-code/insert01.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const actual = await generateTsCode(sql, 'insert01', sqliteDbSchema, 'better-sqlite3');
+		const expected = readFileSync('tests/sqlite/expected-code/insert01.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -159,17 +97,8 @@ describe('sqlite-code-generator', () => {
 	it('insert01-libsql - select with same parameter used twice', async () => {
 		const sql = 'INSERT INTO mytable1(value) values(10)';
 
-		const actual = await generateTsCode(
-			sql,
-			'insert01',
-			sqliteDbSchema,
-			'libsql',
-			false
-		);
-		const expected = readFileSync(
-			'tests/sqlite/expected-code/insert01-libsql.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const actual = await generateTsCode(sql, 'insert01', sqliteDbSchema, 'libsql', false);
+		const expected = readFileSync('tests/sqlite/expected-code/insert01-libsql.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -180,16 +109,8 @@ describe('sqlite-code-generator', () => {
 	it('insert02 - select with same parameter used twice', async () => {
 		const sql = 'INSERT INTO mytable1(value) values(?)';
 
-		const actual = await generateTsCode(
-			sql,
-			'insert02',
-			sqliteDbSchema,
-			'better-sqlite3'
-		);
-		const expected = readFileSync(
-			'tests/sqlite/expected-code/insert02.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const actual = await generateTsCode(sql, 'insert02', sqliteDbSchema, 'better-sqlite3');
+		const expected = readFileSync('tests/sqlite/expected-code/insert02.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -200,17 +121,8 @@ describe('sqlite-code-generator', () => {
 	it('insert03-libsql - select with same parameter used twice', async () => {
 		const sql = 'INSERT INTO mytable1(value) VALUES(:value) RETURNING *';
 
-		const actual = await generateTsCode(
-			sql,
-			'insert03',
-			sqliteDbSchema,
-			'libsql',
-			false
-		);
-		const expected = readFileSync(
-			'tests/sqlite/expected-code/insert03-libsql.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const actual = await generateTsCode(sql, 'insert03', sqliteDbSchema, 'libsql', false);
+		const expected = readFileSync('tests/sqlite/expected-code/insert03-libsql.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -221,16 +133,8 @@ describe('sqlite-code-generator', () => {
 	it('update01 - UPDATE mytable1 SET value=? WHERE id=?', () => {
 		const sql = 'UPDATE mytable1 SET value=? WHERE id=?';
 
-		const actual = generateTsCode(
-			sql,
-			'update01',
-			sqliteDbSchema,
-			'better-sqlite3'
-		);
-		const expected = readFileSync(
-			'tests/sqlite/expected-code/update01.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const actual = generateTsCode(sql, 'update01', sqliteDbSchema, 'better-sqlite3');
+		const expected = readFileSync('tests/sqlite/expected-code/update01.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -241,17 +145,8 @@ describe('sqlite-code-generator', () => {
 	it('update01-libsql - UPDATE mytable1 SET value=? WHERE id=?', () => {
 		const sql = 'UPDATE mytable1 SET value=? WHERE id=?';
 
-		const actual = generateTsCode(
-			sql,
-			'update01',
-			sqliteDbSchema,
-			'libsql',
-			false
-		);
-		const expected = readFileSync(
-			'tests/sqlite/expected-code/update01-libsql.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const actual = generateTsCode(sql, 'update01', sqliteDbSchema, 'libsql', false);
+		const expected = readFileSync('tests/sqlite/expected-code/update01-libsql.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -262,16 +157,8 @@ describe('sqlite-code-generator', () => {
 	it('delete01 - DELETE FROM mytable1 WHERE id=?', () => {
 		const sql = 'DELETE FROM mytable1 WHERE id=?';
 
-		const actual = generateTsCode(
-			sql,
-			'delete01',
-			sqliteDbSchema,
-			'better-sqlite3'
-		);
-		const expected = readFileSync(
-			'tests/sqlite/expected-code/delete01.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const actual = generateTsCode(sql, 'delete01', sqliteDbSchema, 'better-sqlite3');
+		const expected = readFileSync('tests/sqlite/expected-code/delete01.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -282,17 +169,8 @@ describe('sqlite-code-generator', () => {
 	it('delete01-libsql - DELETE FROM mytable1 WHERE id=?', () => {
 		const sql = 'DELETE FROM mytable1 WHERE id=?';
 
-		const actual = generateTsCode(
-			sql,
-			'delete01',
-			sqliteDbSchema,
-			'libsql',
-			false
-		);
-		const expected = readFileSync(
-			'tests/sqlite/expected-code/delete01-libsql.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const actual = generateTsCode(sql, 'delete01', sqliteDbSchema, 'libsql', false);
+		const expected = readFileSync('tests/sqlite/expected-code/delete01-libsql.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -301,97 +179,53 @@ describe('sqlite-code-generator', () => {
 	});
 
 	it('crud-select01', () => {
-		const actual = generateCrud(
-			'better-sqlite3',
-			'Select',
-			'mytable1',
-			sqliteDbSchema
-		);
-		const expected = readFileSync(
-			'tests/sqlite/expected-code/crud-select01.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const actual = generateCrud('better-sqlite3', 'Select', 'mytable1', sqliteDbSchema);
+		const expected = readFileSync('tests/sqlite/expected-code/crud-select01.ts.txt', 'utf-8').replace(/\r/gm, '');
 		assert.deepStrictEqual(actual, expected);
 	});
 
 	it('crud-select01-libsql', () => {
 		const actual = generateCrud('libsql', 'Select', 'mytable1', sqliteDbSchema);
-		const expected = readFileSync(
-			'tests/sqlite/expected-code/crud-select01-libsql.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const expected = readFileSync('tests/sqlite/expected-code/crud-select01-libsql.ts.txt', 'utf-8').replace(/\r/gm, '');
 		assert.deepStrictEqual(actual, expected);
 	});
 
 	it('crud-insert01', () => {
-		const actual = generateCrud(
-			'better-sqlite3',
-			'Insert',
-			'mytable1',
-			sqliteDbSchema
-		);
-		const expected = readFileSync(
-			'tests/sqlite/expected-code/crud-insert01.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const actual = generateCrud('better-sqlite3', 'Insert', 'mytable1', sqliteDbSchema);
+		const expected = readFileSync('tests/sqlite/expected-code/crud-insert01.ts.txt', 'utf-8').replace(/\r/gm, '');
 		assert.deepStrictEqual(actual, expected);
 	});
 
 	it('crud-insert01-libsql', () => {
 		const actual = generateCrud('libsql', 'Insert', 'mytable1', sqliteDbSchema);
-		const expected = readFileSync(
-			'tests/sqlite/expected-code/crud-insert01-libsql.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const expected = readFileSync('tests/sqlite/expected-code/crud-insert01-libsql.ts.txt', 'utf-8').replace(/\r/gm, '');
 		assert.deepStrictEqual(actual, expected);
 	});
 
 	it('crud-update01', () => {
-		const actual = generateCrud(
-			'better-sqlite3',
-			'Update',
-			'mytable1',
-			sqliteDbSchema
-		);
-		const expected = readFileSync(
-			'tests/sqlite/expected-code/crud-update01.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const actual = generateCrud('better-sqlite3', 'Update', 'mytable1', sqliteDbSchema);
+		const expected = readFileSync('tests/sqlite/expected-code/crud-update01.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		assert.deepStrictEqual(actual, expected);
 	});
 
 	it('crud-update01-libsql', () => {
 		const actual = generateCrud('libsql', 'Update', 'mytable1', sqliteDbSchema);
-		const expected = readFileSync(
-			'tests/sqlite/expected-code/crud-update01-libsql.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const expected = readFileSync('tests/sqlite/expected-code/crud-update01-libsql.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		assert.deepStrictEqual(actual, expected);
 	});
 
 	it('crud-delete01', () => {
-		const actual = generateCrud(
-			'better-sqlite3',
-			'Delete',
-			'mytable1',
-			sqliteDbSchema
-		);
-		const expected = readFileSync(
-			'tests/sqlite/expected-code/crud-delete01.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const actual = generateCrud('better-sqlite3', 'Delete', 'mytable1', sqliteDbSchema);
+		const expected = readFileSync('tests/sqlite/expected-code/crud-delete01.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		assert.deepStrictEqual(actual, expected);
 	});
 
 	it('crud-delete01-libsql', () => {
 		const actual = generateCrud('libsql', 'Delete', 'mytable1', sqliteDbSchema);
-		const expected = readFileSync(
-			'tests/sqlite/expected-code/crud-delete01-libsql.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const expected = readFileSync('tests/sqlite/expected-code/crud-delete01-libsql.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		assert.deepStrictEqual(actual, expected);
 	});
@@ -400,17 +234,8 @@ describe('sqlite-code-generator', () => {
 		const sql = 'SELECT id FROM mytable1 ORDER BY ?';
 
 		const isCrud = false;
-		const actual = generateTsCode(
-			sql,
-			'select05',
-			sqliteDbSchema,
-			'better-sqlite3',
-			isCrud
-		);
-		const expected = readFileSync(
-			'tests/sqlite/expected-code/select05.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const actual = generateTsCode(sql, 'select05', sqliteDbSchema, 'better-sqlite3', isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/select05.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -426,17 +251,8 @@ WHERE id IN (:ids)
 AND name IN (:names)`;
 
 		const isCrud = false;
-		const actual = generateTsCode(
-			sql,
-			'select06',
-			sqliteDbSchema,
-			'better-sqlite3',
-			isCrud
-		);
-		const expected = readFileSync(
-			'tests/sqlite/expected-code/select06.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const actual = generateTsCode(sql, 'select06', sqliteDbSchema, 'better-sqlite3', isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/select06.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -455,17 +271,8 @@ FROM users u
 INNER JOIN posts p on p.fk_user = u.id`;
 
 		const isCrud = false;
-		const actual = generateTsCode(
-			sql,
-			'nested01',
-			sqliteDbSchema,
-			'better-sqlite3',
-			isCrud
-		);
-		const expected = readFileSync(
-			'tests/sqlite/expected-code/nested01.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const actual = generateTsCode(sql, 'nested01', sqliteDbSchema, 'better-sqlite3', isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/nested01.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -485,17 +292,8 @@ LEFT JOIN addresses as a2 ON a2.id = c.secondaryAddress
 WHERE c.id = :clientId`;
 
 		const isCrud = false;
-		const actual = generateTsCode(
-			sql,
-			'nested02',
-			sqliteDbSchema,
-			'better-sqlite3',
-			isCrud
-		);
-		const expected = readFileSync(
-			'tests/sqlite/expected-code/nested-clients-with-addresses.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const actual = generateTsCode(sql, 'nested02', sqliteDbSchema, 'better-sqlite3', isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/nested-clients-with-addresses.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -517,23 +315,12 @@ INNER JOIN users u on u.id = p.fk_user`;
 
 		const schemaResult = loadDbSchema(db);
 		if (isLeft(schemaResult)) {
-			assert.fail(
-				`Shouldn't return an error: ${schemaResult.left.description}`
-			);
+			assert.fail(`Shouldn't return an error: ${schemaResult.left.description}`);
 		}
 
 		const isCrud = false;
-		const actual = generateTsCode(
-			sql,
-			'nested03',
-			schemaResult.right,
-			'libsql',
-			isCrud
-		);
-		const expected = readFileSync(
-			'tests/sqlite/expected-code/nested03-many-to-many.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const actual = generateTsCode(sql, 'nested03', schemaResult.right, 'libsql', isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/nested03-many-to-many.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -552,17 +339,8 @@ FROM users u
 INNER JOIN posts p on p.fk_user = u.id`;
 
 		const isCrud = false;
-		const actual = generateTsCode(
-			sql,
-			'nested01',
-			sqliteDbSchema,
-			'libsql',
-			isCrud
-		);
-		const expected = readFileSync(
-			'tests/sqlite/expected-code/nested01-libsql.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const actual = generateTsCode(sql, 'nested01', sqliteDbSchema, 'libsql', isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/nested01-libsql.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -579,17 +357,8 @@ WHERE m2.name = :name
 AND m2.descr = :description`;
 
 		const isCrud = false;
-		const actual = generateTsCode(
-			sql,
-			'dynamic-query-01',
-			sqliteDbSchema,
-			'better-sqlite3',
-			isCrud
-		);
-		const expected = readFileSync(
-			'tests/sqlite/expected-code/dynamic-query01.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const actual = generateTsCode(sql, 'dynamic-query-01', sqliteDbSchema, 'better-sqlite3', isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/dynamic-query01.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -606,17 +375,8 @@ WHERE m2.name = :name
 AND m2.descr = :description`;
 
 		const isCrud = false;
-		const actual = generateTsCode(
-			sql,
-			'dynamic-query-01',
-			sqliteDbSchema,
-			'libsql',
-			isCrud
-		);
-		const expected = readFileSync(
-			'tests/sqlite/expected-code/dynamic-query01-libsql.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const actual = generateTsCode(sql, 'dynamic-query-01', sqliteDbSchema, 'libsql', isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/dynamic-query01-libsql.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -635,17 +395,8 @@ INNER JOIN ( -- derivated table
 WHERE (:name is NULL or m2.name = :name)`;
 
 		const isCrud = false;
-		const actual = generateTsCode(
-			sql,
-			'derivated-table',
-			sqliteDbSchema,
-			'better-sqlite3',
-			isCrud
-		);
-		const expected = readFileSync(
-			'tests/sqlite/expected-code/dynamic-query02.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const actual = generateTsCode(sql, 'derivated-table', sqliteDbSchema, 'better-sqlite3', isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/dynamic-query02.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -659,17 +410,8 @@ SELECT t1.id, t1.value
 FROM mytable1 t1`;
 
 		const isCrud = false;
-		const actual = generateTsCode(
-			sql,
-			'dynamic-query03',
-			sqliteDbSchema,
-			'better-sqlite3',
-			isCrud
-		);
-		const expected = readFileSync(
-			'tests/sqlite/expected-code/dynamic-query03.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const actual = generateTsCode(sql, 'dynamic-query03', sqliteDbSchema, 'better-sqlite3', isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/dynamic-query03.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -685,17 +427,8 @@ FROM mytable1 m1
 INNER JOIN mytable2 m2 on m2.id = m1.id`;
 
 		const isCrud = false;
-		const actual = generateTsCode(
-			sql,
-			'dynamic-query04',
-			sqliteDbSchema,
-			'better-sqlite3',
-			isCrud
-		);
-		const expected = readFileSync(
-			'tests/sqlite/expected-code/dynamic-query04.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const actual = generateTsCode(sql, 'dynamic-query04', sqliteDbSchema, 'better-sqlite3', isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/dynamic-query04.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -717,17 +450,8 @@ INNER JOIN cte m2 on m2.id = m1.id
 WHERE m2.name LIKE concat('%', :name, '%')`;
 
 		const isCrud = false;
-		const actual = generateTsCode(
-			sql,
-			'cte',
-			sqliteDbSchema,
-			'better-sqlite3',
-			isCrud
-		);
-		const expected = readFileSync(
-			'tests/sqlite/expected-code/dynamic-query05.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const actual = generateTsCode(sql, 'cte', sqliteDbSchema, 'better-sqlite3', isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/dynamic-query05.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -744,17 +468,8 @@ INNER JOIN mytable2 m2 on m2.id = m1.id
 ORDER BY ?`;
 
 		const isCrud = false;
-		const actual = generateTsCode(
-			sql,
-			'dynamic-query06',
-			sqliteDbSchema,
-			'better-sqlite3',
-			isCrud
-		);
-		const expected = readFileSync(
-			'tests/sqlite/expected-code/dynamic-query06.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const actual = generateTsCode(sql, 'dynamic-query06', sqliteDbSchema, 'better-sqlite3', isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/dynamic-query06.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -772,17 +487,8 @@ INNER JOIN mytable2 m2 on m2.id = m1.id
 ORDER BY ?`;
 
 		const isCrud = false;
-		const actual = generateTsCode(
-			sql,
-			'dynamic-query07',
-			sqliteDbSchema,
-			'better-sqlite3',
-			isCrud
-		);
-		const expected = readFileSync(
-			'tests/sqlite/expected-code/dynamic-query07.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const actual = generateTsCode(sql, 'dynamic-query07', sqliteDbSchema, 'better-sqlite3', isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/dynamic-query07.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -795,17 +501,8 @@ ORDER BY ?`;
 SELECT text_column, date(text_column) as date FROM all_types`;
 
 		const isCrud = false;
-		const actual = generateTsCode(
-			sql,
-			'dynamic-query08',
-			sqliteDbSchema,
-			'better-sqlite3',
-			isCrud
-		);
-		const expected = readFileSync(
-			'tests/sqlite/expected-code/dynamic-query08-date.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const actual = generateTsCode(sql, 'dynamic-query08', sqliteDbSchema, 'better-sqlite3', isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/dynamic-query08-date.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -823,17 +520,8 @@ FROM mytable2 t2
 INNER JOIN mytable3 t3 on t3.id = t2.id`;
 
 		const isCrud = false;
-		const actual = generateTsCode(
-			sql,
-			'dynamic-query09',
-			sqliteDbSchema,
-			'better-sqlite3',
-			isCrud
-		);
-		const expected = readFileSync(
-			'tests/sqlite/expected-code/dynamic-query09-params-on-select.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const actual = generateTsCode(sql, 'dynamic-query09', sqliteDbSchema, 'better-sqlite3', isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/dynamic-query09-params-on-select.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -852,17 +540,8 @@ WHERE name = :name
 LIMIT :limit OFFSET :offset`;
 
 		const isCrud = false;
-		const actual = generateTsCode(
-			sql,
-			'dynamic-query10',
-			sqliteDbSchema,
-			'better-sqlite3',
-			isCrud
-		);
-		const expected = readFileSync(
-			'tests/sqlite/expected-code/dynamic-query10-limit-offset.ts.txt',
-			'utf-8'
-		).replace(/\r/gm, '');
+		const actual = generateTsCode(sql, 'dynamic-query10', sqliteDbSchema, 'better-sqlite3', isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/dynamic-query10-limit-offset.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);

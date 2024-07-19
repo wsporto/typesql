@@ -7,9 +7,7 @@ import type { MySqlDialect, SchemaDef } from '../src/types';
 describe('Test simple select statements', () => {
 	let client!: MySqlDialect;
 	before(async () => {
-		client = await createMysqlClientForTest(
-			'mysql://root:password@localhost/mydb'
-		);
+		client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
 	});
 
 	//https://dev.mysql.com/doc/refman/8.0/en/comments.html

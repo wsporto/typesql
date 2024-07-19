@@ -8,9 +8,7 @@ import type { MySqlDialect } from '../src/types';
 describe('dynamic-query', () => {
 	let client!: MySqlDialect;
 	before(async () => {
-		client = await createMysqlClientForTest(
-			'mysql://root:password@localhost/mydb'
-		);
+		client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
 	});
 
 	it('WHERE m2.name = :name AND m2.descr = :description', async () => {
@@ -716,10 +714,8 @@ describe('dynamic-query', () => {
 					parameters: []
 				},
 				{
-					fragment:
-						'(select name from mytable1 m3 where m3.id = m2.id) as subQuery',
-					fragmentWitoutAlias:
-						'(select name from mytable1 m3 where m3.id = m2.id)',
+					fragment: '(select name from mytable1 m3 where m3.id = m2.id) as subQuery',
+					fragmentWitoutAlias: '(select name from mytable1 m3 where m3.id = m2.id)',
 					dependOnFields: [2],
 					dependOnParams: [],
 					parameters: []
@@ -1094,8 +1090,7 @@ SELECT id, exists(SELECT 1 FROM mytable2 where id = t1.id) as has from mytable1 
 				},
 				{
 					fragment: 'exists(SELECT 1 FROM mytable2 where id = t1.id) as has',
-					fragmentWitoutAlias:
-						'exists(SELECT 1 FROM mytable2 where id = t1.id)',
+					fragmentWitoutAlias: 'exists(SELECT 1 FROM mytable2 where id = t1.id)',
 					dependOnFields: [1],
 					dependOnParams: [],
 					parameters: []

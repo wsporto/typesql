@@ -1,7 +1,4 @@
-import type {
-	ColumnSchema,
-	GenericColumnSchema
-} from '../../src/mysql-query-analyzer/types';
+import type { ColumnSchema, GenericColumnSchema } from '../../src/mysql-query-analyzer/types';
 import type { SQLiteType } from '../../src/sqlite-query-analyzer/types';
 
 export const dbSchema: ColumnSchema[] = [

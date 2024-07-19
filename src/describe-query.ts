@@ -1,10 +1,4 @@
-import type {
-	SchemaDef,
-	ParameterDef,
-	TypeSqlError,
-	PreprocessedSql,
-	MySqlDialect
-} from './types';
+import type { SchemaDef, ParameterDef, TypeSqlError, PreprocessedSql, MySqlDialect } from './types';
 import { extractQueryInfo } from './mysql-query-analyzer/parse';
 import { type Either, isLeft, right, left } from 'fp-ts/lib/Either';
 import type { ColumnInfo, ColumnSchema } from './mysql-query-analyzer/types';
@@ -17,9 +11,7 @@ export function describeSql(dbSchema: ColumnSchema[], sql: string): SchemaDef {
 	if (queryInfo.kind === 'Select') {
 		const parametersDef = queryInfo.parameters.map((paramInfo, paramIndex) => {
 			const paramDef: ParameterDef = {
-				name: namedParameters?.[paramIndex]
-					? namedParameters[paramIndex]
-					: `param${paramIndex + 1}`,
+				name: namedParameters?.[paramIndex] ? namedParameters[paramIndex] : `param${paramIndex + 1}`,
 				columnType: paramInfo.type,
 				notNull: paramInfo.notNull
 			};
@@ -58,9 +50,7 @@ export function describeSql(dbSchema: ColumnSchema[], sql: string): SchemaDef {
 			}
 		];
 
-		const parameters = namedParameters
-			? addParameterNames(queryInfo.parameters, namedParameters)
-			: queryInfo.parameters;
+		const parameters = namedParameters ? addParameterNames(queryInfo.parameters, namedParameters) : queryInfo.parameters;
 		const verifiedParameters = parameters.map((param) => ({
 			...param,
 			columnType: verifyNotInferred(param.columnType)
@@ -100,9 +90,7 @@ export function describeSql(dbSchema: ColumnSchema[], sql: string): SchemaDef {
 				notNull: true
 			}
 		];
-		const parameters = namedParameters
-			? addParameterNames(queryInfo.parameters, namedParameters)
-			: queryInfo.parameters;
+		const parameters = namedParameters ? addParameterNames(queryInfo.parameters, namedParameters) : queryInfo.parameters;
 		const schemaDef: SchemaDef = {
 			sql: processedSql,
 			queryType: 'Delete',
@@ -116,16 +104,11 @@ export function describeSql(dbSchema: ColumnSchema[], sql: string): SchemaDef {
 	throw Error('Not supported!');
 }
 
-function addParameterNames(
-	parameters: ParameterDef[],
-	namedParameters: string[]
-) {
+function addParameterNames(parameters: ParameterDef[], namedParameters: string[]) {
 	return parameters.map((param, paramIndex) => {
 		const paramDef: ParameterDef = {
 			...param,
-			name: namedParameters?.[paramIndex]
-				? namedParameters[paramIndex]
-				: param.name
+			name: namedParameters?.[paramIndex] ? namedParameters[paramIndex] : param.name
 		};
 		return paramDef;
 	});
@@ -137,10 +120,7 @@ export function verifyNotInferred(type: InferType): DbType | 'any' {
 	return type;
 }
 
-export async function parseSql(
-	client: MySqlDialect,
-	sql: string
-): Promise<Either<TypeSqlError, SchemaDef>> {
+export async function parseSql(client: MySqlDialect, sql: string): Promise<Either<TypeSqlError, SchemaDef>> {
 	const { sql: processedSql } = preprocessSql(sql);
 	const explainResult = await explainSql(client.client, processedSql);
 	if (isLeft(explainResult)) {
@@ -172,8 +152,7 @@ export function preprocessSql(sql: string) {
 	lines.forEach((line, index, array) => {
 		let newLine = line;
 		if (!line.trim().startsWith('--')) {
-			const parameters: string[] =
-				line.match(regex)?.map((param) => param.slice(1)) || [];
+			const parameters: string[] = line.match(regex)?.map((param) => param.slice(1)) || [];
 			allParameters.push(...parameters);
 			newLine = line.replace(regex, '?');
 		}

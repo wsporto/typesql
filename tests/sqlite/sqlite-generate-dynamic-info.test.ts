@@ -2,10 +2,7 @@ import assert from 'node:assert';
 import { isLeft } from 'fp-ts/lib/Either';
 import { parseSql, traverseSql } from '../../src/sqlite-query-analyzer/parser';
 import { sqliteDbSchema } from '../mysql-query-analyzer/create-schema';
-import type {
-	DynamicSqlInfo2,
-	DynamicSqlInfoResult2
-} from '../../src/mysql-query-analyzer/types';
+import type { DynamicSqlInfo2, DynamicSqlInfoResult2 } from '../../src/mysql-query-analyzer/types';
 
 describe('sqlite-generate-dynamic-info', () => {
 	it('dynamic-traverse-result-01', () => {
@@ -77,10 +74,7 @@ describe('sqlite-generate-dynamic-info', () => {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
 		}
 		assert(actual.right.traverseResult.queryType === 'Select');
-		assert.deepStrictEqual(
-			actual.right.traverseResult.dynamicQueryInfo,
-			expected
-		);
+		assert.deepStrictEqual(actual.right.traverseResult.dynamicQueryInfo, expected);
 	});
 
 	it('dynamic-info-result01', () => {
@@ -207,10 +201,7 @@ describe('sqlite-generate-dynamic-info', () => {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
 		}
 		assert(actual.right.traverseResult.queryType === 'Select');
-		assert.deepStrictEqual(
-			actual.right.traverseResult.dynamicQueryInfo,
-			expected
-		);
+		assert.deepStrictEqual(actual.right.traverseResult.dynamicQueryInfo, expected);
 	});
 
 	it('dynamic-info-result02', () => {
@@ -340,10 +331,7 @@ describe('sqlite-generate-dynamic-info', () => {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
 		}
 		assert(actual.right.traverseResult.queryType === 'Select');
-		assert.deepStrictEqual(
-			actual.right.traverseResult.dynamicQueryInfo,
-			expected
-		);
+		assert.deepStrictEqual(actual.right.traverseResult.dynamicQueryInfo, expected);
 	});
 
 	it('dynamic-info-result05', () => {
@@ -489,10 +477,7 @@ describe('sqlite-generate-dynamic-info', () => {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
 		}
 		assert(actual.right.traverseResult.queryType === 'Select');
-		assert.deepStrictEqual(
-			actual.right.traverseResult.dynamicQueryInfo,
-			expected
-		);
+		assert.deepStrictEqual(actual.right.traverseResult.dynamicQueryInfo, expected);
 	});
 
 	it('dynamic-info-result06', () => {
@@ -619,10 +604,7 @@ describe('sqlite-generate-dynamic-info', () => {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
 		}
 		assert(actual.right.traverseResult.queryType === 'Select');
-		assert.deepStrictEqual(
-			actual.right.traverseResult.dynamicQueryInfo,
-			expected
-		);
+		assert.deepStrictEqual(actual.right.traverseResult.dynamicQueryInfo, expected);
 	});
 
 	it('dynamic-info-result06', () => {
@@ -732,10 +714,7 @@ describe('sqlite-generate-dynamic-info', () => {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
 		}
 		assert(actual.right.traverseResult.queryType === 'Select');
-		assert.deepStrictEqual(
-			actual.right.traverseResult.dynamicQueryInfo,
-			expected
-		);
+		assert.deepStrictEqual(actual.right.traverseResult.dynamicQueryInfo, expected);
 	});
 
 	it('dynamic-info-result: where t3.id > 1', () => {
@@ -847,10 +826,7 @@ describe('sqlite-generate-dynamic-info', () => {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
 		}
 		assert(actual.right.traverseResult.queryType === 'Select');
-		assert.deepStrictEqual(
-			actual.right.traverseResult.dynamicQueryInfo,
-			expected
-		);
+		assert.deepStrictEqual(actual.right.traverseResult.dynamicQueryInfo, expected);
 	});
 
 	it('dynamic-info-result: SELECT with parameters', () => {
@@ -967,9 +943,6 @@ describe('sqlite-generate-dynamic-info', () => {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
 		}
 		assert(actual.right.traverseResult.queryType === 'Select');
-		assert.deepStrictEqual(
-			actual.right.traverseResult.dynamicQueryInfo,
-			expected
-		);
+		assert.deepStrictEqual(actual.right.traverseResult.dynamicQueryInfo, expected);
 	});
 });

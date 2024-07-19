@@ -1,11 +1,6 @@
 import type { MySqlType } from './mysql-mapping';
 import type { Brand } from './utility-types';
-import type {
-	ColumnInfo,
-	ColumnSchema,
-	DynamicSqlInfoResult,
-	DynamicSqlInfoResult2
-} from './mysql-query-analyzer/types';
+import type { ColumnInfo, ColumnSchema, DynamicSqlInfoResult, DynamicSqlInfoResult2 } from './mysql-query-analyzer/types';
 import type { QueryContext } from '@wsporto/ts-mysql-parser';
 import type { NestedResultInfo } from './describe-nested-query';
 import type { SQLiteType } from './sqlite-query-analyzer/types';
@@ -95,11 +90,7 @@ export type ResolvedParameter = {
 	columnType: MySqlType | '?';
 };
 
-export type ParameterContext =
-	| ExpressionParamContext
-	| FunctionParamContext
-	| ResolvedParameter
-	| ExpressionCompareParamContext;
+export type ParameterContext = ExpressionParamContext | FunctionParamContext | ResolvedParameter | ExpressionCompareParamContext;
 
 export type FieldDescriptor = {
 	name: string;
@@ -160,12 +151,4 @@ export type TypeSqlConfig = {
 	includeCrudTables: string[];
 };
 
-export type SqlGenOption =
-	| 'select'
-	| 's'
-	| 'insert'
-	| 'i'
-	| 'update'
-	| 'u'
-	| 'delete'
-	| 'd';
+export type SqlGenOption = 'select' | 's' | 'insert' | 'i' | 'update' | 'u' | 'delete' | 'd';

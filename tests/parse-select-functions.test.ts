@@ -7,9 +7,7 @@ import { isLeft } from 'fp-ts/lib/Either';
 describe('Test parse select with functions', () => {
 	let client!: MySqlDialect;
 	before(async () => {
-		client = await createMysqlClientForTest(
-			'mysql://root:password@localhost/mydb'
-		);
+		client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
 	});
 
 	//TODO = column sum?
@@ -495,8 +493,7 @@ describe('Test parse select with functions', () => {
 	});
 
 	it('SELECT PERIOD_ADD(:p1, :p2) as add, PERIOD_DIFF(:p1, :p2) as diff', async () => {
-		const sql =
-			'SELECT PERIOD_ADD(:p1, :p2) as add_result, PERIOD_DIFF(:p1, :p2) as diff_result';
+		const sql = 'SELECT PERIOD_ADD(:p1, :p2) as add_result, PERIOD_DIFF(:p1, :p2) as diff_result';
 		const actual = await parseSql(client, sql);
 		const expected: SchemaDef = {
 			sql: 'SELECT PERIOD_ADD(?, ?) as add_result, PERIOD_DIFF(?, ?) as diff_result',

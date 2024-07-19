@@ -116,8 +116,7 @@ describe('QueryInfoResult test', () => {
 	});
 
 	it('SELECT datetime_column FROM all_types', () => {
-		const sql =
-			'SELECT datetime_column FROM all_types e WHERE datetime_column >= ?';
+		const sql = 'SELECT datetime_column FROM all_types e WHERE datetime_column >= ?';
 		const actual = extractQueryInfo(sql, dbSchema);
 
 		const expected: QueryInfoResult = {
@@ -247,8 +246,7 @@ describe('QueryInfoResult test', () => {
 	});
 
 	it('infer case with subselect', () => {
-		const sql =
-			'SELECT case when id=1 then ? else (select id from mytable1 where id = 1) end from mytable1';
+		const sql = 'SELECT case when id=1 then ? else (select id from mytable1 where id = 1) end from mytable1';
 		const actual = extractQueryInfo(sql, dbSchema);
 
 		const expected: QueryInfoResult = {
@@ -256,8 +254,7 @@ describe('QueryInfoResult test', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName:
-						'case when id=1 then ? else (select id from mytable1 where id = 1) end',
+					columnName: 'case when id=1 then ? else (select id from mytable1 where id = 1) end',
 					type: 'int',
 					notNull: false,
 					table: ''

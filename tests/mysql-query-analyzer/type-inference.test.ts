@@ -199,8 +199,7 @@ describe('type-inference test', () => {
 	});
 
 	it('infer case with subselect', () => {
-		const sql =
-			'SELECT case when id=1 then ? else (select id from mytable1 where id = 1) end from mytable1';
+		const sql = 'SELECT case when id=1 then ? else (select id from mytable1 where id = 1) end from mytable1';
 		const actual = parseAndInfer(sql, dbSchema);
 
 		const expected: TypeInferenceResult = {
@@ -296,8 +295,7 @@ describe('type-inference test', () => {
 	});
 
 	it('SELECT id FROM mytable2 WHERE name like ?', () => {
-		const sql =
-			'SELECT id FROM mytable2 WHERE (name = ? or name = ?) and id > ?';
+		const sql = 'SELECT id FROM mytable2 WHERE (name = ? or name = ?) and id > ?';
 		const actual = parseAndInfer(sql, dbSchema);
 
 		const expected: TypeInferenceResult = {
@@ -321,8 +319,7 @@ describe('type-inference test', () => {
 	});
 
 	it('SELECT concat(name, name) FROM mytable2 WHERE concat(name, name) like ?', () => {
-		const sql =
-			'SELECT concat(name, name) FROM mytable2 WHERE concat(name, name) like ?';
+		const sql = 'SELECT concat(name, name) FROM mytable2 WHERE concat(name, name) like ?';
 		const actual = parseAndInfer(sql, dbSchema);
 
 		const expected: TypeInferenceResult = {
@@ -538,8 +535,7 @@ describe('type-inference test', () => {
 	});
 
 	it('select CURRENT_DATE > ?', () => {
-		const sql =
-			'select CURRENT_DATE, CURRENT_TIME, CURRENT_TIMESTAMP, LOCALTIME, LOCALTIMESTAMP';
+		const sql = 'select CURRENT_DATE, CURRENT_TIME, CURRENT_TIMESTAMP, LOCALTIME, LOCALTIMESTAMP';
 		const actual = parseAndInfer(sql, dbSchema);
 
 		const expected: TypeInferenceResult = {
@@ -755,8 +751,7 @@ describe('type-inference test', () => {
 	//and a DOUBLE value for approximate-value arguments (FLOAT or DOUBLE).
 	//sum(id)=?, sum(double_value)=?, avg(id)=?,
 	it('SELECT sum(id)=?, sum(double_value)=?, avg(id)=?, avg(double_value)=? FROM mytable1', () => {
-		const sql =
-			'SELECT sum(id)=?, sum(double_value)=?, avg(id)=?, avg(double_value)=? FROM mytable3';
+		const sql = 'SELECT sum(id)=?, sum(double_value)=?, avg(id)=?, avg(double_value)=? FROM mytable3';
 		const actual = parseAndInfer(sql, dbSchema);
 
 		const expected: TypeInferenceResult = {
@@ -855,8 +850,7 @@ describe('type-inference test', () => {
 
 	//The return value has the same type as the first argument (assuming that it is integer, double, or decimal).
 	it('SELECT round(id), round(double_value), round(1) FROM mytable3', () => {
-		const sql =
-			'SELECT round(id)=?, round(double_value)=?, round(1)=? FROM mytable3';
+		const sql = 'SELECT round(id)=?, round(double_value)=?, round(1)=? FROM mytable3';
 		const actual = parseAndInfer(sql, dbSchema);
 
 		const expected: TypeInferenceResult = {
@@ -905,8 +899,7 @@ describe('type-inference test', () => {
 	});
 
 	it('SELECT (SELECT id=? FROM mytable2 WHERE name = ?) FROM mytable1', () => {
-		const sql =
-			'SELECT (SELECT id=? FROM mytable2 WHERE name = ?) FROM mytable1';
+		const sql = 'SELECT (SELECT id=? FROM mytable2 WHERE name = ?) FROM mytable1';
 		const actual = parseAndInfer(sql, dbSchema);
 
 		const expected: TypeInferenceResult = {
@@ -942,8 +935,7 @@ describe('type-inference test', () => {
 	});
 
 	it('SELECT id FROM mytable2 WHERE (?, ?) = (SELECT name, id FROM mytable2 WHERE id = ?)', () => {
-		const sql =
-			'SELECT id FROM mytable2 WHERE (?, ?) = (SELECT name, id FROM mytable2 WHERE id = ?)';
+		const sql = 'SELECT id FROM mytable2 WHERE (?, ?) = (SELECT name, id FROM mytable2 WHERE id = ?)';
 		const actual = parseAndInfer(sql, dbSchema);
 
 		const expected: TypeInferenceResult = {
@@ -955,8 +947,7 @@ describe('type-inference test', () => {
 	});
 
 	it('SELECT id FROM mytable2 WHERE (?, ?) in (SELECT name, id FROM mytable2 WHERE id = ?)', () => {
-		const sql =
-			'SELECT id FROM mytable2 WHERE (?, ?) in (SELECT name, id FROM mytable2 WHERE id = ?)';
+		const sql = 'SELECT id FROM mytable2 WHERE (?, ?) in (SELECT name, id FROM mytable2 WHERE id = ?)';
 		const actual = parseAndInfer(sql, dbSchema);
 
 		const expected: TypeInferenceResult = {
@@ -1022,8 +1013,7 @@ describe('type-inference test', () => {
 	});
 
 	it('SELECT id FROM mytable2 WHERE ? = CASE WHEN id = 1 THEN id ELSE ? END', () => {
-		const sql =
-			'SELECT id FROM mytable2 WHERE ? = CASE WHEN id = 1 THEN id ELSE ? END';
+		const sql = 'SELECT id FROM mytable2 WHERE ? = CASE WHEN id = 1 THEN id ELSE ? END';
 		const actual = parseAndInfer(sql, dbSchema);
 
 		const expected: TypeInferenceResult = {
@@ -1157,8 +1147,7 @@ describe('type-inference test', () => {
 	});
 
 	it('SELECT id FROM mytable2 WHERE ? = CASE WHEN id = 1 THEN id ELSE ? END', () => {
-		const sql =
-			'SELECT id FROM mytable2 WHERE ? = CASE WHEN id = 1 THEN id ELSE ? END';
+		const sql = 'SELECT id FROM mytable2 WHERE ? = CASE WHEN id = 1 THEN id ELSE ? END';
 		const actual = parseAndInfer(sql, dbSchema);
 
 		const expected: TypeInferenceResult = {
@@ -1170,8 +1159,7 @@ describe('type-inference test', () => {
 	});
 
 	it('SELECT * FROM mytable1 t WHERE ? in (SELECT id FROM mytable2 m2 )', () => {
-		const sql =
-			'SELECT * FROM mytable1 t WHERE ? in (SELECT id FROM mytable2 m2 )';
+		const sql = 'SELECT * FROM mytable1 t WHERE ? in (SELECT id FROM mytable2 m2 )';
 
 		const actual = parseAndInfer(sql, dbSchema);
 
@@ -1197,8 +1185,7 @@ describe('type-inference test', () => {
 	});
 
 	it('SELECT total FROM (SELECT id+id as total FROM mytable2) t where total > ?', () => {
-		const sql =
-			'SELECT total FROM (SELECT id+id as total FROM mytable2) t where total > ?';
+		const sql = 'SELECT total FROM (SELECT id+id as total FROM mytable2) t where total > ?';
 
 		const actual = parseAndInfer(sql, dbSchema);
 
@@ -1336,8 +1323,7 @@ describe('type-inference test', () => {
 	});
 
 	it('parse a select with tablelist and subquery', () => {
-		const sql =
-			'SELECT name, t.id FROM (select t1.*, t2.name from mytable1 t1, mytable2 t2) t';
+		const sql = 'SELECT name, t.id FROM (select t1.*, t2.name from mytable1 t1, mytable2 t2) t';
 		const actual = parseAndInfer(sql, dbSchema);
 
 		const expected: TypeInferenceResult = {
@@ -1349,8 +1335,7 @@ describe('type-inference test', () => {
 	});
 
 	it('parse a select with tablelist and subquery', () => {
-		const sql =
-			'SELECT value FROM ((( mytable1, (select * from mytable2) t )))';
+		const sql = 'SELECT value FROM ((( mytable1, (select * from mytable2) t )))';
 		const actual = parseAndInfer(sql, dbSchema);
 
 		const expected: TypeInferenceResult = {
@@ -1362,8 +1347,7 @@ describe('type-inference test', () => {
 	});
 
 	it('select name from mytable2 where exists ( select id from mytable1 where value = ?)', async () => {
-		const sql =
-			'select name from mytable2 where exists ( select id from mytable1 where value = ?)';
+		const sql = 'select name from mytable2 where exists ( select id from mytable1 where value = ?)';
 		const actual = parseAndInfer(sql, dbSchema);
 
 		const expected: TypeInferenceResult = {

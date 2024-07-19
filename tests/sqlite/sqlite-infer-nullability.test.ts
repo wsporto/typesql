@@ -29,8 +29,7 @@ describe('sqlite-infer-nullability', () => {
 	});
 
 	it('select value from mytable1 where value is not null or (id > 0 or value is not null)', () => {
-		const sql =
-			'select value from mytable1 where value is not null or (id > 0 or value is not null)';
+		const sql = 'select value from mytable1 where value is not null or (id > 0 or value is not null)';
 		const whereExpr = getWhereExpr(sql);
 
 		const actual = isNotNull('value', whereExpr);
@@ -39,8 +38,7 @@ describe('sqlite-infer-nullability', () => {
 	});
 
 	it('select value from mytable1 where value is not null and (id > 0 or value is not null)', () => {
-		const sql =
-			'select value from mytable1 where value is not null and (id > 0 or value is not null)';
+		const sql = 'select value from mytable1 where value is not null and (id > 0 or value is not null)';
 		const whereExpr = getWhereExpr(sql);
 
 		const actual = isNotNull('value', whereExpr);
@@ -49,8 +47,7 @@ describe('sqlite-infer-nullability', () => {
 	});
 
 	it('select value from mytable1 where value is not null or (id > 0 and (id < 10 and value is not null))', () => {
-		const sql =
-			'select value from mytable1 where value is not null or (id > 0 and (id < 10 and value is not null))';
+		const sql = 'select value from mytable1 where value is not null or (id > 0 and (id < 10 and value is not null))';
 		const whereExpr = getWhereExpr(sql);
 
 		const actual = isNotNull('value', whereExpr);
@@ -59,8 +56,7 @@ describe('sqlite-infer-nullability', () => {
 	});
 
 	it('select value from mytable1 where id > 0 and id < 10 and value > 1', () => {
-		const sql =
-			'select value from mytable1 where id > 0 and id < 10 and value > 1';
+		const sql = 'select value from mytable1 where id > 0 and id < 10 and value > 1';
 		const whereExpr = getWhereExpr(sql);
 
 		const actual = isNotNull('value', whereExpr);
@@ -69,8 +65,7 @@ describe('sqlite-infer-nullability', () => {
 	});
 
 	it('select value from mytable1 where value is not null and (value > 1 or value is null)', () => {
-		const sql =
-			'select value from mytable1 where value is not null and (value > 1 or value is null)';
+		const sql = 'select value from mytable1 where value is not null and (value > 1 or value is null)';
 		const whereExpr = getWhereExpr(sql);
 
 		const actual = isNotNull('value', whereExpr);
@@ -79,8 +74,7 @@ describe('sqlite-infer-nullability', () => {
 	});
 
 	it('select value from mytable1 where value is not null or (value > 1 and value is null)', () => {
-		const sql =
-			'select value from mytable1 where value is not null or (value > 1 and value is null)';
+		const sql = 'select value from mytable1 where value is not null or (value > 1 and value is null)';
 		const whereExpr = getWhereExpr(sql);
 
 		const actual = isNotNull('value', whereExpr);

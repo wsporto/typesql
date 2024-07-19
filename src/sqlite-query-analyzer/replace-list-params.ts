@@ -1,9 +1,6 @@
 import type { ParameterNameAndPosition } from '../types';
 
-export function replaceListParams(
-	sql: string,
-	listParamPositions: ParameterNameAndPosition[]
-): string {
+export function replaceListParams(sql: string, listParamPositions: ParameterNameAndPosition[]): string {
 	if (listParamPositions.length === 0) {
 		return sql;
 	}

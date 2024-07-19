@@ -142,10 +142,7 @@ export function converToTsType(mySqlType: MySqlType | 'any'): TsType {
 			return 'Uint8Array';
 		default:
 			if (mySqlType.startsWith('enum(')) {
-				const enumValues = mySqlType.substring(
-					mySqlType.indexOf('(') + 1,
-					mySqlType.indexOf(')')
-				);
+				const enumValues = mySqlType.substring(mySqlType.indexOf('(') + 1, mySqlType.indexOf(')'));
 				return enumValues.split(',').join(' | ') as TsType;
 			}
 			return 'any';
@@ -156,11 +153,7 @@ export function checkFlag(flags: number, flag: FlagEnum) {
 	return (flags & flag) !== 0;
 }
 
-export function convertTypeCodeToMysqlType(
-	typeCode: number,
-	flags: FlagEnum,
-	columnLength: number
-): MySqlType | string {
+export function convertTypeCodeToMysqlType(typeCode: number, flags: FlagEnum, columnLength: number): MySqlType | string {
 	if (flags & FlagEnum.SET_FLAG) {
 		return 'set';
 	}

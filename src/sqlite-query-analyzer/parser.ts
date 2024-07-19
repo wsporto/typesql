@@ -1,14 +1,6 @@
 import { type Either, isLeft, left, right } from 'fp-ts/lib/Either';
-import type {
-	ParameterNameAndPosition,
-	ParameterDef,
-	SchemaDef,
-	TypeSqlError
-} from '../types';
-import {
-	type Sql_stmtContext,
-	parseSql as parseSqlite
-} from '@wsporto/ts-mysql-parser/dist/sqlite';
+import type { ParameterNameAndPosition, ParameterDef, SchemaDef, TypeSqlError } from '../types';
+import { type Sql_stmtContext, parseSql as parseSqlite } from '@wsporto/ts-mysql-parser/dist/sqlite';
 import { tryTraverse_Sql_stmtContext } from './traverse';
 import {
 	type ColumnInfo,
@@ -20,11 +12,7 @@ import {
 } from '../mysql-query-analyzer/types';
 import { getVarType } from '../mysql-query-analyzer/collect-constraints';
 import { unify } from '../mysql-query-analyzer/unify';
-import {
-	hasAnnotation,
-	preprocessSql,
-	verifyNotInferred
-} from '../describe-query';
+import { hasAnnotation, preprocessSql, verifyNotInferred } from '../describe-query';
 import { describeNestedQuery } from './sqlite-describe-nested-query';
 import { indexGroupBy } from '../util';
 import { replaceListParams } from './replace-list-params';
@@ -39,10 +27,7 @@ type ParseAndTraverseResult = {
 	processedSql: string;
 };
 
-export function traverseSql(
-	sql: string,
-	dbSchema: ColumnSchema[]
-): Either<TypeSqlError, ParseAndTraverseResult> {
+export function traverseSql(sql: string, dbSchema: ColumnSchema[]): Either<TypeSqlError, ParseAndTraverseResult> {
 	const { sql: processedSql, namedParameters } = preprocessSql(sql);
 	const nested = hasAnnotation(sql, '@nested');
 	const dynamicQuery = hasAnnotation(sql, '@dynamicQuery');
@@ -62,35 +47,16 @@ export function traverseSql(
 	return right(result);
 }
 
-export function parseSql(
-	sql: string,
-	dbSchema: ColumnSchema[]
-): Either<TypeSqlError, SchemaDef> {
+export function parseSql(sql: string, dbSchema: ColumnSchema[]): Either<TypeSqlError, SchemaDef> {
 	const parseAndTraverseResult = traverseSql(sql, dbSchema);
 	if (isLeft(parseAndTraverseResult)) {
 		return parseAndTraverseResult;
 	}
-	const {
-		traverseResult,
-		processedSql,
-		namedParameters,
-		nested,
-		dynamicQuery
-	} = parseAndTraverseResult.right;
-	return createSchemaDefinition(
-		processedSql,
-		traverseResult,
-		namedParameters,
-		nested,
-		dynamicQuery
-	);
+	const { traverseResult, processedSql, namedParameters, nested, dynamicQuery } = parseAndTraverseResult.right;
+	return createSchemaDefinition(processedSql, traverseResult, namedParameters, nested, dynamicQuery);
 }
 
-function traverseQuery(
-	sql_stmtContext: Sql_stmtContext,
-	dbSchema: ColumnSchema[],
-	namedParameters: string[]
-) {
+function traverseQuery(sql_stmtContext: Sql_stmtContext, dbSchema: ColumnSchema[], namedParameters: string[]) {
 	const traverseContext: TraverseContext = {
 		dbSchema,
 		withSchema: [],
@@ -115,10 +81,7 @@ function traverseQuery(
 		relations: []
 	};
 
-	const queryResultResult = tryTraverse_Sql_stmtContext(
-		sql_stmtContext,
-		traverseContext
-	);
+	const queryResultResult = tryTraverse_Sql_stmtContext(sql_stmtContext, traverseContext);
 	return queryResultResult;
 }
 
@@ -146,8 +109,7 @@ function createSchemaDefinition(
 			});
 		}
 		for (let index = 0; index < sameNameList.length; index++) {
-			queryResult.parameters[index].notNull =
-				notNull || queryResult.parameters[index].notNull;
+			queryResult.parameters[index].notNull = notNull || queryResult.parameters[index].notNull;
 		}
 	});
 	const substitutions: SubstitutionHash = {}; //TODO - DUPLICADO
@@ -155,10 +117,7 @@ function createSchemaDefinition(
 	if (queryResult.queryType === 'Select') {
 		const columnResult = queryResult.columns.map((col) => {
 			const columnType = getVarType(substitutions, col.type);
-			const columnNotNull =
-				paramsById.get(col.type.id) != null
-					? paramsById.get(col.type.id)?.notNull!
-					: col.notNull;
+			const columnNotNull = paramsById.get(col.type.id) != null ? paramsById.get(col.type.id)?.notNull! : col.notNull;
 			const colInfo: ColumnInfo = {
 				columnName: col.name,
 				type: verifyNotInferred(columnType),
@@ -171,9 +130,7 @@ function createSchemaDefinition(
 			const columnType = getVarType(substitutions, param.type);
 			const columnNotNull = param.notNull;
 			const colInfo: ParameterDef = {
-				name: namedParameters?.[index]
-					? namedParameters[index]
-					: `param${index + 1}`,
+				name: namedParameters?.[index] ? namedParameters[index] : `param${index + 1}`,
 				columnType: verifyNotInferred(columnType),
 				notNull: columnNotNull
 			};
@@ -203,21 +160,14 @@ function createSchemaDefinition(
 			schemaDef.orderByColumns = queryResult.orderByColumns;
 		}
 		if (nestedQuery) {
-			const nestedResult = describeNestedQuery(
-				columnResult,
-				queryResult.relations
-			);
+			const nestedResult = describeNestedQuery(columnResult, queryResult.relations);
 			if (isLeft(nestedResult)) {
 				return nestedResult;
 			}
 			schemaDef.nestedInfo = nestedResult.right;
 		}
 		if (dynamicQuery) {
-			const dynamicSqlInfo = describeDynamicQuery2(
-				queryResult.dynamicQueryInfo,
-				namedParameters,
-				queryResult.orderByColumns || []
-			);
+			const dynamicSqlInfo = describeDynamicQuery2(queryResult.dynamicQueryInfo, namedParameters, queryResult.orderByColumns || []);
 			schemaDef.dynamicSqlQuery2 = dynamicSqlInfo;
 		}
 
@@ -228,9 +178,7 @@ function createSchemaDefinition(
 			const columnType = getVarType(substitutions, param.type);
 			const columnNotNull = param.notNull;
 			const colInfo: ParameterDef = {
-				name: namedParameters?.[index]
-					? namedParameters[index]
-					: `param${index + 1}`,
+				name: namedParameters?.[index] ? namedParameters[index] : `param${index + 1}`,
 				columnType: verifyNotInferred(columnType),
 				notNull: columnNotNull
 			};
@@ -265,9 +213,7 @@ function createSchemaDefinition(
 			const columnType = getVarType(substitutions, param.type);
 			const columnNotNull = param.notNull;
 			const colInfo: ParameterDef = {
-				name: namedParameters?.[index]
-					? namedParameters[index]
-					: `param${index + 1}`,
+				name: namedParameters?.[index] ? namedParameters[index] : `param${index + 1}`,
 				columnType: verifyNotInferred(columnType),
 				notNull: columnNotNull
 			};
@@ -278,9 +224,7 @@ function createSchemaDefinition(
 			const columnNotNull = param.notNull;
 			const paramIndex = index + queryResult.columns.length;
 			const colInfo: ParameterDef = {
-				name: namedParameters?.[paramIndex]
-					? namedParameters[paramIndex]
-					: `param${index + 1}`,
+				name: namedParameters?.[paramIndex] ? namedParameters[paramIndex] : `param${index + 1}`,
 				columnType: verifyNotInferred(columnType),
 				notNull: columnNotNull
 			};
@@ -303,9 +247,7 @@ function createSchemaDefinition(
 			const columnType = getVarType(substitutions, param.type);
 			const columnNotNull = param.notNull;
 			const colInfo: ParameterDef = {
-				name: namedParameters?.[index]
-					? namedParameters[index]
-					: `param${index + 1}`,
+				name: namedParameters?.[index] ? namedParameters[index] : `param${index + 1}`,
 				columnType: verifyNotInferred(columnType),
 				notNull: columnNotNull
 			};

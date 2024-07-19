@@ -566,8 +566,7 @@ describe('infer-not-null-experimental', () => {
 	});
 
 	it('select * from (select * from (select * from mytable2 where name is not null) t1) t2', () => {
-		const sql =
-			'select * from (select * from (select * from mytable2 where name is not null) t1) t2';
+		const sql = 'select * from (select * from (select * from mytable2 where name is not null) t1) t2';
 		const actual = parseAndInferNotNull(sql, dbSchema);
 		const expected = [true, true, false];
 
@@ -575,8 +574,7 @@ describe('infer-not-null-experimental', () => {
 	});
 
 	it('select * from (select * from (select * from mytable2 where id > 10) t1) t2', () => {
-		const sql =
-			'select * from (select * from (select * from mytable2 where id > 10) t1) t2';
+		const sql = 'select * from (select * from (select * from mytable2 where id > 10) t1) t2';
 		const actual = parseAndInferNotNull(sql, dbSchema);
 
 		const expected = [true, false, false];
@@ -585,8 +583,7 @@ describe('infer-not-null-experimental', () => {
 	});
 
 	it('3 levels of subselects on from  - where name is not null on the 2nd level', () => {
-		const sql =
-			'select * from (select * from (select * from mytable2 where id > 10) t1 where name is not null) t2';
+		const sql = 'select * from (select * from (select * from mytable2 where id > 10) t1 where name is not null) t2';
 		const actual = parseAndInferNotNull(sql, dbSchema);
 
 		const expected = [true, true, false];

@@ -2,11 +2,7 @@ import { type Either, right } from 'fp-ts/lib/Either';
 import type { DatabaseClient, TypeSqlError } from '../types';
 import Database from 'libsql';
 
-export function createLibSqlClient(
-	url: string,
-	attachList: string[],
-	authToken: string
-): Either<TypeSqlError, DatabaseClient> {
+export function createLibSqlClient(url: string, attachList: string[], authToken: string): Either<TypeSqlError, DatabaseClient> {
 	const opts = {
 		authToken: authToken
 	} as any;

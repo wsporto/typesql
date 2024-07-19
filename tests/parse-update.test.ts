@@ -8,9 +8,7 @@ import type { ColumnInfo } from '../src/mysql-query-analyzer/types';
 describe('parse update statements', () => {
 	let client!: MySqlDialect;
 	before(async () => {
-		client = await createMysqlClientForTest(
-			'mysql://root:password@localhost/mydb'
-		);
+		client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
 	});
 
 	const columns: ColumnInfo[] = [

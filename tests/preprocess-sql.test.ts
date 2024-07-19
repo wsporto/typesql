@@ -16,8 +16,7 @@ describe('preprocess-sql', () => {
 	});
 
 	it('preprocess sql with several parameters', async () => {
-		const sql =
-			'select * from mytable1 where :id = 10 or :id=1 or : name > 10or:param1>0and :PARAM>0 and :PARAM1>0 and 10>20';
+		const sql = 'select * from mytable1 where :id = 10 or :id=1 or : name > 10or:param1>0and :PARAM>0 and :PARAM1>0 and 10>20';
 		const actual = preprocessSql(sql);
 
 		const expected: PreprocessedSql = {
