@@ -305,7 +305,6 @@ describe('sqlite-code-generator', () => {
 	});
 
 	it('select06 - SELECT id FROM mytable1 ORDER BY ?', () => {
-		//
 		const sql = `SELECT id
 FROM mytable2
 WHERE id IN (:ids)
@@ -314,6 +313,22 @@ AND name IN (:names)`;
 		const isCrud = false;
 		const actual = generateTsCode(sql, 'select06', sqliteDbSchema, 'better-sqlite3', isCrud);
 		const expected = readFileSync('tests/sqlite/expected-code/select06.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('select06-bun - SELECT id FROM mytable1 ORDER BY ?', () => {
+		const sql = `SELECT id
+FROM mytable2
+WHERE id IN (:ids)
+AND name IN (:names)`;
+
+		const isCrud = false;
+		const actual = generateTsCode(sql, 'select06', sqliteDbSchema, 'bun:sqlite', isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/select06-bun.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);

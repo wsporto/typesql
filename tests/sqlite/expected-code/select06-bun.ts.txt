@@ -1,0 +1,29 @@
+import type { Database } from 'bun:sqlite';
+
+export type Select06Params = {
+	ids: number[];
+	names: string[];
+}
+
+export type Select06Result = {
+	id: number;
+}
+
+export function select06(db: Database, params: Select06Params): Select06Result[] {
+	const sql = `
+	SELECT id
+	FROM mytable2
+	WHERE id IN (${params.ids.map(() => '?')})
+	AND name IN (${params.names.map(() => '?')})
+	`
+	return db.prepare(sql)
+		.values(...params.ids, ...params.names)
+		.map(data => mapArrayToSelect06Result(data));
+}
+
+function mapArrayToSelect06Result(data: any) {
+	const result: Select06Result = {
+		id: data[0]
+	}
+	return result;
+}
