@@ -180,7 +180,7 @@ function mapColumns(client: SQLiteClient, queryType: SchemaDef['queryType'], col
 	];
 
 	if (queryType === 'Insert' && !returning) {
-		return client === 'better-sqlite3' ? sqliteInsertColumns : libSqlInsertColumns;
+		return client === 'better-sqlite3' || client == 'bun:sqlite' ? sqliteInsertColumns : libSqlInsertColumns;
 	}
 	if (queryType === 'Update' || queryType === 'Delete') {
 		return client === 'better-sqlite3' ? [sqliteInsertColumns[0]] : [libSqlInsertColumns[0]];
@@ -285,7 +285,8 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 		tsDescriptor.parameters.map((param) => fromDriver('params', param))
 	);
 
-	const queryParams = allParameters.length > 0 ? `${allParameters.join(', ')}` : '';
+	const queryParamsWithoutBrackets = allParameters.length > 0 ? `${allParameters.join(', ')}` : '';
+	const queryParams = queryParamsWithoutBrackets !== '' ? `[${queryParamsWithoutBrackets}]` : '';
 
 	if (client === 'better-sqlite3') {
 		writer.writeLine(`import type { Database } from 'better-sqlite3';`);
@@ -651,7 +652,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 				writer.indent().write('`').newLine();
 				writer.write('return db.prepare(sql)').newLine();
 				writer.indent().write('.raw(true)').newLine();
-				writer.indent().write(`.all([${queryParams}])`).newLine();
+				writer.indent().write(`.all(${queryParams})`).newLine();
 				writer.indent().write(`.map(data => mapArrayTo${resultTypeName}(data))${tsDescriptor.multipleRowsResult ? '' : '[0]'};`);
 			});
 		}
@@ -665,7 +666,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 				});
 				writer.indent().write('`').newLine();
 				writer.write('return db.prepare(sql)').newLine();
-				writer.indent().write(`.values(${queryParams})`).newLine();
+				writer.indent().write(`.values(${queryParamsWithoutBrackets})`).newLine();
 				writer.indent().write(`.map(data => mapArrayTo${resultTypeName}(data))${tsDescriptor.multipleRowsResult ? '' : '[0]'};`);
 			});
 		}
@@ -678,7 +679,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 					writer.indent().write(sqlLine).newLine();
 				});
 				writer.indent().write('`').newLine();
-				const executeParams = queryParams !== '' ? `{ sql, args: [${queryParams}] }` : 'sql';
+				const executeParams = queryParams !== '' ? `{ sql, args: ${queryParams} }` : 'sql';
 
 				writer.write(`return client.execute(${executeParams})`).newLine();
 
@@ -703,9 +704,10 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 	}
 
 	if (!isCrud && (queryType === 'Update' || queryType === 'Delete' || (queryType === 'Insert' && !tsDescriptor.returning))) {
-		if (client === 'better-sqlite3') {
+		if (client === 'better-sqlite3' || client === 'bun:sqlite') {
 			writer.write(`export function ${camelCaseName}(${functionArguments}): ${resultTypeName}`).block(() => {
-				writeExecuteBlock(sql, queryParams, resultTypeName, writer);
+				const params = client === 'better-sqlite3' ? queryParams : queryParamsWithoutBrackets;
+				writeExecuteBlock(sql, params, resultTypeName, writer);
 			});
 		}
 		if (client === 'libsql') {
@@ -716,7 +718,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 					writer.indent().write(sqlLine).newLine();
 				});
 				writer.indent().write('`').newLine();
-				const executeParams = queryParams !== '' ? `{ sql, args: [${queryParams}] }` : 'sql';
+				const executeParams = queryParams !== '' ? `{ sql, args: ${queryParams} }` : 'sql';
 				writer.write(`return client.execute(${executeParams})`).newLine();
 				writer.indent().write(`.then(res => mapArrayTo${resultTypeName}(res));`);
 			});
@@ -836,7 +838,7 @@ function writeExecuteBlock(sql: string, queryParams: string, resultTypeName: str
 	});
 	writer.indent().write('`').newLine();
 	writer.write('return db.prepare(sql)').newLine();
-	writer.indent().write(`.run([${queryParams}]) as ${resultTypeName};`);
+	writer.indent().write(`.run(${queryParams}) as ${resultTypeName};`);
 }
 
 function writeExecuteCrudBlock(
@@ -884,10 +886,10 @@ function writeExecutSelectCrudBlock(
 	if (client === 'better-sqlite3') {
 		writer.write('return db.prepare(sql)').newLine();
 		writer.indent().write('.raw(true)').newLine();
-		writer.indent().write(`.all([${queryParams}])`).newLine();
+		writer.indent().write(`.all(${queryParams})`).newLine();
 		writer.indent().write(`.map(data => mapArrayTo${resultTypeName}(data))[0];`);
 	} else {
-		writer.write(`return client.execute({ sql, args: [${queryParams}] })`).newLine();
+		writer.write(`return client.execute({ sql, args: ${queryParams} })`).newLine();
 		writer.indent().write('.then(res => res.rows)').newLine();
 		writer.indent().write(`.then(rows => mapArrayTo${resultTypeName}(rows[0]));`);
 	}
@@ -960,9 +962,9 @@ function writeExecutDeleteCrudBlock(
 	writer.blankLine();
 	if (client === 'better-sqlite3') {
 		writer.write('return db.prepare(sql)').newLine();
-		writer.indent().write(`.run([${queryParams}]) as ${resultTypeName};`).newLine();
+		writer.indent().write(`.run(${queryParams}) as ${resultTypeName};`).newLine();
 	} else {
-		writer.write(`return client.execute({ sql, args: [${queryParams}] })`).newLine();
+		writer.write(`return client.execute({ sql, args: ${queryParams} })`).newLine();
 		writer.indent().write(`.then(res => mapArrayTo${resultTypeName}(res));`).newLine();
 	}
 }

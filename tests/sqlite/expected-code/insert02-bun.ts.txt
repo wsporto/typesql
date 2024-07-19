@@ -1,0 +1,18 @@
+import type { Database } from 'bun:sqlite';
+
+export type Insert02Params = {
+	param1: number | null;
+}
+
+export type Insert02Result = {
+	changes: number;
+	lastInsertRowid: number;
+}
+
+export function insert02(db: Database, params: Insert02Params): Insert02Result {
+	const sql = `
+	INSERT INTO mytable1(value) values(?)
+	`
+	return db.prepare(sql)
+		.run(params.param1) as Insert02Result;
+}

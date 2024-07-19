@@ -154,11 +154,35 @@ describe('sqlite-code-generator', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('insert01-bun - select with same parameter used twice', async () => {
+		const sql = 'INSERT INTO mytable1(value) values(10)';
+
+		const actual = await generateTsCode(sql, 'insert01', sqliteDbSchema, 'bun:sqlite');
+		const expected = readFileSync('tests/sqlite/expected-code/insert01-bun.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('insert02 - select with same parameter used twice', async () => {
 		const sql = 'INSERT INTO mytable1(value) values(?)';
 
 		const actual = await generateTsCode(sql, 'insert02', sqliteDbSchema, 'better-sqlite3');
 		const expected = readFileSync('tests/sqlite/expected-code/insert02.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('insert02-bun - select with same parameter used twice', async () => {
+		const sql = 'INSERT INTO mytable1(value) values(?)';
+
+		const actual = await generateTsCode(sql, 'insert02', sqliteDbSchema, 'bun:sqlite');
+		const expected = readFileSync('tests/sqlite/expected-code/insert02-bun.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
