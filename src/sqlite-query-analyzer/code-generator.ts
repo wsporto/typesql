@@ -183,7 +183,7 @@ function mapColumns(client: SQLiteClient, queryType: SchemaDef['queryType'], col
 		return client === 'better-sqlite3' || client == 'bun:sqlite' ? sqliteInsertColumns : libSqlInsertColumns;
 	}
 	if (queryType === 'Update' || queryType === 'Delete') {
-		return client === 'better-sqlite3' ? [sqliteInsertColumns[0]] : [libSqlInsertColumns[0]];
+		return client === 'better-sqlite3' || client == 'bun:sqlite' ? [sqliteInsertColumns[0]] : [libSqlInsertColumns[0]];
 	}
 
 	const escapedColumnsNames = renameInvalidNames(columns.map((col) => col.columnName));

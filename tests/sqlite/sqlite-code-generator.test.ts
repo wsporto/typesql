@@ -226,6 +226,18 @@ describe('sqlite-code-generator', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('update01-bun - UPDATE mytable1 SET value=? WHERE id=?', () => {
+		const sql = 'UPDATE mytable1 SET value=? WHERE id=?';
+
+		const actual = generateTsCode(sql, 'update01', sqliteDbSchema, 'bun:sqlite');
+		const expected = readFileSync('tests/sqlite/expected-code/update01-bun.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('delete01 - DELETE FROM mytable1 WHERE id=?', () => {
 		const sql = 'DELETE FROM mytable1 WHERE id=?';
 
