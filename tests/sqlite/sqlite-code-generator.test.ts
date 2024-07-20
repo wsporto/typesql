@@ -262,6 +262,18 @@ describe('sqlite-code-generator', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('delete01-bun - DELETE FROM mytable1 WHERE id=?', () => {
+		const sql = 'DELETE FROM mytable1 WHERE id=?';
+
+		const actual = generateTsCode(sql, 'delete01', sqliteDbSchema, 'bun:sqlite');
+		const expected = readFileSync('tests/sqlite/expected-code/delete01-bun.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('crud-select01', () => {
 		const actual = generateCrud('better-sqlite3', 'Select', 'mytable1', sqliteDbSchema);
 		const expected = readFileSync('tests/sqlite/expected-code/crud-select01.ts.txt', 'utf-8').replace(/\r/gm, '');
