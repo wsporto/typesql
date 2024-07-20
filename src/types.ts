@@ -118,11 +118,11 @@ export type PreprocessedSql = {
 
 export type CamelCaseName = Brand<string, 'CamelCase'>;
 
-export type DatabaseClient = MySqlDialect | SQLiteDialect | LibSqlClient;
+export type DatabaseClient = MySqlDialect | SQLiteDialect | LibSqlClient | BunDialect;
 
-export type TypeSqlDialect = DatabaseClient['type'] | 'bun:sqlite';
+export type TypeSqlDialect = DatabaseClient['type'];
 
-export type SQLiteClient = SQLiteDialect['type'] | LibSqlClient['type'] | 'bun:sqlite';
+export type SQLiteClient = SQLiteDialect['type'] | LibSqlClient['type'] | BunDialect['type'];
 
 export type MySqlDialect = {
 	type: 'mysql2';
@@ -134,6 +134,11 @@ export type MySqlDialect = {
 
 export type SQLiteDialect = {
 	type: 'better-sqlite3';
+	client: Database;
+};
+
+export type BunDialect = {
+	type: 'bun:sqlite';
 	client: Database;
 };
 

@@ -16,6 +16,7 @@ import {
 } from '../code-generator';
 import CodeBlockWriter from 'code-block-writer';
 import type {
+	BunDialect,
 	LibSqlClient,
 	ParameterDef,
 	QueryType,
@@ -34,7 +35,7 @@ import { mapToDynamicParams, mapToDynamicResultColumns, mapToDynamicSelectColumn
 import { EOL } from 'node:os';
 
 export function validateAndGenerateCode(
-	client: SQLiteDialect | LibSqlClient,
+	client: SQLiteDialect | LibSqlClient | BunDialect,
 	sql: string,
 	queryName: string,
 	sqliteDbSchema: ColumnSchema[],
