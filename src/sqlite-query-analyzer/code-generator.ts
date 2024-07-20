@@ -448,6 +448,13 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 					.indent()
 					.write(`.map(data => mapArrayTo${resultTypeName}(data, params?.select))${tsDescriptor.multipleRowsResult ? '' : '[0]'};`);
 			}
+			if (client === 'bun:sqlite') {
+				writer.write('return db.prepare(sql)').newLine();
+				writer.indent().write('.values(paramsValues)').newLine();
+				writer
+					.indent()
+					.write(`.map(data => mapArrayTo${resultTypeName}(data, params?.select))${tsDescriptor.multipleRowsResult ? '' : '[0]'};`);
+			}
 			if (client === 'libsql') {
 				writer.write('return client.execute({ sql, args: paramsValues })').newLine();
 				writer.indent().write('.then(res => res.rows)').newLine();

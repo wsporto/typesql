@@ -576,6 +576,24 @@ AND m2.descr = :description`;
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('dynamic-query-01-bun', () => {
+		const sql = `-- @dynamicQuery
+SELECT m1.id, m1.value, m2.name, m2.descr as description
+FROM mytable1 m1
+INNER JOIN mytable2 m2 on m1.id = m2.id
+WHERE m2.name = :name
+AND m2.descr = :description`;
+
+		const isCrud = false;
+		const actual = generateTsCode(sql, 'dynamic-query-01', sqliteDbSchema, 'bun:sqlite', isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/dynamic-query01-bun.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('dynamic-query-02', () => {
 		const sql = `-- @dynamicQuery
 SELECT m1.id, m2.name
@@ -596,6 +614,26 @@ WHERE (:name is NULL or m2.name = :name)`;
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('dynamic-query-02-bun', () => {
+		const sql = `-- @dynamicQuery
+SELECT m1.id, m2.name
+FROM mytable1 m1
+INNER JOIN ( -- derivated table
+	SELECT id, name from mytable2 m 
+	WHERE m.name = :subqueryName
+) m2 on m2.id = m1.id
+WHERE (:name is NULL or m2.name = :name)`;
+
+		const isCrud = false;
+		const actual = generateTsCode(sql, 'derivated-table', sqliteDbSchema, 'bun:sqlite', isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/dynamic-query02-bun.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('dynamic-query-03', () => {
 		const sql = `-- @dynamicQuery
 SELECT t1.id, t1.value
@@ -604,6 +642,21 @@ FROM mytable1 t1`;
 		const isCrud = false;
 		const actual = generateTsCode(sql, 'dynamic-query03', sqliteDbSchema, 'better-sqlite3', isCrud);
 		const expected = readFileSync('tests/sqlite/expected-code/dynamic-query03.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('dynamic-query-03-bun', () => {
+		const sql = `-- @dynamicQuery
+SELECT t1.id, t1.value
+FROM mytable1 t1`;
+
+		const isCrud = false;
+		const actual = generateTsCode(sql, 'dynamic-query03', sqliteDbSchema, 'bun:sqlite', isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/dynamic-query03-bun.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
