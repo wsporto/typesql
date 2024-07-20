@@ -792,7 +792,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 		relations.forEach((relation, index) => {
 			const relationType = generateRelationType(capitalizedName, relation.name);
 			if (index === 0) {
-				if (client === 'better-sqlite3') {
+				if (client === 'better-sqlite3' || client == 'bun:sqlite') {
 					writer.write(`export function ${camelCaseName}Nested(${functionArguments}): ${relationType}[]`).block(() => {
 						const params = tsDescriptor.parameters.length > 0 ? ', params' : '';
 						writer.writeLine(`const selectResult = ${camelCaseName}(db${params});`);

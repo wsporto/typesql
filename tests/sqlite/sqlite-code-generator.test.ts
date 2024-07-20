@@ -404,6 +404,26 @@ INNER JOIN posts p on p.fk_user = u.id`;
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('nested01-bun - FROM users u INNER JOIN posts p', () => {
+		const sql = `-- @nested
+SELECT 
+	u.id as user_id, 
+	u.name as user_name,
+	p.id as post_id,
+	p.title as post_title
+FROM users u
+INNER JOIN posts p on p.fk_user = u.id`;
+
+		const isCrud = false;
+		const actual = generateTsCode(sql, 'nested01', sqliteDbSchema, 'bun:sqlite', isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/nested01-bun.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('nested02 - self relation', () => {
 		const sql = `-- @nested
 SELECT
@@ -417,7 +437,28 @@ WHERE c.id = :clientId`;
 
 		const isCrud = false;
 		const actual = generateTsCode(sql, 'nested02', sqliteDbSchema, 'better-sqlite3', isCrud);
-		const expected = readFileSync('tests/sqlite/expected-code/nested-clients-with-addresses.ts.txt', 'utf-8').replace(/\r/gm, '');
+		const expected = readFileSync('tests/sqlite/expected-code/nested02-clients-with-addresses.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('nested02 - self relation', () => {
+		const sql = `-- @nested
+SELECT
+	c.id,
+	a1.*,
+	a2.*
+FROM clients as c
+INNER JOIN addresses as a1 ON a1.id = c.primaryAddress
+LEFT JOIN addresses as a2 ON a2.id = c.secondaryAddress
+WHERE c.id = :clientId`;
+
+		const isCrud = false;
+		const actual = generateTsCode(sql, 'nested02', sqliteDbSchema, 'bun:sqlite', isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/nested02-bun-clients-with-addresses.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -444,7 +485,34 @@ INNER JOIN users u on u.id = p.fk_user`;
 
 		const isCrud = false;
 		const actual = generateTsCode(sql, 'nested03', schemaResult.right, 'libsql', isCrud);
-		const expected = readFileSync('tests/sqlite/expected-code/nested03-many-to-many.ts.txt', 'utf-8').replace(/\r/gm, '');
+		const expected = readFileSync('tests/sqlite/expected-code/nested03-libsql-many-to-many.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('nested03-bun - many to many', () => {
+		const sql = `-- @nested
+SELECT
+	s.id as surveyId,
+	s.name as surveyName,
+	p.id as participantId,
+	u.id as userId,
+	u.name as userName
+FROM surveys s
+INNER JOIN participants p on p.fk_survey = s.id
+INNER JOIN users u on u.id = p.fk_user`;
+
+		const schemaResult = loadDbSchema(db);
+		if (isLeft(schemaResult)) {
+			assert.fail(`Shouldn't return an error: ${schemaResult.left.description}`);
+		}
+
+		const isCrud = false;
+		const actual = generateTsCode(sql, 'nested03', schemaResult.right, 'bun:sqlite', isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/nested03-bun-many-to-many.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);

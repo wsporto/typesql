@@ -1,0 +1,84 @@
+import type { Database } from 'bun:sqlite';
+
+export type Nested03Result = {
+	surveyId: number;
+	surveyName: string;
+	participantId: number;
+	userId: number;
+	userName: string;
+}
+
+export function nested03(db: Database): Nested03Result[] {
+	const sql = `
+	-- @nested
+	SELECT
+		s.id as surveyId,
+		s.name as surveyName,
+		p.id as participantId,
+		u.id as userId,
+		u.name as userName
+	FROM surveys s
+	INNER JOIN participants p on p.fk_survey = s.id
+	INNER JOIN users u on u.id = p.fk_user
+	`
+	return db.prepare(sql)
+		.values()
+		.map(data => mapArrayToNested03Result(data));
+}
+
+function mapArrayToNested03Result(data: any) {
+	const result: Nested03Result = {
+		surveyId: data[0],
+		surveyName: data[1],
+		participantId: data[2],
+		userId: data[3],
+		userName: data[4]
+	}
+	return result;
+}
+
+export type Nested03NestedSurveys = {
+	surveyId: number;
+	surveyName: string;
+	users: Nested03NestedUsers[];
+}
+
+export type Nested03NestedUsers = {
+	participantId: number;
+	userId: number;
+	userName: string;
+}
+
+export function nested03Nested(db: Database): Nested03NestedSurveys[] {
+	const selectResult = nested03(db);
+	if (selectResult.length == 0) {
+		return [];
+	}
+	return collectNested03NestedSurveys(selectResult);
+}
+
+function collectNested03NestedSurveys(selectResult: Nested03Result[]): Nested03NestedSurveys[] {
+	const grouped = groupBy(selectResult.filter(r => r.surveyId != null), r => r.surveyId);
+	return [...grouped.values()].map(row => ({
+		surveyId: row[0].surveyId!,
+		surveyName: row[0].surveyName!,
+		users: collectNested03NestedUsers(row),
+	}))
+}
+
+function collectNested03NestedUsers(selectResult: Nested03Result[]): Nested03NestedUsers[] {
+	const grouped = groupBy(selectResult.filter(r => r.userId != null), r => r.userId);
+	return [...grouped.values()].map(row => ({
+		participantId: row[0].participantId!,
+		userId: row[0].userId!,
+		userName: row[0].userName!,
+	}))
+}
+
+const groupBy = <T, Q>(array: T[], predicate: (value: T, index: number, array: T[]) => Q) => {
+	return array.reduce((map, value, index, array) => {
+		const key = predicate(value, index, array);
+		map.get(key)?.push(value) ?? map.set(key, [value]);
+		return map;
+	}, new Map<Q, T[]>());
+}
