@@ -639,7 +639,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 				tableName,
 				tsDescriptor.columns,
 				idColumn,
-				queryParams,
+				client == 'bun:sqlite' ? queryParamsWithoutBrackets : queryParams,
 				paramsTypeName,
 				dataTypeName,
 				resultTypeName,
@@ -896,6 +896,12 @@ function writeExecutSelectCrudBlock(
 		writer.indent().write('.raw(true)').newLine();
 		writer.indent().write(`.all(${queryParams})`).newLine();
 		writer.indent().write(`.map(data => mapArrayTo${resultTypeName}(data))[0];`);
+	}
+	else if (client === 'bun:sqlite') {
+		writer.write('return db.prepare(sql)').newLine();
+		writer.indent().write(`.values(${queryParams})`).newLine();
+		writer.indent().write(`.map(data => mapArrayTo${resultTypeName}(data))[0];`);
+
 	} else {
 		writer.write(`return client.execute({ sql, args: ${queryParams} })`).newLine();
 		writer.indent().write('.then(res => res.rows)').newLine();
@@ -922,6 +928,9 @@ function writeExecuteInsertCrudBlock(
 	if (client === 'better-sqlite3') {
 		writer.write('return db.prepare(sql)').newLine();
 		writer.indent().write(`.run(values) as ${resultTypeName};`);
+	} else if (client == 'bun:sqlite') {
+		writer.write('return db.prepare(sql)').newLine();
+		writer.indent().write(`.run(...values) as ${resultTypeName};`);
 	} else {
 		writer.write('return client.execute({ sql, args: values })').newLine();
 		writer.indent().write(`.then(res => mapArrayTo${resultTypeName}(res));`).newLine();
@@ -949,7 +958,11 @@ function writeExecuteUpdateCrudBlock(
 	if (client === 'better-sqlite3') {
 		writer.write('return db.prepare(sql)').newLine();
 		writer.indent().write(`.run(values) as ${resultTypeName};`);
-	} else {
+	} else if (client === 'bun:sqlite') {
+		writer.write('return db.prepare(sql)').newLine();
+		writer.indent().write(`.run(...values) as ${resultTypeName};`);
+	}
+	else {
 		writer.write('return client.execute({ sql, args: values })').newLine();
 		writer.indent().write(`.then(res => mapArrayTo${resultTypeName}(res));`).newLine();
 	}
@@ -969,6 +982,10 @@ function writeExecutDeleteCrudBlock(
 	writer.indent().write(`WHERE ${idColumn} = ?\``).newLine();
 	writer.blankLine();
 	if (client === 'better-sqlite3') {
+		writer.write('return db.prepare(sql)').newLine();
+		writer.indent().write(`.run(${queryParams}) as ${resultTypeName};`).newLine();
+	}
+	else if (client === 'bun:sqlite') {
 		writer.write('return db.prepare(sql)').newLine();
 		writer.indent().write(`.run(${queryParams}) as ${resultTypeName};`).newLine();
 	} else {

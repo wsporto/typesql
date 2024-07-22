@@ -1,0 +1,28 @@
+import type { Database } from 'bun:sqlite';
+
+export type UpdateMytable1Data = {
+	value?: number | null;
+}
+
+export type UpdateMytable1Params = {
+	id: number;
+}
+
+export type UpdateMytable1Result = {
+	changes: number;
+}
+
+export function updateMytable1(db: Database, data: UpdateMytable1Data, params: UpdateMytable1Params): UpdateMytable1Result {
+
+	const keys = Object.keys(data) as Array<keyof UpdateMytable1Data>;
+	const columns = keys.filter(key => data[key] !== undefined);
+	const values = columns.map(col => data[col]!).concat(params.id);
+
+	const sql = `
+	UPDATE mytable1
+	SET ${columns.map(col => `${col} = ?`).join(', ')}
+	WHERE id = ?`
+
+	return db.prepare(sql)
+		.run(...values) as UpdateMytable1Result;
+}

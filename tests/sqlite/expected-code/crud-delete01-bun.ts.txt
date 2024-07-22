@@ -1,0 +1,19 @@
+import type { Database } from 'bun:sqlite';
+
+export type DeleteFromMytable1Params = {
+	id: number;
+}
+
+export type DeleteFromMytable1Result = {
+	changes: number;
+}
+
+export function deleteFromMytable1(db: Database, params: DeleteFromMytable1Params): DeleteFromMytable1Result {
+
+	const sql = `DELETE
+	FROM mytable1
+	WHERE id = ?`
+
+	return db.prepare(sql)
+		.run(params.id) as DeleteFromMytable1Result;
+}

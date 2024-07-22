@@ -286,6 +286,12 @@ describe('sqlite-code-generator', () => {
 		assert.deepStrictEqual(actual, expected);
 	});
 
+	it('crud-select01-bun', () => {
+		const actual = generateCrud('bun:sqlite', 'Select', 'mytable1', sqliteDbSchema);
+		const expected = readFileSync('tests/sqlite/expected-code/crud-select01-bun.ts.txt', 'utf-8').replace(/\r/gm, '');
+		assert.deepStrictEqual(actual, expected);
+	});
+
 	it('crud-insert01', () => {
 		const actual = generateCrud('better-sqlite3', 'Insert', 'mytable1', sqliteDbSchema);
 		const expected = readFileSync('tests/sqlite/expected-code/crud-insert01.ts.txt', 'utf-8').replace(/\r/gm, '');
@@ -295,6 +301,12 @@ describe('sqlite-code-generator', () => {
 	it('crud-insert01-libsql', () => {
 		const actual = generateCrud('libsql', 'Insert', 'mytable1', sqliteDbSchema);
 		const expected = readFileSync('tests/sqlite/expected-code/crud-insert01-libsql.ts.txt', 'utf-8').replace(/\r/gm, '');
+		assert.deepStrictEqual(actual, expected);
+	});
+
+	it('crud-insert01-bun', () => {//
+		const actual = generateCrud('bun:sqlite', 'Insert', 'mytable1', sqliteDbSchema);
+		const expected = readFileSync('tests/sqlite/expected-code/crud-insert01-bun.ts.txt', 'utf-8').replace(/\r/gm, '');
 		assert.deepStrictEqual(actual, expected);
 	});
 
@@ -312,6 +324,13 @@ describe('sqlite-code-generator', () => {
 		assert.deepStrictEqual(actual, expected);
 	});
 
+	it('crud-update01-bun', () => {
+		const actual = generateCrud('bun:sqlite', 'Update', 'mytable1', sqliteDbSchema);
+		const expected = readFileSync('tests/sqlite/expected-code/crud-update01-bun.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		assert.deepStrictEqual(actual, expected);
+	});
+
 	it('crud-delete01', () => {
 		const actual = generateCrud('better-sqlite3', 'Delete', 'mytable1', sqliteDbSchema);
 		const expected = readFileSync('tests/sqlite/expected-code/crud-delete01.ts.txt', 'utf-8').replace(/\r/gm, '');
@@ -322,6 +341,13 @@ describe('sqlite-code-generator', () => {
 	it('crud-delete01-libsql', () => {
 		const actual = generateCrud('libsql', 'Delete', 'mytable1', sqliteDbSchema);
 		const expected = readFileSync('tests/sqlite/expected-code/crud-delete01-libsql.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		assert.deepStrictEqual(actual, expected);
+	});
+
+	it('crud-delete01-bun', () => {
+		const actual = generateCrud('bun:sqlite', 'Delete', 'mytable1', sqliteDbSchema);
+		const expected = readFileSync('tests/sqlite/expected-code/crud-delete01-bun.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		assert.deepStrictEqual(actual, expected);
 	});
