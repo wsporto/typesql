@@ -37,7 +37,7 @@ deno syntax:
 
 1. _npm install -g typesql-cli_
 
-2. Add the `typesql.json` configuration file in project root folder. You can generate an template with cli command `typesql init`. The client option can be: 'mysql2', 'better-sqlite3' or 'libsql'. The `authToken` configuration is used only for the libsql client.
+2. Add the `typesql.json` configuration file in project root folder. You can generate an template with cli command `typesql init`. The client option can be: 'mysql2', 'better-sqlite3', 'libsql' or 'bun:sqlite'. The `authToken` configuration is used only for the libsql client.
 
 ```json
 {
