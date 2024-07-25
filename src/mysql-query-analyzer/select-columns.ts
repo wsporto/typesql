@@ -36,7 +36,7 @@ import {
 } from '@wsporto/ts-mysql-parser';
 
 import type { ColumnDef, ColumnSchema, FieldName } from './types';
-import { createColumnTypeFomColumnSchema } from './collect-constraints';
+import { createColumnTypeFomColumnSchema, freshVar } from './collect-constraints';
 import { Select_coreContext } from '@wsporto/ts-mysql-parser/dist/sqlite';
 
 export function includeColumn(column: ColumnDef, table: string) {
@@ -266,6 +266,20 @@ export function findColumnOrVT(fieldName: FieldName, columns: ColumnDef[]): Colu
 	const vt = columns.find(col => col.table === fieldName.name && col.columnKey == 'VT');
 	if (vt) {
 		return vt
+	}
+	if (fieldName.name == 'rank') {
+		const hasVT = columns.find(col => col.columnKey === 'VT' && (fieldName.prefix === '' || fieldName.prefix === col.tableAlias || fieldName.prefix === col.table));
+		if (hasVT) {
+			const rankColumn: ColumnDef = {
+				columnName: fieldName.name,
+				columnType: freshVar(fieldName.name, 'REAL'),
+				columnKey: 'VT',
+				notNull: true,
+				table: hasVT.table,
+				tableAlias: hasVT.tableAlias
+			}
+			return rankColumn;
+		}
 	}
 	throw Error(`no such column: ${formatField(fieldName)}`);
 }

@@ -921,4 +921,57 @@ describe('sqlite-parse-select-multiples-tables', () => {
 		}
 		assert.deepStrictEqual(actual.right, expected);
 	});
+
+	it('FTS5 - WHERE mytable2_fts match :match', () => {//
+		const sql = `
+        SELECT t2.*, rank
+        FROM mytable2 t2
+        INNER JOIN mytable2_fts fts2 on fts2.id = t2.id
+        WHERE mytable2_fts match ?
+		ORDER BY rank
+        `;
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'INTEGER',
+					notNull: true,
+					table: 't2'
+				},
+				{
+					columnName: 'name',
+					type: 'TEXT',
+					notNull: false,
+					table: 't2'
+				},
+				{
+					columnName: 'descr',
+					type: 'TEXT',
+					notNull: false,
+					table: 't2'
+				},
+				{
+					columnName: 'rank',
+					type: 'REAL',
+					notNull: true,
+					table: 'fts2'
+				}
+			],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'TEXT',
+					notNull: true
+				}
+			]
+		};
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
 });

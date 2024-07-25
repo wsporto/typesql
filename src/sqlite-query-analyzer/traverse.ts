@@ -1277,7 +1277,7 @@ function traverse_column_name(
 		name: column_name.getText(),
 		prefix: table_name?.getText() || ''
 	};
-	const column = findColumn(fieldName, traverseContext.fromColumns);
+	const column = findColumnOrVT(fieldName, traverseContext.fromColumns);
 	// const typeVar = freshVar(column.columnName, column.columnType.type, column.tableAlias || column.table);
 	return column;
 }
