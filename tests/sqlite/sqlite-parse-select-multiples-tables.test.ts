@@ -922,7 +922,7 @@ describe('sqlite-parse-select-multiples-tables', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
-	it('FTS5 - WHERE mytable2_fts match :match', () => {//
+	it('FTS5 - SELECT t2.*, rank', () => {
 		const sql = `
         SELECT t2.*, rank
         FROM mytable2 t2
@@ -968,6 +968,65 @@ describe('sqlite-parse-select-multiples-tables', () => {
 					notNull: true
 				}
 			]
+		};
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('FTS5 - ORDER BY rank', () => {
+		const sql = `
+        SELECT *
+        FROM mytable2 t2
+        INNER JOIN mytable2_fts fts2 on fts2.id = t2.id
+        WHERE mytable2_fts match 'one'
+		ORDER BY rank
+        `;
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'INTEGER',
+					notNull: true,
+					table: 't2'
+				},
+				{
+					columnName: 'name',
+					type: 'TEXT',
+					notNull: false,
+					table: 't2'
+				},
+				{
+					columnName: 'descr',
+					type: 'TEXT',
+					notNull: false,
+					table: 't2'
+				},
+				{
+					columnName: 'id',
+					type: 'INTEGER',
+					notNull: false, //TODO - should be true: on fts2.id = t2.id
+					table: 'fts2'
+				},
+				{
+					columnName: 'name',
+					type: 'any',
+					notNull: false,
+					table: 'fts2'
+				},
+				{
+					columnName: 'descr',
+					type: 'any',
+					notNull: false,
+					table: 'fts2'
+				},
+			],
+			parameters: []
 		};
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);

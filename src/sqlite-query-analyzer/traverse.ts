@@ -150,7 +150,7 @@ function traverse_select_stmt(
 			} else {
 				traverse_expr(expr, {
 					...traverseContext,
-					fromColumns: fromColumns.concat(selectColumns)
+					fromColumns: mainQueryResult.fromColumns.concat(selectColumns)
 				});
 			}
 		});
