@@ -15,7 +15,7 @@ import {
 	type Select_coreContext
 } from '@wsporto/ts-mysql-parser/dist/sqlite';
 import type { ColumnDef, FieldName, TraverseContext, TypeAndNullInfer, TypeAndNullInferParam } from '../mysql-query-analyzer/types';
-import { filterColumns, findColumn, getExpressions, includeColumn, splitName } from '../mysql-query-analyzer/select-columns';
+import { filterColumns, findColumn, findColumnOrVT, getExpressions, includeColumn, splitName } from '../mysql-query-analyzer/select-columns';
 import { freshVar } from '../mysql-query-analyzer/collect-constraints';
 import {
 	type DeleteResult,
@@ -348,7 +348,7 @@ function extractRelationsAndParams(expr: ExprContext, fromColumns: ColumnDef[], 
 		.filter((expr) => !expr.isSubQuery)
 		.map((colRef) => {
 			const fieldName = splitName((colRef.expr as ExprContext).parentCtx!.getText());
-			const column = findColumn(fieldName, fromColumns);
+			const column = findColumnOrVT(fieldName, fromColumns);
 			return column.tableAlias || column.table;
 		});
 	const expressionList = getExpressions(expr, ExprContext);
@@ -381,11 +381,11 @@ function traverse_table_or_subquery(
 		//grammar error: select * from table1 inner join table2....; inner is parsed as table_alias
 		const table_alias =
 			table_alias_temp.toLowerCase() === 'left' ||
-			table_alias_temp.toLowerCase() === 'right' ||
-			table_alias_temp.toLowerCase() === 'full' ||
-			table_alias_temp.toLowerCase() === 'outer' ||
-			table_alias_temp.toLowerCase() === 'inner' ||
-			table_alias_temp.toLowerCase() === 'cross'
+				table_alias_temp.toLowerCase() === 'right' ||
+				table_alias_temp.toLowerCase() === 'full' ||
+				table_alias_temp.toLowerCase() === 'outer' ||
+				table_alias_temp.toLowerCase() === 'inner' ||
+				table_alias_temp.toLowerCase() === 'cross'
 				? ''
 				: table_alias_temp;
 
@@ -486,9 +486,8 @@ function traverse_table_or_subquery(
 			traverseContext.relations.push(relation);
 
 			//dynamic query
-			const fragment = `${
-				join_operator_list != null && index > 0 ? extractOriginalSql(join_operator_list[index - 1]) : 'FROM'
-			} ${extractOriginalSql(table_or_subquery_list[index])}${join_constraint != null ? ` ${extractOriginalSql(join_constraint)}` : ''}`;
+			const fragment = `${join_operator_list != null && index > 0 ? extractOriginalSql(join_operator_list[index - 1]) : 'FROM'
+				} ${extractOriginalSql(table_or_subquery_list[index])}${join_constraint != null ? ` ${extractOriginalSql(join_constraint)}` : ''}`;
 
 			const params = traverseContext.parameters.slice(numParamsBefore).map((_, index) => index + numParamsBefore);
 
@@ -1169,6 +1168,23 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
 			type1: typeLeft.type,
 			type2: freshVar(expr.getText(), 'TEXT')
 		});
+		const type = freshVar(expr.getText(), 'INTEGER');
+		return {
+			name: type.name,
+			type: type,
+			notNull: true,
+			table: type.table || ''
+		};
+	}
+	if (expr.MATCH_()) {
+		const exprLeft = expr.expr(0);
+		const exprRight = expr.expr(1);
+		const typeRight = traverse_expr(exprRight, traverseContext);
+		if (typeRight.name === '?') {
+			typeRight.notNull = true;
+			typeRight.type = freshVar(exprRight.getText(), 'TEXT');
+		}
+
 		const type = freshVar(expr.getText(), 'INTEGER');
 		return {
 			name: type.name,

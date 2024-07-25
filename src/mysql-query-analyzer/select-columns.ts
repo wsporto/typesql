@@ -258,6 +258,18 @@ export function findColumn(fieldName: FieldName, columns: ColumnDef[]): ColumnDe
 	return found;
 }
 
+export function findColumnOrVT(fieldName: FieldName, columns: ColumnDef[]): ColumnDef {
+	const column = findColumnOrNull(fieldName, columns);
+	if (column) {
+		return column;
+	}
+	const vt = columns.find(col => col.table === fieldName.name && col.columnKey == 'VT');
+	if (vt) {
+		return vt
+	}
+	throw Error(`no such column: ${formatField(fieldName)}`);
+}
+
 function formatField(fieldName: FieldName) {
 	return fieldName.prefix === '' ? fieldName.name : `${fieldName.prefix}.${fieldName.name}`;
 }

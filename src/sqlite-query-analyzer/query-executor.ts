@@ -42,6 +42,11 @@ type TableInfo = {
 	pk: number;
 };
 
+type TableAndType = {
+	name: string;
+	type: 'T' | 'VT'
+}
+
 export function getTableInfo(db: DatabaseType | LibSqlDatabase, schema: string, table: string): TableInfo[] {
 	const tableInfo = db
 		//@ts-ignore
@@ -69,13 +74,17 @@ export function getIndexInfo(db: DatabaseType | LibSqlDatabase, schema: string, 
 	return map;
 }
 
-export function getTables(db: DatabaseType | LibSqlDatabase, schema: string) {
+export function getTables(db: DatabaseType | LibSqlDatabase, schema: string): TableAndType[] {
 	const tables = db
 		//@ts-ignore
-		.prepare(`SELECT name FROM ${schema}.sqlite_schema`)
+		.prepare(`SELECT name, rootpage FROM ${schema}.sqlite_schema`)
 		.all()
-		.map((res: any) => res.name) as string[];
+		.map((res: any) => ({ name: res.name, type: getTableType(res.rootpage) }));
 	return tables;
+}
+
+function getTableType(rootpage: number | null): TableAndType['type'] {
+	return rootpage != null && rootpage !== 0 ? 'T' : 'VT';
 }
 
 function checkAffinity(type: string): SQLiteType {
@@ -97,17 +106,19 @@ function checkAffinity(type: string): SQLiteType {
 function loadDbSchemaForSchema(db: DatabaseType | LibSqlDatabase, schema: '' | string = ''): Either<TypeSqlError, ColumnSchema[]> {
 	const tables = getTables(db, schema);
 
-	const result = tables.flatMap((tableName) => {
-		const tableInfoList = getTableInfo(db, schema, tableName);
-		const tableIndexInfo = getIndexInfo(db, schema, tableName);
+	const result = tables.flatMap(({ name, type }) => {
+		const tableInfoList = getTableInfo(db, schema, name);
+		const tableIndexInfo = getIndexInfo(db, schema, name);
 		const columnSchema = tableInfoList.map((tableInfo) => {
+			const isUni = tableIndexInfo.get(tableInfo.name) != null;
+			const isVT = type == 'VT';
 			const col: ColumnSchema = {
 				column: tableInfo.name,
-				column_type: checkAffinity(tableInfo.type),
-				columnKey: tableInfo.pk >= 1 ? 'PRI' : tableIndexInfo.get(tableInfo.name) != null ? 'UNI' : '',
+				column_type: isVT ? '?' : checkAffinity(tableInfo.type),
+				columnKey: getColumnKey(tableInfo.pk, isUni, isVT),
 				notNull: tableInfo.notnull === 1 || tableInfo.pk >= 1,
 				schema,
-				table: tableName
+				table: name
 			};
 			if (tableInfo.dflt_value != null) {
 				col.defaultValue = tableInfo.dflt_value;
@@ -117,6 +128,19 @@ function loadDbSchemaForSchema(db: DatabaseType | LibSqlDatabase, schema: '' | s
 		return columnSchema;
 	});
 	return right(result);
+}
+
+function getColumnKey(pk: number, isUni: boolean, isVT: boolean): ColumnSchema['columnKey'] {
+	if (pk >= 1) {
+		return 'PRI';
+	}
+	if (isUni) {
+		return 'UNI';
+	}
+	if (isVT) {
+		return 'VT';
+	}
+	return '';
 }
 
 export function selectSqliteTablesFromSchema(db: DatabaseType | LibSqlDatabase): Either<TypeSqlError, Table[]> {

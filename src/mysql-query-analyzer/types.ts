@@ -56,7 +56,7 @@ export type GenericColumnSchema<DbType> = {
 	table: string;
 	column: string;
 	column_type: DbType;
-	columnKey: 'PRI' | 'MUL' | 'UNI' | '';
+	columnKey: 'PRI' | 'MUL' | 'UNI' | 'VT' | '';
 	defaultValue?: string;
 	notNull: boolean;
 	autoincrement?: boolean;
@@ -71,7 +71,7 @@ export type ColumnDef = {
 	table: string;
 	columnName: string;
 	columnType: TypeVar;
-	columnKey: 'PRI' | 'MUL' | 'UNI' | '';
+	columnKey: 'PRI' | 'MUL' | 'UNI' | 'VT' | '';
 	tableAlias?: string;
 	notNull: boolean;
 };

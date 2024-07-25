@@ -717,5 +717,29 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
 		column_type: 'TEXT',
 		notNull: true,
 		columnKey: 'UNI'
+	},
+	{
+		column: 'id',
+		column_type: '?',
+		columnKey: 'VT',
+		table: 'mytable2_fts',
+		schema: 'main',
+		notNull: false
+	},
+	{
+		column: 'name',
+		column_type: '?',
+		columnKey: 'VT',
+		table: 'mytable2_fts',
+		schema: 'main',
+		notNull: false
+	},
+	{
+		column: 'descr',
+		column_type: '?',
+		columnKey: 'VT',
+		table: 'mytable2_fts',
+		schema: 'main',
+		notNull: false
 	}
 ];

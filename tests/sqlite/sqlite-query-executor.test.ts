@@ -94,4 +94,42 @@ describe('sqlite-query-executor', () => {
 		];
 		assert.deepStrictEqual(actual, expected);
 	});
+
+	it('loadDbSchema FTS', async () => {
+		const db = new Database('./mydb.db');
+
+		const dbSchema = loadDbSchema(db);
+		if (isLeft(dbSchema)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+
+		const actual = dbSchema.right.filter((col) => col.table === 'mytable2_fts');
+		const expected: ColumnSchema[] = [
+			{
+				column: 'id',
+				column_type: '?',
+				columnKey: 'VT',
+				table: 'mytable2_fts',
+				schema: 'main',
+				notNull: false
+			},
+			{
+				column: 'name',
+				column_type: '?',
+				columnKey: 'VT',
+				table: 'mytable2_fts',
+				schema: 'main',
+				notNull: false
+			},
+			{
+				column: 'descr',
+				column_type: '?',
+				columnKey: 'VT',
+				table: 'mytable2_fts',
+				schema: 'main',
+				notNull: false
+			}
+		];
+		assert.deepStrictEqual(actual, expected);
+	});
 });
