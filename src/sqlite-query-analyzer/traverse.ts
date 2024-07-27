@@ -818,6 +818,58 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
 			table: ''
 		};
 	}
+	if (function_name === 'highlight' || function_name === 'snippet') {
+		const functionType = freshVar(expr.getText(), 'TEXT');
+		const param0Expr = expr.expr(0);
+		const param1Expr = expr.expr(1);
+		const param1Type = traverse_expr(param1Expr, traverseContext);
+		param1Type.notNull = true;
+		traverseContext.constraints.push({
+			expression: param1Expr.getText(),
+			type1: freshVar(param1Expr.getText(), 'INTEGER'),
+			type2: param1Type.type
+		});
+		const param2Expr = expr.expr(2);
+		const param2Type = traverse_expr(param2Expr, traverseContext);
+		param2Type.notNull = true;
+		traverseContext.constraints.push({
+			expression: param2Expr.getText(),
+			type1: freshVar(param2Expr.getText(), 'TEXT'),
+			type2: param2Type.type
+		});
+		const param3Expr = expr.expr(3);
+		const param3Type = traverse_expr(param3Expr, traverseContext);
+		param3Type.notNull = true;
+		traverseContext.constraints.push({
+			expression: param3Expr.getText(),
+			type1: freshVar(param3Expr.getText(), 'TEXT'),
+			type2: param3Type.type
+		});
+		if (function_name === 'snippet') {
+			const param4Expr = expr.expr(4);
+			const param4Type = traverse_expr(param4Expr, traverseContext);
+			param4Type.notNull = true;
+			traverseContext.constraints.push({
+				expression: param4Expr.getText(),
+				type1: freshVar(param4Expr.getText(), 'TEXT'),
+				type2: param4Type.type
+			});
+			const param5Expr = expr.expr(5);
+			const param5Type = traverse_expr(param5Expr, traverseContext);
+			param5Type.notNull = true;
+			traverseContext.constraints.push({
+				expression: param5Expr.getText(),
+				type1: freshVar(param5Expr.getText(), 'INTEGER'),
+				type2: param5Type.type
+			});
+		}
+		return {
+			name: expr.getText(),
+			type: functionType,
+			notNull: false,
+			table: param0Expr.getText()
+		};
+	}
 	if (function_name === 'vector_extract') {
 		const functionType = freshVar(expr.getText(), 'TEXT');
 		const param1Expr = expr.expr(0);

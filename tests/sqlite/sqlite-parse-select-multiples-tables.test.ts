@@ -1033,4 +1033,264 @@ describe('sqlite-parse-select-multiples-tables', () => {
 		}
 		assert.deepStrictEqual(actual.right, expected);
 	});
+
+	it('FTS5 - highlight', () => {
+		const sql = `
+        SELECT 
+			t2.id, 
+			highlight(mytable2_fts, 1, '<b>', '</b>') as name,
+			highlight(mytable2_fts, 2, '<b>', '</b>') as descr
+        FROM mytable2 t2
+        INNER JOIN mytable2_fts fts2 on fts2.id = t2.id
+        WHERE mytable2_fts match 'one'
+		ORDER BY rank
+        `;
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'INTEGER',
+					notNull: true,
+					table: 't2'
+				},
+				{
+					columnName: 'name',
+					type: 'TEXT',
+					notNull: false,
+					table: 'mytable2_fts'
+				},
+				{
+					columnName: 'descr',
+					type: 'TEXT',
+					notNull: false,
+					table: 'mytable2_fts'
+				},
+			],
+			parameters: []
+		};
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('FTS5 - hightlight with parameters', () => {
+		const sql = `
+        SELECT 
+			t2.id, 
+			highlight(mytable2_fts, ?, ?, ?) as name,
+			highlight(mytable2_fts, ?, ?, ?) as descr
+        FROM mytable2 t2
+        INNER JOIN mytable2_fts fts2 on fts2.id = t2.id
+        WHERE mytable2_fts match 'one'
+		ORDER BY rank
+        `;
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'INTEGER',
+					notNull: true,
+					table: 't2'
+				},
+				{
+					columnName: 'name',
+					type: 'TEXT',
+					notNull: false,
+					table: 'mytable2_fts'
+				},
+				{
+					columnName: 'descr',
+					type: 'TEXT',
+					notNull: false,
+					table: 'mytable2_fts'
+				},
+			],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'INTEGER',
+					notNull: true
+				},
+				{
+					name: 'param2',
+					columnType: 'TEXT',
+					notNull: true
+				},
+				{
+					name: 'param3',
+					columnType: 'TEXT',
+					notNull: true
+				},
+				{
+					name: 'param4',
+					columnType: 'INTEGER',
+					notNull: true
+				},
+				{
+					name: 'param5',
+					columnType: 'TEXT',
+					notNull: true
+				},
+				{
+					name: 'param6',
+					columnType: 'TEXT',
+					notNull: true
+				},
+
+			]
+		};
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('FTS5 - snippet', () => {
+		const sql = `
+        SELECT 
+			t2.id, 
+			snippet(mytable2_fts, 1, '<b>', '</b>', '...', 10) as name,
+			snippet(mytable2_fts, 2, '<b>', '</b>', '...', 10) as descr
+        FROM mytable2 t2
+        INNER JOIN mytable2_fts fts2 on fts2.id = t2.id
+        WHERE mytable2_fts match 'one'
+		ORDER BY rank
+        `;
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'INTEGER',
+					notNull: true,
+					table: 't2'
+				},
+				{
+					columnName: 'name',
+					type: 'TEXT',
+					notNull: false,
+					table: 'mytable2_fts'
+				},
+				{
+					columnName: 'descr',
+					type: 'TEXT',
+					notNull: false,
+					table: 'mytable2_fts'
+				},
+			],
+			parameters: []
+		};
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('FTS5 - snippet with parameters', () => {
+		const sql = `
+        SELECT 
+			t2.id, 
+			snippet(mytable2_fts, ?, ?, ?, ?, ?) as name,
+			snippet(mytable2_fts, ?, ?, ?, ?, ?) as descr
+        FROM mytable2 t2
+        INNER JOIN mytable2_fts fts2 on fts2.id = t2.id
+        WHERE mytable2_fts match 'one'
+		ORDER BY rank
+        `;
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'INTEGER',
+					notNull: true,
+					table: 't2'
+				},
+				{
+					columnName: 'name',
+					type: 'TEXT',
+					notNull: false,
+					table: 'mytable2_fts'
+				},
+				{
+					columnName: 'descr',
+					type: 'TEXT',
+					notNull: false,
+					table: 'mytable2_fts'
+				},
+			],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'INTEGER',
+					notNull: true
+				},
+				{
+					name: 'param2',
+					columnType: 'TEXT',
+					notNull: true
+				},
+				{
+					name: 'param3',
+					columnType: 'TEXT',
+					notNull: true
+				},
+				{
+					name: 'param4',
+					columnType: 'TEXT',
+					notNull: true
+				},
+				{
+					name: 'param5',
+					columnType: 'INTEGER',
+					notNull: true
+				},
+				{
+					name: 'param6',
+					columnType: 'INTEGER',
+					notNull: true
+				},
+				{
+					name: 'param7',
+					columnType: 'TEXT',
+					notNull: true
+				},
+				{
+					name: 'param8',
+					columnType: 'TEXT',
+					notNull: true
+				},
+				{
+					name: 'param9',
+					columnType: 'TEXT',
+					notNull: true
+				},
+				{
+					name: 'param10',
+					columnType: 'INTEGER',
+					notNull: true
+				},
+
+			]
+		};
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
 });
