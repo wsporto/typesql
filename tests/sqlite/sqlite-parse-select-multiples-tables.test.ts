@@ -1293,4 +1293,84 @@ describe('sqlite-parse-select-multiples-tables', () => {
 		}
 		assert.deepStrictEqual(actual.right, expected);
 	});
+
+	it(`FTS5 - SELECT * FROM mytable2_fts('one')`, () => {
+		const sql = `
+        SELECT * FROM mytable2_fts('one')
+        `;
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'any',
+					notNull: false,
+					table: 'mytable2_fts'
+				},
+				{
+					columnName: 'name',
+					type: 'any',
+					notNull: false,
+					table: 'mytable2_fts'
+				},
+				{
+					columnName: 'descr',
+					type: 'any',
+					notNull: false,
+					table: 'mytable2_fts'
+				},
+			],
+			parameters: []
+		};
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('FTS5 - SELECT * FROM mytable2_fts(?)', () => {
+		const sql = `
+        SELECT * FROM mytable2_fts(?)
+        `;
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'any',
+					notNull: false,
+					table: 'mytable2_fts'
+				},
+				{
+					columnName: 'name',
+					type: 'any',
+					notNull: false,
+					table: 'mytable2_fts'
+				},
+				{
+					columnName: 'descr',
+					type: 'any',
+					notNull: false,
+					table: 'mytable2_fts'
+				},
+			],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'TEXT',
+					notNull: true
+				}
+			]
+		};
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
 });

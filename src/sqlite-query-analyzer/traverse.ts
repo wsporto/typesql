@@ -12,7 +12,8 @@ import {
 	type Table_nameContext,
 	type Join_operatorContext,
 	type Returning_clauseContext,
-	type Select_coreContext
+	type Select_coreContext,
+	Table_function_nameContext
 } from '@wsporto/ts-mysql-parser/dist/sqlite';
 import type { ColumnDef, FieldName, TraverseContext, TypeAndNullInfer, TypeAndNullInferParam } from '../mysql-query-analyzer/types';
 import { filterColumns, findColumn, findColumnOrVT, getExpressions, includeColumn, splitName } from '../mysql-query-analyzer/select-columns';
@@ -374,9 +375,12 @@ function traverse_table_or_subquery(
 		const numParamsBefore = traverseContext.parameters.length;
 
 		const isLeftJoin = index > 0 && join_operator_list ? join_operator_list[index - 1]?.LEFT_() != null : false;
-		const table_name = table_or_subquery.table_name();
+		const table_function_name = table_or_subquery.table_function_name();
+		const table_name = table_or_subquery.table_name() || table_function_name;
 		const table_alias_temp = table_or_subquery.table_alias()?.getText() || '';
 		let tableOrSubqueryFields: ColumnDef[] = [];
+
+		const virtualTableMatch = /\('.*'\)/; //ex. FROM email('fts5')
 
 		//grammar error: select * from table1 inner join table2....; inner is parsed as table_alias
 		const table_alias =
@@ -385,7 +389,8 @@ function traverse_table_or_subquery(
 				table_alias_temp.toLowerCase() === 'full' ||
 				table_alias_temp.toLowerCase() === 'outer' ||
 				table_alias_temp.toLowerCase() === 'inner' ||
-				table_alias_temp.toLowerCase() === 'cross'
+				table_alias_temp.toLowerCase() === 'cross' ||
+				table_alias_temp.match(virtualTableMatch)
 				? ''
 				: table_alias_temp;
 
@@ -396,11 +401,22 @@ function traverse_table_or_subquery(
 		const schema = table_or_subquery.schema_name()?.getText() || '';
 
 		if (table_name) {
+
 			const tableName: FieldName = {
 				name: table_name.getText(),
 				prefix: schema
 			};
 			tableOrSubqueryFields = filterColumns(traverseContext.dbSchema, traverseContext.withSchema, table_alias, tableName);
+			if (table_function_name) {
+				const table_function_expr = table_or_subquery.expr(0);
+				if (table_function_expr) {
+					const exprType = traverse_expr(table_function_expr, traverseContext);
+					if (exprType.name === '?' && tableOrSubqueryFields[0]?.columnKey === 'VT') {
+						exprType.type.type = 'TEXT';
+						exprType.notNull = true;
+					}
+				}
+			}
 			const usingFields = join_constraint?.USING_() ? join_constraint?.column_name_list().map((column_name) => column_name.getText()) : [];
 			const filteredFields = usingFields.length > 0 ? filterUsingFields(tableOrSubqueryFields, usingFields) : tableOrSubqueryFields;
 			if (isLeftJoin) {
