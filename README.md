@@ -1,4 +1,21 @@
-TypeSQL: An alternative to access MySQL databases without an ORM. Write your queries in raw SQL and TypeSQL will generate a type-safe API to execute the queries.
+## TypeSQL
+
+**TypeSQL** generates typesafe Typescript APIs from your SQL statements. Write your queries in raw SQL and TypeSQL generates the type-safe APIs to execute those queries.
+
+Access your database directly without a heavy ORM, gain effortless type-safety, and make maintaining your SQL simple.
+
+TypeSQL supports multiple SQL database backends:
+
+##### MySQL / MariaDB
+
+- [mysql2](https://www.npmjs.com/package/mysql2) - the standard driver for mysql in NodeJS
+
+##### SQLite
+- [better-sqlite3](https://www.npmjs.com/package/better-sqlite3) - the fastest SQLite driver for NodeJS
+- [bun:sqlite](https://bun.sh/docs/api/sqlite) - Bun's official high-performance SQLite driver
+
+##### LibSQL
+- [libsql](https://www.npmjs.com/package/libsql) - the NodeJS driver for libSQL, the open-source fork of SQLite powering [Turso](https://turso.tech/)
 
 ## Example
 
@@ -78,7 +95,7 @@ const products = await selectProducts(...
 const updateResult = await updateProduct(...
 ```
 
-# Examples
+## Examples
 
 [Query scaffolding](/docs/query_scaffolding.md)
 
@@ -94,8 +111,8 @@ const updateResult = await updateProduct(...
 
 [Nested Query Result](/docs/nested-query-result.md)
 
-# Project status
+## Project Status: Under Active Development
 
-**WARNING:** This is a WIP experimental project. It is under active development and its API might change.
+**WARNING:** This is a work-in-progress experimental project. It is under active development and its API might change.
 
 Issues reports and feature requests are welcome.
