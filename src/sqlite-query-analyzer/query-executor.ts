@@ -179,3 +179,34 @@ export function explainSql(db: DatabaseType | LibSqlDatabase, sql: string): Eith
 		});
 	}
 }
+
+export type ForeignKeyInfo = {
+	fromTable: string;
+	toTable: string;
+	fromColumn: string;
+	toColumn: string;
+}
+
+export function loadForeignKeys(db: DatabaseType | LibSqlDatabase): Either<TypeSqlError, ForeignKeyInfo[]> {
+	const sql = `
+    SELECT 
+		tab.name as fromTable, 
+		fk.'table' as toTable, 
+		fk.'from' as fromColumn, 
+		fk.'to' as toColumn 
+	FROM sqlite_schema tab
+	INNER JOIN pragma_foreign_key_list(tab.name) fk
+	WHERE type = 'table'`;
+
+	try {
+		//@ts-ignore
+		const result = db.prepare(sql).all() as ForeignKeyInfo[];
+		return right(result);
+	} catch (e) {
+		const err = e as Error;
+		return left({
+			name: err.name,
+			description: err.message
+		});
+	}
+}
