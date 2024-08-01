@@ -876,7 +876,7 @@ describe('sqlite-parse-select-multiples-tables', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
-	it('FTS5 - WHERE mytable2_fts match :match', () => {//
+	it('FTS5 - WHERE mytable2_fts match :match', () => {
 		const sql = `
         SELECT t2.*
         FROM mytable2 t2
