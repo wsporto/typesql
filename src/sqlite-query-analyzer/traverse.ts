@@ -77,7 +77,8 @@ function traverse_select_stmt(
 	traverseContext: TraverseContext,
 	subQuery = false,
 	recursive = false,
-	recursiveNames: string[] = []
+	recursiveNames: string[] = [],
+	withTable?: string
 ): SelectResult {
 	const common_table_stmt = select_stmt.common_table_stmt();
 	if (common_table_stmt) {
@@ -87,22 +88,14 @@ function traverse_select_stmt(
 			const table_name = common_table_expression.table_name();
 			const recursiveNames = common_table_expression.column_name_list().map((column_name) => column_name.getText());
 			const select_stmt = common_table_expression.select_stmt();
-			const select_stmt_result = traverse_select_stmt(
+			traverse_select_stmt(
 				select_stmt,
 				{ ...traverseContext, subQuery: true },
 				subQuery,
 				recursive,
-				recursiveNames
+				recursiveNames,
+				table_name.getText()
 			);
-			select_stmt_result.columns.forEach((col, index) => {
-				traverseContext.withSchema.push({
-					table: table_name.getText(),
-					columnName: recursive ? (recursiveNames[index] ?? col.name) : col.name,
-					columnType: col.type,
-					columnKey: '',
-					notNull: col.notNull
-				});
-			});
 			traverseContext.dynamicSqlInfo2.with.push({
 				fragment: extractOriginalSql(common_table_expression),
 				relationName: table_name.getText(),
@@ -113,12 +106,15 @@ function traverse_select_stmt(
 
 	const [mainSelect, ...unionSelect] = select_stmt.select_core_list();
 	const mainQueryResult = traverse_select_core(mainSelect, traverseContext, subQuery, recursive, recursiveNames);
-	const fromColumns = recursive
-		? mainQueryResult.columns.map((col, index) => mapTypeAndNullInferToColumnDef(col, recursiveNames[index]))
-		: traverseContext.fromColumns;
+	if (withTable) {
+		for (const [index, col] of mainQueryResult.columns.entries()) {
+			const colDef = mapTypeAndNullInferToColumnDef(col, recursiveNames[index], withTable);
+			traverseContext.withSchema.push(colDef);
+		}
+	}
 
 	unionSelect.forEach((select_core) => {
-		const unionResult = traverse_select_core(select_core, { ...traverseContext, fromColumns }, subQuery, recursive);
+		const unionResult = traverse_select_core(select_core, traverseContext, subQuery, recursive);
 		unionResult.columns.forEach((col, colIndex) => {
 			mainQueryResult.columns[colIndex].table = '';
 			traverseContext.constraints.push({
@@ -194,14 +190,14 @@ function traverse_select_stmt(
 	return selectResult;
 }
 
-function mapTypeAndNullInferToColumnDef(col: TypeAndNullInfer, name?: string): ColumnDef {
+function mapTypeAndNullInferToColumnDef(col: TypeAndNullInfer, name?: string, tableName?: string): ColumnDef {
 	return {
 		columnName: name ?? col.name,
 		columnType: col.type,
 		notNull: col.notNull,
 		columnKey: '',
-		table: col.table,
-		tableAlias: col.table
+		table: tableName ?? col.table,
+		tableAlias: ''
 	};
 }
 
