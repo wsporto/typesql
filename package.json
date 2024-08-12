@@ -1,6 +1,6 @@
 {
 	"name": "typesql-cli",
-	"version": "0.10.2",
+	"version": "0.10.3",
 	"description": "",
 	"main": "index.js",
 	"bin": {
@@ -42,6 +42,7 @@
 		"libsql": "^0.3.19",
 		"moment": "^2.30.1",
 		"mysql2": "^3.10.3",
+		"typesql-cli": "file:",
 		"yargs": "^17.7.2"
 	}
 }
