@@ -724,6 +724,110 @@ describe('Test parse complex queries', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('WITH RECURSIVE (with inner join and parameters)', async () => {
+		const sql = `
+        WITH RECURSIVE parent AS (
+			SELECT	id,	value FROM	mytable1
+			WHERE id = ?
+			UNION ALL 
+			SELECT	t1.id, t1.value	
+			FROM mytable1 t1
+			INNER JOIN parent t2 ON t1.id = t2.value
+			WHERE t2.value IS NOT NULL
+		)
+		SELECT id,value FROM parent
+		WHERE id <> ?`;
+
+		const actual = await parseSql(client, sql);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'int',
+					notNull: true,
+					table: 'parent'
+				},
+				{
+					columnName: 'value',
+					type: 'int',
+					notNull: false,
+					table: 'parent'
+				}
+			],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'int',
+					notNull: true
+				},
+				{
+					name: 'param2',
+					columnType: 'int',
+					notNull: true
+				}
+			]
+		};
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('WITH RECURSIVE parent (a, b) (with inner join and parameters)', async () => {
+		const sql = `
+        WITH RECURSIVE parent (a, b) AS (
+			SELECT	id,	value FROM	mytable1
+			WHERE id = ?
+			UNION ALL 
+			SELECT	t1.id, t1.value	
+			FROM mytable1 t1
+			INNER JOIN parent t2 ON t1.id = t2.a
+			WHERE t2.b IS NOT NULL
+		)
+		SELECT a,b FROM parent
+		WHERE a <> ?`;
+
+		const actual = await parseSql(client, sql);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'a',
+					type: 'int',
+					notNull: true,
+					table: 'parent'
+				},
+				{
+					columnName: 'b',
+					type: 'int',
+					notNull: false,
+					table: 'parent'
+				}
+			],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'int',
+					notNull: true
+				},
+				{
+					name: 'param2',
+					columnType: 'int',
+					notNull: true
+				}
+			]
+		};
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('WITH RECURSIVE cte ...SELECT ... INNER JOIN', async () => {
 		const sql = `
         WITH RECURSIVE cte as (
