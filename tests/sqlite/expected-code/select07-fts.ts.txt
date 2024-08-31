@@ -1,0 +1,36 @@
+import type { Database } from 'better-sqlite3';
+
+export type Select07Params = {
+	match: string;
+}
+
+export type Select07Result = {
+	id?: any;
+	name?: any;
+	descr?: any;
+}
+
+export function select07(db: Database, params: Select07Params): Select07Result[] {
+	const sql = `
+	SELECT
+		id,
+		name,
+		descr
+	FROM mytable2_fts
+	WHERE mytable2_fts MATCH ?
+	LIMIT 20
+	`
+	return db.prepare(sql)
+		.raw(true)
+		.all([params.match])
+		.map(data => mapArrayToSelect07Result(data));
+}
+
+function mapArrayToSelect07Result(data: any) {
+	const result: Select07Result = {
+		id: data[0],
+		name: data[1],
+		descr: data[2]
+	}
+	return result;
+}

@@ -9,4 +9,4 @@ export type SQLiteType =
 	| 'REAL[]'
 	| 'DATE'
 	| 'BLOB'
-	| '?';
+	| 'any';

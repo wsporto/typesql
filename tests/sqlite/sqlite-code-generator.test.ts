@@ -410,6 +410,25 @@ AND name IN (:names)`;
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('select07 - fts', () => {
+		const sql = `SELECT
+	id,
+	name,
+	descr
+FROM mytable2_fts
+WHERE mytable2_fts MATCH :match
+LIMIT 20`;
+
+		const isCrud = false;
+		const actual = generateTsCode(sql, 'select07', sqliteDbSchema, 'better-sqlite3', isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/select07-fts.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('nested01 - FROM users u INNER JOIN posts p', () => {
 		const sql = `-- @nested
 SELECT 

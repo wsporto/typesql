@@ -876,6 +876,51 @@ describe('sqlite-parse-select-multiples-tables', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('FTS5 -  SELECT * FROM mytable2_fts fts2', () => {
+		const sql = `
+        SELECT *
+        FROM mytable2_fts fts2
+        WHERE mytable2_fts match ?
+        `;
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'any',
+					notNull: false,
+					table: 'fts2'
+				},
+				{
+					columnName: 'name',
+					type: 'any',
+					notNull: false,
+					table: 'fts2'
+				},
+				{
+					columnName: 'descr',
+					type: 'any',
+					notNull: false,
+					table: 'fts2'
+				}
+			],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'TEXT',
+					notNull: true
+				}
+			]
+		};
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('FTS5 - WHERE mytable2_fts match :match', () => {
 		const sql = `
         SELECT t2.*

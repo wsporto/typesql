@@ -55,7 +55,7 @@ export type GenericColumnSchema<DbType> = {
 	schema: string;
 	table: string;
 	column: string;
-	column_type: DbType;
+	column_type: DbType | '?';
 	columnKey: 'PRI' | 'MUL' | 'UNI' | 'VT' | '';
 	defaultValue?: string;
 	notNull: boolean;
@@ -83,7 +83,7 @@ export type FieldName = {
 
 export type ColumnInfo = {
 	columnName: string;
-	type: DbType | 'any';
+	type: DbType | '?';
 	notNull: boolean;
 	table?: string;
 	optional?: boolean;

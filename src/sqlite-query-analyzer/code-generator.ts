@@ -242,7 +242,7 @@ function mapColumnType(sqliteType: SQLiteType, client: SQLiteClient) {
 			return 'Date';
 		case 'BLOB':
 			return client === 'better-sqlite3' ? 'Uint8Array' : 'ArrayBuffer';
-		case '?':
+		case 'any':
 			return 'any';
 	}
 }
