@@ -73,7 +73,7 @@ export type ColumnDef = {
 	columnType: TypeVar;
 	columnKey: 'PRI' | 'MUL' | 'UNI' | 'VT' | '';
 	tableAlias?: string;
-	notNull: boolean;
+	notNull?: boolean; //true, false or undefined (can't infere)
 };
 
 export type FieldName = {
@@ -224,7 +224,7 @@ export type TypeInferenceResult = {
 export type TypeAndNullInfer = {
 	name: string; //TODO - need?
 	type: TypeVar;
-	notNull: boolean;
+	notNull?: boolean; //true, false or undefined (can't infere)
 	table: string;
 };
 

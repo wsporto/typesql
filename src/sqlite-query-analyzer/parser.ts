@@ -99,9 +99,9 @@ function createSchemaDefinition(
 	});
 
 	groupedByName.forEach((sameNameList) => {
-		let notNull = queryResult.parameters[0].notNull; //param is not null if any param with same name is not null
+		let notNull = queryResult.parameters[0].notNull !== false; //param is not null if any param with same name is not null
 		for (let index = 1; index < sameNameList.length; index++) {
-			notNull = notNull || queryResult.parameters[index].notNull;
+			notNull = notNull && queryResult.parameters[index].notNull !== false;
 			queryResult.constraints.push({
 				expression: queryResult.parameters[0].name,
 				type1: queryResult.parameters[0].type,
@@ -109,7 +109,7 @@ function createSchemaDefinition(
 			});
 		}
 		for (let index = 0; index < sameNameList.length; index++) {
-			queryResult.parameters[index].notNull = notNull || queryResult.parameters[index].notNull;
+			queryResult.parameters[index].notNull = notNull;
 		}
 	});
 	const substitutions: SubstitutionHash = {}; //TODO - DUPLICADO
@@ -117,7 +117,7 @@ function createSchemaDefinition(
 	if (queryResult.queryType === 'Select') {
 		const columnResult = queryResult.columns.map((col) => {
 			const columnType = getVarType(substitutions, col.type);
-			const columnNotNull = paramsById.get(col.type.id) != null ? paramsById.get(col.type.id)?.notNull! : col.notNull;
+			const columnNotNull = paramsById.get(col.type.id) != null ? paramsById.get(col.type.id)?.notNull === true : col.notNull === true;
 			const colInfo: ColumnInfo = {
 				columnName: col.name,
 				type: verifyNotInferred(columnType),
@@ -128,7 +128,7 @@ function createSchemaDefinition(
 		});
 		const paramsResult = queryResult.parameters.map((param, index) => {
 			const columnType = getVarType(substitutions, param.type);
-			const columnNotNull = param.notNull;
+			const columnNotNull = param.notNull === true;
 			const colInfo: ParameterDef = {
 				name: namedParameters?.[index] ? namedParameters[index] : `param${index + 1}`,
 				columnType: verifyNotInferred(columnType),
@@ -176,7 +176,7 @@ function createSchemaDefinition(
 	if (queryResult.queryType === 'Insert') {
 		const paramsResult = queryResult.parameters.map((param, index) => {
 			const columnType = getVarType(substitutions, param.type);
-			const columnNotNull = param.notNull;
+			const columnNotNull = param.notNull === true;
 			const colInfo: ParameterDef = {
 				name: namedParameters?.[index] ? namedParameters[index] : `param${index + 1}`,
 				columnType: verifyNotInferred(columnType),
@@ -190,7 +190,7 @@ function createSchemaDefinition(
 			const colInfo: ColumnInfo = {
 				columnName: col.name,
 				type: verifyNotInferred(columnType),
-				notNull: col.notNull
+				notNull: col.notNull === true
 			};
 			return colInfo;
 		});
@@ -211,7 +211,7 @@ function createSchemaDefinition(
 	if (queryResult.queryType === 'Update') {
 		const paramsResult = queryResult.columns.map((param, index) => {
 			const columnType = getVarType(substitutions, param.type);
-			const columnNotNull = param.notNull;
+			const columnNotNull = param.notNull === true;
 			const colInfo: ParameterDef = {
 				name: namedParameters?.[index] ? namedParameters[index] : `param${index + 1}`,
 				columnType: verifyNotInferred(columnType),
@@ -221,7 +221,7 @@ function createSchemaDefinition(
 		});
 		const whereParams = queryResult.whereParams.map((param, index) => {
 			const columnType = getVarType(substitutions, param.type);
-			const columnNotNull = param.notNull;
+			const columnNotNull = param.notNull === true;
 			const paramIndex = index + queryResult.columns.length;
 			const colInfo: ParameterDef = {
 				name: namedParameters?.[paramIndex] ? namedParameters[paramIndex] : `param${index + 1}`,
@@ -245,7 +245,7 @@ function createSchemaDefinition(
 	if (queryResult.queryType === 'Delete') {
 		const whereParams = queryResult.parameters.map((param, index) => {
 			const columnType = getVarType(substitutions, param.type);
-			const columnNotNull = param.notNull;
+			const columnNotNull = param.notNull === true;
 			const colInfo: ParameterDef = {
 				name: namedParameters?.[index] ? namedParameters[index] : `param${index + 1}`,
 				columnType: verifyNotInferred(columnType),

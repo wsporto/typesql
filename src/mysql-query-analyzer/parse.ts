@@ -217,7 +217,7 @@ export function extractQueryInfo(
 		unify(traverseResult.constraints, substitutions);
 		const columnResult = traverseResult.data.map((col) => {
 			const columnType = getVarType(substitutions, col.type);
-			const columnNotNull = col.notNull;
+			const columnNotNull = col.notNull === true;
 			const colInfo: ParameterDef = {
 				name: col.name,
 				columnType: verifyNotInferred(columnType),
@@ -228,7 +228,7 @@ export function extractQueryInfo(
 
 		const paramResult = traverseResult.parameters.map((col) => {
 			const columnType = getVarType(substitutions, col.type);
-			const columnNotNull = col.notNull;
+			const columnNotNull = col.notNull === true;
 			const colInfo: ParameterDef = {
 				name: col.name,
 				columnType: verifyNotInferred(columnType),
@@ -260,7 +260,7 @@ function extractSelectQueryInfo(traverseResult: SelectStatementResult): QueryInf
 
 	const columnResult = traverseResult.columns.map((col) => {
 		const columnType = getVarType(substitutions, col.type);
-		const columnNotNull = col.notNull;
+		const columnNotNull = col.notNull === true;
 		const colInfo: ColumnInfo = {
 			columnName: col.name,
 			type: verifyNotInferred(columnType),
@@ -273,7 +273,7 @@ function extractSelectQueryInfo(traverseResult: SelectStatementResult): QueryInf
 	const paramsResult = traverseResult.parameters
 		.map((param) => {
 			const columnType = getVarType(substitutions, param.type);
-			const columnNotNull = param.notNull;
+			const columnNotNull = param.notNull === true;
 			const colInfo: ParameterInfo = {
 				// columnName: param.name,
 				type: verifyNotInferred(columnType),

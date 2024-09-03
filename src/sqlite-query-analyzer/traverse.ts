@@ -963,6 +963,15 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
 				table: type.table || ''
 			};
 		}
+		if (literal.TRUE_() || literal.FALSE_()) {
+			const type = freshVar(literal.getText(), 'BOOLEAN');
+			return {
+				name: type.name,
+				type: type,
+				notNull: true,
+				table: type.table || ''
+			};
+		}
 		const type = freshVar(literal.getText(), '?');
 		return {
 			name: type.name,
@@ -971,13 +980,17 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
 			table: type.table || ''
 		};
 	}
+	if (expr.unary_operator()) {
+		const exprRight = expr.expr(0);
+		return traverse_expr(exprRight, traverseContext);
+	}
 	const parameter = expr.BIND_PARAMETER();
 	if (parameter) {
 		const param = freshVar('?', '?');
 		const type: TypeAndNullInferParam = {
 			name: param.name,
 			type: param,
-			notNull: false,
+			notNull: undefined,
 			table: param.table || '',
 			paramIndex: parameter.symbol.start
 		};
@@ -1072,9 +1085,18 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
 		};
 	}
 	if (expr.IS_()) {
-		//is null/is not null
-		const expr_ = expr.expr(0);
-		traverse_expr(expr_, traverseContext);
+		//is null/is not null/is true, is false
+		const exprLeft = expr.expr(0);
+		const typeLeft = traverse_expr(exprLeft, traverseContext);
+		const exprRight = expr.expr(1);
+		const typeRight = traverse_expr(exprRight, traverseContext);
+		typeLeft.notNull = typeRight.notNull;
+
+		traverseContext.constraints.push({
+			expression: expr.getText(),
+			type1: typeLeft.type,
+			type2: typeRight.type
+		});
 		const type = freshVar(expr.getText(), 'INTEGER');
 		return {
 			name: type.name,
@@ -1515,7 +1537,7 @@ function traverse_insert_stmt(insert_stmt: Insert_stmtContext, traverseContext: 
 	});
 	const select_stmt = insert_stmt.select_stmt();
 	if (select_stmt) {
-		const columnNullability = new Map<string, boolean>();
+		const columnNullability = new Map<string, boolean | undefined>();
 		const selectResult = traverse_select_stmt(select_stmt, traverseContext);
 		selectResult.columns.forEach((selectColumn, index) => {
 			const col = columns[index];
