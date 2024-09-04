@@ -99,17 +99,17 @@ function createSchemaDefinition(
 	});
 
 	groupedByName.forEach((sameNameList) => {
-		let notNull = queryResult.parameters[0].notNull !== false; //param is not null if any param with same name is not null
-		for (let index = 1; index < sameNameList.length; index++) {
-			notNull = notNull && queryResult.parameters[index].notNull !== false;
+		let notNull = queryResult.parameters[sameNameList[0]].notNull !== false; //param is not null if any param with same name is not null
+		for (let index = 0; index < sameNameList.length; index++) {
+			notNull = notNull && queryResult.parameters[sameNameList[index]].notNull !== false;
 			queryResult.constraints.push({
-				expression: queryResult.parameters[0].name,
-				type1: queryResult.parameters[0].type,
-				type2: queryResult.parameters[index].type
+				expression: queryResult.parameters[sameNameList[0]].name,
+				type1: queryResult.parameters[sameNameList[0]].type,
+				type2: queryResult.parameters[sameNameList[index]].type
 			});
 		}
 		for (let index = 0; index < sameNameList.length; index++) {
-			queryResult.parameters[index].notNull = notNull;
+			queryResult.parameters[sameNameList[index]].notNull = notNull;
 		}
 	});
 	const substitutions: SubstitutionHash = {}; //TODO - DUPLICADO

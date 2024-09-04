@@ -88,6 +88,37 @@ describe('parse-params', () => {
 		assert.deepStrictEqual(actual.right.parameters, expectedParameters);
 	});
 
+	it(' SELECT ? IS TRUE, ? IS FALSE FROM mytable2 WHERE ? IS TRUE OR ? IS FALSE', () => {
+		const sql = `
+        SELECT
+			id
+		FROM mytable1 
+		WHERE :param1 is true OR (:param2 is true OR :param2 is null)`;
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expectedParameters: ParameterDef[] = [
+			{
+				name: 'param1',
+				columnType: 'BOOLEAN',
+				notNull: true
+			},
+			{
+				name: 'param2',
+				columnType: 'BOOLEAN',
+				notNull: false
+			},
+			{
+				name: 'param2',
+				columnType: 'BOOLEAN',
+				notNull: false
+			}
+		];
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right.parameters, expectedParameters);
+	});
+
 	it('parse select with case when expression (? is not null)', () => {
 		const sql = `
         SELECT
