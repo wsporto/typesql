@@ -1007,12 +1007,19 @@ function toDriver(variableData: string, param: TsFieldDescriptor) {
 		}
 		return `${variableData} != null ? new Date(${variableData}) : ${variableData}`;
 	}
+	if (param.tsType === 'boolean') {
+		return `${variableData} != null ? Boolean(${variableData}) : ${variableData}`;
+	}
 	return variableData;
 }
 
 function fromDriver(variableName: string, param: TsFieldDescriptor): string {
 	if (param.tsType === 'Date') {
 		return `${variableName}.${param.name}?.toISOString()`;
+	}
+	if (param.tsType === 'boolean') {
+		const variable = `${variableName}.${param.name}`;
+		return `${variable} != null ? Number(${variable}) : ${variable}`;
 	}
 	if (param.tsType?.endsWith('[]')) {
 		return `...${variableName}.${param.name}`;

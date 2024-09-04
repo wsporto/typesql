@@ -1,0 +1,36 @@
+import type { Database } from 'better-sqlite3';
+
+export type Select08Params = {
+	param1: boolean;
+	param2: boolean | null;
+}
+
+export type Select08Result = {
+	id: number;
+	param1: boolean;
+	param2?: boolean;
+}
+
+export function select08(db: Database, params: Select08Params): Select08Result[] {
+	const sql = `
+	SELECT
+		id,
+		? as param1,
+		? as param2
+	FROM mytable1 
+	WHERE ? is true OR (? is true OR ? is null)
+	`
+	return db.prepare(sql)
+		.raw(true)
+		.all([params.param1 != null ? Number(params.param1) : params.param1, params.param2 != null ? Number(params.param2) : params.param2, params.param1 != null ? Number(params.param1) : params.param1, params.param2 != null ? Number(params.param2) : params.param2, params.param2 != null ? Number(params.param2) : params.param2])
+		.map(data => mapArrayToSelect08Result(data));
+}
+
+function mapArrayToSelect08Result(data: any) {
+	const result: Select08Result = {
+		id: data[0],
+		param1: data[1] != null ? Boolean(data[1]) : data[1],
+		param2: data[2] != null ? Boolean(data[2]) : data[2]
+	}
+	return result;
+}

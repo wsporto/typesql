@@ -429,6 +429,24 @@ LIMIT 20`;
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('select08 - boolean', () => {
+		const sql = `SELECT
+	id,
+	:param1 as param1,
+	:param2 as param2
+FROM mytable1 
+WHERE :param1 is true OR (:param2 is true OR :param2 is null)`;
+
+		const isCrud = false;
+		const actual = generateTsCode(sql, 'select08', sqliteDbSchema, 'better-sqlite3', isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/select08-boolean.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('nested01 - FROM users u INNER JOIN posts p', () => {
 		const sql = `-- @nested
 SELECT 
