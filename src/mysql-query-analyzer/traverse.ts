@@ -289,7 +289,7 @@ export function traverseInsertStatement(insertStatement: InsertStatementContext,
 				const exprType = traverseExpr(expr, traverseContext);
 				const paramNullabilityExpr = inferParamNullability(expr);
 				traverseContext.parameters.slice(numberParamsBefore).forEach((param) => {
-					paramsNullability[param.type.id] = paramNullabilityExpr.every((n) => n) && column.notNull;
+					paramsNullability[param.type.id] = paramNullabilityExpr.every((n) => n) && column.notNull === true;
 				});
 				traverseContext.constraints.push({
 					expression: expr.getText(),
@@ -312,7 +312,7 @@ export function traverseInsertStatement(insertStatement: InsertStatementContext,
 			const exprType = traverseExpr(expr, traverseContext);
 			const column = findColumn(field, fromColumns);
 			traverseContext.parameters.slice(numberParamsBefore).forEach((param) => {
-				paramsNullability[param.type.id] = column.notNull;
+				paramsNullability[param.type.id] = column.notNull === true;
 			});
 			traverseContext.constraints.push({
 				expression: expr.getText(),
@@ -331,7 +331,7 @@ export function traverseInsertStatement(insertStatement: InsertStatementContext,
 		exprTypes.columns.forEach((type, index) => {
 			const column = insertColumns[index];
 			if (type.type.kind === 'TypeVar') {
-				paramsNullability[type.type.id] = column.notNull;
+				paramsNullability[type.type.id] = column.notNull === true;
 			}
 			traverseContext.constraints.push({
 				expression: insertQueryExpression.getText(),
@@ -742,9 +742,9 @@ export function traverseWithClause(withClause: WithClauseContext, traverseContex
 		const cte = commonTableExpression.identifier().getText();
 		const recursiveNames = withClause.RECURSIVE_SYMBOL()
 			? commonTableExpression
-					.columnInternalRefList()
-					?.columnInternalRef_list()
-					.map((t) => t.getText()) || []
+				.columnInternalRefList()
+				?.columnInternalRef_list()
+				.map((t) => t.getText()) || []
 			: undefined;
 		const subQuery = commonTableExpression.subquery();
 		traverseSubquery(subQuery, traverseContext, cte, recursiveNames); //recursive= true??
