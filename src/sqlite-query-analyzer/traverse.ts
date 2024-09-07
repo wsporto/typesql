@@ -545,17 +545,23 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
 	}
 	if (function_name === 'min' || function_name === 'max') {
 		const functionType = freshVar(expr.getText(), '?');
-		const sumParamExpr = expr.expr(0);
-		const paramType = traverse_expr(sumParamExpr, traverseContext);
-		traverseContext.constraints.push({
-			expression: expr.getText(),
-			type1: functionType,
-			type2: paramType.type
-		});
+		let paramNotNull: boolean | undefined = false;
+		expr.expr_list().forEach((exprParam, index, array) => {
+			const paramType = traverse_expr(exprParam, traverseContext);
+			if (array.length == 1 && index == 0) {
+				paramNotNull = paramType.notNull;
+			}
+			traverseContext.constraints.push({
+				expression: expr.getText(),
+				type1: functionType,
+				type2: paramType.type
+			});
+		})
+
 		return {
 			name: functionType.name,
 			type: functionType,
-			notNull: paramType.notNull,
+			notNull: paramNotNull,
 			table: functionType.table || ''
 		};
 	}

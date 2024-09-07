@@ -339,6 +339,58 @@ describe('sqlite-parse-select-functions', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('SELECT max(id, ?, ?, ?) as max FROM mytable1', () => {
+		const sql = `
+        SELECT max(id, ?, ?, ?) as max, min(name, ?) as min FROM mytable2
+        `;
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'max',
+					type: 'INTEGER',
+					notNull: false,
+					table: ''
+				},
+				{
+					columnName: 'min',
+					type: 'TEXT',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'INTEGER',
+					notNull: false
+				},
+				{
+					name: 'param2',
+					columnType: 'INTEGER',
+					notNull: false
+				},
+				{
+					name: 'param3',
+					columnType: 'INTEGER',
+					notNull: false
+				},
+				{
+					name: 'param4',
+					columnType: 'TEXT',
+					notNull: false
+				}
+			]
+		};
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('SELECT MIN(name) FROM mytable2', () => {
 		const sql = `
         SELECT MIN(name) FROM mytable2
