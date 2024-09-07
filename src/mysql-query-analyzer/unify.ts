@@ -101,12 +101,12 @@ function getBestPossibleType(type1: InferType, type2: InferType, max?: boolean, 
 	const sqliteIndexDateType1 = sqliteDateCoercionOrder.indexOf(type1);
 	const sqliteIndexDateType2 = sqliteDateCoercionOrder.indexOf(type2);
 	if (sqliteIndexDateType1 !== -1 && sqliteIndexDateType2 !== -1) {
-		const index = Math.max(sqliteIndexDateType1, sqliteIndexDateType2);
+		const index = max ? Math.max(sqliteIndexDateType1, sqliteIndexDateType2) : Math.min(sqliteIndexDateType1, sqliteIndexDateType2);
 		return sqliteDateCoercionOrder[index];
 	}
 
-	// Is possible to convert text to date
-	const sqliteNumberCoercionOrder: InferType[] = ['INTEGER', 'REAL', 'NUMERIC'];
+	// Is possible to convert numeric to date
+	const sqliteNumberCoercionOrder: InferType[] = ['INTEGER', 'REAL', 'NUMERIC', 'DATE'];
 	const sqliteIndexNumberType1 = sqliteNumberCoercionOrder.indexOf(type1);
 	const sqliteIndexNumberType2 = sqliteNumberCoercionOrder.indexOf(type2);
 	if (sqliteIndexNumberType1 !== -1 && sqliteIndexNumberType2 !== -1) {

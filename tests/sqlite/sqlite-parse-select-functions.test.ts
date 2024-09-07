@@ -760,6 +760,186 @@ describe('sqlite-parse-select-functions', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('SELECT max(t1.value, date(?)) as result FROM mytable1 t1', () => {
+		const sql = 'SELECT max(t1.value, date(?)) as result FROM mytable1 t1';
+
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'result',
+					type: 'INTEGER',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'DATE',
+					notNull: true
+				}
+			]
+		};
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('SELECT max(t3.double_value, date(?)) as result FROM mytable3 t3', () => {
+		const sql = 'SELECT max(t3.double_value, date(?)) as result FROM mytable3 t3';
+
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'result',
+					type: 'REAL',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'DATE',
+					notNull: true
+				}
+			]
+		};
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('SELECT max(t1.value, date(:param1), :param1) as result FROM mytable1 t1', () => {
+		const sql = 'SELECT max(t1.value, date(:param1), :param1) as result FROM mytable1 t1';
+
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql: sql.replace(':param1', '?').replace(':param1', '?'),
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'result',
+					type: 'INTEGER',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'INTEGER',
+					notNull: true
+				},
+				{
+					name: 'param1',
+					columnType: 'INTEGER',
+					notNull: true
+				}
+			]
+		};
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('SELECT t3.double_value, max(t3.double_value, date(:param1), :param1) as result FROM mytable3 t3', () => {
+		const sql = 'SELECT t3.double_value, max(t3.double_value, date(:param1), :param1) as result FROM mytable3 t3';
+
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql: sql.replace(':param1', '?').replace(':param1', '?'),
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'double_value',
+					type: 'REAL',
+					notNull: false,
+					table: 't3'
+				},
+				{
+					columnName: 'result',
+					type: 'REAL',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'REAL',
+					notNull: true
+				},
+				{
+					name: 'param1',
+					columnType: 'REAL',
+					notNull: true
+				}
+			]
+		};
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('WITH cte ... SELECT c1.name, min(c1.name, date(:param1)) as result2 FROM cte c1', () => {
+		const sql = `WITH cte AS (
+			SELECT t2.name, max(t2.name, date(:param1)) as result FROM mytable2 t2
+		)
+		SELECT c1.name, min(c1.name, date(:param1)) as result2 FROM cte c1`
+
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql: sql.replace(':param1', '?').replace(':param1', '?'),
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'name',
+					type: 'TEXT',
+					notNull: false,
+					table: 'c1'
+				},
+				{
+					columnName: 'result2',
+					type: 'TEXT',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'DATE',
+					notNull: true
+				},
+				{
+					name: 'param1',
+					columnType: 'DATE',
+					notNull: true
+				}
+			]
+		};
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('SELECT IF(1>2,2,3) as result', () => {
 		const sql = `
         SELECT IIF(1>2,2,3) as result
