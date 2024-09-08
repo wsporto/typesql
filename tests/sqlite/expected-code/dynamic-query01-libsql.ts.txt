@@ -3,13 +3,7 @@ import { EOL } from 'os';
 
 export type DynamicQuery01DynamicParams = {
 	select?: DynamicQuery01Select;
-	params?: DynamicQuery01Params;
 	where?: DynamicQuery01Where[];
-}
-
-export type DynamicQuery01Params = {
-	name?: string | null;
-	description?: string | null;
 }
 
 export type DynamicQuery01Result = {
@@ -78,10 +72,6 @@ export async function dynamicQuery01(client: Client | Transaction, params?: Dyna
 		sql += EOL + `INNER JOIN mytable2 m2 on m1.id = m2.id`;
 	}
 	sql += EOL + `WHERE 1 = 1`;
-	sql += EOL + `AND m2.name = ?
-AND m2.descr = ?`;
-	paramsValues.push(params?.params?.name ?? null);
-	paramsValues.push(params?.params?.description ?? null);
 	params?.where?.forEach(condition => {
 		const where = whereCondition(condition);
 		if (where?.hasValue) {
@@ -117,7 +107,7 @@ function mapArrayToDynamicQuery01Result(data: any, select?: DynamicQuery01Select
 }
 
 function appendSelect(sql: string, selectField: string) {
-	if (sql == 'SELECT') {
+	if (sql.toUpperCase().endsWith('SELECT')) {
 		return sql + EOL + selectField;
 	}
 	else {

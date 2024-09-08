@@ -9,7 +9,6 @@ export type DerivatedTableDynamicParams = {
 
 export type DerivatedTableParams = {
 	subqueryName?: string | null;
-	name?: string | null;
 }
 
 export type DerivatedTableResult = {
@@ -62,9 +61,6 @@ export function derivatedTable(db: Database, params?: DerivatedTableDynamicParam
 		paramsValues.push(params?.params?.subqueryName);
 	}
 	sql += EOL + `WHERE 1 = 1`;
-	sql += EOL + `AND (? is NULL or m2.name = ?)`;
-	paramsValues.push(params?.params?.name ?? null);
-	paramsValues.push(params?.params?.name ?? null);
 	params?.where?.forEach(condition => {
 		const where = whereCondition(condition);
 		if (where?.hasValue) {
@@ -93,7 +89,7 @@ function mapArrayToDerivatedTableResult(data: any, select?: DerivatedTableSelect
 }
 
 function appendSelect(sql: string, selectField: string) {
-	if (sql == 'SELECT') {
+	if (sql.toUpperCase().endsWith('SELECT')) {
 		return sql + EOL + selectField;
 	}
 	else {

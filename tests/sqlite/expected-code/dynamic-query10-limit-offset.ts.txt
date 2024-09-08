@@ -53,11 +53,7 @@ export function dynamicQuery10(db: Database, params?: DynamicQuery10DynamicParam
 		sql = appendSelect(sql, `t2.name`);
 	}
 	sql += EOL + `FROM mytable1 t1`;
-	if (params?.select == null
-		|| params.select.name
-		|| where.name != null) {
-		sql += EOL + `INNER JOIN mytable2 t2 on t2.id = t1.id`;
-	}
+	sql += EOL + `INNER JOIN mytable2 t2 on t2.id = t1.id`;
 	sql += EOL + `WHERE 1 = 1`;
 	sql += EOL + `AND name = ?`;
 	paramsValues.push(params?.params?.name ?? null);
@@ -92,7 +88,7 @@ function mapArrayToDynamicQuery10Result(data: any, select?: DynamicQuery10Select
 }
 
 function appendSelect(sql: string, selectField: string) {
-	if (sql == 'SELECT') {
+	if (sql.toUpperCase().endsWith('SELECT')) {
 		return sql + EOL + selectField;
 	}
 	else {

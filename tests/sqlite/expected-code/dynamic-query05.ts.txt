@@ -3,12 +3,7 @@ import { EOL } from 'os';
 
 export type CteDynamicParams = {
 	select?: CteSelect;
-	params?: CteParams;
 	where?: CteWhere[];
-}
-
-export type CteParams = {
-	name?: string | null;
 }
 
 export type CteResult = {
@@ -43,15 +38,15 @@ export type CteWhere =
 export function cte(db: Database, params?: CteDynamicParams): CteResult[] {
 	const where = whereConditionsToObject(params?.where);
 	const paramsValues: any = [];
-	let withClause = '';
+	const withClause = [];
 	if (params?.select == null
 		|| params.select.name
 		|| where.name != null) {
-		withClause += EOL + `cte as (
+		withClause.push(`cte as (
             select id, name from mytable2
-        )`;
+        )`);
 	}
-	let sql = 'WITH ' + withClause + EOL + 'SELECT';
+	let sql = 'WITH ' + withClause.join(',' + EOL) + EOL + 'SELECT';
 	if (params?.select == null || params.select.id) {
 		sql = appendSelect(sql, `m1.id`);
 	}
@@ -65,8 +60,6 @@ export function cte(db: Database, params?: CteDynamicParams): CteResult[] {
 		sql += EOL + `INNER JOIN cte m2 on m2.id = m1.id`;
 	}
 	sql += EOL + `WHERE 1 = 1`;
-	sql += EOL + `AND m2.name LIKE concat('%', ?, '%')`;
-	paramsValues.push(params?.params?.name ?? null);
 	params?.where?.forEach(condition => {
 		const where = whereCondition(condition);
 		if (where?.hasValue) {
@@ -95,7 +88,7 @@ function mapArrayToCteResult(data: any, select?: CteSelect) {
 }
 
 function appendSelect(sql: string, selectField: string) {
-	if (sql == 'SELECT') {
+	if (sql.toUpperCase().endsWith('SELECT')) {
 		return sql + EOL + selectField;
 	}
 	else {

@@ -9,9 +9,7 @@ describe('sqlite-generate-dynamic-info', () => {
 		const sql = `-- @dynamicQuery
 		SELECT m1.id, m1.value, m2.name, m2.descr as description
 		FROM mytable1 m1
-		INNER JOIN mytable2 m2 on m1.id = m2.id
-		WHERE m2.name = :name
-		OR m2.descr = :description`;
+		INNER JOIN mytable2 m2 on m1.id = m2.id`;
 
 		const actual = traverseSql(sql, sqliteDbSchema);
 		const expected: DynamicSqlInfo2 = {
@@ -60,14 +58,7 @@ describe('sqlite-generate-dynamic-info', () => {
 					parameters: []
 				}
 			],
-			where: [
-				{
-					fragment: `AND m2.name = ?
-		OR m2.descr = ?`,
-					dependOnRelations: ['m2'],
-					parameters: [0, 1]
-				}
-			]
+			where: []
 		};
 
 		if (isLeft(actual)) {
@@ -81,9 +72,7 @@ describe('sqlite-generate-dynamic-info', () => {
 		const sql = `-- @dynamicQuery
 		SELECT m1.id, m1.value, m2.name, m2.descr as description
 		FROM mytable1 m1
-		INNER JOIN mytable2 m2 on m1.id = m2.id
-		WHERE m2.name = :name
-		OR m2.descr = :description`;
+		INNER JOIN mytable2 m2 on m1.id = m2.id`;
 
 		const actual = parseSql(sql, sqliteDbSchema);
 		const expected: DynamicSqlInfoResult2 = {
@@ -126,13 +115,7 @@ describe('sqlite-generate-dynamic-info', () => {
 					parameters: []
 				}
 			],
-			where: [
-				{
-					fragment: `AND m2.name = ?
-		OR m2.descr = ?`,
-					parameters: ['name', 'description']
-				}
-			]
+			where: []
 		};
 
 		if (isLeft(actual)) {
@@ -211,6 +194,58 @@ describe('sqlite-generate-dynamic-info', () => {
 		INNER JOIN ( -- derivated table
 			SELECT id, name from mytable2 m 
 			WHERE m.name = :subqueryName
+		) m2 on m2.id = m1.id`;
+
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: DynamicSqlInfoResult2 = {
+			with: [],
+			select: [
+				{
+					fragment: 'm1.id',
+					fragmentWitoutAlias: 'm1.id',
+					parameters: []
+				},
+				{
+					fragment: 'm2.name',
+					fragmentWitoutAlias: 'm2.name',
+					parameters: []
+				}
+			],
+			from: [
+				{
+					fragment: 'FROM mytable1 m1',
+					relationName: 'mytable1',
+					dependOnFields: [],
+					dependOnOrderBy: [],
+					parameters: []
+				},
+				{
+					fragment: `INNER JOIN ( -- derivated table
+			SELECT id, name from mytable2 m 
+			WHERE m.name = ?
+		) m2 on m2.id = m1.id`,
+					relationName: '',
+					dependOnFields: [1],
+					dependOnOrderBy: [],
+					parameters: ['subqueryName']
+				}
+			],
+			where: []
+		};
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right.dynamicSqlQuery2, expected);
+	});
+
+	it('dynamic-info-result02-with-where', () => {
+		const sql = `-- @dynamicQuery
+		SELECT m1.id, m2.name
+		FROM mytable1 m1
+		INNER JOIN ( -- derivated table
+			SELECT id, name from mytable2 m 
+			WHERE m.name = :subqueryName
 		) m2 on m2.id = m1.id
 		WHERE (:name is NULL or m2.name = :name)`;
 
@@ -243,7 +278,7 @@ describe('sqlite-generate-dynamic-info', () => {
 			WHERE m.name = ?
 		) m2 on m2.id = m1.id`,
 					relationName: '',
-					dependOnFields: [1],
+					dependOnFields: [],
 					dependOnOrderBy: [],
 					parameters: ['subqueryName']
 				}
@@ -344,8 +379,7 @@ describe('sqlite-generate-dynamic-info', () => {
 			m1.id,
 			m2.name
 		FROM mytable1 m1
-		INNER JOIN cte m2 on m2.id = m1.id
-		WHERE m2.name LIKE concat('%', :name, '%')`;
+		INNER JOIN cte m2 on m2.id = m1.id`;
 
 		const actual = parseSql(sql, sqliteDbSchema);
 		const expected: DynamicSqlInfoResult2 = {
@@ -384,6 +418,69 @@ describe('sqlite-generate-dynamic-info', () => {
 					fragment: 'INNER JOIN cte m2 on m2.id = m1.id',
 					relationName: 'cte',
 					dependOnFields: [1], //m2.name
+					dependOnOrderBy: [],
+					parameters: []
+				}
+			],
+			where: []
+		};
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right.dynamicSqlQuery2, expected);
+	});
+
+	it('dynamic-info-result05-with-where', () => {
+		const sql = `-- @dynamicQuery
+		WITH 
+			cte as (
+				select id, name from mytable2
+			)
+		SELECT 
+			m1.id,
+			m2.name
+		FROM mytable1 m1
+		INNER JOIN cte m2 on m2.id = m1.id
+		WHERE m2.name LIKE concat('%', :name, '%')`;
+
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: DynamicSqlInfoResult2 = {
+			with: [
+				{
+					fragment: `cte as (
+				select id, name from mytable2
+			)`,
+					relationName: 'cte',
+					dependOnFields: [], //where expr made this block mandatory
+					dependOnOrderBy: [],
+					parameters: []
+				}
+			],
+			select: [
+				{
+					fragment: 'm1.id',
+					fragmentWitoutAlias: 'm1.id',
+					parameters: []
+				},
+				{
+					fragment: 'm2.name',
+					fragmentWitoutAlias: 'm2.name',
+					parameters: []
+				}
+			],
+			from: [
+				{
+					fragment: 'FROM mytable1 m1',
+					relationName: 'mytable1',
+					dependOnFields: [],
+					dependOnOrderBy: [],
+					parameters: []
+				},
+				{
+					fragment: 'INNER JOIN cte m2 on m2.id = m1.id',
+					relationName: 'cte',
+					dependOnFields: [], //m2.name
 					dependOnOrderBy: [],
 					parameters: []
 				}
@@ -611,6 +708,52 @@ describe('sqlite-generate-dynamic-info', () => {
 		const sql = `-- @dynamicQuery
 		select t2.name, t3.name as name2
 		from mytable2 t2
+		inner join mytable3 t3 on t3.id = t2.id`;
+
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: DynamicSqlInfoResult2 = {
+			with: [],
+			select: [
+				{
+					fragment: 't2.name',
+					fragmentWitoutAlias: 't2.name',
+					parameters: []
+				},
+				{
+					fragment: 't3.name as name2',
+					fragmentWitoutAlias: 't3.name',
+					parameters: []
+				}
+			],
+			from: [
+				{
+					fragment: 'FROM mytable2 t2',
+					relationName: 'mytable2',
+					dependOnFields: [],
+					dependOnOrderBy: [],
+					parameters: []
+				},
+				{
+					fragment: 'inner join mytable3 t3 on t3.id = t2.id',
+					relationName: 'mytable3',
+					dependOnFields: [1],
+					dependOnOrderBy: [],
+					parameters: []
+				}
+			],
+			where: []
+		};
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right.dynamicSqlQuery2, expected);
+	});
+
+	it('dynamic-info-result06-with-where', () => {
+		const sql = `-- @dynamicQuery
+		select t2.name, t3.name as name2
+		from mytable2 t2
 		inner join mytable3 t3 on t3.id = t2.id
 		where (concat('%', t2.name, '%') = :name OR concat('%', t3.name, '%') = :name)`;
 
@@ -640,7 +783,7 @@ describe('sqlite-generate-dynamic-info', () => {
 				{
 					fragment: 'inner join mytable3 t3 on t3.id = t2.id',
 					relationName: 'mytable3',
-					dependOnFields: [1],
+					dependOnFields: [], //where made this block mandatory (t3.name)
 					dependOnOrderBy: [],
 					parameters: []
 				}
@@ -750,7 +893,7 @@ describe('sqlite-generate-dynamic-info', () => {
 				{
 					fragment: 'inner join mytable3 t3 on t3.id = t2.id',
 					relationName: 'mytable3',
-					dependOnFields: [1],
+					dependOnFields: [],
 					dependOnOrderBy: [],
 					parameters: []
 				}
@@ -944,5 +1087,332 @@ describe('sqlite-generate-dynamic-info', () => {
 		}
 		assert(actual.right.traverseResult.queryType === 'Select');
 		assert.deepStrictEqual(actual.right.traverseResult.dynamicQueryInfo, expected);
+	});
+
+	it('dynamic-traverse-result-11', () => {
+		const sql = `-- @dynamicQuery
+		WITH 
+			cte1 as (
+				select id, value from mytable1
+				WHERE max(value, :param1) = min(value, :param1)
+			),
+			cte2 as (
+				select id, name from mytable2
+				WHERE max(name, :param2) = min(name, :param2)
+			)
+		SELECT 
+			c1.id,
+			c2.name
+		FROM cte1 c1
+		INNER JOIN cte2 c2 on c1.id = c2.id`;
+
+		const actual = traverseSql(sql, sqliteDbSchema);
+		const expected: DynamicSqlInfo2 = {
+			with: [
+				{
+					fragment: `cte1 as (
+				select id, value from mytable1
+				WHERE max(value, ?) = min(value, ?)
+			)`,
+					relationName: 'cte1',
+					parameters: [0, 1]
+				},
+				{
+					fragment: `cte2 as (
+				select id, name from mytable2
+				WHERE max(name, ?) = min(name, ?)
+			)`,
+					relationName: 'cte2',
+					parameters: [2, 3]
+				}
+			],
+			select: [
+				{
+					fragment: 'c1.id',
+					fragmentWitoutAlias: 'c1.id',
+					dependOnRelations: ['c1'],
+					parameters: []
+				},
+				{
+					fragment: 'c2.name',
+					fragmentWitoutAlias: 'c2.name',
+					dependOnRelations: ['c2'],
+					parameters: []
+				}
+			],
+			from: [
+				{
+					fragment: 'FROM cte1 c1',
+					relationName: 'cte1',
+					relationAlias: 'c1',
+					parentRelation: '',
+					fields: ['id', 'value'],
+					parameters: []
+				},
+				{
+					fragment: 'INNER JOIN cte2 c2 on c1.id = c2.id',
+					relationName: 'cte2',
+					relationAlias: 'c2',
+					parentRelation: 'c1',
+					fields: ['id', 'name'],
+					parameters: []
+				}
+			],
+			where: []
+		};
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert(actual.right.traverseResult.queryType === 'Select');
+		assert.deepStrictEqual(actual.right.traverseResult.dynamicQueryInfo, expected);
+	});
+
+	it('dynamic-info-result11', () => {
+		const sql = `-- @dynamicQuery
+		WITH 
+			cte1 as (
+				select id, value from mytable1
+				WHERE max(value, :param1) = min(value, :param1)
+			),
+			cte2 as (
+				select id, name from mytable2
+				WHERE max(name, :param2) = min(name, :param2)
+			)
+		SELECT 
+			c1.id,
+			c2.name
+		FROM cte1 c1
+		INNER JOIN cte2 c2 on c1.id = c2.id`;
+
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: DynamicSqlInfoResult2 = {
+			with: [
+				{
+					fragment: `cte1 as (
+				select id, value from mytable1
+				WHERE max(value, ?) = min(value, ?)
+			)`,
+					relationName: 'cte1',
+					dependOnFields: [], //FROM made this block mandatory
+					dependOnOrderBy: [],
+					parameters: ['param1', 'param1']
+				},
+				{
+					fragment: `cte2 as (
+				select id, name from mytable2
+				WHERE max(name, ?) = min(name, ?)
+			)`,
+					relationName: 'cte2',
+					dependOnFields: [1], //c2.name
+					dependOnOrderBy: [],
+					parameters: ['param2', 'param2']
+				}
+			],
+			select: [
+				{
+					fragment: 'c1.id',
+					fragmentWitoutAlias: 'c1.id',
+					parameters: []
+				},
+				{
+					fragment: 'c2.name',
+					fragmentWitoutAlias: 'c2.name',
+					parameters: []
+				}
+			],
+			from: [
+				{
+					fragment: 'FROM cte1 c1',
+					relationName: 'cte1',
+					dependOnFields: [], //FROM dependOnFields always []; Can't remove the FROM
+					dependOnOrderBy: [],
+					parameters: []
+				},
+				{
+					fragment: 'INNER JOIN cte2 c2 on c1.id = c2.id',
+					relationName: 'cte2',
+					dependOnFields: [1], //c2.name;
+					dependOnOrderBy: [],
+					parameters: []
+				}
+			],
+			where: []
+		};
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right.dynamicSqlQuery2, expected);
+	});
+
+	it('dynamic-traverse-result-12', () => {
+		const sql = `-- @dynamicQuery
+		WITH 
+			cte1 as (
+				select id, value from mytable1
+				WHERE max(value, :param1) = min(value, :param1)
+			),
+			cte2 as (
+				select id, name from mytable2
+				WHERE max(name, :param2) = min(name, :param2)
+			)
+		SELECT 
+			c1.id,
+			c2.name
+		FROM cte1 c1
+		INNER JOIN cte2 c2 on c1.id = c2.id
+		WHERE max(c1.id, :param3) = min(c2.id, :param3)`;
+
+		const actual = traverseSql(sql, sqliteDbSchema);
+		const expected: DynamicSqlInfo2 = {
+			with: [
+				{
+					fragment: `cte1 as (
+				select id, value from mytable1
+				WHERE max(value, ?) = min(value, ?)
+			)`,
+					relationName: 'cte1',
+					parameters: [0, 1]
+				},
+				{
+					fragment: `cte2 as (
+				select id, name from mytable2
+				WHERE max(name, ?) = min(name, ?)
+			)`,
+					relationName: 'cte2',
+					parameters: [2, 3]
+				}
+			],
+			select: [
+				{
+					fragment: 'c1.id',
+					fragmentWitoutAlias: 'c1.id',
+					dependOnRelations: ['c1'],
+					parameters: []
+				},
+				{
+					fragment: 'c2.name',
+					fragmentWitoutAlias: 'c2.name',
+					dependOnRelations: ['c2'],
+					parameters: []
+				}
+			],
+			from: [
+				{
+					fragment: 'FROM cte1 c1',
+					relationName: 'cte1',
+					relationAlias: 'c1',
+					parentRelation: '',
+					fields: ['id', 'value'],
+					parameters: []
+				},
+				{
+					fragment: 'INNER JOIN cte2 c2 on c1.id = c2.id',
+					relationName: 'cte2',
+					relationAlias: 'c2',
+					parentRelation: 'c1',
+					fields: ['id', 'name'],
+					parameters: []
+				}
+			],
+			where: [
+				{
+					fragment: `AND max(c1.id, ?) = min(c2.id, ?)`,
+					dependOnRelations: ['c1', 'c2'],
+					parameters: [4, 5]
+				}
+			]
+		};
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert(actual.right.traverseResult.queryType === 'Select');
+		assert.deepStrictEqual(actual.right.traverseResult.dynamicQueryInfo, expected);
+	});
+
+	it('dynamic-info-result12', () => {
+		const sql = `-- @dynamicQuery
+		WITH 
+			cte1 as (
+				select id, value from mytable1
+				WHERE max(value, :param1) = min(value, :param1)
+			),
+			cte2 as (
+				select id, name from mytable2
+				WHERE max(name, :param2) = min(name, :param2)
+			)
+		SELECT 
+			c1.id,
+			c2.name
+		FROM cte1 c1
+		INNER JOIN cte2 c2 on c1.id = c2.id
+		WHERE max(c1.id, :param3) = min(c2.id, :param3)`;
+
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: DynamicSqlInfoResult2 = {
+			with: [
+				{
+					fragment: `cte1 as (
+				select id, value from mytable1
+				WHERE max(value, ?) = min(value, ?)
+			)`,
+					relationName: 'cte1',
+					dependOnFields: [],
+					dependOnOrderBy: [],
+					parameters: ['param1', 'param1']
+				},
+				{
+					fragment: `cte2 as (
+				select id, name from mytable2
+				WHERE max(name, ?) = min(name, ?)
+			)`,
+					relationName: 'cte2',
+					dependOnFields: [], //The WHERE expr made this block mandatory (WHERE ... min(c2.id, ?))
+					dependOnOrderBy: [],
+					parameters: ['param2', 'param2']
+				}
+			],
+			select: [
+				{
+					fragment: 'c1.id',
+					fragmentWitoutAlias: 'c1.id',
+					parameters: []
+				},
+				{
+					fragment: 'c2.name',
+					fragmentWitoutAlias: 'c2.name',
+					parameters: []
+				}
+			],
+			from: [
+				{
+					fragment: 'FROM cte1 c1',
+					relationName: 'cte1',
+					dependOnFields: [], //FROM dependOnFields always []; Can't remove the FROM
+					dependOnOrderBy: [],
+					parameters: []
+				},
+				{
+					fragment: 'INNER JOIN cte2 c2 on c1.id = c2.id',
+					relationName: 'cte2',
+					dependOnFields: [], //c2.name; //The WHERE expr made this block mandatory (WHERE ... min(c2.id, ?))
+					dependOnOrderBy: [],
+					parameters: []
+				}
+			],
+			where: [
+				{
+					fragment: `AND max(c1.id, ?) = min(c2.id, ?)`,
+					parameters: ['param3', 'param3']
+				}
+			]
+		};
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right.dynamicSqlQuery2, expected);
 	});
 });

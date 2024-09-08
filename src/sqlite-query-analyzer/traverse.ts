@@ -87,6 +87,7 @@ function traverse_select_stmt(
 		common_table_expression.forEach((common_table_expression) => {
 			const table_name = common_table_expression.table_name();
 			const recursiveNames = common_table_expression.column_name_list().map((column_name) => column_name.getText());
+			const paramsBefore = traverseContext.parameters.length;
 			const select_stmt = common_table_expression.select_stmt();
 			traverse_select_stmt(
 				select_stmt,
@@ -96,10 +97,11 @@ function traverse_select_stmt(
 				recursiveNames,
 				table_name.getText()
 			);
+			const parameters = traverseContext.parameters.slice(paramsBefore).map((_, index) => paramsBefore + index);
 			traverseContext.dynamicSqlInfo2.with.push({
 				fragment: extractOriginalSql(common_table_expression),
 				relationName: table_name.getText(),
-				parameters: []
+				parameters: parameters
 			});
 		});
 	}

@@ -88,7 +88,7 @@ function mapArrayToDynamicQuery07Result(data: any, select?: DynamicQuery07Select
 }
 
 function appendSelect(sql: string, selectField: string) {
-	if (sql == 'SELECT') {
+	if (sql.toUpperCase().endsWith('SELECT')) {
 		return sql + EOL + selectField;
 	}
 	else {

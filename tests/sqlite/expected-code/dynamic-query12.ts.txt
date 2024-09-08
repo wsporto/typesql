@@ -1,29 +1,31 @@
-import type { Database } from 'bun:sqlite';
+import type { Database } from 'better-sqlite3';
 import { EOL } from 'os';
 
-export type DerivatedTableDynamicParams = {
-	select?: DerivatedTableSelect;
-	params?: DerivatedTableParams;
-	where?: DerivatedTableWhere[];
+export type DynamicQuery12DynamicParams = {
+	select?: DynamicQuery12Select;
+	params?: DynamicQuery12Params;
+	where?: DynamicQuery12Where[];
 }
 
-export type DerivatedTableParams = {
-	subqueryName?: string | null;
+export type DynamicQuery12Params = {
+	param1?: number | null;
+	param2?: string | null;
+	param3?: number | null;
 }
 
-export type DerivatedTableResult = {
+export type DynamicQuery12Result = {
 	id?: number;
 	name?: string;
 }
 
-export type DerivatedTableSelect = {
+export type DynamicQuery12Select = {
 	id?: boolean;
 	name?: boolean;
 }
 
 const selectFragments = {
-	id: `m1.id`,
-	name: `m2.name`,
+	id: `c1.id`,
+	name: `c2.name`,
 } as const;
 
 const NumericOperatorList = ['=', '<>', '>', '<', '>=', '<='] as const;
@@ -32,7 +34,7 @@ type StringOperator = '=' | '<>' | '>' | '<' | '>=' | '<=' | 'LIKE';
 type SetOperator = 'IN' | 'NOT IN';
 type BetweenOperator = 'BETWEEN';
 
-export type DerivatedTableWhere =
+export type DynamicQuery12Where =
 	| ['id', NumericOperator, number | null]
 	| ['id', SetOperator, number[]]
 	| ['id', BetweenOperator, number | null, number | null]
@@ -40,27 +42,35 @@ export type DerivatedTableWhere =
 	| ['name', SetOperator, string[]]
 	| ['name', BetweenOperator, string | null, string | null]
 
-export function derivatedTable(db: Database, params?: DerivatedTableDynamicParams): DerivatedTableResult[] {
+export function dynamicQuery12(db: Database, params?: DynamicQuery12DynamicParams): DynamicQuery12Result[] {
 	const where = whereConditionsToObject(params?.where);
 	const paramsValues: any = [];
-	let sql = 'SELECT';
+	const withClause = [];
+	withClause.push(`cte1 as (
+		select id, value from mytable1
+		WHERE max(value, ?) = min(value, ?)
+	)`);
+	paramsValues.push(params?.params?.param1);
+	paramsValues.push(params?.params?.param1);
+	withClause.push(`cte2 as (
+		select id, name from mytable2
+		WHERE max(name, ?) = min(name, ?)
+	)`);
+	paramsValues.push(params?.params?.param2);
+	paramsValues.push(params?.params?.param2);
+	let sql = 'WITH ' + withClause.join(',' + EOL) + EOL + 'SELECT';
 	if (params?.select == null || params.select.id) {
-		sql = appendSelect(sql, `m1.id`);
+		sql = appendSelect(sql, `c1.id`);
 	}
 	if (params?.select == null || params.select.name) {
-		sql = appendSelect(sql, `m2.name`);
+		sql = appendSelect(sql, `c2.name`);
 	}
-	sql += EOL + `FROM mytable1 m1`;
-	if (params?.select == null
-		|| params.select.name
-		|| where.name != null) {
-		sql += EOL + `INNER JOIN ( -- derivated table
-	SELECT id, name from mytable2 m 
-	WHERE m.name = ?
-) m2 on m2.id = m1.id`;
-		paramsValues.push(params?.params?.subqueryName);
-	}
+	sql += EOL + `FROM cte1 c1`;
+	sql += EOL + `INNER JOIN cte2 c2 on c1.id = c2.id`;
 	sql += EOL + `WHERE 1 = 1`;
+	sql += EOL + `AND max(c1.id, ?) = min(c2.id, ?)`;
+	paramsValues.push(params?.params?.param3 ?? null);
+	paramsValues.push(params?.params?.param3 ?? null);
 	params?.where?.forEach(condition => {
 		const where = whereCondition(condition);
 		if (where?.hasValue) {
@@ -69,12 +79,13 @@ export function derivatedTable(db: Database, params?: DerivatedTableDynamicParam
 		}
 	});
 	return db.prepare(sql)
-		.values(paramsValues)
-		.map(data => mapArrayToDerivatedTableResult(data, params?.select));
+		.raw(true)
+		.all(paramsValues)
+		.map(data => mapArrayToDynamicQuery12Result(data, params?.select));
 }
 
-function mapArrayToDerivatedTableResult(data: any, select?: DerivatedTableSelect) {
-	const result = {} as DerivatedTableResult;
+function mapArrayToDynamicQuery12Result(data: any, select?: DynamicQuery12Select) {
+	const result = {} as DynamicQuery12Result;
 	let rowIndex = -1;
 	if (select == null || select.id) {
 		rowIndex++;
@@ -96,7 +107,7 @@ function appendSelect(sql: string, selectField: string) {
 	}
 }
 
-function whereConditionsToObject(whereConditions?: DerivatedTableWhere[]) {
+function whereConditionsToObject(whereConditions?: DynamicQuery12Where[]) {
 	const obj = {} as any;
 	whereConditions?.forEach(condition => {
 		const where = whereCondition(condition);
@@ -113,7 +124,7 @@ type WhereConditionResult = {
 	values: any[];
 }
 
-function whereCondition(condition: DerivatedTableWhere): WhereConditionResult | undefined {
+function whereCondition(condition: DynamicQuery12Where): WhereConditionResult | undefined {
 
 	const selectFragment = selectFragments[condition[0]];
 	const operator = condition[1];

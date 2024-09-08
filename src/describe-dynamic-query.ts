@@ -140,7 +140,7 @@ export function describeDynamicQuery2(
 ): DynamicSqlInfoResult2 {
 	const { with: withFragments, select, from, where, limitOffset } = dynamicQueryInfo;
 
-	const fromResult = transformFromFragments(from, select, namedParameters, orderByColumns);
+	const fromResult = transformFromFragments(from, select, where, namedParameters, orderByColumns);
 
 	const result: DynamicSqlInfoResult2 = {
 		with: transformWithFragmnts(withFragments, fromResult, namedParameters),
@@ -193,6 +193,7 @@ type FromFragmentTempResult = FromFragementResult & {
 function transformFromFragments(
 	fromFragments: FromFragment[],
 	selectFragments: SelectFragment[],
+	whereFragments: WhereFragment[],
 	namedParameters: string[],
 	orderByColumns: string[]
 ): FromFragementResult[] {
@@ -215,7 +216,7 @@ function transformFromFragments(
 			relationName: from.relationName,
 			relationAlias: from.relationAlias,
 			parentRelation: from.parentRelation,
-			dependOnFields: getDependOnFields({ relationName, relationAlias, parentRelation }, selectFragments),
+			dependOnFields: getDependOnFields({ relationName, relationAlias, parentRelation }, selectFragments, whereFragments),
 			dependOnOrderBy: orderBy,
 			parameters: from.parameters.map((paramIndex) => namedParameters[paramIndex])
 		};
@@ -259,10 +260,15 @@ function getDependOnFields(
 		relationAlias: string;
 		parentRelation: string;
 	},
-	selectFragments: SelectFragment[]
+	selectFragments: SelectFragment[],
+	whereFragments: WhereFragment[]
 ): number[] {
 	if (relationInfo.parentRelation === '') {
 		//from
+		return [];
+	}
+	if (whereFragments.find(whereFrag => whereFrag.dependOnRelations.includes(relationInfo.relationName)
+		|| whereFrag.dependOnRelations.includes(relationInfo.relationAlias))) {
 		return [];
 	}
 

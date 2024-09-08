@@ -607,9 +607,7 @@ INNER JOIN posts p on p.fk_user = u.id`;
 		const sql = `-- @dynamicQuery
 SELECT m1.id, m1.value, m2.name, m2.descr as description
 FROM mytable1 m1
-INNER JOIN mytable2 m2 on m1.id = m2.id
-WHERE m2.name = :name
-AND m2.descr = :description`;
+INNER JOIN mytable2 m2 on m1.id = m2.id`;
 
 		const isCrud = false;
 		const actual = generateTsCode(sql, 'dynamic-query-01', sqliteDbSchema, 'better-sqlite3', isCrud);
@@ -625,9 +623,7 @@ AND m2.descr = :description`;
 		const sql = `-- @dynamicQuery
 SELECT m1.id, m1.value, m2.name, m2.descr as description
 FROM mytable1 m1
-INNER JOIN mytable2 m2 on m1.id = m2.id
-WHERE m2.name = :name
-AND m2.descr = :description`;
+INNER JOIN mytable2 m2 on m1.id = m2.id`;
 
 		const isCrud = false;
 		const actual = generateTsCode(sql, 'dynamic-query-01', sqliteDbSchema, 'libsql', isCrud);
@@ -643,9 +639,7 @@ AND m2.descr = :description`;
 		const sql = `-- @dynamicQuery
 SELECT m1.id, m1.value, m2.name, m2.descr as description
 FROM mytable1 m1
-INNER JOIN mytable2 m2 on m1.id = m2.id
-WHERE m2.name = :name
-AND m2.descr = :description`;
+INNER JOIN mytable2 m2 on m1.id = m2.id`;
 
 		const isCrud = false;
 		const actual = generateTsCode(sql, 'dynamic-query-01', sqliteDbSchema, 'bun:sqlite', isCrud);
@@ -664,8 +658,7 @@ FROM mytable1 m1
 INNER JOIN ( -- derivated table
 	SELECT id, name from mytable2 m 
 	WHERE m.name = :subqueryName
-) m2 on m2.id = m1.id
-WHERE (:name is NULL or m2.name = :name)`;
+) m2 on m2.id = m1.id`;
 
 		const isCrud = false;
 		const actual = generateTsCode(sql, 'derivated-table', sqliteDbSchema, 'better-sqlite3', isCrud);
@@ -684,8 +677,7 @@ FROM mytable1 m1
 INNER JOIN ( -- derivated table
 	SELECT id, name from mytable2 m 
 	WHERE m.name = :subqueryName
-) m2 on m2.id = m1.id
-WHERE (:name is NULL or m2.name = :name)`;
+) m2 on m2.id = m1.id`;
 
 		const isCrud = false;
 		const actual = generateTsCode(sql, 'derivated-table', sqliteDbSchema, 'bun:sqlite', isCrud);
@@ -754,8 +746,7 @@ SELECT
     m1.id,
     m2.name
 FROM mytable1 m1
-INNER JOIN cte m2 on m2.id = m1.id
-WHERE m2.name LIKE concat('%', :name, '%')`;
+INNER JOIN cte m2 on m2.id = m1.id`;
 
 		const isCrud = false;
 		const actual = generateTsCode(sql, 'cte', sqliteDbSchema, 'better-sqlite3', isCrud);
@@ -850,6 +841,61 @@ LIMIT :limit OFFSET :offset`;
 		const isCrud = false;
 		const actual = generateTsCode(sql, 'dynamic-query10', sqliteDbSchema, 'better-sqlite3', isCrud);
 		const expected = readFileSync('tests/sqlite/expected-code/dynamic-query10-limit-offset.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('dynamic-query-11', () => {
+		const sql = `-- @dynamicQuery
+WITH 
+	cte1 as (
+		select id, value from mytable1
+		WHERE max(value, :param1) = min(value, :param1)
+	),
+	cte2 as (
+		select id, name from mytable2
+		WHERE max(name, :param2) = min(name, :param2)
+	)
+SELECT 
+	c1.id,
+	c2.name
+FROM cte1 c1
+INNER JOIN cte2 c2 on c1.id = c2.id`;
+
+		const isCrud = false;
+		const actual = generateTsCode(sql, 'dynamic-query11', sqliteDbSchema, 'better-sqlite3', isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/dynamic-query11.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('dynamic-query-12', () => {
+		const sql = `-- @dynamicQuery
+WITH 
+	cte1 as (
+		select id, value from mytable1
+		WHERE max(value, :param1) = min(value, :param1)
+	),
+	cte2 as (
+		select id, name from mytable2
+		WHERE max(name, :param2) = min(name, :param2)
+	)
+SELECT 
+	c1.id,
+	c2.name
+FROM cte1 c1
+INNER JOIN cte2 c2 on c1.id = c2.id
+WHERE max(c1.id, :param3) = min(c2.id, :param3)`;
+
+		const isCrud = false;
+		const actual = generateTsCode(sql, 'dynamic-query12', sqliteDbSchema, 'better-sqlite3', isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/dynamic-query12.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);

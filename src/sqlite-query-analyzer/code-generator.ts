@@ -359,8 +359,8 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 			writer.write('const paramsValues: any = [];').newLine();
 			const hasCte = (tsDescriptor.dynamicQuery2?.with.length || 0) > 0;
 			if (hasCte) {
-				writer.writeLine(`let withClause = '';`);
-				tsDescriptor.dynamicQuery2?.with.forEach((withFragment, index) => {
+				writer.writeLine(`const withClause = [];`);
+				tsDescriptor.dynamicQuery2?.with.forEach((withFragment, index, array) => {
 					const selectConditions = withFragment.dependOnFields.map(
 						(fieldIndex) => `params.select.${tsDescriptor.columns[fieldIndex].name}`
 					);
@@ -371,14 +371,23 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 					const orderByConditions = withFragment.dependOnOrderBy?.map((orderBy) => `orderBy['${orderBy}'] != null`) || [];
 					const allConditions = [...selectConditions, ...whereConditions, ...orderByConditions];
 					const paramValues = withFragment.parameters.map((param) => `params?.params?.${param}`);
-					writer.write(`if (${allConditions.join(`${EOL}\t|| `)})`).block(() => {
-						writer.write(`withClause += EOL + \`${withFragment.fragment}\`;`);
+					if (allConditions.length > 0) {
+						writer.write(`if (${allConditions.join(`${EOL}\t|| `)})`).block(() => {
+							writer.write(`withClause.push(\`${withFragment.fragment}\`);`);
+							paramValues.forEach((paramValues) => {
+								writer.writeLine(`paramsValues.push(${paramValues});`);
+							});
+						});
+					}
+					else {
+						writer.write(`withClause.push(\`${withFragment.fragment}\`);`);
 						paramValues.forEach((paramValues) => {
 							writer.writeLine(`paramsValues.push(${paramValues});`);
 						});
-					});
+					}
+
 				});
-				writer.write(`let sql = 'WITH ' + withClause + EOL + 'SELECT';`).newLine();
+				writer.write(`let sql = 'WITH ' + withClause.join(',' + EOL) + EOL + 'SELECT';`).newLine();
 			} else {
 				writer.write(`let sql = 'SELECT';`).newLine();
 			}
@@ -403,12 +412,21 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 					const orderByConditions = from.dependOnOrderBy?.map((orderBy) => `orderBy['${orderBy}'] != null`) || [];
 					const allConditions = [...selectConditions, ...whereConditions, ...orderByConditions];
 					const paramValues = from.parameters.map((param) => `params?.params?.${param}`);
-					writer.write(`if (${allConditions.join(`${EOL}\t|| `)})`).block(() => {
+					if (allConditions.length > 0) {
+						writer.write(`if (${allConditions.join(`${EOL}\t|| `)})`).block(() => {
+							writer.write(`sql += EOL + \`${from.fragment}\`;`);
+							paramValues.forEach((paramValues) => {
+								writer.writeLine(`paramsValues.push(${paramValues});`);
+							});
+						});
+					}
+					else {
 						writer.write(`sql += EOL + \`${from.fragment}\`;`);
 						paramValues.forEach((paramValues) => {
 							writer.writeLine(`paramsValues.push(${paramValues});`);
 						});
-					});
+					}
+
 				}
 			});
 			writer.writeLine('sql += EOL + `WHERE 1 = 1`;');
@@ -485,7 +503,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 		});
 		writer.blankLine();
 		writer.write('function appendSelect(sql: string, selectField: string)').block(() => {
-			writer.write(`if (sql == 'SELECT')`).block(() => {
+			writer.write(`if (sql.toUpperCase().endsWith('SELECT'))`).block(() => {
 				writer.writeLine('return sql + EOL + selectField;');
 			});
 			writer.write('else').block(() => {
