@@ -8,6 +8,7 @@ export type SQLiteType =
 	| 'REAL'
 	| 'REAL[]'
 	| 'DATE'
+	| 'DATE_TIME'
 	| 'BLOB'
 	| 'BOOLEAN'
 	| 'any';

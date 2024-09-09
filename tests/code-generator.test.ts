@@ -43,7 +43,8 @@ describe('code-generator', () => {
 				{
 					name: 'param1',
 					tsType: 'number',
-					notNull: true
+					notNull: true,
+					toDriver: 'param1'
 				}
 			]
 		};
@@ -104,7 +105,8 @@ function mapArrayToGetPersonResult(data: any) {
 				{
 					name: 'param1',
 					tsType: 'number',
-					notNull: true
+					notNull: true,
+					toDriver: 'param1'
 				}
 			]
 		};

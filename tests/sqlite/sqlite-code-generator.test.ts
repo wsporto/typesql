@@ -110,11 +110,15 @@ describe('sqlite-code-generator', () => {
 		const sql = `SELECT 
 	text_column, 
 	date(text_column) as date_text,
+	datetime(text_column) as datetime_text,
 	integer_column,
-	date(integer_column, 'auto') as date_integer
+	date(integer_column, 'auto') as date_integer,
+	datetime(integer_column, 'auto') as datetime_integer
 FROM all_types 
 WHERE date(text_column) = :date
-AND date(integer_column, 'auto') = :date`;
+AND date(integer_column, 'auto') = :date
+AND datetime(text_column) = :date_time
+AND datetime(integer_column, 'auto') = :date_time`;
 
 		const actual = await generateTsCode(sql, 'select04', sqliteDbSchema, 'better-sqlite3');
 		const expected = readFileSync('tests/sqlite/expected-code/select04.ts.txt', 'utf-8').replace(/\r/gm, '');
@@ -126,7 +130,18 @@ AND date(integer_column, 'auto') = :date`;
 	});
 
 	it('select04-bun - select with same parameter used twice', async () => {
-		const sql = 'SELECT text_column, date(text_column) as date FROM all_types WHERE date(text_column) = date(:date)';
+		const sql = `SELECT 
+	text_column, 
+	date(text_column) as date_text,
+	datetime(text_column) as datetime_text,
+	integer_column,
+	date(integer_column, 'auto') as date_integer,
+	datetime(integer_column, 'auto') as datetime_integer
+FROM all_types 
+WHERE date(text_column) = :date
+AND date(integer_column, 'auto') = :date
+AND datetime(text_column) = :date_time
+AND datetime(integer_column, 'auto') = :date_time`;
 
 		const actual = await generateTsCode(sql, 'select04', sqliteDbSchema, 'bun:sqlite');
 		const expected = readFileSync('tests/sqlite/expected-code/select04-bun.ts.txt', 'utf-8').replace(/\r/gm, '');

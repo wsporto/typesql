@@ -702,7 +702,7 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
 		paramType.notNull = true;
 		traverseContext.constraints.push({
 			expression: paramExpr.getText(),
-			type1: freshVar(paramExpr.getText(), 'DATE'),
+			type1: freshVar(paramExpr.getText(), 'DATE_TIME'),
 			type2: paramType.type
 		});
 		return {
@@ -713,7 +713,8 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
 		};
 	}
 	if (function_name === 'date' || function_name === 'time' || function_name === 'datetime') {
-		const functionType = freshVar(expr.getText(), 'DATE');
+		const dateType = function_name === 'date' ? 'DATE' : 'DATE_TIME';
+		const functionType = freshVar(expr.getText(), dateType);
 		const param1 = traverse_expr(expr.expr(0), traverseContext);
 		param1.notNull = true;
 		expr.expr_list().forEach((paramExpr, index, arr) => {
@@ -721,19 +722,21 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
 			if (index === 0 && arr.length === 1) {
 				traverseContext.constraints.push({
 					expression: paramExpr.getText(),
-					type1: freshVar(paramExpr.getText(), 'DATE'),
+					type1: freshVar(paramExpr.getText(), dateType),
 					type2: param1.type
 				});
 			}
-			else if (index === 1) {
+			else if (index > 0) {
 				const paramType = traverse_expr(paramExpr, traverseContext);
 
-				if (paramType.name === "'auto'" || paramType.name === "'unixepoch'") {
-					traverseContext.constraints.push({
-						expression: paramExpr.getText(),
-						type1: freshVar(paramExpr.getText(), 'NUMERIC'),
-						type2: param1.type
-					});
+				if (index === 1) {
+					if (paramType.name === "'auto'" || paramType.name === "'unixepoch'") {
+						traverseContext.constraints.push({
+							expression: paramExpr.getText(),
+							type1: freshVar(paramExpr.getText(), 'NUMERIC'),
+							type2: param1.type
+						});
+					}
 				}
 				traverseContext.constraints.push({
 					expression: paramExpr.getText(),

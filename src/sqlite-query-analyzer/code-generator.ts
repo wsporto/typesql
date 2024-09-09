@@ -24,6 +24,7 @@ import type {
 	SQLiteDialect,
 	SchemaDef,
 	TsFieldDescriptor,
+	TsParameterDescriptor,
 	TypeSqlError
 } from '../types';
 import type { SQLiteType } from './types';
@@ -73,10 +74,10 @@ export function generateCrud(client: SQLiteClient, queryType: QueryType, tableNa
 	if (keys.length === 0) {
 		keys.push(...columns.filter((col) => col.columnKey === 'UNI'));
 	}
-	const keyColumnInfo = keys.map((key) => mapToColumnInfo(key, false)).map((col) => mapColumnToTsFieldDescriptor(col, client));
+	const keyColumnInfo = keys.map((key) => mapToColumnInfo(key, false)).map((col) => mapColumnToTsParameterDescriptor(col, client));
 
 	const resultColumns = mapColumns(client, queryType, columnInfo, false);
-	const params = columnInfo.map((col) => mapColumnToTsFieldDescriptor(col, client));
+	const params = columnInfo.map((col) => mapColumnToTsParameterDescriptor(col, client));
 
 	const tsDescriptor: TsDescriptor = {
 		sql: '',
@@ -201,13 +202,34 @@ function mapFieldToTsField(columns: ColumnInfo[], field: Field2, client: SQLiteC
 	return tsField;
 }
 
-function mapParameterToTsFieldDescriptor(col: ParameterDef, client: SQLiteClient) {
-	const tsDesc: TsFieldDescriptor = {
+function mapParameterToTsFieldDescriptor(col: ParameterDef, client: SQLiteClient): TsParameterDescriptor {
+	const tsDesc: TsParameterDescriptor = {
 		name: col.name,
 		tsType: mapColumnType(col.columnType as SQLiteType, client),
-		notNull: col.notNull ? col.notNull : false
+		notNull: col.notNull ? col.notNull : false,
+		toDriver: parameterToDriver(col)
 	};
 	return tsDesc;
+}
+
+function parameterToDriver(param: ParameterDef): string {
+	if (param.columnType === 'DATE') {
+		return `${param.name}?.toISOString().split('T')[0]`
+	}
+	if (param.columnType === 'DATE_TIME') {
+		return `${param.name}?.toISOString().split('.')[0].replace('T', ' ')`
+	}
+	return param.name;
+}
+
+function columnToDriver(col: ColumnInfo): string {
+	if (col.type === 'DATE') {
+		return `${col.columnName}?.toISOString().split('T')[0]`
+	}
+	if (col.type === 'DATE_TIME') {
+		return `${col.columnName}?.toISOString().split('.')[0].replace('T', ' ')`
+	}
+	return col.columnName;
 }
 
 function mapColumnToTsFieldDescriptor(col: ColumnInfo, client: SQLiteClient) {
@@ -216,6 +238,17 @@ function mapColumnToTsFieldDescriptor(col: ColumnInfo, client: SQLiteClient) {
 		tsType: mapColumnType(col.type as SQLiteType, client),
 		notNull: col.notNull,
 		optional: col.optional
+	};
+	return tsDesc;
+}
+
+function mapColumnToTsParameterDescriptor(col: ColumnInfo, client: SQLiteClient): TsParameterDescriptor {
+	const tsDesc: TsParameterDescriptor = {
+		name: col.columnName,
+		tsType: mapColumnType(col.type as SQLiteType, client),
+		notNull: col.notNull,
+		optional: col.optional,
+		toDriver: columnToDriver(col)
 	};
 	return tsDesc;
 }
@@ -239,6 +272,8 @@ function mapColumnType(sqliteType: SQLiteType, client: SQLiteClient) {
 		case 'REAL[]':
 			return 'number[]';
 		case 'DATE':
+			return 'Date';
+		case 'DATE_TIME':
 			return 'Date';
 		case 'BLOB':
 			return client === 'better-sqlite3' ? 'Uint8Array' : 'ArrayBuffer';
@@ -1031,9 +1066,9 @@ function toDriver(variableData: string, param: TsFieldDescriptor) {
 	return variableData;
 }
 
-function fromDriver(variableName: string, param: TsFieldDescriptor): string {
+function fromDriver(variableName: string, param: TsParameterDescriptor): string {
 	if (param.tsType === 'Date') {
-		return `${variableName}.${param.name}?.toISOString().split('T')[0]`;
+		return `${variableName}.${param.toDriver}`;
 	}
 	if (param.tsType === 'boolean') {
 		const variable = `${variableName}.${param.name}`;

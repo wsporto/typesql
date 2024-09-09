@@ -97,7 +97,7 @@ function getSumFunctionType(type: InferType): InferType {
 
 function getBestPossibleType(type1: InferType, type2: InferType, max?: boolean, coercionType?: CoercionType): InferType {
 	// Is possible to convert text to date
-	const sqliteDateCoercionOrder: InferType[] = ['TEXT', 'DATE'];
+	const sqliteDateCoercionOrder: InferType[] = ['TEXT', 'DATE', 'DATE_TIME'];
 	const sqliteIndexDateType1 = sqliteDateCoercionOrder.indexOf(type1);
 	const sqliteIndexDateType2 = sqliteDateCoercionOrder.indexOf(type2);
 	if (sqliteIndexDateType1 !== -1 && sqliteIndexDateType2 !== -1) {

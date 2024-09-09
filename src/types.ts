@@ -106,6 +106,10 @@ export type TsFieldDescriptor = {
 	optional?: boolean;
 };
 
+export type TsParameterDescriptor = TsFieldDescriptor & {
+	toDriver: string;
+};
+
 export type TypeSqlError = {
 	name: string;
 	description: string;

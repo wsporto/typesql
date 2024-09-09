@@ -1,4 +1,4 @@
-import type { SchemaDef, CamelCaseName, TsFieldDescriptor, ParameterDef, DatabaseClient, MySqlDialect, TypeSqlError } from './types';
+import type { SchemaDef, CamelCaseName, TsFieldDescriptor, ParameterDef, DatabaseClient, MySqlDialect, TypeSqlError, TsParameterDescriptor } from './types';
 import fs from 'node:fs';
 import path, { parse } from 'node:path';
 import camelCase from 'camelcase';
@@ -110,13 +110,13 @@ export function generateTsCodeForMySQL(tsDescriptor: TsDescriptor, fileName: str
 
 	const allParameters = tsDescriptor.data
 		? tsDescriptor.data.map((field, index) => {
-				//:nameIsSet, :name, :valueIsSet, :value....
-				if (crud && index % 2 === 0) {
-					const nextField = tsDescriptor.data![index + 1];
-					return `data.${nextField.name} !== undefined`;
-				}
-				return `data.${field.name}`;
-			})
+			//:nameIsSet, :name, :valueIsSet, :value....
+			if (crud && index % 2 === 0) {
+				const nextField = tsDescriptor.data![index + 1];
+				return `data.${nextField.name} !== undefined`;
+			}
+			return `data.${field.name}`;
+		})
 		: [];
 	allParameters.push(...tsDescriptor.parameterNames.map((paramName) => generateParam(paramName)));
 
@@ -524,20 +524,22 @@ export function generateTsDescriptor(queryInfo: SchemaDef): TsDescriptor {
 	const parameters = uniqueParams.map((col, paramIndex) => {
 		const arraySymbol = col.list ? '[]' : '';
 
-		const tsDesc: TsFieldDescriptor = {
+		const tsDesc: TsParameterDescriptor = {
 			name: escapedParametersNames[paramIndex],
 			tsType: mapColumnType(col.columnType as MySqlType) + arraySymbol,
-			notNull: col.notNull ? col.notNull : false
+			notNull: col.notNull ? col.notNull : false,
+			toDriver: col.name
 		};
 		return tsDesc;
 	});
 
 	const escapedDataNames = queryInfo.data ? renameInvalidNames(queryInfo.data.map((col) => col.name)) : [];
 	const data = queryInfo.data?.map((col, dataIndex) => {
-		const tsDesc: TsFieldDescriptor = {
+		const tsDesc: TsParameterDescriptor = {
 			name: escapedDataNames[dataIndex],
 			tsType: mapColumnType(col.columnType as MySqlType),
-			notNull: col.notNull ? col.notNull : false
+			notNull: col.notNull ? col.notNull : false,
+			toDriver: col.name
 		};
 		return tsDesc;
 	});
@@ -724,8 +726,8 @@ export type TsDescriptor = {
 	multipleRowsResult: boolean;
 	columns: TsFieldDescriptor[];
 	parameterNames: ParamInfo[];
-	parameters: TsFieldDescriptor[];
-	data?: TsFieldDescriptor[];
+	parameters: TsParameterDescriptor[];
+	data?: TsParameterDescriptor[];
 	orderByColumns?: string[];
 	nestedDescriptor?: NestedTsDescriptor;
 	nestedDescriptor2?: RelationType2[];
