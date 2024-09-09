@@ -1033,7 +1033,7 @@ function toDriver(variableData: string, param: TsFieldDescriptor) {
 
 function fromDriver(variableName: string, param: TsFieldDescriptor): string {
 	if (param.tsType === 'Date') {
-		return `${variableName}.${param.name}?.toISOString()`;
+		return `${variableName}.${param.name}?.toISOString().split('T')[0]`;
 	}
 	if (param.tsType === 'boolean') {
 		const variable = `${variableName}.${param.name}`;

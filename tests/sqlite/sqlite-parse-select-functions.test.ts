@@ -628,8 +628,8 @@ describe('sqlite-parse-select-functions', () => {
 	 * The type affinity for DATE is NUMERIC.
 	 * To insert into a DATE column you must use julianday(?)
 	 */
-	it(`SELECT date(date_column + '+1 day') as result FROM all_types`, () => {
-		const sql = `SELECT date(date_column + '+1 day') as result FROM all_types`;
+	it(`SELECT date(date_column, '+1 day') as result FROM all_types`, () => {
+		const sql = `SELECT date(date_column, '+1 day') as result FROM all_types`;
 
 		const actual = parseSql(sql, sqliteDbSchema);
 		const expected: SchemaDef = {
@@ -761,7 +761,7 @@ describe('sqlite-parse-select-functions', () => {
 	});
 
 	it('SELECT max(t1.value, date(?)) as result FROM mytable1 t1', () => {
-		const sql = 'SELECT max(t1.value, date(?)) as result FROM mytable1 t1';
+		const sql = 'SELECT max(date(t1.value, \'unixepoch\'), ?) as result FROM mytable1 t1';
 
 		const actual = parseSql(sql, sqliteDbSchema);
 		const expected: SchemaDef = {
@@ -771,7 +771,7 @@ describe('sqlite-parse-select-functions', () => {
 			columns: [
 				{
 					columnName: 'result',
-					type: 'INTEGER',
+					type: 'DATE',
 					notNull: false,
 					table: ''
 				}
@@ -780,7 +780,7 @@ describe('sqlite-parse-select-functions', () => {
 				{
 					name: 'param1',
 					columnType: 'DATE',
-					notNull: true
+					notNull: false
 				}
 			]
 		};
@@ -791,7 +791,7 @@ describe('sqlite-parse-select-functions', () => {
 	});
 
 	it('SELECT max(t3.double_value, date(?)) as result FROM mytable3 t3', () => {
-		const sql = 'SELECT max(t3.double_value, date(?)) as result FROM mytable3 t3';
+		const sql = 'SELECT max(date(t3.double_value, \'auto\'), ?) as result FROM mytable3 t3';
 
 		const actual = parseSql(sql, sqliteDbSchema);
 		const expected: SchemaDef = {
@@ -801,7 +801,7 @@ describe('sqlite-parse-select-functions', () => {
 			columns: [
 				{
 					columnName: 'result',
-					type: 'REAL',
+					type: 'DATE',
 					notNull: false,
 					table: ''
 				}
@@ -810,7 +810,7 @@ describe('sqlite-parse-select-functions', () => {
 				{
 					name: 'param1',
 					columnType: 'DATE',
-					notNull: true
+					notNull: false
 				}
 			]
 		};
@@ -820,8 +820,8 @@ describe('sqlite-parse-select-functions', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
-	it('SELECT max(t1.value, date(:param1), :param1) as result FROM mytable1 t1', () => {
-		const sql = 'SELECT max(t1.value, date(:param1), :param1) as result FROM mytable1 t1';
+	it('SELECT max(t1.value, date(:param1), date(:param1), :param1) as result FROM mytable1 t1', () => {
+		const sql = 'SELECT max(date(t1.value, \'auto\'), date(:param1), :param1) as result FROM mytable1 t1';
 
 		const actual = parseSql(sql, sqliteDbSchema);
 		const expected: SchemaDef = {
@@ -831,7 +831,7 @@ describe('sqlite-parse-select-functions', () => {
 			columns: [
 				{
 					columnName: 'result',
-					type: 'INTEGER',
+					type: 'DATE',
 					notNull: false,
 					table: ''
 				}
@@ -839,12 +839,12 @@ describe('sqlite-parse-select-functions', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'INTEGER',
+					columnType: 'DATE',
 					notNull: true
 				},
 				{
 					name: 'param1',
-					columnType: 'INTEGER',
+					columnType: 'DATE',
 					notNull: true
 				}
 			]
@@ -856,7 +856,7 @@ describe('sqlite-parse-select-functions', () => {
 	});
 
 	it('SELECT t3.double_value, max(t3.double_value, date(:param1), :param1) as result FROM mytable3 t3', () => {
-		const sql = 'SELECT t3.double_value, max(t3.double_value, date(:param1), :param1) as result FROM mytable3 t3';
+		const sql = 'SELECT t3.double_value, max(date(t3.double_value, \'auto\'), date(:param1, \'auto\'), date(:param1, \'auto\')) as result FROM mytable3 t3';
 
 		const actual = parseSql(sql, sqliteDbSchema);
 		const expected: SchemaDef = {
@@ -872,7 +872,7 @@ describe('sqlite-parse-select-functions', () => {
 				},
 				{
 					columnName: 'result',
-					type: 'REAL',
+					type: 'DATE',
 					notNull: false,
 					table: ''
 				}
@@ -880,12 +880,12 @@ describe('sqlite-parse-select-functions', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'REAL',
+					columnType: 'NUMERIC',
 					notNull: true
 				},
 				{
 					name: 'param1',
-					columnType: 'REAL',
+					columnType: 'NUMERIC',
 					notNull: true
 				}
 			]
@@ -900,7 +900,7 @@ describe('sqlite-parse-select-functions', () => {
 		const sql = `WITH cte AS (
 			SELECT t2.name, max(t2.name, date(:param1)) as result FROM mytable2 t2
 		)
-		SELECT c1.name, min(c1.name, date(:param1)) as result2 FROM cte c1`
+		SELECT c1.name, min(date(c1.name), date(:param1)) as result2 FROM cte c1`
 
 		const actual = parseSql(sql, sqliteDbSchema);
 		const expected: SchemaDef = {
@@ -916,7 +916,7 @@ describe('sqlite-parse-select-functions', () => {
 				},
 				{
 					columnName: 'result2',
-					type: 'TEXT',
+					type: 'DATE',
 					notNull: false,
 					table: ''
 				}

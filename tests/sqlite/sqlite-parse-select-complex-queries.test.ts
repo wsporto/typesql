@@ -583,10 +583,10 @@ describe('sqlite-parse-select-complex-queries', () => {
 		const sql = `
         WITH RECURSIVE dates (date) AS
             (
-            SELECT MIN(date(date_column)) FROM all_types
+            SELECT MIN(date(date_column, 'auto')) FROM all_types
             UNION ALL
             SELECT date(date, '+1 day') FROM dates
-            WHERE date(date, '+1 day') <= (SELECT MAX(date(date_column)) FROM all_types)
+            WHERE date(date, '+1 day') <= (SELECT MAX(date(date_column, 'auto')) FROM all_types)
             )
         SELECT * FROM dates
         `;

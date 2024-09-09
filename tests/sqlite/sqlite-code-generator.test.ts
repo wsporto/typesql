@@ -106,8 +106,15 @@ describe('sqlite-code-generator', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
-	it('select04 - select with same parameter used twice', async () => {
-		const sql = 'SELECT text_column, date(text_column) as date FROM all_types WHERE date(text_column) = date(:date)';
+	it('select04 - select with same parameter used twice', async () => {//
+		const sql = `SELECT 
+	text_column, 
+	date(text_column) as date_text,
+	integer_column,
+	date(integer_column, 'auto') as date_integer
+FROM all_types 
+WHERE date(text_column) = :date
+AND date(integer_column, 'auto') = :date`;
 
 		const actual = await generateTsCode(sql, 'select04', sqliteDbSchema, 'better-sqlite3');
 		const expected = readFileSync('tests/sqlite/expected-code/select04.ts.txt', 'utf-8').replace(/\r/gm, '');
