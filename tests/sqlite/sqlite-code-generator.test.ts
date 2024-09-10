@@ -819,7 +819,12 @@ ORDER BY ?`;
 
 	it('dynamic-query-08 - date', () => {
 		const sql = `-- @dynamicQuery
-SELECT text_column, date(text_column) as date FROM all_types`;
+SELECT 
+	text_column, 
+	date(text_column) as date, 
+	datetime(text_column) as date_time 
+FROM all_types 
+WHERE date(text_column) = :param1 AND datetime(text_column) = :param2`;
 
 		const isCrud = false;
 		const actual = generateTsCode(sql, 'dynamic-query08', sqliteDbSchema, 'better-sqlite3', isCrud);

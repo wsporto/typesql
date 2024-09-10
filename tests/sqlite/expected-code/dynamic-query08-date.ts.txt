@@ -3,22 +3,31 @@ import { EOL } from 'os';
 
 export type DynamicQuery08DynamicParams = {
 	select?: DynamicQuery08Select;
+	params?: DynamicQuery08Params;
 	where?: DynamicQuery08Where[];
+}
+
+export type DynamicQuery08Params = {
+	param1?: Date | null;
+	param2?: Date | null;
 }
 
 export type DynamicQuery08Result = {
 	text_column?: string;
 	date?: Date;
+	date_time?: Date;
 }
 
 export type DynamicQuery08Select = {
 	text_column?: boolean;
 	date?: boolean;
+	date_time?: boolean;
 }
 
 const selectFragments = {
 	text_column: `text_column`,
 	date: `date(text_column)`,
+	date_time: `datetime(text_column)`,
 } as const;
 
 const NumericOperatorList = ['=', '<>', '>', '<', '>=', '<='] as const;
@@ -34,6 +43,9 @@ export type DynamicQuery08Where =
 	| ['date', NumericOperator, Date | null]
 	| ['date', SetOperator, Date[]]
 	| ['date', BetweenOperator, Date | null, Date | null]
+	| ['date_time', NumericOperator, Date | null]
+	| ['date_time', SetOperator, Date[]]
+	| ['date_time', BetweenOperator, Date | null, Date | null]
 
 export function dynamicQuery08(db: Database, params?: DynamicQuery08DynamicParams): DynamicQuery08Result[] {
 	const where = whereConditionsToObject(params?.where);
@@ -45,8 +57,14 @@ export function dynamicQuery08(db: Database, params?: DynamicQuery08DynamicParam
 	if (params?.select == null || params.select.date) {
 		sql = appendSelect(sql, `date(text_column) as date`);
 	}
+	if (params?.select == null || params.select.date_time) {
+		sql = appendSelect(sql, `datetime(text_column) as date_time`);
+	}
 	sql += EOL + `FROM all_types`;
 	sql += EOL + `WHERE 1 = 1`;
+	sql += EOL + `AND date(text_column) = ? AND datetime(text_column) = ?`;
+	paramsValues.push(params?.params?.param1?.toISOString().split('T')[0] ?? null);
+	paramsValues.push(params?.params?.param2?.toISOString().split('.')[0].replace('T', ' ') ?? null);
 	params?.where?.forEach(condition => {
 		const where = whereCondition(condition);
 		if (where?.hasValue) {
@@ -70,6 +88,10 @@ function mapArrayToDynamicQuery08Result(data: any, select?: DynamicQuery08Select
 	if (select == null || select.date) {
 		rowIndex++;
 		result.date = data[rowIndex] != null ? new Date(data[rowIndex]) : data[rowIndex];
+	}
+	if (select == null || select.date_time) {
+		rowIndex++;
+		result.date_time = data[rowIndex] != null ? new Date(data[rowIndex]) : data[rowIndex];
 	}
 	return result;
 }

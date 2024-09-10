@@ -466,7 +466,10 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 			});
 			writer.writeLine('sql += EOL + `WHERE 1 = 1`;');
 			tsDescriptor.dynamicQuery2?.where.forEach((fragment) => {
-				const paramValues = fragment.parameters.map((param) => `params?.params?.${param} ?? null`);
+				const paramValues = fragment.parameters.map((paramIndex) => {
+					const param = tsDescriptor.parameters[paramIndex];
+					return `${fromDriver('params?.params?', param)} ?? null`
+				});
 				writer.writeLine(`sql += EOL + \`${fragment.fragment}\`;`);
 				paramValues.forEach((paramValues) => {
 					writer.writeLine(`paramsValues.push(${paramValues});`);

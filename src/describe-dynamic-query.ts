@@ -146,7 +146,7 @@ export function describeDynamicQuery2(
 		with: transformWithFragmnts(withFragments, fromResult, namedParameters),
 		select: transformSelectFragments(select, namedParameters),
 		from: fromResult,
-		where: transformWhereFragments(where, namedParameters)
+		where: transformWhereFragments(where)
 	};
 	if (limitOffset) {
 		result.limitOffset = {
@@ -243,12 +243,11 @@ function transformFromFragments(
 	return withChildren;
 }
 
-function transformWhereFragments(whereFragements: WhereFragment[], namedParameters: string[]): WhereFragmentResult[] {
+function transformWhereFragments(whereFragements: WhereFragment[]): WhereFragmentResult[] {
 	return whereFragements.map((where) => {
-		const parameters = where.parameters.map((param) => namedParameters[param]);
 		const whereFragmentResult: WhereFragmentResult = {
 			fragment: where.fragment,
-			parameters
+			parameters: where.parameters
 		};
 		return whereFragmentResult;
 	});

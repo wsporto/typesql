@@ -286,7 +286,7 @@ describe('sqlite-generate-dynamic-info', () => {
 			where: [
 				{
 					fragment: 'AND (? is NULL or m2.name = ?)',
-					parameters: ['name', 'name']
+					parameters: [1, 2]
 				}
 			]
 		};
@@ -488,7 +488,7 @@ describe('sqlite-generate-dynamic-info', () => {
 			where: [
 				{
 					fragment: `AND m2.name LIKE concat('%', ?, '%')`,
-					parameters: ['name']
+					parameters: [0]
 				}
 			]
 		};
@@ -791,7 +791,7 @@ describe('sqlite-generate-dynamic-info', () => {
 			where: [
 				{
 					fragment: `AND (concat('%', t2.name, '%') = ? OR concat('%', t3.name, '%') = ?)`,
-					parameters: ['name', 'name']
+					parameters: [0, 1]
 				}
 			]
 		};
@@ -1405,7 +1405,7 @@ describe('sqlite-generate-dynamic-info', () => {
 			where: [
 				{
 					fragment: `AND max(c1.id, ?) = min(c2.id, ?)`,
-					parameters: ['param3', 'param3']
+					parameters: [4, 5]
 				}
 			]
 		};

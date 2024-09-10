@@ -204,7 +204,7 @@ export type FromFragementResult = {
 
 export type WhereFragmentResult = {
 	fragment: string;
-	parameters: string[];
+	parameters: number[];
 };
 
 export type LimitOffsetResult = {
