@@ -227,7 +227,7 @@ describe('sqlite-generate-dynamic-info', () => {
 					relationName: '',
 					dependOnFields: [1],
 					dependOnOrderBy: [],
-					parameters: ['subqueryName']
+					parameters: [0]
 				}
 			],
 			where: []
@@ -280,7 +280,7 @@ describe('sqlite-generate-dynamic-info', () => {
 					relationName: '',
 					dependOnFields: [],
 					dependOnOrderBy: [],
-					parameters: ['subqueryName']
+					parameters: [0]
 				}
 			],
 			where: [
@@ -1196,7 +1196,7 @@ describe('sqlite-generate-dynamic-info', () => {
 					relationName: 'cte1',
 					dependOnFields: [], //FROM made this block mandatory
 					dependOnOrderBy: [],
-					parameters: ['param1', 'param1']
+					parameters: [0, 1]
 				},
 				{
 					fragment: `cte2 as (
@@ -1206,7 +1206,7 @@ describe('sqlite-generate-dynamic-info', () => {
 					relationName: 'cte2',
 					dependOnFields: [1], //c2.name
 					dependOnOrderBy: [],
-					parameters: ['param2', 'param2']
+					parameters: [2, 3]
 				}
 			],
 			select: [
@@ -1361,7 +1361,7 @@ describe('sqlite-generate-dynamic-info', () => {
 					relationName: 'cte1',
 					dependOnFields: [],
 					dependOnOrderBy: [],
-					parameters: ['param1', 'param1']
+					parameters: [0, 1]
 				},
 				{
 					fragment: `cte2 as (
@@ -1371,7 +1371,7 @@ describe('sqlite-generate-dynamic-info', () => {
 					relationName: 'cte2',
 					dependOnFields: [], //The WHERE expr made this block mandatory (WHERE ... min(c2.id, ?))
 					dependOnOrderBy: [],
-					parameters: ['param2', 'param2']
+					parameters: [2, 3]
 				}
 			],
 			select: [

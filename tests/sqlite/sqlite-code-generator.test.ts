@@ -875,7 +875,7 @@ LIMIT :limit OFFSET :offset`;
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
-	it('dynamic-query-11', () => {
+	it('dynamic-query-11-multiple-CTEs', () => {
 		const sql = `-- @dynamicQuery
 WITH 
 	cte1 as (
@@ -902,12 +902,12 @@ INNER JOIN cte2 c2 on c1.id = c2.id`;
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
-	it('dynamic-query-12', () => {
+	it('dynamic-query-12-multiple-CTEs-with-where', () => {
 		const sql = `-- @dynamicQuery
 WITH 
 	cte1 as (
 		select id, value from mytable1
-		WHERE max(value, :param1) = min(value, :param1)
+		WHERE max(date(value, 'auto'), :param1) = min(date(value, 'auto'), :param1)
 	),
 	cte2 as (
 		select id, name from mytable2

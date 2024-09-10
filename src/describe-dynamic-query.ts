@@ -140,10 +140,10 @@ export function describeDynamicQuery2(
 ): DynamicSqlInfoResult2 {
 	const { with: withFragments, select, from, where, limitOffset } = dynamicQueryInfo;
 
-	const fromResult = transformFromFragments(from, select, where, namedParameters, orderByColumns);
+	const fromResult = transformFromFragments(from, select, where, orderByColumns);
 
 	const result: DynamicSqlInfoResult2 = {
-		with: transformWithFragmnts(withFragments, fromResult, namedParameters),
+		with: transformWithFragmnts(withFragments, fromResult),
 		select: transformSelectFragments(select, namedParameters),
 		from: fromResult,
 		where: transformWhereFragments(where)
@@ -167,8 +167,7 @@ function transformSelectFragments(selectFragments: SelectFragment[], namedParame
 
 function transformWithFragmnts(
 	withFragments: WithFragment[],
-	fromFragments: FromFragementResult[],
-	namedParameters: string[]
+	fromFragments: FromFragementResult[]
 ): FromFragementResult[] {
 	return withFragments.map((withFragment) => {
 		const fromDependOn = fromFragments.filter((from) => from.relationName === withFragment.relationName);
@@ -179,7 +178,7 @@ function transformWithFragmnts(
 			relationName: withFragment.relationName,
 			dependOnFields,
 			dependOnOrderBy,
-			parameters: withFragment.parameters.map((paramIndex) => namedParameters[paramIndex])
+			parameters: withFragment.parameters
 		};
 		return fromFragmentResult;
 	});
@@ -194,7 +193,6 @@ function transformFromFragments(
 	fromFragments: FromFragment[],
 	selectFragments: SelectFragment[],
 	whereFragments: WhereFragment[],
-	namedParameters: string[],
 	orderByColumns: string[]
 ): FromFragementResult[] {
 	const fromResult = fromFragments.map((from) => {
@@ -218,7 +216,7 @@ function transformFromFragments(
 			parentRelation: from.parentRelation,
 			dependOnFields: getDependOnFields({ relationName, relationAlias, parentRelation }, selectFragments, whereFragments),
 			dependOnOrderBy: orderBy,
-			parameters: from.parameters.map((paramIndex) => namedParameters[paramIndex])
+			parameters: from.parameters
 		};
 		return fromFragmentResult;
 	});

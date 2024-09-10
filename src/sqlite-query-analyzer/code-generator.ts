@@ -405,7 +405,10 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 					const whereConditions = withFragment.dependOnFields.map((fieldIndex) => `where.${tsDescriptor.columns[fieldIndex].name} != null`);
 					const orderByConditions = withFragment.dependOnOrderBy?.map((orderBy) => `orderBy['${orderBy}'] != null`) || [];
 					const allConditions = [...selectConditions, ...whereConditions, ...orderByConditions];
-					const paramValues = withFragment.parameters.map((param) => `params?.params?.${param}`);
+					const paramValues = withFragment.parameters.map((paramIndex) => {
+						const param = tsDescriptor.parameters[paramIndex];
+						return fromDriver('params?.params?', param);
+					});
 					if (allConditions.length > 0) {
 						writer.write(`if (${allConditions.join(`${EOL}\t|| `)})`).block(() => {
 							writer.write(`withClause.push(\`${withFragment.fragment}\`);`);
@@ -446,7 +449,10 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 					const whereConditions = from.dependOnFields.map((fieldIndex) => `where.${tsDescriptor.columns[fieldIndex].name} != null`);
 					const orderByConditions = from.dependOnOrderBy?.map((orderBy) => `orderBy['${orderBy}'] != null`) || [];
 					const allConditions = [...selectConditions, ...whereConditions, ...orderByConditions];
-					const paramValues = from.parameters.map((param) => `params?.params?.${param}`);
+					const paramValues = from.parameters.map((paramIndex) => {
+						const param = tsDescriptor.parameters[paramIndex];
+						return fromDriver('params?.params?', param);
+					});
 					if (allConditions.length > 0) {
 						writer.write(`if (${allConditions.join(`${EOL}\t|| `)})`).block(() => {
 							writer.write(`sql += EOL + \`${from.fragment}\`;`);

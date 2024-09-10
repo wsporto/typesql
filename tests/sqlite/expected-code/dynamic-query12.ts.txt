@@ -8,7 +8,7 @@ export type DynamicQuery12DynamicParams = {
 }
 
 export type DynamicQuery12Params = {
-	param1?: number | null;
+	param1?: Date | null;
 	param2?: string | null;
 	param3?: number | null;
 }
@@ -48,10 +48,10 @@ export function dynamicQuery12(db: Database, params?: DynamicQuery12DynamicParam
 	const withClause = [];
 	withClause.push(`cte1 as (
 		select id, value from mytable1
-		WHERE max(value, ?) = min(value, ?)
+		WHERE max(date(value, 'auto'), ?) = min(date(value, 'auto'), ?)
 	)`);
-	paramsValues.push(params?.params?.param1);
-	paramsValues.push(params?.params?.param1);
+	paramsValues.push(params?.params?.param1?.toISOString().split('T')[0]);
+	paramsValues.push(params?.params?.param1?.toISOString().split('T')[0]);
 	withClause.push(`cte2 as (
 		select id, name from mytable2
 		WHERE max(name, ?) = min(name, ?)

@@ -198,7 +198,7 @@ export type FromFragementResult = {
 	fragment: string;
 	relationName: string;
 	dependOnFields: number[];
-	parameters: string[];
+	parameters: number[];
 	dependOnOrderBy: string[];
 };
 
