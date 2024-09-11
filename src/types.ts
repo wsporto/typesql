@@ -157,6 +157,7 @@ export type TypeSqlConfig = {
 	client: TypeSqlDialect;
 	authToken?: string;
 	attach?: string[];
+	loadExtensions?: string[];
 	includeCrudTables: string[];
 };
 

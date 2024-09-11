@@ -122,10 +122,10 @@ async function main() {
 }
 
 async function compile(watch: boolean, config: TypeSqlConfig) {
-	const { sqlDir, databaseUri, client: dialect, attach, authToken } = config;
+	const { sqlDir, databaseUri, client: dialect, attach, loadExtensions, authToken } = config;
 	validateDirectories(sqlDir);
 
-	const databaseClientResult = await createClient(databaseUri, dialect, attach, authToken);
+	const databaseClientResult = await createClient(databaseUri, dialect, attach, loadExtensions, authToken);
 	if (isLeft(databaseClientResult)) {
 		console.error(`Error: ${databaseClientResult.left.description}.`);
 		return;
@@ -285,15 +285,15 @@ async function selectAllTables(client: DatabaseClient): Promise<Either<string, T
 	return selectTablesResult;
 }
 
-async function createClient(databaseUri: string, dialect: TypeSqlDialect, attach?: string[], authToken?: string) {
+async function createClient(databaseUri: string, dialect: TypeSqlDialect, attach?: string[], loadExtensions?: string[], authToken?: string) {
 	switch (dialect) {
 		case 'mysql2':
 			return createMysqlClient(databaseUri);
 		case 'better-sqlite3':
 		case 'bun:sqlite':
-			return createSqliteClient(dialect, databaseUri, attach || []);
+			return createSqliteClient(dialect, databaseUri, attach || [], loadExtensions || []);
 		case 'libsql':
-			return createLibSqlClient(databaseUri, attach || [], authToken || '');
+			return createLibSqlClient(databaseUri, attach || [], loadExtensions || [], authToken || '');
 	}
 }
 async function loadSchema(databaseClient: DatabaseClient): Promise<Either<TypeSqlError, ColumnSchema[]>> {
