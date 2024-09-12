@@ -64,4 +64,35 @@ describe('load-extension', () => {
 		}
 		assert.deepStrictEqual(explainSqlResult.right, true);
 	});
+
+	it('select uuid4() as uuid4, uuid7() as uuid7', () => {
+		const sql = 'select uuid4() as uuid4, uuid7() as uuid7';
+
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'uuid4',
+					type: 'TEXT',
+					notNull: true,
+					table: ''
+				},
+				{
+					columnName: 'uuid7',
+					type: 'TEXT',
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
 });

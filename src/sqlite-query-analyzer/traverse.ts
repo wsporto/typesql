@@ -15,7 +15,7 @@ import {
 	type Select_coreContext,
 	Table_function_nameContext
 } from '@wsporto/ts-mysql-parser/dist/sqlite';
-import type { ColumnDef, FieldName, TraverseContext, TypeAndNullInfer, TypeAndNullInferParam } from '../mysql-query-analyzer/types';
+import type { ColumnDef, ExtensionFunctionCatalog, FieldName, TraverseContext, TypeAndNullInfer, TypeAndNullInferParam } from '../mysql-query-analyzer/types';
 import { filterColumns, findColumn, findColumnOrVT, getExpressions, includeColumn, splitName } from '../mysql-query-analyzer/select-columns';
 import { freshVar } from '../mysql-query-analyzer/collect-constraints';
 import {
@@ -1377,6 +1377,46 @@ function traverse_function(expr: ExprContext, function_name: string, traverseCon
 			name: expr.getText(),
 			type: functionType,
 			notNull: true,
+			table: ''
+		};
+	}
+
+	const sqlean_uuid_functions: ExtensionFunctionCatalog = {
+		'uuid4': {
+			paramsTypes: [],
+			returnType: {
+				type: 'TEXT',
+				notNull: true
+			}
+		},
+		'uuid7': {
+			paramsTypes: [],
+			returnType: {
+				type: 'TEXT',
+				notNull: true
+			}
+		}
+	}
+	const functionCatalog = sqlean_uuid_functions[function_name];
+	if (functionCatalog) {
+		const functionType = freshVar(expr.getText(), functionCatalog.returnType.type);
+		expr.expr_list().forEach((exprParam, index) => {
+			const paramType = traverse_expr(exprParam, traverseContext);
+			const catalogType = functionCatalog.paramsTypes[index];
+			if (catalogType) {
+				paramType.notNull = catalogType.notNull;
+				traverseContext.constraints.push({
+					expression: expr.getText(),
+					type1: freshVar(expr.getText(), catalogType.type),
+					type2: paramType.type
+				});
+			}
+		})
+
+		return {
+			name: expr.getText(),
+			type: functionType,
+			notNull: functionCatalog.returnType.notNull,
 			table: ''
 		};
 	}
