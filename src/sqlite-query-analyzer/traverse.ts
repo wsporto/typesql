@@ -15,7 +15,7 @@ import {
 	type Select_coreContext,
 	Table_function_nameContext
 } from '@wsporto/ts-mysql-parser/dist/sqlite';
-import type { ColumnDef, FieldName, TraverseContext, TypeAndNullInfer, TypeAndNullInferParam } from '../mysql-query-analyzer/types';
+import type { ColumnDef, ExtensionFunctionCatalog, FieldName, TraverseContext, TypeAndNullInfer, TypeAndNullInferParam } from '../mysql-query-analyzer/types';
 import { filterColumns, findColumn, findColumnOrVT, getExpressions, includeColumn, splitName } from '../mysql-query-analyzer/select-columns';
 import { freshVar } from '../mysql-query-analyzer/collect-constraints';
 import {
@@ -520,6 +520,426 @@ function traverse_table_or_subquery(
 
 function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): TypeAndNullInfer {
 	const function_name = expr.function_name()?.getText().toLowerCase();
+	if (function_name) {
+		return traverse_function(expr, function_name, traverseContext);
+	}
+
+	const column_name = expr.column_name();
+	const table_name = expr.table_name();
+	if (column_name) {
+		const type = traverse_column_name(column_name, table_name, traverseContext);
+		return {
+			name: type.columnName,
+			type: type.columnType,
+			notNull: type.notNull,
+			table: type.tableAlias || type.table
+		};
+	}
+	const literal = expr.literal_value();
+	if (literal) {
+		if (literal.STRING_LITERAL()) {
+			const type = freshVar(literal.getText(), 'TEXT');
+			return {
+				name: type.name,
+				type: type,
+				notNull: true,
+				table: type.table || ''
+			};
+		}
+		if (literal.NUMERIC_LITERAL()) {
+			const type = freshVar(literal.getText(), 'INTEGER');
+			return {
+				name: type.name,
+				type: type,
+				notNull: true,
+				table: type.table || ''
+			};
+		}
+		if (literal.TRUE_() || literal.FALSE_()) {
+			const type = freshVar(literal.getText(), 'BOOLEAN');
+			return {
+				name: type.name,
+				type: type,
+				notNull: true,
+				table: type.table || ''
+			};
+		}
+		const type = freshVar(literal.getText(), '?');
+		return {
+			name: type.name,
+			type: type,
+			notNull: literal.NULL_() == null,
+			table: type.table || ''
+		};
+	}
+	if (expr.unary_operator()) {
+		const exprRight = expr.expr(0);
+		return traverse_expr(exprRight, traverseContext);
+	}
+	const parameter = expr.BIND_PARAMETER();
+	if (parameter) {
+		const param = freshVar('?', '?');
+		const type: TypeAndNullInferParam = {
+			name: param.name,
+			type: param,
+			notNull: undefined,
+			table: param.table || '',
+			paramIndex: parameter.symbol.start
+		};
+		traverseContext.parameters.push(type);
+		return type;
+	}
+	if (expr.STAR() || expr.DIV() || expr.MOD()) {
+		const exprLeft = expr.expr(0);
+		const exprRight = expr.expr(1);
+		const typeLeft = traverse_expr(exprLeft, traverseContext);
+		const typeRight = traverse_expr(exprRight, traverseContext);
+		const returnType = freshVar(expr.getText(), '?');
+		traverseContext.constraints.push({
+			expression: expr.getText(),
+			type1: typeLeft.type,
+			type2: returnType
+		});
+		traverseContext.constraints.push({
+			expression: expr.getText(),
+			type1: typeRight.type,
+			type2: returnType
+		});
+		return {
+			name: returnType.name,
+			type: returnType,
+			notNull: typeLeft.notNull && typeRight.notNull,
+			table: returnType.table || ''
+		};
+	}
+	if (expr.PLUS() || expr.MINUS()) {
+		const returnType = freshVar(expr.getText(), 'REAL'); //NUMERIC
+		const exprLeft = expr.expr(0);
+		const exprRight = expr.expr(1);
+		const typeLeft = traverse_expr(exprLeft, traverseContext);
+		const typeRight = traverse_expr(exprRight, traverseContext);
+		typeLeft.table = '';
+		typeRight.table = '';
+		traverseContext.constraints.push({
+			expression: exprLeft.getText(),
+			type1: returnType,
+			type2: typeLeft.type
+		});
+		const isDateFunctionContext =
+			expr.parentCtx instanceof ExprContext && expr.parentCtx.function_name()?.getText().toLowerCase() === 'date';
+
+		if (!isDateFunctionContext) {
+			traverseContext.constraints.push({
+				expression: exprRight.getText(),
+				type1: returnType,
+				type2: typeRight.type
+			});
+		}
+
+		return {
+			...typeLeft,
+			notNull: typeLeft.notNull && typeRight.notNull
+		};
+	}
+	if (
+		expr.LT2() ||
+		expr.GT2() ||
+		expr.AMP() ||
+		expr.PIPE() ||
+		expr.LT() ||
+		expr.LT_EQ() ||
+		expr.GT() ||
+		expr.GT_EQ() ||
+		expr.NOT_EQ1() ||
+		expr.NOT_EQ2()
+	) {
+		const exprLeft = expr.expr(0);
+		const exprRight = expr.expr(1);
+		const typeLeft = traverse_expr(exprLeft, traverseContext);
+		const typeRight = traverse_expr(exprRight, traverseContext);
+		if (typeLeft.name === '?') {
+			typeLeft.notNull = true;
+		}
+		if (typeRight.name === '?') {
+			typeRight.notNull = true;
+		}
+		traverseContext.constraints.push({
+			expression: expr.getText(),
+			type1: typeLeft.type,
+			type2: typeRight.type
+		});
+		const resultType = freshVar(expr.getText(), 'INTEGER');
+		return {
+			name: resultType.name,
+			type: resultType,
+			notNull: true,
+			table: resultType.table || ''
+		};
+	}
+	if (expr.IS_()) {
+		//is null/is not null/is true, is false
+		const exprLeft = expr.expr(0);
+		const typeLeft = traverse_expr(exprLeft, traverseContext);
+		const exprRight = expr.expr(1);
+		const typeRight = traverse_expr(exprRight, traverseContext);
+		typeLeft.notNull = typeRight.notNull;
+
+		traverseContext.constraints.push({
+			expression: expr.getText(),
+			type1: typeLeft.type,
+			type2: typeRight.type
+		});
+		const type = freshVar(expr.getText(), 'INTEGER');
+		return {
+			name: type.name,
+			type: type,
+			notNull: true,
+			table: type.table || ''
+		};
+	}
+	if (expr.ASSIGN()) {
+		//=
+		const exprLeft = expr.expr(0);
+		const exprRight = expr.expr(1);
+		const typeLeft = traverse_expr(exprLeft, traverseContext);
+		const typeRight = traverse_expr(exprRight, traverseContext);
+		if (typeLeft.name === '?') {
+			typeLeft.notNull = true;
+		}
+		if (typeRight.name === '?') {
+			typeRight.notNull = true;
+		}
+
+		traverseContext.constraints.push({
+			expression: expr.getText(),
+			type1: typeLeft.type,
+			type2: typeRight.type
+		});
+		const type = freshVar(expr.getText(), '?');
+		return {
+			name: type.name,
+			type: type,
+			notNull: true,
+			table: type.table || ''
+		};
+	}
+	if (expr.BETWEEN_()) {
+		const exprType = traverse_expr(expr.expr(0), traverseContext);
+		const between1 = traverse_expr(expr.expr(1), traverseContext);
+		const between2 = traverse_expr(expr.expr(2), traverseContext);
+		if (between1.name === '?') {
+			between1.notNull = true;
+		}
+		if (between2.name === '?') {
+			between2.notNull = true;
+		}
+		traverseContext.constraints.push({
+			expression: expr.getText(),
+			type1: exprType.type,
+			type2: between1.type
+		});
+		traverseContext.constraints.push({
+			expression: expr.getText(),
+			type1: exprType.type,
+			type2: between2.type
+		});
+		traverseContext.constraints.push({
+			expression: expr.getText(),
+			type1: between1.type,
+			type2: between2.type
+		});
+		return exprType;
+	}
+	if (expr.OR_() || expr.AND_()) {
+		const expr1 = expr.expr(0);
+		const expr2 = expr.expr(1);
+		traverse_expr(expr1, traverseContext);
+		return traverse_expr(expr2, traverseContext);
+	}
+	if (expr.IN_()) {
+		const exprList = expr.expr_list();
+		const inExprLeft = exprList[0];
+		const typeLeft = traverse_expr(inExprLeft, traverseContext);
+		if (typeLeft.name === '?') {
+			typeLeft.notNull = true;
+		}
+
+		if (expr.NOT_()) {
+			//NOT IN (SELECT...)
+			const select_stmt = expr.select_stmt();
+			if (select_stmt) {
+				const select_stmt_type = traverse_select_stmt(select_stmt, traverseContext, true);
+				const selectType = select_stmt_type.columns[0];
+				traverseContext.constraints.push({
+					expression: expr.getText(),
+					type1: typeLeft!.type,
+					type2: { ...selectType.type, list: true }
+				});
+			}
+			//NOT IN (1, 2, 3)
+			exprList.slice(1).forEach((inExpr) => {
+				const typeRight = traverse_expr(inExpr, traverseContext);
+				if (typeRight.name === '?') {
+					typeRight.notNull = true;
+				}
+				traverseContext.constraints.push({
+					expression: expr.getText(),
+					type1: typeLeft!.type,
+					type2: { ...typeRight.type, list: true }
+				});
+			});
+		} else {
+			const rightExpr = exprList[1];
+			//IN (SELECT...)
+			const select_stmt2 = rightExpr.select_stmt();
+			if (select_stmt2) {
+				const select_stmt_type = traverse_select_stmt(select_stmt2, traverseContext, true);
+				const selectType2 = select_stmt_type.columns[0];
+				traverseContext.constraints.push({
+					expression: expr.getText(),
+					type1: typeLeft!.type,
+					type2: { ...selectType2.type, list: true }
+				});
+			}
+			//IN (1, 2, 3)
+			rightExpr.expr_list().forEach((inExpr2) => {
+				const typeRight = traverse_expr(inExpr2, traverseContext);
+				if (typeRight.name === '?') {
+					typeRight.notNull = true;
+				}
+				traverseContext.constraints.push({
+					expression: expr.getText(),
+					type1: typeLeft!.type,
+					type2: { ...typeRight.type, list: true }
+				});
+			});
+		}
+
+		const type = freshVar(expr.getText(), '?');
+		return {
+			name: type.name,
+			type: type,
+			notNull: true,
+			table: type.table || ''
+		};
+	}
+	if (expr.LIKE_() || expr.GLOB_()) {
+		const exprLeft = expr.expr(0);
+		const exprRight = expr.expr(1);
+
+		const typeLeft = traverse_expr(exprLeft, traverseContext);
+		const typeRight = traverse_expr(exprRight, traverseContext);
+		if (typeLeft.name === '?') {
+			typeLeft.notNull = true;
+		}
+		if (typeRight.name === '?') {
+			typeRight.notNull = true;
+		}
+
+		traverseContext.constraints.push({
+			expression: expr.getText(),
+			type1: typeLeft.type,
+			type2: typeRight.type
+		});
+		traverseContext.constraints.push({
+			expression: expr.getText(),
+			type1: typeLeft.type,
+			type2: freshVar(expr.getText(), 'TEXT')
+		});
+		const type = freshVar(expr.getText(), 'INTEGER');
+		return {
+			name: type.name,
+			type: type,
+			notNull: true,
+			table: type.table || ''
+		};
+	}
+	if (expr.MATCH_()) {
+		const exprLeft = expr.expr(0);
+		const exprRight = expr.expr(1);
+		const typeRight = traverse_expr(exprRight, traverseContext);
+		if (typeRight.name === '?') {
+			typeRight.notNull = true;
+			typeRight.type = freshVar(exprRight.getText(), 'TEXT');
+		}
+
+		const type = freshVar(expr.getText(), 'INTEGER');
+		return {
+			name: type.name,
+			type: type,
+			notNull: true,
+			table: type.table || ''
+		};
+	}
+	const select_stmt = expr.select_stmt();
+	if (select_stmt) {
+		const subQueryType = traverse_select_stmt(select_stmt, { ...traverseContext, subQuery: true }, true);
+		const type = { ...subQueryType.columns[0].type, table: '' };
+		return {
+			name: type.name,
+			type: type,
+			notNull: subQueryType.columns[0].notNull,
+			table: type.table || ''
+		};
+	}
+	if (expr.OPEN_PAR() && expr.CLOSE_PAR()) {
+		const type = freshVar(expr.getText(), '?');
+		const exprTypes = expr.expr_list().map((innerExpr) => {
+			const exprType = traverse_expr(innerExpr, traverseContext);
+			traverseContext.constraints.push({
+				expression: innerExpr.getText(),
+				type1: exprType.type,
+				type2: type
+			});
+			return exprType;
+		});
+		return {
+			name: type.name,
+			type: type,
+			notNull: exprTypes.every((type) => type.notNull),
+			table: type.table || ''
+		};
+	}
+
+	if (expr.CASE_()) {
+		const resultTypes: TypeAndNullInfer[] = []; //then and else
+		const whenTypes: TypeAndNullInfer[] = [];
+		expr.expr_list().forEach((expr_, index) => {
+			const type = traverse_expr(expr_, traverseContext);
+			if (index % 2 === 0 && (!expr.ELSE_() || index < expr.expr_list().length - 1)) {
+				whenTypes.push(type);
+			} else {
+				resultTypes.push(type);
+			}
+		});
+		resultTypes.forEach((resultType, index) => {
+			if (index > 0) {
+				traverseContext.constraints.push({
+					expression: expr.getText(),
+					type1: resultTypes[0].type,
+					type2: resultType.type
+				});
+			}
+		});
+		whenTypes.forEach((whenType) => {
+			traverseContext.constraints.push({
+				expression: expr.getText(),
+				type1: freshVar('INTEGER', 'INTEGER'),
+				type2: whenType.type
+			});
+		});
+		const type = resultTypes[0];
+		return {
+			name: extractOriginalSql(expr),
+			type: type.type,
+			notNull: expr.ELSE_() ? resultTypes.every((type) => type.notNull) : false,
+			table: type.table || ''
+		};
+	}
+	throw Error(`traverse_expr not supported:${expr.getText()}`);
+}
+
+function traverse_function(expr: ExprContext, function_name: string, traverseContext: TraverseContext): TypeAndNullInfer {
 	if (function_name === 'avg') {
 		const functionType = freshVar(expr.getText(), 'REAL');
 		const sumParamExpr = expr.expr(0);
@@ -960,423 +1380,47 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
 			table: ''
 		};
 	}
-	if (function_name) {
-		throw Error(`traverse_expr: function not supported:${function_name}`);
-	}
 
-	const column_name = expr.column_name();
-	const table_name = expr.table_name();
-	if (column_name) {
-		const type = traverse_column_name(column_name, table_name, traverseContext);
-		return {
-			name: type.columnName,
-			type: type.columnType,
-			notNull: type.notNull,
-			table: type.tableAlias || type.table
-		};
-	}
-	const literal = expr.literal_value();
-	if (literal) {
-		if (literal.STRING_LITERAL()) {
-			const type = freshVar(literal.getText(), 'TEXT');
-			return {
-				name: type.name,
-				type: type,
-				notNull: true,
-				table: type.table || ''
-			};
+	const sqlean_uuid_functions: ExtensionFunctionCatalog = {
+		'uuid4': {
+			paramsTypes: [],
+			returnType: {
+				type: 'TEXT',
+				notNull: true
+			}
+		},
+		'uuid7': {
+			paramsTypes: [],
+			returnType: {
+				type: 'TEXT',
+				notNull: true
+			}
 		}
-		if (literal.NUMERIC_LITERAL()) {
-			const type = freshVar(literal.getText(), 'INTEGER');
-			return {
-				name: type.name,
-				type: type,
-				notNull: true,
-				table: type.table || ''
-			};
-		}
-		if (literal.TRUE_() || literal.FALSE_()) {
-			const type = freshVar(literal.getText(), 'BOOLEAN');
-			return {
-				name: type.name,
-				type: type,
-				notNull: true,
-				table: type.table || ''
-			};
-		}
-		const type = freshVar(literal.getText(), '?');
-		return {
-			name: type.name,
-			type: type,
-			notNull: literal.NULL_() == null,
-			table: type.table || ''
-		};
 	}
-	if (expr.unary_operator()) {
-		const exprRight = expr.expr(0);
-		return traverse_expr(exprRight, traverseContext);
-	}
-	const parameter = expr.BIND_PARAMETER();
-	if (parameter) {
-		const param = freshVar('?', '?');
-		const type: TypeAndNullInferParam = {
-			name: param.name,
-			type: param,
-			notNull: undefined,
-			table: param.table || '',
-			paramIndex: parameter.symbol.start
-		};
-		traverseContext.parameters.push(type);
-		return type;
-	}
-	if (expr.STAR() || expr.DIV() || expr.MOD()) {
-		const exprLeft = expr.expr(0);
-		const exprRight = expr.expr(1);
-		const typeLeft = traverse_expr(exprLeft, traverseContext);
-		const typeRight = traverse_expr(exprRight, traverseContext);
-		const returnType = freshVar(expr.getText(), '?');
-		traverseContext.constraints.push({
-			expression: expr.getText(),
-			type1: typeLeft.type,
-			type2: returnType
-		});
-		traverseContext.constraints.push({
-			expression: expr.getText(),
-			type1: typeRight.type,
-			type2: returnType
-		});
-		return {
-			name: returnType.name,
-			type: returnType,
-			notNull: typeLeft.notNull && typeRight.notNull,
-			table: returnType.table || ''
-		};
-	}
-	if (expr.PLUS() || expr.MINUS()) {
-		const returnType = freshVar(expr.getText(), 'REAL'); //NUMERIC
-		const exprLeft = expr.expr(0);
-		const exprRight = expr.expr(1);
-		const typeLeft = traverse_expr(exprLeft, traverseContext);
-		const typeRight = traverse_expr(exprRight, traverseContext);
-		typeLeft.table = '';
-		typeRight.table = '';
-		traverseContext.constraints.push({
-			expression: exprLeft.getText(),
-			type1: returnType,
-			type2: typeLeft.type
-		});
-		const isDateFunctionContext =
-			expr.parentCtx instanceof ExprContext && expr.parentCtx.function_name()?.getText().toLowerCase() === 'date';
-
-		if (!isDateFunctionContext) {
-			traverseContext.constraints.push({
-				expression: exprRight.getText(),
-				type1: returnType,
-				type2: typeRight.type
-			});
-		}
-
-		return {
-			...typeLeft,
-			notNull: typeLeft.notNull && typeRight.notNull
-		};
-	}
-	if (
-		expr.LT2() ||
-		expr.GT2() ||
-		expr.AMP() ||
-		expr.PIPE() ||
-		expr.LT() ||
-		expr.LT_EQ() ||
-		expr.GT() ||
-		expr.GT_EQ() ||
-		expr.NOT_EQ1() ||
-		expr.NOT_EQ2()
-	) {
-		const exprLeft = expr.expr(0);
-		const exprRight = expr.expr(1);
-		const typeLeft = traverse_expr(exprLeft, traverseContext);
-		const typeRight = traverse_expr(exprRight, traverseContext);
-		if (typeLeft.name === '?') {
-			typeLeft.notNull = true;
-		}
-		if (typeRight.name === '?') {
-			typeRight.notNull = true;
-		}
-		traverseContext.constraints.push({
-			expression: expr.getText(),
-			type1: typeLeft.type,
-			type2: typeRight.type
-		});
-		const resultType = freshVar(expr.getText(), 'INTEGER');
-		return {
-			name: resultType.name,
-			type: resultType,
-			notNull: true,
-			table: resultType.table || ''
-		};
-	}
-	if (expr.IS_()) {
-		//is null/is not null/is true, is false
-		const exprLeft = expr.expr(0);
-		const typeLeft = traverse_expr(exprLeft, traverseContext);
-		const exprRight = expr.expr(1);
-		const typeRight = traverse_expr(exprRight, traverseContext);
-		typeLeft.notNull = typeRight.notNull;
-
-		traverseContext.constraints.push({
-			expression: expr.getText(),
-			type1: typeLeft.type,
-			type2: typeRight.type
-		});
-		const type = freshVar(expr.getText(), 'INTEGER');
-		return {
-			name: type.name,
-			type: type,
-			notNull: true,
-			table: type.table || ''
-		};
-	}
-	if (expr.ASSIGN()) {
-		//=
-		const exprLeft = expr.expr(0);
-		const exprRight = expr.expr(1);
-		const typeLeft = traverse_expr(exprLeft, traverseContext);
-		const typeRight = traverse_expr(exprRight, traverseContext);
-		if (typeLeft.name === '?') {
-			typeLeft.notNull = true;
-		}
-		if (typeRight.name === '?') {
-			typeRight.notNull = true;
-		}
-
-		traverseContext.constraints.push({
-			expression: expr.getText(),
-			type1: typeLeft.type,
-			type2: typeRight.type
-		});
-		const type = freshVar(expr.getText(), '?');
-		return {
-			name: type.name,
-			type: type,
-			notNull: true,
-			table: type.table || ''
-		};
-	}
-	if (expr.BETWEEN_()) {
-		const exprType = traverse_expr(expr.expr(0), traverseContext);
-		const between1 = traverse_expr(expr.expr(1), traverseContext);
-		const between2 = traverse_expr(expr.expr(2), traverseContext);
-		if (between1.name === '?') {
-			between1.notNull = true;
-		}
-		if (between2.name === '?') {
-			between2.notNull = true;
-		}
-		traverseContext.constraints.push({
-			expression: expr.getText(),
-			type1: exprType.type,
-			type2: between1.type
-		});
-		traverseContext.constraints.push({
-			expression: expr.getText(),
-			type1: exprType.type,
-			type2: between2.type
-		});
-		traverseContext.constraints.push({
-			expression: expr.getText(),
-			type1: between1.type,
-			type2: between2.type
-		});
-		return exprType;
-	}
-	if (expr.OR_() || expr.AND_()) {
-		const expr1 = expr.expr(0);
-		const expr2 = expr.expr(1);
-		traverse_expr(expr1, traverseContext);
-		return traverse_expr(expr2, traverseContext);
-	}
-	if (expr.IN_()) {
-		const exprList = expr.expr_list();
-		const inExprLeft = exprList[0];
-		const typeLeft = traverse_expr(inExprLeft, traverseContext);
-		if (typeLeft.name === '?') {
-			typeLeft.notNull = true;
-		}
-
-		if (expr.NOT_()) {
-			//NOT IN (SELECT...)
-			const select_stmt = expr.select_stmt();
-			if (select_stmt) {
-				const select_stmt_type = traverse_select_stmt(select_stmt, traverseContext, true);
-				const selectType = select_stmt_type.columns[0];
+	const functionCatalog = sqlean_uuid_functions[function_name];
+	if (functionCatalog) {
+		const functionType = freshVar(expr.getText(), functionCatalog.returnType.type);
+		expr.expr_list().forEach((exprParam, index) => {
+			const paramType = traverse_expr(exprParam, traverseContext);
+			const catalogType = functionCatalog.paramsTypes[index];
+			if (catalogType) {
+				paramType.notNull = catalogType.notNull;
 				traverseContext.constraints.push({
 					expression: expr.getText(),
-					type1: typeLeft!.type,
-					type2: { ...selectType.type, list: true }
+					type1: freshVar(expr.getText(), catalogType.type),
+					type2: paramType.type
 				});
 			}
-			//NOT IN (1, 2, 3)
-			exprList.slice(1).forEach((inExpr) => {
-				const typeRight = traverse_expr(inExpr, traverseContext);
-				if (typeRight.name === '?') {
-					typeRight.notNull = true;
-				}
-				traverseContext.constraints.push({
-					expression: expr.getText(),
-					type1: typeLeft!.type,
-					type2: { ...typeRight.type, list: true }
-				});
-			});
-		} else {
-			const rightExpr = exprList[1];
-			//IN (SELECT...)
-			const select_stmt2 = rightExpr.select_stmt();
-			if (select_stmt2) {
-				const select_stmt_type = traverse_select_stmt(select_stmt2, traverseContext, true);
-				const selectType2 = select_stmt_type.columns[0];
-				traverseContext.constraints.push({
-					expression: expr.getText(),
-					type1: typeLeft!.type,
-					type2: { ...selectType2.type, list: true }
-				});
-			}
-			//IN (1, 2, 3)
-			rightExpr.expr_list().forEach((inExpr2) => {
-				const typeRight = traverse_expr(inExpr2, traverseContext);
-				if (typeRight.name === '?') {
-					typeRight.notNull = true;
-				}
-				traverseContext.constraints.push({
-					expression: expr.getText(),
-					type1: typeLeft!.type,
-					type2: { ...typeRight.type, list: true }
-				});
-			});
-		}
+		})
 
-		const type = freshVar(expr.getText(), '?');
 		return {
-			name: type.name,
-			type: type,
-			notNull: true,
-			table: type.table || ''
+			name: expr.getText(),
+			type: functionType,
+			notNull: functionCatalog.returnType.notNull,
+			table: ''
 		};
 	}
-	if (expr.LIKE_() || expr.GLOB_()) {
-		const exprLeft = expr.expr(0);
-		const exprRight = expr.expr(1);
-
-		const typeLeft = traverse_expr(exprLeft, traverseContext);
-		const typeRight = traverse_expr(exprRight, traverseContext);
-		if (typeLeft.name === '?') {
-			typeLeft.notNull = true;
-		}
-		if (typeRight.name === '?') {
-			typeRight.notNull = true;
-		}
-
-		traverseContext.constraints.push({
-			expression: expr.getText(),
-			type1: typeLeft.type,
-			type2: typeRight.type
-		});
-		traverseContext.constraints.push({
-			expression: expr.getText(),
-			type1: typeLeft.type,
-			type2: freshVar(expr.getText(), 'TEXT')
-		});
-		const type = freshVar(expr.getText(), 'INTEGER');
-		return {
-			name: type.name,
-			type: type,
-			notNull: true,
-			table: type.table || ''
-		};
-	}
-	if (expr.MATCH_()) {
-		const exprLeft = expr.expr(0);
-		const exprRight = expr.expr(1);
-		const typeRight = traverse_expr(exprRight, traverseContext);
-		if (typeRight.name === '?') {
-			typeRight.notNull = true;
-			typeRight.type = freshVar(exprRight.getText(), 'TEXT');
-		}
-
-		const type = freshVar(expr.getText(), 'INTEGER');
-		return {
-			name: type.name,
-			type: type,
-			notNull: true,
-			table: type.table || ''
-		};
-	}
-	const select_stmt = expr.select_stmt();
-	if (select_stmt) {
-		const subQueryType = traverse_select_stmt(select_stmt, { ...traverseContext, subQuery: true }, true);
-		const type = { ...subQueryType.columns[0].type, table: '' };
-		return {
-			name: type.name,
-			type: type,
-			notNull: subQueryType.columns[0].notNull,
-			table: type.table || ''
-		};
-	}
-	if (expr.OPEN_PAR() && expr.CLOSE_PAR()) {
-		const type = freshVar(expr.getText(), '?');
-		const exprTypes = expr.expr_list().map((innerExpr) => {
-			const exprType = traverse_expr(innerExpr, traverseContext);
-			traverseContext.constraints.push({
-				expression: innerExpr.getText(),
-				type1: exprType.type,
-				type2: type
-			});
-			return exprType;
-		});
-		return {
-			name: type.name,
-			type: type,
-			notNull: exprTypes.every((type) => type.notNull),
-			table: type.table || ''
-		};
-	}
-
-	if (expr.CASE_()) {
-		const resultTypes: TypeAndNullInfer[] = []; //then and else
-		const whenTypes: TypeAndNullInfer[] = [];
-		expr.expr_list().forEach((expr_, index) => {
-			const type = traverse_expr(expr_, traverseContext);
-			if (index % 2 === 0 && (!expr.ELSE_() || index < expr.expr_list().length - 1)) {
-				whenTypes.push(type);
-			} else {
-				resultTypes.push(type);
-			}
-		});
-		resultTypes.forEach((resultType, index) => {
-			if (index > 0) {
-				traverseContext.constraints.push({
-					expression: expr.getText(),
-					type1: resultTypes[0].type,
-					type2: resultType.type
-				});
-			}
-		});
-		whenTypes.forEach((whenType) => {
-			traverseContext.constraints.push({
-				expression: expr.getText(),
-				type1: freshVar('INTEGER', 'INTEGER'),
-				type2: whenType.type
-			});
-		});
-		const type = resultTypes[0];
-		return {
-			name: extractOriginalSql(expr),
-			type: type.type,
-			notNull: expr.ELSE_() ? resultTypes.every((type) => type.notNull) : false,
-			table: type.table || ''
-		};
-	}
-	throw Error(`traverse_expr not supported:${expr.getText()}`);
+	throw Error(`traverse_expr: function not supported:${function_name}`);
 }
 
 function extractOriginalSql(rule: ParserRuleContext) {

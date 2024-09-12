@@ -5,10 +5,13 @@ import Database, { type Database as DatabaseType } from 'better-sqlite3';
 import type { Database as LibSqlDatabase } from 'libsql';
 import type { SQLiteType } from './types';
 
-export function createSqliteClient(client: 'better-sqlite3' | 'bun:sqlite', databaseUri: string, attachList: string[]): Either<TypeSqlError, DatabaseClient> {
+export function createSqliteClient(client: 'better-sqlite3' | 'bun:sqlite', databaseUri: string, attachList: string[], loadExtensions: string[]): Either<TypeSqlError, DatabaseClient> {
 	const db = new Database(databaseUri);
 	for (const attach of attachList) {
 		db.exec(`attach database ${attach}`);
+	}
+	for (const extension of loadExtensions) {
+		db.loadExtension(extension);
 	}
 	return right({
 		type: client,

@@ -267,3 +267,17 @@ export type DeleteInfoResult = {
 	kind: 'Delete';
 	parameters: ParameterDef[];
 };
+
+export type ExtensionFunctionCatalog = {
+	[functionName: string]: ExtensionFunction
+}
+
+export type ExtensionFunction = {
+	paramsTypes: FunctionType[],
+	returnType: FunctionType
+}
+
+export type FunctionType = {
+	type: SQLiteType;
+	notNull: boolean;
+}
