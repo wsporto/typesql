@@ -190,6 +190,10 @@ export type ForeignKeyInfo = {
 	toColumn: string;
 }
 
+type CreateTableStatement = {
+	sql: string;
+}
+
 export function loadForeignKeys(db: DatabaseType | LibSqlDatabase): Either<TypeSqlError, ForeignKeyInfo[]> {
 	const sql = `
     SELECT 
@@ -205,6 +209,26 @@ export function loadForeignKeys(db: DatabaseType | LibSqlDatabase): Either<TypeS
 		//@ts-ignore
 		const result = db.prepare(sql).all() as ForeignKeyInfo[];
 		return right(result);
+	} catch (e) {
+		const err = e as Error;
+		return left({
+			name: err.name,
+			description: err.message
+		});
+	}
+}
+
+export function loadCreateTableStmt(db: DatabaseType | LibSqlDatabase, tableName: string): Either<TypeSqlError, string> {
+	const sql = `
+    SELECT 
+		sql
+	FROM sqlite_schema tab
+	WHERE type = 'table' and tbl_name = ?`;
+
+	try {
+		//@ts-ignore
+		const result = db.prepare(sql).all([tableName]) as CreateTableStatement[];
+		return right(result[0].sql);
 	} catch (e) {
 		const err = e as Error;
 		return left({

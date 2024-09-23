@@ -1,6 +1,6 @@
 import assert from 'node:assert';
 
-import { loadDbSchema } from '../../src/sqlite-query-analyzer/query-executor';
+import { loadCreateTableStmt, loadDbSchema } from '../../src/sqlite-query-analyzer/query-executor';
 import { isLeft } from 'fp-ts/lib/Either';
 import { sqliteDbSchema } from '../mysql-query-analyzer/create-schema';
 import Database from 'better-sqlite3';
@@ -132,4 +132,24 @@ describe('sqlite-query-executor', () => {
 		];
 		assert.deepStrictEqual(actual, expected);
 	});
+
+	it('loadCreateTableStmt', () => {
+		const db = new Database('./mydb.db');
+
+		const dbSchema = loadCreateTableStmt(db, 'mytable1');
+		if (isLeft(dbSchema)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+
+		const actual = dbSchema.right;
+		const expected = replaceNewlines(`CREATE TABLE mytable1 (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    value INTEGER
+)`);
+		assert.deepStrictEqual(actual, expected);
+	});
 });
+
+function replaceNewlines(input: string): string {
+	return input.replace(/\n/g, '\r\n');
+}
