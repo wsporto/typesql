@@ -1440,6 +1440,32 @@ describe('sqlite-Test simple select statements', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it(`select enum_column from all_types where enum_column = 'medium' or 'short' = enum_column`, () => {
+		const sql = `
+        select enum_column from all_types where enum_column = 'medium' or 'short' = enum_column
+        `;
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'enum_column',
+					type: `ENUM('x-small','small','medium','large','x-large')`,
+					notNull: true,
+					table: 'all_types'
+				}
+			],
+			parameters: []
+		};
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ` + actual.left.description);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('select value from mytable1 order by ?', () => {
 		const sql = `
         select value from mytable1 order by ?

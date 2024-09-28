@@ -96,6 +96,14 @@ function getSumFunctionType(type: InferType): InferType {
 }
 
 function getBestPossibleType(type1: InferType, type2: InferType, max?: boolean, coercionType?: CoercionType): InferType {
+
+	if (type1.startsWith('ENUM(') && type2 === 'TEXT') {
+		return type1; //ENUM
+	}
+	if (type2.startsWith('ENUM(') && type1 == 'TEXT') {
+		return type2; //ENUM
+	}
+
 	// Is possible to convert text to date
 	const sqliteDateCoercionOrder: InferType[] = ['TEXT', 'DATE', 'DATE_TIME'];
 	const sqliteIndexDateType1 = sqliteDateCoercionOrder.indexOf(type1);
