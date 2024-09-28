@@ -1,0 +1,28 @@
+import type { Client, Transaction } from '@libsql/client';
+
+export type Select09Params = {
+	enum_value: 'x-small' | 'small' | 'medium' | 'large' | 'x-large';
+}
+
+export type Select09Result = {
+	enum_column: 'x-small' | 'small' | 'medium' | 'large' | 'x-large';
+}
+
+export async function select09(client: Client | Transaction, params: Select09Params): Promise<Select09Result[]> {
+	const sql = `
+	SELECT
+		enum_column
+	FROM all_types
+	where enum_column = ?
+	`
+	return client.execute({ sql, args: [params.enum_value] })
+		.then(res => res.rows)
+		.then(rows => rows.map(row => mapArrayToSelect09Result(row)));
+}
+
+function mapArrayToSelect09Result(data: any) {
+	const result: Select09Result = {
+		enum_column: data[0]
+	}
+	return result;
+}
