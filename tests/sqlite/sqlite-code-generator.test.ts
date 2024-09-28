@@ -469,6 +469,54 @@ WHERE :param1 is true OR (:param2 is true OR :param2 is null)`;
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('select09 - enum', () => {
+		const sql = `SELECT
+	enum_column
+FROM all_types
+where enum_column = :enum_value`;
+
+		const isCrud = false;
+		const actual = generateTsCode(sql, 'select09', sqliteDbSchema, 'better-sqlite3', isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/select09-enum.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('select09-libsql - enum', () => {
+		const sql = `SELECT
+	enum_column
+FROM all_types
+where enum_column = :enum_value`;
+
+		const isCrud = false;
+		const actual = generateTsCode(sql, 'select09', sqliteDbSchema, 'libsql', isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/select09-libsql-enum.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('select09-bun - enum', () => {
+		const sql = `SELECT
+	enum_column
+FROM all_types
+where enum_column = :enum_value`;
+
+		const isCrud = false;
+		const actual = generateTsCode(sql, 'select09', sqliteDbSchema, 'bun:sqlite', isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/select09-bun-enum.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('nested01 - FROM users u INNER JOIN posts p', () => {
 		const sql = `-- @nested
 SELECT 

@@ -479,6 +479,14 @@ export const sqliteDbSchema: GenericColumnSchema<SQLiteType>[] = [
 		defaultValue: '10'
 	},
 	{
+		column: 'enum_column',
+		columnKey: '',
+		column_type: `ENUM('x-small','small','medium','large','x-large')`,
+		notNull: false,
+		schema: 'main',
+		table: 'all_types'
+	},
+	{
 		schema: 'main',
 		table: 'users',
 		column: 'id',

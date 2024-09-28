@@ -34,6 +34,7 @@ import { preprocessSql } from '../describe-query';
 import { explainSql } from './query-executor';
 import { mapToDynamicParams, mapToDynamicResultColumns, mapToDynamicSelectColumns } from '../ts-dynamic-query-descriptor';
 import { EOL } from 'node:os';
+import { TsType } from '../mysql-mapping';
 
 export function validateAndGenerateCode(
 	client: SQLiteDialect | LibSqlClient | BunDialect,
@@ -253,7 +254,7 @@ function mapColumnToTsParameterDescriptor(col: ColumnInfo, client: SQLiteClient)
 	return tsDesc;
 }
 
-function mapColumnType(sqliteType: SQLiteType, client: SQLiteClient) {
+function mapColumnType(sqliteType: SQLiteType, client: SQLiteClient): TsType {
 	switch (sqliteType) {
 		case 'INTEGER':
 			return 'number';
@@ -281,9 +282,12 @@ function mapColumnType(sqliteType: SQLiteType, client: SQLiteClient) {
 			return 'boolean';
 		case 'BOOLEAN':
 			return 'boolean';
-		case 'any':
-			return 'any';
 	}
+	if (sqliteType.startsWith('ENUM')) {
+		const enumValues = sqliteType.substring(sqliteType.indexOf('(') + 1, sqliteType.indexOf(')'));
+		return enumValues.split(',').join(' | ') as TsType;
+	}
+	return 'any';
 }
 
 function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, tsDescriptor: TsDescriptor, isCrud = false, tableName = '') {

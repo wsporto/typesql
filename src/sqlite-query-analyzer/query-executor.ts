@@ -3,7 +3,8 @@ import type { DatabaseClient, TypeSqlError } from '../types';
 import type { ColumnSchema, Table } from '../mysql-query-analyzer/types';
 import Database, { type Database as DatabaseType } from 'better-sqlite3';
 import type { Database as LibSqlDatabase } from 'libsql';
-import type { SQLiteType } from './types';
+import type { EnumColumnMap, EnumMap, SQLiteType } from './types';
+import { enumParser } from './enum-parser';
 
 export function createSqliteClient(client: 'better-sqlite3' | 'bun:sqlite', databaseUri: string, attachList: string[], loadExtensions: string[]): Either<TypeSqlError, DatabaseClient> {
 	const db = new Database(databaseUri);
@@ -108,6 +109,12 @@ function checkAffinity(type: string): SQLiteType {
 
 function loadDbSchemaForSchema(db: DatabaseType | LibSqlDatabase, schema: '' | string = ''): Either<TypeSqlError, ColumnSchema[]> {
 	const tables = getTables(db, schema);
+	const createTableStmtsResult = loadCreateTableStmtWithCheckConstraint(db);
+	if (isLeft(createTableStmtsResult)) {
+		return left(createTableStmtsResult.left);
+	}
+	const createTableStmts = createTableStmtsResult.right;
+	const enumMap: EnumMap = createTableStmts ? enumParser(createTableStmtsResult.right) : {};
 
 	const result = tables.flatMap(({ name, type }) => {
 		const tableInfoList = getTableInfo(db, schema, name);
@@ -115,9 +122,10 @@ function loadDbSchemaForSchema(db: DatabaseType | LibSqlDatabase, schema: '' | s
 		const columnSchema = tableInfoList.map((tableInfo) => {
 			const isUni = tableIndexInfo.get(tableInfo.name) != null;
 			const isVT = type == 'VT';
+			const enumColumnMap = enumMap[name] || {};
 			const col: ColumnSchema = {
 				column: tableInfo.name,
-				column_type: isVT ? '?' : checkAffinity(tableInfo.type),
+				column_type: checkType(tableInfo.name, tableInfo.type as SQLiteType, isVT, enumColumnMap),
 				columnKey: getColumnKey(tableInfo.pk, isUni, isVT),
 				notNull: tableInfo.notnull === 1 || tableInfo.pk >= 1,
 				schema,
@@ -131,6 +139,16 @@ function loadDbSchemaForSchema(db: DatabaseType | LibSqlDatabase, schema: '' | s
 		return columnSchema;
 	});
 	return right(result);
+}
+
+function checkType(columnName: string, columnType: SQLiteType, isVT: boolean, enumColumnMap: EnumColumnMap): SQLiteType | '?' {
+	if (isVT) {
+		return '?'
+	}
+	if (columnType === 'TEXT' && enumColumnMap[columnName] != null) {
+		return enumColumnMap[columnName];
+	}
+	return checkAffinity(columnType);
 }
 
 function getColumnKey(pk: number, isUni: boolean, isVT: boolean): ColumnSchema['columnKey'] {
@@ -228,6 +246,26 @@ export function loadCreateTableStmt(db: DatabaseType | LibSqlDatabase, tableName
 	try {
 		//@ts-ignore
 		const result = db.prepare(sql).all([tableName]) as CreateTableStatement[];
+		return right(result[0].sql);
+	} catch (e) {
+		const err = e as Error;
+		return left({
+			name: err.name,
+			description: err.message
+		});
+	}
+}
+
+export function loadCreateTableStmtWithCheckConstraint(db: DatabaseType | LibSqlDatabase): Either<TypeSqlError, string | null> {
+	const sql = `
+    SELECT 
+		GROUP_CONCAT(sql, ';') as sql
+	FROM sqlite_schema tab
+	WHERE type = 'table' and upper(sql) GLOB '*CHECK[ (]*)*'`;
+
+	try {
+		//@ts-ignore
+		const result = db.prepare(sql).all() as CreateTableStatement[];
 		return right(result[0].sql);
 	} catch (e) {
 		const err = e as Error;

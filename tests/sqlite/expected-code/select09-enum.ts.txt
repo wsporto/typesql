@@ -1,0 +1,29 @@
+import type { Database } from 'better-sqlite3';
+
+export type Select09Params = {
+	enum_value: 'x-small' | 'small' | 'medium' | 'large' | 'x-large';
+}
+
+export type Select09Result = {
+	enum_column: 'x-small' | 'small' | 'medium' | 'large' | 'x-large';
+}
+
+export function select09(db: Database, params: Select09Params): Select09Result[] {
+	const sql = `
+	SELECT
+		enum_column
+	FROM all_types
+	where enum_column = ?
+	`
+	return db.prepare(sql)
+		.raw(true)
+		.all([params.enum_value])
+		.map(data => mapArrayToSelect09Result(data));
+}
+
+function mapArrayToSelect09Result(data: any) {
+	const result: Select09Result = {
+		enum_column: data[0]
+	}
+	return result;
+}
