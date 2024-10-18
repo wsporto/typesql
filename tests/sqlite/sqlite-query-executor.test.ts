@@ -149,6 +149,44 @@ describe('sqlite-query-executor', () => {
 		assert.deepStrictEqual(actual, expected);
 	});
 
+	it('loadDbSchema - albums with non unique index', () => {
+		const db = new Database('./mydb.db');
+
+		const dbSchema = loadDbSchema(db);
+		if (isLeft(dbSchema)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+
+		const actual = dbSchema.right.filter(col => col.table === 'albums');
+		const expected: ColumnSchema[] = [
+			{
+				column: "AlbumId",
+				column_type: "INTEGER",
+				columnKey: "PRI",
+				notNull: true,
+				schema: "main",
+				table: "albums",
+			},
+			{
+				column: "Title",
+				column_type: "TEXT",
+				columnKey: "",
+				notNull: true,
+				schema: "main",
+				table: "albums",
+			},
+			{
+				column: "ArtistId",
+				column_type: "INTEGER",
+				columnKey: "",
+				notNull: true,
+				schema: "main",
+				table: "albums",
+			},
+		]
+		assert.deepStrictEqual(actual, expected);
+	});
+
 	it('loadCreateTableStmtWithCheckConstraint', () => {
 		const db = new Database('./mydb.db');
 

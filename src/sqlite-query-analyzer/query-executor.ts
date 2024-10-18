@@ -66,13 +66,15 @@ export function getIndexInfo(db: DatabaseType | LibSqlDatabase, schema: string, 
 		.prepare(`PRAGMA ${schema}.index_list('${table}')`)
 		.all() as { name: string; unique: number }[];
 	for (const index of indexList) {
-		const indexedColumns = db
-			//@ts-ignore
-			.prepare(`PRAGMA ${schema}.index_info('${index.name}')`)
-			.all()
-			.map((res: any) => res.name) as string[];
-		for (const column of indexedColumns) {
-			map.set(column, true);
+		if (index.unique === 1) {
+			const indexedColumns = db
+				//@ts-ignore
+				.prepare(`PRAGMA ${schema}.index_info('${index.name}')`)
+				.all()
+				.map((res: any) => res.name) as string[];
+			for (const column of indexedColumns) {
+				map.set(column, true);
+			}
 		}
 	}
 	return map;
