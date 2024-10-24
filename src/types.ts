@@ -122,11 +122,11 @@ export type PreprocessedSql = {
 
 export type CamelCaseName = Brand<string, 'CamelCase'>;
 
-export type DatabaseClient = MySqlDialect | SQLiteDialect | LibSqlClient | BunDialect;
+export type DatabaseClient = MySqlDialect | SQLiteDialect | LibSqlClient | BunDialect | D1Dialect;
 
 export type TypeSqlDialect = DatabaseClient['type'];
 
-export type SQLiteClient = SQLiteDialect['type'] | LibSqlClient['type'] | BunDialect['type'];
+export type SQLiteClient = SQLiteDialect['type'] | LibSqlClient['type'] | BunDialect['type'] | D1Dialect['type'];
 
 export type MySqlDialect = {
 	type: 'mysql2';
@@ -151,6 +151,11 @@ export type LibSqlClient = {
 	client: LibSQLDatabase;
 };
 
+export type D1Dialect = {
+	type: 'd1:sqlite';
+	client: Database;
+};
+
 export type TypeSqlConfig = {
 	databaseUri: string;
 	sqlDir: string;
@@ -159,6 +164,7 @@ export type TypeSqlConfig = {
 	attach?: string[];
 	loadExtensions?: string[];
 	includeCrudTables: string[];
+	esm?: boolean;
 };
 
 export type SqlGenOption = 'select' | 's' | 'insert' | 'i' | 'update' | 'u' | 'delete' | 'd';
