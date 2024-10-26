@@ -769,7 +769,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 
 	if (isCrud) {
 		const crudFunction =
-			client === 'libsql'
+			client === 'libsql' || client === 'd1:sqlite'
 				? `async function ${camelCaseName}(${functionArguments}): Promise<${returnType}>`
 				: `function ${camelCaseName}(${functionArguments}): ${returnType}`;
 		writer.write(`export ${crudFunction}`).block(() => {
@@ -780,7 +780,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 				tableName,
 				tsDescriptor.columns,
 				idColumn,
-				client === 'bun:sqlite' ? queryParamsWithoutBrackets : queryParams,
+				client === 'bun:sqlite' || client === 'd1:sqlite' ? queryParamsWithoutBrackets : queryParams,
 				paramsTypeName,
 				dataTypeName,
 				resultTypeName,
@@ -921,7 +921,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 		}
 	}
 
-	if ((queryType === 'Select' || tsDescriptor.returning) && tsDescriptor.dynamicQuery2 == null) {
+	if ((queryType === 'Select' || tsDescriptor.returning) && tsDescriptor.dynamicQuery2 == null && !(isCrud && client === 'd1:sqlite')) {
 		writer.blankLine();
 		writer.write(`function mapArrayTo${resultTypeName}(data: any) `).block(() => {
 			writer.write(`const result: ${resultTypeName} = `).block(() => {
@@ -1091,7 +1091,9 @@ function writeExecutSelectCrudBlock(
 		writer.indent().write(`.map(data => mapArrayTo${resultTypeName}(data))[0];`);
 	}
 	else if (client === 'd1:sqlite') {
-		writer.write(`return db.prepare(sql).first() as Promise<${resultTypeName}>`).newLine();
+		writer.write('return db.prepare(sql)').newLine();
+		writer.indent().write(`.bind(${queryParams})`).newLine();
+		writer.indent().write('.first();').newLine();
 	} else {
 		writer.write(`return client.execute({ sql, args: ${queryParams} })`).newLine();
 		writer.indent().write('.then(res => res.rows)').newLine();
@@ -1123,8 +1125,9 @@ function writeExecuteInsertCrudBlock(
 		writer.indent().write(`.run(...values) as ${resultTypeName};`);
 	} else if (client === 'd1:sqlite') {
 		writer.write('return db.prepare(sql)').newLine();
-		writer.indent().write('.bind(...values)');
-		writer.indent().write(`.run() as Promise<D1Result<${resultTypeName}>>;`);
+		writer.indent().write('.bind(...values)').newLine();
+		writer.indent().write('.run()').newLine();
+		writer.indent().write('.then(res => res.meta);')
 	} else {
 		writer.write('return client.execute({ sql, args: values })').newLine();
 		writer.indent().write(`.then(res => mapArrayTo${resultTypeName}(res));`).newLine();
@@ -1157,8 +1160,9 @@ function writeExecuteUpdateCrudBlock(
 		writer.indent().write(`.run(...values) as ${resultTypeName};`);
 	} else if (client === 'd1:sqlite') {
 		writer.write('return db.prepare(sql)').newLine();
-		writer.indent().write('.bind(...values)');
-		writer.indent().write(`.run() as Promise<D1Result<${resultTypeName}>>;`);
+		writer.indent().write(`.bind(params.${idColumn})`).newLine();
+		writer.indent().write('.run()').newLine();
+		writer.indent().write('.then(res => res.meta);')
 	} else {
 		writer.write('return client.execute({ sql, args: values })').newLine();
 		writer.indent().write(`.then(res => mapArrayTo${resultTypeName}(res));`).newLine();
@@ -1186,8 +1190,9 @@ function writeExecutDeleteCrudBlock(
 		writer.indent().write(`.run(${queryParams}) as ${resultTypeName};`).newLine();
 	} else if (client === 'd1:sqlite') {
 		writer.write('return db.prepare(sql)').newLine();
-		writer.indent().write(`.bind(${queryParams})`);
-		writer.indent().write(`.run() as Promise<D1Result<${resultTypeName}>>;`);
+		writer.indent().write(`.bind(${queryParams})`).newLine();
+		writer.indent().write('.run()').newLine();
+		writer.indent().write('.then(res => res.meta);')
 	} else {
 		writer.write(`return client.execute({ sql, args: ${queryParams} })`).newLine();
 		writer.indent().write(`.then(res => mapArrayTo${resultTypeName}(res));`).newLine();
