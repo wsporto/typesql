@@ -1,4 +1,14 @@
-import type { SchemaDef, CamelCaseName, TsFieldDescriptor, ParameterDef, DatabaseClient, MySqlDialect, TypeSqlError, TsParameterDescriptor } from './types';
+import {
+	SchemaDef,
+	CamelCaseName,
+	TsFieldDescriptor,
+	ParameterDef,
+	DatabaseClient,
+	MySqlDialect,
+	TypeSqlError,
+	TsParameterDescriptor,
+	TypeSqlDialect, type SQLiteDialect, type LibSqlClient, type BunDialect, D1Dialect
+} from './types';
 import fs from 'node:fs';
 import path, { parse } from 'node:path';
 import camelCase from 'camelcase';
@@ -10,7 +20,7 @@ import { type NestedTsDescriptor, type RelationType2, createNestedTsDescriptor }
 import { mapToDynamicResultColumns, mapToDynamicParams, mapToDynamicSelectColumns } from './ts-dynamic-query-descriptor';
 import type { ColumnSchema, DynamicSqlInfoResult, DynamicSqlInfoResult2, FragmentInfoResult } from './mysql-query-analyzer/types';
 import { EOL } from 'node:os';
-import { validateAndGenerateCode } from './sqlite-query-analyzer/code-generator';
+import { validateAndGenerateCode, validateAndGenerateD1Code } from './sqlite-query-analyzer/code-generator';
 
 export function generateTsCodeForMySQL(tsDescriptor: TsDescriptor, fileName: string, crud = false): string {
 	const writer = new CodeBlockWriter();
@@ -681,10 +691,18 @@ export async function generateTsFile(client: DatabaseClient, sqlFile: string, db
 	const dirPath = parse(sqlFile).dir;
 	const queryName = convertToCamelCaseName(fileName);
 
-	const tsContentResult =
-		client.type === 'mysql2'
-			? await generateTsFileFromContent(client, queryName, sqlContent, isCrudFile)
-			: validateAndGenerateCode(client, sqlContent, queryName, dbSchema, isCrudFile);
+	const tsContentResult = await (async (type: TypeSqlDialect) => {
+		switch (type) {
+			case 'mysql2':
+				return await generateTsFileFromContent(client as MySqlDialect, queryName, sqlContent, isCrudFile);
+			case 'better-sqlite3':
+			case 'bun:sqlite':
+			case 'libsql':
+				return validateAndGenerateCode(client as SQLiteDialect | LibSqlClient | BunDialect, sqlContent, queryName, dbSchema, isCrudFile);
+			case 'd1:sqlite':
+				return validateAndGenerateD1Code(client as D1Dialect, sqlContent, queryName, dbSchema, isCrudFile);
+		}
+	})(client.type);
 
 	const tsFilePath = `${path.resolve(dirPath, fileName)}.ts`;
 	if (isLeft(tsContentResult)) {

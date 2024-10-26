@@ -25,7 +25,7 @@ import type {
 	SchemaDef,
 	TsFieldDescriptor,
 	TsParameterDescriptor,
-	TypeSqlError
+	TypeSqlError, D1Dialect
 } from '../types';
 import type { SQLiteType } from './types';
 import type { Field2 } from './sqlite-describe-nested-query';
@@ -34,7 +34,7 @@ import { preprocessSql } from '../describe-query';
 import { explainSql } from './query-executor';
 import { mapToDynamicParams, mapToDynamicResultColumns, mapToDynamicSelectColumns } from '../ts-dynamic-query-descriptor';
 import { EOL } from 'node:os';
-import { TsType } from '../mysql-mapping';
+import type { TsType } from '../mysql-mapping';
 
 export function validateAndGenerateCode(
 	client: SQLiteDialect | LibSqlClient | BunDialect,
@@ -52,6 +52,27 @@ export function validateAndGenerateCode(
 		});
 	}
 	const code = generateTsCode(sql, queryName, sqliteDbSchema, client.type, isCrud);
+	return code;
+}
+
+export function validateAndGenerateD1Code(
+	client: D1Dialect,
+	sql: string,
+	queryName: string,
+	sqliteDbSchema: ColumnSchema[],
+	isCrud = false
+): Either<TypeSqlError, string> {
+	const { sql: processedSql } = preprocessSql(sql);
+	const explainSqlResult = explainSql(client.client, processedSql);
+	if (isLeft(explainSqlResult)) {
+		return left({
+			name: 'Invalid sql',
+			description: explainSqlResult.left.description
+		});
+	}
+	const code = client.type === 'd1:sqlite'
+		? generateD1TsCode(sql, queryName, sqliteDbSchema, client.type, isCrud)
+		: generateTsCode(sql, queryName, sqliteDbSchema, client.type, isCrud);
 	return code;
 }
 
@@ -127,6 +148,22 @@ export function generateTsCode(
 	return right(code);
 }
 
+export function generateD1TsCode(
+	sql: string,
+	queryName: string,
+	sqliteDbSchema: ColumnSchema[],
+	client: SQLiteClient,
+	isCrud = false
+): Either<TypeSqlError, string> {
+	const schemaDefResult = parseSql(sql, sqliteDbSchema);
+	if (isLeft(schemaDefResult)) {
+		return schemaDefResult;
+	}
+	const tsDescriptor = createTsDescriptor(schemaDefResult.right, client);
+	const code = generateCodeFromTsDescriptor(client, queryName, tsDescriptor, isCrud);
+	return right(code);
+}
+
 function createTsDescriptor(queryInfo: SchemaDef, client: SQLiteClient): TsDescriptor {
 	const tsDescriptor: TsDescriptor = {
 		sql: queryInfo.sql,
@@ -183,10 +220,10 @@ function mapColumns(client: SQLiteClient, queryType: SchemaDef['queryType'], col
 	];
 
 	if (queryType === 'Insert' && !returning) {
-		return client === 'better-sqlite3' || client == 'bun:sqlite' ? sqliteInsertColumns : libSqlInsertColumns;
+		return client === 'better-sqlite3' || client === 'bun:sqlite' ? sqliteInsertColumns : libSqlInsertColumns;
 	}
 	if (queryType === 'Update' || queryType === 'Delete') {
-		return client === 'better-sqlite3' || client == 'bun:sqlite' ? [sqliteInsertColumns[0]] : [libSqlInsertColumns[0]];
+		return client === 'better-sqlite3' || client === 'bun:sqlite' ? [sqliteInsertColumns[0]] : [libSqlInsertColumns[0]];
 	}
 
 	const escapedColumnsNames = renameInvalidNames(columns.map((col) => col.columnName));
@@ -280,8 +317,6 @@ function mapColumnType(sqliteType: SQLiteType, client: SQLiteClient): TsType {
 			return client === 'better-sqlite3' ? 'Uint8Array' : 'ArrayBuffer';
 		case 'BOOLEAN':
 			return 'boolean';
-		case 'BOOLEAN':
-			return 'boolean';
 	}
 	if (sqliteType.startsWith('ENUM')) {
 		const enumValues = sqliteType.substring(sqliteType.indexOf('(') + 1, sqliteType.indexOf(')'));
@@ -316,7 +351,11 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 		tsDescriptor.dynamicQuery2 == null ? tsDescriptor.parameters : mapToDynamicParams(tsDescriptor.parameters)
 	);
 
-	let functionArguments = client === 'better-sqlite3' || client == 'bun:sqlite' ? 'db: Database' : 'client: Client | Transaction';
+	let functionArguments = client === 'better-sqlite3' || client === 'bun:sqlite'
+		? 'db: Database'
+		: client === 'd1:sqlite'
+	  ? 'db: D1Database'
+		: 'client: Client | Transaction';
 	functionArguments += queryType === 'Update' ? `, data: ${dataTypeName}` : '';
 	if (tsDescriptor.dynamicQuery2 == null) {
 		functionArguments += tsDescriptor.parameters.length > 0 || generateOrderBy ? `, params: ${paramsTypeName}` : '';
@@ -339,6 +378,9 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 	}
 	if (client === 'bun:sqlite') {
 		writer.writeLine(`import type { Database } from 'bun:sqlite';`);
+	}
+	if (client === 'libsql') {
+		writer.writeLine(`import type { Client, Transaction } from '@libsql/client';`);
 	}
 	if (client === 'libsql') {
 		writer.writeLine(`import type { Client, Transaction } from '@libsql/client';`);
@@ -398,7 +440,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 			writer.write('const paramsValues: any = [];').newLine();
 			const hasCte = (tsDescriptor.dynamicQuery2?.with.length || 0) > 0;
 			if (hasCte) {
-				writer.writeLine(`const withClause = [];`);
+				writer.writeLine('const withClause = [];');
 				tsDescriptor.dynamicQuery2?.with.forEach((withFragment, index, array) => {
 					const selectConditions = withFragment.dependOnFields.map(
 						(fieldIndex) => `params.select.${tsDescriptor.columns[fieldIndex].name}`
@@ -711,7 +753,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 				tableName,
 				tsDescriptor.columns,
 				idColumn,
-				client == 'bun:sqlite' ? queryParamsWithoutBrackets : queryParams,
+				client === 'bun:sqlite' ? queryParamsWithoutBrackets : queryParams,
 				paramsTypeName,
 				dataTypeName,
 				resultTypeName,
@@ -871,7 +913,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 		relations.forEach((relation, index) => {
 			const relationType = generateRelationType(capitalizedName, relation.name);
 			if (index === 0) {
-				if (client === 'better-sqlite3' || client == 'bun:sqlite') {
+				if (client === 'better-sqlite3' || client === 'bun:sqlite') {
 					writer.write(`export function ${camelCaseName}Nested(${functionArguments}): ${relationType}[]`).block(() => {
 						const params = tsDescriptor.parameters.length > 0 ? ', params' : '';
 						writer.writeLine(`const selectResult = ${camelCaseName}(db${params});`);
@@ -973,7 +1015,8 @@ function writeExecutSelectCrudBlock(
 		writer.write('return db.prepare(sql)').newLine();
 		writer.indent().write(`.values(${queryParams})`).newLine();
 		writer.indent().write(`.map(data => mapArrayTo${resultTypeName}(data))[0];`);
-
+	} if (client === 'd1:sqlite') {
+		writer.write(`return db.prepare(sql).first() as Promise<${resultTypeName}>`).newLine();
 	} else {
 		writer.write(`return client.execute({ sql, args: ${queryParams} })`).newLine();
 		writer.indent().write('.then(res => res.rows)').newLine();
@@ -1000,9 +1043,13 @@ function writeExecuteInsertCrudBlock(
 	if (client === 'better-sqlite3') {
 		writer.write('return db.prepare(sql)').newLine();
 		writer.indent().write(`.run(values) as ${resultTypeName};`);
-	} else if (client == 'bun:sqlite') {
+	} else if (client === 'bun:sqlite') {
 		writer.write('return db.prepare(sql)').newLine();
 		writer.indent().write(`.run(...values) as ${resultTypeName};`);
+	} else if (client === 'd1:sqlite') {
+		writer.write('return db.prepare(sql)').newLine();
+		writer.indent().write('.bind(...values)');
+		writer.indent().write(`.run() as Promise<D1Result<${resultTypeName}>>;`);
 	} else {
 		writer.write('return client.execute({ sql, args: values })').newLine();
 		writer.indent().write(`.then(res => mapArrayTo${resultTypeName}(res));`).newLine();
@@ -1033,8 +1080,11 @@ function writeExecuteUpdateCrudBlock(
 	} else if (client === 'bun:sqlite') {
 		writer.write('return db.prepare(sql)').newLine();
 		writer.indent().write(`.run(...values) as ${resultTypeName};`);
-	}
-	else {
+	} else if (client === 'd1:sqlite') {
+		writer.write('return db.prepare(sql)').newLine();
+		writer.indent().write('.bind(...values)');
+		writer.indent().write(`.run() as Promise<D1Result<${resultTypeName}>>;`);
+	} else {
 		writer.write('return client.execute({ sql, args: values })').newLine();
 		writer.indent().write(`.then(res => mapArrayTo${resultTypeName}(res));`).newLine();
 	}
@@ -1056,10 +1106,13 @@ function writeExecutDeleteCrudBlock(
 	if (client === 'better-sqlite3') {
 		writer.write('return db.prepare(sql)').newLine();
 		writer.indent().write(`.run(${queryParams}) as ${resultTypeName};`).newLine();
-	}
-	else if (client === 'bun:sqlite') {
+	} else if (client === 'bun:sqlite') {
 		writer.write('return db.prepare(sql)').newLine();
 		writer.indent().write(`.run(${queryParams}) as ${resultTypeName};`).newLine();
+	} else if (client === 'd1:sqlite') {
+		writer.write('return db.prepare(sql)').newLine();
+		writer.indent().write(`.bind(${queryParams})`);
+		writer.indent().write(`.run() as Promise<D1Result<${resultTypeName}>>;`);
 	} else {
 		writer.write(`return client.execute({ sql, args: ${queryParams} })`).newLine();
 		writer.indent().write(`.then(res => mapArrayTo${resultTypeName}(res));`).newLine();

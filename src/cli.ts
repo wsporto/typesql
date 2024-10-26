@@ -11,7 +11,12 @@ import type { TypeSqlConfig, SqlGenOption, DatabaseClient, TypeSqlDialect, TypeS
 import { type Either, isLeft, left } from 'fp-ts/lib/Either';
 import CodeBlockWriter from 'code-block-writer';
 import { globSync } from 'glob';
-import { createSqliteClient, loadDbSchema, selectSqliteTablesFromSchema } from './sqlite-query-analyzer/query-executor';
+import {
+	createD1Client,
+	createSqliteClient,
+	loadDbSchema,
+	selectSqliteTablesFromSchema
+} from './sqlite-query-analyzer/query-executor';
 import { createLibSqlClient } from './drivers/libsql';
 import { generateCrud } from './sqlite-query-analyzer/code-generator';
 
@@ -98,7 +103,7 @@ function validateDirectories(dir: string) {
 	}
 }
 
-function watchDirectories(client: DatabaseClient, dirPath: string, dbSchema: ColumnSchema[]) {
+function watchDirectories(client: DatabaseClient, dirPath: string, dbSchema: ColumnSchema[], config: TypeSqlConfig) {
 	const dirGlob = `${dirPath}/**/*.sql`;
 
 	chokidar
@@ -107,14 +112,14 @@ function watchDirectories(client: DatabaseClient, dirPath: string, dbSchema: Col
 				stabilityThreshold: 100
 			}
 		})
-		.on('add', (path) => rewiteFiles(client, path, dbSchema, isCrudFile(dirPath, path)))
-		.on('change', (path) => rewiteFiles(client, path, dbSchema, isCrudFile(dirPath, path)));
+		.on('add', (path) => rewiteFiles(client, path, dbSchema, isCrudFile(dirPath, path), config))
+		.on('change', (path) => rewiteFiles(client, path, dbSchema, isCrudFile(dirPath, path), config));
 }
 
-async function rewiteFiles(client: DatabaseClient, path: string, dbSchema: ColumnSchema[], isCrudFile: boolean) {
+async function rewiteFiles(client: DatabaseClient, path: string, dbSchema: ColumnSchema[], isCrudFile: boolean, config: TypeSqlConfig) {
 	await generateTsFile(client, path, dbSchema, isCrudFile);
 	const dirPath = parse(path).dir;
-	await writeIndexFile(dirPath);
+	await writeIndexFile(dirPath, config);
 }
 
 async function main() {
@@ -148,30 +153,31 @@ async function compile(watch: boolean, config: TypeSqlConfig) {
 	const filesGeneration = sqlFiles.map((sqlFile) => generateTsFile(databaseClient, sqlFile, dbSchema.right, isCrudFile(sqlDir, sqlFile)));
 	await Promise.all(filesGeneration);
 
-	writeIndexFile(sqlDir);
+	writeIndexFile(sqlDir, config);
 
 	if (watch) {
 		console.log('watching mode!');
-		watchDirectories(databaseClient, sqlDir, dbSchema.right);
+		watchDirectories(databaseClient, sqlDir, dbSchema.right, config);
 	} else {
 		// databaseClient.client.closeConnection();
 	}
 }
 
-async function writeIndexFile(sqlDir: string) {
+async function writeIndexFile(sqlDir: string, config: TypeSqlConfig) {
 	const tsFiles = fs.readdirSync(sqlDir).filter((file) => path.basename(file) !== 'index.ts' && path.extname(file) === '.ts');
 
-	const indexContent = generateIndexContent(tsFiles);
+	const indexContent = generateIndexContent(tsFiles, config);
 	const indexFilePath = `${sqlDir}/index.ts`;
 	writeFile(indexFilePath, indexContent);
 }
 
 //Move to code-generator
-function generateIndexContent(tsFiles: string[]) {
+function generateIndexContent(tsFiles: string[], config: TypeSqlConfig) {
 	const writer = new CodeBlockWriter();
 	for (const filePath of tsFiles) {
 		const fileName = path.basename(filePath, '.ts'); //remove the ts extension
-		writer.writeLine(`export * from "./${fileName}";`);
+		const suffix = config.esm ? '.js' : '';
+		writer.writeLine(`export * from "./${fileName}${suffix}";`);
 	}
 	return writer.toString();
 }
@@ -294,6 +300,8 @@ async function createClient(databaseUri: string, dialect: TypeSqlDialect, attach
 			return createSqliteClient(dialect, databaseUri, attach || [], loadExtensions || []);
 		case 'libsql':
 			return createLibSqlClient(databaseUri, attach || [], loadExtensions || [], authToken || '');
+		case 'd1:sqlite':
+			return createD1Client(dialect, databaseUri, loadExtensions || []);
 	}
 }
 async function loadSchema(databaseClient: DatabaseClient): Promise<Either<TypeSqlError, ColumnSchema[]>> {
@@ -303,6 +311,7 @@ async function loadSchema(databaseClient: DatabaseClient): Promise<Either<TypeSq
 		case 'better-sqlite3':
 		case 'libsql':
 		case 'bun:sqlite':
+		case 'd1:sqlite':
 			return loadDbSchema(databaseClient.client);
 	}
 }
@@ -314,6 +323,7 @@ async function loadTableSchema(databaseClient: DatabaseClient, tableName: string
 		case 'better-sqlite3':
 		case 'libsql':
 		case 'bun:sqlite':
+		case 'd1:sqlite':
 			return await loadDbSchema(databaseClient.client);
 	}
 }
@@ -325,6 +335,7 @@ async function selectTables(databaseClient: DatabaseClient) {
 		case 'better-sqlite3':
 		case 'libsql':
 		case 'bun:sqlite':
+		case 'd1:sqlite':
 			return selectSqliteTablesFromSchema(databaseClient.client);
 	}
 }
