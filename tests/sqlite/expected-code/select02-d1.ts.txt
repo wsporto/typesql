@@ -1,0 +1,21 @@
+import type { D1Database } from '@cloudflare/workers-types';
+
+export type Select02Result = {
+	id: number;
+}
+
+export async function select02(db: D1Database): Promise<Select02Result[]> {
+	const sql = `
+	select id from mytable1
+	`
+	return db.prepare(sql)
+		.raw({ columnNames: false })
+		.then(rows => rows.map(row => mapArrayToSelect02Result(row)));
+}
+
+function mapArrayToSelect02Result(data: any) {
+	const result: Select02Result = {
+		id: data[0]
+	}
+	return result;
+}

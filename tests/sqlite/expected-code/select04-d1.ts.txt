@@ -1,0 +1,48 @@
+import type { D1Database } from '@cloudflare/workers-types';
+
+export type Select04Params = {
+	date: Date;
+	date_time: Date;
+}
+
+export type Select04Result = {
+	text_column?: string;
+	date_text?: Date;
+	datetime_text?: Date;
+	integer_column?: number;
+	date_integer?: Date;
+	datetime_integer?: Date;
+}
+
+export async function select04(db: D1Database, params: Select04Params): Promise<Select04Result[]> {
+	const sql = `
+	SELECT 
+		text_column, 
+		date(text_column) as date_text,
+		datetime(text_column) as datetime_text,
+		integer_column,
+		date(integer_column, 'auto') as date_integer,
+		datetime(integer_column, 'auto') as datetime_integer
+	FROM all_types 
+	WHERE date(text_column) = ?
+	AND date(integer_column, 'auto') = ?
+	AND datetime(text_column) = ?
+	AND datetime(integer_column, 'auto') = ?
+	`
+	return db.prepare(sql)
+		.bind(params.date?.toISOString().split('T')[0], params.date?.toISOString().split('T')[0], params.date_time?.toISOString().split('.')[0].replace('T', ' '), params.date_time?.toISOString().split('.')[0].replace('T', ' '))
+		.raw({ columnNames: false })
+		.then(rows => rows.map(row => mapArrayToSelect04Result(row)));
+}
+
+function mapArrayToSelect04Result(data: any) {
+	const result: Select04Result = {
+		text_column: data[0],
+		date_text: data[1] != null ? new Date(data[1]) : data[1],
+		datetime_text: data[2] != null ? new Date(data[2]) : data[2],
+		integer_column: data[3],
+		date_integer: data[4] != null ? new Date(data[4]) : data[4],
+		datetime_integer: data[5] != null ? new Date(data[5]) : data[5]
+	}
+	return result;
+}
