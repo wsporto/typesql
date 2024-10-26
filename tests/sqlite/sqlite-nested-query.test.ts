@@ -628,7 +628,8 @@ describe('sqlite-nested-query', () => {
 		assert.deepStrictEqual(actual.right.nestedInfo, expectedModel);
 	});
 
-	it('many to many - books with authors', () => {
+	//includes junction table because of the *
+	it('many to many - books with authors - includes junction table', () => {
 		const sql = `
 		-- @nested
         SELECT *
@@ -659,16 +660,16 @@ describe('sqlite-nested-query', () => {
 				],
 				relations: [
 					{
-						name: 'authors',
-						alias: 'a',
+						name: 'books_authors',
+						alias: 'ba',
 						cardinality: 'many'
 					}
 				]
 			},
 			{
-				name: 'authors',
-				alias: 'a',
-				groupIndex: 7,
+				name: 'books_authors',
+				alias: 'ba',
+				groupIndex: 3,
 				fields: [
 					{
 						name: 'id',
@@ -685,7 +686,21 @@ describe('sqlite-nested-query', () => {
 					{
 						name: 'author_ordinal',
 						index: 6
-					},
+					}
+				],
+				relations: [
+					{
+						name: 'authors',
+						alias: 'a',
+						cardinality: 'one'
+					}
+				]
+			},
+			{
+				name: 'authors',
+				alias: 'a',
+				groupIndex: 7,
+				fields: [
 					{
 						name: 'id',
 						index: 7
@@ -711,14 +726,81 @@ describe('sqlite-nested-query', () => {
 		assert.deepStrictEqual(actual.right.nestedInfo, expectedModel);
 	});
 
-	it('many to many - chinook', () => {
+	it('many to many - books with authors - without junction table', () => {
+		const sql = `
+		-- @nested
+        SELECT 
+			b.*,
+			a.*
+        FROM books b
+        INNER JOIN books_authors ba on ba.book_id = b.id
+        INNER JOIN authors a on a.id = ba.author_id
+        `;
+
+		//[id(0),title(1),isbn(2), id(3),fullName(4),shortName(5)]
+		const expectedModel: RelationInfo2[] = [
+			{
+				name: 'books',
+				alias: 'b',
+				groupIndex: 0,
+				fields: [
+					{
+						name: 'id',
+						index: 0
+					},
+					{
+						name: 'title',
+						index: 1
+					},
+					{
+						name: 'isbn',
+						index: 2
+					}
+				],
+				relations: [
+					{
+						name: 'authors',
+						alias: 'a',
+						cardinality: 'many'
+					}
+				]
+			},
+			{
+				name: 'authors',
+				alias: 'a',
+				groupIndex: 3,
+				fields: [
+					{
+						name: 'id',
+						index: 3
+					},
+					{
+						name: 'fullName',
+						index: 4
+					},
+					{
+						name: 'shortName',
+						index: 5
+					}
+				],
+				relations: []
+			}
+		];
+
+		const actual = parseSql(sql, sqliteDbSchema);
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+
+		assert.deepStrictEqual(actual.right.nestedInfo, expectedModel);
+	});
+
+	it('many to many - chinook (without join table)', () => {
 		const sql = `
 		-- @nested
         SELECT 
 			p.PlaylistId,
 			p.Name,
-			pt.PlaylistId,
-			pt.TrackId,
 			t.TrackId,
 			t.Name
 		FROM playlists p
@@ -727,7 +809,7 @@ describe('sqlite-nested-query', () => {
 		WHERE p.PlaylistId = 3
         `;
 
-		//[PlaylistId(0),Name(1),PlaylistId(2),TrackId(3),TrackId(4),Name(5)]
+		//[PlaylistId(0),Name(1),TrackId(2),Name(3)]
 		const expectedModel: RelationInfo2[] = [
 			{
 				name: 'playlists',
@@ -754,23 +836,15 @@ describe('sqlite-nested-query', () => {
 			{
 				name: 'tracks',
 				alias: 't',
-				groupIndex: 4,
+				groupIndex: 2,
 				fields: [
 					{
-						name: 'PlaylistId',
+						name: 'TrackId',
 						index: 2
 					},
 					{
-						name: 'TrackId',
-						index: 3
-					},
-					{
-						name: 'TrackId',
-						index: 4
-					},
-					{
 						name: 'Name',
-						index: 5
+						index: 3
 					}
 				],
 				relations: []
@@ -1072,5 +1146,121 @@ INNER JOIN mytable2 t2 on t2.id = t1.id `;
 		};
 
 		assert.deepStrictEqual(actual.left, expectedError);
+	});
+
+	it('nested query - false junctiontable', () => {
+		const sql = `-- @nested
+SELECT
+	a.ArtistId,
+	a.Name as ArtistName,
+	al.AlbumId,
+	al.Title as AlbumTitle,
+	t.TrackId,
+	t.Name as TrackName,
+	mt.MediaTypeId,
+	mt.Name as MediaTypeName
+FROM artists a
+INNER JOIN albums al on al.ArtistId = a.ArtistId
+INNER JOIN tracks t on t.AlbumId = al.AlbumId
+INNER JOIN media_types mt on mt.MediaTypeId = t.MediaTypeId`;
+
+		//[ArtistId(0),ArtistName(1),AlbumId(2),AlbumTitle(3), TrackId(4),TrackName(5), MediaTypeId(6), MediaTypeName(7)]
+		const expectedModel: RelationInfo2[] = [
+			{
+				name: 'artists',
+				alias: 'a',
+				groupIndex: 0,
+				fields: [
+					{
+						name: 'ArtistId',
+						index: 0
+					},
+					{
+						name: 'ArtistName',
+						index: 1
+					}
+				],
+				relations: [
+					{
+						name: 'albums',
+						alias: 'al',
+						cardinality: 'many'
+					}
+				]
+			},
+			{
+				name: 'albums',
+				alias: 'al',
+				groupIndex: 2,
+				fields: [
+					{
+						name: 'AlbumId',
+						index: 2
+					},
+					{
+						name: 'AlbumTitle',
+						index: 3
+					}
+				],
+				relations: [
+					{
+						name: 'tracks',
+						alias: 't',
+						cardinality: 'many'
+					}
+				]
+			},
+			{
+				name: 'tracks',
+				alias: 't',
+				groupIndex: 4,
+				fields: [
+					{
+						name: 'TrackId',
+						index: 4
+					},
+					{
+						name: 'TrackName',
+						index: 5
+					}
+				],
+				relations: [
+					{
+						name: 'media_types',
+						alias: 'mt',
+						cardinality: 'one'
+					}
+				]
+			},
+			{
+				name: 'media_types',
+				alias: 'mt',
+				groupIndex: 6,
+				fields: [
+					{
+						name: 'MediaTypeId',
+						index: 6
+					},
+					{
+						name: 'MediaTypeName',
+						index: 7
+					}
+				],
+				relations: []
+			}
+		];
+
+		const dbSchema = loadDbSchema(db);
+
+		if (isLeft(dbSchema)) {
+			assert.fail(`Shouldn't return an error: ${dbSchema.left.description}`);
+		}
+
+		const actual = parseSql(sql, dbSchema.right);
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+
+		assert.deepStrictEqual(actual.right.nestedInfo, expectedModel);
 	});
 });

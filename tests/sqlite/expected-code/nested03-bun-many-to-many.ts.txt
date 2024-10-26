@@ -3,7 +3,6 @@ import type { Database } from 'bun:sqlite';
 export type Nested03Result = {
 	surveyId: number;
 	surveyName: string;
-	participantId: number;
 	userId: number;
 	userName: string;
 }
@@ -14,7 +13,6 @@ export function nested03(db: Database): Nested03Result[] {
 	SELECT
 		s.id as surveyId,
 		s.name as surveyName,
-		p.id as participantId,
 		u.id as userId,
 		u.name as userName
 	FROM surveys s
@@ -30,9 +28,8 @@ function mapArrayToNested03Result(data: any) {
 	const result: Nested03Result = {
 		surveyId: data[0],
 		surveyName: data[1],
-		participantId: data[2],
-		userId: data[3],
-		userName: data[4]
+		userId: data[2],
+		userName: data[3]
 	}
 	return result;
 }
@@ -44,7 +41,6 @@ export type Nested03NestedSurveys = {
 }
 
 export type Nested03NestedUsers = {
-	participantId: number;
 	userId: number;
 	userName: string;
 }
@@ -69,7 +65,6 @@ function collectNested03NestedSurveys(selectResult: Nested03Result[]): Nested03N
 function collectNested03NestedUsers(selectResult: Nested03Result[]): Nested03NestedUsers[] {
 	const grouped = groupBy(selectResult.filter(r => r.userId != null), r => r.userId);
 	return [...grouped.values()].map(row => ({
-		participantId: row[0].participantId!,
 		userId: row[0].userId!,
 		userName: row[0].userName!,
 	}))

@@ -42,7 +42,7 @@ export function describeNestedQuery(columns: ColumnInfo[], relations: Relation2[
 	const isJunctionTableMap = new Map<string, boolean>();
 	const parentRef = new Map<string, Relation2>();
 	for (const relation of relations) {
-		const isJunctionTableResult = isJunctionTable(relation, relations);
+		const isJunctionTableResult = isJunctionTable(relation, relations, columns);
 		const relationId = relation.alias || relation.name;
 		isJunctionTableMap.set(relationId, isJunctionTableResult);
 		parentRef.set(relationId, relation);
@@ -94,10 +94,15 @@ export function describeNestedQuery(columns: ColumnInfo[], relations: Relation2[
 	return right(result);
 }
 
-function isJunctionTable(relation: Relation2, relations: Relation2[]): boolean {
+function isJunctionTable(relation: Relation2, relations: Relation2[], columns: ColumnInfo[]): boolean {
 	const childRelation = relations.find(
 		(r) => r.parentRelation === relation.name || (r.alias !== '' && r.parentRelation === relation.alias)
 	);
 	const isJunctionTable = relation.cardinality === 'many' && childRelation?.parentCardinality === 'many';
-	return isJunctionTable;
+	return isJunctionTable && notIncludeRelationColumns(columns, relation);
+}
+
+function notIncludeRelationColumns(columns: ColumnInfo[], relation: Relation2): boolean {
+	const relationColumns = columns.filter(col => col.table === relation.name || col.table === relation.alias);
+	return relationColumns.length === 0;
 }

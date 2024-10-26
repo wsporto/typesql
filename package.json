@@ -10,7 +10,8 @@
 		"build": "tsc -w",
 		"test": "mocha --enable-source-maps dist/tests/**/*.js --watch --watch-files **/*.js",
 		"antlr4ts": "antlr4ts -Xexact-output-dir -o ./parser/ ./grammar/*.g4",
-		"dist": "tsc && shx cp ./package.json ./README.md ./dist/src && cd ./dist/src && npm publish"
+		"dist": "tsc && shx cp ./package.json ./README.md ./dist/src && cd ./dist/src && npm publish",
+		"gen": "node ./dist/src/cli.js compile"
 	},
 	"keywords": [],
 	"author": "",

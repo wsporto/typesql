@@ -604,7 +604,6 @@ WHERE c.id = :clientId`;
 SELECT
 	s.id as surveyId,
 	s.name as surveyName,
-	p.id as participantId,
 	u.id as userId,
 	u.name as userName
 FROM surveys s
@@ -631,7 +630,6 @@ INNER JOIN users u on u.id = p.fk_user`;
 SELECT
 	s.id as surveyId,
 	s.name as surveyName,
-	p.id as participantId,
 	u.id as userId,
 	u.name as userName
 FROM surveys s
