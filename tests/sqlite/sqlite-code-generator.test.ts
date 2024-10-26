@@ -711,6 +711,26 @@ INNER JOIN posts p on p.fk_user = u.id`;
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('nested01-libsql - FROM users u INNER JOIN posts p', () => {
+		const sql = `-- @nested
+SELECT 
+	u.id as user_id, 
+	u.name as user_name,
+	p.id as post_id,
+	p.title as post_title
+FROM users u
+INNER JOIN posts p on p.fk_user = u.id`;
+
+		const isCrud = false;
+		const actual = generateTsCode(sql, 'nested01', sqliteDbSchema, 'libsql', isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/nested01-libsql.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('nested01-bun - FROM users u INNER JOIN posts p', () => {
 		const sql = `-- @nested
 SELECT 
@@ -724,6 +744,26 @@ INNER JOIN posts p on p.fk_user = u.id`;
 		const isCrud = false;
 		const actual = generateTsCode(sql, 'nested01', sqliteDbSchema, 'bun:sqlite', isCrud);
 		const expected = readFileSync('tests/sqlite/expected-code/nested01-bun.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('nested01-d1 - FROM users u INNER JOIN posts p', () => {
+		const sql = `-- @nested
+SELECT 
+	u.id as user_id, 
+	u.name as user_name,
+	p.id as post_id,
+	p.title as post_title
+FROM users u
+INNER JOIN posts p on p.fk_user = u.id`;
+
+		const isCrud = false;
+		const actual = generateTsCode(sql, 'nested01', sqliteDbSchema, 'd1:sqlite', isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/nested01-d1.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -752,7 +792,7 @@ WHERE c.id = :clientId`;
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
-	it('nested02 - self relation', () => {
+	it('nested02-bun - self relation', () => {
 		const sql = `-- @nested
 SELECT
 	c.id,
@@ -766,6 +806,27 @@ WHERE c.id = :clientId`;
 		const isCrud = false;
 		const actual = generateTsCode(sql, 'nested02', sqliteDbSchema, 'bun:sqlite', isCrud);
 		const expected = readFileSync('tests/sqlite/expected-code/nested02-bun-clients-with-addresses.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('nested02-d1 - self relation', () => {
+		const sql = `-- @nested
+SELECT
+	c.id,
+	a1.*,
+	a2.*
+FROM clients as c
+INNER JOIN addresses as a1 ON a1.id = c.primaryAddress
+LEFT JOIN addresses as a2 ON a2.id = c.secondaryAddress
+WHERE c.id = :clientId`;
+
+		const isCrud = false;
+		const actual = generateTsCode(sql, 'nested02', sqliteDbSchema, 'd1:sqlite', isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/nested02-d1-clients-with-addresses.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -818,26 +879,6 @@ INNER JOIN users u on u.id = p.fk_user`;
 		const isCrud = false;
 		const actual = generateTsCode(sql, 'nested03', schemaResult.right, 'bun:sqlite', isCrud);
 		const expected = readFileSync('tests/sqlite/expected-code/nested03-bun-many-to-many.ts.txt', 'utf-8').replace(/\r/gm, '');
-
-		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
-		}
-		assert.deepStrictEqual(actual.right, expected);
-	});
-
-	it('nested01-libsql - FROM users u INNER JOIN posts p', () => {
-		const sql = `-- @nested
-SELECT 
-	u.id as user_id, 
-	u.name as user_name,
-	p.id as post_id,
-	p.title as post_title
-FROM users u
-INNER JOIN posts p on p.fk_user = u.id`;
-
-		const isCrud = false;
-		const actual = generateTsCode(sql, 'nested01', sqliteDbSchema, 'libsql', isCrud);
-		const expected = readFileSync('tests/sqlite/expected-code/nested01-libsql.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);

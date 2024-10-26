@@ -996,10 +996,11 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 						});
 						writer.writeLine(`return collect${relationType}(selectResult);`);
 					});
-				} else if (client === 'libsql') {
+				} else if (client === 'libsql' || client === 'd1:sqlite') {
 					writer.write(`export async function ${camelCaseName}Nested(${functionArguments}): Promise<${relationType}[]>`).block(() => {
 						const params = tsDescriptor.parameters.length > 0 ? ', params' : '';
-						writer.writeLine(`const selectResult = await ${camelCaseName}(client${params});`);
+						const functionParam = client === 'libsql' ? `client${params}` : `db${params}`;
+						writer.writeLine(`const selectResult = await ${camelCaseName}(${functionParam});`);
 						writer.write('if (selectResult.length == 0)').block(() => {
 							writer.writeLine('return [];');
 						});
