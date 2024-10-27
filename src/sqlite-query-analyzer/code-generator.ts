@@ -413,7 +413,12 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 		writer.writeLine(`import type { Client, Transaction } from '@libsql/client';`);
 	}
 	if (tsDescriptor.dynamicQuery2 != null) {
-		writer.writeLine(`import { EOL } from 'os';`);
+		if (client === 'd1:sqlite') {
+			writer.writeLine(`const EOL = '\\n';`);
+		}
+		else {
+			writer.writeLine(`import { EOL } from 'os';`);
+		}
 
 		writer.blankLine();
 
@@ -457,8 +462,8 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 			});
 		});
 		writer.blankLine();
-		const asyncModified = client === 'libsql' ? 'async ' : '';
-		const returnTypeModifier = client === 'libsql' ? `Promise<${returnType}>` : returnType;
+		const asyncModified = client === 'libsql' || client === 'd1:sqlite' ? 'async ' : '';
+		const returnTypeModifier = client === 'libsql' || client === 'd1:sqlite' ? `Promise<${returnType}>` : returnType;
 		writer.write(`export ${asyncModified}function ${camelCaseName}(${functionArguments}): ${returnTypeModifier}`).block(() => {
 			writer.write('const where = whereConditionsToObject(params?.where);').newLine();
 			if (orderByField != null) {
@@ -595,6 +600,14 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 				writer
 					.indent()
 					.write(`.map(data => mapArrayTo${resultTypeName}(data, params?.select))${tsDescriptor.multipleRowsResult ? '' : '[0]'};`);
+			}
+			if (client === 'd1:sqlite') {
+				writer.write('return db.prepare(sql)').newLine();
+				writer.indent().write('.bind(...paramsValues)').newLine();
+				writer.indent().write('.raw()').newLine();
+				writer
+					.indent()
+					.write(`.then(rows => rows.map(row => mapArrayTo${resultTypeName}(row, params?.select)))${tsDescriptor.multipleRowsResult ? '' : '[0]'};`);
 			}
 			if (client === 'libsql') {
 				writer.write('return client.execute({ sql, args: paramsValues })').newLine();
