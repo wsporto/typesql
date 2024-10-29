@@ -399,29 +399,11 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 
 	const queryParamsWithoutBrackets = allParameters.length > 0 ? `${allParameters.join(', ')}` : '';
 	const queryParams = queryParamsWithoutBrackets !== '' ? `[${queryParamsWithoutBrackets}]` : '';
+	const isDynamicQuery = tsDescriptor.dynamicQuery2 != null;
 
-	if (client === 'better-sqlite3') {
-		writer.writeLine(`import type { Database } from 'better-sqlite3';`);
-	}
-	if (client === 'bun:sqlite') {
-		writer.writeLine(`import type { Database } from 'bun:sqlite';`);
-	}
-	if (client === 'd1:sqlite') {
-		writer.writeLine(`import type { D1Database } from '@cloudflare/workers-types';`);
-	}
-	if (client === 'libsql') {
-		writer.writeLine(`import type { Client, Transaction } from '@libsql/client';`);
-	}
+	writeImports(writer, client, isDynamicQuery);
 	if (tsDescriptor.dynamicQuery2 != null) {
-		if (client === 'd1:sqlite') {
-			writer.writeLine(`const EOL = '\\n';`);
-		}
-		else {
-			writer.writeLine(`import { EOL } from 'os';`);
-		}
-
 		writer.blankLine();
-
 		writer.write(`export type ${dynamicParamsTypeName} = `).block(() => {
 			writer.writeLine(`select?: ${selectColumnsTypeName};`);
 			if (paramsTypes.length > 0) {
@@ -1270,3 +1252,35 @@ function writeCollectFunction(
 			.write('))');
 	});
 }
+
+function writeImports(writer: CodeBlockWriter, client: SQLiteClient, isDynamicQuery: boolean) {
+	switch (client) {
+		case 'better-sqlite3':
+			writer.writeLine(`import type { Database } from 'better-sqlite3';`);
+			if (isDynamicQuery) {
+				writer.writeLine(`import { EOL } from 'os';`);
+			}
+			return;
+		case 'libsql':
+			writer.writeLine(`import type { Client, Transaction } from '@libsql/client';`);
+			if (isDynamicQuery) {
+				writer.writeLine(`import { EOL } from 'os';`);
+			}
+			return;
+		case 'bun:sqlite':
+			writer.writeLine(`import type { Database } from 'bun:sqlite';`);
+			if (isDynamicQuery) {
+				writer.writeLine(`import { EOL } from 'os';`);
+			}
+			return;
+		case 'd1:sqlite':
+			writer.writeLine(`import type { D1Database } from '@cloudflare/workers-types';`);
+			if (isDynamicQuery) {
+				writer.writeLine(`const EOL = '\\n';`);
+			}
+			return;
+		default:
+			return client satisfies never;
+	}
+}
+
