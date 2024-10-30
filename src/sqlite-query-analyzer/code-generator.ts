@@ -36,6 +36,20 @@ import { mapToDynamicParams, mapToDynamicResultColumns, mapToDynamicSelectColumn
 import { EOL } from 'node:os';
 import type { TsType } from '../mysql-mapping';
 
+type ExecFunctionParams = {
+	functionName: string;
+	returnType: string;
+	resultTypeName: string;
+	paramsTypeName: string;
+	dataTypeName: string;
+	sql: string;
+	multipleRowsResult: boolean;
+	parameters: string[];
+	queryType: 'Select' | 'Insert' | 'Update' | 'Delete';
+	returning: boolean;
+	orderBy: boolean;
+}
+
 export function validateAndGenerateCode(
 	client: SQLiteDialect | LibSqlClient | BunDialect,
 	sql: string,
@@ -784,136 +798,22 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 		});
 	}
 
-	if (tsDescriptor.dynamicQuery2 == null && !isCrud && (queryType === 'Select' || (queryType === 'Insert' && tsDescriptor.returning))) {
-		if (client === 'better-sqlite3') {
-			writer.write(`export function ${camelCaseName}(${functionArguments}): ${returnType}`).block(() => {
-				const processedSql = tsDescriptor.orderByColumns ? replaceOrderByParam(sql) : sql;
-				const sqlSplit = processedSql.split('\n');
-				writer.write('const sql = `').newLine();
-				sqlSplit.forEach((sqlLine) => {
-					writer.indent().write(sqlLine).newLine();
-				});
-				writer.indent().write('`').newLine();
-				writer.write('return db.prepare(sql)').newLine();
-				writer.indent().write('.raw(true)').newLine();
-				writer.indent().write(`.all(${queryParams})`).newLine();
-				writer.indent().write(`.map(data => mapArrayTo${resultTypeName}(data))${tsDescriptor.multipleRowsResult ? '' : '[0]'};`);
-			});
-		}
-		if (client === 'bun:sqlite') {
-			writer.write(`export function ${camelCaseName}(${functionArguments}): ${returnType}`).block(() => {
-				const processedSql = tsDescriptor.orderByColumns ? replaceOrderByParam(sql) : sql;
-				const sqlSplit = processedSql.split('\n');
-				writer.write('const sql = `').newLine();
-				sqlSplit.forEach((sqlLine) => {
-					writer.indent().write(sqlLine).newLine();
-				});
-				writer.indent().write('`').newLine();
-				writer.write('return db.prepare(sql)').newLine();
-				writer.indent().write(`.values(${queryParamsWithoutBrackets})`).newLine();
-				writer.indent().write(`.map(data => mapArrayTo${resultTypeName}(data))${tsDescriptor.multipleRowsResult ? '' : '[0]'};`);
-			});
-		}
-		if (client === 'd1:sqlite') {
-			writer.write(`export async function ${camelCaseName}(${functionArguments}): Promise<${returnType}>`).block(() => {
-				const processedSql = tsDescriptor.orderByColumns ? replaceOrderByParam(sql) : sql;
-				const sqlSplit = processedSql.split('\n');
-				writer.write('const sql = `').newLine();
-				sqlSplit.forEach((sqlLine) => {
-					writer.indent().write(sqlLine).newLine();
-				});
-				writer.indent().write('`').newLine();
-
-				writer.write('return db.prepare(sql)').newLine();
-				if (queryParamsWithoutBrackets !== '') {
-					writer.indent().write(`.bind(${queryParamsWithoutBrackets})`).newLine();
-				}
-				writer.indent().write('.raw({ columnNames: false })').newLine();
-				if (queryType === 'Select') {
-					if (tsDescriptor.multipleRowsResult) {
-						writer.indent().write(`.then(rows => rows.map(row => mapArrayTo${resultTypeName}(row)));`);
-					} else {
-						writer.indent().write(`.then(rows => rows.map(row => mapArrayTo${resultTypeName}(row))[0]);`);
-					}
-				}
-				if (queryType === 'Insert') {
-					if (tsDescriptor.returning) {
-						writer.indent().write(`.then(rows => rows.map(row => mapArrayTo${resultTypeName}(row))[0]);`);
-					} else {
-						writer.indent().write(`.then(res => mapArrayTo${resultTypeName}(res));`);
-					}
-				}
-			});
-		}
-		if (!isCrud && client === 'libsql') {
-			writer.write(`export async function ${camelCaseName}(${functionArguments}): Promise<${returnType}>`).block(() => {
-				const processedSql = tsDescriptor.orderByColumns ? replaceOrderByParam(sql) : sql;
-				const sqlSplit = processedSql.split('\n');
-				writer.write('const sql = `').newLine();
-				sqlSplit.forEach((sqlLine) => {
-					writer.indent().write(sqlLine).newLine();
-				});
-				writer.indent().write('`').newLine();
-				const executeParams = queryParams !== '' ? `{ sql, args: ${queryParams} }` : 'sql';
-
-				writer.write(`return client.execute(${executeParams})`).newLine();
-
-				if (queryType === 'Select') {
-					writer.indent().write('.then(res => res.rows)').newLine();
-					if (tsDescriptor.multipleRowsResult) {
-						writer.indent().write(`.then(rows => rows.map(row => mapArrayTo${resultTypeName}(row)));`);
-					} else {
-						writer.indent().write(`.then(rows => mapArrayTo${resultTypeName}(rows[0]));`);
-					}
-				}
-				if (queryType === 'Insert') {
-					if (tsDescriptor.returning) {
-						writer.indent().write('.then(res => res.rows)').newLine();
-						writer.indent().write(`.then(rows => mapArrayTo${resultTypeName}(rows[0]));`);
-					} else {
-						writer.indent().write(`.then(res => mapArrayTo${resultTypeName}(res));`);
-					}
-				}
-			});
-		}
+	const executeFunctionParams: ExecFunctionParams = {
+		functionName: camelCaseName,
+		returnType,
+		resultTypeName,
+		dataTypeName,
+		sql: replaceOrderByParam(sql),
+		multipleRowsResult: tsDescriptor.multipleRowsResult,
+		parameters: allParameters,
+		queryType,
+		paramsTypeName,
+		returning: tsDescriptor.returning || false,
+		orderBy: (tsDescriptor.orderByColumns?.length || 0) > 0
 	}
 
-	if (!isCrud && (queryType === 'Update' || queryType === 'Delete' || (queryType === 'Insert' && !tsDescriptor.returning))) {
-		if (client === 'better-sqlite3' || client === 'bun:sqlite') {
-			writer.write(`export function ${camelCaseName}(${functionArguments}): ${resultTypeName}`).block(() => {
-				const params = client === 'better-sqlite3' ? queryParams : queryParamsWithoutBrackets;
-				writeExecuteBlock(sql, params, resultTypeName, writer);
-			});
-		}
-		if (client === 'libsql') {
-			writer.write(`export async function ${camelCaseName}(${functionArguments}): Promise<${resultTypeName}>`).block(() => {
-				const sqlSplit = sql.split('\n');
-				writer.write('const sql = `').newLine();
-				sqlSplit.forEach((sqlLine) => {
-					writer.indent().write(sqlLine).newLine();
-				});
-				writer.indent().write('`').newLine();
-				const executeParams = queryParams !== '' ? `{ sql, args: ${queryParams} }` : 'sql';
-				writer.write(`return client.execute(${executeParams})`).newLine();
-				writer.indent().write(`.then(res => mapArrayTo${resultTypeName}(res));`);
-			});
-		}
-		if (client === 'd1:sqlite') {
-			writer.write(`export async function ${camelCaseName}(${functionArguments}): Promise<${resultTypeName}>`).block(() => {
-				const sqlSplit = sql.split('\n');
-				writer.write('const sql = `').newLine();
-				sqlSplit.forEach((sqlLine) => {
-					writer.indent().write(sqlLine).newLine();
-				});
-				writer.indent().write('`').newLine();
-				writer.write(`return db.prepare(sql)`).newLine();
-				if (queryParamsWithoutBrackets) {
-					writer.indent().write(`.bind(${queryParamsWithoutBrackets})`).newLine();
-				}
-				writer.indent().write('.run()').newLine();
-				writer.indent().write('.then(res => res.meta);');
-			});
-		}
+	if (tsDescriptor.dynamicQuery2 == null && !isCrud) {
+		writeExecFunction(writer, client, executeFunctionParams);
 	}
 
 	if ((queryType === 'Select' || tsDescriptor.returning) && tsDescriptor.dynamicQuery2 == null && !(isCrud && client === 'd1:sqlite')) {
@@ -1020,17 +920,6 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 	}
 
 	return writer.toString();
-}
-
-function writeExecuteBlock(sql: string, queryParams: string, resultTypeName: string, writer: CodeBlockWriter) {
-	const sqlSplit = sql.split('\n');
-	writer.write('const sql = `').newLine();
-	sqlSplit.forEach((sqlLine) => {
-		writer.indent().write(sqlLine).newLine();
-	});
-	writer.indent().write('`').newLine();
-	writer.write('return db.prepare(sql)').newLine();
-	writer.indent().write(`.run(${queryParams}) as ${resultTypeName};`);
 }
 
 function writeExecuteCrudBlock(
@@ -1284,3 +1173,133 @@ function writeImports(writer: CodeBlockWriter, client: SQLiteClient, isDynamicQu
 	}
 }
 
+function writeExecFunction(writer: CodeBlockWriter, client: SQLiteClient, params: ExecFunctionParams) {
+	const {
+		functionName,
+		returnType,
+		sql,
+		multipleRowsResult,
+		parameters,
+		queryType,
+		returning,
+		paramsTypeName,
+		resultTypeName,
+		dataTypeName,
+		orderBy
+	} = params;
+
+	let restParameters = queryType === 'Update' ? `, data: ${dataTypeName}` : '';
+	const dynamicQuery = false;
+	if (!dynamicQuery) {
+		restParameters += parameters.length > 0 || orderBy ? `, params: ${paramsTypeName}` : '';
+	}
+	const queryParametersWithoutBrackes = parameters.join(', ');
+	const queryParams = queryParametersWithoutBrackes != '' ? `[${queryParametersWithoutBrackes}]` : '';
+
+	switch (client) {
+		case 'better-sqlite3':
+			const betterSqliteArgs = 'db: Database' + restParameters;
+			if (queryType === 'Select') {
+				writer.write(`export function ${functionName}(${betterSqliteArgs}): ${returnType}`).block(() => {
+					writeSql(writer, sql);
+					writer.write('return db.prepare(sql)').newLine();
+					writer.indent().write('.raw(true)').newLine();
+					writer.indent().write(`.all(${queryParams})`).newLine();
+					writer.indent().write(`.map(data => mapArrayTo${resultTypeName}(data))${multipleRowsResult ? '' : '[0]'};`);
+				});
+			}
+			if (queryType === 'Update' || queryType === 'Delete' || (queryType === 'Insert' && !returning)) {
+				writer.write(`export function ${functionName}(${betterSqliteArgs}): ${resultTypeName}`).block(() => {
+					writeSql(writer, sql);
+					writer.write('return db.prepare(sql)').newLine();
+					writer.indent().write(`.run(${queryParams}) as ${resultTypeName};`);
+				});
+			}
+
+			return;
+		case 'libsql':
+			const libSqlArgs = 'client: Client | Transaction' + restParameters;
+			writer.write(`export async function ${functionName}(${libSqlArgs}): Promise<${returnType}>`).block(() => {
+				writeSql(writer, sql);
+				const executeParams = queryParametersWithoutBrackes !== '' ? `{ sql, args: [${queryParametersWithoutBrackes}] }` : 'sql';
+
+				writer.write(`return client.execute(${executeParams})`).newLine();
+
+				if (queryType === 'Select') {
+					writer.indent().write('.then(res => res.rows)').newLine();
+					if (multipleRowsResult) {
+						writer.indent().write(`.then(rows => rows.map(row => mapArrayTo${resultTypeName}(row)));`);
+					} else {
+						writer.indent().write(`.then(rows => mapArrayTo${resultTypeName}(rows[0]));`);
+					}
+				}
+				if (queryType === 'Insert') {
+					if (returning) {
+						writer.indent().write('.then(res => res.rows)').newLine();
+						writer.indent().write(`.then(rows => mapArrayTo${resultTypeName}(rows[0]));`);
+					}
+				}
+				if (queryType === 'Update' || queryType === 'Delete' || (queryType === 'Insert' && !returning)) {
+					writer.indent().write(`.then(res => mapArrayTo${resultTypeName}(res));`);
+				}
+			});
+			return;
+		case 'bun:sqlite':
+			const bunArgs = 'db: Database' + restParameters;
+			if (queryType === 'Select') {
+				writer.write(`export function ${functionName}(${bunArgs}): ${returnType}`).block(() => {
+					writeSql(writer, sql);
+					writer.write('return db.prepare(sql)').newLine();
+					writer.indent().write(`.values(${queryParametersWithoutBrackes})`).newLine();
+					writer.indent().write(`.map(data => mapArrayTo${resultTypeName}(data))${multipleRowsResult ? '' : '[0]'};`);
+				});
+			}
+			if (queryType === 'Update' || queryType === 'Delete' || (queryType === 'Insert' && !returning)) {
+				writer.write(`export function ${functionName}(${bunArgs}): ${resultTypeName}`).block(() => {
+					writeSql(writer, sql);
+					writer.write('return db.prepare(sql)').newLine();
+					writer.indent().write(`.run(${queryParametersWithoutBrackes}) as ${resultTypeName};`);
+				});
+			}
+			return;
+		case 'd1:sqlite':
+			const d1Args = 'db: D1Database' + restParameters;
+			writer.write(`export async function ${functionName}(${d1Args}): Promise<${returnType}>`).block(() => {
+				writeSql(writer, sql);
+				writer.write('return db.prepare(sql)').newLine();
+				if (queryParametersWithoutBrackes !== '') {
+					writer.indent().write(`.bind(${queryParametersWithoutBrackes})`).newLine();
+				}
+
+				if (queryType === 'Select') {
+					writer.indent().write('.raw({ columnNames: false })').newLine();
+					if (multipleRowsResult) {
+						writer.indent().write(`.then(rows => rows.map(row => mapArrayTo${resultTypeName}(row)));`);
+					} else {
+						writer.indent().write(`.then(rows => rows.map(row => mapArrayTo${resultTypeName}(row))[0]);`);
+					}
+				}
+				if (queryType === 'Insert' || queryType === 'Update' || queryType === 'Delete') {
+					if (returning) {
+						writer.indent().write('.raw({ columnNames: false })').newLine();
+						writer.indent().write(`.then(rows => rows.map(row => mapArrayTo${resultTypeName}(row))[0]);`);
+					} else {
+						writer.indent().write('.run()').newLine();
+						writer.indent().write(`.then(res => res.meta);`);
+					}
+				}
+			});
+			return;
+		default:
+			return client satisfies never;
+	}
+}
+
+function writeSql(writer: CodeBlockWriter, sql: string) {
+	const sqlSplit = sql.split('\n');
+	writer.write('const sql = `').newLine();
+	sqlSplit.forEach((sqlLine) => {
+		writer.indent().write(sqlLine).newLine();
+	});
+	writer.indent().write('`').newLine();
+}
