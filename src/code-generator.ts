@@ -20,7 +20,7 @@ import { type NestedTsDescriptor, type RelationType2, createNestedTsDescriptor }
 import { mapToDynamicResultColumns, mapToDynamicParams, mapToDynamicSelectColumns } from './ts-dynamic-query-descriptor';
 import type { ColumnSchema, DynamicSqlInfoResult, DynamicSqlInfoResult2, FragmentInfoResult } from './mysql-query-analyzer/types';
 import { EOL } from 'node:os';
-import { validateAndGenerateCode, validateAndGenerateD1Code } from './sqlite-query-analyzer/code-generator';
+import { validateAndGenerateCode } from './sqlite-query-analyzer/code-generator';
 
 export function generateTsCodeForMySQL(tsDescriptor: TsDescriptor, fileName: string, crud = false): string {
 	const writer = new CodeBlockWriter();
@@ -698,9 +698,8 @@ export async function generateTsFile(client: DatabaseClient, sqlFile: string, db
 			case 'better-sqlite3':
 			case 'bun:sqlite':
 			case 'libsql':
-				return validateAndGenerateCode(client as SQLiteDialect | LibSqlClient | BunDialect, sqlContent, queryName, dbSchema, isCrudFile);
 			case 'd1:sqlite':
-				return validateAndGenerateD1Code(client as D1Dialect, sqlContent, queryName, dbSchema, isCrudFile);
+				return validateAndGenerateCode(client as SQLiteDialect | LibSqlClient | BunDialect, sqlContent, queryName, dbSchema, isCrudFile);
 		}
 	})(client.type);
 

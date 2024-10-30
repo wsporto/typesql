@@ -25,7 +25,7 @@ import type {
 	SchemaDef,
 	TsFieldDescriptor,
 	TsParameterDescriptor,
-	TypeSqlError, D1Dialect
+	TypeSqlError
 } from '../types';
 import type { SQLiteType } from './types';
 import type { Field2 } from './sqlite-describe-nested-query';
@@ -72,27 +72,6 @@ export function validateAndGenerateCode(
 		});
 	}
 	const code = generateTsCode(sql, queryName, sqliteDbSchema, client.type, isCrud);
-	return code;
-}
-
-export function validateAndGenerateD1Code(
-	client: D1Dialect,
-	sql: string,
-	queryName: string,
-	sqliteDbSchema: ColumnSchema[],
-	isCrud = false
-): Either<TypeSqlError, string> {
-	const { sql: processedSql } = preprocessSql(sql);
-	const explainSqlResult = explainSql(client.client, processedSql);
-	if (isLeft(explainSqlResult)) {
-		return left({
-			name: 'Invalid sql',
-			description: explainSqlResult.left.description
-		});
-	}
-	const code = client.type === 'd1:sqlite'
-		? generateD1TsCode(sql, queryName, sqliteDbSchema, client.type, isCrud)
-		: generateTsCode(sql, queryName, sqliteDbSchema, client.type, isCrud);
 	return code;
 }
 
@@ -153,22 +132,6 @@ function getQueryName(queryType: QueryType, tableName: string) {
 }
 
 export function generateTsCode(
-	sql: string,
-	queryName: string,
-	sqliteDbSchema: ColumnSchema[],
-	client: SQLiteClient,
-	isCrud = false
-): Either<TypeSqlError, string> {
-	const schemaDefResult = parseSql(sql, sqliteDbSchema);
-	if (isLeft(schemaDefResult)) {
-		return schemaDefResult;
-	}
-	const tsDescriptor = createTsDescriptor(schemaDefResult.right, client);
-	const code = generateCodeFromTsDescriptor(client, queryName, tsDescriptor, isCrud);
-	return right(code);
-}
-
-export function generateD1TsCode(
 	sql: string,
 	queryName: string,
 	sqliteDbSchema: ColumnSchema[],
