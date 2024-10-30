@@ -45,9 +45,15 @@ type ExecFunctionParams = {
 	sql: string;
 	multipleRowsResult: boolean;
 	parameters: string[];
+	columns: TsFieldDescriptor[];
 	queryType: 'Select' | 'Insert' | 'Update' | 'Delete';
 	returning: boolean;
 	orderBy: boolean;
+}
+
+type MapFunctionParams = {
+	resultTypeName: string;
+	columns: TsFieldDescriptor[];
 }
 
 export function validateAndGenerateCode(
@@ -796,6 +802,14 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 				writer
 			);
 		});
+		if (client !== 'd1:sqlite' && (queryType === 'Select' || tsDescriptor.returning)) {
+			writer.blankLine();
+			writeMapFunction(writer, { resultTypeName, columns: tsDescriptor.columns });
+		}
+		if (client === 'libsql' && queryType !== 'Select' && !tsDescriptor.returning) {
+			writer.blankLine();
+			writeMapFunctionByName(writer, { resultTypeName, columns: tsDescriptor.columns });
+		}
 	}
 
 	const executeFunctionParams: ExecFunctionParams = {
@@ -806,6 +820,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 		sql: replaceOrderByParam(sql),
 		multipleRowsResult: tsDescriptor.multipleRowsResult,
 		parameters: allParameters,
+		columns: tsDescriptor.columns,
 		queryType,
 		paramsTypeName,
 		returning: tsDescriptor.returning || false,
@@ -814,30 +829,6 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 
 	if (tsDescriptor.dynamicQuery2 == null && !isCrud) {
 		writeExecFunction(writer, client, executeFunctionParams);
-	}
-
-	if ((queryType === 'Select' || tsDescriptor.returning) && tsDescriptor.dynamicQuery2 == null && !(isCrud && client === 'd1:sqlite')) {
-		writer.blankLine();
-		writer.write(`function mapArrayTo${resultTypeName}(data: any) `).block(() => {
-			writer.write(`const result: ${resultTypeName} = `).block(() => {
-				tsDescriptor.columns.forEach((col, index) => {
-					const separator = index < tsDescriptor.columns.length - 1 ? ',' : '';
-					writer.writeLine(`${col.name}: ${toDriver(`data[${index}]`, col)}${separator}`);
-				});
-			});
-			writer.writeLine('return result;');
-		});
-	} else if (client === 'libsql' && !tsDescriptor.returning && tsDescriptor.dynamicQuery2 == null) {
-		writer.blankLine();
-		writer.write(`function mapArrayTo${resultTypeName}(data: any) `).block(() => {
-			writer.write(`const result: ${resultTypeName} = `).block(() => {
-				tsDescriptor.columns.forEach((col, index) => {
-					const separator = index < tsDescriptor.columns.length - 1 ? ',' : '';
-					writer.writeLine(`${col.name}: data.${col.name}${separator}`);
-				});
-			});
-			writer.writeLine('return result;');
-		});
 	}
 	if (tsDescriptor.orderByColumns) {
 		const orderByType = tsDescriptor.dynamicQuery2 == null ? paramsTypeName : dynamicParamsTypeName;
@@ -1180,6 +1171,7 @@ function writeExecFunction(writer: CodeBlockWriter, client: SQLiteClient, params
 		sql,
 		multipleRowsResult,
 		parameters,
+		columns,
 		queryType,
 		returning,
 		paramsTypeName,
@@ -1196,6 +1188,11 @@ function writeExecFunction(writer: CodeBlockWriter, client: SQLiteClient, params
 	const queryParametersWithoutBrackes = parameters.join(', ');
 	const queryParams = queryParametersWithoutBrackes != '' ? `[${queryParametersWithoutBrackes}]` : '';
 
+	const mapFunctionParams: MapFunctionParams = {
+		resultTypeName,
+		columns
+	}
+
 	switch (client) {
 		case 'better-sqlite3':
 			const betterSqliteArgs = 'db: Database' + restParameters;
@@ -1207,6 +1204,8 @@ function writeExecFunction(writer: CodeBlockWriter, client: SQLiteClient, params
 					writer.indent().write(`.all(${queryParams})`).newLine();
 					writer.indent().write(`.map(data => mapArrayTo${resultTypeName}(data))${multipleRowsResult ? '' : '[0]'};`);
 				});
+				writer.blankLine();
+				writeMapFunction(writer, mapFunctionParams);
 			}
 			if (queryType === 'Update' || queryType === 'Delete' || (queryType === 'Insert' && !returning)) {
 				writer.write(`export function ${functionName}(${betterSqliteArgs}): ${resultTypeName}`).block(() => {
@@ -1243,6 +1242,13 @@ function writeExecFunction(writer: CodeBlockWriter, client: SQLiteClient, params
 					writer.indent().write(`.then(res => mapArrayTo${resultTypeName}(res));`);
 				}
 			});
+			writer.blankLine();
+			if (queryType === 'Select' || returning) {
+				writeMapFunction(writer, mapFunctionParams);
+			}
+			else {
+				writeMapFunctionByName(writer, mapFunctionParams);
+			}
 			return;
 		case 'bun:sqlite':
 			const bunArgs = 'db: Database' + restParameters;
@@ -1253,6 +1259,8 @@ function writeExecFunction(writer: CodeBlockWriter, client: SQLiteClient, params
 					writer.indent().write(`.values(${queryParametersWithoutBrackes})`).newLine();
 					writer.indent().write(`.map(data => mapArrayTo${resultTypeName}(data))${multipleRowsResult ? '' : '[0]'};`);
 				});
+				writer.blankLine();
+				writeMapFunction(writer, mapFunctionParams);
 			}
 			if (queryType === 'Update' || queryType === 'Delete' || (queryType === 'Insert' && !returning)) {
 				writer.write(`export function ${functionName}(${bunArgs}): ${resultTypeName}`).block(() => {
@@ -1289,6 +1297,10 @@ function writeExecFunction(writer: CodeBlockWriter, client: SQLiteClient, params
 					}
 				}
 			});
+			if (queryType === 'Select' || returning) {
+				writer.blankLine();
+				writeMapFunction(writer, mapFunctionParams);
+			}
 			return;
 		default:
 			return client satisfies never;
@@ -1302,4 +1314,30 @@ function writeSql(writer: CodeBlockWriter, sql: string) {
 		writer.indent().write(sqlLine).newLine();
 	});
 	writer.indent().write('`').newLine();
+}
+
+function writeMapFunction(writer: CodeBlockWriter, params: MapFunctionParams): void {
+	const { resultTypeName, columns } = params;
+	writer.write(`function mapArrayTo${resultTypeName}(data: any) `).block(() => {
+		writer.write(`const result: ${resultTypeName} = `).block(() => {
+			columns.forEach((col, index) => {
+				const separator = index < columns.length - 1 ? ',' : '';
+				writer.writeLine(`${col.name}: ${toDriver(`data[${index}]`, col)}${separator}`);
+			});
+		});
+		writer.writeLine('return result;');
+	});
+}
+
+function writeMapFunctionByName(writer: CodeBlockWriter, params: MapFunctionParams): void {
+	const { resultTypeName, columns } = params;
+	writer.write(`function mapArrayTo${resultTypeName}(data: any) `).block(() => {
+		writer.write(`const result: ${resultTypeName} = `).block(() => {
+			columns.forEach((col, index) => {
+				const separator = index < columns.length - 1 ? ',' : '';
+				writer.writeLine(`${col.name}: data.${col.name}${separator}`);
+			});
+		});
+		writer.writeLine('return result;');
+	});
 }
