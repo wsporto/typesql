@@ -49,7 +49,7 @@ describe('sqlite-code-generator', () => {
 	it('select01-d1 - select id, name from mytable2 where id = ?', async () => {
 		const sql = 'select id, name from mytable2 where id = ?';
 
-		const actual = await generateTsCode(sql, 'select01', sqliteDbSchema, 'd1:sqlite', false);
+		const actual = await generateTsCode(sql, 'select01', sqliteDbSchema, 'd1', false);
 		const expected = readFileSync('tests/sqlite/expected-code/select01-d1.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
@@ -97,7 +97,7 @@ describe('sqlite-code-generator', () => {
 	it('select02-d1 - select without parameters', async () => {
 		const sql = 'select id from mytable1';
 
-		const actual = await generateTsCode(sql, 'select02', sqliteDbSchema, 'd1:sqlite');
+		const actual = await generateTsCode(sql, 'select02', sqliteDbSchema, 'd1');
 		const expected = readFileSync('tests/sqlite/expected-code/select02-d1.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
@@ -133,7 +133,7 @@ describe('sqlite-code-generator', () => {
 	it('select03-d1 - select with same parameter used twice', async () => {
 		const sql = 'select id from mytable1 where id = :id or id = :id';
 
-		const actual = await generateTsCode(sql, 'select03', sqliteDbSchema, 'd1:sqlite');
+		const actual = await generateTsCode(sql, 'select03', sqliteDbSchema, 'd1');
 		const expected = readFileSync('tests/sqlite/expected-code/select03-d1.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
@@ -202,7 +202,7 @@ AND date(integer_column, 'auto') = :date
 AND datetime(text_column) = :date_time
 AND datetime(integer_column, 'auto') = :date_time`;
 
-		const actual = await generateTsCode(sql, 'select04', sqliteDbSchema, 'd1:sqlite');
+		const actual = await generateTsCode(sql, 'select04', sqliteDbSchema, 'd1');
 		const expected = readFileSync('tests/sqlite/expected-code/select04-d1.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
@@ -250,7 +250,7 @@ AND datetime(integer_column, 'auto') = :date_time`;
 	it('insert01-d1 - select with same parameter used twice', async () => {
 		const sql = 'INSERT INTO mytable1(value) values(10)';
 
-		const actual = await generateTsCode(sql, 'insert01', sqliteDbSchema, 'd1:sqlite');
+		const actual = await generateTsCode(sql, 'insert01', sqliteDbSchema, 'd1');
 		const expected = readFileSync('tests/sqlite/expected-code/insert01-d1.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
@@ -286,7 +286,7 @@ AND datetime(integer_column, 'auto') = :date_time`;
 	it('insert02-d1 - select with same parameter used twice', async () => {
 		const sql = 'INSERT INTO mytable1(value) values(?)';
 
-		const actual = await generateTsCode(sql, 'insert02', sqliteDbSchema, 'd1:sqlite');
+		const actual = await generateTsCode(sql, 'insert02', sqliteDbSchema, 'd1');
 		const expected = readFileSync('tests/sqlite/expected-code/insert02-d1.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
@@ -310,7 +310,7 @@ AND datetime(integer_column, 'auto') = :date_time`;
 	it('insert03-d1 - select with same parameter used twice', async () => {
 		const sql = 'INSERT INTO mytable1(value) VALUES(:value) RETURNING *';
 
-		const actual = await generateTsCode(sql, 'insert03', sqliteDbSchema, 'd1:sqlite', false);
+		const actual = await generateTsCode(sql, 'insert03', sqliteDbSchema, 'd1', false);
 		const expected = readFileSync('tests/sqlite/expected-code/insert03-d1.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
@@ -358,7 +358,7 @@ AND datetime(integer_column, 'auto') = :date_time`;
 	it('update01-d1 - UPDATE mytable1 SET value=? WHERE id=?', () => {
 		const sql = 'UPDATE mytable1 SET value=? WHERE id=?';
 
-		const actual = generateTsCode(sql, 'update01', sqliteDbSchema, 'd1:sqlite');
+		const actual = generateTsCode(sql, 'update01', sqliteDbSchema, 'd1');
 		const expected = readFileSync('tests/sqlite/expected-code/update01-d1.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
@@ -406,7 +406,7 @@ AND datetime(integer_column, 'auto') = :date_time`;
 	it('delete01-bun - DELETE FROM mytable1 WHERE id=?', () => {
 		const sql = 'DELETE FROM mytable1 WHERE id=?';
 
-		const actual = generateTsCode(sql, 'delete01', sqliteDbSchema, 'd1:sqlite');
+		const actual = generateTsCode(sql, 'delete01', sqliteDbSchema, 'd1');
 		const expected = readFileSync('tests/sqlite/expected-code/delete01-d1.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
@@ -434,7 +434,7 @@ AND datetime(integer_column, 'auto') = :date_time`;
 	});
 
 	it('crud-select01-d1', () => {
-		const actual = generateCrud('d1:sqlite', 'Select', 'mytable1', sqliteDbSchema);
+		const actual = generateCrud('d1', 'Select', 'mytable1', sqliteDbSchema);
 		const expected = readFileSync('tests/sqlite/expected-code/crud-select01-d1.ts.txt', 'utf-8').replace(/\r/gm, '');
 		assert.deepStrictEqual(actual, expected);
 	});
@@ -458,7 +458,7 @@ AND datetime(integer_column, 'auto') = :date_time`;
 	});
 
 	it('crud-insert01-d1', () => {//
-		const actual = generateCrud('d1:sqlite', 'Insert', 'mytable1', sqliteDbSchema);
+		const actual = generateCrud('d1', 'Insert', 'mytable1', sqliteDbSchema);
 		const expected = readFileSync('tests/sqlite/expected-code/crud-insert01-d1.ts.txt', 'utf-8').replace(/\r/gm, '');
 		assert.deepStrictEqual(actual, expected);
 	});
@@ -485,7 +485,7 @@ AND datetime(integer_column, 'auto') = :date_time`;
 	});
 
 	it('crud-update01-d1', () => {
-		const actual = generateCrud('d1:sqlite', 'Update', 'mytable1', sqliteDbSchema);
+		const actual = generateCrud('d1', 'Update', 'mytable1', sqliteDbSchema);
 		const expected = readFileSync('tests/sqlite/expected-code/crud-update01-d1.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		assert.deepStrictEqual(actual, expected);
@@ -513,7 +513,7 @@ AND datetime(integer_column, 'auto') = :date_time`;
 	});
 
 	it('crud-delete01-d1', () => {
-		const actual = generateCrud('d1:sqlite', 'Delete', 'mytable1', sqliteDbSchema);
+		const actual = generateCrud('d1', 'Delete', 'mytable1', sqliteDbSchema);
 		const expected = readFileSync('tests/sqlite/expected-code/crud-delete01-d1.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		assert.deepStrictEqual(actual, expected);
@@ -549,7 +549,7 @@ AND datetime(integer_column, 'auto') = :date_time`;
 		const sql = 'SELECT id FROM mytable1 ORDER BY ?';
 
 		const isCrud = false;
-		const actual = generateTsCode(sql, 'select05', sqliteDbSchema, 'd1:sqlite', isCrud);
+		const actual = generateTsCode(sql, 'select05', sqliteDbSchema, 'd1', isCrud);
 		const expected = readFileSync('tests/sqlite/expected-code/select05-d1.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
@@ -597,7 +597,7 @@ WHERE id IN (:ids)
 AND name IN (:names)`;
 
 		const isCrud = false;
-		const actual = generateTsCode(sql, 'select06', sqliteDbSchema, 'd1:sqlite', isCrud);
+		const actual = generateTsCode(sql, 'select06', sqliteDbSchema, 'd1', isCrud);
 		const expected = readFileSync('tests/sqlite/expected-code/select06-d1.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
@@ -762,7 +762,7 @@ FROM users u
 INNER JOIN posts p on p.fk_user = u.id`;
 
 		const isCrud = false;
-		const actual = generateTsCode(sql, 'nested01', sqliteDbSchema, 'd1:sqlite', isCrud);
+		const actual = generateTsCode(sql, 'nested01', sqliteDbSchema, 'd1', isCrud);
 		const expected = readFileSync('tests/sqlite/expected-code/nested01-d1.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
@@ -825,7 +825,7 @@ LEFT JOIN addresses as a2 ON a2.id = c.secondaryAddress
 WHERE c.id = :clientId`;
 
 		const isCrud = false;
-		const actual = generateTsCode(sql, 'nested02', sqliteDbSchema, 'd1:sqlite', isCrud);
+		const actual = generateTsCode(sql, 'nested02', sqliteDbSchema, 'd1', isCrud);
 		const expected = readFileSync('tests/sqlite/expected-code/nested02-d1-clients-with-addresses.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
@@ -941,7 +941,7 @@ FROM mytable1 m1
 INNER JOIN mytable2 m2 on m1.id = m2.id`;
 
 		const isCrud = false;
-		const actual = generateTsCode(sql, 'dynamic-query-01', sqliteDbSchema, 'd1:sqlite', isCrud);
+		const actual = generateTsCode(sql, 'dynamic-query-01', sqliteDbSchema, 'd1', isCrud);
 		const expected = readFileSync('tests/sqlite/expected-code/dynamic-query01-d1.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
@@ -998,7 +998,7 @@ INNER JOIN ( -- derivated table
 ) m2 on m2.id = m1.id`;
 
 		const isCrud = false;
-		const actual = generateTsCode(sql, 'dynamic-query02', sqliteDbSchema, 'd1:sqlite', isCrud);
+		const actual = generateTsCode(sql, 'dynamic-query02', sqliteDbSchema, 'd1', isCrud);
 		const expected = readFileSync('tests/sqlite/expected-code/dynamic-query02-d1.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {

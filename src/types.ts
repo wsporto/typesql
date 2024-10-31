@@ -152,7 +152,7 @@ export type LibSqlClient = {
 };
 
 export type D1Dialect = {
-	type: 'd1:sqlite';
+	type: 'd1';
 	client: Database;
 };
 

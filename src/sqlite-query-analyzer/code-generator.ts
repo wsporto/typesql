@@ -235,7 +235,7 @@ function getInsertUpdateResult(client: SQLiteClient) {
 			return sqliteInsertColumns;
 		case 'libsql':
 			return libSqlInsertColumns;
-		case 'd1:sqlite':
+		case 'd1':
 			return d1InsertColumns
 	}
 }
@@ -363,7 +363,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 
 	let functionArguments = client === 'better-sqlite3' || client === 'bun:sqlite'
 		? 'db: Database'
-		: client === 'd1:sqlite'
+		: client === 'd1'
 			? 'db: D1Database'
 			: 'client: Client | Transaction';
 	functionArguments += queryType === 'Update' ? `, data: ${dataTypeName}` : '';
@@ -427,8 +427,8 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 			});
 		});
 		writer.blankLine();
-		const asyncModified = client === 'libsql' || client === 'd1:sqlite' ? 'async ' : '';
-		const returnTypeModifier = client === 'libsql' || client === 'd1:sqlite' ? `Promise<${returnType}>` : returnType;
+		const asyncModified = client === 'libsql' || client === 'd1' ? 'async ' : '';
+		const returnTypeModifier = client === 'libsql' || client === 'd1' ? `Promise<${returnType}>` : returnType;
 		writer.write(`export ${asyncModified}function ${camelCaseName}(${functionArguments}): ${returnTypeModifier}`).block(() => {
 			writer.write('const where = whereConditionsToObject(params?.where);').newLine();
 			if (orderByField != null) {
@@ -566,7 +566,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 					.indent()
 					.write(`.map(data => mapArrayTo${resultTypeName}(data, params?.select))${tsDescriptor.multipleRowsResult ? '' : '[0]'};`);
 			}
-			if (client === 'd1:sqlite') {
+			if (client === 'd1') {
 				writer.write('return db.prepare(sql)').newLine();
 				writer.indent().write('.bind(...paramsValues)').newLine();
 				writer.indent().write('.raw()').newLine();
@@ -747,7 +747,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 
 	if (isCrud) {
 		const crudFunction =
-			client === 'libsql' || client === 'd1:sqlite'
+			client === 'libsql' || client === 'd1'
 				? `async function ${camelCaseName}(${functionArguments}): Promise<${returnType}>`
 				: `function ${camelCaseName}(${functionArguments}): ${returnType}`;
 		writer.write(`export ${crudFunction}`).block(() => {
@@ -758,14 +758,14 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 				tableName,
 				tsDescriptor.columns,
 				idColumn,
-				client === 'bun:sqlite' || client === 'd1:sqlite' ? queryParamsWithoutBrackets : queryParams,
+				client === 'bun:sqlite' || client === 'd1' ? queryParamsWithoutBrackets : queryParams,
 				paramsTypeName,
 				dataTypeName,
 				resultTypeName,
 				writer
 			);
 		});
-		if (client !== 'd1:sqlite' && (queryType === 'Select' || tsDescriptor.returning)) {
+		if (client !== 'd1' && (queryType === 'Select' || tsDescriptor.returning)) {
 			writer.blankLine();
 			writeMapFunction(writer, { resultTypeName, columns: tsDescriptor.columns });
 		}
@@ -845,7 +845,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 						});
 						writer.writeLine(`return collect${relationType}(selectResult);`);
 					});
-				} else if (client === 'libsql' || client === 'd1:sqlite') {
+				} else if (client === 'libsql' || client === 'd1') {
 					writer.write(`export async function ${camelCaseName}Nested(${functionArguments}): Promise<${relationType}[]>`).block(() => {
 						const params = tsDescriptor.parameters.length > 0 ? ', params' : '';
 						const functionParam = client === 'libsql' ? `client${params}` : `db${params}`;
@@ -929,7 +929,7 @@ function writeExecutSelectCrudBlock(
 		writer.indent().write(`.values(${queryParams})`).newLine();
 		writer.indent().write(`.map(data => mapArrayTo${resultTypeName}(data))[0];`);
 	}
-	else if (client === 'd1:sqlite') {
+	else if (client === 'd1') {
 		writer.write('return db.prepare(sql)').newLine();
 		writer.indent().write(`.bind(${queryParams})`).newLine();
 		writer.indent().write('.first();').newLine();
@@ -962,7 +962,7 @@ function writeExecuteInsertCrudBlock(
 	} else if (client === 'bun:sqlite') {
 		writer.write('return db.prepare(sql)').newLine();
 		writer.indent().write(`.run(...values) as ${resultTypeName};`);
-	} else if (client === 'd1:sqlite') {
+	} else if (client === 'd1') {
 		writer.write('return db.prepare(sql)').newLine();
 		writer.indent().write('.bind(...values)').newLine();
 		writer.indent().write('.run()').newLine();
@@ -997,7 +997,7 @@ function writeExecuteUpdateCrudBlock(
 	} else if (client === 'bun:sqlite') {
 		writer.write('return db.prepare(sql)').newLine();
 		writer.indent().write(`.run(...values) as ${resultTypeName};`);
-	} else if (client === 'd1:sqlite') {
+	} else if (client === 'd1') {
 		writer.write('return db.prepare(sql)').newLine();
 		writer.indent().write(`.bind(params.${idColumn})`).newLine();
 		writer.indent().write('.run()').newLine();
@@ -1027,7 +1027,7 @@ function writeExecutDeleteCrudBlock(
 	} else if (client === 'bun:sqlite') {
 		writer.write('return db.prepare(sql)').newLine();
 		writer.indent().write(`.run(${queryParams}) as ${resultTypeName};`).newLine();
-	} else if (client === 'd1:sqlite') {
+	} else if (client === 'd1') {
 		writer.write('return db.prepare(sql)').newLine();
 		writer.indent().write(`.bind(${queryParams})`).newLine();
 		writer.indent().write('.run()').newLine();
@@ -1116,7 +1116,7 @@ function writeImports(writer: CodeBlockWriter, client: SQLiteClient, isDynamicQu
 				writer.writeLine(`import { EOL } from 'os';`);
 			}
 			return;
-		case 'd1:sqlite':
+		case 'd1':
 			writer.writeLine(`import type { D1Database } from '@cloudflare/workers-types';`);
 			if (isDynamicQuery) {
 				writer.writeLine(`const EOL = '\\n';`);
@@ -1233,7 +1233,7 @@ function writeExecFunction(writer: CodeBlockWriter, client: SQLiteClient, params
 				});
 			}
 			return;
-		case 'd1:sqlite':
+		case 'd1':
 			const d1Args = 'db: D1Database' + restParameters;
 			writer.write(`export async function ${functionName}(${d1Args}): Promise<${returnType}>`).block(() => {
 				writeSql(writer, sql);

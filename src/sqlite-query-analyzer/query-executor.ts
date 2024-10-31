@@ -20,7 +20,7 @@ export function createSqliteClient(client: 'better-sqlite3' | 'bun:sqlite', data
 	});
 }
 
-export function createD1Client(client: 'd1:sqlite', databaseUri: string, loadExtensions: string[]): Either<TypeSqlError, DatabaseClient> {
+export function createD1Client(client: 'd1', databaseUri: string, loadExtensions: string[]): Either<TypeSqlError, DatabaseClient> {
 	const db = new Database(databaseUri);
 	for (const extension of loadExtensions) {
 		db.loadExtension(extension);

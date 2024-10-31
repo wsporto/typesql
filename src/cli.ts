@@ -300,7 +300,7 @@ async function createClient(databaseUri: string, dialect: TypeSqlDialect, attach
 			return createSqliteClient(dialect, databaseUri, attach || [], loadExtensions || []);
 		case 'libsql':
 			return createLibSqlClient(databaseUri, attach || [], loadExtensions || [], authToken || '');
-		case 'd1:sqlite':
+		case 'd1':
 			return createD1Client(dialect, databaseUri, loadExtensions || []);
 	}
 }
@@ -311,7 +311,7 @@ async function loadSchema(databaseClient: DatabaseClient): Promise<Either<TypeSq
 		case 'better-sqlite3':
 		case 'libsql':
 		case 'bun:sqlite':
-		case 'd1:sqlite':
+		case 'd1':
 			return loadDbSchema(databaseClient.client);
 	}
 }
@@ -323,7 +323,7 @@ async function loadTableSchema(databaseClient: DatabaseClient, tableName: string
 		case 'better-sqlite3':
 		case 'libsql':
 		case 'bun:sqlite':
-		case 'd1:sqlite':
+		case 'd1':
 			return await loadDbSchema(databaseClient.client);
 	}
 }
@@ -335,7 +335,7 @@ async function selectTables(databaseClient: DatabaseClient) {
 		case 'better-sqlite3':
 		case 'libsql':
 		case 'bun:sqlite':
-		case 'd1:sqlite':
+		case 'd1':
 			return selectSqliteTablesFromSchema(databaseClient.client);
 	}
 }

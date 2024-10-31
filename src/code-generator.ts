@@ -698,7 +698,7 @@ export async function generateTsFile(client: DatabaseClient, sqlFile: string, db
 			case 'better-sqlite3':
 			case 'bun:sqlite':
 			case 'libsql':
-			case 'd1:sqlite':
+			case 'd1':
 				return validateAndGenerateCode(client as SQLiteDialect | LibSqlClient | BunDialect, sqlContent, queryName, dbSchema, isCrudFile);
 		}
 	})(client.type);
