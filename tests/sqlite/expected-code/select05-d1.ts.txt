@@ -1,0 +1,38 @@
+import type { D1Database } from '@cloudflare/workers-types';
+
+export type Select05Params = {
+	orderBy: [Select05OrderBy, 'asc' | 'desc'][];
+}
+
+export type Select05Result = {
+	id: number;
+}
+
+export async function select05(db: D1Database, params: Select05Params): Promise<Select05Result[]> {
+	const sql = `
+	SELECT id FROM mytable1 ORDER BY ${escapeOrderBy(params.orderBy)}
+	`
+	return db.prepare(sql)
+		.raw({ columnNames: false })
+		.then(rows => rows.map(row => mapArrayToSelect05Result(row)));
+}
+
+function mapArrayToSelect05Result(data: any) {
+	const result: Select05Result = {
+		id: data[0]
+	}
+	return result;
+}
+
+const orderByFragments = {
+	'id': `id`,
+	'mytable1.id': `mytable1.id`,
+	'value': `value`,
+	'mytable1.value': `mytable1.value`,
+} as const;
+
+export type Select05OrderBy = keyof typeof orderByFragments;
+
+function escapeOrderBy(orderBy: Select05Params['orderBy']): string {
+	return orderBy.map(order => `${orderByFragments[order[0]]} ${order[1] == 'desc' ? 'desc' : 'asc'}`).join(', ');
+}

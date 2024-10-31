@@ -1,0 +1,30 @@
+import type { D1Database } from '@cloudflare/workers-types';
+
+export type Select06Params = {
+	ids: number[];
+	names: string[];
+}
+
+export type Select06Result = {
+	id: number;
+}
+
+export async function select06(db: D1Database, params: Select06Params): Promise<Select06Result[]> {
+	const sql = `
+	SELECT id
+	FROM mytable2
+	WHERE id IN (${params.ids.map(() => '?')})
+	AND name IN (${params.names.map(() => '?')})
+	`
+	return db.prepare(sql)
+		.bind(...params.ids, ...params.names)
+		.raw({ columnNames: false })
+		.then(rows => rows.map(row => mapArrayToSelect06Result(row)));
+}
+
+function mapArrayToSelect06Result(data: any) {
+	const result: Select06Result = {
+		id: data[0]
+	}
+	return result;
+}

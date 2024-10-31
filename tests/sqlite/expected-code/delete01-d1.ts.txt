@@ -1,0 +1,19 @@
+import type { D1Database } from '@cloudflare/workers-types';
+
+export type Delete01Params = {
+	param1: number;
+}
+
+export type Delete01Result = {
+	changes: number;
+}
+
+export async function delete01(db: D1Database, params: Delete01Params): Promise<Delete01Result> {
+	const sql = `
+	DELETE FROM mytable1 WHERE id=?
+	`
+	return db.prepare(sql)
+		.bind(params.param1)
+		.run()
+		.then(res => res.meta);
+}

@@ -1,0 +1,23 @@
+import type { D1Database } from '@cloudflare/workers-types';
+
+export type Update01Data = {
+	param1: number | null;
+}
+
+export type Update01Params = {
+	param1: number;
+}
+
+export type Update01Result = {
+	changes: number;
+}
+
+export async function update01(db: D1Database, data: Update01Data, params: Update01Params): Promise<Update01Result> {
+	const sql = `
+	UPDATE mytable1 SET value=? WHERE id=?
+	`
+	return db.prepare(sql)
+		.bind(data.param1, params.param1)
+		.run()
+		.then(res => res.meta);
+}

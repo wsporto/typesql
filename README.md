@@ -17,6 +17,9 @@ TypeSQL supports multiple SQL database backends:
 ##### LibSQL
 - [libsql](https://www.npmjs.com/package/libsql) - the NodeJS driver for libSQL, the open-source fork of SQLite powering [Turso](https://turso.tech/)
 
+##### Cloudflare D1
+[@cloudflare/d1](https://developers.cloudflare.com/d1/) - the official SQLite-compatible database from Cloudflare.
+
 ## Example
 
 Having the following query in `select-products.sql` file.
@@ -54,7 +57,7 @@ deno syntax:
 
 1. _npm install -g typesql-cli_
 
-2. Add the `typesql.json` configuration file in project root folder. You can generate an template with cli command `typesql init`. The client option can be: 'mysql2', 'better-sqlite3', 'libsql' or 'bun:sqlite'. The `authToken` configuration is used only for the libsql client.
+2. Add the `typesql.json` configuration file in project root folder. You can generate an template with cli command `typesql init`. The client option can be: 'mysql2', 'better-sqlite3', 'libsql', 'bun:sqlite' or 'd1'. The `authToken` configuration is used only for the libsql client.
 
 ```json
 {

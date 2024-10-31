@@ -1,0 +1,20 @@
+import type { D1Database } from '@cloudflare/workers-types';
+
+export type Insert02Params = {
+	param1: number | null;
+}
+
+export type Insert02Result = {
+	changes: number;
+	last_row_id: number;
+}
+
+export async function insert02(db: D1Database, params: Insert02Params): Promise<Insert02Result> {
+	const sql = `
+	INSERT INTO mytable1(value) values(?)
+	`
+	return db.prepare(sql)
+		.bind(params.param1)
+		.run()
+		.then(res => res.meta);
+}
