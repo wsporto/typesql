@@ -18,7 +18,7 @@ TypeSQL supports multiple SQL database backends:
 - [libsql](https://www.npmjs.com/package/libsql) - the NodeJS driver for libSQL, the open-source fork of SQLite powering [Turso](https://turso.tech/)
 
 ##### Cloudflare D1
-[@cloudflare/d1](https://developers.cloudflare.com/d1/) - the official SQLite-compatible database from Cloudflare.
+- [@cloudflare/d1](https://developers.cloudflare.com/d1/) - Serverless SQLite-compatible database from Cloudflare.
 
 ## Example
 
