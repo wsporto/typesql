@@ -164,7 +164,7 @@ export type TypeSqlConfig = {
 	attach?: string[];
 	loadExtensions?: string[];
 	includeCrudTables: string[];
-	esm?: boolean;
+	moduleExtension?: 'js' | 'ts';
 };
 
 export type SqlGenOption = 'select' | 's' | 'insert' | 'i' | 'update' | 'u' | 'delete' | 'd';

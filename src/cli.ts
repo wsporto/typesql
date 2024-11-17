@@ -176,7 +176,7 @@ function generateIndexContent(tsFiles: string[], config: TypeSqlConfig) {
 	const writer = new CodeBlockWriter();
 	for (const filePath of tsFiles) {
 		const fileName = path.basename(filePath, '.ts'); //remove the ts extension
-		const suffix = config.esm ? '.js' : '';
+		const suffix = config.moduleExtension ? `.${config.moduleExtension}` : '.js';
 		writer.writeLine(`export * from "./${fileName}${suffix}";`);
 	}
 	return writer.toString();
