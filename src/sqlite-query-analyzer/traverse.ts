@@ -594,6 +594,12 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
 		const exprRight = expr.expr(1);
 		const typeLeft = traverse_expr(exprLeft, traverseContext);
 		const typeRight = traverse_expr(exprRight, traverseContext);
+		if (typeLeft.name === '?') {
+			typeLeft.notNull = true;
+		}
+		if (typeRight.name === '?') {
+			typeRight.notNull = true;
+		}
 		const returnType = freshVar(expr.getText(), '?');
 		traverseContext.constraints.push({
 			expression: expr.getText(),
@@ -620,6 +626,12 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
 		const typeRight = traverse_expr(exprRight, traverseContext);
 		typeLeft.table = '';
 		typeRight.table = '';
+		if (typeLeft.name === '?') {
+			typeLeft.notNull = true;
+		}
+		if (typeRight.name === '?') {
+			typeRight.notNull = true;
+		}
 		traverseContext.constraints.push({
 			expression: exprLeft.getText(),
 			type1: returnType,

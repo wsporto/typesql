@@ -732,4 +732,74 @@ describe('sqlite-parse-insert', () => {
 		}
 		assert.deepStrictEqual(actual.right, expected);
 	});
+
+	//TODO - nullability test
+	it('insert into all_types (integer_column) values (unixepoch(current_timestamp) + :seconds)', () => {
+		const sql = 'insert into all_types (integer_column) values (unixepoch(current_timestamp) + :seconds)';
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			multipleRowsResult: false,
+			queryType: 'Insert',
+			sql: 'insert into all_types (integer_column) values (unixepoch(current_timestamp) + ?)',
+			columns: [],
+			parameters: [
+				{
+					name: 'seconds',
+					columnType: 'INTEGER',
+					notNull: true
+				}
+			]
+		};
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('insert into all_types (integer_column) values (unixepoch(current_timestamp) + ?)', () => {
+		const sql = 'insert into all_types (integer_column) values (unixepoch(current_timestamp) + ?)';
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			multipleRowsResult: false,
+			queryType: 'Insert',
+			sql,
+			columns: [],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'INTEGER',
+					notNull: true
+				}
+			]
+		};
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('insert into all_types (integer_column) values (unixepoch(current_timestamp) * ?)', () => {
+		const sql = 'insert into all_types (integer_column) values (unixepoch(current_timestamp) * ?)';
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			multipleRowsResult: false,
+			queryType: 'Insert',
+			sql,
+			columns: [],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'INTEGER',
+					notNull: true
+				}
+			]
+		};
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
 });
