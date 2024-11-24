@@ -273,7 +273,8 @@ export function traverseInsertStatement(insertStatement: InsertStatementContext,
 				columnName: c.column,
 				columnType: freshVar(c.column, c.column_type),
 				columnKey: c.columnKey,
-				notNull: c.notNull
+				notNull: c.notNull,
+				hidden: c.hidden
 			};
 			return col;
 		});
@@ -582,7 +583,8 @@ function traverseQueryExpressionBody(
 				columnName: col.name,
 				columnType: col,
 				columnKey: '',
-				notNull: mainQueryResult.columns[index].notNull
+				notNull: mainQueryResult.columns[index].notNull,
+				hidden: 0
 			};
 			traverseContext.withSchema.push(withCol);
 		});
@@ -669,7 +671,8 @@ function renameFromColumns(fromColumns: TypeAndNullInfer[], recursiveNames: stri
 			columnName: recursiveNames[index],
 			columnType: col.type,
 			columnKey: '',
-			notNull: col.notNull
+			notNull: col.notNull,
+			hidden: col.hidden || 0
 		};
 		return newCol;
 	});
@@ -721,7 +724,8 @@ export function traverseQuerySpecification(
 				columnName: c.name,
 				columnType: c.type,
 				columnKey: '',
-				notNull: c.notNull
+				notNull: c.notNull,
+				hidden: c.hidden || 0
 			};
 			return col;
 		});
@@ -915,7 +919,8 @@ function traverseTableFactor(
 					columnType: t.type,
 					columnKey: '',
 					notNull: t.notNull,
-					tableAlias: tableAlias
+					tableAlias: tableAlias,
+					hidden: t.hidden || 0
 				};
 				return colDef;
 			});
@@ -2183,7 +2188,8 @@ export function filterColumns(
 				notNull: tableColumn.notNull,
 				table: table.name,
 				tableAlias: tableAlias || '',
-				columnKey: tableColumn.columnKey
+				columnKey: tableColumn.columnKey,
+				hidden: tableColumn.hidden || 0
 			};
 			return r;
 		});

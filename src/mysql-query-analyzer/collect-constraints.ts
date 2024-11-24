@@ -91,7 +91,8 @@ export function getDeleteColumns(deleteStatement: DeleteStatementContext, dbSche
 				columnName: col.column,
 				columnType: createColumnTypeFomColumnSchema(col),
 				columnKey: col.columnKey,
-				notNull: col.notNull
+				notNull: col.notNull,
+				hidden: col.hidden
 			};
 			return colDef;
 		});

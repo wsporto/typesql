@@ -51,7 +51,8 @@ describe('type-inference test', () => {
 				columnKey: '',
 				table: 'mytable1',
 				schema: 'mydb',
-				notNull: false
+				notNull: false,
+				hidden: 0
 			},
 			{
 				column: 'column4',
@@ -59,7 +60,8 @@ describe('type-inference test', () => {
 				columnKey: '',
 				table: 'mytable1',
 				schema: 'mydb',
-				notNull: false
+				notNull: false,
+				hidden: 0
 			}
 		];
 		const actual = parseAndInfer(sql, newSchema);

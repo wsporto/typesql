@@ -16,7 +16,7 @@ import {
 	Table_function_nameContext
 } from '@wsporto/ts-mysql-parser/dist/sqlite';
 import type { ColumnDef, ExtensionFunctionCatalog, FieldName, TraverseContext, TypeAndNullInfer, TypeAndNullInferParam } from '../mysql-query-analyzer/types';
-import { filterColumns, findColumn, findColumnOrVT, getExpressions, includeColumn, splitName } from '../mysql-query-analyzer/select-columns';
+import { filterColumns, findColumn, getExpressions, includeColumn, splitName } from '../mysql-query-analyzer/select-columns';
 import { freshVar } from '../mysql-query-analyzer/collect-constraints';
 import {
 	type DeleteResult,
@@ -199,7 +199,8 @@ function mapTypeAndNullInferToColumnDef(col: TypeAndNullInfer, name?: string, ta
 		notNull: col.notNull,
 		columnKey: '',
 		table: tableName ?? col.table,
-		tableAlias: ''
+		tableAlias: '',
+		hidden: col.hidden || 0
 	};
 }
 
@@ -233,14 +234,15 @@ function traverse_select_core(
 	result_column.forEach((result_column) => {
 		if (result_column.STAR()) {
 			const tableName = result_column.table_name()?.getText();
-			columnsResult.forEach((col) => {
+			columnsResult.filter(col => col.hidden !== 1).forEach((col) => {
 				const table = col.tableAlias || col.table;
 				if (!tableName || includeColumn(col, tableName)) {
 					listType.push({
 						name: col.columnName,
 						type: col.columnType,
 						notNull: col.notNull,
-						table: table
+						table: table,
+						hidden: col.hidden
 					});
 					if (!traverseContext.subQuery) {
 						traverseContext.dynamicSqlInfo2.select.push({
@@ -311,7 +313,8 @@ function traverse_select_core(
 			table: selectField.table,
 			columnType: selectField.type,
 			notNull: selectField.notNull,
-			columnKey: ''
+			columnKey: '',
+			hidden: selectField.hidden || 0
 		};
 		return col;
 	});
@@ -347,7 +350,7 @@ function extractRelationsAndParams(expr: ExprContext, fromColumns: ColumnDef[], 
 		.filter((expr) => !expr.isSubQuery)
 		.map((colRef) => {
 			const fieldName = splitName((colRef.expr as ExprContext).parentCtx!.getText());
-			const column = findColumnOrVT(fieldName, fromColumns);
+			const column = findColumn(fieldName, fromColumns);
 			return column.tableAlias || column.table;
 		});
 	const expressionList = getExpressions(expr, ExprContext);
@@ -442,7 +445,8 @@ function traverse_table_or_subquery(
 					columnType: t.type,
 					columnKey: '',
 					notNull: t.notNull,
-					tableAlias: tableAlias
+					tableAlias: tableAlias,
+					hidden: t.hidden || 0
 				};
 				return colDef;
 			});
@@ -532,7 +536,8 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
 			name: type.columnName,
 			type: type.columnType,
 			notNull: type.notNull,
-			table: type.tableAlias || type.table
+			table: type.tableAlias || type.table,
+			hidden: type.hidden
 		};
 	}
 	const literal = expr.literal_value();
@@ -1451,7 +1456,7 @@ function traverse_column_name(
 		name: column_name.getText(),
 		prefix: table_name?.getText() || ''
 	};
-	const column = findColumnOrVT(fieldName, traverseContext.fromColumns);
+	const column = findColumn(fieldName, traverseContext.fromColumns);
 	// const typeVar = freshVar(column.columnName, column.columnType.type, column.tableAlias || column.table);
 	return column;
 }
