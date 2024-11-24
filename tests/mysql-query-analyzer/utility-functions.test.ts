@@ -13,7 +13,8 @@ describe('Utility functions tests', () => {
 				columnType: freshVar('varchar', 'varchar'),
 				columnKey: '',
 				notNull: true,
-				table: 'mytable2'
+				table: 'mytable2',
+				hidden: 0
 			}
 		];
 		const fieldName = splitName('name');

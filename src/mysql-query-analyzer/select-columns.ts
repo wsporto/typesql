@@ -60,7 +60,8 @@ export function filterColumns(
 				notNull: tableColumn.notNull,
 				table: table.name,
 				tableAlias: tableAlias || '',
-				columnKey: tableColumn.columnKey
+				columnKey: tableColumn.columnKey,
+				hidden: tableColumn.hidden
 			};
 			return r;
 		});
@@ -134,7 +135,8 @@ export const functionAlias: ColumnSchema[] = [
 		columnKey: '',
 		notNull: true,
 		schema: '',
-		table: ''
+		table: '',
+		hidden: 0
 	},
 	{
 		column: 'CURRENT_TIME',
@@ -142,7 +144,8 @@ export const functionAlias: ColumnSchema[] = [
 		columnKey: '',
 		notNull: true,
 		schema: '',
-		table: ''
+		table: '',
+		hidden: 0
 	},
 	{
 		column: 'CURRENT_TIMESTAMP',
@@ -150,7 +153,8 @@ export const functionAlias: ColumnSchema[] = [
 		columnKey: '',
 		notNull: true,
 		schema: '',
-		table: ''
+		table: '',
+		hidden: 0
 	},
 	{
 		column: 'LOCALTIME',
@@ -158,7 +162,8 @@ export const functionAlias: ColumnSchema[] = [
 		columnKey: '',
 		notNull: true,
 		schema: '',
-		table: ''
+		table: '',
+		hidden: 0
 	},
 	{
 		column: 'LOCALTIMESTAMP',
@@ -166,7 +171,8 @@ export const functionAlias: ColumnSchema[] = [
 		columnKey: '',
 		notNull: true,
 		schema: '',
-		table: ''
+		table: '',
+		hidden: 0
 	},
 	{
 		column: 'MICROSECOND',
@@ -174,7 +180,8 @@ export const functionAlias: ColumnSchema[] = [
 		columnKey: '',
 		notNull: true,
 		schema: '',
-		table: ''
+		table: '',
+		hidden: 0
 	},
 	{
 		column: 'SECOND',
@@ -182,7 +189,8 @@ export const functionAlias: ColumnSchema[] = [
 		columnKey: '',
 		notNull: true,
 		schema: '',
-		table: ''
+		table: '',
+		hidden: 0
 	},
 	{
 		column: 'MINUTE',
@@ -190,7 +198,8 @@ export const functionAlias: ColumnSchema[] = [
 		columnKey: '',
 		notNull: true,
 		schema: '',
-		table: ''
+		table: '',
+		hidden: 0
 	},
 	{
 		column: 'HOUR',
@@ -198,7 +207,8 @@ export const functionAlias: ColumnSchema[] = [
 		columnKey: '',
 		notNull: true,
 		schema: '',
-		table: ''
+		table: '',
+		hidden: 0
 	},
 	{
 		column: 'DAY',
@@ -206,7 +216,8 @@ export const functionAlias: ColumnSchema[] = [
 		columnKey: '',
 		notNull: true,
 		schema: '',
-		table: ''
+		table: '',
+		hidden: 0
 	},
 	{
 		column: 'WEEK',
@@ -214,7 +225,8 @@ export const functionAlias: ColumnSchema[] = [
 		columnKey: '',
 		notNull: true,
 		schema: '',
-		table: ''
+		table: '',
+		hidden: 0
 	},
 	{
 		column: 'MONTH',
@@ -222,7 +234,8 @@ export const functionAlias: ColumnSchema[] = [
 		columnKey: '',
 		notNull: true,
 		schema: '',
-		table: ''
+		table: '',
+		hidden: 0
 	},
 	{
 		column: 'QUARTER',
@@ -230,7 +243,8 @@ export const functionAlias: ColumnSchema[] = [
 		columnKey: '',
 		notNull: true,
 		schema: '',
-		table: ''
+		table: '',
+		hidden: 0
 	},
 	{
 		column: 'YEAR',
@@ -238,7 +252,8 @@ export const functionAlias: ColumnSchema[] = [
 		columnKey: '',
 		notNull: true,
 		schema: '',
-		table: ''
+		table: '',
+		hidden: 0
 	}
 ];
 
@@ -258,31 +273,6 @@ export function findColumn(fieldName: FieldName, columns: ColumnDef[]): ColumnDe
 	return found;
 }
 
-export function findColumnOrVT(fieldName: FieldName, columns: ColumnDef[]): ColumnDef {
-	const column = findColumnOrNull(fieldName, columns);
-	if (column) {
-		return column;
-	}
-	const vt = columns.find(col => col.table === fieldName.name && col.columnKey == 'VT');
-	if (vt) {
-		return vt
-	}
-	if (fieldName.name == 'rank') {
-		const hasVT = columns.find(col => col.columnKey === 'VT' && (fieldName.prefix === '' || fieldName.prefix === col.tableAlias || fieldName.prefix === col.table));
-		if (hasVT) {
-			const rankColumn: ColumnDef = {
-				columnName: fieldName.name,
-				columnType: freshVar(fieldName.name, 'REAL'),
-				columnKey: 'VT',
-				notNull: true,
-				table: hasVT.table,
-				tableAlias: hasVT.tableAlias
-			}
-			return rankColumn;
-		}
-	}
-	throw Error(`no such column: ${formatField(fieldName)}`);
-}
 
 function formatField(fieldName: FieldName) {
 	return fieldName.prefix === '' ? fieldName.name : `${fieldName.prefix}.${fieldName.name}`;
@@ -305,7 +295,8 @@ export function findColumnOrNull(fieldName: FieldName, columns: ColumnDef[]): Co
 			columnType: createColumnTypeFomColumnSchema(functionType),
 			columnKey: functionType.columnKey,
 			notNull: functionType.notNull,
-			table: ''
+			table: '',
+			hidden: 0
 		};
 		return colDef;
 	}

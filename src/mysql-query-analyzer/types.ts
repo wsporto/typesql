@@ -60,6 +60,7 @@ export type GenericColumnSchema<DbType> = {
 	defaultValue?: string;
 	notNull: boolean;
 	autoincrement?: boolean;
+	hidden: number;
 };
 
 export type Table = {
@@ -74,6 +75,7 @@ export type ColumnDef = {
 	columnKey: 'PRI' | 'MUL' | 'UNI' | 'VT' | '';
 	tableAlias?: string;
 	notNull?: boolean; //true, false or undefined (can't infere)
+	hidden: number;
 };
 
 export type FieldName = {
@@ -226,6 +228,7 @@ export type TypeAndNullInfer = {
 	type: TypeVar;
 	notNull?: boolean; //true, false or undefined (can't infere)
 	table: string;
+	hidden?: number;
 };
 
 export type TypeAndNullInferParam = TypeAndNullInfer & {

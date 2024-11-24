@@ -33,7 +33,8 @@ describe('sqlite-query-executor', () => {
 				column: 'PlaylistId',
 				column_type: 'INTEGER',
 				notNull: true,
-				columnKey: 'PRI'
+				columnKey: 'PRI',
+				hidden: 0
 			},
 			{
 				schema: 'main',
@@ -41,7 +42,8 @@ describe('sqlite-query-executor', () => {
 				column: 'TrackId',
 				column_type: 'INTEGER',
 				notNull: true,
-				columnKey: 'PRI'
+				columnKey: 'PRI',
+				hidden: 0
 			}
 		];
 
@@ -65,7 +67,8 @@ describe('sqlite-query-executor', () => {
 				columnKey: 'PRI',
 				table: 'mytable1',
 				schema: 'main',
-				notNull: true
+				notNull: true,
+				hidden: 0
 			},
 			{
 				column: 'value',
@@ -73,7 +76,8 @@ describe('sqlite-query-executor', () => {
 				columnKey: '',
 				table: 'mytable1',
 				schema: 'main',
-				notNull: false
+				notNull: false,
+				hidden: 0
 			},
 			{
 				column: 'id',
@@ -81,7 +85,8 @@ describe('sqlite-query-executor', () => {
 				columnKey: 'PRI',
 				table: 'users',
 				schema: 'users',
-				notNull: true
+				notNull: true,
+				hidden: 0
 			},
 			{
 				column: 'username',
@@ -89,7 +94,8 @@ describe('sqlite-query-executor', () => {
 				columnKey: 'UNI',
 				table: 'users',
 				schema: 'users',
-				notNull: true
+				notNull: true,
+				hidden: 0
 			}
 		];
 		assert.deepStrictEqual(actual, expected);
@@ -111,7 +117,8 @@ describe('sqlite-query-executor', () => {
 				columnKey: 'VT',
 				table: 'mytable2_fts',
 				schema: 'main',
-				notNull: false
+				notNull: false,
+				hidden: 0
 			},
 			{
 				column: 'name',
@@ -119,7 +126,8 @@ describe('sqlite-query-executor', () => {
 				columnKey: 'VT',
 				table: 'mytable2_fts',
 				schema: 'main',
-				notNull: false
+				notNull: false,
+				hidden: 0
 			},
 			{
 				column: 'descr',
@@ -127,7 +135,76 @@ describe('sqlite-query-executor', () => {
 				columnKey: 'VT',
 				table: 'mytable2_fts',
 				schema: 'main',
-				notNull: false
+				notNull: false,
+				hidden: 0
+			},
+			{
+				column: "mytable2_fts",
+				columnKey: "VT",
+				column_type: "?",
+				notNull: false,
+				schema: "main",
+				table: "mytable2_fts",
+				hidden: 1
+			},
+			{
+				column: "rank",
+				columnKey: "VT",
+				column_type: "REAL",
+				notNull: true,
+				schema: "main",
+				table: "mytable2_fts",
+				hidden: 1
+			}
+		];
+		assert.deepStrictEqual(actual, expected);
+	});
+
+	it('loadDbSchema - generated columns', async () => {
+		const db = new Database('./mydb.db');
+
+		const dbSchema = loadDbSchema(db);
+		if (isLeft(dbSchema)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+
+		const actual = dbSchema.right.filter((col) => col.table === 'generated_column');
+		const expected: ColumnSchema[] = [
+			{
+				column: 'id',
+				column_type: 'INTEGER',
+				columnKey: 'PRI',
+				table: 'generated_column',
+				schema: 'main',
+				notNull: true,
+				hidden: 0
+			},
+			{
+				column: 'first_name',
+				column_type: 'TEXT',
+				columnKey: '',
+				table: 'generated_column',
+				schema: 'main',
+				notNull: true,
+				hidden: 0
+			},
+			{
+				column: 'last_name',
+				column_type: 'TEXT',
+				columnKey: '',
+				table: 'generated_column',
+				schema: 'main',
+				notNull: true,
+				hidden: 0
+			},
+			{
+				column: 'full_name',
+				column_type: 'TEXT',
+				columnKey: '',
+				table: 'generated_column',
+				schema: 'main',
+				notNull: false,
+				hidden: 2
 			}
 		];
 		assert.deepStrictEqual(actual, expected);
@@ -166,6 +243,7 @@ describe('sqlite-query-executor', () => {
 				notNull: true,
 				schema: "main",
 				table: "albums",
+				hidden: 0
 			},
 			{
 				column: "Title",
@@ -174,6 +252,7 @@ describe('sqlite-query-executor', () => {
 				notNull: true,
 				schema: "main",
 				table: "albums",
+				hidden: 0
 			},
 			{
 				column: "ArtistId",
@@ -182,6 +261,7 @@ describe('sqlite-query-executor', () => {
 				notNull: true,
 				schema: "main",
 				table: "albums",
+				hidden: 0
 			},
 		]
 		assert.deepStrictEqual(actual, expected);

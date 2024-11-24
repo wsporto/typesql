@@ -55,6 +55,7 @@ type TableInfo = {
 	notnull: number;
 	dflt_value: string;
 	pk: number;
+	hidden: number;
 };
 
 type TableAndType = {
@@ -65,7 +66,7 @@ type TableAndType = {
 export function getTableInfo(db: DatabaseType | LibSqlDatabase, schema: string, table: string): TableInfo[] {
 	const tableInfo = db
 		//@ts-ignore
-		.prepare(`PRAGMA ${schema}.table_info('${table}')`)
+		.prepare(`PRAGMA ${schema}.table_xinfo('${table}')`)
 		.all() as TableInfo[];
 	return tableInfo;
 }
@@ -140,9 +141,10 @@ function loadDbSchemaForSchema(db: DatabaseType | LibSqlDatabase, schema: '' | s
 				column: tableInfo.name,
 				column_type: checkType(tableInfo.name, tableInfo.type as SQLiteType, isVT, enumColumnMap),
 				columnKey: getColumnKey(tableInfo.pk, isUni, isVT),
-				notNull: tableInfo.notnull === 1 || tableInfo.pk >= 1,
+				notNull: tableInfo.notnull === 1 || tableInfo.pk >= 1 || (isVT && tableInfo.name === 'rank'),
 				schema,
-				table: name
+				table: name,
+				hidden: tableInfo.hidden
 			};
 			if (tableInfo.dflt_value != null) {
 				col.defaultValue = tableInfo.dflt_value;
@@ -156,7 +158,7 @@ function loadDbSchemaForSchema(db: DatabaseType | LibSqlDatabase, schema: '' | s
 
 function checkType(columnName: string, columnType: SQLiteType, isVT: boolean, enumColumnMap: EnumColumnMap): SQLiteType | '?' {
 	if (isVT) {
-		return '?'
+		return columnName === 'rank' ? 'REAL' : '?';
 	}
 	if (columnType === 'TEXT' && enumColumnMap[columnName] != null) {
 		return enumColumnMap[columnName];

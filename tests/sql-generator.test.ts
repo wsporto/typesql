@@ -11,7 +11,8 @@ describe('code-generator', () => {
 			column_type: 'int',
 			notNull: true,
 			table: '',
-			schema: 'mydb'
+			schema: 'mydb',
+			hidden: 0
 		},
 		{
 			column: 'value',
@@ -20,7 +21,8 @@ describe('code-generator', () => {
 			column_type: 'int',
 			notNull: false,
 			table: '',
-			schema: 'mydb'
+			schema: 'mydb',
+			hidden: 0
 		}
 	];
 
