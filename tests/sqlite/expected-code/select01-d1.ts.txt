@@ -16,7 +16,7 @@ export async function select01(db: D1Database, params: Select01Params): Promise<
 	return db.prepare(sql)
 		.bind(params.param1)
 		.raw({ columnNames: false })
-		.then(rows => rows.map(row => mapArrayToSelect01Result(row))[0]);
+		.then(rows => rows.length > 0 ? mapArrayToSelect01Result(rows[0]) : null);
 }
 
 function mapArrayToSelect01Result(data: any) {

@@ -13,10 +13,11 @@ export function select01(db: Database, params: Select01Params): Select01Result |
 	const sql = `
 	select id, name from mytable2 where id = ?
 	`
-	return db.prepare(sql)
+	const res = db.prepare(sql)
 		.raw(true)
-		.all([params.param1])
-		.map(data => mapArrayToSelect01Result(data))[0];
+		.get([params.param1]);
+
+	return res ? mapArrayToSelect01Result(res) : null;
 }
 
 function mapArrayToSelect01Result(data: any) {

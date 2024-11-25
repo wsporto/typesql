@@ -1162,10 +1162,19 @@ function writeExecFunction(writer: CodeBlockWriter, client: SQLiteClient, params
 			if (queryType === 'Select') {
 				writer.write(`export function ${functionName}(${betterSqliteArgs}): ${returnType}`).block(() => {
 					writeSql(writer, sql);
-					writer.write('return db.prepare(sql)').newLine();
-					writer.indent().write('.raw(true)').newLine();
-					writer.indent().write(`.all(${queryParams})`).newLine();
-					writer.indent().write(`.map(data => mapArrayTo${resultTypeName}(data))${multipleRowsResult ? '' : '[0]'};`);
+					if (multipleRowsResult) {
+						writer.write('return db.prepare(sql)').newLine();
+						writer.indent().write('.raw(true)').newLine();
+						writer.indent().write(`.all(${queryParams})`).newLine();
+						writer.indent().write(`.map(data => mapArrayTo${resultTypeName}(data));`);
+					}
+					else {
+						writer.write('const res = db.prepare(sql)').newLine();
+						writer.indent().write('.raw(true)').newLine();
+						writer.indent().write(`.get(${queryParams});`).newLine();
+						writer.blankLine();
+						writer.write(`return res ? mapArrayTo${resultTypeName}(res) : null;`);
+					}
 				});
 				writer.blankLine();
 				writeMapFunction(writer, mapFunctionParams);
@@ -1192,7 +1201,7 @@ function writeExecFunction(writer: CodeBlockWriter, client: SQLiteClient, params
 					if (multipleRowsResult) {
 						writer.indent().write(`.then(rows => rows.map(row => mapArrayTo${resultTypeName}(row)));`);
 					} else {
-						writer.indent().write(`.then(rows => mapArrayTo${resultTypeName}(rows[0]));`);
+						writer.indent().write(`.then(rows => rows.length > 0 ? mapArrayTo${resultTypeName}(rows[0]) : null);`);
 					}
 				}
 				if (queryType === 'Insert') {
@@ -1218,9 +1227,18 @@ function writeExecFunction(writer: CodeBlockWriter, client: SQLiteClient, params
 			if (queryType === 'Select') {
 				writer.write(`export function ${functionName}(${bunArgs}): ${returnType}`).block(() => {
 					writeSql(writer, sql);
-					writer.write('return db.prepare(sql)').newLine();
-					writer.indent().write(`.values(${queryParametersWithoutBrackes})`).newLine();
-					writer.indent().write(`.map(data => mapArrayTo${resultTypeName}(data))${multipleRowsResult ? '' : '[0]'};`);
+					if (multipleRowsResult) {
+						writer.write('return db.prepare(sql)').newLine();
+						writer.indent().write(`.values(${queryParametersWithoutBrackes})`).newLine();
+						writer.indent().write(`.map(data => mapArrayTo${resultTypeName}(data))${multipleRowsResult ? '' : '[0]'};`);
+					}
+					else {
+						writer.write('const res = db.prepare(sql)').newLine();
+						writer.indent().write(`.get(${queryParametersWithoutBrackes});`).newLine();
+						writer.blankLine();
+						writer.write(`return res ? mapArrayTo${resultTypeName}(res) : null;`);
+					}
+
 				});
 				writer.blankLine();
 				writeMapFunction(writer, mapFunctionParams);
@@ -1247,7 +1265,7 @@ function writeExecFunction(writer: CodeBlockWriter, client: SQLiteClient, params
 					if (multipleRowsResult) {
 						writer.indent().write(`.then(rows => rows.map(row => mapArrayTo${resultTypeName}(row)));`);
 					} else {
-						writer.indent().write(`.then(rows => rows.map(row => mapArrayTo${resultTypeName}(row))[0]);`);
+						writer.indent().write(`.then(rows => rows.length > 0 ? mapArrayTo${resultTypeName}(rows[0]) : null);`);
 					}
 				}
 				if (queryType === 'Insert' || queryType === 'Update' || queryType === 'Delete') {
