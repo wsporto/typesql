@@ -411,7 +411,7 @@ function traverse_table_or_subquery(
 			if (table_function_name) {
 				const table_function_expr = table_or_subquery.expr(0);
 				if (table_function_expr) {
-					const exprType = traverse_expr(table_function_expr, traverseContext);
+					const exprType = traverse_expr(table_function_expr, { ...traverseContext, fromColumns: allFields });
 					if (exprType.name === '?' && tableOrSubqueryFields[0]?.columnKey === 'VT') {
 						exprType.type.type = 'TEXT';
 						exprType.notNull = true;
