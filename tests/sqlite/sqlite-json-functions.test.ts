@@ -34,7 +34,7 @@ describe('sqlite-Test simple select statements', () => {
 				},
 				{
 					columnName: 'value',
-					type: 'TEXT',
+					type: 'any', //{"hello": 10} number; {"hello": 1.0} real; "{hello": [1, 2, 3]
 					notNull: false, //ex. {"hello": null}
 					table: 'json_each'
 				},
@@ -174,7 +174,7 @@ describe('sqlite-Test simple select statements', () => {
 				},
 				{
 					columnName: 'value',
-					type: 'TEXT',
+					type: 'any',
 					notNull: false, //ex. {"hello": null}
 					table: 'j'
 				}
@@ -503,13 +503,13 @@ describe('sqlite-Test simple select statements', () => {
 			columns: [
 				{
 					columnName: 'result',
-					type: 'TEXT',
+					type: 'any',
 					notNull: false, //json_extract('{"a":null}', '$.a') → NULL
 					table: ''
 				},
 				{
 					columnName: 'result2',
-					type: 'TEXT',
+					type: 'any',
 					notNull: false,
 					table: ''
 				},
@@ -587,7 +587,7 @@ describe('sqlite-Test simple select statements', () => {
 			columns: [
 				{
 					columnName: 'min_value',
-					type: 'TEXT',
+					type: 'any',
 					notNull: false,
 					table: ''
 				}

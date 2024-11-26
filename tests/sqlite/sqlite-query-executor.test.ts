@@ -231,7 +231,7 @@ describe('sqlite-query-executor', () => {
 			},
 			{
 				column: 'value',
-				column_type: 'TEXT',
+				column_type: 'any',
 				columnKey: '',
 				table: 'json_each',
 				schema: 'main',

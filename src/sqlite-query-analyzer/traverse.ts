@@ -1484,7 +1484,7 @@ function traverse_function(expr: ExprContext, function_name: string, traverseCon
 			],
 			variableParameters: true,
 			returnType: {
-				type: 'TEXT',
+				type: 'any',
 				notNull: false
 			}
 		},
