@@ -14,9 +14,9 @@ export function select01(db: Database, params: Select01Params): Select01Result |
 	select id, name from mytable2 where id = ?
 	`
 	const res = db.prepare(sql)
-		.get(params.param1);
+		.values(params.param1);
 
-	return res ? mapArrayToSelect01Result(res) : null;
+	return res.length > 0 ? mapArrayToSelect01Result(res[0]) : null;
 }
 
 function mapArrayToSelect01Result(data: any) {

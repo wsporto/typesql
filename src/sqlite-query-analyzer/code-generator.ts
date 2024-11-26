@@ -1234,9 +1234,9 @@ function writeExecFunction(writer: CodeBlockWriter, client: SQLiteClient, params
 					}
 					else {
 						writer.write('const res = db.prepare(sql)').newLine();
-						writer.indent().write(`.get(${queryParametersWithoutBrackes});`).newLine();
+						writer.indent().write(`.values(${queryParametersWithoutBrackes});`).newLine();
 						writer.blankLine();
-						writer.write(`return res ? mapArrayTo${resultTypeName}(res) : null;`);
+						writer.write(`return res.length > 0 ? mapArrayTo${resultTypeName}(res[0]) : null;`);
 					}
 
 				});
