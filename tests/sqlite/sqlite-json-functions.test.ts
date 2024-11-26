@@ -575,4 +575,29 @@ describe('sqlite-Test simple select statements', () => {
 		}
 		assert.deepStrictEqual(actual.right, expected);
 	});
+
+	it(`SELECT MIN(json_extract(json_value, '$.value')) AS min_value FROM json_table`, () => {
+		const sql = `SELECT MIN(json_extract(json_value, '$.value')) AS min_value FROM json_table`;
+
+		const actual = parseSql(sql, dbSchema);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'min_value',
+					type: 'TEXT',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
 });
