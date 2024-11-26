@@ -1398,6 +1398,111 @@ function traverse_function(expr: ExprContext, function_name: string, traverseCon
 		};
 	}
 
+	const json_functions: ExtensionFunctionCatalog = {
+		'json': {
+			paramsTypes: [
+				{
+					type: 'TEXT',
+					notNull: false
+				}
+			],
+			returnType: {
+				type: 'TEXT',
+				notNull: 0 //index of parameter
+			}
+		},
+		'jsonb': {
+			paramsTypes: [
+				{
+					type: 'TEXT',
+					notNull: false
+				}
+			],
+			returnType: {
+				type: 'BLOB',
+				notNull: 0
+			}
+		},
+		'json_array': {
+			paramsTypes: [
+				{
+					type: 'any',
+					notNull: false
+				}
+			],
+			returnType: {
+				type: 'TEXT',
+				notNull: 0
+			}
+		},
+		'jsonb_array': {
+			paramsTypes: [
+				{
+					type: 'any',
+					notNull: false
+				}
+			],
+			returnType: {
+				type: 'BLOB',
+				notNull: 0
+			}
+		},
+		'json_array_length': {
+			paramsTypes: [
+				{
+					type: 'TEXT',
+					notNull: false
+				},
+				{
+					type: 'TEXT',
+					notNull: false
+				}
+			],
+			returnType: {
+				type: 'INTEGER',
+				notNull: false
+			}
+		},
+		'json_error_position': {
+			paramsTypes: [
+				{
+					type: 'TEXT',
+					notNull: false
+				}
+			],
+			returnType: {
+				type: 'INTEGER',
+				notNull: 0
+			}
+		},
+		'json_extract': {
+			paramsTypes: [
+				{
+					type: 'TEXT',
+					notNull: false
+				}
+			],
+			variableParameters: true,
+			returnType: {
+				type: 'TEXT',
+				notNull: false
+			}
+		},
+		'jsonb_extract': {
+			paramsTypes: [
+				{
+					type: 'TEXT',
+					notNull: false
+				}
+			],
+			variableParameters: true,
+			returnType: {
+				type: 'BLOB',
+				notNull: false
+			}
+		}
+	}
+
 	const sqlean_uuid_functions: ExtensionFunctionCatalog = {
 		'uuid4': {
 			paramsTypes: [],
@@ -1414,26 +1519,33 @@ function traverse_function(expr: ExprContext, function_name: string, traverseCon
 			}
 		}
 	}
-	const functionCatalog = sqlean_uuid_functions[function_name];
+	const allFunctions = { ...json_functions, ...sqlean_uuid_functions };
+	const functionCatalog = allFunctions[function_name];
 	if (functionCatalog) {
 		const functionType = freshVar(expr.getText(), functionCatalog.returnType.type);
-		expr.expr_list().forEach((exprParam, index) => {
+
+		const params = expr.expr_list().map((exprParam, index) => {
 			const paramType = traverse_expr(exprParam, traverseContext);
-			const catalogType = functionCatalog.paramsTypes[index];
+			const catalogType = functionCatalog.variableParameters === true ? functionCatalog.paramsTypes[0] : functionCatalog.paramsTypes[index];
 			if (catalogType) {
-				paramType.notNull = catalogType.notNull;
+				if (paramType.name === '?') {
+					paramType.notNull = typeof (catalogType.notNull) === 'boolean' ? catalogType.notNull : false;
+				}
 				traverseContext.constraints.push({
 					expression: expr.getText(),
 					type1: freshVar(expr.getText(), catalogType.type),
 					type2: paramType.type
 				});
 			}
+			return paramType;
 		})
-
+		const isNotNull: boolean = typeof (functionCatalog.returnType.notNull) === 'number'
+			? params[functionCatalog.returnType.notNull].notNull || false
+			: functionCatalog.returnType.notNull;
 		return {
 			name: expr.getText(),
 			type: functionType,
-			notNull: functionCatalog.returnType.notNull,
+			notNull: isNotNull,
 			table: ''
 		};
 	}

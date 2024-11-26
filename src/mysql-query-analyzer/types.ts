@@ -277,10 +277,11 @@ export type ExtensionFunctionCatalog = {
 
 export type ExtensionFunction = {
 	paramsTypes: FunctionType[],
+	variableParameters?: true;
 	returnType: FunctionType
 }
 
 export type FunctionType = {
 	type: SQLiteType;
-	notNull: boolean;
+	notNull: boolean | number; //true | false | index of parameter
 }
