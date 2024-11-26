@@ -693,6 +693,24 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
 			table: resultType.table || ''
 		};
 	}
+	if (expr.PIPE2()) {
+		const exprLeft = expr.expr(0);
+		const typeLeft = traverse_expr(exprLeft, traverseContext);
+		const exprRight = expr.expr(1);
+		const typeRight = traverse_expr(exprRight, traverseContext);
+		if (typeLeft.name === '?') {
+			typeLeft.type.type = 'TEXT';
+		}
+		if (typeRight.name === '?') {
+			typeRight.type.type = 'TEXT';
+		}
+		return {
+			name: expr.getText(),
+			type: freshVar(expr.getText(), 'TEXT'),
+			notNull: typeLeft.notNull && typeRight.notNull,
+			table: ''
+		}
+	}
 	if (expr.IS_()) {
 		//is null/is not null/is true, is false
 		const exprLeft = expr.expr(0);

@@ -1189,4 +1189,87 @@ describe('sqlite-parse-select-functions', () => {
 		}
 		assert.deepStrictEqual(actual.right, expected);
 	});
+
+	it(`SELECT 'a' || 'b' as result`, () => {
+		const sql = `SELECT 'a' || 'b' as result`;
+		const actual = parseSql(sql, sqliteDbSchema);
+
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'result',
+					type: 'TEXT',
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it(`SELECT 'a' || ? as result, ? || 'b' as result2, ? || ? as result3`, () => {
+		const sql = `SELECT 'a' || ? as result, ? || 'b' as result2, ? || ? as result3`;
+		const actual = parseSql(sql, sqliteDbSchema);
+
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'result',
+					type: 'TEXT',
+					notNull: false,
+					table: ''
+				},
+				{
+					columnName: 'result2',
+					type: 'TEXT',
+					notNull: false,
+					table: ''
+				},
+				{
+					columnName: 'result3',
+					type: 'TEXT',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: [
+				{
+					columnType: 'TEXT',
+					name: 'param1',
+					notNull: false
+				},
+				{
+					columnType: 'TEXT',
+					name: 'param2',
+					notNull: false
+				},
+				{
+					columnType: 'TEXT',
+					name: 'param3',
+					notNull: false
+				},
+				{
+					columnType: 'TEXT',
+					name: 'param4',
+					notNull: false
+				}
+			]
+		};
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
 });
