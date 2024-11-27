@@ -1416,7 +1416,75 @@ function traverse_function(expr: ExprContext, function_name: string, traverseCon
 		};
 	}
 
-	const json_functions: ExtensionFunctionCatalog = {
+	const functionsSpec: ExtensionFunctionCatalog = {
+		'trim': {
+			paramsTypes: [
+				{
+					type: 'TEXT',
+					notNull: false
+				},
+				{
+					type: 'TEXT',
+					notNull: true
+				},
+			],
+			returnType: {
+				type: 'TEXT',
+				notNull: 0
+			}
+		},
+		'rtrim': {
+			paramsTypes: [
+				{
+					type: 'TEXT',
+					notNull: false
+				},
+				{
+					type: 'TEXT',
+					notNull: true
+				},
+			],
+			returnType: {
+				type: 'TEXT',
+				notNull: 0
+			}
+		},
+		'ltrim': {
+			paramsTypes: [
+				{
+					type: 'TEXT',
+					notNull: false
+				},
+				{
+					type: 'TEXT',
+					notNull: true
+				},
+			],
+			returnType: {
+				type: 'TEXT',
+				notNull: 0
+			}
+		},
+		'replace': {
+			paramsTypes: [
+				{
+					type: 'TEXT',
+					notNull: false
+				},
+				{
+					type: 'TEXT',
+					notNull: true
+				},
+				{
+					type: 'TEXT',
+					notNull: true
+				},
+			],
+			returnType: {
+				type: 'TEXT',
+				notNull: 0
+			}
+		},
 		'json': {
 			paramsTypes: [
 				{
@@ -1537,7 +1605,7 @@ function traverse_function(expr: ExprContext, function_name: string, traverseCon
 			}
 		}
 	}
-	const allFunctions = { ...json_functions, ...sqlean_uuid_functions };
+	const allFunctions = { ...functionsSpec, ...sqlean_uuid_functions };
 	const functionCatalog = allFunctions[function_name];
 	if (functionCatalog) {
 		const functionType = freshVar(expr.getText(), functionCatalog.returnType.type);
