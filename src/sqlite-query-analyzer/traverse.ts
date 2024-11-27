@@ -292,21 +292,6 @@ function traverse_select_core(
 		}
 	});
 
-	const whereExpr = select_core._whereExpr;
-	if (whereExpr) {
-		traverse_expr(whereExpr, {
-			...traverseContext,
-			fromColumns: fromColumns
-		});
-		if (!traverseContext.subQuery) {
-			const { relations, params } = extractRelationsAndParams(whereExpr, fromColumns, traverseContext.parameters);
-			traverseContext.dynamicSqlInfo2.where.push({
-				fragment: `AND ${extractOriginalSql(whereExpr)}`,
-				dependOnRelations: [...new Set(relations)], //remove duplicated
-				parameters: params
-			});
-		}
-	}
 	const newColumns = listType.map((selectField) => {
 		const col: ColumnDef = {
 			columnName: selectField.name,
@@ -318,6 +303,21 @@ function traverse_select_core(
 		};
 		return col;
 	});
+	const whereExpr = select_core._whereExpr;
+	if (whereExpr) {
+		traverse_expr(whereExpr, {
+			...traverseContext,
+			fromColumns: fromColumns.concat(newColumns)
+		});
+		if (!traverseContext.subQuery) {
+			const { relations, params } = extractRelationsAndParams(whereExpr, fromColumns.concat(newColumns), traverseContext.parameters);
+			traverseContext.dynamicSqlInfo2.where.push({
+				fragment: `AND ${extractOriginalSql(whereExpr)}`,
+				dependOnRelations: [...new Set(relations)], //remove duplicated
+				parameters: params
+			});
+		}
+	}
 	const groupByExprList = select_core._groupByExpr || [];
 	groupByExprList.forEach((groupByExpr) => {
 		traverse_expr(groupByExpr, {

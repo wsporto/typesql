@@ -1890,4 +1890,29 @@ describe('sqlite-Test simple select statements', () => {
 		}
 		assert.deepStrictEqual(actual.right, expected);
 	});
+
+	it('SELECT 1 + 1 as col_alias WHERE col_alias > 0', async () => {
+		const sql = 'SELECT 1 + 1 as col_alias WHERE col_alias > 0';
+
+		const actual = await parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'col_alias',
+					type: 'INTEGER',
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
 });
