@@ -348,9 +348,11 @@ function extractRelationsAndParams(expr: ExprContext, fromColumns: ColumnDef[], 
 	const columnsRef = getExpressions(expr, Column_nameContext);
 	const relations = columnsRef
 		.filter((expr) => !expr.isSubQuery)
-		.map((colRef) => {
-			const fieldName = splitName((colRef.expr as ExprContext).parentCtx!.getText());
-			const column = findColumn(fieldName, fromColumns);
+		.map((colRefExpr) => {
+			const colRef = colRefExpr.expr as Column_nameContext;
+			const expr = colRef.parentCtx as ExprContext;
+			const tableName = expr.table_name();
+			const column = traverse_column_name(colRef, tableName, fromColumns);
 			return column.tableAlias || column.table;
 		});
 	const expressionList = getExpressions(expr, ExprContext);
@@ -403,10 +405,7 @@ function traverse_table_or_subquery(
 
 		if (table_name) {
 
-			const tableName: FieldName = {
-				name: table_name.getText(),
-				prefix: schema
-			};
+			const tableName = getTableName(table_name, schema);
 			tableOrSubqueryFields = filterColumns(traverseContext.dbSchema, traverseContext.withSchema, table_alias, tableName);
 			if (table_function_name) {
 				const table_function_expr = table_or_subquery.expr(0);
@@ -531,7 +530,7 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
 	const column_name = expr.column_name();
 	const table_name = expr.table_name();
 	if (column_name) {
-		const type = traverse_column_name(column_name, table_name, traverseContext);
+		const type = traverse_column_name(column_name, table_name, traverseContext.fromColumns);
 		return {
 			name: type.columnName,
 			type: type.columnType,
@@ -1648,15 +1647,30 @@ function extractOriginalSql(rule: ParserRuleContext) {
 function traverse_column_name(
 	column_name: Column_nameContext,
 	table_name: Table_nameContext | null,
-	traverseContext: TraverseContext
+	fromColumns: ColumnDef[]
 ): ColumnDef {
 	const fieldName: FieldName = {
-		name: column_name.getText(),
-		prefix: table_name?.getText() || ''
+		name: removeDoubleQuotes(column_name.getText()),
+		prefix: removeDoubleQuotes(table_name?.getText() || '')
 	};
-	const column = findColumn(fieldName, traverseContext.fromColumns);
+	const column = findColumn(fieldName, fromColumns);
 	// const typeVar = freshVar(column.columnName, column.columnType.type, column.tableAlias || column.table);
 	return column;
+}
+
+function getTableName(
+	column_name: Table_nameContext,
+	schema: string
+): FieldName {
+	const fieldName: FieldName = {
+		name: removeDoubleQuotes(column_name.getText()),
+		prefix: schema
+	};
+	return fieldName;
+}
+
+function removeDoubleQuotes(columnName: string): string {
+	return columnName.replace(/^"|"$/g, '');
 }
 
 export function isNotNull(columnName: string, where: ExprContext | null): boolean {
@@ -1787,8 +1801,7 @@ function is_single_result(expr: ExprContext, fromColumns: ColumnDef[]): boolean 
 	const expr2 = expr.expr(1); //TODO: 1 = id
 	const column_name = expr1?.column_name();
 	if (column_name && expr.ASSIGN()) {
-		const fieldName = splitName(column_name.getText());
-		const column = findColumn(fieldName, fromColumns);
+		const column = traverse_column_name(column_name, null, fromColumns);
 		if (column.columnKey === 'PRI') {
 			return true;
 		}
@@ -1800,10 +1813,7 @@ function traverse_insert_stmt(insert_stmt: Insert_stmtContext, traverseContext: 
 	const table_name = insert_stmt.table_name();
 	const fromColumns = filterColumns(traverseContext.dbSchema, [], '', splitName(table_name.getText()));
 	const columns = insert_stmt.column_name_list().map((column_name) => {
-		return traverse_column_name(column_name, null, {
-			...traverseContext,
-			fromColumns
-		});
+		return traverse_column_name(column_name, null, fromColumns);
 	});
 	const insertColumns: TypeAndNullInferParam[] = [];
 	const value_row_list = insert_stmt.values_clause()?.value_row_list() || [];
@@ -1854,10 +1864,7 @@ function traverse_insert_stmt(insert_stmt: Insert_stmtContext, traverseContext: 
 		const paramsBefore = traverseContext.parameters.length;
 		assign_list.forEach((_, index) => {
 			const column_name = upsert_clause.column_name(index);
-			const col = traverse_column_name(column_name, null, {
-				...traverseContext,
-				fromColumns
-			});
+			const col = traverse_column_name(column_name, null, fromColumns);
 			const expr = upsert_clause.expr(index);
 			const table_name = expr.table_name();
 			const excludedColumns =
@@ -1920,10 +1927,7 @@ function traverse_update_stmt(update_stmt: Update_stmtContext, traverseContext: 
 		length: update_stmt.ASSIGN_list().length
 	}).map((_, i) => update_stmt.column_name(i));
 	const columns = column_name_list.map((column_name) => {
-		return traverse_column_name(column_name, null, {
-			...traverseContext,
-			fromColumns
-		});
+		return traverse_column_name(column_name, null, fromColumns);
 	});
 	const updateColumns: TypeAndNullInfer[] = [];
 	const whereParams: TypeAndNullInferParam[] = [];

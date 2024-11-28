@@ -1915,4 +1915,35 @@ describe('sqlite-Test simple select statements', () => {
 		}
 		assert.deepStrictEqual(actual.right, expected);
 	});
+
+	it('SELECT "id" from mytable1 where "mytable1"."id" = 0', async () => {
+		const sql = 'SELECT "id", "mytable1"."value" from "mytable1" where "mytable1"."id" = 0;';
+
+		const actual = await parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'INTEGER',
+					notNull: true,
+					table: 'mytable1'
+				},
+				{
+					columnName: 'value',
+					type: 'INTEGER',
+					notNull: false,
+					table: 'mytable1'
+				}
+			],
+			parameters: []
+		};
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
 });
