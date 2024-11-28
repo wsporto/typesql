@@ -8,7 +8,7 @@ import { createMysqlClient, loadMysqlSchema, loadMySqlTableSchema, selectTablesF
 import { generateInsertStatement, generateUpdateStatement, generateDeleteStatement, generateSelectStatement } from './sql-generator';
 import type { ColumnSchema, Table } from './mysql-query-analyzer/types';
 import type { TypeSqlConfig, SqlGenOption, DatabaseClient, TypeSqlDialect, TypeSqlError, SQLiteClient, QueryType } from './types';
-import { type Either, isLeft, left } from 'fp-ts/lib/Either';
+import { type Either, isLeft, left, right } from 'fp-ts/lib/Either';
 import CodeBlockWriter from 'code-block-writer';
 import { globSync } from 'glob';
 import {
@@ -19,6 +19,7 @@ import {
 } from './sqlite-query-analyzer/query-executor';
 import { createLibSqlClient } from './drivers/libsql';
 import { generateCrud } from './sqlite-query-analyzer/code-generator';
+import { createPostgresClient } from './drivers/postgres';
 
 const CRUD_FOLDER = 'crud';
 
@@ -291,7 +292,7 @@ async function selectAllTables(client: DatabaseClient): Promise<Either<string, T
 	return selectTablesResult;
 }
 
-async function createClient(databaseUri: string, dialect: TypeSqlDialect, attach?: string[], loadExtensions?: string[], authToken?: string) {
+async function createClient(databaseUri: string, dialect: TypeSqlDialect, attach?: string[], loadExtensions?: string[], authToken?: string): Promise<Either<TypeSqlError, DatabaseClient>> {
 	switch (dialect) {
 		case 'mysql2':
 			return createMysqlClient(databaseUri);
@@ -302,6 +303,8 @@ async function createClient(databaseUri: string, dialect: TypeSqlDialect, attach
 			return createLibSqlClient(databaseUri, attach || [], loadExtensions || [], authToken || '');
 		case 'd1':
 			return createD1Client(dialect, databaseUri, loadExtensions || []);
+		case 'pg':
+			return createPostgresClient(databaseUri);
 	}
 }
 async function loadSchema(databaseClient: DatabaseClient): Promise<Either<TypeSqlError, ColumnSchema[]>> {
@@ -313,6 +316,9 @@ async function loadSchema(databaseClient: DatabaseClient): Promise<Either<TypeSq
 		case 'bun:sqlite':
 		case 'd1':
 			return loadDbSchema(databaseClient.client);
+		case 'pg':
+			return right([]);
+
 	}
 }
 
@@ -325,10 +331,12 @@ async function loadTableSchema(databaseClient: DatabaseClient, tableName: string
 		case 'bun:sqlite':
 		case 'd1':
 			return await loadDbSchema(databaseClient.client);
+		case 'pg':
+			return right([]);
 	}
 }
 
-async function selectTables(databaseClient: DatabaseClient) {
+async function selectTables(databaseClient: DatabaseClient): Promise<Either<TypeSqlError, Table[]>> {
 	switch (databaseClient.type) {
 		case 'mysql2':
 			return await selectTablesFromSchema(databaseClient.client);
@@ -337,6 +345,8 @@ async function selectTables(databaseClient: DatabaseClient) {
 		case 'bun:sqlite':
 		case 'd1':
 			return selectSqliteTablesFromSchema(databaseClient.client);
+		case 'pg':
+			return right([])
 	}
 }
 

@@ -8,7 +8,7 @@ import {
 	ExprOrContext,
 	type BoolPriContext,
 	type PredicateContext
-} from '@wsporto/ts-mysql-parser';
+} from '@wsporto/typesql-parser/mysql/MySQLParser';
 import { getSimpleExpressions, splitName, findColumn } from './select-columns';
 import type { ColumnDef } from './types';
 

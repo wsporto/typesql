@@ -10,6 +10,14 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: "password"
       MYSQL_DATABASE: "mydb"
+  postgres-dev: 
+    image: "postgres:12.21"
+    container_name: "postgres-dev"
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
   flyway:
     image: flyway/flyway:7.15
     container_name: "flyway"
@@ -32,3 +40,11 @@ services:
     volumes:
       - .:/flyway/db
       - ./sqlite-attached-migrations:/flyway/sql
+  postgres-flyway:
+    image: flyway/flyway:7.15
+    container_name: "postgres_flyway"
+    command: -url=jdbc:postgresql://postgres-dev:5432/postgres -schemas=public -user=postgres -password=password -connectRetries=60 migrate
+    volumes:
+      - ./migrations/postgres:/flyway/sql
+    depends_on:
+      - postgres-dev

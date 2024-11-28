@@ -1,6 +1,6 @@
 import { type Either, isLeft, left, right } from 'fp-ts/lib/Either';
 import type { ParameterNameAndPosition, ParameterDef, SchemaDef, TypeSqlError } from '../types';
-import { type Sql_stmtContext, parseSql as parseSqlite } from '@wsporto/ts-mysql-parser/dist/sqlite';
+import { type Sql_stmtContext, parseSql as parseSqlite } from '@wsporto/typesql-parser/sqlite';
 import { tryTraverse_Sql_stmtContext } from './traverse';
 import {
 	type ColumnInfo,
@@ -28,7 +28,7 @@ type ParseAndTraverseResult = {
 };
 
 export function traverseSql(sql: string, dbSchema: ColumnSchema[]): Either<TypeSqlError, ParseAndTraverseResult> {
-	const { sql: processedSql, namedParameters } = preprocessSql(sql);
+	const { sql: processedSql, namedParameters } = preprocessSql(sql, 'sqlite');
 	const nested = hasAnnotation(sql, '@nested');
 	const dynamicQuery = hasAnnotation(sql, '@dynamicQuery');
 	const parser = parseSqlite(processedSql);

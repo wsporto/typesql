@@ -1,5 +1,5 @@
 import assert from 'node:assert';
-import { parseSql } from '@wsporto/ts-mysql-parser/dist/sqlite';
+import { parseSql } from '@wsporto/typesql-parser/sqlite';
 import { isNotNull } from '../../src/sqlite-query-analyzer/traverse';
 
 function getWhereExpr(sql: string) {

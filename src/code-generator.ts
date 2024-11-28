@@ -7,7 +7,7 @@ import {
 	MySqlDialect,
 	TypeSqlError,
 	TsParameterDescriptor,
-	TypeSqlDialect, type SQLiteDialect, type LibSqlClient, type BunDialect, D1Dialect
+	TypeSqlDialect, type SQLiteDialect, type LibSqlClient, type BunDialect, PgDielect
 } from './types';
 import fs from 'node:fs';
 import path, { parse } from 'node:path';
@@ -21,6 +21,7 @@ import { mapToDynamicResultColumns, mapToDynamicParams, mapToDynamicSelectColumn
 import type { ColumnSchema, DynamicSqlInfoResult, DynamicSqlInfoResult2, FragmentInfoResult } from './mysql-query-analyzer/types';
 import { EOL } from 'node:os';
 import { validateAndGenerateCode } from './sqlite-query-analyzer/code-generator';
+import { generateCode } from './code-generator2';
 
 export function generateTsCodeForMySQL(tsDescriptor: TsDescriptor, fileName: string, crud = false): string {
 	const writer = new CodeBlockWriter();
@@ -700,6 +701,8 @@ export async function generateTsFile(client: DatabaseClient, sqlFile: string, db
 			case 'libsql':
 			case 'd1':
 				return validateAndGenerateCode(client as SQLiteDialect | LibSqlClient | BunDialect, sqlContent, queryName, dbSchema, isCrudFile);
+			case 'pg':
+				return await generateCode(client as PgDielect, sqlContent, queryName)();
 		}
 	})(client.type);
 

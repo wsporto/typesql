@@ -1,12 +1,12 @@
 import moment from 'moment';
 
-import type { SimpleExprFunctionContext, ExprContext, InsertStatementContext, DeleteStatementContext } from '@wsporto/ts-mysql-parser';
+import type { SimpleExprFunctionContext, ExprContext, InsertStatementContext, DeleteStatementContext } from '@wsporto/typesql-parser/mysql/MySQLParser';
 
 import type { ColumnSchema, ColumnDef, TypeVar, Type, Constraint, SubstitutionHash, TypeAndNullInfer } from './types';
 import { findColumn, splitName } from './select-columns';
 import type { MySqlType, InferType } from '../mysql-mapping';
 import { unify } from './unify';
-import type TerminalNode from '@wsporto/ts-mysql-parser';
+import { TerminalNode } from '@wsporto/typesql-parser';
 
 let counter = 0;
 export function freshVar(name: string, typeVar: InferType, table?: string, list?: true): TypeVar {

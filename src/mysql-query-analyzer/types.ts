@@ -1,4 +1,5 @@
 import type { NestedResultInfo } from '../describe-nested-query';
+import { PostgresColumnSchema } from '../drivers/types';
 import type { MySqlType, InferType, DbType } from '../mysql-mapping';
 import type { Relation2 } from '../sqlite-query-analyzer/sqlite-describe-nested-query';
 import type { SQLiteType } from '../sqlite-query-analyzer/types';

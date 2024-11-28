@@ -1,5 +1,5 @@
-import { ParserRuleContext } from '@wsporto/ts-mysql-parser';
-import type { ParseTree } from '@wsporto/ts-mysql-parser';
+import { ParserRuleContext } from '@wsporto/typesql-parser';
+import type { ParseTree } from '@wsporto/typesql-parser';
 
 import {
 	type JoinedTableContext,
@@ -33,11 +33,11 @@ import {
 	ExprAndContext,
 	ExprXorContext,
 	ExprOrContext
-} from '@wsporto/ts-mysql-parser';
+} from '@wsporto/typesql-parser/mysql/MySQLParser';
 
 import type { ColumnDef, ColumnSchema, FieldName } from './types';
 import { createColumnTypeFomColumnSchema, freshVar } from './collect-constraints';
-import { Select_coreContext } from '@wsporto/ts-mysql-parser/dist/sqlite';
+import { Select_coreContext } from '@wsporto/typesql-parser/sqlite';
 
 export function includeColumn(column: ColumnDef, table: string) {
 	return column.table.toLowerCase() === table.toLowerCase() || column.tableAlias?.toLowerCase() === table.toLowerCase();
