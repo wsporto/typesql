@@ -1443,4 +1443,45 @@ describe('sqlite-parse-select-functions', () => {
 		}
 		assert.deepStrictEqual(actual.right, expected);
 	});
+
+	it('SELECT char(?, ?, ?) as result', () => {
+		const sql = 'SELECT char(?, ?, ?) as result';
+		const actual = parseSql(sql, sqliteDbSchema);
+
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'result',
+					type: 'TEXT',
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: [
+				{
+					columnType: 'INTEGER',
+					name: 'param1',
+					notNull: true
+				},
+				{
+					columnType: 'INTEGER',
+					name: 'param2',
+					notNull: true
+				},
+				{
+					columnType: 'INTEGER',
+					name: 'param3',
+					notNull: true
+				}
+			]
+		};
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
 });
