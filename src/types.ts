@@ -1,13 +1,14 @@
 import type { MySqlType } from './mysql-mapping';
 import type { Brand } from './utility-types';
 import type { ColumnInfo, ColumnSchema, DynamicSqlInfoResult, DynamicSqlInfoResult2 } from './mysql-query-analyzer/types';
-import type { QueryContext } from '@wsporto/ts-mysql-parser';
+import type { QueryContext } from '@wsporto/typesql-parser/mysql/MySQLParser';
 import type { NestedResultInfo } from './describe-nested-query';
-import type { SQLiteType } from './sqlite-query-analyzer/types';
+import type { PostgresType, SQLiteType } from './sqlite-query-analyzer/types';
 import type { Database } from 'better-sqlite3';
 import type { Pool } from 'mysql2/promise';
 import type { RelationInfo2 } from './sqlite-query-analyzer/sqlite-describe-nested-query';
 import type { Database as LibSQLDatabase } from 'libsql';
+import { Sql } from 'postgres';
 
 export type DBSchema = {
 	columns: ColumnSchema[];
@@ -52,7 +53,7 @@ export type ColumnDef2 = {
 
 export type ParameterDef = {
 	name: string;
-	columnType: MySqlType | SQLiteType | 'any';
+	columnType: MySqlType | SQLiteType | PostgresType | 'any';
 	notNull: boolean;
 	list?: boolean; //id in (?)
 };
@@ -122,11 +123,11 @@ export type PreprocessedSql = {
 
 export type CamelCaseName = Brand<string, 'CamelCase'>;
 
-export type DatabaseClient = MySqlDialect | SQLiteDialect | LibSqlClient | BunDialect | D1Dialect;
+export type DatabaseClient = MySqlDialect | SQLiteDialect | LibSqlClient | BunDialect | D1Dialect | PgDielect;
 
 export type TypeSqlDialect = DatabaseClient['type'];
 
-export type SQLiteClient = SQLiteDialect['type'] | LibSqlClient['type'] | BunDialect['type'] | D1Dialect['type'];
+export type SQLiteClient = SQLiteDialect['type'] | LibSqlClient['type'] | BunDialect['type'] | D1Dialect['type'] | PgDielect['type'];
 
 export type MySqlDialect = {
 	type: 'mysql2';
@@ -155,6 +156,11 @@ export type D1Dialect = {
 	type: 'd1';
 	client: Database;
 };
+
+export type PgDielect = {
+	type: 'pg',
+	client: Sql
+}
 
 export type TypeSqlConfig = {
 	databaseUri: string;

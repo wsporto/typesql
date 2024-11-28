@@ -5,10 +5,9 @@ import {
 	type ExprContext,
 	type InsertQueryExpressionContext,
 	type SelectStatementContext,
-	type QueryExpressionContext,
-	ParserRuleContext
-} from '@wsporto/ts-mysql-parser';
-import type { RuleContext } from '@wsporto/ts-mysql-parser';
+	type QueryExpressionContext
+} from '@wsporto/typesql-parser/mysql/MySQLParser';
+import { ParserRuleContext, RuleContext } from '@wsporto/typesql-parser';
 import { getAllQuerySpecificationsFromSelectStatement } from './parse';
 
 export function inferParamNullabilityQuery(queryContext: SelectStatementContext | InsertQueryExpressionContext): boolean[] {

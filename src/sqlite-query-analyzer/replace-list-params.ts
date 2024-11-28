@@ -17,3 +17,18 @@ export function replaceListParams(sql: string, listParamPositions: ParameterName
 	});
 	return newSql;
 }
+
+export function replacePostgresParams(sql: string, paramsIndexes: boolean[], paramsNames: string[]) {
+	const paramRegex = /\$(\d+)/g;
+
+	const newSql = sql.replace(paramRegex, (match, index) => {
+		const paramIndex = parseInt(index, 10) - 1; // Adjust to zero-based index
+
+		if (paramsIndexes[paramIndex]) {
+			return `\${generatePlaceholders(params.${paramsNames[paramIndex]})}`;
+		} else {
+			return match;
+		}
+	});
+	return newSql;
+}

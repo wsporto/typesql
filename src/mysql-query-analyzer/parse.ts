@@ -1,5 +1,6 @@
-import MySQLParser, {
-	SqlMode,
+import MySQLParser from '@wsporto/typesql-parser/mysql'
+import { TerminalNode, ParseTree, ParserRuleContext } from '@wsporto/typesql-parser';
+import {
 	type QueryContext,
 	QuerySpecificationContext,
 	type SelectStatementContext,
@@ -10,11 +11,8 @@ import MySQLParser, {
 	SumExprContext,
 	SimpleExprWindowingFunctionContext,
 	WindowingClauseContext,
-	FunctionCallContext,
-	type ParseTree,
-	TerminalNode,
-	ParserRuleContext
-} from '@wsporto/ts-mysql-parser';
+	FunctionCallContext
+} from '@wsporto/typesql-parser/mysql/MySQLParser';
 import { getVarType } from './collect-constraints';
 import type {
 	ColumnSchema,
@@ -36,6 +34,7 @@ import { type SelectStatementResult, traverseQueryContext } from './traverse';
 import type { ParameterDef } from '../types';
 import { generateNestedInfo } from '../describe-nested-query';
 import { describeDynamicQuery } from '../describe-dynamic-query';
+import { SqlMode } from '@wsporto/typesql-parser/mysql/common';
 
 const parser = new MySQLParser({
 	version: '8.0.17',
@@ -44,10 +43,6 @@ const parser = new MySQLParser({
 
 export function parse(sql: string): QueryContext {
 	const parseResult = parser.parse(sql);
-	if (parseResult.parserError) {
-		throw new Error(`Parser error${parseResult.parserError}`);
-	}
-
 	return parseResult.tree as QueryContext;
 }
 
@@ -186,7 +181,7 @@ export function extractQueryInfo(
 	sql: string,
 	dbSchema: ColumnSchema[]
 ): QueryInfoResult | InsertInfoResult | UpdateInfoResult | DeleteInfoResult {
-	const { sql: processedSql, namedParameters } = preprocessSql(sql);
+	const { sql: processedSql, namedParameters } = preprocessSql(sql, 'mysql');
 	const gererateNested = hasAnnotation(sql, '@nested');
 	const gererateDynamicQuery = hasAnnotation(sql, '@dynamicQuery');
 	const tree = parse(processedSql);

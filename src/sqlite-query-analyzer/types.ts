@@ -23,3 +23,9 @@ export type SQLiteType =
 	| 'BOOLEAN'
 	| EnumType
 	| 'any';
+
+export type PostgresType =
+	| 'int4'
+	| 'int4[]'
+	| 'text'
+	| 'text[]';

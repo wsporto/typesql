@@ -29,7 +29,7 @@ import {
 	SimpleExprWindowingFunctionContext,
 	type WindowFunctionCallContext,
 	SimpleExprCastContext
-} from '@wsporto/ts-mysql-parser';
+} from '@wsporto/typesql-parser/mysql/MySQLParser';
 import type { ColumnSchema, FieldName, ColumnDef } from './types';
 import { findColumn, splitName, selectAllColumns } from './select-columns';
 import { getParentContext, inferParameterNotNull } from './infer-param-nullability';
@@ -40,7 +40,7 @@ import { preprocessSql } from '../describe-query';
 //TODO - COLUMN SCHEMA DEFAULT = []
 //utility for tests
 export function parseAndInferNotNull(sql: string, dbSchema: ColumnSchema[]) {
-	const { sql: processedSql, namedParameters } = preprocessSql(sql);
+	const { sql: processedSql, namedParameters } = preprocessSql(sql, 'mysql');
 	const tree = parse(processedSql);
 	const result = traverseQueryContext(tree, dbSchema, namedParameters);
 	if (result.type === 'Select') {

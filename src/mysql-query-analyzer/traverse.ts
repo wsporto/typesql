@@ -53,7 +53,7 @@ import {
 	type UpdateStatementContext,
 	type WindowFunctionCallContext,
 	type WithClauseContext
-} from '@wsporto/ts-mysql-parser';
+} from '@wsporto/typesql-parser/mysql/MySQLParser';
 import { verifyNotInferred } from '../describe-query';
 import {
 	extractLimitParameters,

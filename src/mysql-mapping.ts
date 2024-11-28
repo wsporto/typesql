@@ -1,4 +1,4 @@
-import type { SQLiteType } from './sqlite-query-analyzer/types';
+import type { PostgresType, SQLiteType } from './sqlite-query-analyzer/types';
 
 export enum FlagEnum {
 	NOT_NULL = 1,
@@ -8,9 +8,9 @@ export enum FlagEnum {
 	SET_FLAG = 2048
 }
 
-export type InferType = MySqlType | SQLiteType | '?' | 'number' | 'any';
+export type InferType = MySqlType | SQLiteType | PostgresType | '?' | 'number' | 'any';
 
-export type DbType = MySqlType | SQLiteType;
+export type DbType = MySqlType | SQLiteType | PostgresType;
 
 export type MySqlType =
 	| 'decimal'

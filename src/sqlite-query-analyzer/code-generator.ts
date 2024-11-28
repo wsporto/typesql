@@ -63,7 +63,7 @@ export function validateAndGenerateCode(
 	sqliteDbSchema: ColumnSchema[],
 	isCrud = false
 ): Either<TypeSqlError, string> {
-	const { sql: processedSql } = preprocessSql(sql);
+	const { sql: processedSql } = preprocessSql(sql, 'sqlite');
 	const explainSqlResult = explainSql(client.client, processedSql);
 	if (isLeft(explainSqlResult)) {
 		return left({
@@ -236,7 +236,9 @@ function getInsertUpdateResult(client: SQLiteClient) {
 		case 'libsql':
 			return libSqlInsertColumns;
 		case 'd1':
-			return d1InsertColumns
+			return d1InsertColumns;
+		case 'pg':
+			return [];
 	}
 }
 
@@ -1122,6 +1124,8 @@ function writeImports(writer: CodeBlockWriter, client: SQLiteClient, isDynamicQu
 				writer.writeLine(`const EOL = '\\n';`);
 			}
 			return;
+		case 'pg':
+			throw Error('postgres not execpted');
 		default:
 			return client satisfies never;
 	}
@@ -1283,6 +1287,9 @@ function writeExecFunction(writer: CodeBlockWriter, client: SQLiteClient, params
 				writeMapFunction(writer, mapFunctionParams);
 			}
 			return;
+		case 'pg': {
+			throw Error('postgres not expected')
+		}
 		default:
 			return client satisfies never;
 	}

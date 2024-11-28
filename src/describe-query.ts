@@ -6,7 +6,7 @@ import type { InferType, DbType } from './mysql-mapping';
 import { explainSql, loadMysqlSchema } from './queryExectutor';
 
 export function describeSql(dbSchema: ColumnSchema[], sql: string): SchemaDef {
-	const { sql: processedSql, namedParameters } = preprocessSql(sql);
+	const { sql: processedSql, namedParameters } = preprocessSql(sql, 'mysql');
 	const queryInfo = extractQueryInfo(sql, dbSchema);
 	if (queryInfo.kind === 'Select') {
 		const parametersDef = queryInfo.parameters.map((paramInfo, paramIndex) => {
@@ -121,7 +121,7 @@ export function verifyNotInferred(type: InferType): DbType | 'any' {
 }
 
 export async function parseSql(client: MySqlDialect, sql: string): Promise<Either<TypeSqlError, SchemaDef>> {
-	const { sql: processedSql } = preprocessSql(sql);
+	const { sql: processedSql } = preprocessSql(sql, 'mysql');
 	const explainResult = await explainSql(client.client, processedSql);
 	if (isLeft(explainResult)) {
 		return explainResult;
@@ -144,17 +144,27 @@ export async function parseSql(client: MySqlDialect, sql: string): Promise<Eithe
 
 //http://dev.mysql.com/doc/refman/8.0/en/identifiers.html
 //Permitted characters in unquoted identifiers: ASCII: [0-9,a-z,A-Z$_] (basic Latin letters, digits 0-9, dollar, underscore)
-export function preprocessSql(sql: string) {
+export function preprocessSql(sql: string, dialect: 'postgres' | 'mysql' | 'sqlite') {
 	const lines = sql.split('\n');
 	const regex = /:[a-zA-Z$_]+[a-zA-Z\d$_]*/g;
 	let newSql = '';
 	const allParameters: string[] = [];
+	let paramIndex = 1; // For PostgreSQL, to track $1, $2, $3, ...
 	lines.forEach((line, index, array) => {
 		let newLine = line;
 		if (!line.trim().startsWith('--')) {
 			const parameters: string[] = line.match(regex)?.map((param) => param.slice(1)) || [];
 			allParameters.push(...parameters);
-			newLine = line.replace(regex, '?');
+			if (dialect == 'postgres') {
+				parameters.forEach((param) => {
+					newLine = newLine.replace(`:${param}`, `$${paramIndex}`);
+					paramIndex++;
+				});
+			}
+			else {
+				// Replace named parameters with `?` for MySQL and sqlite
+				newLine = line.replace(regex, '?');
+			}
 		}
 		newSql += newLine;
 		if (index !== array.length - 1) {
