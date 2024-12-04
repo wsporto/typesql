@@ -2,7 +2,7 @@ import assert from 'node:assert';
 import { SchemaDef } from '../../src/types';
 import { describeQuery } from '../../src/postgres-query-analyzer/describe';
 import postgres from 'postgres';
-import { isLeft, right } from 'fp-ts/lib/Either';
+import { ok } from 'neverthrow';
 
 describe('select-single-table', () => {
 
@@ -17,7 +17,7 @@ describe('select-single-table', () => {
 	it('SELECT id FROM mytable1', async () => {
 
 		const sql = 'SELECT id FROM mytable1';
-		const actual = await describeQuery(postres, sql, [])();
+		const actual = await describeQuery(postres, sql, []);
 		const expected: SchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -33,13 +33,13 @@ describe('select-single-table', () => {
 			parameters: []
 		};
 
-		assert.deepStrictEqual(actual, right(expected));
+		assert.deepStrictEqual(actual, ok(expected));
 	});
 
 	it('SELECT * FROM mytable1 WHERE id = ?', async () => {
 		const sql = 'SELECT * FROM mytable1 WHERE id = $1';
 
-		const actual = await describeQuery(postres, sql, [])();
+		const actual = await describeQuery(postres, sql, []);
 		const expected: SchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -66,17 +66,17 @@ describe('select-single-table', () => {
 				}
 			]
 		};
-		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
 		}
-		assert.deepStrictEqual(actual.right, expected);
+		assert.deepStrictEqual(actual.value, expected);
 	});
 
 	it('SELECT id FROM mytable1 where value between :start and :end', async () => {
 		const sql = 'SELECT id FROM mytable1 where value between $1 and $2';
 		const expectedSql = 'SELECT id FROM mytable1 where value between $1 and $2';
 
-		const actual = await describeQuery(postres, sql, ['start', 'end'])();
+		const actual = await describeQuery(postres, sql, ['start', 'end']);
 		const expected: SchemaDef = {
 			sql: expectedSql,
 			queryType: 'Select',
@@ -102,10 +102,10 @@ describe('select-single-table', () => {
 				}
 			]
 		};
-		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error: ${actual.left}`);
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error}`);
 		}
-		assert.deepStrictEqual(actual.right, expected);
+		assert.deepStrictEqual(actual.value, expected);
 	});
 
 	it.skip('parse a select with multiples params', async () => {
@@ -114,7 +114,7 @@ describe('select-single-table', () => {
         FROM mytable2 
         WHERE (name = $2 or descr = $3) and id > $4
         `;
-		const actual = await describeQuery(postres, sql, [])();
+		const actual = await describeQuery(postres, sql, []);
 		const expected: SchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -162,17 +162,17 @@ describe('select-single-table', () => {
 				}
 			]
 		};
-		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error: ${actual.left}`);
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error}`);
 		}
-		assert.deepStrictEqual(actual.right, expected);
+		assert.deepStrictEqual(actual.value, expected);
 	});
 
 	it('SELECT * FROM mytable1 t WHERE id in (1, 2, 3, ?)', async () => {
 		const sql = 'SELECT * FROM mytable1 t WHERE id in (1, 2, 3, $1)';
 
 		const expectedSql = 'SELECT * FROM mytable1 t WHERE id in (1, 2, 3, ${generatePlaceholders(params.param1)})';
-		const actual = await describeQuery(postres, sql, [])();
+		const actual = await describeQuery(postres, sql, []);
 
 		const expected: SchemaDef = {
 			sql: expectedSql,
@@ -200,9 +200,9 @@ describe('select-single-table', () => {
 				}
 			]
 		};
-		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error: ${actual.left}`);
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error}`);
 		}
-		assert.deepStrictEqual(actual.right, expected);
+		assert.deepStrictEqual(actual.value, expected);
 	});
 });

@@ -15,7 +15,7 @@ describe('postgres-parse-insert', () => {
 
 	it.skip('insert into mytable1 (value) values (?)', async () => {
 		const sql = 'insert into mytable1 (value) values ($1)';
-		const actual = await describeQuery(postres, sql, [])();
+		const actual = await describeQuery(postres, sql, []);
 		const expected: SchemaDef = {
 			multipleRowsResult: false,
 			queryType: 'Insert',
@@ -30,9 +30,9 @@ describe('postgres-parse-insert', () => {
 			]
 		};
 
-		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
 		}
-		assert.deepStrictEqual(actual.right, expected);
+		assert.deepStrictEqual(actual.value, expected);
 	});
 });

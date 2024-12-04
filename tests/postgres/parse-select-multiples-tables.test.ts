@@ -20,7 +20,7 @@ describe('sqlite-parse-select-multiples-tables', () => {
         FROM mytable1 t1 
         INNER JOIN mytable2 t2 on t2.id = t1.id
         `;
-		const actual = await describeQuery(postres, sql, [])();
+		const actual = await describeQuery(postres, sql, []);
 		const expected: SchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -59,9 +59,9 @@ describe('sqlite-parse-select-multiples-tables', () => {
 			],
 			parameters: []
 		};
-		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error: ${actual.left}`);
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error}`);
 		}
-		assert.deepStrictEqual(actual.right, expected);
+		assert.deepStrictEqual(actual.value, expected);
 	});
 });

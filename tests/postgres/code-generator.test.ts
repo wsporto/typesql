@@ -23,37 +23,37 @@ describe('postgres-code-generator', () => {
 	it('select01 - select id, name from mytable2 where id = ?', async () => {
 		const sql = 'select id, name from mytable2 where id = $1';
 
-		const actual = await generateCode(dialect, sql, 'select01')();
+		const actual = await generateCode(dialect, sql, 'select01');
 		const expected = readFileSync('tests/postgres/expected-code/select01.ts.txt', 'utf-8').replace(/\r/gm, '');
 
-		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error: ${actual.left}`);
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error}`);
 		}
-		assert.deepStrictEqual(actual.right, expected);
+		assert.deepStrictEqual(actual.value, expected);
 	});
 
 	it('select02 - select without parameters', async () => {
 		const sql = 'select id from mytable1';
 
-		const actual = await generateCode(dialect, sql, 'select02')();
+		const actual = await generateCode(dialect, sql, 'select02');
 		const expected = readFileSync('tests/postgres/expected-code/select02.ts.txt', 'utf-8').replace(/\r/gm, '');
 
-		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error: ${actual.left}`);
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error}`);
 		}
-		assert.deepStrictEqual(actual.right, expected);
+		assert.deepStrictEqual(actual.value, expected);
 	});
 
 	it.skip('select03 - select with same parameter used twice', async () => {
 		const sql = 'select id from mytable1 where id = :id or id = :id';
 
-		const actual = await generateCode(dialect, sql, 'select03')();
+		const actual = await generateCode(dialect, sql, 'select03');
 		const expected = readFileSync('tests/postgres/expected-code/select03.ts.txt', 'utf-8').replace(/\r/gm, '');
 
-		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error: ${actual.left}`);
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error}`);
 		}
-		assert.deepStrictEqual(actual.right, expected);
+		assert.deepStrictEqual(actual.value, expected);
 	});
 
 	it.skip('select06 - SELECT id FROM mytable1 ORDER BY ?', async () => {
@@ -62,24 +62,24 @@ FROM mytable2
 WHERE id IN (:ids)
 AND name IN (:names)`;
 
-		const actual = await generateCode(dialect, sql, 'select06')();
+		const actual = await generateCode(dialect, sql, 'select06');
 		const expected = readFileSync('tests/postgres/expected-code/select06.ts.txt', 'utf-8').replace(/\r/gm, '');
 
-		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error: ${actual.left}`);
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error}`);
 		}
-		assert.deepStrictEqual(actual.right, expected);
+		assert.deepStrictEqual(actual.value, expected);
 	});
 
 	it.skip('insert01 - INSERT INTO mytable1(value) values(10)', async () => {
 		const sql = 'INSERT INTO mytable1(value) values(10)';
 
-		const actual = await generateCode(dialect, sql, 'insert01')();
+		const actual = await generateCode(dialect, sql, 'insert01');
 		const expected = readFileSync('tests/postgres/expected-code/insert01.ts.txt', 'utf-8').replace(/\r/gm, '');
 
-		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
 		}
-		assert.deepStrictEqual(actual.right, expected);
+		assert.deepStrictEqual(actual.value, expected);
 	});
 });

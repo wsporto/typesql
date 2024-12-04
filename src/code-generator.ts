@@ -12,7 +12,7 @@ import {
 import fs from 'node:fs';
 import path, { parse } from 'node:path';
 import camelCase from 'camelcase';
-import { type Either, isLeft, right } from 'fp-ts/lib/Either';
+import { type Either, isLeft, left, right } from 'fp-ts/lib/Either';
 import { converToTsType, type MySqlType } from './mysql-mapping';
 import { parseSql } from './describe-query';
 import CodeBlockWriter from 'code-block-writer';
@@ -702,7 +702,11 @@ export async function generateTsFile(client: DatabaseClient, sqlFile: string, db
 			case 'd1':
 				return validateAndGenerateCode(client as SQLiteDialect | LibSqlClient | BunDialect, sqlContent, queryName, dbSchema, isCrudFile);
 			case 'pg':
-				return await generateCode(client as PgDielect, sqlContent, queryName)();
+				const result = await generateCode(client as PgDielect, sqlContent, queryName);
+				if (result.isErr()) {
+					return left(result.error);
+				}
+				return right(result.value);
 		}
 	})(client.type);
 
