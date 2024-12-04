@@ -44,7 +44,7 @@ describe('postgres-code-generator', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
-	it.skip('select03 - select with same parameter used twice', async () => {
+	it('select03 - select with same parameter used twice', async () => {
 		const sql = 'select id from mytable1 where id = :id or id = :id';
 
 		const actual = await generateCode(dialect, sql, 'select03');
