@@ -71,11 +71,13 @@ export const postgresDescribe = (sql: Sql, sqlQuery: string): ResultAsync<Postgr
 }
 
 
-export function postgresAnalyze(sql: Sql, sqlQuery: string, paramCount: number): ResultAsync<string, string> {
+export function postgresAnalyze(sql: Sql, sqlQuery: string): ResultAsync<string[], string> {
 	return ResultAsync.fromThrowable(
 		async () => {
-			const analyzeResult = await sql.unsafe(`EXPLAIN ${sqlQuery}`, [...Array(paramCount).keys()]);
-			return analyzeResult[0]?.["QUERY PLAN"] || '';
+			const analyzeResult = await sql.unsafe(`EXPLAIN ${sqlQuery}`);
+			return analyzeResult.map(res => {
+				return res['QUERY PLAN'];
+			});
 		},
 		(reason: any) => {
 			if (reason.errors && reason.errors.length > 0) {

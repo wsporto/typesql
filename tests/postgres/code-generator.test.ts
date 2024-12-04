@@ -56,7 +56,7 @@ describe('postgres-code-generator', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
-	it.skip('select06 - SELECT id FROM mytable1 ORDER BY ?', async () => {
+	it('select06 - SELECT id FROM mytable1 ORDER BY ?', async () => {
 		const sql = `SELECT id
 FROM mytable2
 WHERE id IN (:ids)
@@ -66,7 +66,7 @@ AND name IN (:names)`;
 		const expected = readFileSync('tests/postgres/expected-code/select06.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (actual.isErr()) {
-			assert.fail(`Shouldn't return an error: ${actual.error}`);
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});

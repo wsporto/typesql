@@ -4,10 +4,10 @@ import { postgresDescribe, postgresAnalyze, loadDbSchema } from '../drivers/post
 import { Sql } from 'postgres';
 import { ColumnInfo } from '../mysql-query-analyzer/types';
 import { parseSql } from './parser';
-import { replacePostgresParams } from '../sqlite-query-analyzer/replace-list-params';
+import { replacePostgresParams, replacePostgresParamsWithValues } from '../sqlite-query-analyzer/replace-list-params';
 import { ok, Result, ResultAsync } from 'neverthrow';
 
-const postgresTypes: PostgresType = {
+export const postgresTypes: PostgresType = {
 	23: 'int4',
 	25: 'text'
 }
@@ -61,18 +61,20 @@ function mapToParamDef(paramName: string, paramType: number, isList: boolean): P
 }
 
 export function describeQuery(postgres: Sql, sql: string, namedParameters: string[]): ResultAsync<SchemaDef, TypeSqlError> {
-	const schemaTask = loadDbSchema(postgres);
 	const analyzeTask = postgresDescribe(postgres, sql)
-		.andThen(describeResult => postgresAnalyze(postgres, sql, describeResult.parameters.length)
-			.map(analyzeResult => {
-				const rows = parseQueryPlan(analyzeResult);
+		.andThen(describeResult => {
+			const parseResult = parseSql(sql);
+			const newSql = replacePostgresParamsWithValues(sql, parseResult.parameterList, describeResult.parameters);
+			return postgresAnalyze(postgres, newSql).map(analyzeResult => {
+				const singleRow = isSingleRow(analyzeResult);
 				const result: DescribeQueryResult = {
 					...describeResult,
-					multipleRowsResult: rows > 1,
+					multipleRowsResult: !singleRow,
 				}
-				return result
-			})
-		);
+				return result;
+			});
+		});
+	const schemaTask = loadDbSchema(postgres);
 	return ResultAsync.combine([schemaTask, analyzeTask])
 		.andThen(([schema, analyzeResult]) => describeQueryRefine(sql, schema, analyzeResult, namedParameters))
 		.mapErr(err => {
@@ -83,11 +85,19 @@ export function describeQuery(postgres: Sql, sql: string, namedParameters: strin
 		});
 }
 
-function parseQueryPlan(queryPlan: string): number {
+function isSingleRow(queryPlans: string[]): boolean {
+	const parseResult = queryPlans
+		.map(queryPlan => parseSingleQueryPlan(queryPlan))
+		.filter(rows => rows != null)
+		.every(value => value === 1);
+	return parseResult;
+}
+
+function parseSingleQueryPlan(queryPlan: string): number | null {
 	const regex = /rows=(\d+)/;
 	const match = queryPlan.match(regex);
 	if (match) {
 		return parseInt(match[1], 10); // match[1] is the captured number after 'rows='
 	}
-	return 100;
+	return null;
 }

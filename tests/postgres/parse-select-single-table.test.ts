@@ -169,6 +169,44 @@ describe('select-single-table', () => {
 	});
 
 	it('SELECT * FROM mytable1 t WHERE id in (1, 2, 3, ?)', async () => {
+		const sql = 'SELECT * FROM mytable1 t WHERE id in ($1)';
+
+		const expectedSql = 'SELECT * FROM mytable1 t WHERE id in (${generatePlaceholders(params.param1)})';
+		const actual = await describeQuery(postres, sql, []);
+
+		const expected: SchemaDef = {
+			sql: expectedSql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'table'
+				},
+				{
+					columnName: 'value',
+					type: 'int4',
+					notNull: false,
+					table: 'table'
+				}
+			],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'int4[]',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('SELECT * FROM mytable1 t WHERE id in (1, 2, 3, ?)', async () => {
 		const sql = 'SELECT * FROM mytable1 t WHERE id in (1, 2, 3, $1)';
 
 		const expectedSql = 'SELECT * FROM mytable1 t WHERE id in (1, 2, 3, ${generatePlaceholders(params.param1)})';
