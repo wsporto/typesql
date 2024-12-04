@@ -1,10 +1,10 @@
-import { Client } from 'pg';
+import { Client, Pool } from 'pg';
 
 export type Insert01Result = {
 	rowCount: number;
 }
 
-export async function insert01(client: Client): Promise<Insert01Result> {
+export async function insert01(client: Client | Pool): Promise<Insert01Result> {
 	const sql = `
 	INSERT INTO mytable1(value) values(10)
 	`
