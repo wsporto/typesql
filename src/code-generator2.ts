@@ -135,12 +135,12 @@ type ExecFunctionParameters = {
 
 const postgresCodeWriter: CodeWriter = {
 	writeImports: function (writer: CodeBlockWriter): void {
-		writer.writeLine(`import { Client } from 'pg'`);
+		writer.writeLine(`import { Client, Pool } from 'pg'`);
 	},
 
 	writeExecFunction: function (writer: CodeBlockWriter, params: ExecFunctionParameters): void {
 		const { functionName, paramsType, returnType, parameters } = params;
-		const functionParams = parameters.length > 0 ? `client: Client, params: ${paramsType}` : 'client: Client';
+		const functionParams = parameters.length > 0 ? `client: Client | Pool, params: ${paramsType}` : 'client: Client | Pool';
 		const paramValues = parameters.length > 0 ? `, values: [${parameters.map(param => paramToDriver(param, 'params')).join(', ')}]` : '';
 		const functionReturnType = params.multipleRowsResult ? `${returnType}[]` : `${returnType} | null`;
 		writer.write(`export async function ${functionName}(${functionParams}): Promise<${functionReturnType}>`).block(() => {
