@@ -8,18 +8,17 @@ import { ColumnInfo } from './mysql-query-analyzer/types';
 import { mapColumnType } from './dialects/postgres';
 import { PostgresType } from './sqlite-query-analyzer/types';
 import { preprocessSql } from './describe-query';
+import { ResultAsync } from 'neverthrow';
 
 
 
-export function generateCode(client: PgDielect, sql: string, queryName: string): TaskEither<TypeSqlError, string> {
+export function generateCode(client: PgDielect, sql: string, queryName: string): ResultAsync<string, TypeSqlError> {
 	const { sql: processedSql, namedParameters } = preprocessSql(sql, 'postgres');
-	return pipe(
-		_describeQuery(client, processedSql, namedParameters),
-		map(schemaDef => generateTsCode(processedSql, queryName, schemaDef, client.type))
-	)
+	return _describeQuery(client, processedSql, namedParameters)
+		.map(schemaDef => generateTsCode(processedSql, queryName, schemaDef, client.type))
 }
 
-function _describeQuery(databaseClient: PgDielect, sql: string, namedParameters: string[]): TaskEither<TypeSqlError, SchemaDef> {
+function _describeQuery(databaseClient: PgDielect, sql: string, namedParameters: string[]): ResultAsync<SchemaDef, TypeSqlError> {
 	return describeQuery(databaseClient.client, sql, namedParameters);
 }
 

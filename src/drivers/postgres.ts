@@ -1,11 +1,12 @@
 import postgres, { Sql } from 'postgres';
-import { PostgresColumnSchema, DescribeQueryColumn, Driver, PostgresDescribe, PostgresType } from './types';
+import { PostgresColumnSchema, DescribeQueryColumn, PostgresDescribe, PostgresType } from './types';
 import { TaskEither, tryCatch } from 'fp-ts/lib/TaskEither';
 import { DatabaseClient, TypeSqlError } from '../types';
 import { Either, right } from 'fp-ts/lib/Either';
+import { ResultAsync } from 'neverthrow';
 
-export function loadDbSchema(sql: Sql): TaskEither<string, PostgresColumnSchema[]> {
-	return tryCatch(
+export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], string> {
+	return ResultAsync.fromThrowable(
 		async () => {
 			const result = await sql`SELECT 
 				c.oid,
@@ -41,11 +42,11 @@ export function loadDbSchema(sql: Sql): TaskEither<string, PostgresColumnSchema[
 			}
 			return 'Unknown error';
 		}
-	);
+	)();
 }
 
-export function postgresDescribe(sql: Sql, sqlQuery: string): TaskEither<string, PostgresDescribe> {
-	return tryCatch(
+export const postgresDescribe = (sql: Sql, sqlQuery: string): ResultAsync<PostgresDescribe, string> => {
+	return ResultAsync.fromThrowable(
 		async () => {
 			const describeResult = await sql.unsafe(sqlQuery).describe();
 			const columns: DescribeQueryColumn[] = describeResult.columns.map((col) => ({
@@ -54,23 +55,24 @@ export function postgresDescribe(sql: Sql, sqlQuery: string): TaskEither<string,
 				typeId: col.type
 			}));
 			const parameters = describeResult.types;
-			return {
+			const result: PostgresDescribe = {
 				columns,
 				parameters
-
-			}
+			};
+			return result;
 		},
-		(reason: any) => {
-			if (reason.errors && reason.errors.length > 0) {
-				return reason.errors.map((e: { message: string }) => e.message).join(', '); // Join all error messages into one string
+		(reason: unknown): string => {
+			if (reason instanceof Error) {
+				return reason.message;
 			}
 			return 'Unknown error';
 		}
-	);
+	)();
 }
 
-export function postgresAnalyze(sql: Sql, sqlQuery: string, paramCount: number): TaskEither<string, string> {
-	return tryCatch(
+
+export function postgresAnalyze(sql: Sql, sqlQuery: string, paramCount: number): ResultAsync<string, string> {
+	return ResultAsync.fromThrowable(
 		async () => {
 			const analyzeResult = await sql.unsafe(`EXPLAIN ${sqlQuery}`, [...Array(paramCount).keys()]);
 			return analyzeResult[0]?.["QUERY PLAN"] || '';
@@ -81,7 +83,7 @@ export function postgresAnalyze(sql: Sql, sqlQuery: string, paramCount: number):
 			}
 			return reason.message;
 		}
-	);
+	)();
 }
 
 export function loadTypes(postgres: Sql): TaskEither<string, PostgresType[]> {

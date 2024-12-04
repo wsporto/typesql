@@ -44,6 +44,7 @@
 		"libsql": "^0.4.4",
 		"moment": "^2.30.1",
 		"mysql2": "^3.10.3",
+		"neverthrow": "^8.1.1",
 		"postgres": "^3.4.5",
 		"yargs": "^17.7.2"
 	}

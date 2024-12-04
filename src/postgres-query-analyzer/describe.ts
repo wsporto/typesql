@@ -1,22 +1,18 @@
-import { Either, right } from 'fp-ts/lib/Either';
 import { ParameterDef, SchemaDef, TypeSqlError } from '../types';
 import { PostgresColumnSchema, DescribeQueryColumn, DescribeQueryResult, PostgresType } from '../drivers/types';
-import { TaskEither } from 'fp-ts/lib/TaskEither';
-import * as T from 'fp-ts/lib/TaskEither';
-import { pipe } from 'fp-ts/lib/function';
 import { postgresDescribe, postgresAnalyze, loadDbSchema } from '../drivers/postgres';
 import { Sql } from 'postgres';
-import { sequenceT } from 'fp-ts/lib/Apply';
 import { ColumnInfo } from '../mysql-query-analyzer/types';
 import { parseSql } from './parser';
 import { replacePostgresParams } from '../sqlite-query-analyzer/replace-list-params';
+import { ok, Result, ResultAsync } from 'neverthrow';
 
 const postgresTypes: PostgresType = {
 	23: 'int4',
 	25: 'text'
 }
 
-function describeQueryRefine(sql: string, schema: PostgresColumnSchema[], postgresDescribeResult: DescribeQueryResult, namedParameters: string[]): Either<string, SchemaDef> {
+function describeQueryRefine(sql: string, schema: PostgresColumnSchema[], postgresDescribeResult: DescribeQueryResult, namedParameters: string[]): Result<SchemaDef, string> {
 
 	const columnNullability = transformToNullabilityMapping(schema);
 	const traverseResult = parseSql(sql);
@@ -31,7 +27,7 @@ function describeQueryRefine(sql: string, schema: PostgresColumnSchema[], postgr
 		columns: postgresDescribeResult.columns.map(col => mapToColumnInfo(col, postgresTypes, columnNullability)),
 		parameters: postgresDescribeResult.parameters.map((param, index) => mapToParamDef(paramNames[index], param, traverseResult.parameterList[index]))
 	}
-	return right(descResult);
+	return ok(descResult);
 }
 
 export type NullabilityMapping = {
@@ -64,36 +60,27 @@ function mapToParamDef(paramName: string, paramType: number, isList: boolean): P
 	}
 }
 
-export function describeQuery(postgres: Sql, sql: string, namedParameters: string[]): TaskEither<TypeSqlError, SchemaDef> {
+export function describeQuery(postgres: Sql, sql: string, namedParameters: string[]): ResultAsync<SchemaDef, TypeSqlError> {
 	const schemaTask = loadDbSchema(postgres);
-	const analyzeTask = pipe(
-		postgresDescribe(postgres, sql), // First TaskEither
-		T.flatMap(describeResult =>
-			pipe(
-				postgresAnalyze(postgres, sql, describeResult.parameters.length), // Second TaskEither
-				T.map(analyzeResult => {
-					const rows = parseQueryPlan(analyzeResult);
-					const result: DescribeQueryResult = {
-						...describeResult,
-						multipleRowsResult: rows > 1,
-					}
-					return result
-				})
-			)
-		)
-	);
-
-	// Run both tasks in parallel and combine their results
-	return pipe(
-		sequenceT(T.ApplicativePar)(schemaTask, analyzeTask),
-		T.flatMapEither(([schema, analyzeResult]) => describeQueryRefine(sql, schema, analyzeResult, namedParameters)),
-		T.mapLeft(err => {
+	const analyzeTask = postgresDescribe(postgres, sql)
+		.andThen(describeResult => postgresAnalyze(postgres, sql, describeResult.parameters.length)
+			.map(analyzeResult => {
+				const rows = parseQueryPlan(analyzeResult);
+				const result: DescribeQueryResult = {
+					...describeResult,
+					multipleRowsResult: rows > 1,
+				}
+				return result
+			})
+		);
+	return ResultAsync.combine([schemaTask, analyzeTask])
+		.andThen(([schema, analyzeResult]) => describeQueryRefine(sql, schema, analyzeResult, namedParameters))
+		.mapErr(err => {
 			return {
 				name: 'error',
 				description: err
 			}
-		})
-	);
+		});
 }
 
 function parseQueryPlan(queryPlan: string): number {

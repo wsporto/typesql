@@ -17,15 +17,16 @@ describe('postgres-query-executor', () => {
 	});
 
 	it('loadDbSchema', async () => {
-		const loadDbSchemaTask = loadDbSchema(sql);
+		const result = await loadDbSchema(sql);
 		const expected = schema;
-		const result = await loadDbSchemaTask();
-		assert.deepStrictEqual(result._tag, 'Right');
-		assert.deepStrictEqual(result.right.filter(col => !col.table_name.includes('flyway')), expected);
+		if (result.isErr()) {
+			assert.fail(`Shouldn't return an error: ${result.error}`);
+		}
+		assert.deepStrictEqual(result.value.filter(col => !col.table_name.includes('flyway')), expected);
 	});
 
 	it('postgresDescribe', async () => {
-		const actual = await postgresDescribe(sql, 'SELECT * FROM mytable1 WHERE id = $1')();
+		const actual = await postgresDescribe(sql, 'SELECT * FROM mytable1 WHERE id = $1');
 		const expected: PostgresDescribe = {
 			parameters: [23],
 			columns: [
@@ -41,9 +42,9 @@ describe('postgres-query-executor', () => {
 				}
 			]
 		};
-		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error: ${actual.left}`);
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error}`);
 		}
-		assert.deepStrictEqual(actual.right, expected);
+		assert.deepStrictEqual(actual.value, expected);
 	});
 });
