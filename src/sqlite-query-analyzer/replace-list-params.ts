@@ -38,24 +38,25 @@ export function replacePostgresParamsWithValues(sql: string, paramsIsList: boole
 	const paramRegex = /\$(\d+)/g;
 
 	const newSql = sql.replace(paramRegex, (match, index) => {
-		const paramIndex = parseInt(index, 10) - 1; // Adjust to zero-based index
-		return getValueForType(paramsTypes[paramIndex], paramsIsList[paramIndex]);
+		const paramIndex = parseInt(index, 10) - 1;
+		return getValueForType(index, paramsTypes[paramIndex], paramsIsList[paramIndex]);
 	});
 	return newSql;
 }
 
-function getValueForType(typeOid: number, isList: boolean): string {
-	if (postgresTypes[typeOid] == 'int4') {
-		if (isList) {
-			return '1, 2';
-		}
-		return '1';
+function getValueForType(paramIndex: number, typeOid: number, isList: boolean): string {
+	switch (postgresTypes[typeOid]) {
+		case 'int4':
+			if (isList) {
+				return '1, 2';
+			}
+			return `${paramIndex} + 1`;
+		case 'text':
+			if (isList) {
+				return `'1', '2'`;
+			}
+			return `'${paramIndex + 1}'`;
+
 	}
-	if (postgresTypes[typeOid] == 'text') {
-		if (isList) {
-			return `'1', '2'`;
-		}
-		return `'1'`;
-	}
-	return '1'
+	return '1';
 }
