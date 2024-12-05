@@ -536,4 +536,40 @@ describe.only('Infer column nullability', () => {
 
 		assert.deepStrictEqual(actual.columnsNullability, expected);
 	});
+
+	it('select quantity from mytable1, (select count(*) as quantity from mytable2) t2', () => {
+		const sql = 'select quantity from mytable1, (select count(*) as quantity from mytable2) t2';
+		const actual = parseSql(sql, dbSchema);
+
+		const expected = [true];
+
+		assert.deepStrictEqual(actual.columnsNullability, expected);
+	});
+
+	it('SELECT name from mytable1, (SELECT name from mytable2 where name is not null) t', () => {
+		const sql = 'SELECT name from mytable1, (SELECT name from mytable2 where name is not null) t';
+		const actual = parseSql(sql, dbSchema);
+
+		const expected = [true];
+
+		assert.deepStrictEqual(actual.columnsNullability, expected);
+	});
+
+	it('SELECT name from (SELECT name from mytable2 where name is not null) t', () => {
+		const sql = 'SELECT name from (SELECT name from mytable2 where name is not null) t';
+		const actual = parseSql(sql, dbSchema);
+
+		const expected = [true];
+
+		assert.deepStrictEqual(actual.columnsNullability, expected);
+	});
+
+	it('SELECT name from (SELECT name from mytable2) t WHERE name is not null', () => {
+		const sql = 'SELECT name from (SELECT name from mytable2) t WHERE name is not null';
+		const actual = parseSql(sql, dbSchema);
+
+		const expected = [true];
+
+		assert.deepStrictEqual(actual.columnsNullability, expected);
+	});
 });
