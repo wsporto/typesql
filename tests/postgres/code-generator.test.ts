@@ -4,7 +4,6 @@ import { readFileSync } from 'node:fs';
 import { generateCode } from '../../src/code-generator2';
 import { PgDielect } from '../../src/types';
 import postgres from 'postgres';
-import { isLeft } from 'fp-ts/lib/Either';
 
 describe('postgres-code-generator', () => {
 
@@ -71,7 +70,7 @@ AND name IN (:names)`;
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
-	it.skip('insert01 - INSERT INTO mytable1(value) values(10)', async () => {
+	it('insert01 - INSERT INTO mytable1(value) values(10)', async () => {
 		const sql = 'INSERT INTO mytable1(value) values(10)';
 
 		const actual = await generateCode(dialect, sql, 'insert01');
