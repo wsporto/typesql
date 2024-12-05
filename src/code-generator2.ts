@@ -135,7 +135,7 @@ type ExecFunctionParameters = {
 
 const postgresCodeWriter: CodeWriter = {
 	writeImports: function (writer: CodeBlockWriter): void {
-		writer.writeLine(`import { Client, Pool } from 'pg'`);
+		writer.writeLine(`import { Client, Pool } from 'pg';`);
 	},
 
 	writeExecFunction: function (writer: CodeBlockWriter, params: ExecFunctionParameters): void {
