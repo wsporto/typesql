@@ -1,4 +1,4 @@
-import { Client, Pool } from 'pg'
+import { Client, Pool } from 'pg';
 
 export type Select02Result = {
 	id: number;
