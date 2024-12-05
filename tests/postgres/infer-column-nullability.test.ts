@@ -5,7 +5,7 @@ import { PostgresColumnSchema } from '../../src/drivers/types';
 import { parseSql } from '../../src/postgres-query-analyzer/parser';
 
 let dbSchema: PostgresColumnSchema[] = [];
-describe.only('Infer column nullability', () => {
+describe('Infer column nullability', () => {
 
 	const postres = postgres({
 		host: 'localhost',
@@ -533,6 +533,16 @@ describe.only('Infer column nullability', () => {
 		const actual = parseSql(sql, dbSchema);
 
 		const expected = [true];
+
+		assert.deepStrictEqual(actual.columnsNullability, expected);
+	});
+
+	it('SELECT * FROM mytable1 t1 INNER JOIN mytable2 t2 on t2.id = t1.id', () => {
+		const sql = 'SELECT * FROM mytable1 t1 INNER JOIN mytable2 t2 on t2.id = t1.id';
+		const actual = parseSql(sql, dbSchema);
+
+		//id, value, id, name, description
+		const expected = [true, false, true, false, false];
 
 		assert.deepStrictEqual(actual.columnsNullability, expected);
 	});
