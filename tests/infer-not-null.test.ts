@@ -10,6 +10,7 @@ describe('infer-not-null', () => {
 		client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
 	});
 
+	//here
 	it('select value from mytable1 where value is not null', async () => {
 		const sql = `
         select value from mytable1 where value is not null
@@ -1015,7 +1016,7 @@ describe('infer-not-null', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
-	it('select name from (select id as name from mytable2) t1', async () => {
+	it('select id from (select * from mytable2) t1', async () => {
 		const sql = `
         select id from (select * from mytable2) t1
         `;

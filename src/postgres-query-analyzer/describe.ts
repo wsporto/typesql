@@ -14,8 +14,8 @@ export const postgresTypes: PostgresType = {
 
 function describeQueryRefine(sql: string, schema: PostgresColumnSchema[], postgresDescribeResult: DescribeQueryResult, namedParameters: string[]): Result<SchemaDef, string> {
 
-	const columnNullability = transformToNullabilityMapping(schema);
-	const traverseResult = parseSql(sql);
+	const traverseResult = parseSql(sql, schema);
+	const columnNullability = traverseResult.columnsNullability;
 	const paramNames = postgresDescribeResult.parameters.map((_, index) => namedParameters[index] ? namedParameters[index] : `param${index + 1}`);
 
 	const newSql = replacePostgresParams(sql, traverseResult.parameterList, paramNames);
@@ -24,7 +24,7 @@ function describeQueryRefine(sql: string, schema: PostgresColumnSchema[], postgr
 		sql: newSql,
 		queryType: traverseResult.queryType,
 		multipleRowsResult: postgresDescribeResult.multipleRowsResult,
-		columns: postgresDescribeResult.columns.map(col => mapToColumnInfo(col, postgresTypes, columnNullability)),
+		columns: postgresDescribeResult.columns.map((col, index) => mapToColumnInfo(col, postgresTypes, columnNullability[index])),
 		parameters: postgresDescribeResult.parameters.map((param, index) => mapToParamDef(paramNames[index], param, traverseResult.parameterList[index]))
 	}
 	return ok(descResult);
@@ -34,18 +34,10 @@ export type NullabilityMapping = {
 	[key: string]: boolean;  // key is "oid-column_name" and value is the is_nullable boolean
 };
 
-export const transformToNullabilityMapping = (schema: PostgresColumnSchema[]): NullabilityMapping => {
-	return schema.reduce((mapping, column) => {
-		const key = `${column.oid}-${column.column_name}`;
-		mapping[key] = !column.is_nullable;
-		return mapping;
-	}, {} as NullabilityMapping);
-};
-
-function mapToColumnInfo(col: DescribeQueryColumn, posgresTypes: PostgresType, nullabilityMapping: NullabilityMapping): ColumnInfo {
+function mapToColumnInfo(col: DescribeQueryColumn, posgresTypes: PostgresType, notNull: boolean): ColumnInfo {
 	return {
 		columnName: col.name,
-		notNull: !!nullabilityMapping[`${col.tableId}-${col.name}`],
+		notNull: notNull,
 		type: posgresTypes[col.typeId] as any,
 		table: col.tableId == 0 ? '' : 'table'
 	}
@@ -61,23 +53,22 @@ function mapToParamDef(paramName: string, paramType: number, isList: boolean): P
 }
 
 export function describeQuery(postgres: Sql, sql: string, namedParameters: string[]): ResultAsync<SchemaDef, TypeSqlError> {
-	const analyzeTask = postgresDescribe(postgres, sql)
-		.andThen(describeResult => {
-			const parseResult = parseSql(sql);
-			const newSql = replacePostgresParamsWithValues(sql, parseResult.parameterList, describeResult.parameters);
-			return postgresAnalyze(postgres, newSql).map(analyzeResult => {
-				const singleRow = isSingleRow(analyzeResult);
-				const result: DescribeQueryResult = {
-					...describeResult,
-					multipleRowsResult: !singleRow,
-				}
-				return result;
-			});
-		});
-	const schemaTask = loadDbSchema(postgres);
-	return ResultAsync.combine([schemaTask, analyzeTask])
-		.andThen(([schema, analyzeResult]) => describeQueryRefine(sql, schema, analyzeResult, namedParameters))
-		.mapErr(err => {
+	return loadDbSchema(postgres)
+		.andThen(dbSchema => {
+			return postgresDescribe(postgres, sql)
+				.andThen(describeResult => {
+					const parseResult = parseSql(sql, dbSchema);
+					const newSql = replacePostgresParamsWithValues(sql, parseResult.parameterList, describeResult.parameters);
+					return postgresAnalyze(postgres, newSql).map(analyzeResult => {
+						const singleRow = isSingleRow(analyzeResult);
+						const result: DescribeQueryResult = {
+							...describeResult,
+							multipleRowsResult: !singleRow,
+						}
+						return result;
+					});
+				}).andThen(analyzeResult => describeQueryRefine(sql, dbSchema, analyzeResult, namedParameters));
+		}).mapErr(err => {
 			return {
 				name: 'error',
 				description: err
