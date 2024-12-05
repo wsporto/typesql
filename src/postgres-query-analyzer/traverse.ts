@@ -1,4 +1,4 @@
-import { A_expr_addContext, A_expr_andContext, A_expr_at_time_zoneContext, A_expr_betweenContext, A_expr_caretContext, A_expr_collateContext, A_expr_compareContext, A_expr_inContext, A_expr_is_notContext, A_expr_isnullContext, A_expr_lesslessContext, A_expr_likeContext, A_expr_mulContext, A_expr_orContext, A_expr_qual_opContext, A_expr_qualContext, A_expr_typecastContext, A_expr_unary_notContext, A_expr_unary_qualopContext, A_expr_unary_signContext, A_exprContext, C_expr_caseContext, C_expr_exprContext, C_exprContext, ColidContext, Expr_listContext, From_clauseContext, From_listContext, Func_applicationContext, Func_arg_exprContext, IdentifierContext, InsertstmtContext, Join_qualContext, Qualified_nameContext, Relation_exprContext, Select_clauseContext, Select_no_parensContext, Select_with_parensContext, SelectstmtContext, Simple_select_intersectContext, Simple_select_pramaryContext, StmtContext, Table_refContext, Target_elContext, Target_labelContext, Target_listContext, When_clauseContext, Where_clauseContext } from '@wsporto/typesql-parser/postgres/PostgreSQLParser';
+import { A_expr_addContext, A_expr_andContext, A_expr_at_time_zoneContext, A_expr_betweenContext, A_expr_caretContext, A_expr_collateContext, A_expr_compareContext, A_expr_inContext, A_expr_is_notContext, A_expr_isnullContext, A_expr_lesslessContext, A_expr_likeContext, A_expr_mulContext, A_expr_orContext, A_expr_qual_opContext, A_expr_qualContext, A_expr_typecastContext, A_expr_unary_notContext, A_expr_unary_qualopContext, A_expr_unary_signContext, A_exprContext, C_expr_caseContext, C_expr_exprContext, C_exprContext, ColidContext, Expr_listContext, From_clauseContext, From_listContext, Func_applicationContext, Func_arg_exprContext, IdentifierContext, Insert_column_itemContext, InsertstmtContext, Join_qualContext, Qualified_nameContext, Relation_exprContext, Select_clauseContext, Select_no_parensContext, Select_with_parensContext, SelectstmtContext, Simple_select_intersectContext, Simple_select_pramaryContext, StmtContext, Table_refContext, Target_elContext, Target_labelContext, Target_listContext, When_clauseContext, Where_clauseContext } from '@wsporto/typesql-parser/postgres/PostgreSQLParser';
 import { PostgresTraverseResult } from './parser';
 import { ParserRuleContext } from '@wsporto/typesql-parser';
 import { PostgresColumnSchema } from '../drivers/types';
@@ -19,11 +19,12 @@ export function traverseSmt(stmt: StmtContext, dbSchema: PostgresColumnSchema[])
 	}
 	const insertstmt = stmt.insertstmt();
 	if (insertstmt) {
-		return traverseInsertstmt(insertstmt);
+		return traverseInsertstmt(insertstmt, dbSchema);
 	}
 	return {
 		queryType: 'Select',
 		columnsNullability: [],
+		parametersNullability: [],
 		parameterList: []
 	}
 
@@ -58,6 +59,7 @@ function traverseSelectstmt(selectstmt: SelectstmtContext, dbSchema: PostgresCol
 	return {
 		queryType: 'Select',
 		columnsNullability,
+		parametersNullability: [],
 		parameterList: paramIsListResult
 	};
 }
@@ -513,13 +515,30 @@ function paramIsList(c_expr: ParserRuleContext) {
 }
 
 
-function traverseInsertstmt(insertstmt: InsertstmtContext): PostgresTraverseResult {
+function traverseInsertstmt(insertstmt: InsertstmtContext, dbSchema: PostgresColumnSchema[]): PostgresTraverseResult {
+
+	const insert_rest = insertstmt.insert_rest();
+	const parametersNullability = insert_rest.insert_column_list()
+		.insert_column_item_list()
+		.map(insert_column_item => traverse_insert_column_item(insert_column_item, dbSchema));
+
 	return {
 		queryType: 'Insert',
-		//rowCount
-		columnsNullability: [true],
+		parametersNullability,
+		columnsNullability: [],
 		parameterList: []
 	}
+}
+
+function traverse_insert_column_item(insert_column_item: Insert_column_itemContext, dbSchema: PostgresColumnSchema[]): boolean {
+	const colid = insert_column_item.colid();
+	return isNotNull_colid(colid, dbSchema);
+}
+
+function isNotNull_colid(colid: ColidContext, dbSchema: PostgresColumnSchema[]): boolean {
+	const columnName = colid.unreserved_keyword().getText();
+	const column = findColumn(columnName, dbSchema);
+	return !column.is_nullable;
 }
 
 function isNotNull(field: NotNullInfo, where_clause: Where_clauseContext): boolean {
