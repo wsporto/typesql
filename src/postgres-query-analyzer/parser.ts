@@ -1,6 +1,7 @@
 import { parseSql as _parseSql } from '@wsporto/typesql-parser/postgres';
 import { traverseSmt } from './traverse';
 import { QueryType } from '../types';
+import { PostgresColumnSchema } from '../drivers/types';
 
 export type PostgresTraverseResult = {
 	queryType: QueryType;
@@ -8,10 +9,10 @@ export type PostgresTraverseResult = {
 	parameterList: boolean[];
 }
 
-export function parseSql(sql: string): PostgresTraverseResult {
+export function parseSql(sql: string, dbSchema: PostgresColumnSchema[]): PostgresTraverseResult {
 	const parser = _parseSql(sql);
 
-	const traverseResult = traverseSmt(parser.stmt());
+	const traverseResult = traverseSmt(parser.stmt(), dbSchema);
 
 	return traverseResult;
 }
