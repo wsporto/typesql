@@ -418,11 +418,8 @@ function traverse_from_clause(from_clause: From_clauseContext, dbSchema: NotNull
 }
 
 function traverse_from_list(from_list: From_listContext, dbSchema: NotNullInfo[]) {
-	const table_ref = from_list.table_ref_list()[0];
-	if (table_ref) {
-		return traverse_table_ref(table_ref, dbSchema);
-	}
-	return [];
+	const fromColumns = from_list.table_ref_list().flatMap(table_ref => traverse_table_ref(table_ref, dbSchema));
+	return fromColumns;
 }
 
 function traverse_table_ref(table_ref: Table_refContext, dbSchema: NotNullInfo[]): NotNullInfo[] {

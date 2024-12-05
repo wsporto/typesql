@@ -266,7 +266,6 @@ describe('Infer column nullability', () => {
 		assert.deepStrictEqual(actual, expected);
 	});
 
-	//TODO - pq passou nos testes
 	it('SELECT name from (SELECT name from mytable2 where name is not null) t', () => {
 		const sql = 'SELECT name from (SELECT name from mytable2 where name is not null) t';
 		const actual = parseAndInferNotNull(sql, dbSchema);
