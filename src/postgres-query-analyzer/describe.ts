@@ -15,7 +15,6 @@ export const postgresTypes: PostgresType = {
 function describeQueryRefine(sql: string, schema: PostgresColumnSchema[], postgresDescribeResult: DescribeQueryResult, namedParameters: string[]): Result<SchemaDef, string> {
 
 	const traverseResult = parseSql(sql, schema);
-	const columnNullability = traverseResult.columnsNullability;
 	const paramNames = postgresDescribeResult.parameters.map((_, index) => namedParameters[index] ? namedParameters[index] : `param${index + 1}`);
 
 	const newSql = replacePostgresParams(sql, traverseResult.parameterList, paramNames);
@@ -25,7 +24,7 @@ function describeQueryRefine(sql: string, schema: PostgresColumnSchema[], postgr
 		queryType: traverseResult.queryType,
 		multipleRowsResult: postgresDescribeResult.multipleRowsResult,
 		columns: getColumnsForQuery(traverseResult, postgresDescribeResult),
-		parameters: postgresDescribeResult.parameters.map((param, index) => mapToParamDef(paramNames[index], param, traverseResult.parameterList[index]))
+		parameters: getParamtersForQuery(traverseResult, postgresDescribeResult, paramNames)
 	}
 	return ok(descResult);
 }
@@ -43,11 +42,11 @@ function mapToColumnInfo(col: DescribeQueryColumn, posgresTypes: PostgresType, n
 	}
 }
 
-function mapToParamDef(paramName: string, paramType: number, isList: boolean): ParameterDef {
+function mapToParamDef(paramName: string, paramType: number, notNull: boolean, isList: boolean): ParameterDef {
 	const arrayType = isList ? '[]' : ''
 	return {
 		name: paramName,
-		notNull: true,
+		notNull,
 		columnType: `${postgresTypes[paramType]}${arrayType}` as any
 	}
 }
@@ -94,19 +93,10 @@ function parseSingleQueryPlan(queryPlan: string): number | null {
 }
 
 function getColumnsForQuery(traverseResult: PostgresTraverseResult, postgresDescribeResult: DescribeQueryResult): ColumnInfo[] {
-	if (traverseResult.queryType === 'Insert') {
-		return getColumnsForInsert();
-	}
 	return postgresDescribeResult.columns.map((col, index) => mapToColumnInfo(col, postgresTypes, traverseResult.columnsNullability[index]))
 }
 
-function getColumnsForInsert(): ColumnInfo[] {
-	const columns: ColumnInfo[] = [
-		{
-			columnName: 'rowCount',
-			type: 'int4',
-			notNull: true
-		}
-	]
-	return columns;
+function getParamtersForQuery(traverseResult: PostgresTraverseResult, postgresDescribeResult: DescribeQueryResult, paramNames: string[]): ParameterDef[] {
+	return postgresDescribeResult.parameters
+		.map((param, index) => mapToParamDef(paramNames[index], param, traverseResult.parametersNullability[index] ?? true, traverseResult.parameterList[index]))
 }

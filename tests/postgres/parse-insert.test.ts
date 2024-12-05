@@ -1,6 +1,5 @@
 import assert from 'node:assert';
 import type { SchemaDef } from '../../src/types';
-import { isLeft } from 'fp-ts/lib/Either';
 import postgres from 'postgres';
 import { describeQuery } from '../../src/postgres-query-analyzer/describe';
 
@@ -13,7 +12,7 @@ describe('postgres-parse-insert', () => {
 		port: 5432
 	});
 
-	it.skip('insert into mytable1 (value) values (?)', async () => {
+	it('insert into mytable1 (value) values (?)', async () => {
 		const sql = 'insert into mytable1 (value) values ($1)';
 		const actual = await describeQuery(postres, sql, []);
 		const expected: SchemaDef = {

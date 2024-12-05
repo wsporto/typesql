@@ -84,7 +84,7 @@ function generateTsCode(
 
 function createTsDescriptor(schemaDef: SchemaDef) {
 	const tsDescriptor: TsDescriptor = {
-		columns: schemaDef.columns.map(col => mapColumnInfoToTsFieldDescriptor(col)),
+		columns: getColumnsForQuery(schemaDef),
 		parameters: schemaDef.parameters.map((param) => mapParameterToTsFieldDescriptor(param)),
 		sql: '',
 		queryType: schemaDef.queryType,
@@ -147,7 +147,7 @@ const postgresCodeWriter: CodeWriter = {
 		writer.write(`export async function ${functionName}(${functionParams}): Promise<${functionReturnType}>`).block(() => {
 			writeSql(writer, params.sql);
 			if (params.queryType === 'Insert') {
-				writer.write('return client.query(sql)').newLine();
+				writer.write(`return client.query({ text: sql${paramValues} })`).newLine();
 				writer.indent().write(`.then(res => mapArrayTo${returnType}(res));`)
 			}
 			else {
@@ -217,3 +217,18 @@ const postgresCodeWriter: CodeWriter = {
 		}
 	}
 }
+
+function getColumnsForQuery(schemaDef: SchemaDef): TsFieldDescriptor[] {
+	if (schemaDef.queryType === 'Insert') {
+		const columns: TsFieldDescriptor[] = [
+			{
+				name: 'rowCount',
+				tsType: 'number',
+				notNull: true
+			}
+		]
+		return columns;
+	}
+	return schemaDef.columns.map(col => mapColumnInfoToTsFieldDescriptor(col))
+}
+

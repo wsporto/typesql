@@ -81,4 +81,16 @@ AND name IN (:names)`;
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('insert02 - select with same parameter used twice', async () => {
+		const sql = 'INSERT INTO mytable1(value) values($1)';
+
+		const actual = await generateCode(dialect, sql, 'insert02');
+		const expected = readFileSync('tests/postgres/expected-code/insert02.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });
