@@ -516,7 +516,8 @@ function paramIsList(c_expr: ParserRuleContext) {
 function traverseInsertstmt(insertstmt: InsertstmtContext): PostgresTraverseResult {
 	return {
 		queryType: 'Insert',
-		columnsNullability: [],
+		//rowCount
+		columnsNullability: [true],
 		parameterList: []
 	}
 }

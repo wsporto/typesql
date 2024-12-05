@@ -3,7 +3,7 @@ import { PostgresColumnSchema, DescribeQueryColumn, DescribeQueryResult, Postgre
 import { postgresDescribe, postgresAnalyze, loadDbSchema } from '../drivers/postgres';
 import { Sql } from 'postgres';
 import { ColumnInfo } from '../mysql-query-analyzer/types';
-import { parseSql } from './parser';
+import { parseSql, PostgresTraverseResult } from './parser';
 import { replacePostgresParams, replacePostgresParamsWithValues } from '../sqlite-query-analyzer/replace-list-params';
 import { ok, Result, ResultAsync } from 'neverthrow';
 
@@ -24,7 +24,7 @@ function describeQueryRefine(sql: string, schema: PostgresColumnSchema[], postgr
 		sql: newSql,
 		queryType: traverseResult.queryType,
 		multipleRowsResult: postgresDescribeResult.multipleRowsResult,
-		columns: postgresDescribeResult.columns.map((col, index) => mapToColumnInfo(col, postgresTypes, columnNullability[index])),
+		columns: getColumnsForQuery(traverseResult, postgresDescribeResult),
 		parameters: postgresDescribeResult.parameters.map((param, index) => mapToParamDef(paramNames[index], param, traverseResult.parameterList[index]))
 	}
 	return ok(descResult);
@@ -91,4 +91,22 @@ function parseSingleQueryPlan(queryPlan: string): number | null {
 		return parseInt(match[1], 10); // match[1] is the captured number after 'rows='
 	}
 	return null;
+}
+
+function getColumnsForQuery(traverseResult: PostgresTraverseResult, postgresDescribeResult: DescribeQueryResult): ColumnInfo[] {
+	if (traverseResult.queryType === 'Insert') {
+		return getColumnsForInsert();
+	}
+	return postgresDescribeResult.columns.map((col, index) => mapToColumnInfo(col, postgresTypes, traverseResult.columnsNullability[index]))
+}
+
+function getColumnsForInsert(): ColumnInfo[] {
+	const columns: ColumnInfo[] = [
+		{
+			columnName: 'rowCount',
+			type: 'int4',
+			notNull: true
+		}
+	]
+	return columns;
 }

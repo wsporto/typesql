@@ -1,9 +1,7 @@
 import CodeBlockWriter from 'code-block-writer';
 import { capitalize, convertToCamelCaseName, removeDuplicatedParameters2, TsDescriptor } from './code-generator';
 import { ParameterDef, PgDielect, SchemaDef, TsFieldDescriptor, TsParameterDescriptor, TypeSqlError } from './types';
-import { TaskEither, map } from 'fp-ts/lib/TaskEither';
 import { describeQuery } from './postgres-query-analyzer/describe';
-import { pipe } from 'fp-ts/lib/function';
 import { ColumnInfo } from './mysql-query-analyzer/types';
 import { mapColumnType } from './dialects/postgres';
 import { PostgresType } from './sqlite-query-analyzer/types';
@@ -71,6 +69,7 @@ function generateTsCode(
 	writer.blankLine();
 	const execFunctionParams: ExecFunctionParameters = {
 		sql,
+		queryType: tsDescriptor.queryType,
 		multipleRowsResult: tsDescriptor.multipleRowsResult,
 		functionName: queryName,
 		paramsType: paramsTypeName,
@@ -88,7 +87,7 @@ function createTsDescriptor(schemaDef: SchemaDef) {
 		columns: schemaDef.columns.map(col => mapColumnInfoToTsFieldDescriptor(col)),
 		parameters: schemaDef.parameters.map((param) => mapParameterToTsFieldDescriptor(param)),
 		sql: '',
-		queryType: 'Select',
+		queryType: schemaDef.queryType,
 		multipleRowsResult: schemaDef.multipleRowsResult,
 		parameterNames: []
 	}
@@ -125,6 +124,7 @@ type CodeWriter = {
 
 type ExecFunctionParameters = {
 	sql: string;
+	queryType: TsDescriptor['queryType'],
 	multipleRowsResult: boolean;
 	functionName: string;
 	returnType: string;
@@ -142,15 +142,22 @@ const postgresCodeWriter: CodeWriter = {
 		const { functionName, paramsType, returnType, parameters } = params;
 		const functionParams = parameters.length > 0 ? `client: Client | Pool, params: ${paramsType}` : 'client: Client | Pool';
 		const paramValues = parameters.length > 0 ? `, values: [${parameters.map(param => paramToDriver(param, 'params')).join(', ')}]` : '';
-		const functionReturnType = params.multipleRowsResult ? `${returnType}[]` : `${returnType} | null`;
+		const orNull = params.queryType === 'Insert' ? '' : ' | null'
+		const functionReturnType = params.multipleRowsResult ? `${returnType}[]` : `${returnType}${orNull}`;
 		writer.write(`export async function ${functionName}(${functionParams}): Promise<${functionReturnType}>`).block(() => {
 			writeSql(writer, params.sql);
-			writer.write(`return client.query({ text: sql, rowMode: 'array'${paramValues} })`).newLine();
-			if (params.multipleRowsResult) {
-				writer.indent().write(`.then(res => res.rows.map(row => mapArrayTo${returnType}(row)));`)
+			if (params.queryType === 'Insert') {
+				writer.write('return client.query(sql)').newLine();
+				writer.indent().write(`.then(res => mapArrayTo${returnType}(res));`)
 			}
 			else {
-				writer.indent().write(`.then(res => res.rows.length > 0 ? mapArrayTo${returnType}(res.rows[0]) : null);`)
+				writer.write(`return client.query({ text: sql, rowMode: 'array'${paramValues} })`).newLine();
+				if (params.multipleRowsResult) {
+					writer.indent().write(`.then(res => res.rows.map(row => mapArrayTo${returnType}(row)));`)
+				}
+				else {
+					writer.indent().write(`.then(res => res.rows.length > 0 ? mapArrayTo${returnType}(res.rows[0]) : null);`)
+				}
 			}
 		});
 
@@ -173,7 +180,12 @@ const postgresCodeWriter: CodeWriter = {
 			writer.write(`const result: ${returnType} = `).block(() => {
 				params.columns.forEach((col, index) => {
 					const separator = index < params.columns.length - 1 ? ',' : '';
-					writer.writeLine(`${col.name}: ${toDriver(`data[${index}]`, col)}${separator}`);
+					if (params.queryType === 'Insert') {
+						writer.writeLine(`${col.name}: data.${col.name}${separator}`);
+					}
+					else {
+						writer.writeLine(`${col.name}: ${toDriver(`data[${index}]`, col)}${separator}`);
+					}
 				});
 			});
 			writer.writeLine('return result;');
