@@ -1,0 +1,24 @@
+import { Client, Pool } from 'pg';
+
+export type Delete01Params = {
+	param1: number;
+}
+
+export type Delete01Result = {
+	rowCount: number;
+}
+
+export async function delete01(client: Client | Pool, params: Delete01Params): Promise<Delete01Result> {
+	const sql = `
+	DELETE FROM mytable1 WHERE id=$1
+	`
+	return client.query({ text: sql, values: [params.param1] })
+		.then(res => mapArrayToDelete01Result(res));
+}
+
+function mapArrayToDelete01Result(data: any) {
+	const result: Delete01Result = {
+		rowCount: data.rowCount
+	}
+	return result;
+}

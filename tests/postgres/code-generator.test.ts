@@ -105,4 +105,16 @@ AND name IN (:names)`;
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('delete01 - DELETE FROM mytable1 WHERE id=?', async () => {
+		const sql = 'DELETE FROM mytable1 WHERE id=$1';
+
+		const actual = await generateCode(dialect, sql, 'delete01');
+		const expected = readFileSync('tests/postgres/expected-code/delete01.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });
