@@ -169,11 +169,11 @@ const postgresCodeWriter: CodeWriter = {
 		}
 		const allParamters = [...params.data.map(param => paramToDriver(param, 'data')), ...parameters.map(param => paramToDriver(param, 'params'))];
 		const paramValues = allParamters.length > 0 ? `, values: [${allParamters.join(', ')}]` : '';
-		const orNull = params.queryType === 'Insert' || params.queryType === 'Update' ? '' : ' | null';
+		const orNull = params.queryType === 'Insert' || params.queryType === 'Update' || params.queryType === 'Delete' ? '' : ' | null';
 		const functionReturnType = params.multipleRowsResult ? `${returnType}[]` : `${returnType}${orNull}`;
 		writer.write(`export async function ${functionName}(${functionParams}): Promise<${functionReturnType}>`).block(() => {
 			writeSql(writer, params.sql);
-			if (params.queryType === 'Insert' || params.queryType === 'Update') {
+			if (params.queryType === 'Insert' || params.queryType === 'Update' || params.queryType === 'Delete') {
 				writer.write(`return client.query({ text: sql${paramValues} })`).newLine();
 				writer.indent().write(`.then(res => mapArrayTo${returnType}(res));`)
 			}
@@ -207,7 +207,7 @@ const postgresCodeWriter: CodeWriter = {
 			writer.write(`const result: ${returnType} = `).block(() => {
 				params.columns.forEach((col, index) => {
 					const separator = index < params.columns.length - 1 ? ',' : '';
-					if (params.queryType === 'Insert' || params.queryType === 'Update') {
+					if (params.queryType === 'Insert' || params.queryType === 'Update' || params.queryType === 'Delete') {
 						writer.writeLine(`${col.name}: data.${col.name}${separator}`);
 					}
 					else {
@@ -246,7 +246,7 @@ const postgresCodeWriter: CodeWriter = {
 }
 
 function getColumnsForQuery(schemaDef: SchemaDef): TsFieldDescriptor[] {
-	if (schemaDef.queryType === 'Insert' || schemaDef.queryType === 'Update') {
+	if (schemaDef.queryType === 'Insert' || schemaDef.queryType === 'Update' || schemaDef.queryType === 'Delete') {
 		const columns: TsFieldDescriptor[] = [
 			{
 				name: 'rowCount',
