@@ -7,6 +7,10 @@ export function mapColumnType(postgresType: PostgresType): TsType {
 			return 'number';
 		case 'int4[]':
 			return 'number[]';
+		case 'float4':
+			return 'number';
+		case 'float4[]':
+			return 'number[]';
 		case 'text':
 			return 'string';
 		case 'text[]':
