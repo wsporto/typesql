@@ -1,4 +1,4 @@
-import { A_expr_addContext, A_expr_andContext, A_expr_at_time_zoneContext, A_expr_betweenContext, A_expr_caretContext, A_expr_collateContext, A_expr_compareContext, A_expr_inContext, A_expr_is_notContext, A_expr_isnullContext, A_expr_lesslessContext, A_expr_likeContext, A_expr_mulContext, A_expr_orContext, A_expr_qual_opContext, A_expr_qualContext, A_expr_typecastContext, A_expr_unary_notContext, A_expr_unary_qualopContext, A_expr_unary_signContext, A_exprContext, C_expr_caseContext, C_expr_exprContext, C_exprContext, ColidContext, Expr_listContext, From_clauseContext, From_listContext, Func_applicationContext, Func_arg_exprContext, IdentifierContext, Insert_column_itemContext, InsertstmtContext, Join_qualContext, Qualified_nameContext, Relation_exprContext, Select_clauseContext, Select_no_parensContext, Select_with_parensContext, SelectstmtContext, Simple_select_intersectContext, Simple_select_pramaryContext, StmtContext, Table_refContext, Target_elContext, Target_labelContext, Target_listContext, When_clauseContext, Where_clauseContext } from '@wsporto/typesql-parser/postgres/PostgreSQLParser';
+import { A_expr_addContext, A_expr_andContext, A_expr_at_time_zoneContext, A_expr_betweenContext, A_expr_caretContext, A_expr_collateContext, A_expr_compareContext, A_expr_inContext, A_expr_is_notContext, A_expr_isnullContext, A_expr_lesslessContext, A_expr_likeContext, A_expr_mulContext, A_expr_orContext, A_expr_qual_opContext, A_expr_qualContext, A_expr_typecastContext, A_expr_unary_notContext, A_expr_unary_qualopContext, A_expr_unary_signContext, A_exprContext, C_expr_caseContext, C_expr_exprContext, C_exprContext, ColidContext, Expr_listContext, From_clauseContext, From_listContext, Func_applicationContext, Func_arg_exprContext, IdentifierContext, Insert_column_itemContext, InsertstmtContext, Join_qualContext, Qualified_nameContext, Relation_exprContext, Select_clauseContext, Select_no_parensContext, Select_with_parensContext, SelectstmtContext, Set_clauseContext, Simple_select_intersectContext, Simple_select_pramaryContext, StmtContext, Table_refContext, Target_elContext, Target_labelContext, Target_listContext, UpdatestmtContext, When_clauseContext, Where_clauseContext } from '@wsporto/typesql-parser/postgres/PostgreSQLParser';
 import { PostgresTraverseResult } from './parser';
 import { ParserRuleContext } from '@wsporto/typesql-parser';
 import { PostgresColumnSchema } from '../drivers/types';
@@ -11,15 +11,28 @@ type NotNullInfo = {
 	is_nullable: boolean;
 }
 
+type TraverseResult = {
+	columnsNullability: boolean[],
+	parametersNullability: boolean[],
+}
+
 export function traverseSmt(stmt: StmtContext, dbSchema: PostgresColumnSchema[]): PostgresTraverseResult {
+	const traverseResult: TraverseResult = {
+		columnsNullability: [],
+		parametersNullability: []
+	}
 	const selectstmt = stmt.selectstmt();
 	if (selectstmt) {
-		const result = traverseSelectstmt(selectstmt, dbSchema);
+		const result = traverseSelectstmt(selectstmt, dbSchema, traverseResult);
 		return result;
 	}
 	const insertstmt = stmt.insertstmt();
 	if (insertstmt) {
 		return traverseInsertstmt(insertstmt, dbSchema);
+	}
+	const updatestmt = stmt.updatestmt();
+	if (updatestmt) {
+		return traverseUpdatestmt(updatestmt, dbSchema, traverseResult);
 	}
 	return {
 		queryType: 'Select',
@@ -47,13 +60,13 @@ function collectContextsOfType(ctx: ParserRuleContext, targetType: any): ParserR
 }
 
 
-function traverseSelectstmt(selectstmt: SelectstmtContext, dbSchema: PostgresColumnSchema[]): PostgresTraverseResult {
+function traverseSelectstmt(selectstmt: SelectstmtContext, dbSchema: PostgresColumnSchema[], traverseResult: TraverseResult): PostgresTraverseResult {
 
 	const result = collectContextsOfType(selectstmt, C_expr_exprContext).filter(c_expr => (c_expr as any).PARAM());
 	const paramIsListResult = result.map(param => paramIsList(param));
 
 
-	const columns = traverse_selectstmt(selectstmt, dbSchema);
+	const columns = traverse_selectstmt(selectstmt, dbSchema, traverseResult);
 	const columnsNullability = columns.map(col => !col.is_nullable);
 
 	return {
@@ -64,31 +77,31 @@ function traverseSelectstmt(selectstmt: SelectstmtContext, dbSchema: PostgresCol
 	};
 }
 
-function traverse_selectstmt(selectstmt: SelectstmtContext, dbSchema: PostgresColumnSchema[]): NotNullInfo[] {
+function traverse_selectstmt(selectstmt: SelectstmtContext, dbSchema: PostgresColumnSchema[], traverseResult: TraverseResult): NotNullInfo[] {
 	const select_no_parens = selectstmt.select_no_parens();
 	if (select_no_parens) {
-		return traverse_select_no_parens(select_no_parens, dbSchema);
+		return traverse_select_no_parens(select_no_parens, dbSchema, traverseResult);
 	}
 	return [];
 }
 
-function traverse_select_no_parens(select_no_parens: Select_no_parensContext, dbSchema: NotNullInfo[]): NotNullInfo[] {
+function traverse_select_no_parens(select_no_parens: Select_no_parensContext, dbSchema: NotNullInfo[], traverseResult: TraverseResult): NotNullInfo[] {
 	const select_clause = select_no_parens.select_clause();
 	if (select_clause) {
-		return traverse_select_clause(select_clause, dbSchema);
+		return traverse_select_clause(select_clause, dbSchema, traverseResult);
 	}
 	return [];
 }
 
-function traverse_select_clause(select_clause: Select_clauseContext, dbSchema: NotNullInfo[]): NotNullInfo[] {
+function traverse_select_clause(select_clause: Select_clauseContext, dbSchema: NotNullInfo[], traverseResult: TraverseResult): NotNullInfo[] {
 	const simple_select_intersect_list = select_clause.simple_select_intersect_list();
 	let selectColumns: NotNullInfo[] = [];
 	if (simple_select_intersect_list) {
-		selectColumns = traverse_simple_select_intersect(simple_select_intersect_list[0], dbSchema);
+		selectColumns = traverse_simple_select_intersect(simple_select_intersect_list[0], dbSchema, traverseResult);
 	}
 	//union
 	for (let index = 1; index < simple_select_intersect_list.length; index++) {
-		const unionNotNull = traverse_simple_select_intersect(simple_select_intersect_list[index], dbSchema);
+		const unionNotNull = traverse_simple_select_intersect(simple_select_intersect_list[index], dbSchema, traverseResult);
 		selectColumns = selectColumns.map((value, columnIndex) => {
 			const col: NotNullInfo = {
 				...value,
@@ -101,46 +114,46 @@ function traverse_select_clause(select_clause: Select_clauseContext, dbSchema: N
 	return selectColumns;
 }
 
-function traverse_simple_select_intersect(simple_select_intersect: Simple_select_intersectContext, dbSchema: NotNullInfo[]): NotNullInfo[] {
+function traverse_simple_select_intersect(simple_select_intersect: Simple_select_intersectContext, dbSchema: NotNullInfo[], traverseResult: TraverseResult): NotNullInfo[] {
 	const simple_select_pramary = simple_select_intersect.simple_select_pramary_list()[0];
 	if (simple_select_pramary) {
-		return traverse_simple_select_pramary(simple_select_pramary, dbSchema);
+		return traverse_simple_select_pramary(simple_select_pramary, dbSchema, traverseResult);
 	}
 	return [];
 }
 
-function traverse_simple_select_pramary(simple_select_pramary: Simple_select_pramaryContext, dbSchema: NotNullInfo[]): NotNullInfo[] {
+function traverse_simple_select_pramary(simple_select_pramary: Simple_select_pramaryContext, dbSchema: NotNullInfo[], traverseResult: TraverseResult): NotNullInfo[] {
 	const fromColumns: NotNullInfo[] = [];
 
 	const from_clause = simple_select_pramary.from_clause();
 	if (from_clause) {
 		const where_clause = simple_select_pramary.where_clause();
-		const fields = traverse_from_clause(from_clause, dbSchema);
+		const fields = traverse_from_clause(from_clause, dbSchema, traverseResult);
 		const fieldsNotNull = where_clause != null ? fields.map(field => checkIsNullable(where_clause, field)) : fields;
 		fromColumns.push(...fieldsNotNull);
 	}
-	const filteredColumns = filterColumns_simple_select_pramary(simple_select_pramary, fromColumns);
+	const filteredColumns = filterColumns_simple_select_pramary(simple_select_pramary, fromColumns, traverseResult);
 	return filteredColumns;
 }
 
-function filterColumns_simple_select_pramary(simple_select_pramary: Simple_select_pramaryContext, fromColumns: NotNullInfo[]): NotNullInfo[] {
+function filterColumns_simple_select_pramary(simple_select_pramary: Simple_select_pramaryContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult): NotNullInfo[] {
 	const target_list_ = simple_select_pramary.target_list_();
 	if (target_list_) {
 		const target_list = target_list_.target_list();
 		if (target_list) {
-			return filterColumns_target_list(target_list, fromColumns);
+			return filterColumns_target_list(target_list, fromColumns, traverseResult);
 		}
 	}
 	return [];
 }
 
-function filterColumns_target_list(target_list: Target_listContext, fromColumns: NotNullInfo[]): NotNullInfo[] {
+function filterColumns_target_list(target_list: Target_listContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult): NotNullInfo[] {
 	const columns = target_list.target_el_list().flatMap(target_el => {
 		const fieldName = target_el.getText();
 		if (fieldName == '*') {
 			return fromColumns;
 		}
-		const column = isNotNull_target_el(target_el, fromColumns);
+		const column = isNotNull_target_el(target_el, fromColumns, traverseResult);
 		// const result: NotNullInfo = {
 		// 	column_name: target_el.getText(),
 		// 	is_nullable: !isNotNull,
@@ -157,10 +170,10 @@ function filterColumns_target_list(target_list: Target_listContext, fromColumns:
 	return columns;
 }
 
-function isNotNull_target_el(target_el: Target_elContext, fromColumns: NotNullInfo[]): NotNullInfo {
+function isNotNull_target_el(target_el: Target_elContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult): NotNullInfo {
 	if (target_el instanceof Target_labelContext) {
 		const a_expr = target_el.a_expr();
-		const isNotNull = columnIsNotNull_a_expr(a_expr, fromColumns);
+		const isNotNull = traverse_a_expr(a_expr, fromColumns, traverseResult);
 		const colLabel = target_el.colLabel();
 		const alias = colLabel != null ? colLabel.getText() : '';
 		return {
@@ -173,169 +186,169 @@ function isNotNull_target_el(target_el: Target_elContext, fromColumns: NotNullIn
 	throw Error('Column not found');
 }
 
-function columnIsNotNull_a_expr(a_expr: A_exprContext, fromColumns: NotNullInfo[]): boolean {
+function traverse_a_expr(a_expr: A_exprContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult): boolean {
 	const a_expr_qual = a_expr.a_expr_qual();
 	if (a_expr_qual) {
-		return columnIsNotNull_a_expr_qual(a_expr_qual, fromColumns);
+		return traverse_a_expr_qual(a_expr_qual, fromColumns, traverseResult);
 	}
 
 	return false;
 }
 
-function columnIsNotNull_a_expr_qual(a_expr_qual: A_expr_qualContext, fromColumns: NotNullInfo[]): boolean {
+function traverse_a_expr_qual(a_expr_qual: A_expr_qualContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult): boolean {
 	const a_expr_lessless = a_expr_qual.a_expr_lessless();
 	if (a_expr_lessless) {
-		return columnIsNotNull_a_expr_lessless(a_expr_lessless, fromColumns);
+		return traverse_a_expr_lessless(a_expr_lessless, fromColumns, traverseResult);
 	}
 	return false;
 }
 
-function columnIsNotNull_a_expr_lessless(a_expr_lessless: A_expr_lesslessContext, fromColumns: NotNullInfo[]): boolean {
+function traverse_a_expr_lessless(a_expr_lessless: A_expr_lesslessContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult): boolean {
 	const a_expr_or = a_expr_lessless.a_expr_or_list()[0];
 	if (a_expr_or) {
-		return columnIsNotNull_a_expr_or(a_expr_or, fromColumns);
+		return traverse_expr_or(a_expr_or, fromColumns, traverseResult);
 	}
 	return false;
 }
 
-function columnIsNotNull_a_expr_or(a_expr_or: A_expr_orContext, fromColumns: NotNullInfo[]): boolean {
+function traverse_expr_or(a_expr_or: A_expr_orContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult): boolean {
 	const a_expr_and = a_expr_or.a_expr_and_list()[0];
 	if (a_expr_and) {
-		return columnIsNotNull_a_expr_and(a_expr_and, fromColumns);
+		return traverse_expr_and(a_expr_and, fromColumns, traverseResult);
 	}
 	return false;
 }
 
-function columnIsNotNull_a_expr_and(a_expr_and: A_expr_andContext, fromColumns: NotNullInfo[]): boolean {
+function traverse_expr_and(a_expr_and: A_expr_andContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult): boolean {
 	const a_expr_between = a_expr_and.a_expr_between_list()[0];
 	if (a_expr_between) {
-		return columnIsNotNull_a_expr_between(a_expr_between, fromColumns);
+		return traverse_expr_between(a_expr_between, fromColumns, traverseResult);
 	}
 	return false;
 }
 
-function columnIsNotNull_a_expr_between(a_expr_between: A_expr_betweenContext, fromColumns: NotNullInfo[]): boolean {
+function traverse_expr_between(a_expr_between: A_expr_betweenContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult): boolean {
 	const a_expr_in = a_expr_between.a_expr_in_list()[0];
 	if (a_expr_in) {
-		return columnIsNotNull_a_expr_in(a_expr_in, fromColumns);
+		return traverse_expr_in(a_expr_in, fromColumns, traverseResult);
 	}
 	return false;
 }
 
-function columnIsNotNull_a_expr_in(a_expr_in: A_expr_inContext, fromColumns: NotNullInfo[]): boolean {
+function traverse_expr_in(a_expr_in: A_expr_inContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult): boolean {
 	const a_expr_unary = a_expr_in.a_expr_unary_not();
 	if (a_expr_unary) {
-		return columnIsNotNull_a_expr_unary(a_expr_unary, fromColumns);
+		return traverse_expr_unary(a_expr_unary, fromColumns, traverseResult);
 	}
 	return false;
 }
 
-function columnIsNotNull_a_expr_unary(a_expr_unary: A_expr_unary_notContext, fromColumns: NotNullInfo[]): boolean {
+function traverse_expr_unary(a_expr_unary: A_expr_unary_notContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult): boolean {
 	const a_expr_isnull = a_expr_unary.a_expr_isnull();
 	if (a_expr_isnull) {
-		return columnIsNotNull_a_expr_isnull(a_expr_isnull, fromColumns);
+		return traverse_expr_isnull(a_expr_isnull, fromColumns, traverseResult);
 	}
 	return false;
 }
 
-function columnIsNotNull_a_expr_isnull(a_expr_isnull: A_expr_isnullContext, fromColumns: NotNullInfo[]): boolean {
+function traverse_expr_isnull(a_expr_isnull: A_expr_isnullContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult): boolean {
 	const a_expr_is_not = a_expr_isnull.a_expr_is_not();
 	if (a_expr_is_not) {
-		return columnIsNotNull_a_expr_is_not(a_expr_is_not, fromColumns);
+		return traverse_expr_is_not(a_expr_is_not, fromColumns, traverseResult);
 	}
 	return false;
 }
 
-function columnIsNotNull_a_expr_is_not(a_expr_is_not: A_expr_is_notContext, fromColumns: NotNullInfo[]): boolean {
+function traverse_expr_is_not(a_expr_is_not: A_expr_is_notContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult): boolean {
 	const a_expr_compare = a_expr_is_not.a_expr_compare();
 	if (a_expr_compare) {
-		return columnIsNotNull_a_expr_compare(a_expr_compare, fromColumns);
+		return traverse_expr_compare(a_expr_compare, fromColumns, traverseResult);
 	}
 	return false;
 }
 
-function columnIsNotNull_a_expr_compare(a_expr_compare: A_expr_compareContext, fromColumns: NotNullInfo[]): boolean {
+function traverse_expr_compare(a_expr_compare: A_expr_compareContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult): boolean {
 	const a_expr_like = a_expr_compare.a_expr_like_list()[0];
 	if (a_expr_like) {
-		return columnIsNotNull_a_expr_like(a_expr_like, fromColumns);
+		return traverse_expr_like(a_expr_like, fromColumns, traverseResult);
 	}
 	return false;
 }
 
-function columnIsNotNull_a_expr_like(a_expr_like: A_expr_likeContext, fromColumns: NotNullInfo[]): boolean {
+function traverse_expr_like(a_expr_like: A_expr_likeContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult): boolean {
 	const a_expr_qual_op = a_expr_like.a_expr_qual_op_list()[0];
 	if (a_expr_qual_op) {
-		return columnIsNotNull_a_expr_qual_op(a_expr_qual_op, fromColumns);
+		return traverse_expr_qual_op(a_expr_qual_op, fromColumns, traverseResult);
 	}
 	return false;
 }
 
-function columnIsNotNull_a_expr_qual_op(a_expr_qual_op: A_expr_qual_opContext, fromColumns: NotNullInfo[]): boolean {
+function traverse_expr_qual_op(a_expr_qual_op: A_expr_qual_opContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult): boolean {
 	const a_expr_unary_qualop = a_expr_qual_op.a_expr_unary_qualop_list()[0];
 	if (a_expr_unary_qualop) {
-		return columnIsNotNull_a_expr_unary_qualop(a_expr_unary_qualop, fromColumns);
+		return traverse_expr_unary_qualop(a_expr_unary_qualop, fromColumns, traverseResult);
 	}
 	return false;
 }
 
-function columnIsNotNull_a_expr_unary_qualop(a_expr_unary_qualop: A_expr_unary_qualopContext, fromColumns: NotNullInfo[]): boolean {
+function traverse_expr_unary_qualop(a_expr_unary_qualop: A_expr_unary_qualopContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult): boolean {
 	const a_expr_add = a_expr_unary_qualop.a_expr_add();
 	if (a_expr_add) {
-		const isNotNull = a_expr_add.a_expr_mul_list().every(a_expr_mul => columnIsNotNull_a_expr_mul(a_expr_mul, fromColumns))
+		const isNotNull = a_expr_add.a_expr_mul_list().every(a_expr_mul => traverse_expr_mul(a_expr_mul, fromColumns, traverseResult))
 		return isNotNull;
 	}
 	return false;
 }
 
-function columnIsNotNull_a_expr_mul(a_expr_mul: A_expr_mulContext, fromColumns: NotNullInfo[]): boolean {
+function traverse_expr_mul(a_expr_mul: A_expr_mulContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult): boolean {
 	const a_expr_mul_list = a_expr_mul.a_expr_caret_list();
 	if (a_expr_mul_list) {
-		return a_expr_mul.a_expr_caret_list().every(a_expr_caret => columnIsNotNull_a_expr_caret(a_expr_caret, fromColumns));
+		return a_expr_mul.a_expr_caret_list().every(a_expr_caret => traverse_expr_caret(a_expr_caret, fromColumns, traverseResult));
 	}
 	return false;
 }
 
-function columnIsNotNull_a_expr_caret(a_expr_caret: A_expr_caretContext, fromColumns: NotNullInfo[]): boolean {
+function traverse_expr_caret(a_expr_caret: A_expr_caretContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult): boolean {
 	const a_expr_unary_sign_list = a_expr_caret.a_expr_unary_sign_list();
 	if (a_expr_unary_sign_list) {
-		return a_expr_caret.a_expr_unary_sign_list().every(a_expr_unary_sign => columnIsNotNull_a_expr_unary_sign(a_expr_unary_sign, fromColumns));;
+		return a_expr_caret.a_expr_unary_sign_list().every(a_expr_unary_sign => traverse_expr_unary_sign(a_expr_unary_sign, fromColumns, traverseResult));;
 	}
 	return false;
 }
 
-function columnIsNotNull_a_expr_unary_sign(a_expr_unary_sign: A_expr_unary_signContext, fromColumns: NotNullInfo[]): boolean {
+function traverse_expr_unary_sign(a_expr_unary_sign: A_expr_unary_signContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult): boolean {
 	const a_expr_at_time_zone = a_expr_unary_sign.a_expr_at_time_zone();
 	if (a_expr_at_time_zone) {
-		return columnIsNotNull_a_expr_at_time_zone(a_expr_at_time_zone, fromColumns);
+		return traverse_expr_at_time_zone(a_expr_at_time_zone, fromColumns, traverseResult);
 	}
 	return false;
 }
 
-function columnIsNotNull_a_expr_at_time_zone(a_expr_at_time_zone: A_expr_at_time_zoneContext, fromColumns: NotNullInfo[]): boolean {
+function traverse_expr_at_time_zone(a_expr_at_time_zone: A_expr_at_time_zoneContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult): boolean {
 	const a_expr_collate = a_expr_at_time_zone.a_expr_collate();
 	if (a_expr_collate) {
-		return columnIsNotNull_a_expr_collate(a_expr_collate, fromColumns);
+		return traverse_expr_collate(a_expr_collate, fromColumns, traverseResult);
 	}
 	return false;
 }
 
-function columnIsNotNull_a_expr_collate(a_expr_collate: A_expr_collateContext, fromColumns: NotNullInfo[]): boolean {
+function traverse_expr_collate(a_expr_collate: A_expr_collateContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult): boolean {
 	const a_expr_typecast = a_expr_collate.a_expr_typecast();
 	if (a_expr_typecast) {
-		return columnIsNotNull_a_expr_typecast(a_expr_typecast, fromColumns);
+		return traverse_expr_typecast(a_expr_typecast, fromColumns, traverseResult);
 	}
 	return false;
 }
 
-function columnIsNotNull_a_expr_typecast(a_expr_typecast: A_expr_typecastContext, fromColumns: NotNullInfo[]): boolean {
+function traverse_expr_typecast(a_expr_typecast: A_expr_typecastContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult): boolean {
 	const c_expr = a_expr_typecast.c_expr();
 	if (c_expr) {
-		return columnIsNotNull_c_expr(c_expr, fromColumns);
+		return traversec_expr(c_expr, fromColumns, traverseResult);
 	}
 	return false;
 }
 
-function columnIsNotNull_c_expr(c_expr: C_exprContext, fromColumns: NotNullInfo[]): boolean {
+function traversec_expr(c_expr: C_exprContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult): boolean {
 	if (c_expr instanceof C_expr_exprContext) {
 		const columnref = c_expr.columnref();
 		if (columnref) {
@@ -347,33 +360,36 @@ function columnIsNotNull_c_expr(c_expr: C_exprContext, fromColumns: NotNullInfo[
 		if (aexprconst) {
 			return aexprconst.NULL_P() === null;
 		}
+		if (c_expr.PARAM()) {
+			traverseResult.parametersNullability.push(false);
+		}
 		const func_application = c_expr.func_expr()?.func_application();
 		if (func_application) {
-			return columnIsNotNull_func_application(func_application, fromColumns);
+			return traversefunc_application(func_application, fromColumns, traverseResult);
 		}
 	}
 	if (c_expr instanceof C_expr_caseContext) {
-		return columnIsNotNull_c_expr_case(c_expr, fromColumns);
+		return traversec_expr_case(c_expr, fromColumns, traverseResult);
 	}
 
 	return false;
 }
 
-function columnIsNotNull_c_expr_case(c_expr_case: C_expr_caseContext, fromColumns: NotNullInfo[]): boolean {
+function traversec_expr_case(c_expr_case: C_expr_caseContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult): boolean {
 	const case_expr = c_expr_case.case_expr();
-	const whenIsNotNull = case_expr.when_clause_list().when_clause_list().every(when_clause => columnIsNotNull_when_clause(when_clause, fromColumns));
+	const whenIsNotNull = case_expr.when_clause_list().when_clause_list().every(when_clause => traversewhen_clause(when_clause, fromColumns, traverseResult));
 	const elseExpr = case_expr.case_default()?.a_expr();
-	const elseIsNotNull = elseExpr ? columnIsNotNull_a_expr(elseExpr, fromColumns) : false;
+	const elseIsNotNull = elseExpr ? traverse_a_expr(elseExpr, fromColumns, traverseResult) : false;
 	return elseIsNotNull && whenIsNotNull;
 }
 
-function columnIsNotNull_when_clause(when_clause: When_clauseContext, fromColumns: NotNullInfo[]): boolean {
+function traversewhen_clause(when_clause: When_clauseContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult): boolean {
 	const a_expr_list = when_clause.a_expr_list();
 	const thenExprList = a_expr_list.filter((_, index) => index % 2 == 1);
-	return thenExprList.every(thenExpr => columnIsNotNull_a_expr(thenExpr, fromColumns));
+	return thenExprList.every(thenExpr => traverse_a_expr(thenExpr, fromColumns, traverseResult));
 }
 
-function columnIsNotNull_func_application(func_application: Func_applicationContext, fromColumns: NotNullInfo[]): boolean {
+function traversefunc_application(func_application: Func_applicationContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult): boolean {
 	const functionName = func_application.func_name().getText().toLowerCase();
 	if (functionName === 'count') {
 		return true;
@@ -381,16 +397,16 @@ function columnIsNotNull_func_application(func_application: Func_applicationCont
 	if (functionName === 'concat') {
 		const func_arg_expr_list = func_application.func_arg_list().func_arg_expr_list();
 		if (func_arg_expr_list) {
-			return func_arg_expr_list.every(func_arg_expr => columnIsNotNull_func_arg_expr(func_arg_expr, fromColumns))
+			return func_arg_expr_list.every(func_arg_expr => traversefunc_arg_expr(func_arg_expr, fromColumns, traverseResult))
 		}
 		return false;
 	}
 	return false;
 }
 
-function columnIsNotNull_func_arg_expr(func_arg_expr: Func_arg_exprContext, fromColumns: NotNullInfo[]): boolean {
+function traversefunc_arg_expr(func_arg_expr: Func_arg_exprContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult): boolean {
 	const a_expr = func_arg_expr.a_expr();
-	return columnIsNotNull_a_expr(a_expr, fromColumns);
+	return traverse_a_expr(a_expr, fromColumns, traverseResult);
 }
 
 
@@ -411,20 +427,20 @@ function checkIsNullable(where_clause: Where_clauseContext, field: NotNullInfo):
 	return col;
 }
 
-function traverse_from_clause(from_clause: From_clauseContext, dbSchema: NotNullInfo[]) {
+function traverse_from_clause(from_clause: From_clauseContext, dbSchema: NotNullInfo[], traverseResult: TraverseResult) {
 	const from_list = from_clause.from_list();
 	if (from_list) {
-		return traverse_from_list(from_list, dbSchema);
+		return traverse_from_list(from_list, dbSchema, traverseResult);
 	}
 	return [];
 }
 
-function traverse_from_list(from_list: From_listContext, dbSchema: NotNullInfo[]) {
-	const fromColumns = from_list.table_ref_list().flatMap(table_ref => traverse_table_ref(table_ref, dbSchema));
+function traverse_from_list(from_list: From_listContext, dbSchema: NotNullInfo[], traverseResult: TraverseResult) {
+	const fromColumns = from_list.table_ref_list().flatMap(table_ref => traverse_table_ref(table_ref, dbSchema, traverseResult));
 	return fromColumns;
 }
 
-function traverse_table_ref(table_ref: Table_refContext, dbSchema: NotNullInfo[]): NotNullInfo[] {
+function traverse_table_ref(table_ref: Table_refContext, dbSchema: NotNullInfo[], traverseResult: TraverseResult): NotNullInfo[] {
 	const allColumns: NotNullInfo[] = [];
 	const relation_expr = table_ref.relation_expr();
 	if (relation_expr) {
@@ -434,12 +450,12 @@ function traverse_table_ref(table_ref: Table_refContext, dbSchema: NotNullInfo[]
 	}
 	const table_ref_list = table_ref.table_ref_list();
 	if (table_ref_list) {
-		const joinColumns = table_ref_list.flatMap(table_ref => traverse_table_ref(table_ref, dbSchema));
+		const joinColumns = table_ref_list.flatMap(table_ref => traverse_table_ref(table_ref, dbSchema, traverseResult));
 		allColumns.push(...joinColumns);
 	}
 	const select_with_parens = table_ref.select_with_parens();
 	if (select_with_parens) {
-		return traverse_select_with_parens(select_with_parens, dbSchema);
+		return traverse_select_with_parens(select_with_parens, dbSchema, traverseResult);
 	}
 	return allColumns;
 }
@@ -449,14 +465,14 @@ function traverse_join_qual(join_qual: Join_qualContext, dbSchema: NotNullInfo[]
 	return [];
 }
 
-function traverse_select_with_parens(select_with_parens: Select_with_parensContext, dbSchema: NotNullInfo[]): NotNullInfo[] {
+function traverse_select_with_parens(select_with_parens: Select_with_parensContext, dbSchema: NotNullInfo[], traverseResult: TraverseResult): NotNullInfo[] {
 	const select_with_parens2 = select_with_parens.select_with_parens();
 	if (select_with_parens2) {
-		return traverse_select_with_parens(select_with_parens2, dbSchema);
+		return traverse_select_with_parens(select_with_parens2, dbSchema, traverseResult);
 	}
 	const select_no_parens = select_with_parens.select_no_parens();
 	if (select_no_parens) {
-		return traverse_select_no_parens(select_no_parens, dbSchema);
+		return traverse_select_no_parens(select_no_parens, dbSchema, traverseResult);
 	}
 	return [];
 }
@@ -531,6 +547,46 @@ function traverseInsertstmt(insertstmt: InsertstmtContext, dbSchema: PostgresCol
 		columnsNullability: [],
 		parameterList: []
 	}
+}
+
+function traverseUpdatestmt(updatestmt: UpdatestmtContext, dbSchema: PostgresColumnSchema[], traverseResult: TraverseResult): PostgresTraverseResult {
+
+	const relation_expr_opt_alias = updatestmt.relation_expr_opt_alias();
+	const tableName = relation_expr_opt_alias.getText();
+	const updateColumns = dbSchema.filter(col => col.table_name === tableName);
+
+	updatestmt.set_clause_list().set_clause_list()
+		.map(set_clause => traverse_set_clause(set_clause, updateColumns, traverseResult));
+
+	const dataParameters = traverseResult.parametersNullability;
+	const where_clause = updatestmt.where_or_current_clause();
+	if (where_clause) {
+		const a_expr = where_clause.a_expr();
+		traverse_a_expr(a_expr, updateColumns, traverseResult);
+	}
+	const whereParameters = traverseResult.parametersNullability.slice(dataParameters.length);
+
+	return {
+		queryType: 'Update',
+		parametersNullability: traverseResult.parametersNullability,
+		columnsNullability: [],
+		parameterList: [],
+		whereParamtersNullability: whereParameters
+	}
+}
+
+function traverse_set_clause(set_clause: Set_clauseContext, updateColumns: PostgresColumnSchema[], traverseResult: TraverseResult): boolean {
+	const set_target = set_clause.set_target();
+	const columnName = set_target.getText();
+	const column = findColumn(columnName, updateColumns);
+	const a_expr = set_clause.a_expr();
+	const paramsBefore = traverseResult.parametersNullability.length;
+	traverse_a_expr(a_expr, updateColumns, traverseResult);
+	for (let i = paramsBefore; i < traverseResult.parametersNullability.length; i++) {
+		traverseResult.parametersNullability[i] = traverseResult.parametersNullability[i] || !column.is_nullable;
+	}
+
+	return !column.is_nullable
 }
 
 function traverse_insert_column_item(insert_column_item: Insert_column_itemContext, dbSchema: PostgresColumnSchema[]): boolean {

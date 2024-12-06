@@ -7,6 +7,7 @@ export type PostgresTraverseResult = {
 	queryType: QueryType;
 	columnsNullability: boolean[];
 	parametersNullability: boolean[];
+	whereParamtersNullability?: boolean[];
 	parameterList: boolean[];
 }
 
