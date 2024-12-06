@@ -1,11 +1,11 @@
 import { ParameterDef, SchemaDef, TypeSqlError } from '../types';
-import { PostgresColumnSchema, DescribeQueryColumn, DescribeQueryResult, PostgresType } from '../drivers/types';
+import { PostgresColumnSchema, DescribeQueryColumn, DescribeQueryResult, PostgresType, PostgresDescribe } from '../drivers/types';
 import { postgresDescribe, postgresAnalyze, loadDbSchema } from '../drivers/postgres';
 import { Sql } from 'postgres';
 import { ColumnInfo } from '../mysql-query-analyzer/types';
 import { parseSql, PostgresTraverseResult } from './parser';
 import { replacePostgresParams, replacePostgresParamsWithValues } from '../sqlite-query-analyzer/replace-list-params';
-import { ok, Result, ResultAsync } from 'neverthrow';
+import { ok, Result, ResultAsync, okAsync } from 'neverthrow';
 
 export const postgresTypes: PostgresType = {
 	23: 'int4',
@@ -61,23 +61,33 @@ export function describeQuery(postgres: Sql, sql: string, namedParameters: strin
 		.andThen(dbSchema => {
 			const parseResult = parseSql(sql, dbSchema);
 			return postgresDescribe(postgres, sql)
-				.andThen(describeResult => {
-					const newSql = replacePostgresParamsWithValues(sql, parseResult.parameterList, describeResult.parameters);
-					return postgresAnalyze(postgres, newSql).map(analyzeResult => {
-						const singleRow = isSingleRow(analyzeResult);
-						const result: DescribeQueryResult = {
-							...describeResult,
-							multipleRowsResult: !singleRow
-						}
-						return result;
-					});
-				}).andThen(analyzeResult => describeQueryRefine(sql, dbSchema, analyzeResult, parseResult, namedParameters));
+				.andThen(describeResult => getMultipleRowInfo(postgres, sql, describeResult, parseResult))
+				.andThen(analyzeResult => describeQueryRefine(sql, dbSchema, analyzeResult, parseResult, namedParameters));
 		}).mapErr(err => {
 			return {
 				name: 'error',
 				description: err
 			}
 		});
+}
+
+function getMultipleRowInfo(postgres: Sql, sql: string, describeResult: PostgresDescribe, parseResult: PostgresTraverseResult): ResultAsync<DescribeQueryResult, string> {
+	if (parseResult.queryType === 'Select') {
+		const newSql = replacePostgresParamsWithValues(sql, parseResult.parameterList, describeResult.parameters);
+		return postgresAnalyze(postgres, newSql).map(analyzeResult => {
+			const singleRow = isSingleRow(analyzeResult);
+			const result: DescribeQueryResult = {
+				...describeResult,
+				multipleRowsResult: !singleRow
+			}
+			return result;
+		});
+	}
+	const result: DescribeQueryResult = {
+		...describeResult,
+		multipleRowsResult: false
+	}
+	return okAsync(result);
 }
 
 function isSingleRow(queryPlans: string[]): boolean {
