@@ -13,9 +13,8 @@ export const postgresTypes: PostgresType = {
 	700: 'float4'
 }
 
-function describeQueryRefine(sql: string, schema: PostgresColumnSchema[], postgresDescribeResult: DescribeQueryResult, namedParameters: string[]): Result<SchemaDef, string> {
+function describeQueryRefine(sql: string, schema: PostgresColumnSchema[], postgresDescribeResult: DescribeQueryResult, traverseResult: PostgresTraverseResult, namedParameters: string[]): Result<SchemaDef, string> {
 
-	const traverseResult = parseSql(sql, schema);
 	const paramNames = postgresDescribeResult.parameters.map((_, index) => namedParameters[index] ? namedParameters[index] : `param${index + 1}`);
 
 	const newSql = replacePostgresParams(sql, traverseResult.parameterList, paramNames);
@@ -25,7 +24,12 @@ function describeQueryRefine(sql: string, schema: PostgresColumnSchema[], postgr
 		queryType: traverseResult.queryType,
 		multipleRowsResult: postgresDescribeResult.multipleRowsResult,
 		columns: getColumnsForQuery(traverseResult, postgresDescribeResult),
-		parameters: getParamtersForQuery(traverseResult, postgresDescribeResult, paramNames)
+		parameters: traverseResult.queryType === 'Update'
+			? getParamtersForWhere(traverseResult, postgresDescribeResult, paramNames)
+			: getParamtersForQuery(traverseResult, postgresDescribeResult, paramNames)
+	}
+	if (traverseResult.queryType === 'Update') {
+		descResult.data = getDataForQuery(traverseResult, postgresDescribeResult, paramNames);
 	}
 	return ok(descResult);
 }
@@ -55,19 +59,19 @@ function mapToParamDef(paramName: string, paramType: number, notNull: boolean, i
 export function describeQuery(postgres: Sql, sql: string, namedParameters: string[]): ResultAsync<SchemaDef, TypeSqlError> {
 	return loadDbSchema(postgres)
 		.andThen(dbSchema => {
+			const parseResult = parseSql(sql, dbSchema);
 			return postgresDescribe(postgres, sql)
 				.andThen(describeResult => {
-					const parseResult = parseSql(sql, dbSchema);
 					const newSql = replacePostgresParamsWithValues(sql, parseResult.parameterList, describeResult.parameters);
 					return postgresAnalyze(postgres, newSql).map(analyzeResult => {
 						const singleRow = isSingleRow(analyzeResult);
 						const result: DescribeQueryResult = {
 							...describeResult,
-							multipleRowsResult: !singleRow,
+							multipleRowsResult: !singleRow
 						}
 						return result;
 					});
-				}).andThen(analyzeResult => describeQueryRefine(sql, dbSchema, analyzeResult, namedParameters));
+				}).andThen(analyzeResult => describeQueryRefine(sql, dbSchema, analyzeResult, parseResult, namedParameters));
 		}).mapErr(err => {
 			return {
 				name: 'error',
@@ -99,5 +103,16 @@ function getColumnsForQuery(traverseResult: PostgresTraverseResult, postgresDesc
 
 function getParamtersForQuery(traverseResult: PostgresTraverseResult, postgresDescribeResult: DescribeQueryResult, paramNames: string[]): ParameterDef[] {
 	return postgresDescribeResult.parameters
+		.map((param, index) => mapToParamDef(paramNames[index], param, traverseResult.parametersNullability[index] ?? true, traverseResult.parameterList[index]))
+}
+
+function getParamtersForWhere(traverseResult: PostgresTraverseResult, postgresDescribeResult: DescribeQueryResult, paramNames: string[]): ParameterDef[] {
+	const indexOffset = traverseResult.parametersNullability.length;
+	return postgresDescribeResult.parameters.slice(indexOffset)
+		.map((param, index) => mapToParamDef(paramNames[index + indexOffset], param, traverseResult.whereParamtersNullability?.[index] ?? true, traverseResult.parameterList[index + indexOffset]))
+}
+
+function getDataForQuery(traverseResult: PostgresTraverseResult, postgresDescribeResult: DescribeQueryResult, paramNames: string[]): ParameterDef[] {
+	return postgresDescribeResult.parameters.slice(0, traverseResult.parametersNullability.length)
 		.map((param, index) => mapToParamDef(paramNames[index], param, traverseResult.parametersNullability[index] ?? true, traverseResult.parameterList[index]))
 }
