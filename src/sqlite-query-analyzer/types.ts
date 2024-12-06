@@ -28,4 +28,6 @@ export type PostgresType =
 	| 'int4'
 	| 'int4[]'
 	| 'text'
-	| 'text[]';
+	| 'text[]'
+	| 'float4'
+	| 'float4[]';

@@ -516,11 +516,14 @@ function paramIsList(c_expr: ParserRuleContext) {
 
 
 function traverseInsertstmt(insertstmt: InsertstmtContext, dbSchema: PostgresColumnSchema[]): PostgresTraverseResult {
+	const insert_target = insertstmt.insert_target();
+	const tableName = insert_target.getText();
+	const insertColumns = dbSchema.filter(col => col.table_name === tableName);
 
 	const insert_rest = insertstmt.insert_rest();
 	const parametersNullability = insert_rest.insert_column_list()
 		.insert_column_item_list()
-		.map(insert_column_item => traverse_insert_column_item(insert_column_item, dbSchema));
+		.map(insert_column_item => traverse_insert_column_item(insert_column_item, insertColumns));
 
 	return {
 		queryType: 'Insert',
@@ -536,7 +539,7 @@ function traverse_insert_column_item(insert_column_item: Insert_column_itemConte
 }
 
 function isNotNull_colid(colid: ColidContext, dbSchema: PostgresColumnSchema[]): boolean {
-	const columnName = colid.unreserved_keyword().getText();
+	const columnName = colid.getText();
 	const column = findColumn(columnName, dbSchema);
 	return !column.is_nullable;
 }

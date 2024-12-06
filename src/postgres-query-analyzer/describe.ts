@@ -9,7 +9,8 @@ import { ok, Result, ResultAsync } from 'neverthrow';
 
 export const postgresTypes: PostgresType = {
 	23: 'int4',
-	25: 'text'
+	25: 'text',
+	700: 'float4'
 }
 
 function describeQueryRefine(sql: string, schema: PostgresColumnSchema[], postgresDescribeResult: DescribeQueryResult, namedParameters: string[]): Result<SchemaDef, string> {
