@@ -93,4 +93,16 @@ AND name IN (:names)`;
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('update01 - UPDATE mytable1 SET value=? WHERE id=?', async () => {
+		const sql = 'UPDATE mytable1 SET value=$1 WHERE id=$2';
+
+		const actual = await generateCode(dialect, sql, 'update01');
+		const expected = readFileSync('tests/postgres/expected-code/update01.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });

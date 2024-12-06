@@ -36,6 +36,7 @@ function generateTsCode(
 
 	const camelCaseName = convertToCamelCaseName(queryName);
 	const capitalizedName = capitalize(camelCaseName);
+	const dataTypeName = `${capitalizedName}Data`;
 	const resultTypeName = `${capitalizedName}Result`;
 	const paramsTypeName = `${capitalizedName}Params`;
 	const orderByTypeName = `${capitalizedName}OrderBy`;
@@ -46,6 +47,20 @@ function generateTsCode(
 
 	const codeWriter = getCodeWriter(client);
 	codeWriter.writeImports(writer);
+	const uniqueDataParams = removeDuplicatedParameters2(tsDescriptor.data || []);
+	if (uniqueDataParams.length > 0) {
+		writer.blankLine();
+		writer.write(`export type ${dataTypeName} =`).block(() => {
+			uniqueDataParams.forEach((field) => {
+				const optionalOp = field.optional ? '?' : '';
+				const orNull = field.notNull ? '' : ' | null';
+				writer.writeLine(`${field.name}${optionalOp}: ${field.tsType}${orNull};`);
+			});
+			if (generateOrderBy) {
+				writer.writeLine(`orderBy: [${orderByTypeName}, 'asc' | 'desc'][];`);
+			}
+		});
+	}
 	if (uniqueParams.length > 0 || generateOrderBy) {
 		writer.blankLine();
 		writer.write(`export type ${paramsTypeName} =`).block(() => {
@@ -73,9 +88,11 @@ function generateTsCode(
 		multipleRowsResult: tsDescriptor.multipleRowsResult,
 		functionName: queryName,
 		paramsType: paramsTypeName,
+		dataType: dataTypeName,
 		returnType: resultTypeName,
 		columns: tsDescriptor.columns,
-		parameters: tsDescriptor.parameters
+		parameters: tsDescriptor.parameters,
+		data: tsDescriptor.data || []
 	}
 	codeWriter.writeExecFunction(writer, execFunctionParams);
 
@@ -89,7 +106,8 @@ function createTsDescriptor(schemaDef: SchemaDef) {
 		sql: '',
 		queryType: schemaDef.queryType,
 		multipleRowsResult: schemaDef.multipleRowsResult,
-		parameterNames: []
+		parameterNames: [],
+		data: schemaDef.data?.map(param => mapParameterToTsFieldDescriptor(param))
 	}
 	return tsDescriptor;
 }
@@ -129,8 +147,10 @@ type ExecFunctionParameters = {
 	functionName: string;
 	returnType: string;
 	paramsType: string;
+	dataType: string;
 	columns: TsFieldDescriptor[];
 	parameters: TsFieldDescriptor[];
+	data: TsFieldDescriptor[];
 }
 
 const postgresCodeWriter: CodeWriter = {
@@ -139,14 +159,21 @@ const postgresCodeWriter: CodeWriter = {
 	},
 
 	writeExecFunction: function (writer: CodeBlockWriter, params: ExecFunctionParameters): void {
-		const { functionName, paramsType, returnType, parameters } = params;
-		const functionParams = parameters.length > 0 ? `client: Client | Pool, params: ${paramsType}` : 'client: Client | Pool';
-		const paramValues = parameters.length > 0 ? `, values: [${parameters.map(param => paramToDriver(param, 'params')).join(', ')}]` : '';
-		const orNull = params.queryType === 'Insert' ? '' : ' | null'
+		const { functionName, paramsType, dataType, returnType, parameters } = params;
+		let functionParams = 'client: Client | Pool';
+		if (params.data.length > 0) {
+			functionParams += `, data: ${dataType}`;
+		}
+		if (parameters.length > 0) {
+			functionParams += `, params: ${paramsType}`;
+		}
+		const allParamters = [...params.data.map(param => paramToDriver(param, 'data')), ...parameters.map(param => paramToDriver(param, 'params'))];
+		const paramValues = allParamters.length > 0 ? `, values: [${allParamters.join(', ')}]` : '';
+		const orNull = params.queryType === 'Insert' || params.queryType === 'Update' ? '' : ' | null';
 		const functionReturnType = params.multipleRowsResult ? `${returnType}[]` : `${returnType}${orNull}`;
 		writer.write(`export async function ${functionName}(${functionParams}): Promise<${functionReturnType}>`).block(() => {
 			writeSql(writer, params.sql);
-			if (params.queryType === 'Insert') {
+			if (params.queryType === 'Insert' || params.queryType === 'Update') {
 				writer.write(`return client.query({ text: sql${paramValues} })`).newLine();
 				writer.indent().write(`.then(res => mapArrayTo${returnType}(res));`)
 			}
@@ -180,7 +207,7 @@ const postgresCodeWriter: CodeWriter = {
 			writer.write(`const result: ${returnType} = `).block(() => {
 				params.columns.forEach((col, index) => {
 					const separator = index < params.columns.length - 1 ? ',' : '';
-					if (params.queryType === 'Insert') {
+					if (params.queryType === 'Insert' || params.queryType === 'Update') {
 						writer.writeLine(`${col.name}: data.${col.name}${separator}`);
 					}
 					else {
@@ -219,7 +246,7 @@ const postgresCodeWriter: CodeWriter = {
 }
 
 function getColumnsForQuery(schemaDef: SchemaDef): TsFieldDescriptor[] {
-	if (schemaDef.queryType === 'Insert') {
+	if (schemaDef.queryType === 'Insert' || schemaDef.queryType === 'Update') {
 		const columns: TsFieldDescriptor[] = [
 			{
 				name: 'rowCount',
