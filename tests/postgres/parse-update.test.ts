@@ -3,7 +3,7 @@ import type { SchemaDef } from '../../src/types';
 import postgres from 'postgres';
 import { describeQuery } from '../../src/postgres-query-analyzer/describe';
 
-describe('postgres-parse-insert', () => {
+describe('postgres-parse-update', () => {
 	const postres = postgres({
 		host: 'localhost',
 		username: 'postgres',

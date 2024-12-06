@@ -34,7 +34,7 @@
 		"typescript": "^5.5.3"
 	},
 	"dependencies": {
-		"@wsporto/typesql-parser": "^0.0.2",
+		"@wsporto/typesql-parser": "^0.0.3",
 		"better-sqlite3": "^11.1.2",
 		"camelcase": "^6.3.0",
 		"chokidar": "^3.6.0",
