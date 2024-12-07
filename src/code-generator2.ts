@@ -171,7 +171,14 @@ const postgresCodeWriter: CodeWriter = {
 		const paramValues = allParamters.length > 0 ? `, values: [${allParamters.join(', ')}]` : '';
 		const orNull = params.queryType === 'Insert' || params.queryType === 'Update' || params.queryType === 'Delete' ? '' : ' | null';
 		const functionReturnType = params.multipleRowsResult ? `${returnType}[]` : `${returnType}${orNull}`;
+		const hasListParams = parameters.some(param => param.tsType.endsWith('[]'));
+		if (hasListParams) {
+			writer.writeLine('let currentIndex: number;');
+		}
 		writer.write(`export async function ${functionName}(${functionParams}): Promise<${functionReturnType}>`).block(() => {
+			if (hasListParams) {
+				writer.writeLine('currentIndex = 0;');
+			}
 			writeSql(writer, params.sql);
 			if (params.queryType === 'Insert' || params.queryType === 'Update' || params.queryType === 'Delete') {
 				writer.write(`return client.query({ text: sql${paramValues} })`).newLine();
@@ -188,10 +195,8 @@ const postgresCodeWriter: CodeWriter = {
 			}
 		});
 
-		const hasListParams = parameters.some(param => param.tsType.endsWith('[]'));
 		if (hasListParams) {
 			writer.blankLine();
-			writer.writeLine('let currentIndex = 0;');
 			writer.write(`function generatePlaceholders(paramsArray: any[]): string`).block(() => {
 				writer.write('return paramsArray').newLine();
 				writer.indent().write('.map(() => {').newLine();
