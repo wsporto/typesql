@@ -667,4 +667,119 @@ describe('sqlite-parse-select-multiples-tables', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('select * from inner join using (id, name)', async () => {
+		const sql = `
+        SELECT *
+        FROM mytable2 t1
+        INNER JOIN mytable2 t2 using (id, name)
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'table'
+				},
+				{
+					columnName: 'name',
+					type: 'text',
+					notNull: false, //TODO - using(id, name) makes the name notNull
+					table: 'table'
+				},
+				{
+					columnName: 'descr',
+					type: 'text',
+					notNull: false,
+					table: 'table'
+				},
+				{
+					columnName: 'descr',
+					type: 'text',
+					notNull: false,
+					table: 'table'
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it.skip('multipleRowsResult must be true with inner join WHERE t1.id = 1', async () => {
+		const sql = `
+        SELECT t1.id, t1.name
+        FROM mytable2 t1
+        INNER JOIN mytable2 t2 ON t2.id = t1.id
+        WHERE t1.id = 1
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'table'
+				},
+				{
+					columnName: 'name',
+					type: 'text',
+					notNull: false,
+					table: 'table'
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it.skip('SELECT mytable1.id, mytable2.id is not null as hasOwner', async () => {
+		const sql = `
+        SELECT
+            mytable1.id,
+            mytable2.id is not null as hasOwner
+        FROM mytable1
+        LEFT JOIN mytable2 ON mytable1.id = mytable2.id
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'table'
+				},
+				{
+					columnName: 'hasOwner',
+					type: 'bool',
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });
