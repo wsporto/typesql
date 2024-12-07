@@ -165,10 +165,11 @@ function isNotNull_target_el(target_el: Target_elContext, fromColumns: NotNullIn
 		const isNotNull = traverse_a_expr(a_expr, fromColumns, traverseResult);
 		const colLabel = target_el.colLabel();
 		const alias = colLabel != null ? colLabel.getText() : '';
+		const fieldName = splitName(a_expr.getText());
 		return {
-			column_name: alias || a_expr.getText(),
+			column_name: alias || fieldName.name,
 			is_nullable: !isNotNull,
-			table_name: '',
+			table_name: fieldName.prefix,
 			table_schema: ''
 		};
 	}
