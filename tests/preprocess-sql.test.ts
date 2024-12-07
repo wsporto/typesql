@@ -129,4 +129,18 @@ describe('preprocess-sql', () => {
 
 		assert.deepStrictEqual(actual, expected);
 	});
+
+	it('handle type-cast id::int2', async () => {
+		const sql = `
+        select id::int2 from mytable1`;
+
+		const actual = preprocessSql(sql, 'postgres');
+		const expected: PreprocessedSql = {
+			sql: `
+        select id::int2 from mytable1`,
+			namedParameters: []
+		};
+
+		assert.deepStrictEqual(actual, expected);
+	});
 });

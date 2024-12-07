@@ -70,6 +70,18 @@ AND name IN (:names)`;
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('select-type-cast ', async () => {
+		const sql = 'SELECT id::int2 FROM mytable1';
+
+		const actual = await generateCode(dialect, sql, 'selectTypeCast');
+		const expected = readFileSync('tests/postgres/expected-code/select-type-cast.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('insert01 - INSERT INTO mytable1(value) values(10)', async () => {
 		const sql = 'INSERT INTO mytable1(value) values(10)';
 

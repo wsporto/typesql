@@ -145,8 +145,9 @@ export async function parseSql(client: MySqlDialect, sql: string): Promise<Eithe
 //http://dev.mysql.com/doc/refman/8.0/en/identifiers.html
 //Permitted characters in unquoted identifiers: ASCII: [0-9,a-z,A-Z$_] (basic Latin letters, digits 0-9, dollar, underscore)
 export function preprocessSql(sql: string, dialect: 'postgres' | 'mysql' | 'sqlite') {
-	const lines = sql.split('\n');
 	const regex = /:[a-zA-Z$_]+[a-zA-Z\d$_]*/g;
+	let tempSql = sql.replace(/::([a-zA-Z0-9_]+)/g, (match, type) => `/*TYPECAST*/${type}`);
+	const lines = tempSql.split('\n');
 	let newSql = '';
 	const allParameters: string[] = [];
 	let paramIndex = 1; // For PostgreSQL, to track $1, $2, $3, ...
@@ -171,6 +172,7 @@ export function preprocessSql(sql: string, dialect: 'postgres' | 'mysql' | 'sqli
 			newSql += '\n';
 		}
 	});
+	newSql = newSql.replace(/\/\*TYPECAST\*\/([a-zA-Z0-9_]+)/g, (_, type) => `::${type}`);
 
 	const processedSql: PreprocessedSql = {
 		sql: newSql,

@@ -206,6 +206,31 @@ describe('select-single-table', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('SELECT id::int4 FROM mytable1', async () => {
+		const sql = 'SELECT id::int2 FROM mytable1';
+
+		const actual = await describeQuery(postres, sql, []);
+
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'int2',
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('SELECT * FROM mytable1 t WHERE id in (1, 2, 3, ?)', async () => {
 		const sql = 'SELECT * FROM mytable1 t WHERE id in (1, 2, 3, $1)';
 
@@ -238,6 +263,34 @@ describe('select-single-table', () => {
 				}
 			]
 		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it.skip('SELECT SUM(ID) as sumById FROM mytable1 t1 GROUP BY id', async () => {
+		const sql = `
+        SELECT SUM(ID) as sumById
+        FROM mytable1 t1
+        GROUP BY id
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'sumById',
+					type: 'int8',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+
 		if (actual.isErr()) {
 			assert.fail(`Shouldn't return an error: ${actual.error}`);
 		}
