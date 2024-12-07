@@ -801,7 +801,7 @@ function isNotNull_c_expr(c_expr: C_exprContext, field: NotNullInfo): boolean {
 		const columnref = c_expr.columnref();
 		if (columnref) {
 			const fieldName = splitName(columnref.getText());
-			return fieldName.name === field.column_name;
+			return (fieldName.name === field.column_name && (fieldName.prefix === '' || field.table_name === fieldName.prefix));
 		}
 		const aexprconst = c_expr.aexprconst();
 		if (aexprconst) {
