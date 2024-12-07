@@ -238,4 +238,111 @@ describe('sqlite-parse-select-multiples-tables', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('parse select with param', async () => {
+		const sql = `
+        SELECT t1.id
+        FROM mytable1 t1
+        INNER JOIN mytable2 t2 on t2.id = t1.id
+        WHERE t2.id = $1
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false, //different from mysql and sqlite
+			columns: [
+				{
+					columnName: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'table'
+				}
+			],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'int4',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it.skip('parse select with param 2', async () => {
+		const sql = `
+        SELECT t1.id, t2.name, t1.value, t2.descr as description, $1 as param1
+        FROM mytable1 t1
+        INNER JOIN mytable2 t2 on t2.id = t1.id
+        WHERE t1.id = $2 and t2.name = $3 and t1.value > $4
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false, //different from mysql and sqlite
+			columns: [
+				{
+					columnName: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'table'
+				},
+				{
+					columnName: 'name', //where t1.name = ?; cannot be null
+					type: 'text',
+					notNull: true,
+					table: 'table'
+				},
+				{
+					columnName: 'value', //where t1.value = ?; cannot be null
+					type: 'int4',
+					notNull: true,
+					table: 'table'
+				},
+				{
+					columnName: 'description',
+					type: 'text',
+					notNull: false,
+					table: 'table'
+				},
+				{
+					columnName: 'param1',
+					type: 'text',
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'text', //different from mysql and sqlite
+					notNull: true //changed at v0.0.2
+				},
+				{
+					name: 'param2',
+					columnType: 'int4',
+					notNull: true
+				},
+				{
+					name: 'param3',
+					columnType: 'text',
+					notNull: true
+				},
+				{
+					name: 'param4',
+					columnType: 'int4',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });
