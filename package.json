@@ -1,6 +1,6 @@
 {
 	"name": "typesql-cli",
-	"version": "0.14.3",
+	"version": "0.15.0-experimental.0",
 	"description": "",
 	"main": "index.js",
 	"bin": {
@@ -11,6 +11,7 @@
 		"test": "mocha --enable-source-maps dist/tests/**/*.js --watch --watch-files **/*.js",
 		"antlr4ts": "antlr4ts -Xexact-output-dir -o ./parser/ ./grammar/*.g4",
 		"dist": "tsc && shx cp ./package.json ./README.md ./dist/src && cd ./dist/src && npm publish",
+		"dist-exp": "tsc && shx cp ./package.json ./README.md ./dist/src && cd ./dist/src && npm publish --tag experimental",
 		"gen": "node ./dist/src/cli.js compile"
 	},
 	"keywords": [],
