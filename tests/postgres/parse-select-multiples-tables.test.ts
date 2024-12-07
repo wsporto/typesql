@@ -64,4 +64,178 @@ describe('sqlite-parse-select-multiples-tables', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('FROM mytable1 as t1 INNER JOIN mytable2 as t2', async () => {
+		const sql = `
+        SELECT *
+        FROM mytable1 as t1
+        INNER JOIN mytable2 as t2 on t2.id = t1.id
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'table'
+				},
+				{
+					columnName: 'value',
+					type: 'int4',
+					notNull: false,
+					table: 'table'
+				},
+				{
+					columnName: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'table'
+				},
+				{
+					columnName: 'name',
+					type: 'text',
+					notNull: false,
+					table: 'table'
+				},
+				{
+					columnName: 'descr',
+					type: 'text',
+					notNull: false,
+					table: 'table'
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('select t1.* from inner join', async () => {
+		const sql = `
+        SELECT t1.*
+        FROM mytable1 t1
+        INNER JOIN mytable2 t2 on t2.id = t1.id
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'table'
+				},
+				{
+					columnName: 'value',
+					type: 'int4',
+					notNull: false,
+					table: 'table'
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('select t2.* from inner join', async () => {
+		const sql = `
+        SELECT t2.*
+        FROM mytable1 t1
+        INNER JOIN mytable2 t2 on t2.id = t1.id
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'table'
+				},
+				{
+					columnName: 'name',
+					type: 'text',
+					notNull: false,
+					table: 'table'
+				},
+				{
+					columnName: 'descr',
+					type: 'text',
+					notNull: false,
+					table: 'table'
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('select t2.*, t1.* from inner join', async () => {
+		const sql = `
+        SELECT t2.*, t1.*
+        FROM mytable1 t1
+        INNER JOIN mytable2 t2 on t2.id = t1.id
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'table'
+				},
+				{
+					columnName: 'name',
+					type: 'text',
+					notNull: false,
+					table: 'table'
+				},
+				{
+					columnName: 'descr',
+					type: 'text',
+					notNull: false,
+					table: 'table'
+				},
+				{
+					columnName: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'table'
+				},
+				{
+					columnName: 'value',
+					type: 'int4',
+					notNull: false,
+					table: 'table'
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });
