@@ -39,6 +39,15 @@ describe('Infer column nullability', () => {
 		assert.deepStrictEqual(actual.columnsNullability, expected);
 	});
 
+	it('select value from mytable1 t1 where t1.value is not null', () => {
+		const sql = 'select value from mytable1 t1 where t1.value is not null';
+		const actual = parseSql(sql, dbSchema);
+
+		const expected = [true];
+
+		assert.deepStrictEqual(actual.columnsNullability, expected);
+	});
+
 	it('select * from mytable1 where value is not null', () => {
 		const sql = 'select * from mytable1 where value is not null';
 		const actual = parseSql(sql, dbSchema);
@@ -230,6 +239,24 @@ describe('Infer column nullability', () => {
 
 	it('select sum(value) from mytable1 where value is not null', () => {
 		const sql = 'select sum(value) from mytable1 where value is not null';
+		const actual = parseSql(sql, dbSchema);
+
+		const expected = [false];
+
+		assert.deepStrictEqual(actual.columnsNullability, expected);
+	});
+
+	it('select t2.name from mytable2 t2 inner join mytable3 t3 on t3.id = t2.id where t2.name is not null', () => {
+		const sql = 'select t2.name from mytable2 t2 inner join mytable3 t3 on t3.id = t2.id where t2.name is not null';
+		const actual = parseSql(sql, dbSchema);
+
+		const expected = [true];
+
+		assert.deepStrictEqual(actual.columnsNullability, expected);
+	});
+
+	it('select t2.name from mytable2 t2 inner join mytable3 t3 on t3.id = t2.id where t3.name is not null', () => {
+		const sql = 'select t2.name from mytable2 t2 inner join mytable3 t3 on t3.id = t2.id where t3.name is not null';
 		const actual = parseSql(sql, dbSchema);
 
 		const expected = [false];
