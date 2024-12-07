@@ -1,5 +1,5 @@
 import assert from 'node:assert';
-import type { SchemaDef } from '../../src/types';
+import type { SchemaDef, TypeSqlError } from '../../src/types';
 import { isLeft } from 'fp-ts/lib/Either';
 import postgres from 'postgres';
 import { describeQuery } from '../../src/postgres-query-analyzer/describe';
@@ -339,6 +339,173 @@ describe('sqlite-parse-select-multiples-tables', () => {
 					notNull: true
 				}
 			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it.skip('parse select with param (tablelist)', async () => {
+		const sql = `
+        SELECT t3.id, t2.name, t1.value, $1 as param1
+        FROM mytable1 t1, mytable2 t2, mytable3 t3
+        WHERE t3.id > $2 and t1.value = $3 and t2.name = $4
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'table'
+				},
+				{
+					columnName: 'name',
+					type: 'text',
+					notNull: true, //where t2.name = ?; cannot be null
+					table: 'table'
+				},
+				{
+					columnName: 'value',
+					type: 'int4',
+					notNull: true, //where t1.value = ?; cannot be null
+					table: 'table'
+				},
+				{
+					columnName: 'param1',
+					notNull: true,
+					type: 'text',
+					table: ''
+				}
+			],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'text',
+					notNull: true //changed at v0.0.2
+				},
+				{
+					name: 'param2',
+					columnType: 'int4',
+					notNull: true
+				},
+				{
+					name: 'param3',
+					columnType: 'int4',
+					notNull: true
+				},
+				{
+					name: 'param4',
+					columnType: 'text',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('parse a select with tablelist', async () => {
+		const sql = `
+        SELECT t1.id, t2.name
+        FROM mytable1 t1, mytable2 t2
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'table'
+				},
+				{
+					columnName: 'name',
+					type: 'text',
+					notNull: false,
+					table: 'table'
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('parse a select with tablelist (not ambiguous)', async () => {
+		// Column 'name' exists only on mytable2
+		const sql = `
+        SELECT name FROM mytable1, mytable2
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'name',
+					type: 'text',
+					notNull: false,
+					table: 'table'
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('parse a select with tablelist (ambiguous)', async () => {
+		// Column 'id' exists on mytable1 and mytable2
+		const sql = `
+        SELECT id FROM mytable1, mytable2
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: TypeSqlError = {
+			name: 'error',
+			description: `column reference \"id\" is ambiguous`
+		};
+
+		if (actual.isOk()) {
+			assert.fail('Should return an error');
+		}
+		assert.deepStrictEqual(actual.error, expected);
+	});
+
+	it('parse a select with tablelist (unreferenced alias)', async () => {
+		// Column 'name' exists only on mytable2
+		const sql = `
+        SELECT name as fullname FROM mytable1 t1, mytable2 t2
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'fullname',
+					type: 'text',
+					notNull: false,
+					table: 'table'
+				}
+			],
+			parameters: []
 		};
 		if (actual.isErr()) {
 			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
