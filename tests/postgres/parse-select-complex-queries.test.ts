@@ -60,4 +60,232 @@ describe('parse-select-complex-queries', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('HAVING value > ?', async () => {
+		const sql = `
+        SELECT
+            name,
+            SUM(double_value) as value
+        FROM mytable3
+        GROUP BY
+            name
+        HAVING
+            SUM(double_value) > $1
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'name',
+					type: 'text',
+					notNull: true,
+					table: 'table'
+				},
+				{
+					columnName: 'value',
+					type: 'float4',
+					notNull: false, //SUM(double_value) > $1; then notNull should be true
+					table: ''
+				}
+			],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'float4',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('HAVING value > ? and ? <', async () => {
+		const sql = `
+        SELECT
+            name,
+            SUM(double_value) as value,
+            SUM(double_value * 0.01) as id
+        FROM mytable3
+        WHERE id > $1 -- this id is from mytable3 column
+        GROUP BY
+            name
+        HAVING
+            SUM(double_value) > $2
+            and SUM(double_value * 0.01) < $3 -- this id is from the SELECT alias
+            AND SUM(double_value) = $4
+
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'name',
+					type: 'text',
+					notNull: true,
+					table: 'table'
+				},
+				{
+					columnName: 'value',
+					type: 'float4',
+					notNull: false,
+					table: ''
+				},
+				{
+					columnName: 'id',
+					type: 'float8',
+					notNull: false,
+					table: '' //TODO - could be mytable3?
+				}
+			],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'int4',
+					notNull: true
+				},
+				{
+					name: 'param2',
+					columnType: 'float4',
+					notNull: true
+				},
+				{
+					name: 'param3',
+					columnType: 'float8',
+					notNull: true
+				},
+				{
+					name: 'param4',
+					columnType: 'float4',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('parse a select with UNION', async () => {
+		const sql = `
+        SELECT id FROM mytable1
+        UNION
+        SELECT id FROM mytable2
+        UNION
+        SELECT id FROM mytable3
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'int4',
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('parse a select with UNION (int4_column + int8_column)', async () => {
+		const sql = `
+            SELECT column_int4 as col FROM all_types
+			UNION
+			SELECT column_int8 as col FROM all_types
+            `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'col',
+					type: 'int8',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('subselect in column', async () => {
+		const sql = `
+        SELECT (SELECT name FROM mytable2 where id = t1.id) as fullname
+        FROM mytable1 t1
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'fullname',
+					type: 'text',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('subselect in column (with parameter)', async () => {
+		const sql = `
+        SELECT (SELECT name as namealias FROM mytable2 where id = $1) as fullname
+        FROM mytable1 t1
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'fullname',
+					type: 'text',
+					notNull: false,
+					table: '' //TODO - subselect table name should be ''
+				}
+			],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'int4',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });

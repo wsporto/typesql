@@ -658,6 +658,31 @@ describe('Infer column nullability', () => {
 		assert.deepStrictEqual(actual.columnsNullability, expected);
 	});
 
+	it.skip('select with inner join after left join', () => {
+		const sqlInnerJoin = `
+        select t1.id, t2.id, t3.id, t1.value, t2.name, t3.double_value 
+        from mytable1 t1 
+        left join mytable2 t2 on t1.id = t2.id
+        inner join mytable3 t3 on t2.id = t3.id
+        `;
+		const actualInnerJoin = parseSql(sqlInnerJoin, dbSchema);
+
+		const expected = [true, true, true, false, false, false];
+
+		assert.deepStrictEqual(actualInnerJoin.columnsNullability, expected);
+
+		// USE JOIN instead of INNER JOIN. The same result is expected
+		const sqlJoin = `
+		select t1.id, t2.id, t3.id, t1.value, t2.name, t3.double_value 
+		from mytable1 t1 
+		left join mytable2 t2 on t1.id = t2.id
+		join mytable3 t3 on t2.id = t3.id
+		`;
+		const actualJoin = parseSql(sqlJoin, dbSchema);
+
+		assert.deepStrictEqual(actualJoin.columnsNullability, expected);
+	});
+
 	it('select with left join after inner join', () => {
 		const sql = `
         select t1.id, t2.id, t3.id, t1.value, t2.name, t3.double_value 
