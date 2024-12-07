@@ -6,12 +6,7 @@ import { ColumnInfo } from '../mysql-query-analyzer/types';
 import { parseSql, PostgresTraverseResult } from './parser';
 import { replacePostgresParams, replacePostgresParamsWithValues } from '../sqlite-query-analyzer/replace-list-params';
 import { ok, Result, ResultAsync, okAsync } from 'neverthrow';
-
-export const postgresTypes: PostgresType = {
-	23: 'int4',
-	25: 'text',
-	700: 'float4'
-}
+import { postgresTypes } from '../dialects/postgres';
 
 function describeQueryRefine(sql: string, schema: PostgresColumnSchema[], postgresDescribeResult: DescribeQueryResult, traverseResult: PostgresTraverseResult, namedParameters: string[]): Result<SchemaDef, string> {
 
@@ -42,7 +37,7 @@ function mapToColumnInfo(col: DescribeQueryColumn, posgresTypes: PostgresType, n
 	return {
 		columnName: col.name,
 		notNull: notNull,
-		type: posgresTypes[col.typeId] as any,
+		type: posgresTypes[col.typeId] as any ?? '?',
 		table: col.tableId == 0 ? '' : 'table'
 	}
 }
