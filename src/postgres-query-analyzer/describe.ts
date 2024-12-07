@@ -86,6 +86,11 @@ function getMultipleRowInfo(postgres: Sql, sql: string, describeResult: Postgres
 }
 
 function isSingleRow(queryPlans: string[]): boolean {
+	const isLimitOne = queryPlans[0].startsWith("Limit ") && parseSingleQueryPlan(queryPlans[0]) === 1;
+	if (isLimitOne) {
+		return true;
+	}
+
 	const parseResult = queryPlans
 		.map(queryPlan => parseSingleQueryPlan(queryPlan))
 		.filter(rows => rows != null)
