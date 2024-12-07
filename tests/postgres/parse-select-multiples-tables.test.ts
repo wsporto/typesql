@@ -621,4 +621,50 @@ describe('sqlite-parse-select-multiples-tables', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('select * from inner join using', async () => {
+		const sql = `
+        SELECT *
+        FROM mytable1 t1
+        INNER JOIN mytable2 t2 using(id)
+        WHERE name is not null and value > 0
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'table'
+				},
+				{
+					columnName: 'value',
+					type: 'int4',
+					notNull: true,
+					table: 'table'
+				},
+				{
+					columnName: 'name',
+					type: 'text',
+					notNull: true,
+					table: 'table'
+				},
+				{
+					columnName: 'descr',
+					type: 'text',
+					notNull: false,
+					table: 'table'
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });

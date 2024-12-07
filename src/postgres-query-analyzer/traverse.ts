@@ -370,6 +370,14 @@ function filterColumns(fromColumns: NotNullInfo[], fieldName: FieldName) {
 		&& (fieldName.name === '*' || col.column_name === fieldName.name));
 }
 
+function excludeColumns(fromColumns: NotNullInfo[], excludeList: FieldName[]) {
+	return fromColumns.filter(col => {
+		const found = excludeList.find(excluded => (excluded.prefix === '' || col.table_name === excluded.prefix)
+			&& excluded.name == col.column_name);
+		return !found;
+	});
+}
+
 function traversec_expr_case(c_expr_case: C_expr_caseContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult): boolean {
 	const case_expr = c_expr_case.case_expr();
 	const whenIsNotNull = case_expr.when_clause_list().when_clause_list().every(when_clause => traversewhen_clause(when_clause, fromColumns, traverseResult));
@@ -447,8 +455,17 @@ function traverse_table_ref(table_ref: Table_refContext, dbSchema: NotNullInfo[]
 		allColumns.push(...fromColumns);
 	}
 	const table_ref_list = table_ref.table_ref_list();
+	// const join_type_list = table_ref.join_type_list();
+	const join_qual_list = table_ref.join_qual_list();
 	if (table_ref_list) {
-		const joinColumns = table_ref_list.flatMap(table_ref => traverse_table_ref(table_ref, dbSchema, traverseResult));
+		const joinColumns = table_ref_list.flatMap((table_ref, joinIndex) => {
+			// const joinType = join_type_list[joinIndex]; //INNER, LEFT
+			const joinQual = join_qual_list[joinIndex];
+			const joinColumns = traverse_table_ref(table_ref, dbSchema, traverseResult);
+			const isUsing = joinQual?.USING() ? true : false;
+			const filteredColumns = isUsing ? filterUsingColumns(joinColumns, joinQual) : joinColumns;
+			return filteredColumns;
+		});
 		allColumns.push(...joinColumns);
 	}
 	const select_with_parens = table_ref.select_with_parens();
@@ -458,9 +475,10 @@ function traverse_table_ref(table_ref: Table_refContext, dbSchema: NotNullInfo[]
 	return allColumns;
 }
 
-function traverse_join_qual(join_qual: Join_qualContext, dbSchema: NotNullInfo[]): NotNullInfo[] {
-	const a = join_qual;
-	return [];
+function filterUsingColumns(fromColumns: NotNullInfo[], joinQual: Join_qualContext): NotNullInfo[] {
+	const excludeList = joinQual.name_list().name_list().map(name => splitName(name.getText()));
+	const filteredColumns = excludeColumns(fromColumns, excludeList);
+	return filteredColumns;
 }
 
 function traverse_select_with_parens(select_with_parens: Select_with_parensContext, dbSchema: NotNullInfo[], traverseResult: TraverseResult): NotNullInfo[] {
