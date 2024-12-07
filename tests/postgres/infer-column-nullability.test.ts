@@ -39,6 +39,24 @@ describe('Infer column nullability', () => {
 		assert.deepStrictEqual(actual.columnsNullability, expected);
 	});
 
+	it('select value from mytable1 where value = 10', () => {
+		const sql = 'select value from mytable1 where value = 10';
+		const actual = parseSql(sql, dbSchema);
+
+		const expected = [true];
+
+		assert.deepStrictEqual(actual.columnsNullability, expected);
+	});
+
+	it('select value from mytable1 where value = $1', () => {
+		const sql = 'select value from mytable1 where value = $1';
+		const actual = parseSql(sql, dbSchema);
+
+		const expected = [true];
+
+		assert.deepStrictEqual(actual.columnsNullability, expected);
+	});
+
 	it('select value from mytable1 t1 where t1.value is not null', () => {
 		const sql = 'select value from mytable1 t1 where t1.value is not null';
 		const actual = parseSql(sql, dbSchema);

@@ -711,7 +711,8 @@ function isNotNull_a_expr_is_not(a_expr_is_not: A_expr_is_notContext, field: Not
 function isNotNull_a_expr_compare(a_expr_compare: A_expr_compareContext, field: NotNullInfo): boolean {
 	const a_expr_like_list = a_expr_compare.a_expr_like_list()
 	if (a_expr_like_list) {
-		return a_expr_like_list.every(a_expr_like => isNotNull_a_expr_like(a_expr_like, field));
+		//a = b, b = a, id > 10, id = $1
+		return a_expr_like_list.some(a_expr_like => isNotNull_a_expr_like(a_expr_like, field));
 	}
 	return false;
 }
@@ -805,7 +806,7 @@ function isNotNull_c_expr(c_expr: C_exprContext, field: NotNullInfo): boolean {
 		}
 		const aexprconst = c_expr.aexprconst();
 		if (aexprconst) {
-			return true;
+			return false;
 		}
 		const a_expr = c_expr.a_expr();
 		if (a_expr) {
