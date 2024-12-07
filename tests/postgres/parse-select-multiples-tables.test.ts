@@ -538,4 +538,87 @@ describe('sqlite-parse-select-multiples-tables', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	//not valid postgres query
+	it.skip('parse a query with extras parenteses', async () => {
+		const sql = `
+        select name from ((( mytable1, (select * from mytable2) t )))
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'name',
+					type: 'varchar',
+					notNull: false,
+					table: 't'
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('parse a query with duplicated names', async () => {
+		const sql = `
+        select t1.id, t2.id, t1.value as name, t2.name, t1.id, name as descr
+        from mytable1 t1
+        inner join mytable2 t2 on t1.id = t2.id
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'table'
+				},
+				{
+					columnName: 'id', //TODO - rename field
+					type: 'int4',
+					notNull: true,
+					table: 'table'
+				},
+				{
+					columnName: 'name',
+					type: 'int4',
+					notNull: false,
+					table: 'table'
+				},
+				{
+					columnName: 'name', //TODO - rename field
+					type: 'text',
+					notNull: false,
+					table: 'table'
+				},
+				{
+					columnName: 'id', //TODO - rename field
+					type: 'int4',
+					notNull: true,
+					table: 'table'
+				},
+				{
+					columnName: 'descr',
+					type: 'text',
+					notNull: false,
+					table: 'table'
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });
