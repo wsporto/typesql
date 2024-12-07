@@ -3,6 +3,7 @@ import { PostgresTraverseResult } from './parser';
 import { ParserRuleContext } from '@wsporto/typesql-parser';
 import { PostgresColumnSchema } from '../drivers/types';
 import { splitName } from '../mysql-query-analyzer/select-columns';
+import { FieldName } from '../mysql-query-analyzer/types';
 
 type NotNullInfo = {
 	table_schema: string;
@@ -147,23 +148,13 @@ function filterColumns_simple_select_pramary(simple_select_pramary: Simple_selec
 
 function filterColumns_target_list(target_list: Target_listContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult): NotNullInfo[] {
 	const columns = target_list.target_el_list().flatMap(target_el => {
-		const fieldName = target_el.getText();
-		if (fieldName == '*') {
-			return fromColumns;
+		const fieldName = splitName(target_el.getText());
+		if (fieldName.name == '*') {
+			const columns = filterColumns(fromColumns, fieldName);
+			return columns;
 		}
 		const column = isNotNull_target_el(target_el, fromColumns, traverseResult);
-		// const result: NotNullInfo = {
-		// 	column_name: target_el.getText(),
-		// 	is_nullable: !isNotNull,
-		// 	table_name: '',
-		// 	table_schema: ''
-		// }
 		return [column];
-		// const col = findColumn(fieldName, fromColumns);
-		// if (col == null) {
-		// 	throw Error('Could not find column:' + fieldName);
-		// }
-		// return [col];
 	})
 	return columns;
 }
@@ -373,6 +364,11 @@ function traversec_expr(c_expr: C_exprContext, fromColumns: NotNullInfo[], trave
 	return false;
 }
 
+function filterColumns(fromColumns: NotNullInfo[], fieldName: FieldName) {
+	return fromColumns.filter(col => (fieldName.prefix === '' || col.table_name === fieldName.prefix)
+		&& (fieldName.name === '*' || col.column_name === fieldName.name));
+}
+
 function traversec_expr_case(c_expr_case: C_expr_caseContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult): boolean {
 	const case_expr = c_expr_case.case_expr();
 	const whenIsNotNull = case_expr.when_clause_list().when_clause_list().every(when_clause => traversewhen_clause(when_clause, fromColumns, traverseResult));
@@ -441,9 +437,12 @@ function traverse_from_list(from_list: From_listContext, dbSchema: NotNullInfo[]
 function traverse_table_ref(table_ref: Table_refContext, dbSchema: NotNullInfo[], traverseResult: TraverseResult): NotNullInfo[] {
 	const allColumns: NotNullInfo[] = [];
 	const relation_expr = table_ref.relation_expr();
+	const aliasClause = table_ref.alias_clause();
+	const alias = aliasClause ? aliasClause.getText() : undefined;
 	if (relation_expr) {
 		const tableName = traverse_relation_expr(relation_expr, dbSchema);
-		const fromColumns = dbSchema.filter(col => col.table_name === tableName);
+		const tableNameWithAlias = alias ? alias : tableName;
+		const fromColumns = dbSchema.filter(col => col.table_name === tableName).map(col => ({ ...col, table_name: tableNameWithAlias }));
 		allColumns.push(...fromColumns);
 	}
 	const table_ref_list = table_ref.table_ref_list();
