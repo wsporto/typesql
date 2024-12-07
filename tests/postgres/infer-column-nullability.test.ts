@@ -644,4 +644,31 @@ describe('Infer column nullability', () => {
 
 		assert.deepStrictEqual(actual.columnsNullability, expected);
 	});
+
+	it('select with left join', () => {
+		const sql = `
+        select t1.id, t2.id, t1.value, t2.name 
+        from mytable1 t1 
+        left join mytable2 t2 on t1.id = t2.id;
+        `;
+		const actual = parseSql(sql, dbSchema);
+
+		const expected = [true, false, false, false];
+
+		assert.deepStrictEqual(actual.columnsNullability, expected);
+	});
+
+	it('select with left join after inner join', () => {
+		const sql = `
+        select t1.id, t2.id, t3.id, t1.value, t2.name, t3.double_value 
+        from mytable1 t1 
+        inner join mytable2 t2 on t1.id = t2.id
+        left join mytable3 t3 on t2.id = t3.id
+        `;
+		const actual = parseSql(sql, dbSchema);
+
+		const expected = [true, true, false, false, false, false];
+
+		assert.deepStrictEqual(actual.columnsNullability, expected);
+	});
 });

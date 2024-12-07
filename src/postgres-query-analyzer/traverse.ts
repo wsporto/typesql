@@ -343,7 +343,7 @@ function traversec_expr(c_expr: C_exprContext, fromColumns: NotNullInfo[], trave
 		const columnref = c_expr.columnref();
 		if (columnref) {
 			const fieldName = splitName(columnref.getText());
-			const col = findColumn(fieldName.name, fromColumns);
+			const col = findColumn(fieldName, fromColumns);
 			return !col.is_nullable;
 		}
 		const aexprconst = c_expr.aexprconst();
@@ -427,8 +427,8 @@ function traversefunc_arg_expr(func_arg_expr: Func_arg_exprContext, fromColumns:
 }
 
 
-function findColumn(fieldName: string, fromColumns: NotNullInfo[]) {
-	const col = fromColumns.find(col => col.column_name === fieldName);
+function findColumn(fieldName: FieldName, fromColumns: NotNullInfo[]) {
+	const col = fromColumns.find(col => (fieldName.prefix === '' || col.table_name === fieldName.prefix) && col.column_name === fieldName.name);
 	if (col == null) {
 		throw Error('Column not found: ' + fieldName);
 	}
@@ -469,16 +469,18 @@ function traverse_table_ref(table_ref: Table_refContext, dbSchema: NotNullInfo[]
 		allColumns.push(...fromColumns);
 	}
 	const table_ref_list = table_ref.table_ref_list();
-	// const join_type_list = table_ref.join_type_list();
+	const join_type_list = table_ref.join_type_list();
 	const join_qual_list = table_ref.join_qual_list();
 	if (table_ref_list) {
 		const joinColumns = table_ref_list.flatMap((table_ref, joinIndex) => {
-			// const joinType = join_type_list[joinIndex]; //INNER, LEFT
+			const joinType = join_type_list[joinIndex]; //INNER, LEFT
 			const joinQual = join_qual_list[joinIndex];
 			const joinColumns = traverse_table_ref(table_ref, dbSchema, traverseResult);
 			const isUsing = joinQual?.USING() ? true : false;
+			const isLeftJoin = joinType.LEFT();
 			const filteredColumns = isUsing ? filterUsingColumns(joinColumns, joinQual) : joinColumns;
-			return filteredColumns;
+			const resultColumns = isLeftJoin ? filteredColumns.map(col => ({ ...col, is_nullable: true })) : filteredColumns;
+			return resultColumns;
 		});
 		allColumns.push(...joinColumns);
 	}
@@ -617,7 +619,7 @@ function traverseUpdatestmt(updatestmt: UpdatestmtContext, dbSchema: PostgresCol
 
 function traverse_set_clause(set_clause: Set_clauseContext, updateColumns: PostgresColumnSchema[], traverseResult: TraverseResult): boolean {
 	const set_target = set_clause.set_target();
-	const columnName = set_target.getText();
+	const columnName = splitName(set_target.getText());
 	const column = findColumn(columnName, updateColumns);
 	const a_expr = set_clause.a_expr();
 	const paramsBefore = traverseResult.parametersNullability.length;
@@ -636,7 +638,8 @@ function traverse_insert_column_item(insert_column_item: Insert_column_itemConte
 
 function isNotNull_colid(colid: ColidContext, dbSchema: PostgresColumnSchema[]): boolean {
 	const columnName = colid.getText();
-	const column = findColumn(columnName, dbSchema);
+	const fieldName = splitName(columnName);
+	const column = findColumn(fieldName, dbSchema);
 	return !column.is_nullable;
 }
 
