@@ -1,4 +1,4 @@
-import { A_expr_addContext, A_expr_andContext, A_expr_at_time_zoneContext, A_expr_betweenContext, A_expr_caretContext, A_expr_collateContext, A_expr_compareContext, A_expr_inContext, A_expr_is_notContext, A_expr_isnullContext, A_expr_lesslessContext, A_expr_likeContext, A_expr_mulContext, A_expr_orContext, A_expr_qual_opContext, A_expr_qualContext, A_expr_typecastContext, A_expr_unary_notContext, A_expr_unary_qualopContext, A_expr_unary_signContext, A_exprContext, C_expr_caseContext, C_expr_exprContext, C_exprContext, ColidContext, DeletestmtContext, Expr_listContext, From_clauseContext, From_listContext, Func_applicationContext, Func_arg_exprContext, IdentifierContext, Insert_column_itemContext, InsertstmtContext, Join_qualContext, Qualified_nameContext, Relation_exprContext, Select_clauseContext, Select_no_parensContext, Select_with_parensContext, SelectstmtContext, Set_clauseContext, Simple_select_intersectContext, Simple_select_pramaryContext, StmtContext, Table_refContext, Target_elContext, Target_labelContext, Target_listContext, UpdatestmtContext, When_clauseContext, Where_clauseContext } from '@wsporto/typesql-parser/postgres/PostgreSQLParser';
+import { A_expr_addContext, A_expr_andContext, A_expr_at_time_zoneContext, A_expr_betweenContext, A_expr_caretContext, A_expr_collateContext, A_expr_compareContext, A_expr_inContext, A_expr_is_notContext, A_expr_isnullContext, A_expr_lesslessContext, A_expr_likeContext, A_expr_mulContext, A_expr_orContext, A_expr_qual_opContext, A_expr_qualContext, A_expr_typecastContext, A_expr_unary_notContext, A_expr_unary_qualopContext, A_expr_unary_signContext, A_exprContext, C_expr_caseContext, C_expr_exprContext, C_exprContext, ColidContext, DeletestmtContext, Expr_listContext, From_clauseContext, From_listContext, Func_applicationContext, Func_arg_exprContext, Func_expr_common_subexprContext, IdentifierContext, Insert_column_itemContext, InsertstmtContext, Join_qualContext, Qualified_nameContext, Relation_exprContext, Select_clauseContext, Select_no_parensContext, Select_with_parensContext, SelectstmtContext, Set_clauseContext, Simple_select_intersectContext, Simple_select_pramaryContext, StmtContext, Table_refContext, Target_elContext, Target_labelContext, Target_listContext, UpdatestmtContext, When_clauseContext, Where_clauseContext } from '@wsporto/typesql-parser/postgres/PostgreSQLParser';
 import { PostgresTraverseResult } from './parser';
 import { ParserRuleContext } from '@wsporto/typesql-parser';
 import { PostgresColumnSchema } from '../drivers/types';
@@ -357,6 +357,10 @@ function traversec_expr(c_expr: C_exprContext, fromColumns: NotNullInfo[], trave
 		if (func_application) {
 			return traversefunc_application(func_application, fromColumns, traverseResult);
 		}
+		const func_expr_common_subexpr = c_expr.func_expr()?.func_expr_common_subexpr();
+		if (func_expr_common_subexpr) {
+			return traversefunc_expr_common_subexpr(func_expr_common_subexpr, fromColumns, traverseResult);
+		}
 	}
 	if (c_expr instanceof C_expr_caseContext) {
 		return traversec_expr_case(c_expr, fromColumns, traverseResult);
@@ -403,6 +407,16 @@ function traversefunc_application(func_application: Func_applicationContext, fro
 			return func_arg_expr_list.every(func_arg_expr => traversefunc_arg_expr(func_arg_expr, fromColumns, traverseResult))
 		}
 		return false;
+	}
+
+	return false;
+}
+
+function traversefunc_expr_common_subexpr(func_expr_common_subexpr: Func_expr_common_subexprContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult) {
+	if (func_expr_common_subexpr.COALESCE()) {
+		const func_arg_list = func_expr_common_subexpr.expr_list().a_expr_list();
+		const result = func_arg_list.some(func_arg_expr => traverse_a_expr(func_arg_expr, fromColumns, traverseResult));
+		return result;
 	}
 	return false;
 }
