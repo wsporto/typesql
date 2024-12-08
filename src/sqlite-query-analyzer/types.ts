@@ -55,4 +55,8 @@ export type PostgresType =
 	| 'float4'
 	| 'float4[]'
 	| 'float8'
-	| 'float8[]';
+	| 'float8[]'
+	| 'timestamp'
+	| 'timestamp[]'
+	| 'timestamptz'
+	| 'timestamptz[]';

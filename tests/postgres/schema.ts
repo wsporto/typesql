@@ -2,106 +2,134 @@ import { PostgresColumnSchema } from '../../src/drivers/types';
 
 export const schema: PostgresColumnSchema[] = [
 	{
-		column_name: "column_bool",
+		column_name: "bool_column",
 		is_nullable: true,
 		oid: 16421,
 		table_name: "all_types",
 		table_schema: "public"
 	},
 	{
-		column_name: "column_bytea",
+		column_name: "bytea_column",
 		is_nullable: true,
 		oid: 16421,
 		table_name: "all_types",
 		table_schema: "public"
 	},
 	{
-		column_name: "column_char",
+		column_name: "char_column",
 		is_nullable: true,
 		oid: 16421,
 		table_name: "all_types",
 		table_schema: "public"
 	},
 	{
-		column_name: "column_name",
+		column_name: "name_column",
 		is_nullable: true,
 		oid: 16421,
 		table_name: "all_types",
 		table_schema: "public"
 	},
 	{
-		column_name: "column_int8",
+		column_name: "int8_column",
 		is_nullable: true,
 		oid: 16421,
 		table_name: "all_types",
 		table_schema: "public"
 	},
 	{
-		column_name: "column_int2",
+		column_name: "int2_column",
 		is_nullable: true,
 		oid: 16421,
 		table_name: "all_types",
 		table_schema: "public"
 	},
 	{
-		column_name: "column_int4",
+		column_name: "int4_column",
 		is_nullable: true,
 		oid: 16421,
 		table_name: "all_types",
 		table_schema: "public"
 	},
 	{
-		column_name: "column_text",
+		column_name: "text_column",
 		is_nullable: true,
 		oid: 16421,
 		table_name: "all_types",
 		table_schema: "public"
 	},
 	{
-		column_name: "column_varchar",
+		column_name: "varchar_column",
 		is_nullable: true,
 		oid: 16421,
 		table_name: "all_types",
 		table_schema: "public"
 	},
 	{
-		column_name: "column_date",
+		column_name: "date_column",
 		is_nullable: true,
 		oid: 16421,
 		table_name: "all_types",
 		table_schema: "public"
 	},
 	{
-		column_name: "column_bit",
+		column_name: "bit_column",
 		is_nullable: true,
 		oid: 16421,
 		table_name: "all_types",
 		table_schema: "public"
 	},
 	{
-		column_name: "column_numeric",
+		column_name: "numeric_column",
 		is_nullable: true,
 		oid: 16421,
 		table_name: "all_types",
 		table_schema: "public"
 	},
 	{
-		column_name: "column_uuid",
+		column_name: "uuid_column",
 		is_nullable: true,
 		oid: 16421,
 		table_name: "all_types",
 		table_schema: "public"
 	},
 	{
-		column_name: "column_float4",
+		column_name: "float4_column",
 		is_nullable: true,
 		oid: 16421,
 		table_name: "all_types",
 		table_schema: "public"
 	},
 	{
-		column_name: "column_float8",
+		column_name: "float8_column",
 		is_nullable: true,
+		oid: 16421,
+		table_name: "all_types",
+		table_schema: "public"
+	},
+	{
+		column_name: "timestamp_column",
+		is_nullable: true,
+		oid: 16421,
+		table_name: "all_types",
+		table_schema: "public"
+	},
+	{
+		column_name: "timestamp_not_null_column",
+		is_nullable: false,
+		oid: 16421,
+		table_name: "all_types",
+		table_schema: "public"
+	},
+	{
+		column_name: "timestamptz_column",
+		is_nullable: true,
+		oid: 16421,
+		table_name: "all_types",
+		table_schema: "public"
+	},
+	{
+		column_name: "timestamptz_not_null_column",
+		is_nullable: false,
 		oid: 16421,
 		table_name: "all_types",
 		table_schema: "public"

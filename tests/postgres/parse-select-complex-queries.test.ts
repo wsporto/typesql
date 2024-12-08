@@ -206,9 +206,9 @@ describe('parse-select-complex-queries', () => {
 
 	it('parse a select with UNION (int4_column + int8_column)', async () => {
 		const sql = `
-            SELECT column_int4 as col FROM all_types
+            SELECT int4_column as col FROM all_types
 			UNION
-			SELECT column_int8 as col FROM all_types
+			SELECT int8_column as col FROM all_types
             `;
 		const actual = await describeQuery(postres, sql, []);
 		const expected: SchemaDef = {

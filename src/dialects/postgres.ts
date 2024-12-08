@@ -20,6 +20,8 @@ export const postgresTypes = {
 	1042: 'bpchar',
 	1043: 'varchar',
 	2950: 'uuid',
+	1114: 'timestamp',
+	1184: 'timestamptz'
 } as any;
 
 
@@ -86,6 +88,14 @@ export function mapColumnType(postgresType: PostgresType): TsType {
 		case 'float8':
 			return 'number';
 		case 'float8[]':
-			return 'number[]';
+			return 'number[]'
+		case 'timestamp':
+			return 'Date'
+		case 'timestamp[]':
+			return 'Date[]';
+		case 'timestamptz':
+			return 'Date';
+		case 'timestamptz[]':
+			return 'Date[]';
 	}
 }

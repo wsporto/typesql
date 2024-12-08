@@ -21,94 +21,118 @@ describe('postgres-type-mapping', () => {
 			sql,
 			columns: [
 				{
-					columnName: 'column_bool',
+					columnName: 'bool_column',
 					type: 'bool',
 					notNull: false,
 					table: 'table'
 				},
 				{
-					columnName: 'column_bytea',
+					columnName: 'bytea_column',
 					type: 'bytea',
 					notNull: false,
 					table: 'table'
 				},
 				{
-					columnName: 'column_char',
+					columnName: 'char_column',
 					type: 'bpchar',
 					notNull: false,
 					table: 'table'
 				},
 				{
-					columnName: 'column_name',
+					columnName: 'name_column',
 					type: 'name',
 					notNull: false,
 					table: 'table'
 				},
 				{
-					columnName: 'column_int8',
+					columnName: 'int8_column',
 					type: 'int8',
 					notNull: false,
 					table: 'table'
 				},
 				{
-					columnName: 'column_int2',
+					columnName: 'int2_column',
 					type: 'int2',
 					notNull: false,
 					table: 'table'
 				},
 				{
-					columnName: 'column_int4',
+					columnName: 'int4_column',
 					type: 'int4',
 					notNull: false,
 					table: 'table'
 				},
 				{
-					columnName: 'column_text',
+					columnName: 'text_column',
 					type: 'text',
 					notNull: false,
 					table: 'table'
 				},
 				{
-					columnName: 'column_varchar',
+					columnName: 'varchar_column',
 					type: 'varchar',
 					notNull: false,
 					table: 'table'
 				},
 				{
-					columnName: 'column_date',
+					columnName: 'date_column',
 					type: 'date',
 					notNull: false,
 					table: 'table'
 				},
 				{
-					columnName: 'column_bit',
+					columnName: 'bit_column',
 					type: 'bit',
 					notNull: false,
 					table: 'table'
 				},
 				{
-					columnName: 'column_numeric',
+					columnName: 'numeric_column',
 					type: 'numeric',
 					notNull: false,
 					table: 'table'
 				},
 				{
-					columnName: 'column_uuid',
+					columnName: 'uuid_column',
 					type: 'uuid',
 					notNull: false,
 					table: 'table'
 				},
 				{
-					columnName: 'column_float4',
+					columnName: 'float4_column',
 					type: 'float4',
 					notNull: false,
 					table: 'table'
 				},
 				{
-					columnName: 'column_float8',
+					columnName: 'float8_column',
 					type: 'float8',
 					notNull: false,
 					table: 'table'
+				},
+				{
+					columnName: "timestamp_column",
+					notNull: false,
+					table: "table",
+					type: "timestamp"
+				},
+				{
+					columnName: "timestamp_not_null_column",
+					notNull: true,
+					table: "table",
+					type: "timestamp"
+				},
+				{
+					columnName: "timestamptz_column",
+					notNull: false,
+					table: "table",
+					type: "timestamptz"
+				},
+				{
+					columnName: "timestamptz_not_null_column",
+					notNull: true,
+					table: "table",
+					type: "timestamptz"
 				}
 			],
 			parameters: []
