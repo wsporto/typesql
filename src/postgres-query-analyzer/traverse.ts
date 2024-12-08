@@ -507,7 +507,7 @@ function traverse_table_ref(table_ref: Table_refContext, dbSchema: NotNullInfo[]
 			const joinQual = join_qual_list[joinIndex];
 			const joinColumns = traverse_table_ref(table_ref, dbSchema, traverseResult);
 			const isUsing = joinQual?.USING() ? true : false;
-			const isLeftJoin = joinType.LEFT();
+			const isLeftJoin = joinType?.LEFT();
 			const filteredColumns = isUsing ? filterUsingColumns(joinColumns, joinQual) : joinColumns;
 			const resultColumns = isLeftJoin ? filteredColumns.map(col => ({ ...col, is_nullable: true })) : filteredColumns;
 			return resultColumns;
