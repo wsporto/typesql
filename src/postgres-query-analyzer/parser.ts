@@ -9,6 +9,7 @@ export type PostgresTraverseResult = {
 	parametersNullability: boolean[];
 	whereParamtersNullability?: boolean[];
 	parameterList: boolean[];
+	limit?: number;
 }
 
 export function parseSql(sql: string, dbSchema: PostgresColumnSchema[]): PostgresTraverseResult {
