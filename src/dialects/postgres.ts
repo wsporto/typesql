@@ -46,9 +46,9 @@ export function mapColumnType(postgresType: PostgresType): TsType {
 		case 'name[]':
 			return 'string[]';
 		case 'int8':
-			return 'number';
+			return 'string';
 		case 'int8[]':
-			return 'number[]';
+			return 'string[]';
 		case 'int2':
 			return 'number';
 		case 'int2[]':
