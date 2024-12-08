@@ -1,4 +1,4 @@
-import { A_expr_addContext, A_expr_andContext, A_expr_at_time_zoneContext, A_expr_betweenContext, A_expr_caretContext, A_expr_collateContext, A_expr_compareContext, A_expr_inContext, A_expr_is_notContext, A_expr_isnullContext, A_expr_lesslessContext, A_expr_likeContext, A_expr_mulContext, A_expr_orContext, A_expr_qual_opContext, A_expr_qualContext, A_expr_typecastContext, A_expr_unary_notContext, A_expr_unary_qualopContext, A_expr_unary_signContext, A_exprContext, C_expr_caseContext, C_expr_exprContext, C_exprContext, ColidContext, DeletestmtContext, Expr_listContext, From_clauseContext, From_listContext, Func_applicationContext, Func_arg_exprContext, Func_expr_common_subexprContext, IdentifierContext, Insert_column_itemContext, InsertstmtContext, Join_qualContext, Qualified_nameContext, Relation_exprContext, Select_clauseContext, Select_no_parensContext, Select_with_parensContext, SelectstmtContext, Set_clauseContext, Simple_select_intersectContext, Simple_select_pramaryContext, StmtContext, Table_refContext, Target_elContext, Target_labelContext, Target_listContext, UpdatestmtContext, When_clauseContext, Where_clauseContext } from '@wsporto/typesql-parser/postgres/PostgreSQLParser';
+import { A_expr_addContext, A_expr_andContext, A_expr_at_time_zoneContext, A_expr_betweenContext, A_expr_caretContext, A_expr_collateContext, A_expr_compareContext, A_expr_inContext, A_expr_is_notContext, A_expr_isnullContext, A_expr_lesslessContext, A_expr_likeContext, A_expr_mulContext, A_expr_orContext, A_expr_qual_opContext, A_expr_qualContext, A_expr_typecastContext, A_expr_unary_notContext, A_expr_unary_qualopContext, A_expr_unary_signContext, A_exprContext, C_expr_caseContext, C_expr_exprContext, C_exprContext, ColidContext, Common_table_exprContext, DeletestmtContext, Expr_listContext, From_clauseContext, From_listContext, Func_applicationContext, Func_arg_exprContext, Func_expr_common_subexprContext, IdentifierContext, Insert_column_itemContext, InsertstmtContext, Join_qualContext, Qualified_nameContext, Relation_exprContext, Select_clauseContext, Select_no_parensContext, Select_with_parensContext, SelectstmtContext, Set_clauseContext, Simple_select_intersectContext, Simple_select_pramaryContext, StmtContext, Table_refContext, Target_elContext, Target_labelContext, Target_listContext, Unreserved_keywordContext, UpdatestmtContext, When_clauseContext, Where_clauseContext } from '@wsporto/typesql-parser/postgres/PostgreSQLParser';
 import { PostgresTraverseResult } from './parser';
 import { ParserRuleContext } from '@wsporto/typesql-parser';
 import { PostgresColumnSchema } from '../drivers/types';
@@ -76,7 +76,7 @@ function traverseSelectstmt(selectstmt: SelectstmtContext, dbSchema: PostgresCol
 	};
 }
 
-function traverse_selectstmt(selectstmt: SelectstmtContext, dbSchema: PostgresColumnSchema[], traverseResult: TraverseResult): NotNullInfo[] {
+function traverse_selectstmt(selectstmt: SelectstmtContext, dbSchema: NotNullInfo[], traverseResult: TraverseResult): NotNullInfo[] {
 	const select_no_parens = selectstmt.select_no_parens();
 	if (select_no_parens) {
 		return traverse_select_no_parens(select_no_parens, dbSchema, traverseResult);
@@ -85,9 +85,25 @@ function traverse_selectstmt(selectstmt: SelectstmtContext, dbSchema: PostgresCo
 }
 
 function traverse_select_no_parens(select_no_parens: Select_no_parensContext, dbSchema: NotNullInfo[], traverseResult: TraverseResult): NotNullInfo[] {
+	let withColumns: NotNullInfo[] = [];
+	const with_clause = select_no_parens.with_clause()
+	if (with_clause) {
+		withColumns = with_clause.cte_list().common_table_expr_list().flatMap(common_table_expr => traverse_common_table_expr(common_table_expr, dbSchema, traverseResult));
+	}
 	const select_clause = select_no_parens.select_clause();
 	if (select_clause) {
-		return traverse_select_clause(select_clause, dbSchema, traverseResult);
+		return traverse_select_clause(select_clause, withColumns.concat(dbSchema), traverseResult);
+	}
+	return [];
+}
+
+function traverse_common_table_expr(common_table_expr: Common_table_exprContext, dbSchema: NotNullInfo[], traverseResult: TraverseResult) {
+	const tableName = common_table_expr.name().getText();
+	const select_stmt = common_table_expr.preparablestmt().selectstmt();
+	if (select_stmt) {
+		const columns = traverse_selectstmt(select_stmt, dbSchema, traverseResult);
+		const columnsWithTalbeName = columns.map(col => ({ ...col, table_name: tableName }));
+		return columnsWithTalbeName;
 	}
 	return [];
 }
@@ -525,12 +541,23 @@ function traverse_qualified_name(qualified_name: Qualified_nameContext, dbSchema
 
 function traverse_colid(colid: ColidContext, dbSchema: NotNullInfo[]): string {
 	const identifier = colid.identifier();
-	return traverse_identifier(identifier, dbSchema);
+	if (identifier) {
+		return traverse_identifier(identifier, dbSchema);
+	}
+	const unreserved_keyword = colid.unreserved_keyword();
+	if (unreserved_keyword) {
+		return traverse_unreserved_keyword(unreserved_keyword, dbSchema);
+	}
+	return '';
 }
 
-function traverse_identifier(identifier: IdentifierContext, dbSchema: NotNullInfo[]) {
+function traverse_identifier(identifier: IdentifierContext, dbSchema: NotNullInfo[]): string {
 	const tableName = identifier.Identifier().getText();
 	return tableName;
+}
+
+function traverse_unreserved_keyword(unreserved_keyword: Unreserved_keywordContext, dbSchema: NotNullInfo[]) {
+	return unreserved_keyword.getText();
 }
 
 function paramIsList(c_expr: ParserRuleContext) {
