@@ -413,4 +413,100 @@ describe('postgres-parse-select-subqueries', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('select name from mytable2 where exists ( select id from mytable1 where value = ?)', async () => {
+		const sql = `
+        select name from mytable2 where exists ( select id from mytable1 where value = $1)
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'name',
+					type: 'text',
+					notNull: false,
+					table: 'table'
+				}
+			],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'int4',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('select name from mytable2 where not exists ( select id from mytable1 where id = :a and value = :b)', async () => {
+		const sql = 'select name from mytable2 where not exists ( select id from mytable1 where id = $1 and value = $2)';
+		const actual = await describeQuery(postres, sql, ['a', 'b']);
+		const expected: SchemaDef = {
+			sql: 'select name from mytable2 where not exists ( select id from mytable1 where id = $1 and value = $2)',
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'name',
+					type: 'text',
+					notNull: false,
+					table: 'table'
+				}
+			],
+			parameters: [
+				{
+					name: 'a',
+					columnType: 'int4',
+					notNull: true
+				},
+				{
+					name: 'b',
+					columnType: 'int4',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('SELECT * from (SELECT * FROM mytable1) as t1 WHERE t1.id > ?', async () => {
+		const sql = `
+        SELECT id from (SELECT * FROM mytable1) as t1 WHERE t1.id > $1
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'table'
+				}
+			],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'int4',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });
