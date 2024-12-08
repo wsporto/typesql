@@ -428,10 +428,15 @@ function traversefunc_application(func_application: Func_applicationContext, fro
 	return false;
 }
 
-function traversefunc_expr_common_subexpr(func_expr_common_subexpr: Func_expr_common_subexprContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult) {
+function traversefunc_expr_common_subexpr(func_expr_common_subexpr: Func_expr_common_subexprContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult): boolean {
 	if (func_expr_common_subexpr.COALESCE()) {
 		const func_arg_list = func_expr_common_subexpr.expr_list().a_expr_list();
 		const result = func_arg_list.some(func_arg_expr => traverse_a_expr(func_arg_expr, fromColumns, traverseResult));
+		return result;
+	}
+	if (func_expr_common_subexpr.EXTRACT()) {
+		const a_expr = func_expr_common_subexpr.extract_list().a_expr();
+		const result = traverse_a_expr(a_expr, fromColumns, traverseResult)
 		return result;
 	}
 	return false;
