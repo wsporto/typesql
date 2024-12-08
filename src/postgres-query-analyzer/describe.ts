@@ -86,8 +86,13 @@ function getMultipleRowInfo(postgres: Sql, sql: string, describeResult: Postgres
 }
 
 function isSingleRow(queryPlans: string[]): boolean {
-	const isLimitOne = queryPlans[0].startsWith("Limit ") && parseSingleQueryPlan(queryPlans[0]) === 1;
+	const first = parseSingleQueryPlan(queryPlans[0]);
+	const isLimitOne = queryPlans[0].startsWith('Limit ') && first === 1;
 	if (isLimitOne) {
+		return true;
+	}
+	const isAggregate = queryPlans[0].startsWith('Aggregate ') && first === 1;
+	if (isAggregate) {
 		return true;
 	}
 
