@@ -262,7 +262,7 @@ describe('Test parse select with subqueries', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
-	it('nested with *)', async () => {
+	it('nested with *', async () => {
 		const sql = `
         SELECT * from (select * from (select id, name from mytable2) t1) t2
         `;
