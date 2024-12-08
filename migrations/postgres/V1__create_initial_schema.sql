@@ -16,19 +16,23 @@ CREATE TABLE mytable3 (
 );
 
 CREATE TABLE all_types (
-    column_bool BOOL,
-    column_bytea BYTEA,
-    column_char CHAR(1),
-    column_name NAME,
-    column_int8 INT8,
-    column_int2 INT2,
-    column_int4 INT4,
-    column_text TEXT,
-    column_varchar VARCHAR(255),
-    column_date DATE,
-    column_bit BIT(1),
-    column_numeric NUMERIC,
-    column_uuid UUID,
-    column_float4 FLOAT4,
-    column_float8 FLOAT8
+    bool_column BOOL,
+    bytea_column BYTEA,
+    char_column CHAR(1),
+    name_column NAME,
+    int8_column INT8,
+    int2_column INT2,
+    int4_column INT4,
+    text_column TEXT,
+    varchar_column VARCHAR(255),
+    date_column DATE,
+    bit_column BIT(1),
+    numeric_column NUMERIC,
+    uuid_column UUID,
+    float4_column FLOAT4,
+    float8_column FLOAT8,
+    timestamp_column timestamp,
+    timestamp_not_null_column timestamp NOT NULL,
+    timestamptz_column timestamptz,
+    timestamptz_not_null_column timestamptz NOT NULL
 );
