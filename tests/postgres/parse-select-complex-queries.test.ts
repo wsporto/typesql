@@ -423,4 +423,62 @@ describe('parse-select-complex-queries', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('WITH (query with inner join and parameters)', async () => {
+		const sql = `
+        WITH t1 AS
+        (
+            SELECT mytable1.*, mytable2.name
+            FROM mytable1
+            INNER JOIN mytable2 ON mytable1.id = mytable2.id
+            WHERE mytable1.value > $1 and mytable2.name = $2
+        )
+        SELECT t1.*
+        FROM t1
+        ORDER BY t1.value DESC
+		LIMIT 100
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'table'
+				},
+				{
+					columnName: 'value',
+					type: 'int4',
+					notNull: true,
+					table: 'table'
+				},
+				{
+					columnName: 'name',
+					type: 'text',
+					notNull: true,
+					table: 'table'
+				}
+			],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'int4',
+					notNull: true
+				},
+				{
+					name: 'param2',
+					columnType: 'text',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });

@@ -68,6 +68,13 @@ export function describeQuery(postgres: Sql, sql: string, namedParameters: strin
 
 function getMultipleRowInfo(postgres: Sql, sql: string, describeResult: PostgresDescribe, parseResult: PostgresTraverseResult): ResultAsync<DescribeQueryResult, string> {
 	if (parseResult.queryType === 'Select') {
+		if (parseResult.limit === 1) {
+			const result: DescribeQueryResult = {
+				...describeResult,
+				multipleRowsResult: false
+			}
+			return okAsync(result);
+		}
 		const newSql = replacePostgresParamsWithValues(sql, parseResult.parameterList, describeResult.parameters);
 		return postgresAnalyze(postgres, newSql).map(analyzeResult => {
 			const singleRow = isSingleRow(analyzeResult);
@@ -87,10 +94,6 @@ function getMultipleRowInfo(postgres: Sql, sql: string, describeResult: Postgres
 
 function isSingleRow(queryPlans: string[]): boolean {
 	const first = parseSingleQueryPlan(queryPlans[0]);
-	const isLimitOne = queryPlans[0].startsWith('Limit ') && first === 1;
-	if (isLimitOne) {
-		return true;
-	}
 	const isAggregate = queryPlans[0].startsWith('Aggregate ') && first === 1;
 	if (isAggregate) {
 		return true;

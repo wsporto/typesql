@@ -68,11 +68,13 @@ function traverseSelectstmt(selectstmt: SelectstmtContext, dbSchema: PostgresCol
 	const columns = traverse_selectstmt(selectstmt, dbSchema, traverseResult);
 	const columnsNullability = columns.map(col => !col.is_nullable);
 
+	const limit = checkLimit(selectstmt);
 	return {
 		queryType: 'Select',
 		columnsNullability,
 		parametersNullability: [],
-		parameterList: paramIsListResult
+		parameterList: paramIsListResult,
+		limit
 	};
 }
 
@@ -882,4 +884,24 @@ function isNotNull_c_expr(c_expr: C_exprContext, field: NotNullInfo): boolean {
 		}
 	}
 	return false;
+}
+
+function checkLimit(selectstmt: SelectstmtContext): number | undefined {
+	const select_no_parens = selectstmt.select_no_parens();
+	if (select_no_parens) {
+		return checkLimit_select_no_parens(select_no_parens);
+	}
+	const select_with_parens = selectstmt.select_with_parens();
+	if (select_with_parens) {
+		return checkLimit_select_with_parens(select_with_parens);
+	}
+	return undefined;
+}
+
+function checkLimit_select_no_parens(select_no_parens: Select_no_parensContext): number | undefined {
+	return +select_no_parens.select_limit()?.limit_clause()?.select_limit_value()?.getText();
+}
+
+function checkLimit_select_with_parens(select_with_parens: Select_with_parensContext): number | undefined {
+	return checkLimit(select_with_parens);
 }
