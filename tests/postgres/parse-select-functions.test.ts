@@ -84,4 +84,29 @@ describe('postgres-parse-select-functions', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('SELECT generate_series(1, 12) AS month', async () => {
+		const sql = `
+         SELECT generate_series(1, 12) AS month
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'month',
+					type: 'int4',
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });

@@ -426,6 +426,9 @@ function traversefunc_application(func_application: Func_applicationContext, fro
 		}
 		return false;
 	}
+	if (functionName === 'generate_series') {
+		return true;
+	}
 
 	return false;
 }
