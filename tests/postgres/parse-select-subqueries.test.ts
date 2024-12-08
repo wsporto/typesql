@@ -159,4 +159,49 @@ describe('postgres-parse-select-subqueries', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('select * from (subquery) where', async () => {
+		const sql = `
+        select * from (
+            select name, name as id from mytable2
+        ) t2
+        WHERE t2.id = $1 and t2.name = $2
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false, //different from mysql and sqlite
+			columns: [
+				{
+					columnName: 'name',
+					type: 'text',
+					notNull: true,
+					table: 'table'
+				},
+				{
+					columnName: 'id',
+					type: 'text',
+					notNull: true,
+					table: 'table'
+				}
+			],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'text',
+					notNull: true
+				},
+				{
+					name: 'param2',
+					columnType: 'text',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });

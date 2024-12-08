@@ -512,7 +512,9 @@ function traverse_table_ref(table_ref: Table_refContext, dbSchema: NotNullInfo[]
 	}
 	const select_with_parens = table_ref.select_with_parens();
 	if (select_with_parens) {
-		return traverse_select_with_parens(select_with_parens, dbSchema, traverseResult);
+		const columns = traverse_select_with_parens(select_with_parens, dbSchema, traverseResult);
+		const withAlias = columns.map(col => ({ ...col, table_name: alias || col.table_name }));
+		return withAlias;
 	}
 	return allColumns;
 }
