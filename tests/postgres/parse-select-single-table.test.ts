@@ -296,4 +296,121 @@ describe('select-single-table', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('parse select using ANY operator', async () => {
+		const sql = `
+        select id from mytable1 where value > any(select id from mytable2 where name like $1)
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'table'
+				}
+			],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'text',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('parse select using ANY operator with parameter', async () => {
+		const sql = `
+        select id from mytable1 where $1 > any(select id from mytable2 where name like $2)
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'table'
+				}
+			],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'int4',
+					notNull: true
+				},
+				{
+					name: 'param2',
+					columnType: 'text',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('select value from mytable1 where value is not null', async () => {
+		const sql = `
+        select value from mytable1 where value is not null or (id > 0 and value is not null)
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'value',
+					type: 'int4',
+					notNull: true,
+					table: 'table'
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('select id from mytable1 where 1 = 1', async () => {
+		const sql = `
+        select id from mytable1 where 1 = 1
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'table'
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });
