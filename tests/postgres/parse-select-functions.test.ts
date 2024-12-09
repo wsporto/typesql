@@ -37,6 +37,187 @@ describe('postgres-parse-select-functions', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('select sum(value) from mytable1', async () => {
+		const sql = `
+        select sum(value) as total from mytable1
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'total',
+					type: 'int8',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('select sum(t1.value) as total from mytable1 t1', async () => {
+		const sql = `
+        select sum(t1.value) as total from mytable1 t1
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'total',
+					type: 'int8',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('select count(id) from mytable1', async () => {
+		const sql = `
+        select count(id) from mytable1
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'count',
+					type: 'int8',
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('select count(*) from mytable1', async () => {
+		const sql = `
+        select count(*) from mytable1
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'count',
+					type: 'int8',
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('select sum(2*value) from  mytable1', async () => {
+		const sql = `
+        select sum(2*value) from  mytable1
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'sum',
+					type: 'int8',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('select avg(value) from mytable1', async () => {
+		const sql = `
+        select avg(value) from mytable1
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'avg',
+					type: 'numeric',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('select avg(value + (value + ?)) from mytable1', async () => {
+		const sql = `
+        select avg(value + (value + $1)) from mytable1
+        `;
+		const actual = await describeQuery(postres, sql, ['value']);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'avg',
+					type: 'numeric',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: [
+				{
+					columnType: 'int4',
+					name: 'value',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('EXTRACT(MONTH FROM timestamp_column)', async () => {
 		const sql = `
          select 
