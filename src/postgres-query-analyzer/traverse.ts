@@ -1,4 +1,4 @@
-import { A_expr_addContext, A_expr_andContext, A_expr_at_time_zoneContext, A_expr_betweenContext, A_expr_caretContext, A_expr_collateContext, A_expr_compareContext, A_expr_inContext, A_expr_is_notContext, A_expr_isnullContext, A_expr_lesslessContext, A_expr_likeContext, A_expr_mulContext, A_expr_orContext, A_expr_qual_opContext, A_expr_qualContext, A_expr_typecastContext, A_expr_unary_notContext, A_expr_unary_qualopContext, A_expr_unary_signContext, A_exprContext, C_expr_caseContext, C_expr_existsContext, C_expr_exprContext, C_exprContext, ColidContext, Common_table_exprContext, DeletestmtContext, Expr_listContext, From_clauseContext, From_listContext, Func_applicationContext, Func_arg_exprContext, Func_expr_common_subexprContext, IdentifierContext, Insert_column_itemContext, Insert_column_listContext, InsertstmtContext, Join_qualContext, Qualified_nameContext, Relation_exprContext, Select_clauseContext, Select_no_parensContext, Select_with_parensContext, SelectstmtContext, Set_clauseContext, Simple_select_intersectContext, Simple_select_pramaryContext, StmtContext, Table_refContext, Target_elContext, Target_labelContext, Target_listContext, Unreserved_keywordContext, UpdatestmtContext, Values_clauseContext, When_clauseContext, Where_clauseContext } from '@wsporto/typesql-parser/postgres/PostgreSQLParser';
+import { A_expr_addContext, A_expr_andContext, A_expr_at_time_zoneContext, A_expr_betweenContext, A_expr_caretContext, A_expr_collateContext, A_expr_compareContext, A_expr_inContext, A_expr_is_notContext, A_expr_isnullContext, A_expr_lesslessContext, A_expr_likeContext, A_expr_mulContext, A_expr_orContext, A_expr_qual_opContext, A_expr_qualContext, A_expr_typecastContext, A_expr_unary_notContext, A_expr_unary_qualopContext, A_expr_unary_signContext, A_exprContext, C_expr_caseContext, C_expr_existsContext, C_expr_exprContext, C_exprContext, ColidContext, Common_table_exprContext, DeletestmtContext, Expr_listContext, From_clauseContext, From_listContext, Func_applicationContext, Func_arg_exprContext, Func_expr_common_subexprContext, IdentifierContext, In_expr_listContext, Insert_column_itemContext, Insert_column_listContext, InsertstmtContext, Join_qualContext, Qualified_nameContext, Relation_exprContext, Select_clauseContext, Select_no_parensContext, Select_with_parensContext, SelectstmtContext, Set_clauseContext, Simple_select_intersectContext, Simple_select_pramaryContext, StmtContext, Table_refContext, Target_elContext, Target_labelContext, Target_listContext, Unreserved_keywordContext, UpdatestmtContext, Values_clauseContext, When_clauseContext, Where_clauseContext } from '@wsporto/typesql-parser/postgres/PostgreSQLParser';
 import { ParserRuleContext } from '@wsporto/typesql-parser';
 import { PostgresColumnSchema } from '../drivers/types';
 import { splitName } from '../mysql-query-analyzer/select-columns';
@@ -86,7 +86,7 @@ function traverseSelectstmt(selectstmt: SelectstmtContext, dbSchema: PostgresCol
 	return {
 		queryType: 'Select',
 		columnsNullability,
-		parametersNullability: [],
+		parametersNullability: traverseResult.parametersNullability,
 		parameterList: paramIsListResult,
 		limit
 	};
@@ -470,6 +470,10 @@ function traversec_expr(c_expr: C_exprContext, dbSchema: NotNullInfo[], fromColu
 				is_nullable: true
 			}
 		}
+		const a_expr_in_parens = c_expr._a_expr_in_parens;
+		if (a_expr_in_parens) {
+			return traverse_a_expr(a_expr_in_parens, dbSchema, fromColumns, traverseResult);
+		}
 	}
 	if (c_expr instanceof C_expr_caseContext) {
 		const isNotNull = traversec_expr_case(c_expr, dbSchema, fromColumns, traverseResult);
@@ -517,11 +521,11 @@ function traversewhen_clause(when_clause: When_clauseContext, dbSchema: NotNullI
 
 function traversefunc_application(func_application: Func_applicationContext, dbSchema: NotNullInfo[], fromColumns: NotNullInfo[], traverseResult: TraverseResult): boolean {
 	const functionName = func_application.func_name().getText().toLowerCase();
+	const func_arg_expr_list = func_application.func_arg_list()?.func_arg_expr_list();
 	if (functionName === 'count') {
 		return true;
 	}
 	if (functionName === 'concat') {
-		const func_arg_expr_list = func_application.func_arg_list().func_arg_expr_list();
 		if (func_arg_expr_list) {
 			const result = func_arg_expr_list.map(func_arg_expr => traversefunc_arg_expr(func_arg_expr, dbSchema, fromColumns, traverseResult))
 			return result.every(col => col);
@@ -530,6 +534,9 @@ function traversefunc_application(func_application: Func_applicationContext, dbS
 	}
 	if (functionName === 'generate_series') {
 		return true;
+	}
+	if (func_arg_expr_list) {
+		func_arg_expr_list.forEach(func_arg_expr => traversefunc_arg_expr(func_arg_expr, dbSchema, fromColumns, traverseResult))
 	}
 
 	return false;
@@ -556,7 +563,7 @@ function traversefunc_arg_expr(func_arg_expr: Func_arg_exprContext, dbSchema: No
 
 
 function findColumn(fieldName: FieldName, fromColumns: NotNullInfo[]) {
-	const col = fromColumns.find(col => (fieldName.prefix === '' || col.table_name === fieldName.prefix) && col.column_name === fieldName.name);
+	const col = fromColumns.find(col => (fieldName.prefix === '' || col.table_name.toLowerCase() === fieldName.prefix.toLowerCase()) && col.column_name.toLowerCase() === fieldName.name.toLowerCase());
 	if (col == null) {
 		throw Error('Column not found: ' + fieldName);
 	}
@@ -700,7 +707,8 @@ function paramIsList(c_expr: ParserRuleContext) {
 	const a_expr_qual = a_expr_lessless?.parentCtx;
 	const a_expr = a_expr_qual?.parentCtx;
 	const expr_list = a_expr?.parentCtx;
-	return expr_list instanceof Expr_listContext;
+	const in_expr_list = expr_list?.parentCtx;
+	return in_expr_list instanceof In_expr_listContext;
 }
 
 
