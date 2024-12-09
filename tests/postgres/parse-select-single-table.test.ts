@@ -413,4 +413,65 @@ describe('select-single-table', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it.skip('select value from mytable1 order by ?', async () => {
+		const sql = `
+	    select value from mytable1 order by $1
+	    `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'value',
+					type: 'int',
+					notNull: false,
+					table: 'mytable1'
+				}
+			],
+			orderByColumns: ['id', 'mytable1.id', 'value', 'mytable1.value'],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('SELECT id FROM mytable1 LIMIT ?, ?', async () => {
+		const sql = 'SELECT id FROM mytable1 LIMIT $1 OFFSET $2';
+
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'table'
+				}
+			],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'int8',
+					notNull: true
+				},
+				{
+					name: 'param2',
+					columnType: 'int8',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });
