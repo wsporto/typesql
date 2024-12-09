@@ -3,10 +3,11 @@ import { PostgresColumnSchema, DescribeQueryColumn, DescribeQueryResult, Postgre
 import { postgresDescribe, postgresAnalyze, loadDbSchema } from '../drivers/postgres';
 import { Sql } from 'postgres';
 import { ColumnInfo } from '../mysql-query-analyzer/types';
-import { parseSql, PostgresTraverseResult } from './parser';
+import { parseSql } from './parser';
 import { replacePostgresParams, replacePostgresParamsWithValues } from '../sqlite-query-analyzer/replace-list-params';
 import { ok, Result, ResultAsync, okAsync } from 'neverthrow';
 import { postgresTypes } from '../dialects/postgres';
+import { PostgresTraverseResult } from './traverse';
 
 function describeQueryRefine(sql: string, schema: PostgresColumnSchema[], postgresDescribeResult: DescribeQueryResult, traverseResult: PostgresTraverseResult, namedParameters: string[]): Result<SchemaDef, string> {
 

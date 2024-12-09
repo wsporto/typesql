@@ -1,15 +1,29 @@
-import { A_expr_addContext, A_expr_andContext, A_expr_at_time_zoneContext, A_expr_betweenContext, A_expr_caretContext, A_expr_collateContext, A_expr_compareContext, A_expr_inContext, A_expr_is_notContext, A_expr_isnullContext, A_expr_lesslessContext, A_expr_likeContext, A_expr_mulContext, A_expr_orContext, A_expr_qual_opContext, A_expr_qualContext, A_expr_typecastContext, A_expr_unary_notContext, A_expr_unary_qualopContext, A_expr_unary_signContext, A_exprContext, C_expr_caseContext, C_expr_existsContext, C_expr_exprContext, C_exprContext, ColidContext, Common_table_exprContext, DeletestmtContext, Expr_listContext, From_clauseContext, From_listContext, Func_applicationContext, Func_arg_exprContext, Func_expr_common_subexprContext, IdentifierContext, Insert_column_itemContext, InsertstmtContext, Join_qualContext, Qualified_nameContext, Relation_exprContext, Select_clauseContext, Select_no_parensContext, Select_with_parensContext, SelectstmtContext, Set_clauseContext, Simple_select_intersectContext, Simple_select_pramaryContext, StmtContext, Table_refContext, Target_elContext, Target_labelContext, Target_listContext, Unreserved_keywordContext, UpdatestmtContext, When_clauseContext, Where_clauseContext } from '@wsporto/typesql-parser/postgres/PostgreSQLParser';
-import { PostgresTraverseResult } from './parser';
+import { A_expr_addContext, A_expr_andContext, A_expr_at_time_zoneContext, A_expr_betweenContext, A_expr_caretContext, A_expr_collateContext, A_expr_compareContext, A_expr_inContext, A_expr_is_notContext, A_expr_isnullContext, A_expr_lesslessContext, A_expr_likeContext, A_expr_mulContext, A_expr_orContext, A_expr_qual_opContext, A_expr_qualContext, A_expr_typecastContext, A_expr_unary_notContext, A_expr_unary_qualopContext, A_expr_unary_signContext, A_exprContext, C_expr_caseContext, C_expr_existsContext, C_expr_exprContext, C_exprContext, ColidContext, Common_table_exprContext, DeletestmtContext, Expr_listContext, From_clauseContext, From_listContext, Func_applicationContext, Func_arg_exprContext, Func_expr_common_subexprContext, IdentifierContext, Insert_column_itemContext, Insert_column_listContext, InsertstmtContext, Join_qualContext, Qualified_nameContext, Relation_exprContext, Select_clauseContext, Select_no_parensContext, Select_with_parensContext, SelectstmtContext, Set_clauseContext, Simple_select_intersectContext, Simple_select_pramaryContext, StmtContext, Table_refContext, Target_elContext, Target_labelContext, Target_listContext, Unreserved_keywordContext, UpdatestmtContext, Values_clauseContext, When_clauseContext, Where_clauseContext } from '@wsporto/typesql-parser/postgres/PostgreSQLParser';
 import { ParserRuleContext } from '@wsporto/typesql-parser';
 import { PostgresColumnSchema } from '../drivers/types';
 import { splitName } from '../mysql-query-analyzer/select-columns';
 import { FieldName } from '../mysql-query-analyzer/types';
+import { QueryType } from '../types';
 
 type NotNullInfo = {
 	table_schema: string;
 	table_name: string;
 	column_name: string;
 	is_nullable: boolean;
+}
+
+type NotNullInfoResult = {
+	column_name: string;
+	is_nullable: boolean;
+}
+
+export type PostgresTraverseResult = {
+	queryType: QueryType;
+	columnsNullability: boolean[];
+	parametersNullability: boolean[];
+	whereParamtersNullability?: boolean[];
+	parameterList: boolean[];
+	limit?: number;
 }
 
 type TraverseResult = {
@@ -149,8 +163,35 @@ function traverse_simple_select_pramary(simple_select_pramary: Simple_select_pra
 		const fieldsNotNull = where_clause != null ? fields.map(field => checkIsNullable(where_clause, field)) : fields;
 		fromColumns.push(...fieldsNotNull);
 	}
+	const values_clause = simple_select_pramary.values_clause();
+	if (values_clause) {
+		const valuesColumns = traverse_values_clause(values_clause, dbSchema, traverseResult);
+		return valuesColumns;
+	}
 	const filteredColumns = filterColumns_simple_select_pramary(simple_select_pramary, fromColumns, traverseResult);
 	return filteredColumns;
+}
+
+function traverse_values_clause(values_clause: Values_clauseContext, dbSchema: NotNullInfo[], traverseResult: TraverseResult): NotNullInfo[] {
+	const expr_list_list = values_clause.expr_list_list();
+	if (expr_list_list) {
+		return expr_list_list.flatMap(expr_list => traverse_expr_list(expr_list, dbSchema, traverseResult));
+	}
+	return [];
+}
+
+function traverse_expr_list(expr_list: Expr_listContext, dbSchema: NotNullInfo[], traverseResult: TraverseResult): NotNullInfo[] {
+	const columns = expr_list.a_expr_list().map(a_expr => {
+		const notNull = traverse_a_expr(a_expr, dbSchema, traverseResult);
+		const result: NotNullInfo = {
+			column_name: a_expr.getText(),
+			is_nullable: !notNull,
+			table_name: '',
+			table_schema: ''
+		}
+		return result;
+	});
+	return columns;
 }
 
 function filterColumns_simple_select_pramary(simple_select_pramary: Simple_select_pramaryContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult): NotNullInfo[] {
@@ -180,13 +221,13 @@ function filterColumns_target_list(target_list: Target_listContext, fromColumns:
 function isNotNull_target_el(target_el: Target_elContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult): NotNullInfo {
 	if (target_el instanceof Target_labelContext) {
 		const a_expr = target_el.a_expr();
-		const isNotNull = traverse_a_expr(a_expr, fromColumns, traverseResult);
+		const exprResult = traverse_a_expr(a_expr, fromColumns, traverseResult);
 		const colLabel = target_el.colLabel();
 		const alias = colLabel != null ? colLabel.getText() : '';
 		const fieldName = splitName(a_expr.getText());
 		return {
 			column_name: alias || fieldName.name,
-			is_nullable: !isNotNull,
+			is_nullable: exprResult.is_nullable,
 			table_name: fieldName.prefix,
 			table_schema: ''
 		};
@@ -194,13 +235,19 @@ function isNotNull_target_el(target_el: Target_elContext, fromColumns: NotNullIn
 	throw Error('Column not found');
 }
 
-function traverse_a_expr(a_expr: A_exprContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult): boolean {
+function traverse_a_expr(a_expr: A_exprContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult): NotNullInfoResult {
 	const a_expr_qual = a_expr.a_expr_qual();
 	if (a_expr_qual) {
-		return traverse_a_expr_qual(a_expr_qual, fromColumns, traverseResult);
+		const notNull = traverse_a_expr_qual(a_expr_qual, fromColumns, traverseResult);
+		return {
+			column_name: a_expr_qual.getText(),
+			is_nullable: !notNull
+		}
 	}
-
-	return false;
+	return {
+		column_name: '',
+		is_nullable: true
+	};
 }
 
 function traverse_a_expr_qual(a_expr_qual: A_expr_qualContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult): boolean {
@@ -370,6 +417,7 @@ function traversec_expr(c_expr: C_exprContext, fromColumns: NotNullInfo[], trave
 		}
 		if (c_expr.PARAM()) {
 			traverseResult.parametersNullability.push(false);
+			return false;
 		}
 		const func_application = c_expr.func_expr()?.func_application();
 		if (func_application) {
@@ -408,7 +456,7 @@ function traversec_expr_case(c_expr_case: C_expr_caseContext, fromColumns: NotNu
 	const case_expr = c_expr_case.case_expr();
 	const whenIsNotNull = case_expr.when_clause_list().when_clause_list().every(when_clause => traversewhen_clause(when_clause, fromColumns, traverseResult));
 	const elseExpr = case_expr.case_default()?.a_expr();
-	const elseIsNotNull = elseExpr ? traverse_a_expr(elseExpr, fromColumns, traverseResult) : false;
+	const elseIsNotNull = elseExpr ? !traverse_a_expr(elseExpr, fromColumns, traverseResult).is_nullable : false;
 	return elseIsNotNull && whenIsNotNull;
 }
 
@@ -440,20 +488,20 @@ function traversefunc_application(func_application: Func_applicationContext, fro
 function traversefunc_expr_common_subexpr(func_expr_common_subexpr: Func_expr_common_subexprContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult): boolean {
 	if (func_expr_common_subexpr.COALESCE()) {
 		const func_arg_list = func_expr_common_subexpr.expr_list().a_expr_list();
-		const result = func_arg_list.some(func_arg_expr => traverse_a_expr(func_arg_expr, fromColumns, traverseResult));
-		return result;
+		const result = func_arg_list.map(func_arg_expr => traverse_a_expr(func_arg_expr, fromColumns, traverseResult));
+		return result.some(col => !col.is_nullable);
 	}
 	if (func_expr_common_subexpr.EXTRACT()) {
 		const a_expr = func_expr_common_subexpr.extract_list().a_expr();
 		const result = traverse_a_expr(a_expr, fromColumns, traverseResult)
-		return result;
+		return !result.is_nullable;
 	}
 	return false;
 }
 
 function traversefunc_arg_expr(func_arg_expr: Func_arg_exprContext, fromColumns: NotNullInfo[], traverseResult: TraverseResult): boolean {
 	const a_expr = func_arg_expr.a_expr();
-	return traverse_a_expr(a_expr, fromColumns, traverseResult);
+	return !traverse_a_expr(a_expr, fromColumns, traverseResult).is_nullable;
 }
 
 
@@ -612,9 +660,12 @@ function traverseInsertstmt(insertstmt: InsertstmtContext, dbSchema: PostgresCol
 	const insertColumns = dbSchema.filter(col => col.table_name === tableName);
 
 	const insert_rest = insertstmt.insert_rest();
-	const parametersNullability = insert_rest.insert_column_list()
+	const insertColumnsList = insert_rest.insert_column_list()
 		.insert_column_item_list()
 		.map(insert_column_item => traverse_insert_column_item(insert_column_item, insertColumns));
+
+	const selectstmt = insert_rest.selectstmt();
+	const parametersNullability = traverse_insert_select_stmt(selectstmt, insertColumnsList);
 
 	return {
 		queryType: 'Insert',
@@ -622,6 +673,35 @@ function traverseInsertstmt(insertstmt: InsertstmtContext, dbSchema: PostgresCol
 		columnsNullability: [],
 		parameterList: []
 	}
+}
+
+function traverse_insert_select_stmt(selectstmt: SelectstmtContext, insertColumnlist: NotNullInfo[]): boolean[] {
+	const simple_select = selectstmt.select_no_parens()?.select_clause()?.simple_select_intersect_list()?.[0];
+	if (simple_select) {
+		const simple_select_pramary = simple_select?.simple_select_pramary_list()?.[0];
+		if (simple_select_pramary) {
+			return simple_select_pramary.values_clause().expr_list_list().flatMap(expr_list => traverse_insert_a_expr_list(expr_list, insertColumnlist))
+		}
+	}
+	return [];
+}
+
+function traverse_insert_a_expr_list(expr_list: Expr_listContext, insertColumns: NotNullInfo[]) {
+	const parametersNullability: boolean[] = [];
+	expr_list.a_expr_list().forEach((a_expr, index) => {
+		const traverseResult: TraverseResult = {
+			columnsNullability: [],
+			parametersNullability: []
+		}
+		const result = traverse_a_expr(a_expr, insertColumns, traverseResult);
+		if (isParameter(result.column_name)) {
+			parametersNullability.push(!insertColumns[index].is_nullable);
+		}
+		else {
+			parametersNullability.push(...traverseResult.parametersNullability);
+		}
+	})
+	return parametersNullability;
 }
 
 function traverseDeletestmt(deleteStmt: DeletestmtContext, dbSchema: PostgresColumnSchema[], traverseResult: TraverseResult): PostgresTraverseResult {
@@ -674,16 +754,16 @@ function traverse_set_clause(set_clause: Set_clauseContext, updateColumns: Postg
 	return !column.is_nullable
 }
 
-function traverse_insert_column_item(insert_column_item: Insert_column_itemContext, dbSchema: PostgresColumnSchema[]): boolean {
+function traverse_insert_column_item(insert_column_item: Insert_column_itemContext, dbSchema: PostgresColumnSchema[]): NotNullInfo {
 	const colid = insert_column_item.colid();
 	return isNotNull_colid(colid, dbSchema);
 }
 
-function isNotNull_colid(colid: ColidContext, dbSchema: PostgresColumnSchema[]): boolean {
+function isNotNull_colid(colid: ColidContext, dbSchema: PostgresColumnSchema[]): NotNullInfo {
 	const columnName = colid.getText();
 	const fieldName = splitName(columnName);
 	const column = findColumn(fieldName, dbSchema);
-	return !column.is_nullable;
+	return column;
 }
 
 function isNotNull(field: NotNullInfo, where_clause: Where_clauseContext): boolean {
@@ -913,4 +993,10 @@ function checkLimit_select_no_parens(select_no_parens: Select_no_parensContext):
 
 function checkLimit_select_with_parens(select_with_parens: Select_with_parensContext): number | undefined {
 	return checkLimit(select_with_parens);
+}
+
+function isParameter(str: string): boolean {
+	// Regular expression to match $1, $2, $123, etc.
+	const paramPattern = /^\$[0-9]+$/;
+	return paramPattern.test(str);
 }
