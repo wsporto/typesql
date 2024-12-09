@@ -251,4 +251,58 @@ describe('postgres-parse-insert', () => {
 		}
 		assert.deepStrictEqual(actual.value.parameters, expected);
 	});
+
+	it('insert into all_types (int_column) values (?+?)', async () => {
+		const sql = 'insert into mytable1 (value) values ($1::int4+$2)';
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Insert',
+			multipleRowsResult: false,
+			columns: [],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'int4',
+					notNull: true
+				},
+				{
+					name: 'param2',
+					columnType: 'int4',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('insert into all_types (int_column) values (?+coalesce(?, 10))', async () => {
+		const sql = 'insert into mytable1 (value) values ($1::int4+coalesce($2, 10))';
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Insert',
+			multipleRowsResult: false,
+			columns: [],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'int4',
+					notNull: true
+				},
+				{
+					name: 'param2',
+					columnType: 'int4',
+					notNull: false
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });
