@@ -218,6 +218,37 @@ describe('postgres-parse-select-functions', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('select avg(value + (value + coalesce(?, 10))) from mytable1', async () => {
+		const sql = `
+        select avg(value + (value + coalesce($1, 10))) from mytable1
+        `;
+		const actual = await describeQuery(postres, sql, ['value']);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'avg',
+					type: 'numeric',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: [
+				{
+					columnType: 'int4',
+					name: 'value',
+					notNull: false
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('EXTRACT(MONTH FROM timestamp_column)', async () => {
 		const sql = `
          select 
