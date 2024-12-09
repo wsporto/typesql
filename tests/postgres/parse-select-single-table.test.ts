@@ -269,9 +269,9 @@ describe('select-single-table', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
-	it.skip('SELECT SUM(ID) as sumById FROM mytable1 t1 GROUP BY id', async () => {
+	it('SELECT SUM(ID) as sumById FROM mytable1 t1 GROUP BY id', async () => {
 		const sql = `
-        SELECT SUM(ID) as sumById
+        SELECT SUM(ID) as "sumById"
         FROM mytable1 t1
         GROUP BY id
         `;
