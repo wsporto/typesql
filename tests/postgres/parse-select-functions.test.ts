@@ -588,6 +588,82 @@ describe('postgres-parse-select-functions', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('SELECT GROUP_CONCAT(name) FROM mytable2', async () => {
+		const sql = `
+        SELECT STRING_AGG(name, ', ') FROM mytable2
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'string_agg',
+					type: 'text',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('SELECT GROUP_CONCAT(id) FROM mytable2', async () => {
+		const sql = `
+        SELECT STRING_AGG(id::text, ', ') FROM mytable2
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'string_agg',
+					type: 'text',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it(`SELECT GROUP_CONCAT(DISTINCT name ORDER BY id DESC SEPARATOR ';') FROM mytable2`, async () => {
+		const sql = `
+       	SELECT STRING_AGG(DISTINCT name, ';' ORDER BY name DESC) AS result
+		FROM mytable2;
+        `; //different from mysql; must use the displayed column (name) in the ORDER BY
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'result',
+					type: 'text',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('SELECT generate_series(1, 12) AS month', async () => {
 		const sql = `
          SELECT generate_series(1, 12) AS month
