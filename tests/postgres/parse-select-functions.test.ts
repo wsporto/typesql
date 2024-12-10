@@ -249,6 +249,56 @@ describe('postgres-parse-select-functions', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('parse a select with SUM and with expression from multiple tables', async () => {
+		const sql = `
+        select sum(t2.id + (t1.value + 2)) from mytable1 t1 inner join mytable2 t2 on t1.id = t2.id
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'sum',
+					type: 'int8',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it(`SELECT STR_TO_DATE('21/5/2013','%d/%m/%Y')`, async () => {
+		const sql = `
+       SELECT TO_DATE('21/5/2013', 'DD/MM/YYYY');
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: `to_date`,
+					type: 'date',
+					notNull: false, //invalid date
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('EXTRACT(MONTH FROM timestamp_column)', async () => {
 		const sql = `
          select 
