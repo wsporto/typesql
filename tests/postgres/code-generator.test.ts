@@ -70,6 +70,23 @@ AND name IN (:names)`;
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('select08 - boolean', async () => {
+		const sql = `SELECT
+	id,
+	:param1::bool as param1,
+	:param2::bool as param2
+FROM mytable1 
+WHERE :param1 is true OR (:param2 is true OR :param2::bool is null)`;
+
+		const actual = await generateCode(dialect, sql, 'select08');
+		const expected = readFileSync('tests/postgres/expected-code/select08.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('select-type-cast ', async () => {
 		const sql = 'SELECT id::int2 FROM mytable1';
 
