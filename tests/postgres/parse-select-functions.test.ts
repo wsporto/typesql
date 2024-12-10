@@ -426,6 +426,40 @@ describe('postgres-parse-select-functions', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('SELECT datediff(:date1, :date2) as days_stayed', async () => {
+		const sql = 'SELECT $1::date - $2::date as days_stayed';
+		const actual = await describeQuery(postres, sql, ['date1', 'date2']);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'days_stayed',
+					type: 'int4',
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: [
+				{
+					name: 'date1',
+					columnType: 'date',
+					notNull: true
+				},
+				{
+					name: 'date2',
+					columnType: 'date',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('SELECT generate_series(1, 12) AS month', async () => {
 		const sql = `
          SELECT generate_series(1, 12) AS month
