@@ -130,6 +130,20 @@ describe('preprocess-sql', () => {
 		assert.deepStrictEqual(actual, expected);
 	});
 
+	it('postgres-replace named paramters', async () => {
+		const sql = `
+        select :value1, :value1, :value2, :value3, :value2 from mytable1`;
+
+		const actual = preprocessSql(sql, 'postgres');
+		const expected: PreprocessedSql = {
+			sql: `
+        select $1, $1, $2, $3, $2 from mytable1`,
+			namedParameters: ['value1', 'value1', 'value2', 'value3', 'value2']
+		};
+
+		assert.deepStrictEqual(actual, expected);
+	});
+
 	it('handle type-cast id::int2', async () => {
 		const sql = `
         select id::int2 from mytable1`;

@@ -10,9 +10,9 @@ export type Select03Result = {
 
 export async function select03(client: Client | Pool, params: Select03Params): Promise<Select03Result[]> {
 	const sql = `
-	select id from mytable1 where id = $1 or id = $2
+	select id from mytable1 where id = $1 or value = $1
 	`
-	return client.query({ text: sql, rowMode: 'array', values: [params.id, params.id] })
+	return client.query({ text: sql, rowMode: 'array', values: [params.id] })
 		.then(res => res.rows.map(row => mapArrayToSelect03Result(row)));
 }
 
