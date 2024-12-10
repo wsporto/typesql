@@ -287,7 +287,7 @@ describe('postgres-parse-select-functions', () => {
 				{
 					columnName: `to_date`,
 					type: 'date',
-					notNull: false, //invalid date
+					notNull: true, // //PostgreSQL gives an error for an invalid date, while MySQL returns NULL;
 					table: ''
 				}
 			],
@@ -398,7 +398,7 @@ describe('postgres-parse-select-functions', () => {
 				{
 					columnName: `to_date`,
 					type: 'date',
-					notNull: false,
+					notNull: true,  //PostgreSQL gives an error for an invalid date, while MySQL returns NULL;
 					table: ''
 				}
 			],
@@ -406,17 +406,48 @@ describe('postgres-parse-select-functions', () => {
 				{
 					name: 'param1',
 					columnType: 'text',
-					notNull: true //changed at v0.0.2
+					notNull: true
 				},
 				{
 					name: 'param2',
 					columnType: 'text',
-					notNull: true //changed at v0.0.2
+					notNull: true
 				},
 				{
 					name: 'param3',
 					columnType: 'text',
-					notNull: true //changed at v0.0.2
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('parse a select with STR_TO_DATE and CONCAT_WS function', async () => {
+		const sql = `
+        SELECT TO_DATE(COALESCE($1, null),'DD/MM/YYYY')
+        `;
+		const actual = await describeQuery(postres, sql, ['date']);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: `to_date`,
+					type: 'date',
+					notNull: false,  //TO_DATE(null, 'DD/MM/YYYY')
+					table: ''
+				}
+			],
+			parameters: [
+				{
+					name: 'date',
+					columnType: 'text',
+					notNull: false
 				}
 			]
 		};
@@ -450,6 +481,47 @@ describe('postgres-parse-select-functions', () => {
 				{
 					name: 'date2',
 					columnType: 'date',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('parse a select with datediff function', async () => {
+		const sql = `
+        SELECT (TO_DATE(CONCAT_WS('/', $1::text, $2::text, $3::text), 'DD/MM/YYYY') - TO_DATE('01/01/2020', 'DD/MM/YYYY')) AS days_stayed
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'days_stayed',
+					type: 'int4',
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'text',
+					notNull: true
+				},
+				{
+					name: 'param2',
+					columnType: 'text',
+					notNull: true
+				},
+				{
+					name: 'param3',
+					columnType: 'text',
 					notNull: true
 				}
 			]

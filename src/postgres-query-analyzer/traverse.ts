@@ -514,16 +514,20 @@ function traversewhen_clause(when_clause: When_clauseContext, dbSchema: NotNullI
 
 function traversefunc_application(func_application: Func_applicationContext, dbSchema: NotNullInfo[], fromColumns: NotNullInfo[], traverseResult: TraverseResult): boolean {
 	const functionName = func_application.func_name().getText().toLowerCase();
-	const func_arg_expr_list = func_application.func_arg_list()?.func_arg_expr_list();
+	const func_arg_expr_list = func_application.func_arg_list()?.func_arg_expr_list() || [];
+	const argsResult = func_arg_expr_list.map(func_arg_expr => traversefunc_arg_expr(func_arg_expr, dbSchema, fromColumns, traverseResult))
 	if (functionName === 'count') {
 		return true;
 	}
 	if (functionName === 'concat' || functionName === 'concat_ws') {
 		if (func_arg_expr_list) {
-			const result = func_arg_expr_list.map(func_arg_expr => traversefunc_arg_expr(func_arg_expr, dbSchema, fromColumns, traverseResult))
-			return result.every(col => col);
+			return argsResult.every(col => col);
 		}
 		return false;
+	}
+	if (functionName === 'to_date') {
+		const firstArg = argsResult[0];
+		return firstArg;
 	}
 	if (functionName === 'generate_series') {
 		return true;
