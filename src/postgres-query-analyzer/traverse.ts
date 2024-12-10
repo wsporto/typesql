@@ -104,12 +104,15 @@ function traverse_select_no_parens(select_no_parens: Select_no_parensContext, db
 	let withColumns: NotNullInfo[] = [];
 	const with_clause = select_no_parens.with_clause()
 	if (with_clause) {
-		withColumns = with_clause.cte_list().common_table_expr_list()
-			.flatMap(common_table_expr => traverse_common_table_expr(common_table_expr, dbSchema, fromColumns, traverseResult));
+		with_clause.cte_list().common_table_expr_list()
+			.forEach(common_table_expr => {
+				const withResult = traverse_common_table_expr(common_table_expr, dbSchema, withColumns.concat(fromColumns), traverseResult);
+				withColumns.push(...withResult);
+			});
 	}
 	const select_clause = select_no_parens.select_clause();
 	if (select_clause) {
-		return traverse_select_clause(select_clause, withColumns.concat(dbSchema), fromColumns, traverseResult);
+		return traverse_select_clause(select_clause, dbSchema, withColumns.concat(fromColumns), traverseResult);
 	}
 	return [];
 }
@@ -169,7 +172,7 @@ function traverse_simple_select_pramary(simple_select_pramary: Simple_select_pra
 		const valuesColumns = traverse_values_clause(values_clause, dbSchema, parentFromColumns, traverseResult);
 		return valuesColumns;
 	}
-	const filteredColumns = filterColumns_simple_select_pramary(simple_select_pramary, dbSchema, fromColumns, traverseResult);
+	const filteredColumns = filterColumns_simple_select_pramary(simple_select_pramary, dbSchema, parentFromColumns.concat(fromColumns), traverseResult);
 	return filteredColumns;
 }
 
@@ -569,9 +572,13 @@ function traversefunc_arg_expr(func_arg_expr: Func_arg_exprContext, dbSchema: No
 function findColumn(fieldName: FieldName, fromColumns: NotNullInfo[]) {
 	const col = fromColumns.find(col => (fieldName.prefix === '' || col.table_name.toLowerCase() === fieldName.prefix.toLowerCase()) && col.column_name.toLowerCase() === fieldName.name.toLowerCase());
 	if (col == null) {
-		throw Error('Column not found: ' + fieldName);
+		throw Error('Column not found: ' + fieldNameToString(fieldName));
 	}
 	return col;
+}
+
+function fieldNameToString(fieldName: FieldName): string {
+	return fieldName.prefix !== '' ? `${fieldName.prefix}.${fieldName.name}` : fieldName.name;
 }
 
 function checkIsNullable(where_clause: Where_clauseContext, field: NotNullInfo): NotNullInfo {
@@ -604,8 +611,8 @@ function traverse_table_ref(table_ref: Table_refContext, dbSchema: NotNullInfo[]
 	if (relation_expr) {
 		const tableName = traverse_relation_expr(relation_expr, dbSchema);
 		const tableNameWithAlias = alias ? alias : tableName;
-		const fromColumns = dbSchema.filter(col => col.table_name === tableName).map(col => ({ ...col, table_name: tableNameWithAlias }));
-		allColumns.push(...fromColumns);
+		const fromColumnsResult = fromColumns.concat(dbSchema).filter(col => col.table_name === tableName).map(col => ({ ...col, table_name: tableNameWithAlias }));
+		allColumns.push(...fromColumnsResult);
 	}
 	const table_ref_list = table_ref.table_ref_list();
 	const join_type_list = table_ref.join_type_list();
