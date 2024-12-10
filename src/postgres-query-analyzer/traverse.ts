@@ -525,7 +525,7 @@ function traversefunc_application(func_application: Func_applicationContext, dbS
 	if (functionName === 'count') {
 		return true;
 	}
-	if (functionName === 'concat') {
+	if (functionName === 'concat' || functionName === 'concat_ws') {
 		if (func_arg_expr_list) {
 			const result = func_arg_expr_list.map(func_arg_expr => traversefunc_arg_expr(func_arg_expr, dbSchema, fromColumns, traverseResult))
 			return result.every(col => col);
