@@ -347,6 +347,43 @@ describe('postgres-parse-select-functions', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('parse select without from clause', async () => {
+		const sql = `
+        select 10, CONCAT_WS('a', 'b'), 'a' as name
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: '?column?', //different from mysql and sqlite
+					type: 'int4',
+					notNull: true,
+					table: ''
+				},
+				{
+					columnName: `concat_ws`, //If the separator is NULL, the result is NULL.
+					type: 'text',
+					notNull: true,
+					table: ''
+				},
+				{
+					columnName: 'name',
+					type: 'text',
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('SELECT generate_series(1, 12) AS month', async () => {
 		const sql = `
          SELECT generate_series(1, 12) AS month
