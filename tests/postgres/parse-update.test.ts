@@ -42,7 +42,7 @@ describe('postgres-parse-update', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
-	it('update mytable1 set value = ? where id = ?', async () => {
+	it('update mytable3 set name = ? where id = ?', async () => {
 		const sql = 'update mytable3 set name = $1 where id = $2';
 		const actual = await describeQuery(postres, sql, ['name', 'id']);
 		const expected: SchemaDef = {
