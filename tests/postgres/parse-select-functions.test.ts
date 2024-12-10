@@ -384,6 +384,48 @@ describe('postgres-parse-select-functions', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	//TODO - infer param types
+	it('parse a select with STR_TO_DATE and CONCAT_WS function', async () => {
+		const sql = `
+        SELECT TO_DATE(CONCAT_WS('/', $1::text, $2::text, $3::text),'DD/MM/YYYY')
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: `to_date`,
+					type: 'date',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'text',
+					notNull: true //changed at v0.0.2
+				},
+				{
+					name: 'param2',
+					columnType: 'text',
+					notNull: true //changed at v0.0.2
+				},
+				{
+					name: 'param3',
+					columnType: 'text',
+					notNull: true //changed at v0.0.2
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('SELECT generate_series(1, 12) AS month', async () => {
 		const sql = `
          SELECT generate_series(1, 12) AS month

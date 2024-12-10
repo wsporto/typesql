@@ -347,17 +347,10 @@ function traverse_expr_qual_op(a_expr_qual_op: A_expr_qual_opContext, dbSchema: 
 function traverse_expr_unary_qualop(a_expr_unary_qualop: A_expr_unary_qualopContext, dbSchema: NotNullInfo[], fromColumns: NotNullInfo[], traverseResult: TraverseResult): NotNullInfoResult {
 	const a_expr_add = a_expr_unary_qualop.a_expr_add();
 	if (a_expr_add) {
-		const exprResult = a_expr_add.a_expr_mul_list().map((a_expr_mul, _, arr) => {
-			const expr_mulResult = traverse_expr_mul(a_expr_mul, dbSchema, fromColumns, traverseResult);
-			if (isParameter(expr_mulResult.column_name) && arr.length > 1) {
-				traverseResult.parametersNullability[traverseResult.parametersNullability.length - 1] = true;
-			}
-			return expr_mulResult;
-		});
-		//null + 10 should give an error?
+		const exprResult = a_expr_add.a_expr_mul_list().map(a_expr_mul => traverse_expr_mul(a_expr_mul, dbSchema, fromColumns, traverseResult));
 		const result: NotNullInfoResult = {
 			column_name: a_expr_unary_qualop.getText(),
-			is_nullable: exprResult.length == 1 ? exprResult[0].is_nullable && !isParameter(exprResult[0].column_name) : exprResult.some(col => col.is_nullable)
+			is_nullable: exprResult.some(col => col.is_nullable)
 		}
 		return result;
 	}
@@ -440,10 +433,10 @@ function traversec_expr(c_expr: C_exprContext, dbSchema: NotNullInfo[], fromColu
 			}
 		}
 		if (c_expr.PARAM()) {
-			traverseResult.parametersNullability.push(false);
+			traverseResult.parametersNullability.push(true);
 			return {
 				column_name: c_expr.PARAM().getText(),
-				is_nullable: true
+				is_nullable: false
 			}
 		}
 		const func_application = c_expr.func_expr()?.func_application();
@@ -545,7 +538,14 @@ function traversefunc_application(func_application: Func_applicationContext, dbS
 function traversefunc_expr_common_subexpr(func_expr_common_subexpr: Func_expr_common_subexprContext, dbSchema: NotNullInfo[], fromColumns: NotNullInfo[], traverseResult: TraverseResult): boolean {
 	if (func_expr_common_subexpr.COALESCE()) {
 		const func_arg_list = func_expr_common_subexpr.expr_list().a_expr_list();
-		const result = func_arg_list.map(func_arg_expr => traverse_a_expr(func_arg_expr, dbSchema, fromColumns, traverseResult));
+		const result = func_arg_list.map(func_arg_expr => {
+			const paramResult = traverse_a_expr(func_arg_expr, dbSchema, fromColumns, traverseResult);
+			if (isParameter(paramResult.column_name)) {
+				traverseResult.parametersNullability[traverseResult.parametersNullability.length - 1] = false;
+				paramResult.is_nullable = true;
+			}
+			return paramResult;
+		});
 		return result.some(col => !col.is_nullable);
 	}
 	if (func_expr_common_subexpr.EXTRACT()) {
@@ -804,10 +804,9 @@ function traverse_set_clause(set_clause: Set_clauseContext, dbSchema: NotNullInf
 	const columnName = splitName(set_target.getText());
 	const column = findColumn(columnName, updateColumns);
 	const a_expr = set_clause.a_expr();
-	const paramsBefore = traverseResult.parametersNullability.length;
-	traverse_a_expr(a_expr, dbSchema, updateColumns, traverseResult);
-	for (let i = paramsBefore; i < traverseResult.parametersNullability.length; i++) {
-		traverseResult.parametersNullability[i] = traverseResult.parametersNullability[i] || !column.is_nullable;
+	const a_exprResult = traverse_a_expr(a_expr, dbSchema, updateColumns, traverseResult);
+	if (isParameter(a_exprResult.column_name)) {
+		traverseResult.parametersNullability[traverseResult.parametersNullability.length - 1] = !column.is_nullable;
 	}
 
 	return !column.is_nullable
