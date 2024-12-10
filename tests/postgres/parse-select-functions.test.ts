@@ -532,6 +532,62 @@ describe('postgres-parse-select-functions', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it(`SELECT IFNULL(NULL, 'yes') as result1, IFNULL('10', 'yes') as result2`, async () => {
+		const sql = `
+        SELECT coalesce(NULL, 'yes') as result1, coalesce('10', 'yes') as result2
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'result1',
+					type: 'text',
+					notNull: true,
+					table: ''
+				},
+				{
+					columnName: 'result2',
+					type: 'text',
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('SELECT IFNULL(value, id) as result from mytable1', async () => {
+		const sql = `
+        SELECT coalesce(value, id) as result from mytable1
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'result',
+					type: 'int4',
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('SELECT generate_series(1, 12) AS month', async () => {
 		const sql = `
          SELECT generate_series(1, 12) AS month
