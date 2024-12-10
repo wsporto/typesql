@@ -150,6 +150,7 @@ export function preprocessSql(sql: string, dialect: 'postgres' | 'mysql' | 'sqli
 	const lines = tempSql.split('\n');
 	let newSql = '';
 	const allParameters: string[] = [];
+	const paramMap: Record<string, number> = {}; // Map for tracking named parameters
 	let paramIndex = 1; // For PostgreSQL, to track $1, $2, $3, ...
 	lines.forEach((line, index, array) => {
 		let newLine = line;
@@ -158,8 +159,13 @@ export function preprocessSql(sql: string, dialect: 'postgres' | 'mysql' | 'sqli
 			allParameters.push(...parameters);
 			if (dialect == 'postgres') {
 				parameters.forEach((param) => {
-					newLine = newLine.replace(`:${param}`, `$${paramIndex}`);
-					paramIndex++;
+					// Check if the parameter has already been assigned an index
+					if (!paramMap[param]) {
+						paramMap[param] = paramIndex; // Assign new index for the named parameter
+						paramIndex++;
+					}
+					// Replace the parameter with the assigned index
+					newLine = newLine.replace(`:${param}`, `$${paramMap[param]}`);
 				});
 			}
 			else {
