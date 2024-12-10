@@ -58,7 +58,8 @@ function getValueForType(paramIndex: number, typeOid: number, isList: boolean): 
 			return `'${paramIndex + 1}'`;
 		case 'date':
 			return `'${formatDate(new Date())}'`;
-
+		case 'bool':
+			return 'true';
 	}
 	return '1';
 }
