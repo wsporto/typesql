@@ -74,6 +74,7 @@ export type TsType =
 	| 'Object[]'
 	| 'Uint8Array'
 	| 'ArrayBuffer'
+	| 'ArrayBuffer[]'
 	| 'any'
 	| 'null';
 

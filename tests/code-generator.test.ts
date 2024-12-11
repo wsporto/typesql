@@ -1,11 +1,11 @@
 import assert from 'node:assert';
 import {
-	type TsDescriptor,
-	convertToCamelCaseName,
-	replaceOrderByParam,
-	generateTsCodeForMySQL as generateTsCode,
-	generateTsDescriptor,
-	generateTsFileFromContent
+    type TsDescriptor,
+    convertToCamelCaseName,
+    replaceOrderByParam,
+    generateTsCodeForMySQL as generateTsCode,
+    generateTsDescriptor,
+    generateTsFileFromContent
 } from '../src/code-generator';
 import { describeSql } from '../src/describe-query';
 import { dbSchema } from './mysql-query-analyzer/create-schema';
@@ -15,42 +15,43 @@ import type { MySqlDialect } from '../src/types';
 import { isLeft } from 'fp-ts/lib/Either';
 
 describe('code-generator', () => {
-	let client!: MySqlDialect;
-	before(async () => {
-		client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
-	});
+    let client!: MySqlDialect;
+    before(async () => {
+        client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
+    });
 
-	it('generate main function with parameters', () => {
-		const queryName = 'get-person';
-		const tsDescriptor: TsDescriptor = {
-			sql: 'select id, name from person where id = ?',
-			queryType: 'Select',
-			multipleRowsResult: true,
-			columns: [
-				{
-					name: 'id',
-					tsType: 'number',
-					notNull: true
-				},
-				{
-					name: 'name',
-					tsType: 'string',
-					notNull: false
-				}
-			],
-			parameterNames: [{ name: 'param1', isList: false }],
-			parameters: [
-				{
-					name: 'param1',
-					tsType: 'number',
-					notNull: true,
-					toDriver: 'param1'
-				}
-			]
-		};
+    it('generate main function with parameters', () => {
+        const queryName = 'get-person';
+        const tsDescriptor: TsDescriptor = {
+            sql: 'select id, name from person where id = ?',
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'id',
+                    tsType: 'number',
+                    notNull: true
+                },
+                {
+                    name: 'name',
+                    tsType: 'string',
+                    notNull: false
+                }
+            ],
+            parameterNames: [{ name: 'param1', isList: false }],
+            parameters: [
+                {
+                    name: 'param1',
+                    tsType: 'number',
+                    notNull: true,
+                    toDriver: 'param1',
+                    isArray: false
+                }
+            ]
+        };
 
-		const actual = generateTsCode(tsDescriptor, queryName);
-		const expected = `import type { Connection } from 'mysql2/promise';
+        const actual = generateTsCode(tsDescriptor, queryName);
+        const expected = `import type { Connection } from 'mysql2/promise';
 
 export type GetPersonParams = {
     param1: number;
@@ -79,40 +80,41 @@ function mapArrayToGetPersonResult(data: any) {
     return result;
 }`;
 
-		assert.deepStrictEqual(actual, expected);
-	});
+        assert.deepStrictEqual(actual, expected);
+    });
 
-	it('generate main function with list parameters', () => {
-		const queryName = 'get-person';
-		const tsDescriptor: TsDescriptor = {
-			sql: 'select id, name from person where id in (?)',
-			queryType: 'Select',
-			multipleRowsResult: true,
-			columns: [
-				{
-					name: 'id',
-					tsType: 'number',
-					notNull: true
-				},
-				{
-					name: 'name',
-					tsType: 'string',
-					notNull: false
-				}
-			],
-			parameterNames: [{ name: 'param1', isList: true }],
-			parameters: [
-				{
-					name: 'param1',
-					tsType: 'number',
-					notNull: true,
-					toDriver: 'param1'
-				}
-			]
-		};
+    it('generate main function with list parameters', () => {
+        const queryName = 'get-person';
+        const tsDescriptor: TsDescriptor = {
+            sql: 'select id, name from person where id in (?)',
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'id',
+                    tsType: 'number',
+                    notNull: true
+                },
+                {
+                    name: 'name',
+                    tsType: 'string',
+                    notNull: false
+                }
+            ],
+            parameterNames: [{ name: 'param1', isList: true }],
+            parameters: [
+                {
+                    name: 'param1',
+                    tsType: 'number',
+                    notNull: true,
+                    toDriver: 'param1',
+                    isArray: false
+                }
+            ]
+        };
 
-		const actual = generateTsCode(tsDescriptor, queryName);
-		const expected = `import type { Connection } from 'mysql2/promise';
+        const actual = generateTsCode(tsDescriptor, queryName);
+        const expected = `import type { Connection } from 'mysql2/promise';
 
 export type GetPersonParams = {
     param1: number;
@@ -141,16 +143,16 @@ function mapArrayToGetPersonResult(data: any) {
     return result;
 }`;
 
-		assert.deepStrictEqual(actual, expected);
-	});
+        assert.deepStrictEqual(actual, expected);
+    });
 
-	it('generate main function with data and parameters', () => {
-		const queryName = convertToCamelCaseName('update-person');
-		const sql = 'update mytable2 set name= :name, descr= :descr where id = :id';
-		const schemaDef = describeSql(dbSchema, sql);
-		const tsDescriptor = generateTsDescriptor(schemaDef);
-		const actual = generateTsCode(tsDescriptor, queryName);
-		const expected = `import type { Connection } from 'mysql2/promise';
+    it('generate main function with data and parameters', () => {
+        const queryName = convertToCamelCaseName('update-person');
+        const sql = 'update mytable2 set name= :name, descr= :descr where id = :id';
+        const schemaDef = describeSql(dbSchema, sql);
+        const tsDescriptor = generateTsDescriptor(schemaDef);
+        const actual = generateTsCode(tsDescriptor, queryName);
+        const expected = `import type { Connection } from 'mysql2/promise';
 
 export type UpdatePersonData = {
     name?: string;
@@ -174,30 +176,30 @@ export async function updatePerson(connection: Connection, data: UpdatePersonDat
         .then(res => res[0] as UpdatePersonResult);
 }`;
 
-		assert.deepStrictEqual(actual, expected);
-	});
+        assert.deepStrictEqual(actual, expected);
+    });
 
-	it('generate main function only with order by parameter', () => {
-		const queryName = convertToCamelCaseName('select-person');
-		const tsDescriptor: TsDescriptor = {
-			sql: 'SELECT id FROM person ORDER BY ?',
-			queryType: 'Select',
-			multipleRowsResult: false,
-			columns: [
-				{
-					name: 'id',
-					tsType: 'number',
-					notNull: true
-				}
-			],
-			data: [],
-			parameterNames: [],
-			parameters: [],
-			orderByColumns: ['id', 'name']
-		};
+    it('generate main function only with order by parameter', () => {
+        const queryName = convertToCamelCaseName('select-person');
+        const tsDescriptor: TsDescriptor = {
+            sql: 'SELECT id FROM person ORDER BY ?',
+            queryType: 'Select',
+            multipleRowsResult: false,
+            columns: [
+                {
+                    name: 'id',
+                    tsType: 'number',
+                    notNull: true
+                }
+            ],
+            data: [],
+            parameterNames: [],
+            parameters: [],
+            orderByColumns: ['id', 'name']
+        };
 
-		const actual = generateTsCode(tsDescriptor, queryName);
-		const expected = `import type { Connection } from 'mysql2/promise';
+        const actual = generateTsCode(tsDescriptor, queryName);
+        const expected = `import type { Connection } from 'mysql2/promise';
 
 export type SelectPersonParams = {
     orderBy: [SelectPersonOrderBy, ...SelectPersonOrderBy[]];
@@ -234,68 +236,68 @@ function escapeOrderBy(orderBy: SelectPersonOrderBy[]): string {
     return orderBy.map(order => \`\\\`\${order.column}\\\` \${order.direction == 'desc' ? 'desc' : 'asc' }\`).join(', ');
 }`;
 
-		assert.deepStrictEqual(actual, expected);
-	});
+        assert.deepStrictEqual(actual, expected);
+    });
 
-	it('test replace order by parameter', () => {
-		const sql = `
+    it('test replace order by parameter', () => {
+        const sql = `
         SELECT *
         FROM mytable1
         ORDER BY ?`;
 
-		const actual = replaceOrderByParam(sql);
+        const actual = replaceOrderByParam(sql);
 
-		const expected = `
+        const expected = `
         SELECT *
         FROM mytable1
         ORDER BY \${escapeOrderBy(params.orderBy)}`;
 
-		assert.deepStrictEqual(actual, expected);
-	});
+        assert.deepStrictEqual(actual, expected);
+    });
 
-	it('test replace order by parameter with LIMIT', () => {
-		const sql = `
+    it('test replace order by parameter with LIMIT', () => {
+        const sql = `
         SELECT *
         FROM mytable1
         ORDER BY ? LIMIT 10`;
 
-		const actual = replaceOrderByParam(sql);
+        const actual = replaceOrderByParam(sql);
 
-		const expected = `
+        const expected = `
         SELECT *
         FROM mytable1
         ORDER BY \${escapeOrderBy(params.orderBy)} LIMIT 10`;
 
-		assert.deepStrictEqual(actual, expected);
-	});
+        assert.deepStrictEqual(actual, expected);
+    });
 
-	it('test replace order by parameter with extra blank line', () => {
-		const sql = `
+    it('test replace order by parameter with extra blank line', () => {
+        const sql = `
         SELECT *
         FROM mytable1
         ORDER BY ?
         
         `;
 
-		const actual = replaceOrderByParam(sql);
+        const actual = replaceOrderByParam(sql);
 
-		const expected = `
+        const expected = `
         SELECT *
         FROM mytable1
         ORDER BY \${escapeOrderBy(params.orderBy)}
         
         `;
 
-		assert.deepStrictEqual(actual, expected);
-	});
+        assert.deepStrictEqual(actual, expected);
+    });
 
-	it('test generateTsDescriptor - select without parameters', () => {
-		const sql = 'SELECT id FROM mytable1';
+    it('test generateTsDescriptor - select without parameters', () => {
+        const sql = 'SELECT id FROM mytable1';
 
-		const schemaDef = describeSql(dbSchema, sql);
-		const tsDescriptor = generateTsDescriptor(schemaDef);
-		const actual = generateTsCode(tsDescriptor, 'select-id');
-		const expected = `import type { Connection } from 'mysql2/promise';
+        const schemaDef = describeSql(dbSchema, sql);
+        const tsDescriptor = generateTsDescriptor(schemaDef);
+        const actual = generateTsCode(tsDescriptor, 'select-id');
+        const expected = `import type { Connection } from 'mysql2/promise';
 
 export type SelectIdResult = {
     id: number;
@@ -318,15 +320,15 @@ function mapArrayToSelectIdResult(data: any) {
     return result;
 }`;
 
-		assert.deepStrictEqual(actual, expected);
-	});
+        assert.deepStrictEqual(actual, expected);
+    });
 
-	it('test generateTsDescriptor - select with parameters', () => {
-		const sql = 'SELECT id from mytable1 where id = ? and value in (?)'; //returns single row result
-		const schemaDef = describeSql(dbSchema, sql);
-		const tsDescriptor = generateTsDescriptor(schemaDef);
-		const actual = generateTsCode(tsDescriptor, 'selectId');
-		const expected = `import type { Connection } from 'mysql2/promise';
+    it('test generateTsDescriptor - select with parameters', () => {
+        const sql = 'SELECT id from mytable1 where id = ? and value in (?)'; //returns single row result
+        const schemaDef = describeSql(dbSchema, sql);
+        const tsDescriptor = generateTsDescriptor(schemaDef);
+        const actual = generateTsCode(tsDescriptor, 'selectId');
+        const expected = `import type { Connection } from 'mysql2/promise';
 
 export type SelectIdParams = {
     param1: number;
@@ -355,15 +357,15 @@ function mapArrayToSelectIdResult(data: any) {
     return result;
 }`;
 
-		assert.deepStrictEqual(actual, expected);
-	});
+        assert.deepStrictEqual(actual, expected);
+    });
 
-	it('test generateTsDescriptor - select with same parameter used twice', () => {
-		const sql = 'SELECT id from mytable1 where id = :id or id = :id';
-		const schemaDef = describeSql(dbSchema, sql);
-		const tsDescriptor = generateTsDescriptor(schemaDef);
-		const actual = generateTsCode(tsDescriptor, 'selectId');
-		const expected = `import type { Connection } from 'mysql2/promise';
+    it('test generateTsDescriptor - select with same parameter used twice', () => {
+        const sql = 'SELECT id from mytable1 where id = :id or id = :id';
+        const schemaDef = describeSql(dbSchema, sql);
+        const tsDescriptor = generateTsDescriptor(schemaDef);
+        const actual = generateTsCode(tsDescriptor, 'selectId');
+        const expected = `import type { Connection } from 'mysql2/promise';
 
 export type SelectIdParams = {
     id: number;
@@ -390,15 +392,15 @@ function mapArrayToSelectIdResult(data: any) {
     return result;
 }`;
 
-		assert.deepStrictEqual(actual, expected);
-	});
+        assert.deepStrictEqual(actual, expected);
+    });
 
-	it('test generateTsDescriptor - update', () => {
-		const sql = 'UPDATE mytable1 SET value = ?';
-		const schemaDef = describeSql(dbSchema, sql);
-		const tsDescriptor = generateTsDescriptor(schemaDef);
-		const actual = generateTsCode(tsDescriptor, 'update-value');
-		const expected = `import type { Connection } from 'mysql2/promise';
+    it('test generateTsDescriptor - update', () => {
+        const sql = 'UPDATE mytable1 SET value = ?';
+        const schemaDef = describeSql(dbSchema, sql);
+        const tsDescriptor = generateTsDescriptor(schemaDef);
+        const actual = generateTsCode(tsDescriptor, 'update-value');
+        const expected = `import type { Connection } from 'mysql2/promise';
 
 export type UpdateValueData = {
     value?: number;
@@ -417,16 +419,16 @@ export async function updateValue(connection: Connection, data: UpdateValueData)
         .then(res => res[0] as UpdateValueResult);
 }`;
 
-		assert.deepStrictEqual(actual, expected);
-	});
+        assert.deepStrictEqual(actual, expected);
+    });
 
-	it('test generateTsDescriptor - update with parameters', () => {
-		const sql = 'UPDATE mytable1 SET value = ? WHERE id = ?';
-		const schemaDef = describeSql(dbSchema, sql);
-		const tsDescriptor = generateTsDescriptor(schemaDef);
-		const actual = generateTsCode(tsDescriptor, 'update-value');
+    it('test generateTsDescriptor - update with parameters', () => {
+        const sql = 'UPDATE mytable1 SET value = ? WHERE id = ?';
+        const schemaDef = describeSql(dbSchema, sql);
+        const tsDescriptor = generateTsDescriptor(schemaDef);
+        const actual = generateTsCode(tsDescriptor, 'update-value');
 
-		const expected = `import type { Connection } from 'mysql2/promise';
+        const expected = `import type { Connection } from 'mysql2/promise';
 
 export type UpdateValueData = {
     value?: number;
@@ -449,15 +451,15 @@ export async function updateValue(connection: Connection, data: UpdateValueData,
         .then(res => res[0] as UpdateValueResult);
 }`;
 
-		assert.deepStrictEqual(actual, expected);
-	});
+        assert.deepStrictEqual(actual, expected);
+    });
 
-	it('test generateTsDescriptor - select with order by', () => {
-		const sql = 'SELECT id from mytable1 ORDER BY ?';
-		const schemaDef = describeSql(dbSchema, sql);
-		const tsDescriptor = generateTsDescriptor(schemaDef);
-		const actual = generateTsCode(tsDescriptor, 'selectId');
-		const expected = `import type { Connection } from 'mysql2/promise';
+    it('test generateTsDescriptor - select with order by', () => {
+        const sql = 'SELECT id from mytable1 ORDER BY ?';
+        const schemaDef = describeSql(dbSchema, sql);
+        const tsDescriptor = generateTsDescriptor(schemaDef);
+        const actual = generateTsCode(tsDescriptor, 'selectId');
+        const expected = `import type { Connection } from 'mysql2/promise';
 
 export type SelectIdParams = {
     orderBy: [SelectIdOrderBy, ...SelectIdOrderBy[]];
@@ -493,16 +495,16 @@ function escapeOrderBy(orderBy: SelectIdOrderBy[]): string {
     return orderBy.map(order => \`\\\`\${order.column}\\\` \${order.direction == 'desc' ? 'desc' : 'asc' }\`).join(', ');
 }`;
 
-		assert.deepStrictEqual(actual, expected);
-	});
+        assert.deepStrictEqual(actual, expected);
+    });
 
-	it('test code generation with escaped table name', () => {
-		const sql = 'SELECT id FROM `my table`';
+    it('test code generation with escaped table name', () => {
+        const sql = 'SELECT id FROM `my table`';
 
-		const schemaDef = describeSql(dbSchema, sql);
-		const tsDescriptor = generateTsDescriptor(schemaDef);
-		const actual = generateTsCode(tsDescriptor, 'select-id');
-		const expected = `import type { Connection } from 'mysql2/promise';
+        const schemaDef = describeSql(dbSchema, sql);
+        const tsDescriptor = generateTsDescriptor(schemaDef);
+        const actual = generateTsCode(tsDescriptor, 'select-id');
+        const expected = `import type { Connection } from 'mysql2/promise';
 
 export type SelectIdResult = {
     id: number;
@@ -525,41 +527,41 @@ function mapArrayToSelectIdResult(data: any) {
     return result;
 }`;
 
-		assert.deepStrictEqual(actual, expected);
-	});
+        assert.deepStrictEqual(actual, expected);
+    });
 
-	it('test generateTsDescriptor for enum column schema', () => {
-		const sql = 'SELECT enum_column FROM all_types';
+    it('test generateTsDescriptor for enum column schema', () => {
+        const sql = 'SELECT enum_column FROM all_types';
 
-		const schemaDef = describeSql(dbSchema, sql);
-		const actual = generateTsDescriptor(schemaDef);
-		const expected: TsDescriptor = {
-			sql: 'SELECT enum_column FROM all_types',
-			queryType: 'Select',
-			multipleRowsResult: true,
-			columns: [
-				{
-					name: 'enum_column',
-					tsType: `'x-small' | 'small' | 'medium' | 'large' | 'x-large'`,
-					notNull: false
-				}
-			],
-			orderByColumns: undefined,
-			data: undefined,
-			parameterNames: [],
-			parameters: []
-		};
+        const schemaDef = describeSql(dbSchema, sql);
+        const actual = generateTsDescriptor(schemaDef);
+        const expected: TsDescriptor = {
+            sql: 'SELECT enum_column FROM all_types',
+            queryType: 'Select',
+            multipleRowsResult: true,
+            columns: [
+                {
+                    name: 'enum_column',
+                    tsType: `'x-small' | 'small' | 'medium' | 'large' | 'x-large'`,
+                    notNull: false
+                }
+            ],
+            orderByColumns: undefined,
+            data: undefined,
+            parameterNames: [],
+            parameters: []
+        };
 
-		assert.deepStrictEqual(actual, expected);
-	});
+        assert.deepStrictEqual(actual, expected);
+    });
 
-	it('test code generation with duplicated parameters', () => {
-		const sql = 'SELECT id from mytable1 where (id = :id or id = :id) and value = :value';
+    it('test code generation with duplicated parameters', () => {
+        const sql = 'SELECT id from mytable1 where (id = :id or id = :id) and value = :value';
 
-		const schemaDef = describeSql(dbSchema, sql);
-		const tsDescriptor = generateTsDescriptor(schemaDef);
-		const actual = generateTsCode(tsDescriptor, 'select-id');
-		const expected = `import type { Connection } from 'mysql2/promise';
+        const schemaDef = describeSql(dbSchema, sql);
+        const tsDescriptor = generateTsDescriptor(schemaDef);
+        const actual = generateTsCode(tsDescriptor, 'select-id');
+        const expected = `import type { Connection } from 'mysql2/promise';
 
 export type SelectIdParams = {
     id: number;
@@ -587,12 +589,12 @@ function mapArrayToSelectIdResult(data: any) {
     return result;
 }`;
 
-		assert.deepStrictEqual(actual, expected);
-	});
+        assert.deepStrictEqual(actual, expected);
+    });
 
-	it('generate nested result', async () => {
-		const queryName = 'select-users';
-		const sql = `-- @nested
+    it('generate nested result', async () => {
+        const queryName = 'select-users';
+        const sql = `-- @nested
 SELECT 
     u.id as user_id, 
     u.name as user_name,
@@ -608,8 +610,8 @@ LEFT JOIN posts p on p.fk_user = u.id
 LEFT JOIN roles r on r.fk_user = u.id
 LEFT JOIN comments c on c.fk_post = p.id`;
 
-		const actual = await generateTsFileFromContent(client, queryName, sql);
-		const expected = `import type { Connection } from 'mysql2/promise';
+        const actual = await generateTsFileFromContent(client, queryName, sql);
+        const expected = `import type { Connection } from 'mysql2/promise';
 
 export type SelectUsersResult = {
     user_id: number;
@@ -761,15 +763,15 @@ const groupBy = <T, Q>(array: T[], predicate: (value: T, index: number, array: T
         return map;
     }, new Map<Q, T[]>());
 }`;
-		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
-		}
-		assert.deepStrictEqual(actual.right, expected);
-	});
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    });
 
-	it('generate nested with params', async () => {
-		const queryName = 'select-users';
-		const sql = `-- @nested
+    it('generate nested with params', async () => {
+        const queryName = 'select-users';
+        const sql = `-- @nested
 SELECT 
     u.id as user_id, 
     u.name as user_name,
@@ -780,8 +782,8 @@ FROM users u
 LEFT JOIN posts p on p.fk_user = u.id
 WHERE u.id = :id`;
 
-		const actual = await generateTsFileFromContent(client, queryName, sql);
-		const expected = `import type { Connection } from 'mysql2/promise';
+        const actual = await generateTsFileFromContent(client, queryName, sql);
+        const expected = `import type { Connection } from 'mysql2/promise';
 
 export type SelectUsersParams = {
     id: number;
@@ -882,15 +884,15 @@ const groupBy = <T, Q>(array: T[], predicate: (value: T, index: number, array: T
         return map;
     }, new Map<Q, T[]>());
 }`;
-		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
-		}
-		assert.deepStrictEqual(actual.right, expected);
-	});
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    });
 
-	it('generate nested result with many to many relation', async () => {
-		const queryName = 'select-answers';
-		const sql = `-- @nested
+    it('generate nested result with many to many relation', async () => {
+        const queryName = 'select-answers';
+        const sql = `-- @nested
 SELECT
     s.id as surveyId,
     s.name as surveyName,
@@ -901,8 +903,8 @@ FROM surveys s
 INNER JOIN participants p on p.fk_survey = s.id
 INNER JOIN users u on p.fk_user = :user_id`;
 
-		const actual = await generateTsFileFromContent(client, queryName, sql);
-		const expected = `import type { Connection } from 'mysql2/promise';
+        const actual = await generateTsFileFromContent(client, queryName, sql);
+        const expected = `import type { Connection } from 'mysql2/promise';
 
 export type SelectAnswersParams = {
     user_id: number;
@@ -1004,15 +1006,15 @@ const groupBy = <T, Q>(array: T[], predicate: (value: T, index: number, array: T
     }, new Map<Q, T[]>());
 }`;
 
-		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
-		}
-		assert.deepStrictEqual(actual.right, expected);
-	});
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    });
 
-	it('generate nested result with many to many relation', async () => {
-		const queryName = 'select-clients';
-		const sql = `-- @nested
+    it('generate nested result with many to many relation', async () => {
+        const queryName = 'select-clients';
+        const sql = `-- @nested
 SELECT
     c.id,
     a1.*,
@@ -1022,8 +1024,8 @@ INNER JOIN addresses as a1 ON a1.id = c.primaryAddress
 LEFT JOIN addresses as a2 ON a2.id = c.secondaryAddress
 WHERE c.id = :clientId`;
 
-		const actual = await generateTsFileFromContent(client, queryName, sql);
-		const expected = `import type { Connection } from 'mysql2/promise';
+        const actual = await generateTsFileFromContent(client, queryName, sql);
+        const expected = `import type { Connection } from 'mysql2/promise';
 
 export type SelectClientsParams = {
     clientId: number;
@@ -1141,22 +1143,22 @@ const groupBy = <T, Q>(array: T[], predicate: (value: T, index: number, array: T
     }, new Map<Q, T[]>());
 }`;
 
-		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
-		}
-		assert.deepStrictEqual(actual.right, expected);
-	});
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    });
 
-	it('generate nested result with many to many relation - duplicated field name', async () => {
-		const queryName = 'select-books';
-		const sql = `-- @nested
+    it('generate nested result with many to many relation - duplicated field name', async () => {
+        const queryName = 'select-books';
+        const sql = `-- @nested
 SELECT *
 FROM books b
 INNER JOIN books_authors ba on ba.book_id = b.id
 INNER JOIN authors a on a.id = ba.author_id`;
 
-		const actual = await generateTsFileFromContent(client, queryName, sql);
-		const expected = `import type { Connection } from 'mysql2/promise';
+        const actual = await generateTsFileFromContent(client, queryName, sql);
+        const expected = `import type { Connection } from 'mysql2/promise';
 
 export type SelectBooksResult = {
     id: number;
@@ -1269,34 +1271,34 @@ const groupBy = <T, Q>(array: T[], predicate: (value: T, index: number, array: T
     }, new Map<Q, T[]>());
 }`;
 
-		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
-		}
-		assert.deepStrictEqual(actual.right, expected);
-	});
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    });
 
-	it('dynamic-query-01', async () => {
-		const queryName = 'dynamic-query-01';
-		const sql = `-- @dynamicQuery
+    it('dynamic-query-01', async () => {
+        const queryName = 'dynamic-query-01';
+        const sql = `-- @dynamicQuery
 SELECT m1.id, m1.value, m2.name, m2.descr as description
 FROM mytable1 m1
 INNER JOIN mytable2 m2 on m1.id = m2.id
 WHERE m2.name = :name
 AND m2.descr = :description`;
 
-		const actual = await generateTsFileFromContent(client, queryName, sql);
-		//tests\expected-code\dynamic-query01.ts
-		const expected = readFileSync('tests/expected-code/dynamic-query01.ts.txt', 'utf-8').replace(/\r/gm, '');
+        const actual = await generateTsFileFromContent(client, queryName, sql);
+        //tests\expected-code\dynamic-query01.ts
+        const expected = readFileSync('tests/expected-code/dynamic-query01.ts.txt', 'utf-8').replace(/\r/gm, '');
 
-		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
-		}
-		assert.deepStrictEqual(actual.right, expected);
-	});
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    });
 
-	it('dynamic-query-02', async () => {
-		const queryName = 'derivated-table';
-		const sql = `-- @dynamicQuery
+    it('dynamic-query-02', async () => {
+        const queryName = 'derivated-table';
+        const sql = `-- @dynamicQuery
 SELECT m1.id, m2.name
 FROM mytable1 m1
 INNER JOIN ( -- derivated table
@@ -1305,53 +1307,53 @@ INNER JOIN ( -- derivated table
 ) m2
 WHERE (:name is NULL or m2.name = :name)`;
 
-		const actual = await generateTsFileFromContent(client, queryName, sql);
-		//tests\expected-code\dynamic-query01.ts
-		const expected = readFileSync('tests/expected-code/dynamic-query02.ts.txt', 'utf-8').replace(/\r/gm, '');
+        const actual = await generateTsFileFromContent(client, queryName, sql);
+        //tests\expected-code\dynamic-query01.ts
+        const expected = readFileSync('tests/expected-code/dynamic-query02.ts.txt', 'utf-8').replace(/\r/gm, '');
 
-		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
-		}
-		assert.deepStrictEqual(actual.right, expected);
-	});
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    });
 
-	it('dynamic-query-03 - without parameters', async () => {
-		const queryName = 'dynamic-query03';
-		const sql = `-- @dynamicQuery
+    it('dynamic-query-03 - without parameters', async () => {
+        const queryName = 'dynamic-query03';
+        const sql = `-- @dynamicQuery
 SELECT t1.id, t1.value
 FROM mytable1 t1`;
 
-		const actual = await generateTsFileFromContent(client, queryName, sql);
-		//tests\expected-code\dynamic-query01.ts
-		const expected = readFileSync('tests/expected-code/dynamic-query03.ts.txt', 'utf-8').replace(/\r/gm, '');
+        const actual = await generateTsFileFromContent(client, queryName, sql);
+        //tests\expected-code\dynamic-query01.ts
+        const expected = readFileSync('tests/expected-code/dynamic-query03.ts.txt', 'utf-8').replace(/\r/gm, '');
 
-		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
-		}
-		assert.deepStrictEqual(actual.right, expected);
-	});
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    });
 
-	it('dynamic-query-04 - select *', async () => {
-		const queryName = 'dynamic-query04'; //
-		const sql = `-- @dynamicQuery
+    it('dynamic-query-04 - select *', async () => {
+        const queryName = 'dynamic-query04'; //
+        const sql = `-- @dynamicQuery
 SELECT 
     *
 FROM mytable1 m1
 INNER JOIN mytable2 m2 on m2.id = m1.id`;
 
-		const actual = await generateTsFileFromContent(client, queryName, sql);
-		//tests\expected-code\dynamic-query01.ts
-		const expected = readFileSync('tests/expected-code/dynamic-query04.ts.txt', 'utf-8').replace(/\r/gm, '');
+        const actual = await generateTsFileFromContent(client, queryName, sql);
+        //tests\expected-code\dynamic-query01.ts
+        const expected = readFileSync('tests/expected-code/dynamic-query04.ts.txt', 'utf-8').replace(/\r/gm, '');
 
-		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
-		}
-		assert.deepStrictEqual(actual.right, expected);
-	});
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    });
 
-	it('dynamic-query-05 - cte', async () => {
-		const queryName = 'cte';
-		const sql = `-- @dynamicQuery
+    it('dynamic-query-05 - cte', async () => {
+        const queryName = 'cte';
+        const sql = `-- @dynamicQuery
     WITH 
     cte as (
             select id, name from mytable2
@@ -1363,38 +1365,38 @@ FROM mytable1 m1
 INNER JOIN cte m2 on m2.id = m1.id
 WHERE m2.name LIKE concat('%', :name, '%')`;
 
-		const actual = await generateTsFileFromContent(client, queryName, sql);
-		//tests\expected-code\dynamic-query01.ts
-		const expected = readFileSync('tests/expected-code/dynamic-query05.ts.txt', 'utf-8').replace(/\r/gm, '');
+        const actual = await generateTsFileFromContent(client, queryName, sql);
+        //tests\expected-code\dynamic-query01.ts
+        const expected = readFileSync('tests/expected-code/dynamic-query05.ts.txt', 'utf-8').replace(/\r/gm, '');
 
-		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
-		}
-		assert.deepStrictEqual(actual.right, expected);
-	});
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    });
 
-	it('dynamic-query-06 - select * ORDER BY ?', async () => {
-		const queryName = 'dynamic-query06';
-		const sql = `-- @dynamicQuery
+    it('dynamic-query-06 - select * ORDER BY ?', async () => {
+        const queryName = 'dynamic-query06';
+        const sql = `-- @dynamicQuery
 SELECT 
     *
 FROM mytable1 m1
 INNER JOIN mytable2 m2 on m2.id = m1.id
 ORDER BY ?`;
 
-		const actual = await generateTsFileFromContent(client, queryName, sql);
-		//tests\expected-code\dynamic-query01.ts
-		const expected = readFileSync('tests/expected-code/dynamic-query06.ts.txt', 'utf-8').replace(/\r/gm, '');
+        const actual = await generateTsFileFromContent(client, queryName, sql);
+        //tests\expected-code\dynamic-query01.ts
+        const expected = readFileSync('tests/expected-code/dynamic-query06.ts.txt', 'utf-8').replace(/\r/gm, '');
 
-		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
-		}
-		assert.deepStrictEqual(actual.right, expected);
-	});
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    });
 
-	it('dynamic-query-07 - select * ORDER BY ?', async () => {
-		const queryName = 'dynamic-query07';
-		const sql = `-- @dynamicQuery
+    it('dynamic-query-07 - select * ORDER BY ?', async () => {
+        const queryName = 'dynamic-query07';
+        const sql = `-- @dynamicQuery
 SELECT 
     m1.id as myId,
     m2.name
@@ -1402,13 +1404,13 @@ FROM mytable1 m1
 INNER JOIN mytable2 m2 on m2.id = m1.id
 ORDER BY ?`;
 
-		const actual = await generateTsFileFromContent(client, queryName, sql);
-		//tests\expected-code\dynamic-query01.ts
-		const expected = readFileSync('tests/expected-code/dynamic-query07.ts.txt', 'utf-8').replace(/\r/gm, '');
+        const actual = await generateTsFileFromContent(client, queryName, sql);
+        //tests\expected-code\dynamic-query01.ts
+        const expected = readFileSync('tests/expected-code/dynamic-query07.ts.txt', 'utf-8').replace(/\r/gm, '');
 
-		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
-		}
-		assert.deepStrictEqual(actual.right, expected);
-	});
+        if (isLeft(actual)) {
+            assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+        }
+        assert.deepStrictEqual(actual.right, expected);
+    });
 });

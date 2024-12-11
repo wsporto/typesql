@@ -1,4 +1,4 @@
-import { postgresTypes } from '../dialects/postgres';
+import { mapColumnType, postgresTypes } from '../dialects/postgres';
 import type { ParameterNameAndPosition } from '../types';
 
 export function replaceListParams(sql: string, listParamPositions: ParameterNameAndPosition[]): string {
@@ -45,21 +45,43 @@ export function replacePostgresParamsWithValues(sql: string, paramsIsList: boole
 }
 
 function getValueForType(paramIndex: number, typeOid: number, isList: boolean): string {
-	switch (postgresTypes[typeOid]) {
-		case 'int4':
+	const type = postgresTypes[typeOid];
+	const tsType = mapColumnType(type);
+	switch (tsType) {
+		case 'number':
 			if (isList) {
 				return '1, 2';
 			}
 			return `${paramIndex} + 1`;
-		case 'text':
+		case 'number[]':
+			return 'ARRAY[1, 2]'
+		case 'string':
 			if (isList) {
 				return `'1', '2'`;
 			}
 			return `'${paramIndex + 1}'`;
-		case 'date':
+		case 'string[]':
+			return `ARRAY['1', '2']`;
+		case 'Date':
+			const date1 = new Date();
+			const date2 = new Date();
+			date2.setDate(date2.getDate() + 1);
+			if (isList) {
+				return `'${formatDate(date1)}', '${formatDate(date2)}'`;
+			}
 			return `'${formatDate(new Date())}'`;
-		case 'bool':
+		case 'Date[]':
+			const date3 = new Date();
+			const date4 = new Date();
+			date4.setDate(date4.getDate() + 1);
+			return `ARRAY['${formatDate(date3)}', '${formatDate(date4)}']`;
+		case 'boolean':
+			if (isList) {
+				return 'true, true';
+			}
 			return 'true';
+		case 'boolean[]':
+			return 'ARRAY[true, true]';
 	}
 	return '1';
 }

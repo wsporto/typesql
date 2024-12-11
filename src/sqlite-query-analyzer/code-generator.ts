@@ -257,7 +257,8 @@ function mapParameterToTsFieldDescriptor(col: ParameterDef, client: SQLiteClient
 		name: col.name,
 		tsType: mapColumnType(col.columnType as SQLiteType, client),
 		notNull: col.notNull ? col.notNull : false,
-		toDriver: parameterToDriver(col)
+		toDriver: parameterToDriver(col),
+		isArray: false
 	};
 	return tsDesc;
 }
@@ -298,7 +299,8 @@ function mapColumnToTsParameterDescriptor(col: ColumnInfo, client: SQLiteClient)
 		tsType: mapColumnType(col.type as SQLiteType, client),
 		notNull: col.notNull,
 		optional: col.optional,
-		toDriver: columnToDriver(col)
+		toDriver: columnToDriver(col),
+		isArray: false
 	};
 	return tsDesc;
 }

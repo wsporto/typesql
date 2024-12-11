@@ -364,6 +364,37 @@ describe('select-single-table', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('parse select using ANY operator with parameter', async () => {
+		const sql = `
+        select id from mytable1 where id > any($1)
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'table'
+				}
+			],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: '_int4',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('select value from mytable1 where value is not null', async () => {
 		const sql = `
         select value from mytable1 where value is not null or (id > 0 and value is not null)

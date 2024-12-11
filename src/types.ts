@@ -109,6 +109,7 @@ export type TsFieldDescriptor = {
 
 export type TsParameterDescriptor = TsFieldDescriptor & {
 	toDriver: string;
+	isArray: boolean;
 };
 
 export type TypeSqlError = {

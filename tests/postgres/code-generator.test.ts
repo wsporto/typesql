@@ -70,6 +70,22 @@ AND name IN (:names)`;
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('select06-any - SELECT id FROM mytable1 ORDER BY ?', async () => {
+		const sql = `SELECT id
+FROM mytable2
+WHERE id < ANY (:ids)
+AND name = SOME (:names)
+AND name <> :name`;
+
+		const actual = await generateCode(dialect, sql, 'select06');
+		const expected = readFileSync('tests/postgres/expected-code/select06-any.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('select08 - boolean', async () => {
 		const sql = `SELECT
 	id,
