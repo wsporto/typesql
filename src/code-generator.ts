@@ -539,7 +539,8 @@ export function generateTsDescriptor(queryInfo: SchemaDef): TsDescriptor {
 			name: escapedParametersNames[paramIndex],
 			tsType: mapColumnType(col.columnType as MySqlType) + arraySymbol,
 			notNull: col.notNull ? col.notNull : false,
-			toDriver: col.name
+			toDriver: col.name,
+			isArray: false
 		};
 		return tsDesc;
 	});
@@ -550,7 +551,8 @@ export function generateTsDescriptor(queryInfo: SchemaDef): TsDescriptor {
 			name: escapedDataNames[dataIndex],
 			tsType: mapColumnType(col.columnType as MySqlType),
 			notNull: col.notNull ? col.notNull : false,
-			toDriver: col.name
+			toDriver: col.name,
+			isArray: false
 		};
 		return tsDesc;
 	});

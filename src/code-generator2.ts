@@ -126,7 +126,8 @@ function mapParameterToTsFieldDescriptor(param: ParameterDef): TsParameterDescri
 		name: param.name,
 		tsType: mapColumnType(param.columnType as PostgresType),
 		notNull: param.notNull ? param.notNull : false,
-		toDriver: ''
+		toDriver: '',
+		isArray: param.columnType.startsWith('_')
 	};
 	return tsDesc;
 }
@@ -149,8 +150,8 @@ type ExecFunctionParameters = {
 	paramsType: string;
 	dataType: string;
 	columns: TsFieldDescriptor[];
-	parameters: TsFieldDescriptor[];
-	data: TsFieldDescriptor[];
+	parameters: TsParameterDescriptor[];
+	data: TsParameterDescriptor[];
 }
 
 const postgresCodeWriter: CodeWriter = {
@@ -171,7 +172,7 @@ const postgresCodeWriter: CodeWriter = {
 		const paramValues = allParamters.length > 0 ? `, values: [${allParamters.join(', ')}]` : '';
 		const orNull = params.queryType === 'Insert' || params.queryType === 'Update' || params.queryType === 'Delete' ? '' : ' | null';
 		const functionReturnType = params.multipleRowsResult ? `${returnType}[]` : `${returnType}${orNull}`;
-		const hasListParams = parameters.some(param => param.tsType.endsWith('[]'));
+		const hasListParams = parameters.some(param => !param.isArray && param.tsType.endsWith('[]'));
 		if (hasListParams) {
 			writer.writeLine('let currentIndex: number;');
 		}
@@ -244,8 +245,12 @@ const postgresCodeWriter: CodeWriter = {
 			return variableData;
 		}
 
-		function paramToDriver(param: TsFieldDescriptor, objName: string): any {
-			return param.tsType.endsWith('[]') ? `...${objName}.${param.name}` : `${objName}.${param.name}`;
+		function paramToDriver(param: TsParameterDescriptor, objName: string): any {
+			if (!param.tsType.endsWith('[]')) {
+				return `${objName}.${param.name}`;
+			}
+			const listParam = `...${objName}.${param.name}`;
+			return param.isArray ? `[${listParam}]` : listParam;
 		}
 	}
 }

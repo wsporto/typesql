@@ -1,0 +1,30 @@
+import { Client, Pool } from 'pg';
+
+export type Select06Params = {
+	ids: number[];
+	names: string[];
+	name: string;
+}
+
+export type Select06Result = {
+	id: number;
+}
+
+export async function select06(client: Client | Pool, params: Select06Params): Promise<Select06Result[]> {
+	const sql = `
+	SELECT id
+	FROM mytable2
+	WHERE id < ANY ($1)
+	AND name = SOME ($2)
+	AND name <> $3
+	`
+	return client.query({ text: sql, rowMode: 'array', values: [[...params.ids], [...params.names], params.name] })
+		.then(res => res.rows.map(row => mapArrayToSelect06Result(row)));
+}
+
+function mapArrayToSelect06Result(data: any) {
+	const result: Select06Result = {
+		id: data[0]
+	}
+	return result;
+}
