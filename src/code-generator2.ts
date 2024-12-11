@@ -156,12 +156,12 @@ type ExecFunctionParameters = {
 
 const postgresCodeWriter: CodeWriter = {
 	writeImports: function (writer: CodeBlockWriter): void {
-		writer.writeLine(`import { Client, Pool } from 'pg';`);
+		writer.writeLine(`import pg from 'pg';`);
 	},
 
 	writeExecFunction: function (writer: CodeBlockWriter, params: ExecFunctionParameters): void {
 		const { functionName, paramsType, dataType, returnType, parameters } = params;
-		let functionParams = 'client: Client | Pool';
+		let functionParams = 'client: pg.Client | pg.Pool';
 		if (params.data.length > 0) {
 			functionParams += `, data: ${dataType}`;
 		}

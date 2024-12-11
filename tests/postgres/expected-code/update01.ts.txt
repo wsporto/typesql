@@ -1,4 +1,4 @@
-import { Client, Pool } from 'pg';
+import pg from 'pg';
 
 export type Update01Data = {
 	param1: number | null;
@@ -12,7 +12,7 @@ export type Update01Result = {
 	rowCount: number;
 }
 
-export async function update01(client: Client | Pool, data: Update01Data, params: Update01Params): Promise<Update01Result> {
+export async function update01(client: pg.Client | pg.Pool, data: Update01Data, params: Update01Params): Promise<Update01Result> {
 	const sql = `
 	UPDATE mytable1 SET value=$1 WHERE id=$2
 	`

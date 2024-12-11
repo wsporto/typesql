@@ -1,10 +1,10 @@
-import { Client, Pool } from 'pg';
+import pg from 'pg';
 
 export type Select02Result = {
 	id: number;
 }
 
-export async function select02(client: Client | Pool): Promise<Select02Result[]> {
+export async function select02(client: pg.Client | pg.Pool): Promise<Select02Result[]> {
 	const sql = `
 	select id from mytable1
 	`
