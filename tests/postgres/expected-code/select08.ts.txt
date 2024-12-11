@@ -1,4 +1,4 @@
-import { Client, Pool } from 'pg';
+import pg from 'pg';
 
 export type Select08Params = {
 	param1: boolean;
@@ -11,7 +11,7 @@ export type Select08Result = {
 	param2: boolean;
 }
 
-export async function select08(client: Client | Pool, params: Select08Params): Promise<Select08Result[]> {
+export async function select08(client: pg.Client | pg.Pool, params: Select08Params): Promise<Select08Result[]> {
 	const sql = `
 	SELECT
 		id,

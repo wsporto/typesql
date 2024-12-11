@@ -1,4 +1,4 @@
-import { Client, Pool } from 'pg';
+import pg from 'pg';
 
 export type Select06Params = {
 	ids: number[];
@@ -10,7 +10,7 @@ export type Select06Result = {
 }
 
 let currentIndex: number;
-export async function select06(client: Client | Pool, params: Select06Params): Promise<Select06Result[]> {
+export async function select06(client: pg.Client | pg.Pool, params: Select06Params): Promise<Select06Result[]> {
 	currentIndex = 0;
 	const sql = `
 	SELECT id

@@ -1,10 +1,10 @@
-import { Client, Pool } from 'pg';
+import pg from 'pg';
 
 export type SelectTypeCastResult = {
 	id: number;
 }
 
-export async function selectTypeCast(client: Client | Pool): Promise<SelectTypeCastResult[]> {
+export async function selectTypeCast(client: pg.Client | pg.Pool): Promise<SelectTypeCastResult[]> {
 	const sql = `
 	SELECT id::int2 FROM mytable1
 	`

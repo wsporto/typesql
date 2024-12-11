@@ -1,4 +1,4 @@
-import { Client, Pool } from 'pg';
+import pg from 'pg';
 
 export type Select03Params = {
 	id: number;
@@ -8,7 +8,7 @@ export type Select03Result = {
 	id: number;
 }
 
-export async function select03(client: Client | Pool, params: Select03Params): Promise<Select03Result[]> {
+export async function select03(client: pg.Client | pg.Pool, params: Select03Params): Promise<Select03Result[]> {
 	const sql = `
 	select id from mytable1 where id = $1 or value = $1
 	`
