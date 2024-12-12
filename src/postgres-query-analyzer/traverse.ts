@@ -1,4 +1,4 @@
-import { A_expr_addContext, A_expr_andContext, A_expr_at_time_zoneContext, A_expr_betweenContext, A_expr_caretContext, A_expr_collateContext, A_expr_compareContext, A_expr_inContext, A_expr_is_notContext, A_expr_isnullContext, A_expr_lesslessContext, A_expr_likeContext, A_expr_mulContext, A_expr_orContext, A_expr_qual_opContext, A_expr_qualContext, A_expr_typecastContext, A_expr_unary_notContext, A_expr_unary_qualopContext, A_expr_unary_signContext, A_exprContext, C_expr_caseContext, C_expr_existsContext, C_expr_exprContext, C_exprContext, ColidContext, Common_table_exprContext, DeletestmtContext, Expr_listContext, From_clauseContext, From_listContext, Func_applicationContext, Func_arg_exprContext, Func_expr_common_subexprContext, IdentifierContext, In_expr_listContext, Insert_column_itemContext, Insert_column_listContext, InsertstmtContext, Join_qualContext, Qualified_nameContext, Relation_exprContext, Select_clauseContext, Select_no_parensContext, Select_with_parensContext, SelectstmtContext, Set_clauseContext, Simple_select_intersectContext, Simple_select_pramaryContext, StmtContext, Table_refContext, Target_elContext, Target_labelContext, Target_listContext, Unreserved_keywordContext, UpdatestmtContext, Values_clauseContext, When_clauseContext, Where_clauseContext } from '@wsporto/typesql-parser/postgres/PostgreSQLParser';
+import { A_expr_addContext, A_expr_andContext, A_expr_at_time_zoneContext, A_expr_betweenContext, A_expr_caretContext, A_expr_collateContext, A_expr_compareContext, A_expr_inContext, A_expr_is_notContext, A_expr_isnullContext, A_expr_lesslessContext, A_expr_likeContext, A_expr_mulContext, A_expr_orContext, A_expr_qual_opContext, A_expr_qualContext, A_expr_typecastContext, A_expr_unary_notContext, A_expr_unary_qualopContext, A_expr_unary_signContext, A_exprContext, C_expr_caseContext, C_expr_existsContext, C_expr_exprContext, C_exprContext, ColidContext, Common_table_exprContext, DeletestmtContext, Expr_listContext, From_clauseContext, From_listContext, Func_applicationContext, Func_arg_exprContext, Func_expr_common_subexprContext, IdentifierContext, In_expr_listContext, In_expr_selectContext, In_exprContext, Insert_column_itemContext, Insert_column_listContext, InsertstmtContext, Join_qualContext, Qualified_nameContext, Relation_exprContext, Select_clauseContext, Select_no_parensContext, Select_with_parensContext, SelectstmtContext, Set_clauseContext, Simple_select_intersectContext, Simple_select_pramaryContext, StmtContext, Table_refContext, Target_elContext, Target_labelContext, Target_listContext, Unreserved_keywordContext, UpdatestmtContext, Values_clauseContext, When_clauseContext, Where_clauseContext } from '@wsporto/typesql-parser/postgres/PostgreSQLParser';
 import { ParserRuleContext } from '@wsporto/typesql-parser';
 import { PostgresColumnSchema } from '../drivers/types';
 import { splitName } from '../mysql-query-analyzer/select-columns';
@@ -26,15 +26,20 @@ export type PostgresTraverseResult = {
 	limit?: number;
 }
 
+type ParamInfo = {
+	paramIndex: number;
+	isNotNull: boolean;
+}
+
 type TraverseResult = {
 	columnsNullability: boolean[],
-	parametersNullability: boolean[],
+	parameters: ParamInfo[],
 }
 
 export function traverseSmt(stmt: StmtContext, dbSchema: PostgresColumnSchema[]): PostgresTraverseResult {
 	const traverseResult: TraverseResult = {
 		columnsNullability: [],
-		parametersNullability: []
+		parameters: []
 	}
 	const selectstmt = stmt.selectstmt();
 	if (selectstmt) {
@@ -80,13 +85,15 @@ function traverseSelectstmt(selectstmt: SelectstmtContext, dbSchema: PostgresCol
 
 
 	const columns = traverse_selectstmt(selectstmt, dbSchema, fromColumns, traverseResult);
+	//select parameters are collected after from paramters
+	traverseResult.parameters.sort((param1, param2) => param1.paramIndex - param2.paramIndex);
 	const columnsNullability = columns.map(col => !col.is_nullable);
 
 	const limit = checkLimit(selectstmt);
 	return {
 		queryType: 'Select',
 		columnsNullability,
-		parametersNullability: traverseResult.parametersNullability,
+		parametersNullability: traverseResult.parameters.map(param => param.isNotNull),
 		parameterList: paramIsListResult,
 		limit
 	};
@@ -171,6 +178,10 @@ function traverse_simple_select_pramary(simple_select_pramary: Simple_select_pra
 	if (values_clause) {
 		const valuesColumns = traverse_values_clause(values_clause, dbSchema, parentFromColumns, traverseResult);
 		return valuesColumns;
+	}
+	const where_a_expr = simple_select_pramary.where_clause()?.a_expr();
+	if (where_a_expr) {
+		traverse_a_expr(where_a_expr, dbSchema, parentFromColumns.concat(fromColumns), traverseResult);
 	}
 	const filteredColumns = filterColumns_simple_select_pramary(simple_select_pramary, dbSchema, parentFromColumns.concat(fromColumns), traverseResult);
 	return filteredColumns;
@@ -276,11 +287,12 @@ function traverse_expr_or(a_expr_or: A_expr_orContext, dbSchema: NotNullInfo[], 
 }
 
 function traverse_expr_and(a_expr_and: A_expr_andContext, dbSchema: NotNullInfo[], fromColumns: NotNullInfo[], traverseResult: TraverseResult): NotNullInfoResult {
-	const a_expr_between = a_expr_and.a_expr_between_list()[0];
-	if (a_expr_between) {
-		return traverse_expr_between(a_expr_between, dbSchema, fromColumns, traverseResult);
-	}
-	throw Error('traverse_expr_and -  Not expected:' + a_expr_and.getText());
+	const result = a_expr_and.a_expr_between_list().map(a_expr_between => traverse_expr_between(a_expr_between, dbSchema, fromColumns, traverseResult));
+
+	return {
+		column_name: a_expr_and.getText(),
+		is_nullable: result.some(col => col.is_nullable)
+	} satisfies NotNullInfoResult;
 }
 
 function traverse_expr_between(a_expr_between: A_expr_betweenContext, dbSchema: NotNullInfo[], fromColumns: NotNullInfo[], traverseResult: TraverseResult): NotNullInfoResult {
@@ -293,10 +305,32 @@ function traverse_expr_between(a_expr_between: A_expr_betweenContext, dbSchema: 
 
 function traverse_expr_in(a_expr_in: A_expr_inContext, dbSchema: NotNullInfo[], fromColumns: NotNullInfo[], traverseResult: TraverseResult): NotNullInfoResult {
 	const a_expr_unary = a_expr_in.a_expr_unary_not();
+	let leftExprResult = undefined;
 	if (a_expr_unary) {
-		return traverse_expr_unary(a_expr_unary, dbSchema, fromColumns, traverseResult);
+		leftExprResult = traverse_expr_unary(a_expr_unary, dbSchema, fromColumns, traverseResult);
 	}
-	throw Error('traverse_expr_in -  Not expected:' + a_expr_in.getText());
+	const in_expr = a_expr_in.in_expr();
+	if (in_expr) {
+		traverse_in_expr(in_expr, dbSchema, fromColumns, traverseResult);
+	}
+	return {
+		column_name: a_expr_in.getText(),
+		//id in (...)  -> is_nullable: false
+		// value -> is_nullable = leftExprResult.is_nullable
+		is_nullable: in_expr != null ? false : leftExprResult!.is_nullable
+	} satisfies NotNullInfoResult
+}
+
+function traverse_in_expr(in_expr: In_exprContext, dbSchema: NotNullInfo[], fromColumns: NotNullInfo[], traverseResult: TraverseResult) {
+	if (in_expr instanceof In_expr_selectContext) {
+		const select_with_parens = in_expr.select_with_parens();
+		traverse_select_with_parens(select_with_parens, dbSchema, fromColumns, traverseResult);
+	}
+	if (in_expr instanceof In_expr_listContext) {
+		in_expr.expr_list().a_expr_list().forEach(a_expr => {
+			traverse_a_expr(a_expr, dbSchema, fromColumns, traverseResult);
+		})
+	}
 }
 
 function traverse_expr_unary(a_expr_unary: A_expr_unary_notContext, dbSchema: NotNullInfo[], fromColumns: NotNullInfo[], traverseResult: TraverseResult): NotNullInfoResult {
@@ -324,17 +358,25 @@ function traverse_expr_is_not(a_expr_is_not: A_expr_is_notContext, dbSchema: Not
 }
 
 function traverse_expr_compare(a_expr_compare: A_expr_compareContext, dbSchema: NotNullInfo[], fromColumns: NotNullInfo[], traverseResult: TraverseResult): NotNullInfoResult {
-	const a_expr_like = a_expr_compare.a_expr_like_list()[0];
-	if (a_expr_like) {
-		return traverse_expr_like(a_expr_like, dbSchema, fromColumns, traverseResult);
+	const a_expr_like_list = a_expr_compare.a_expr_like_list();
+	if (a_expr_like_list) {
+		const result = a_expr_like_list.map(a_expr_like => traverse_expr_like(a_expr_like, dbSchema, fromColumns, traverseResult));
+		return {
+			column_name: a_expr_compare.getText(),
+			is_nullable: result.some(col => col.is_nullable)
+		}
 	}
 	throw Error('traverse_expr_compare -  Not expected:' + a_expr_compare.getText());
 }
 
 function traverse_expr_like(a_expr_like: A_expr_likeContext, dbSchema: NotNullInfo[], fromColumns: NotNullInfo[], traverseResult: TraverseResult): NotNullInfoResult {
-	const a_expr_qual_op = a_expr_like.a_expr_qual_op_list()[0];
-	if (a_expr_qual_op) {
-		return traverse_expr_qual_op(a_expr_qual_op, dbSchema, fromColumns, traverseResult);
+	const a_expr_qual_op_list = a_expr_like.a_expr_qual_op_list();
+	if (a_expr_qual_op_list) {
+		const result = a_expr_qual_op_list.map(a_expr_qual_op => traverse_expr_qual_op(a_expr_qual_op, dbSchema, fromColumns, traverseResult));
+		return {
+			column_name: a_expr_like.getText(),
+			is_nullable: result.some(col => col.is_nullable)
+		} satisfies NotNullInfoResult
 	}
 	throw Error('traverse_expr_like -  Not expected:' + a_expr_like.getText());
 }
@@ -436,7 +478,10 @@ function traversec_expr(c_expr: C_exprContext, dbSchema: NotNullInfo[], fromColu
 			}
 		}
 		if (c_expr.PARAM()) {
-			traverseResult.parametersNullability.push(true);
+			traverseResult.parameters.push({
+				paramIndex: c_expr.start.start,
+				isNotNull: true
+			});
 			return {
 				column_name: c_expr.PARAM().getText(),
 				is_nullable: false
@@ -548,7 +593,7 @@ function traversefunc_expr_common_subexpr(func_expr_common_subexpr: Func_expr_co
 		const result = func_arg_list.map(func_arg_expr => {
 			const paramResult = traverse_a_expr(func_arg_expr, dbSchema, fromColumns, traverseResult);
 			if (isParameter(paramResult.column_name)) {
-				traverseResult.parametersNullability[traverseResult.parametersNullability.length - 1] = false;
+				traverseResult.parameters[traverseResult.parameters.length - 1].isNotNull = false;
 				paramResult.is_nullable = true;
 			}
 			return paramResult;
@@ -607,7 +652,7 @@ function traverse_table_ref(table_ref: Table_refContext, dbSchema: NotNullInfo[]
 	const allColumns: NotNullInfo[] = [];
 	const relation_expr = table_ref.relation_expr();
 	const aliasClause = table_ref.alias_clause();
-	const alias = aliasClause ? aliasClause.getText() : undefined;
+	const alias = aliasClause ? aliasClause.colid().getText() : undefined;
 	if (relation_expr) {
 		const tableName = traverse_relation_expr(relation_expr, dbSchema);
 		const tableNameWithAlias = alias ? alias : tableName;
@@ -761,14 +806,14 @@ function traverse_insert_a_expr_list(expr_list: Expr_listContext, dbSchema: NotN
 	expr_list.a_expr_list().forEach((a_expr, index) => {
 		const traverseResult: TraverseResult = {
 			columnsNullability: [],
-			parametersNullability: []
+			parameters: []
 		}
 		const result = traverse_a_expr(a_expr, dbSchema, insertColumns, traverseResult);
 		if (isParameter(result.column_name)) {
 			parametersNullability.push(!insertColumns[index].is_nullable);
 		}
 		else {
-			parametersNullability.push(...traverseResult.parametersNullability);
+			parametersNullability.push(...traverseResult.parameters.map(param => param.isNotNull));
 		}
 	})
 	return parametersNullability;
@@ -778,7 +823,7 @@ function traverseDeletestmt(deleteStmt: DeletestmtContext, dbSchema: PostgresCol
 
 	return {
 		queryType: 'Delete',
-		parametersNullability: traverseResult.parametersNullability,
+		parametersNullability: traverseResult.parameters.map(param => param.isNotNull),
 		columnsNullability: [],
 		parameterList: []
 	}
@@ -793,20 +838,20 @@ function traverseUpdatestmt(updatestmt: UpdatestmtContext, dbSchema: PostgresCol
 	updatestmt.set_clause_list().set_clause_list()
 		.map(set_clause => traverse_set_clause(set_clause, dbSchema, updateColumns, traverseResult));
 
-	const dataParameters = traverseResult.parametersNullability;
+	const parametersBefore = traverseResult.parameters.length;
 	const where_clause = updatestmt.where_or_current_clause();
 	if (where_clause) {
 		const a_expr = where_clause.a_expr();
 		traverse_a_expr(a_expr, dbSchema, updateColumns, traverseResult);
 	}
-	const whereParameters = traverseResult.parametersNullability.slice(dataParameters.length);
+	const whereParameters = traverseResult.parameters.slice(parametersBefore);
 
 	return {
 		queryType: 'Update',
-		parametersNullability: traverseResult.parametersNullability,
+		parametersNullability: traverseResult.parameters.slice(0, parametersBefore).map(param => param.isNotNull),
 		columnsNullability: [],
 		parameterList: [],
-		whereParamtersNullability: whereParameters
+		whereParamtersNullability: whereParameters.map(param => param.isNotNull)
 	}
 }
 
@@ -817,7 +862,7 @@ function traverse_set_clause(set_clause: Set_clauseContext, dbSchema: NotNullInf
 	const a_expr = set_clause.a_expr();
 	const a_exprResult = traverse_a_expr(a_expr, dbSchema, updateColumns, traverseResult);
 	if (isParameter(a_exprResult.column_name)) {
-		traverseResult.parametersNullability[traverseResult.parametersNullability.length - 1] = !column.is_nullable;
+		traverseResult.parameters[traverseResult.parameters.length - 1].isNotNull = !column.is_nullable;
 	}
 
 	return !column.is_nullable
@@ -1057,7 +1102,8 @@ function checkLimit(selectstmt: SelectstmtContext): number | undefined {
 }
 
 function checkLimit_select_no_parens(select_no_parens: Select_no_parensContext): number | undefined {
-	return +select_no_parens.select_limit()?.limit_clause()?.select_limit_value()?.getText();
+	const limitText = select_no_parens.select_limit()?.limit_clause()?.select_limit_value()?.getText();
+	return limitText ? +limitText : undefined;
 }
 
 function checkLimit_select_with_parens(select_with_parens: Select_with_parensContext): number | undefined {

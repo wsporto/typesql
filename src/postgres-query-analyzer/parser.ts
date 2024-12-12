@@ -14,11 +14,11 @@ export function parseSql(sql: string, dbSchema: PostgresColumnSchema[]): Postgre
 
 export function safeParseSql(sql: string, dbSchema: PostgresColumnSchema[]): Result<PostgresTraverseResult, string> {
 	try {
-		console.log("will parse")
 		const result = parseSql(sql, dbSchema);
 		return ok(result);
 	}
 	catch (e) {
-		return err('Invalid Sql');
+		const error = e as Error;
+		return err(error.message);
 	}
 }

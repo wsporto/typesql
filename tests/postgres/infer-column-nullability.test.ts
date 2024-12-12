@@ -3,6 +3,7 @@ import postgres from 'postgres';
 import { loadDbSchema } from '../../src/drivers/postgres';
 import { PostgresColumnSchema } from '../../src/drivers/types';
 import { parseSql } from '../../src/postgres-query-analyzer/parser';
+import { PostgresTraverseResult } from '../../src/postgres-query-analyzer/traverse';
 
 let dbSchema: PostgresColumnSchema[] = [];
 describe('Infer column nullability', () => {
@@ -695,5 +696,43 @@ describe('Infer column nullability', () => {
 		const expected = [true, true, false, false, false, false];
 
 		assert.deepStrictEqual(actual.columnsNullability, expected);
+	});
+
+	it('SELECT FROM (subquery with IN operator)', async () => {
+		const sql = `
+        SELECT id
+		FROM (
+			SELECT id FROM mytable1 WHERE id = coalesce($1, 10)
+			AND id IN ($2)
+		) t
+		WHERE id = $3
+        `;
+		const actual = parseSql(sql, dbSchema);
+		const expected: PostgresTraverseResult = {
+			queryType: 'Select',
+			limit: undefined,
+			columnsNullability: [true],
+			parameterList: [false, true, false],
+			parametersNullability: [false, true, true]
+		};
+		assert.deepStrictEqual(actual, expected);
+	});
+
+	it('SELECT FROM (subquery with IN operator)', async () => {
+		const sql = `
+        SELECT id, concat($1::text, 'a')
+		FROM (
+			SELECT id FROM mytable1 WHERE id = coalesce($2, 10)
+		) t
+        `;
+		const actual = parseSql(sql, dbSchema);
+		const expected: PostgresTraverseResult = {
+			queryType: 'Select',
+			limit: undefined,
+			columnsNullability: [true, true],
+			parameterList: [false, false],
+			parametersNullability: [true, false]
+		};
+		assert.deepStrictEqual(actual, expected);
 	});
 });
