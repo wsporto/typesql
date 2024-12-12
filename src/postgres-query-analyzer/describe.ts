@@ -27,6 +27,9 @@ function describeQueryRefine(sql: string, schema: PostgresColumnSchema[], postgr
 	if (traverseResult.queryType === 'Update') {
 		descResult.data = getDataForQuery(traverseResult, postgresDescribeResult, paramNames);
 	}
+	if (traverseResult.returning) {
+		descResult.returning = traverseResult.returning;
+	}
 	return ok(descResult);
 }
 

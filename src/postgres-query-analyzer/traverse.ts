@@ -24,6 +24,7 @@ export type PostgresTraverseResult = {
 	whereParamtersNullability?: boolean[];
 	parameterList: boolean[];
 	limit?: number;
+	returning?: boolean;
 }
 
 type ParamInfo = {
@@ -214,13 +215,13 @@ function filterColumns_simple_select_pramary(simple_select_pramary: Simple_selec
 	if (target_list_) {
 		const target_list = target_list_.target_list();
 		if (target_list) {
-			return filterColumns_target_list(target_list, dbSchema, fromColumns, traverseResult);
+			return traverse_target_list(target_list, dbSchema, fromColumns, traverseResult);
 		}
 	}
 	return [];
 }
 
-function filterColumns_target_list(target_list: Target_listContext, dbSchema: NotNullInfo[], fromColumns: NotNullInfo[], traverseResult: TraverseResult): NotNullInfo[] {
+function traverse_target_list(target_list: Target_listContext, dbSchema: NotNullInfo[], fromColumns: NotNullInfo[], traverseResult: TraverseResult): NotNullInfo[] {
 	const columns = target_list.target_el_list().flatMap(target_el => {
 		const fieldName = splitName(target_el.getText());
 		if (fieldName.name == '*') {
@@ -769,6 +770,10 @@ function paramIsList(c_expr: ParserRuleContext) {
 
 
 function traverseInsertstmt(insertstmt: InsertstmtContext, dbSchema: PostgresColumnSchema[]): PostgresTraverseResult {
+	const traverseResult: TraverseResult = {
+		columnsNullability: [],
+		parameters: []
+	}
 	const insert_target = insertstmt.insert_target();
 	const tableName = insert_target.getText();
 	const insertColumns = dbSchema.filter(col => col.table_name === tableName);
@@ -779,35 +784,38 @@ function traverseInsertstmt(insertstmt: InsertstmtContext, dbSchema: PostgresCol
 		.map(insert_column_item => traverse_insert_column_item(insert_column_item, insertColumns));
 
 	const selectstmt = insert_rest.selectstmt();
-	const parametersNullability = traverse_insert_select_stmt(selectstmt, dbSchema, insertColumnsList);
+	const parametersNullability = traverse_insert_select_stmt(selectstmt, dbSchema, insertColumnsList, traverseResult);
 
-	return {
+	const returning_clause = insertstmt.returning_clause();
+	const returninColumns = returning_clause ? traverse_target_list(returning_clause.target_list(), dbSchema, insertColumns, traverseResult) : [];
+
+	const result: PostgresTraverseResult = {
 		queryType: 'Insert',
 		parametersNullability,
-		columnsNullability: [],
+		columnsNullability: returninColumns.map(col => !col.is_nullable),
 		parameterList: []
 	}
+	if (returning_clause) {
+		result.returning = true;
+	}
+	return result;
 }
 
-function traverse_insert_select_stmt(selectstmt: SelectstmtContext, dbSchema: NotNullInfo[], insertColumnlist: NotNullInfo[]): boolean[] {
+function traverse_insert_select_stmt(selectstmt: SelectstmtContext, dbSchema: NotNullInfo[], insertColumnlist: NotNullInfo[], traverseResult: TraverseResult): boolean[] {
 	const simple_select = selectstmt.select_no_parens()?.select_clause()?.simple_select_intersect_list()?.[0];
 	if (simple_select) {
 		const simple_select_pramary = simple_select?.simple_select_pramary_list()?.[0];
 		if (simple_select_pramary) {
 			return simple_select_pramary.values_clause().expr_list_list()
-				.flatMap(expr_list => traverse_insert_a_expr_list(expr_list, dbSchema, insertColumnlist))
+				.flatMap(expr_list => traverse_insert_a_expr_list(expr_list, dbSchema, insertColumnlist, traverseResult))
 		}
 	}
 	return [];
 }
 
-function traverse_insert_a_expr_list(expr_list: Expr_listContext, dbSchema: NotNullInfo[], insertColumns: NotNullInfo[]) {
+function traverse_insert_a_expr_list(expr_list: Expr_listContext, dbSchema: NotNullInfo[], insertColumns: NotNullInfo[], traverseResult: TraverseResult) {
 	const parametersNullability: boolean[] = [];
 	expr_list.a_expr_list().forEach((a_expr, index) => {
-		const traverseResult: TraverseResult = {
-			columnsNullability: [],
-			parameters: []
-		}
 		const result = traverse_a_expr(a_expr, dbSchema, insertColumns, traverseResult);
 		if (isParameter(result.column_name)) {
 			parametersNullability.push(!insertColumns[index].is_nullable);
