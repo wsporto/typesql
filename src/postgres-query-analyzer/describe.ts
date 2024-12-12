@@ -3,9 +3,9 @@ import { PostgresColumnSchema, DescribeQueryColumn, DescribeQueryResult, Postgre
 import { postgresDescribe, postgresAnalyze, loadDbSchema } from '../drivers/postgres';
 import { Sql } from 'postgres';
 import { ColumnInfo } from '../mysql-query-analyzer/types';
-import { parseSql } from './parser';
+import { safeParseSql } from './parser';
 import { replacePostgresParams, replacePostgresParamsWithValues } from '../sqlite-query-analyzer/replace-list-params';
-import { ok, Result, ResultAsync, okAsync } from 'neverthrow';
+import { ok, Result, ResultAsync, okAsync, err } from 'neverthrow';
 import { postgresTypes } from '../dialects/postgres';
 import { PostgresTraverseResult } from './traverse';
 
@@ -55,10 +55,13 @@ function mapToParamDef(paramName: string, paramType: number, notNull: boolean, i
 export function describeQuery(postgres: Sql, sql: string, namedParameters: string[]): ResultAsync<SchemaDef, TypeSqlError> {
 	return loadDbSchema(postgres)
 		.andThen(dbSchema => {
-			const parseResult = parseSql(sql, dbSchema);
+			const parseResult = safeParseSql(sql, dbSchema);
+			if (parseResult.isErr()) {
+				return err(parseResult.error)
+			}
 			return postgresDescribe(postgres, sql)
-				.andThen(describeResult => getMultipleRowInfo(postgres, sql, describeResult, parseResult))
-				.andThen(analyzeResult => describeQueryRefine(sql, dbSchema, analyzeResult, parseResult, namedParameters));
+				.andThen(describeResult => getMultipleRowInfo(postgres, sql, describeResult, parseResult.value))
+				.andThen(analyzeResult => describeQueryRefine(sql, dbSchema, analyzeResult, parseResult.value, namedParameters));
 		}).mapErr(err => {
 			return {
 				name: 'error',
