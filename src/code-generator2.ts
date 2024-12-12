@@ -6,14 +6,25 @@ import { ColumnInfo } from './mysql-query-analyzer/types';
 import { mapColumnType } from './dialects/postgres';
 import { PostgresType } from './sqlite-query-analyzer/types';
 import { preprocessSql } from './describe-query';
-import { ResultAsync } from 'neverthrow';
+import { okAsync, ResultAsync } from 'neverthrow';
 
 
 
 export function generateCode(client: PgDielect, sql: string, queryName: string): ResultAsync<string, TypeSqlError> {
+	if (isEmptySql(sql)) {
+		return okAsync('');
+	}
 	const { sql: processedSql, namedParameters } = preprocessSql(sql, 'postgres');
 	return _describeQuery(client, processedSql, namedParameters)
 		.map(schemaDef => generateTsCode(processedSql, queryName, schemaDef, client.type))
+}
+
+function isEmptySql(sql: string) {
+	if (sql.trim() === '') {
+		return true;
+	}
+	const lines = sql.split('\n');
+	return lines.every(line => line.trim() === '' || line.trim().startsWith('//'))
 }
 
 function _describeQuery(databaseClient: PgDielect, sql: string, namedParameters: string[]): ResultAsync<SchemaDef, TypeSqlError> {
