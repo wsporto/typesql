@@ -103,7 +103,8 @@ function generateTsCode(
 		returnType: resultTypeName,
 		columns: tsDescriptor.columns,
 		parameters: tsDescriptor.parameters,
-		data: tsDescriptor.data || []
+		data: tsDescriptor.data || [],
+		returning: dbSchema.returning || false
 	}
 	codeWriter.writeExecFunction(writer, execFunctionParams);
 
@@ -163,6 +164,7 @@ type ExecFunctionParameters = {
 	columns: TsFieldDescriptor[];
 	parameters: TsParameterDescriptor[];
 	data: TsParameterDescriptor[];
+	returning: boolean;
 }
 
 const postgresCodeWriter: CodeWriter = {
@@ -181,7 +183,7 @@ const postgresCodeWriter: CodeWriter = {
 		}
 		const allParamters = [...params.data.map(param => paramToDriver(param, 'data')), ...parameters.map(param => paramToDriver(param, 'params'))];
 		const paramValues = allParamters.length > 0 ? `, values: [${allParamters.join(', ')}]` : '';
-		const orNull = params.queryType === 'Insert' || params.queryType === 'Update' || params.queryType === 'Delete' ? '' : ' | null';
+		const orNull = params.queryType === 'Select' ? ' | null' : '';
 		const functionReturnType = params.multipleRowsResult ? `${returnType}[]` : `${returnType}${orNull}`;
 		const hasListParams = parameters.some(param => !param.isArray && param.tsType.endsWith('[]'));
 		if (hasListParams) {
@@ -192,18 +194,21 @@ const postgresCodeWriter: CodeWriter = {
 				writer.writeLine('currentIndex = 0;');
 			}
 			writeSql(writer, params.sql);
-			if (params.queryType === 'Insert' || params.queryType === 'Update' || params.queryType === 'Delete') {
-				writer.write(`return client.query({ text: sql${paramValues} })`).newLine();
-				writer.indent().write(`.then(res => mapArrayTo${returnType}(res));`)
-			}
-			else {
+			if (params.queryType === 'Select' || params.returning) {
 				writer.write(`return client.query({ text: sql, rowMode: 'array'${paramValues} })`).newLine();
 				if (params.multipleRowsResult) {
 					writer.indent().write(`.then(res => res.rows.map(row => mapArrayTo${returnType}(row)));`)
 				}
+				else if (params.returning) {
+					writer.indent().write(`.then(res => mapArrayTo${returnType}(res.rows[0]));`)
+				}
 				else {
 					writer.indent().write(`.then(res => res.rows.length > 0 ? mapArrayTo${returnType}(res.rows[0]) : null);`)
 				}
+			}
+			else {
+				writer.write(`return client.query({ text: sql${paramValues} })`).newLine();
+				writer.indent().write(`.then(res => mapArrayTo${returnType}(res));`)
 			}
 		});
 
@@ -224,11 +229,11 @@ const postgresCodeWriter: CodeWriter = {
 			writer.write(`const result: ${returnType} = `).block(() => {
 				params.columns.forEach((col, index) => {
 					const separator = index < params.columns.length - 1 ? ',' : '';
-					if (params.queryType === 'Insert' || params.queryType === 'Update' || params.queryType === 'Delete') {
-						writer.writeLine(`${col.name}: data.${col.name}${separator}`);
+					if (params.queryType === 'Select' || params.returning) {
+						writer.writeLine(`${col.name}: ${toDriver(`data[${index}]`, col)}${separator}`);
 					}
 					else {
-						writer.writeLine(`${col.name}: ${toDriver(`data[${index}]`, col)}${separator}`);
+						writer.writeLine(`${col.name}: data.${col.name}${separator}`);
 					}
 				});
 			});
@@ -267,16 +272,16 @@ const postgresCodeWriter: CodeWriter = {
 }
 
 function getColumnsForQuery(schemaDef: SchemaDef): TsFieldDescriptor[] {
-	if (schemaDef.queryType === 'Insert' || schemaDef.queryType === 'Update' || schemaDef.queryType === 'Delete') {
-		const columns: TsFieldDescriptor[] = [
-			{
-				name: 'rowCount',
-				tsType: 'number',
-				notNull: true
-			}
-		]
-		return columns;
+	if (schemaDef.queryType === 'Select' || schemaDef.returning) {
+		return schemaDef.columns.map(col => mapColumnInfoToTsFieldDescriptor(col))
 	}
-	return schemaDef.columns.map(col => mapColumnInfoToTsFieldDescriptor(col))
+	const columns: TsFieldDescriptor[] = [
+		{
+			name: 'rowCount',
+			tsType: 'number',
+			notNull: true
+		}
+	]
+	return columns;
 }
 

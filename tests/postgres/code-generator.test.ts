@@ -139,6 +139,18 @@ WHERE :param1 is true OR (:param2 is true OR :param2::bool is null)`;
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('insert03 - INSERT INTO mytable1(value) VALUES(:value) RETURNING *', async () => {
+		const sql = 'INSERT INTO mytable1(value) VALUES(:value) RETURNING *';
+
+		const actual = await generateCode(dialect, sql, 'insert03');
+		const expected = readFileSync('tests/postgres/expected-code/insert03.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('update01 - UPDATE mytable1 SET value=? WHERE id=?', async () => {
 		const sql = 'UPDATE mytable1 SET value=$1 WHERE id=$2';
 
