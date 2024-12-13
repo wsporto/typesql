@@ -39,7 +39,7 @@ export function replacePostgresParamsWithValues(sql: string, paramsIsList: boole
 
 	const newSql = sql.replace(paramRegex, (match, index) => {
 		const paramIndex = parseInt(index, 10) - 1;
-		return getValueForType(index, paramsTypes[paramIndex], paramsIsList[paramIndex]);
+		return getValueForType(paramIndex, paramsTypes[paramIndex], paramsIsList[paramIndex]);
 	});
 	return newSql;
 }
@@ -52,7 +52,7 @@ function getValueForType(paramIndex: number, typeOid: number, isList: boolean): 
 			if (isList) {
 				return '1, 2';
 			}
-			return `${paramIndex} + 1`;
+			return `${paramIndex + 1}`;
 		case 'number[]':
 			return 'ARRAY[1, 2]'
 		case 'string':

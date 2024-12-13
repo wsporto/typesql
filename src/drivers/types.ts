@@ -6,6 +6,7 @@ export type PostgresColumnSchema = {
 	table_name: string;
 	column_name: string;
 	is_nullable: boolean;
+	column_key: 'PRI' | 'UNI' | '';
 };
 
 export type DescribeQueryColumn = {

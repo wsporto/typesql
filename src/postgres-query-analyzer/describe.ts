@@ -1,15 +1,15 @@
 import { ParameterDef, SchemaDef, TypeSqlError } from '../types';
-import { PostgresColumnSchema, DescribeQueryColumn, DescribeQueryResult, PostgresType, PostgresDescribe } from '../drivers/types';
-import { postgresDescribe, postgresAnalyze, loadDbSchema } from '../drivers/postgres';
+import { DescribeQueryColumn, PostgresType, PostgresDescribe } from '../drivers/types';
+import { postgresDescribe, loadDbSchema } from '../drivers/postgres';
 import { Sql } from 'postgres';
 import { ColumnInfo } from '../mysql-query-analyzer/types';
 import { safeParseSql } from './parser';
-import { replacePostgresParams, replacePostgresParamsWithValues } from '../sqlite-query-analyzer/replace-list-params';
-import { ok, Result, ResultAsync, okAsync, err } from 'neverthrow';
+import { replacePostgresParams } from '../sqlite-query-analyzer/replace-list-params';
+import { ok, Result, ResultAsync, err } from 'neverthrow';
 import { postgresTypes } from '../dialects/postgres';
 import { PostgresTraverseResult } from './traverse';
 
-function describeQueryRefine(sql: string, schema: PostgresColumnSchema[], postgresDescribeResult: DescribeQueryResult, traverseResult: PostgresTraverseResult, namedParameters: string[]): Result<SchemaDef, string> {
+function describeQueryRefine(sql: string, postgresDescribeResult: PostgresDescribe, traverseResult: PostgresTraverseResult, namedParameters: string[]): Result<SchemaDef, string> {
 
 	const paramNames = postgresDescribeResult.parameters.map((_, index) => namedParameters[index] ? namedParameters[index] : `param${index + 1}`);
 
@@ -18,7 +18,7 @@ function describeQueryRefine(sql: string, schema: PostgresColumnSchema[], postgr
 	const descResult: SchemaDef = {
 		sql: newSql,
 		queryType: traverseResult.queryType,
-		multipleRowsResult: postgresDescribeResult.multipleRowsResult,
+		multipleRowsResult: traverseResult.multipleRowsResult,
 		columns: getColumnsForQuery(traverseResult, postgresDescribeResult),
 		parameters: traverseResult.queryType === 'Update'
 			? getParamtersForWhere(traverseResult, postgresDescribeResult, paramNames)
@@ -63,8 +63,7 @@ export function describeQuery(postgres: Sql, sql: string, namedParameters: strin
 				return err(parseResult.error)
 			}
 			return postgresDescribe(postgres, sql)
-				.andThen(describeResult => getMultipleRowInfo(postgres, sql, describeResult, parseResult.value))
-				.andThen(analyzeResult => describeQueryRefine(sql, dbSchema, analyzeResult, parseResult.value, namedParameters));
+				.andThen(analyzeResult => describeQueryRefine(sql, analyzeResult, parseResult.value, namedParameters));
 		}).mapErr(err => {
 			return {
 				name: 'error',
@@ -73,71 +72,22 @@ export function describeQuery(postgres: Sql, sql: string, namedParameters: strin
 		});
 }
 
-function getMultipleRowInfo(postgres: Sql, sql: string, describeResult: PostgresDescribe, parseResult: PostgresTraverseResult): ResultAsync<DescribeQueryResult, string> {
-	if (parseResult.queryType === 'Select') {
-		if (parseResult.limit === 1) {
-			const result: DescribeQueryResult = {
-				...describeResult,
-				multipleRowsResult: false
-			}
-			return okAsync(result);
-		}
-		const newSql = replacePostgresParamsWithValues(sql, parseResult.parameterList, describeResult.parameters);
-		return postgresAnalyze(postgres, newSql).map(analyzeResult => {
-			const singleRow = isSingleRow(analyzeResult);
-			const result: DescribeQueryResult = {
-				...describeResult,
-				multipleRowsResult: !singleRow
-			}
-			return result;
-		});
-	}
-	const result: DescribeQueryResult = {
-		...describeResult,
-		multipleRowsResult: false
-	}
-	return okAsync(result);
-}
-
-function isSingleRow(queryPlans: string[]): boolean {
-	const first = parseSingleQueryPlan(queryPlans[0]);
-	const isAggregate = queryPlans[0].startsWith('Aggregate ') && first === 1;
-	if (isAggregate) {
-		return true;
-	}
-
-	const parseResult = queryPlans
-		.map(queryPlan => parseSingleQueryPlan(queryPlan))
-		.filter(rows => rows != null)
-		.every(value => value === 1);
-	return parseResult;
-}
-
-function parseSingleQueryPlan(queryPlan: string): number | null {
-	const regex = /rows=(\d+)/;
-	const match = queryPlan.match(regex);
-	if (match) {
-		return parseInt(match[1], 10); // match[1] is the captured number after 'rows='
-	}
-	return null;
-}
-
-function getColumnsForQuery(traverseResult: PostgresTraverseResult, postgresDescribeResult: DescribeQueryResult): ColumnInfo[] {
+function getColumnsForQuery(traverseResult: PostgresTraverseResult, postgresDescribeResult: PostgresDescribe): ColumnInfo[] {
 	return postgresDescribeResult.columns.map((col, index) => mapToColumnInfo(col, postgresTypes, traverseResult.columnsNullability[index]))
 }
 
-function getParamtersForQuery(traverseResult: PostgresTraverseResult, postgresDescribeResult: DescribeQueryResult, paramNames: string[]): ParameterDef[] {
+function getParamtersForQuery(traverseResult: PostgresTraverseResult, postgresDescribeResult: PostgresDescribe, paramNames: string[]): ParameterDef[] {
 	return postgresDescribeResult.parameters
 		.map((param, index) => mapToParamDef(paramNames[index], param, traverseResult.parametersNullability[index] ?? true, traverseResult.parameterList[index]))
 }
 
-function getParamtersForWhere(traverseResult: PostgresTraverseResult, postgresDescribeResult: DescribeQueryResult, paramNames: string[]): ParameterDef[] {
+function getParamtersForWhere(traverseResult: PostgresTraverseResult, postgresDescribeResult: PostgresDescribe, paramNames: string[]): ParameterDef[] {
 	const indexOffset = traverseResult.parametersNullability.length;
 	return postgresDescribeResult.parameters.slice(indexOffset)
 		.map((param, index) => mapToParamDef(paramNames[index + indexOffset], param, traverseResult.whereParamtersNullability?.[index] ?? true, traverseResult.parameterList[index + indexOffset]))
 }
 
-function getDataForQuery(traverseResult: PostgresTraverseResult, postgresDescribeResult: DescribeQueryResult, paramNames: string[]): ParameterDef[] {
+function getDataForQuery(traverseResult: PostgresTraverseResult, postgresDescribeResult: PostgresDescribe, paramNames: string[]): ParameterDef[] {
 	return postgresDescribeResult.parameters.slice(0, traverseResult.parametersNullability.length)
 		.map((param, index) => mapToParamDef(paramNames[index], param, traverseResult.parametersNullability[index] ?? true, traverseResult.parameterList[index]))
 }

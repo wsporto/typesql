@@ -710,6 +710,7 @@ describe('Infer column nullability', () => {
 		const actual = parseSql(sql, dbSchema);
 		const expected: PostgresTraverseResult = {
 			queryType: 'Select',
+			multipleRowsResult: true, //could be false
 			limit: undefined,
 			columnsNullability: [true],
 			parameterList: [false, true, false],
@@ -728,6 +729,7 @@ describe('Infer column nullability', () => {
 		const actual = parseSql(sql, dbSchema);
 		const expected: PostgresTraverseResult = {
 			queryType: 'Select',
+			multipleRowsResult: true, //could be false
 			limit: undefined,
 			columnsNullability: [true, true],
 			parameterList: [false, false],

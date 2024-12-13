@@ -1,4 +1,4 @@
-import { A_expr_addContext, A_expr_andContext, A_expr_at_time_zoneContext, A_expr_betweenContext, A_expr_caretContext, A_expr_collateContext, A_expr_compareContext, A_expr_inContext, A_expr_is_notContext, A_expr_isnullContext, A_expr_lesslessContext, A_expr_likeContext, A_expr_mulContext, A_expr_orContext, A_expr_qual_opContext, A_expr_qualContext, A_expr_typecastContext, A_expr_unary_notContext, A_expr_unary_qualopContext, A_expr_unary_signContext, A_exprContext, C_expr_caseContext, C_expr_existsContext, C_expr_exprContext, C_exprContext, ColidContext, Common_table_exprContext, DeletestmtContext, Expr_listContext, From_clauseContext, From_listContext, Func_applicationContext, Func_arg_exprContext, Func_expr_common_subexprContext, IdentifierContext, In_expr_listContext, In_expr_selectContext, In_exprContext, Insert_column_itemContext, Insert_column_listContext, InsertstmtContext, Join_qualContext, Qualified_nameContext, Relation_exprContext, Select_clauseContext, Select_no_parensContext, Select_with_parensContext, SelectstmtContext, Set_clauseContext, Simple_select_intersectContext, Simple_select_pramaryContext, StmtContext, Table_refContext, Target_elContext, Target_labelContext, Target_listContext, Unreserved_keywordContext, UpdatestmtContext, Values_clauseContext, When_clauseContext, Where_clauseContext } from '@wsporto/typesql-parser/postgres/PostgreSQLParser';
+import { A_expr_addContext, A_expr_andContext, A_expr_at_time_zoneContext, A_expr_betweenContext, A_expr_caretContext, A_expr_collateContext, A_expr_compareContext, A_expr_inContext, A_expr_is_notContext, A_expr_isnullContext, A_expr_lesslessContext, A_expr_likeContext, A_expr_mulContext, A_expr_orContext, A_expr_qual_opContext, A_expr_qualContext, A_expr_typecastContext, A_expr_unary_notContext, A_expr_unary_qualopContext, A_expr_unary_signContext, A_exprContext, C_expr_caseContext, C_expr_existsContext, C_expr_exprContext, C_exprContext, ColidContext, ColumnrefContext, Common_table_exprContext, DeletestmtContext, Expr_listContext, From_clauseContext, From_listContext, Func_applicationContext, Func_arg_exprContext, Func_expr_common_subexprContext, Func_exprContext, IdentifierContext, In_expr_listContext, In_expr_selectContext, In_exprContext, Insert_column_itemContext, InsertstmtContext, Join_qualContext, Qualified_nameContext, Relation_exprContext, Select_clauseContext, Select_no_parensContext, Select_with_parensContext, SelectstmtContext, Set_clauseContext, Simple_select_intersectContext, Simple_select_pramaryContext, StmtContext, Table_refContext, Target_elContext, Target_labelContext, Target_listContext, Unreserved_keywordContext, UpdatestmtContext, Values_clauseContext, When_clauseContext, Where_clauseContext } from '@wsporto/typesql-parser/postgres/PostgreSQLParser';
 import { ParserRuleContext } from '@wsporto/typesql-parser';
 import { PostgresColumnSchema } from '../drivers/types';
 import { splitName } from '../mysql-query-analyzer/select-columns';
@@ -19,6 +19,7 @@ type NotNullInfoResult = {
 
 export type PostgresTraverseResult = {
 	queryType: QueryType;
+	multipleRowsResult: boolean;
 	columnsNullability: boolean[];
 	parametersNullability: boolean[];
 	whereParamtersNullability?: boolean[];
@@ -35,12 +36,14 @@ type ParamInfo = {
 type TraverseResult = {
 	columnsNullability: boolean[],
 	parameters: ParamInfo[],
+	singleRow: boolean;
 }
 
 export function traverseSmt(stmt: StmtContext, dbSchema: PostgresColumnSchema[]): PostgresTraverseResult {
 	const traverseResult: TraverseResult = {
 		columnsNullability: [],
-		parameters: []
+		parameters: [],
+		singleRow: false
 	}
 	const selectstmt = stmt.selectstmt();
 	if (selectstmt) {
@@ -90,9 +93,12 @@ function traverseSelectstmt(selectstmt: SelectstmtContext, dbSchema: PostgresCol
 	traverseResult.parameters.sort((param1, param2) => param1.paramIndex - param2.paramIndex);
 	const columnsNullability = columns.map(col => !col.is_nullable);
 
+	const multipleRowsResult = !isSingleRowResult(selectstmt, dbSchema);
+
 	const limit = checkLimit(selectstmt);
 	return {
 		queryType: 'Select',
+		multipleRowsResult,
 		columnsNullability,
 		parametersNullability: traverseResult.parameters.map(param => param.isNotNull),
 		parameterList: paramIsListResult,
@@ -462,12 +468,17 @@ function traverse_expr_typecast(a_expr_typecast: A_expr_typecastContext, dbSchem
 	throw Error('traverse_expr_typecast -  Not expected:' + a_expr_typecast.getText());
 }
 
+function traverseColumnRef(columnref: ColumnrefContext, fromColumns: NotNullInfo[]): NotNullInfo {
+	const fieldName = splitName(columnref.getText());
+	const col = findColumn(fieldName, fromColumns);
+	return col;
+}
+
 function traversec_expr(c_expr: C_exprContext, dbSchema: NotNullInfo[], fromColumns: NotNullInfo[], traverseResult: TraverseResult): NotNullInfoResult {
 	if (c_expr instanceof C_expr_exprContext) {
 		const columnref = c_expr.columnref();
 		if (columnref) {
-			const fieldName = splitName(columnref.getText());
-			const col = findColumn(fieldName, fromColumns);
+			const col = traverseColumnRef(columnref, fromColumns);
 			return col;
 		}
 		const aexprconst = c_expr.aexprconst();
@@ -772,7 +783,8 @@ function paramIsList(c_expr: ParserRuleContext) {
 function traverseInsertstmt(insertstmt: InsertstmtContext, dbSchema: PostgresColumnSchema[]): PostgresTraverseResult {
 	const traverseResult: TraverseResult = {
 		columnsNullability: [],
-		parameters: []
+		parameters: [],
+		singleRow: false
 	}
 	const insert_target = insertstmt.insert_target();
 	const tableName = insert_target.getText();
@@ -791,6 +803,7 @@ function traverseInsertstmt(insertstmt: InsertstmtContext, dbSchema: PostgresCol
 
 	const result: PostgresTraverseResult = {
 		queryType: 'Insert',
+		multipleRowsResult: false,
 		parametersNullability,
 		columnsNullability: returninColumns.map(col => !col.is_nullable),
 		parameterList: []
@@ -831,6 +844,7 @@ function traverseDeletestmt(deleteStmt: DeletestmtContext, dbSchema: PostgresCol
 
 	return {
 		queryType: 'Delete',
+		multipleRowsResult: false,
 		parametersNullability: traverseResult.parameters.map(param => param.isNotNull),
 		columnsNullability: [],
 		parameterList: []
@@ -856,6 +870,7 @@ function traverseUpdatestmt(updatestmt: UpdatestmtContext, dbSchema: PostgresCol
 
 	return {
 		queryType: 'Update',
+		multipleRowsResult: false,
 		parametersNullability: traverseResult.parameters.slice(0, parametersBefore).map(param => param.isNotNull),
 		columnsNullability: [],
 		parameterList: [],
@@ -1097,18 +1112,6 @@ function isNotNull_c_expr(c_expr: C_exprContext, field: NotNullInfo): boolean {
 	return false;
 }
 
-function checkLimit(selectstmt: SelectstmtContext): number | undefined {
-	const select_no_parens = selectstmt.select_no_parens();
-	if (select_no_parens) {
-		return checkLimit_select_no_parens(select_no_parens);
-	}
-	const select_with_parens = selectstmt.select_with_parens();
-	if (select_with_parens) {
-		return checkLimit_select_with_parens(select_with_parens);
-	}
-	return undefined;
-}
-
 function checkLimit_select_no_parens(select_no_parens: Select_no_parensContext): number | undefined {
 	const limitText = select_no_parens.select_limit()?.limit_clause()?.select_limit_value()?.getText();
 	return limitText ? +limitText : undefined;
@@ -1122,4 +1125,168 @@ function isParameter(str: string): boolean {
 	// Regular expression to match $1, $2, $123, etc. with optional casts (e.g. $1::int4)
 	const paramPattern = /^\$[0-9]+(::[a-zA-Z_][a-zA-Z0-9_]*)?$/;
 	return paramPattern.test(str);
+}
+
+function isSingleRowResult(selectstmt: SelectstmtContext, dbSchema: PostgresColumnSchema[]): boolean {
+
+	const limit = checkLimit(selectstmt);
+	if (limit === 1) {
+		return true;
+	}
+
+	const select_no_parens = selectstmt.select_no_parens();
+	const simple_select_pramary_list = select_no_parens.select_clause()
+		.simple_select_intersect_list()?.[0]
+		.simple_select_pramary_list();
+
+	if (simple_select_pramary_list.length > 1) {
+		return false;
+	}
+	const simple_select_pramary = simple_select_pramary_list[0];
+	const from_clause = simple_select_pramary.from_clause();
+	if (!from_clause) {
+		const hasSetReturningFunction = simple_select_pramary.target_list_().target_list().target_el_list().some(target_el => isSetReturningFunction_target_el(target_el));
+		return !hasSetReturningFunction;
+	}
+	if (!simple_select_pramary.group_clause()) {
+		const agreegateFunction = simple_select_pramary.target_list_().target_list().target_el_list().some(target_el => isAggregateFunction_target_el(target_el))
+		if (agreegateFunction) {
+			return true;
+		}
+	}
+	const table_ref_list = from_clause.from_list().table_ref_list();
+	if (table_ref_list.length > 1) {
+		return false;
+	}
+	if (table_ref_list[0].JOIN_list().length > 0 || table_ref_list[0].select_with_parens() != null) {
+		return false;
+	}
+
+	const tableName = getTableName(table_ref_list[0]);
+	const uniqueKeys = dbSchema.filter(col => col.table_name.toLowerCase() === tableName.name.toLowerCase()
+		&& (col.column_key === 'PRI' || col.column_key === 'UNI'))
+		.map(col => col.column_name);
+
+	const where_clause = simple_select_pramary.where_clause();
+	if (where_clause) {
+		return isSingleRowResult_where(where_clause.a_expr(), uniqueKeys)
+	}
+	return false;
+}
+
+type TableName = {
+	name: string;
+	alias: string;
+}
+
+function getTableName(table_ref: Table_refContext): TableName {
+	const relation_expr = table_ref.relation_expr();
+	const tableName = relation_expr.qualified_name().getText();
+	const aliasClause = table_ref.alias_clause();
+	const tableAlias = aliasClause ? aliasClause.colid().getText() : '';
+	return {
+		name: tableName,
+		alias: tableAlias
+	}
+}
+
+function isAggregateFunction_target_el(target_el: Target_elContext): boolean {
+	if (target_el instanceof Target_labelContext) {
+		const c_expr_list = collectContextsOfType(target_el, Func_exprContext);
+		const aggrFunction = c_expr_list.some(func_expr => isAggregateFunction_c_expr(<Func_exprContext>func_expr));
+		return aggrFunction;
+	}
+	return false;
+}
+
+function isAggregateFunction_c_expr(func_expr: Func_exprContext): boolean {
+	const funcName = func_expr?.func_application()?.func_name()?.getText()?.toLowerCase();
+	return funcName === 'sum'
+		|| funcName === 'count'
+		|| funcName === 'avg'
+		|| funcName === 'string_agg'
+}
+
+function isSetReturningFunction_target_el(target_el: Target_elContext): boolean {
+	if (target_el instanceof Target_labelContext) {
+		const c_expr_list = collectContextsOfType(target_el, Func_exprContext);
+		const setReturningFunction = c_expr_list.some(func_expr => isSetReturningFunction_c_expr(<Func_exprContext>func_expr));
+		return setReturningFunction;
+	}
+	return false;
+}
+
+function isSetReturningFunction_c_expr(func_expr: Func_exprContext) {
+	const funcName = func_expr?.func_application()?.func_name()?.getText()?.toLowerCase();
+	return funcName === 'generate_series';
+}
+
+function isSingleRowResult_where(a_expr: A_exprContext, uniqueKeys: string[]): boolean {
+
+	const a_expr_or_list = a_expr.a_expr_qual()?.a_expr_lessless()?.a_expr_or_list() || [];
+	if (a_expr_or_list.length > 1 || a_expr_or_list[0].OR_list().length > 0) {
+		return false;
+	}
+	const someInSingleRow = a_expr_or_list[0].a_expr_and_list().some(a_expr_and => {
+		const a = isSingleRowResult_a_expr_and(a_expr_and, uniqueKeys);
+		return a;
+	});
+	return someInSingleRow;
+}
+
+function isSingleRowResult_a_expr_and(a_expr_and: A_expr_andContext, uniqueKeys: string[]): boolean {
+	const a_expr_between_list = a_expr_and.a_expr_between_list();
+	if (a_expr_between_list && a_expr_between_list.length > 0) {
+		return a_expr_between_list.some(a_expr_between => isSingleRowResult_a_expr_between(a_expr_between, uniqueKeys));
+	}
+	return false;
+}
+function isSingleRowResult_a_expr_between(a_expr_between: A_expr_betweenContext, uniqueKeys: string[]): boolean {
+	const isSingleRow = a_expr_between.a_expr_in_list().every(a_expr_in => isSingleRowResult_a_expr_in(a_expr_in, uniqueKeys));
+	return isSingleRow;
+}
+
+function isSingleRowResult_a_expr_in(a_expr_in: A_expr_inContext, uniqueKeys: string[]): boolean {
+	const a_expr_compare = a_expr_in.a_expr_unary_not()?.a_expr_isnull()?.a_expr_is_not()?.a_expr_compare();
+	if (a_expr_compare) {
+		if (a_expr_compare.EQUAL() != null) {
+			const a_expr_like_list = a_expr_compare.a_expr_like_list();
+			if (a_expr_like_list && a_expr_like_list.length == 2) {
+				const left = a_expr_like_list[0];
+				const right = a_expr_like_list[1];
+				const result = (isUniqueColumn(left, uniqueKeys) + isUniqueColumn(right, uniqueKeys));
+				return result == 1;
+			}
+		};
+	}
+	return false;
+}
+
+//1 = yes
+//0 = no
+function isUniqueColumn(a_expr_like: A_expr_likeContext, uniqueKeys: string[]): number {
+	const c_expr = a_expr_like.a_expr_qual_op_list()?.[0].a_expr_unary_qualop_list()?.[0].a_expr_add()
+		.a_expr_mul_list()[0].a_expr_caret_list()[0].a_expr_unary_sign_list()[0].a_expr_at_time_zone()
+		.a_expr_collate().a_expr_typecast().c_expr();
+	if (c_expr instanceof C_expr_exprContext) {
+		const columnref = c_expr.columnref();
+		if (columnref) {
+			const fieldName = splitName(columnref.getText());
+			// const col = traverseColumnRef(columnref, dbSchema);
+			return uniqueKeys.includes(fieldName.name) ? 1 : 0;
+		}
+	}
+	return 0;
+}
+
+function checkLimit(selectstmt: SelectstmtContext): number | undefined {
+	const select_no_parens = selectstmt.select_no_parens();
+	if (select_no_parens) {
+		return checkLimit_select_no_parens(select_no_parens);
+	}
+	const select_with_parens = selectstmt.select_with_parens();
+	if (select_with_parens) {
+		return checkLimit_select_with_parens(select_with_parens);
+	}
+	return undefined;
 }

@@ -1,10 +1,9 @@
 import assert from 'node:assert';
 import type { SchemaDef, TypeSqlError } from '../../src/types';
-import { isLeft } from 'fp-ts/lib/Either';
 import postgres from 'postgres';
 import { describeQuery } from '../../src/postgres-query-analyzer/describe';
 
-describe('sqlite-parse-select-multiples-tables', () => {
+describe('postgres-parse-select-multiples-tables', () => {
 	const postres = postgres({
 		host: 'localhost',
 		username: 'postgres',
@@ -250,7 +249,7 @@ describe('sqlite-parse-select-multiples-tables', () => {
 		const expected: SchemaDef = {
 			sql,
 			queryType: 'Select',
-			multipleRowsResult: false, //different from mysql and sqlite
+			multipleRowsResult: true, //could be false (one to one relation)
 			columns: [
 				{
 					columnName: 'id',

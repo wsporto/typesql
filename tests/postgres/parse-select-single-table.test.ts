@@ -72,6 +72,71 @@ describe('select-single-table', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('parse a select with a single parameter (not using *)', async () => {
+		const sql = 'SELECT id FROM mytable1 WHERE id = $1 and value = 10';
+
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'table'
+				}
+			],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'int4',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('SELECT value FROM mytable1 WHERE id = ? or value > ?', async () => {
+		const sql = 'SELECT value FROM mytable1 WHERE id = $1 or value > $2';
+
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'value',
+					type: 'int4',
+					notNull: false,
+					table: 'table'
+				}
+			],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'int4',
+					notNull: true
+				},
+				{
+					name: 'param2',
+					columnType: 'int4',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('SELECT id FROM mytable1 where value between :start and :end', async () => {
 		const sql = 'SELECT id FROM mytable1 where value between $1 and $2';
 		const expectedSql = 'SELECT id FROM mytable1 where value between $1 and $2';

@@ -8,12 +8,18 @@ import { ResultAsync } from 'neverthrow';
 export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], string> {
 	return ResultAsync.fromThrowable(
 		async () => {
-			const result = await sql`SELECT 
+			const result = await sql`
+			SELECT 
 				c.oid,
 				t.table_schema,
 				t.table_name,
 				col.column_name,
-				col.is_nullable
+				col.is_nullable,
+				CASE 
+					WHEN con.contype = 'p' THEN 'PRI'  -- Primary key
+					WHEN con.contype = 'u' THEN 'UNI'  -- Unique constraint
+					ELSE ''  -- Otherwise, empty string
+    			END AS column_key
 			FROM 
 				information_schema.tables t
 			JOIN 
@@ -22,18 +28,22 @@ export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], stri
 				information_schema.columns col
 				ON t.table_name = col.table_name 
 				AND t.table_schema = col.table_schema
+			LEFT JOIN 
+			    pg_constraint con ON con.conrelid = c.oid
+			    AND col.ordinal_position = ANY (con.conkey)
 			WHERE 
 				t.table_type = 'BASE TABLE'  -- Only regular tables, excluding views
 				AND t.table_schema NOT IN ('information_schema', 'pg_catalog')  -- Exclude system schemas
 			ORDER BY 
-				t.table_schema, t.table_name, col.ordinal_position;`;
+				t.table_schema, t.table_name, col.ordinal_position`;
 
 			return result.map((row: any) => ({
 				oid: row.oid,
 				table_schema: row.table_schema,
 				table_name: row.table_name,
 				column_name: row.column_name,
-				is_nullable: row.is_nullable === 'YES'
+				is_nullable: row.is_nullable === 'YES',
+				column_key: row.column_key
 			}));
 		},
 		(reason: any) => {

@@ -160,6 +160,7 @@ describe('postgres-parse-select-subqueries', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	//explain returns rows=1
 	it('select * from (subquery) where', async () => {
 		const sql = `
         select * from (
@@ -171,7 +172,7 @@ describe('postgres-parse-select-subqueries', () => {
 		const expected: SchemaDef = {
 			sql,
 			queryType: 'Select',
-			multipleRowsResult: false, //different from mysql and sqlite
+			multipleRowsResult: true,
 			columns: [
 				{
 					columnName: 'name',
