@@ -15,7 +15,7 @@ import {
 	type Select_coreContext,
 	Table_function_nameContext
 } from '@wsporto/ts-mysql-parser/dist/sqlite';
-import type { ColumnDef, ExtensionFunctionCatalog, FieldName, TraverseContext, TypeAndNullInfer, TypeAndNullInferParam } from '../mysql-query-analyzer/types';
+import type { ColumnDef, ColumnSchema, ExtensionFunctionCatalog, FieldName, TraverseContext, TypeAndNullInfer, TypeAndNullInferParam } from '../mysql-query-analyzer/types';
 import { filterColumns, findColumn, getExpressions, includeColumn, splitName } from '../mysql-query-analyzer/select-columns';
 import { freshVar } from '../mysql-query-analyzer/collect-constraints';
 import {
@@ -132,7 +132,7 @@ function traverse_select_stmt(
 		queryType: 'Select',
 		parameters: sortedParameters,
 		columns: mainQueryResult.columns,
-		multipleRowsResult: isMultipleRowResult(select_stmt, mainQueryResult.fromColumns),
+		multipleRowsResult: isMultipleRowResult(select_stmt, traverseContext.dbSchema, mainQueryResult.fromColumns),
 		relations: traverseContext.relations,
 		dynamicQueryInfo: traverseContext.dynamicSqlInfo2,
 		constraints: traverseContext.constraints
@@ -1731,7 +1731,10 @@ function isNotNullExpr(columnName: string, expr: ExprContext): boolean {
 	return false;
 }
 
-export function isMultipleRowResult(select_stmt: Select_stmtContext, fromColumns: ColumnDef[]) {
+export function isMultipleRowResult(select_stmt: Select_stmtContext, dbSchema: ColumnSchema[], fromColumns: ColumnDef[]) {
+	if (isLimitOne(select_stmt)) {
+		return false;
+	}
 	if (select_stmt.select_core_list().length === 1) {
 		//UNION queries are multipleRowsResult = true
 		const select_core = select_stmt.select_core(0);
@@ -1747,16 +1750,30 @@ export function isMultipleRowResult(select_stmt: Select_stmtContext, fromColumns
 		if (agreegateFunction) {
 			return false;
 		}
+		const table_or_subquery_list = select_core.table_or_subquery_list();
+		if (select_core.join_clause() != null || table_or_subquery_list.length > 1) {
+			return true;
+		}
+		const tableName = table_or_subquery_list[0].table_name()?.getText().toLowerCase();
+		if (!tableName) {
+			return true;
+		}
+
 		const _whereExpr = select_core._whereExpr;
-		const isSingleResult = select_core.join_clause() == null && _whereExpr && where_is_single_result(_whereExpr, fromColumns);
+		if (!_whereExpr) {
+			return true;
+		}
+		const schema = table_or_subquery_list[0].schema_name()?.getText()?.toLowerCase() || 'main';
+		const uniqueKeys = dbSchema.filter(col => (col.table.toLowerCase() === tableName || `"${col.table.toLowerCase()}"` === tableName)
+			&& (col.schema === schema || `"${col.schema}"` === schema)
+			&& (col.columnKey === 'PRI' || col.columnKey === 'UNI'))
+			.map(col => col.column.toLowerCase());
+
+		const isSingleResult = where_is_single_result(_whereExpr, fromColumns, uniqueKeys);
 		if (isSingleResult === true) {
 			return false;
 		}
 	}
-	if (isLimitOne(select_stmt)) {
-		return false;
-	}
-
 	return true;
 }
 
@@ -1795,31 +1812,58 @@ function isLimitOne(select_stmt: Select_stmtContext) {
 	return false;
 }
 
-function where_is_single_result(whereExpr: ExprContext, fromColumns: ColumnDef[]): boolean {
-	if (whereExpr.ASSIGN()) {
-		const isSingleResult = is_single_result(whereExpr, fromColumns);
-		return isSingleResult;
+function where_is_single_result(whereExpr: ExprContext, fromColumns: ColumnDef[], uniqueKeys: string[]): boolean {
+	//only one assign (=). ex. id = 1
+	if (uniqueKeys.length === 0) {
+		return false;
+	}
+	if (whereExpr.ASSIGN() && uniqueKeys.length === 1) {
+		const assignResult = is_single_result(whereExpr, fromColumns);
+		if (assignResult.isAssign && uniqueKeys[0] === assignResult.column.columnName.toLowerCase()) {
+			return true;
+		}
+		return false;
+	}
+	const hasOr = whereExpr.OR_();
+	if (hasOr) {
+		return false;
 	}
 	const expr_list = whereExpr.expr_list();
-	const onlyAnd = !whereExpr.OR_();
-	const oneSingle = expr_list.some((expr) => is_single_result(expr, fromColumns));
-	if (onlyAnd && oneSingle) {
-		return true;
-	}
-	return false;
+	const assignColumnList = expr_list.map((expr) => is_single_result(expr, fromColumns))
+		.filter(result => result.isAssign).map(assign => assign.column.columnName.toLowerCase());
+
+	const includeAllKeys = uniqueKeys.every(key => assignColumnList.includes(key));
+	return includeAllKeys;
 }
 
-function is_single_result(expr: ExprContext, fromColumns: ColumnDef[]): boolean {
+type AssignTrue = {
+	isAssign: true;
+	column: ColumnDef;
+}
+
+type AssignFalse = {
+	isAssign: false;
+}
+
+function is_single_result(expr: ExprContext, fromColumns: ColumnDef[]): AssignTrue | AssignFalse {
+	if (expr.expr_list().length != 2 || !expr.ASSIGN()) {
+		return {
+			isAssign: false
+		};
+	}
 	const expr1 = expr.expr(0);
 	const expr2 = expr.expr(1); //TODO: 1 = id
 	const column_name = expr1?.column_name();
-	if (column_name && expr.ASSIGN()) {
+	if (column_name) {
 		const column = traverse_column_name(column_name, null, fromColumns);
-		if (column.columnKey === 'PRI') {
-			return true;
-		}
+		return {
+			isAssign: true,
+			column,
+		};
 	}
-	return false;
+	return {
+		isAssign: false
+	};
 }
 
 function traverse_insert_stmt(insert_stmt: Insert_stmtContext, traverseContext: TraverseContext): InsertResult {

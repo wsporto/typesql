@@ -5,6 +5,7 @@ import { parseSql } from '../../src/sqlite-query-analyzer/parser';
 import { sqliteDbSchema } from '../mysql-query-analyzer/create-schema';
 import Database from 'better-sqlite3';
 import { validateAndGenerateCode } from '../../src/sqlite-query-analyzer/code-generator';
+import { loadDbSchema } from '../../src/sqlite-query-analyzer/query-executor';
 
 describe('sqlite-Test simple select statements', () => {
 	it('try to parse a empty query', async () => {
@@ -309,8 +310,8 @@ describe('sqlite-Test simple select statements', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
-	it('SELECT id FROM mydb.MYTABLE1', () => {
-		const sql = 'SELECT id FROM mydb.mytable1';
+	it('SELECT id FROM main.MYTABLE1', () => {
+		const sql = 'SELECT id FROM main.mytable1';
 		const actual = parseSql(sql, sqliteDbSchema);
 		const expected: SchemaDef = {
 			sql,
@@ -1936,6 +1937,117 @@ describe('sqlite-Test simple select statements', () => {
 					type: 'INTEGER',
 					notNull: false,
 					table: 'mytable1'
+				}
+			],
+			parameters: []
+		};
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('multipleRowsResult for table with composite key', async () => {
+		const db = new Database('./mydb.db');
+		const dbSchemaResult = loadDbSchema(db);
+		if (isLeft(dbSchemaResult)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+
+		const sql = 'select * from playlist_track where PlaylistId = 1';
+
+		const actual = await parseSql(sql, dbSchemaResult.right);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'PlaylistId',
+					type: 'INTEGER',
+					notNull: true,
+					table: 'playlist_track'
+				},
+				{
+					columnName: 'TrackId',
+					type: 'INTEGER',
+					notNull: true,
+					table: 'playlist_track'
+				}
+			],
+			parameters: []
+		};
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('multipleRowsResult for table with composite key (all keys)', async () => {
+		const db = new Database('./mydb.db');
+		const dbSchemaResult = loadDbSchema(db);
+		if (isLeft(dbSchemaResult)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+
+		const sql = 'select * from playlist_track where PlaylistId = 1 and TrackId = 1';
+
+		const actual = await parseSql(sql, dbSchemaResult.right);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'PlaylistId',
+					type: 'INTEGER',
+					notNull: true,
+					table: 'playlist_track'
+				},
+				{
+					columnName: 'TrackId',
+					type: 'INTEGER',
+					notNull: true,
+					table: 'playlist_track'
+				}
+			],
+			parameters: []
+		};
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('multipleRowsResult for table with composite key (all keys, with OR)', async () => {
+		const db = new Database('./mydb.db');
+		const dbSchemaResult = loadDbSchema(db);
+		if (isLeft(dbSchemaResult)) {
+			assert.fail(`Shouldn't return an error`);
+		}
+
+		const sql = 'select * from playlist_track where PlaylistId = 1 OR TrackId = 1';
+
+		const actual = await parseSql(sql, dbSchemaResult.right);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'PlaylistId',
+					type: 'INTEGER',
+					notNull: true,
+					table: 'playlist_track'
+				},
+				{
+					columnName: 'TrackId',
+					type: 'INTEGER',
+					notNull: true,
+					table: 'playlist_track'
 				}
 			],
 			parameters: []
