@@ -181,7 +181,9 @@ const postgresCodeWriter: CodeWriter = {
 		if (parameters.length > 0) {
 			functionParams += `, params: ${paramsType}`;
 		}
-		const allParamters = [...params.data.map(param => paramToDriver(param, 'data')), ...parameters.map(param => paramToDriver(param, 'params'))];
+		const allParamters = [...params.data.map(param => paramToDriver(param, 'data')),
+		...parameters.map(param => paramToDriver(param, 'params')),
+		...parameters.filter(param => isList(param)).map(param => `...params.${param.name}.slice(1)`)];
 		const paramValues = allParamters.length > 0 ? `, values: [${allParamters.join(', ')}]` : '';
 		const orNull = params.queryType === 'Select' ? ' | null' : '';
 		const functionReturnType = params.multipleRowsResult ? `${returnType}[]` : `${returnType}${orNull}`;
@@ -191,7 +193,7 @@ const postgresCodeWriter: CodeWriter = {
 		}
 		writer.write(`export async function ${functionName}(${functionParams}): Promise<${functionReturnType}>`).block(() => {
 			if (hasListParams) {
-				writer.writeLine('currentIndex = 0;');
+				writer.writeLine(`currentIndex = ${params.data.length + params.parameters.length};`);
 			}
 			writeSql(writer, params.sql);
 			if (params.queryType === 'Select' || params.returning) {
@@ -214,9 +216,12 @@ const postgresCodeWriter: CodeWriter = {
 
 		if (hasListParams) {
 			writer.blankLine();
-			writer.write(`function generatePlaceholders(paramsArray: any[]): string`).block(() => {
+			writer.write(`function generatePlaceholders(param: string, paramsArray: any[]): string`).block(() => {
 				writer.write('return paramsArray').newLine();
-				writer.indent().write('.map(() => {').newLine();
+				writer.indent().write('.map((_, index) => {').newLine();
+				writer.indent(2).write(`if (index === 0) {`).newLine();
+				writer.indent(3).write(`return param`).newLine();
+				writer.indent(2).write(`}`).newLine();
 				writer.indent(2).write('currentIndex++;').newLine();
 				writer.indent(2).write('return `$${currentIndex}`;').newLine();
 				writer.indent().write('})');
@@ -265,8 +270,11 @@ const postgresCodeWriter: CodeWriter = {
 			if (!param.tsType.endsWith('[]')) {
 				return `${objName}.${param.name}`;
 			}
-			const listParam = `...${objName}.${param.name}`;
-			return param.isArray ? `[${listParam}]` : listParam;
+			return param.isArray ? `[...${objName}.${param.name}]` : `${objName}.${param.name}[0]`;
+		}
+
+		function isList(param: TsParameterDescriptor) {
+			return param.tsType.endsWith('[]') && !param.isArray;
 		}
 	}
 }

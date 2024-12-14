@@ -70,6 +70,22 @@ AND name IN (:names)`;
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('select06 - SELECT id FROM mytable2 WHERE name = $1 OR id in ($2) OR name = $3', async () => {
+		const sql = `SELECT id 
+FROM mytable2
+WHERE name = $1
+OR id in ($2)
+OR name = $3`;
+
+		const actual = await generateCode(dialect, sql, 'select06');
+		const expected = readFileSync('tests/postgres/expected-code/select06-2.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('select06-any - SELECT id FROM mytable1 ORDER BY ?', async () => {
 		const sql = `SELECT id
 FROM mytable2

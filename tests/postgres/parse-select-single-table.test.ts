@@ -236,7 +236,7 @@ describe('select-single-table', () => {
 	it('SELECT * FROM mytable1 t WHERE id in (1, 2, 3, ?)', async () => {
 		const sql = 'SELECT * FROM mytable1 t WHERE id in ($1)';
 
-		const expectedSql = 'SELECT * FROM mytable1 t WHERE id in (${generatePlaceholders(params.param1)})';
+		const expectedSql = `SELECT * FROM mytable1 t WHERE id in (\${generatePlaceholders('$1', params.param1)})`;
 		const actual = await describeQuery(postres, sql, []);
 
 		const expected: SchemaDef = {
@@ -299,7 +299,7 @@ describe('select-single-table', () => {
 	it('SELECT * FROM mytable1 t WHERE id in (1, 2, 3, ?)', async () => {
 		const sql = 'SELECT * FROM mytable1 t WHERE id in (1, 2, 3, $1)';
 
-		const expectedSql = 'SELECT * FROM mytable1 t WHERE id in (1, 2, 3, ${generatePlaceholders(params.param1)})';
+		const expectedSql = `SELECT * FROM mytable1 t WHERE id in (1, 2, 3, \${generatePlaceholders('$1', params.param1)})`;
 		const actual = await describeQuery(postres, sql, []);
 
 		const expected: SchemaDef = {

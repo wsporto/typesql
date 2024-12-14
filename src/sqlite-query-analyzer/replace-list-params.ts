@@ -26,7 +26,7 @@ export function replacePostgresParams(sql: string, paramsIndexes: boolean[], par
 		const paramIndex = parseInt(index, 10) - 1; // Adjust to zero-based index
 
 		if (paramsIndexes[paramIndex]) {
-			return `\${generatePlaceholders(params.${paramsNames[paramIndex]})}`;
+			return `\${generatePlaceholders('${match}', params.${paramsNames[paramIndex]})}`;
 		} else {
 			return match;
 		}
