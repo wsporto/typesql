@@ -419,4 +419,35 @@ describe('postgres-parse-insert', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('ON DUPLICATE KEY UPDATE name = excluded.name', async () => {
+		const sql = `
+			INSERT INTO mytable5 (id, name)
+			VALUES ($1, $2)
+			ON CONFLICT(id) DO
+			UPDATE SET name = excluded.name`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql: sql,
+			queryType: 'Insert',
+			multipleRowsResult: false,
+			columns: [],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'int4',
+					notNull: true //primary key
+				},
+				{
+					name: 'param2',
+					columnType: 'text',
+					notNull: false
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });

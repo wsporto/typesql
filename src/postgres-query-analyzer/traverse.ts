@@ -883,7 +883,8 @@ function traverse_set_clause(set_clause: Set_clauseContext, dbSchema: NotNullInf
 	const columnName = splitName(set_target.getText());
 	const column = findColumn(columnName, updateColumns);
 	const a_expr = set_clause.a_expr();
-	const a_exprResult = traverse_a_expr(a_expr, dbSchema, updateColumns, traverseResult);
+	const excludedColumns = updateColumns.map((col) => ({ ...col, table_name: 'excluded' }) satisfies PostgresColumnSchema);
+	const a_exprResult = traverse_a_expr(a_expr, dbSchema, updateColumns.concat(excludedColumns), traverseResult);
 	if (isParameter(a_exprResult.column_name)) {
 		traverseResult.parameters[traverseResult.parameters.length - 1].isNotNull = !column.is_nullable;
 	}
