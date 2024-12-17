@@ -1234,12 +1234,58 @@ function isAggregateFunction_target_el(target_el: Target_elContext): boolean {
 	return false;
 }
 
+// SELECT distinct '''' ||  p.proname || '''' || ',' as aggregate_function
+// FROM pg_catalog.pg_proc p
+// JOIN pg_catalog.pg_aggregate a ON a.aggfnoid = p.oid
+// ORDER BY  aggregate_function;
+const aggregateFunctions = new Set([
+	'array_agg',
+	'avg',
+	'bit_and',
+	'bit_or',
+	'bool_and',
+	'bool_or',
+	'corr',
+	'count',
+	'covar_pop',
+	'covar_samp',
+	'cume_dist',
+	'dense_rank',
+	'every',
+	'json_agg',
+	'json_object_agg',
+	'jsonb_agg',
+	'jsonb_object_agg',
+	'max',
+	'min',
+	'mode',
+	'percent_rank',
+	'percentile_cont',
+	'percentile_disc',
+	'rank',
+	'regr_avgx',
+	'regr_avgy',
+	'regr_count',
+	'regr_intercept',
+	'regr_r2',
+	'regr_slope',
+	'regr_sxx',
+	'regr_sxy',
+	'regr_syy',
+	'stddev',
+	'stddev_pop',
+	'stddev_samp',
+	'string_agg',
+	'sum',
+	'var_pop',
+	'var_samp',
+	'variance',
+	'xmlagg'
+]);
+
 function isAggregateFunction_c_expr(func_expr: Func_exprContext): boolean {
 	const funcName = func_expr?.func_application()?.func_name()?.getText()?.toLowerCase();
-	return funcName === 'sum'
-		|| funcName === 'count'
-		|| funcName === 'avg'
-		|| funcName === 'string_agg'
+	return aggregateFunctions.has(funcName);
 }
 
 function isSetReturningFunction_target_el(target_el: Target_elContext): boolean {
