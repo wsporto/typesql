@@ -825,8 +825,23 @@ function traverse_insert_select_stmt(selectstmt: SelectstmtContext, dbSchema: No
 	if (simple_select) {
 		const simple_select_pramary = simple_select?.simple_select_pramary_list()?.[0];
 		if (simple_select_pramary) {
-			simple_select_pramary.values_clause().expr_list_list()
-				.forEach(expr_list => traverse_insert_a_expr_list(expr_list, dbSchema, insertColumnlist, traverseResult))
+
+			const values_clause = simple_select_pramary.values_clause();
+			if (values_clause) {
+				values_clause.expr_list_list()
+					.forEach(expr_list => traverse_insert_a_expr_list(expr_list, dbSchema, insertColumnlist, traverseResult))
+			}
+			const target_list = simple_select_pramary.target_list_()?.target_list();
+			if (target_list) {
+				const from_clause = simple_select_pramary.from_clause();
+				const fromColumns = from_clause ? traverse_from_clause(from_clause, dbSchema, [], traverseResult) : [];
+				target_list.target_el_list().forEach((target_el, index) => {
+					const targetResult = isNotNull_target_el(target_el, dbSchema, fromColumns, traverseResult);
+					if (isParameter(targetResult.column_name)) {
+						traverseResult.parameters.at(-1)!.isNotNull = !insertColumnlist[index].is_nullable;
+					}
+				});
+			}
 		}
 	}
 }
