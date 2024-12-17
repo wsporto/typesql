@@ -450,4 +450,131 @@ describe('postgres-parse-insert', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('ON DUPLICATE KEY UPDATE name = concat(?, ?)', async () => {
+		const sql = `
+			INSERT INTO mytable5 (id, name)
+			VALUES ($1, $2)
+			ON CONFLICT(id) DO UPDATE 
+			SET name = concat($3::text, $4::text)`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql: sql,
+			queryType: 'Insert',
+			multipleRowsResult: false,
+			columns: [],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'int4',
+					notNull: true //primary key
+				},
+				{
+					name: 'param2',
+					columnType: 'text',
+					notNull: false
+				},
+				{
+					name: 'param3',
+					columnType: 'text',
+					notNull: true //different from mysql and sqlite
+				},
+				{
+					name: 'param4',
+					columnType: 'text',
+					notNull: true //different from mysql and sqlite
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it(`ON DUPLICATE KEY UPDATE name = concat(?, 'a', ?)`, async () => {
+		const sql = `
+			INSERT INTO mytable5 (id, name)
+			VALUES ($1, concat($2::text, '-a'))
+			ON CONFLICT (id) DO UPDATE 
+				SET name = concat($3::text, 'a', $4::text)`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql: sql,
+			queryType: 'Insert',
+			multipleRowsResult: false,
+			columns: [],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'int4',
+					notNull: true //primary key
+				},
+				{
+					name: 'param2',
+					columnType: 'text',
+					notNull: true
+				},
+				{
+					name: 'param3',
+					columnType: 'text',
+					notNull: true
+				},
+				{
+					name: 'param4',
+					columnType: 'text',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it(`ON DUPLICATE KEY UPDATE name = name = IF(? != '', ?, name)`, async () => {
+		const sql = `
+			INSERT INTO mytable5 (id, name)
+			VALUES ($1, $2)
+			ON CONFLICT(id) DO UPDATE 
+			SET name = CASE
+				WHEN $3 != '' THEN $4
+				ELSE mytable5.name -- mytable5.name: different from mysql and sqlite
+			END`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql: sql,
+			queryType: 'Insert',
+			multipleRowsResult: false,
+			columns: [],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'int4',
+					notNull: true //primary key
+				},
+				{
+					name: 'param2',
+					columnType: 'text',
+					notNull: false
+				},
+				{
+					name: 'param3',
+					columnType: 'text',
+					notNull: true //diff from mysql
+				},
+				{
+					name: 'param4',
+					columnType: 'text',
+					notNull: true ////diff from mysql and sqlite
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 });
