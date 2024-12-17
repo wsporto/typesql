@@ -671,8 +671,8 @@ function traverse_table_ref(table_ref: Table_refContext, dbSchema: NotNullInfo[]
 	const alias = aliasClause ? aliasClause.colid().getText() : undefined;
 	if (relation_expr) {
 		const tableName = traverse_relation_expr(relation_expr, dbSchema);
-		const tableNameWithAlias = alias ? alias : tableName;
-		const fromColumnsResult = fromColumns.concat(dbSchema).filter(col => col.table_name === tableName).map(col => ({ ...col, table_name: tableNameWithAlias }));
+		const tableNameWithAlias = alias ? alias : tableName.name;
+		const fromColumnsResult = fromColumns.concat(dbSchema).filter(col => col.table_name === tableName.name).map(col => ({ ...col, table_name: tableNameWithAlias }));
 		allColumns.push(...fromColumnsResult);
 	}
 	const table_ref_list = table_ref.table_ref_list();
@@ -718,18 +718,26 @@ function traverse_select_with_parens(select_with_parens: Select_with_parensConte
 	return [];
 }
 
-function traverse_relation_expr(relation_expr: Relation_exprContext, dbSchema: NotNullInfo[]): string {
+function traverse_relation_expr(relation_expr: Relation_exprContext, dbSchema: NotNullInfo[]): TableName {
 	const qualified_name = relation_expr.qualified_name();
 	const name = traverse_qualified_name(qualified_name, dbSchema);
 	return name;
 }
 
-function traverse_qualified_name(qualified_name: Qualified_nameContext, dbSchema: NotNullInfo[]): string {
-	const colid = qualified_name.colid();
-	if (colid) {
-		return traverse_colid(colid, dbSchema);
+function traverse_qualified_name(qualified_name: Qualified_nameContext, dbSchema: NotNullInfo[]): TableName {
+	const colid_name = qualified_name.colid() ? traverse_colid(qualified_name.colid(), dbSchema) : '';
+
+	const indirection_el_list = qualified_name.indirection()?.indirection_el_list();
+	if (indirection_el_list && indirection_el_list.length === 1) {
+		return {
+			name: indirection_el_list[0].attr_name()?.getText() || '',
+			alias: colid_name
+		}
 	}
-	return '';
+	return {
+		name: colid_name,
+		alias: ''
+	}
 }
 
 function traverse_colid(colid: ColidContext, dbSchema: NotNullInfo[]): string {
