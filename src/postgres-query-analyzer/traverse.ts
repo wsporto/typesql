@@ -224,6 +224,10 @@ function filterColumns_simple_select_pramary(simple_select_pramary: Simple_selec
 			return traverse_target_list(target_list, dbSchema, fromColumns, traverseResult);
 		}
 	}
+	const target_list = simple_select_pramary.target_list();
+	if (target_list) {
+		return traverse_target_list(target_list, dbSchema, fromColumns, traverseResult);
+	}
 	return [];
 }
 
@@ -1163,7 +1167,7 @@ function isSingleRowResult(selectstmt: SelectstmtContext, dbSchema: PostgresColu
 		return !hasSetReturningFunction;
 	}
 	if (!simple_select_pramary.group_clause()) {
-		const agreegateFunction = simple_select_pramary.target_list_().target_list().target_el_list().some(target_el => isAggregateFunction_target_el(target_el))
+		const agreegateFunction = hasAggregateFunction(simple_select_pramary);
 		if (agreegateFunction) {
 			return true;
 		}
@@ -1186,6 +1190,15 @@ function isSingleRowResult(selectstmt: SelectstmtContext, dbSchema: PostgresColu
 		return isSingleRowResult_where(where_clause.a_expr(), uniqueKeys)
 	}
 	return false;
+}
+
+function hasAggregateFunction(simple_select_pramary: Simple_select_pramaryContext): boolean {
+	const target_list_ = simple_select_pramary.target_list_();
+	if (target_list_) {
+		return target_list_.target_list().target_el_list().some(target_el => isAggregateFunction_target_el(target_el));
+	}
+	const target_list = simple_select_pramary.target_list();
+	return target_list.target_el_list().some(target_el => isAggregateFunction_target_el(target_el));
 }
 
 type TableName = {

@@ -216,6 +216,64 @@ describe('select-single-table', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('SELECT distinct id, value FROM mytable1', async () => {
+		const sql = 'SELECT distinct id, value FROM mytable1';
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'table'
+				},
+				{
+					columnName: 'value',
+					type: 'int4',
+					notNull: false,
+					table: 'table'
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('parse select distinct *', async () => {
+		const sql = 'SELECT distinct * FROM mytable1';
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'table'
+				},
+				{
+					columnName: 'value',
+					type: 'int4',
+					notNull: false,
+					table: 'table'
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('SELECT * FROM mytable1 WHERE id = ?', async () => {
 		const sql = 'SELECT * FROM mytable1 WHERE id = $1';
 
