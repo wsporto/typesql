@@ -15,6 +15,18 @@ CREATE TABLE mytable3 (
   name TEXT NOT NULL
 );
 
+CREATE TABLE mytable4 (
+    id TEXT PRIMARY KEY,
+    name TEXT,
+    year INTEGER
+);
+
+CREATE TABLE mytable5 (
+    id INTEGER PRIMARY KEY,
+    name TEXT,
+    year INTEGER
+);
+
 CREATE TABLE all_types (
     bool_column BOOL,
     bytea_column BYTEA,

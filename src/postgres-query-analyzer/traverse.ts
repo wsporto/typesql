@@ -796,7 +796,13 @@ function traverseInsertstmt(insertstmt: InsertstmtContext, dbSchema: PostgresCol
 		.map(insert_column_item => traverse_insert_column_item(insert_column_item, insertColumns));
 
 	const selectstmt = insert_rest.selectstmt();
-	const parametersNullability = traverse_insert_select_stmt(selectstmt, dbSchema, insertColumnsList, traverseResult);
+	traverse_insert_select_stmt(selectstmt, dbSchema, insertColumnsList, traverseResult);
+
+	const on_conflict = insertstmt.on_conflict_();
+	if (on_conflict) {
+		const set_clause_list = on_conflict.set_clause_list().set_clause_list() || [];
+		set_clause_list.forEach(set_clause => traverse_set_clause(set_clause, dbSchema, insertColumns, traverseResult));
+	}
 
 	const returning_clause = insertstmt.returning_clause();
 	const returninColumns = returning_clause ? traverse_target_list(returning_clause.target_list(), dbSchema, insertColumns, traverseResult) : [];
@@ -804,7 +810,7 @@ function traverseInsertstmt(insertstmt: InsertstmtContext, dbSchema: PostgresCol
 	const result: PostgresTraverseResult = {
 		queryType: 'Insert',
 		multipleRowsResult: false,
-		parametersNullability,
+		parametersNullability: traverseResult.parameters.map(param => param.isNotNull),
 		columnsNullability: returninColumns.map(col => !col.is_nullable),
 		parameterList: []
 	}
@@ -814,30 +820,24 @@ function traverseInsertstmt(insertstmt: InsertstmtContext, dbSchema: PostgresCol
 	return result;
 }
 
-function traverse_insert_select_stmt(selectstmt: SelectstmtContext, dbSchema: NotNullInfo[], insertColumnlist: NotNullInfo[], traverseResult: TraverseResult): boolean[] {
+function traverse_insert_select_stmt(selectstmt: SelectstmtContext, dbSchema: NotNullInfo[], insertColumnlist: NotNullInfo[], traverseResult: TraverseResult): void {
 	const simple_select = selectstmt.select_no_parens()?.select_clause()?.simple_select_intersect_list()?.[0];
 	if (simple_select) {
 		const simple_select_pramary = simple_select?.simple_select_pramary_list()?.[0];
 		if (simple_select_pramary) {
-			return simple_select_pramary.values_clause().expr_list_list()
-				.flatMap(expr_list => traverse_insert_a_expr_list(expr_list, dbSchema, insertColumnlist, traverseResult))
+			simple_select_pramary.values_clause().expr_list_list()
+				.forEach(expr_list => traverse_insert_a_expr_list(expr_list, dbSchema, insertColumnlist, traverseResult))
 		}
 	}
-	return [];
 }
 
 function traverse_insert_a_expr_list(expr_list: Expr_listContext, dbSchema: NotNullInfo[], insertColumns: NotNullInfo[], traverseResult: TraverseResult) {
-	const parametersNullability: boolean[] = [];
 	expr_list.a_expr_list().forEach((a_expr, index) => {
 		const result = traverse_a_expr(a_expr, dbSchema, insertColumns, traverseResult);
 		if (isParameter(result.column_name)) {
-			parametersNullability.push(!insertColumns[index].is_nullable);
-		}
-		else {
-			parametersNullability.push(...traverseResult.parameters.map(param => param.isNotNull));
+			traverseResult.parameters.at(-1)!.isNotNull = !insertColumns[index].is_nullable;
 		}
 	})
-	return parametersNullability;
 }
 
 function traverseDeletestmt(deleteStmt: DeletestmtContext, dbSchema: PostgresColumnSchema[], traverseResult: TraverseResult): PostgresTraverseResult {
@@ -858,7 +858,7 @@ function traverseUpdatestmt(updatestmt: UpdatestmtContext, dbSchema: PostgresCol
 	const updateColumns = dbSchema.filter(col => col.table_name === tableName);
 
 	updatestmt.set_clause_list().set_clause_list()
-		.map(set_clause => traverse_set_clause(set_clause, dbSchema, updateColumns, traverseResult));
+		.forEach(set_clause => traverse_set_clause(set_clause, dbSchema, updateColumns, traverseResult));
 
 	const parametersBefore = traverseResult.parameters.length;
 	const where_clause = updatestmt.where_or_current_clause();
@@ -878,7 +878,7 @@ function traverseUpdatestmt(updatestmt: UpdatestmtContext, dbSchema: PostgresCol
 	}
 }
 
-function traverse_set_clause(set_clause: Set_clauseContext, dbSchema: NotNullInfo[], updateColumns: PostgresColumnSchema[], traverseResult: TraverseResult): boolean {
+function traverse_set_clause(set_clause: Set_clauseContext, dbSchema: NotNullInfo[], updateColumns: PostgresColumnSchema[], traverseResult: TraverseResult): void {
 	const set_target = set_clause.set_target();
 	const columnName = splitName(set_target.getText());
 	const column = findColumn(columnName, updateColumns);
@@ -887,8 +887,6 @@ function traverse_set_clause(set_clause: Set_clauseContext, dbSchema: NotNullInf
 	if (isParameter(a_exprResult.column_name)) {
 		traverseResult.parameters[traverseResult.parameters.length - 1].isNotNull = !column.is_nullable;
 	}
-
-	return !column.is_nullable
 }
 
 function traverse_insert_column_item(insert_column_item: Insert_column_itemContext, dbSchema: PostgresColumnSchema[]): NotNullInfo {
