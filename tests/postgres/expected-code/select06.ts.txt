@@ -1,0 +1,42 @@
+import pg from 'pg';
+
+export type Select06Params = {
+	ids: number[];
+	names: string[];
+}
+
+export type Select06Result = {
+	id: number;
+}
+
+let currentIndex: number;
+export async function select06(client: pg.Client | pg.Pool, params: Select06Params): Promise<Select06Result[]> {
+	currentIndex = 2;
+	const sql = `
+	SELECT id
+	FROM mytable2
+	WHERE id IN (${generatePlaceholders('$1', params.ids)})
+	AND name IN (${generatePlaceholders('$2', params.names)})
+	`
+	return client.query({ text: sql, rowMode: 'array', values: [params.ids[0], params.names[0], ...params.ids.slice(1), ...params.names.slice(1)] })
+		.then(res => res.rows.map(row => mapArrayToSelect06Result(row)));
+}
+
+function generatePlaceholders(param: string, paramsArray: any[]): string {
+	return paramsArray
+		.map((_, index) => {
+			if (index === 0) {
+				return param
+			}
+			currentIndex++;
+			return `$${currentIndex}`;
+		})
+		.join(', ');
+}
+
+function mapArrayToSelect06Result(data: any) {
+	const result: Select06Result = {
+		id: data[0]
+	}
+	return result;
+}

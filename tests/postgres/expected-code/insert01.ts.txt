@@ -1,0 +1,20 @@
+import pg from 'pg';
+
+export type Insert01Result = {
+	rowCount: number;
+}
+
+export async function insert01(client: pg.Client | pg.Pool): Promise<Insert01Result> {
+	const sql = `
+	INSERT INTO mytable1(value) values(10)
+	`
+	return client.query({ text: sql })
+		.then(res => mapArrayToInsert01Result(res));
+}
+
+function mapArrayToInsert01Result(data: any) {
+	const result: Insert01Result = {
+		rowCount: data.rowCount
+	}
+	return result;
+}

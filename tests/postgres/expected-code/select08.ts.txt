@@ -1,0 +1,34 @@
+import pg from 'pg';
+
+export type Select08Params = {
+	param1: boolean;
+	param2: boolean;
+}
+
+export type Select08Result = {
+	id: number;
+	param1: boolean;
+	param2: boolean;
+}
+
+export async function select08(client: pg.Client | pg.Pool, params: Select08Params): Promise<Select08Result[]> {
+	const sql = `
+	SELECT
+		id,
+		$1::bool as param1,
+		$2::bool as param2
+	FROM mytable1 
+	WHERE $1 is true OR ($2 is true OR $2::bool is null)
+	`
+	return client.query({ text: sql, rowMode: 'array', values: [params.param1, params.param2] })
+		.then(res => res.rows.map(row => mapArrayToSelect08Result(row)));
+}
+
+function mapArrayToSelect08Result(data: any) {
+	const result: Select08Result = {
+		id: data[0],
+		param1: data[1] != null ? Boolean(data[1]) : data[1],
+		param2: data[2] != null ? Boolean(data[2]) : data[2]
+	}
+	return result;
+}

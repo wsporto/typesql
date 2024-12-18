@@ -5,7 +5,7 @@ import {
 	SimpleExprColumnRefContext,
 	type TableFactorContext,
 	type TableReferenceContext
-} from '@wsporto/ts-mysql-parser';
+} from '@wsporto/typesql-parser/mysql/MySQLParser';
 import { extractQueryInfo, parse } from './mysql-query-analyzer/parse';
 import { findColumnSchema, getSimpleExpressions, splitName } from './mysql-query-analyzer/select-columns';
 import type { ColumnInfo, ColumnSchema } from './mysql-query-analyzer/types';
@@ -47,7 +47,7 @@ export type TableName = {
 
 //utility for tests
 export function describeNestedQuery(sql: string, dbSchema: ColumnSchema[]): NestedResultInfo {
-	const { sql: processedSql } = preprocessSql(sql);
+	const { sql: processedSql } = preprocessSql(sql, 'mysql');
 	const queryContext = parse(processedSql);
 	const queryInfo = extractQueryInfo(sql, dbSchema);
 	const columns = queryInfo.kind === 'Select' ? queryInfo.columns : [];

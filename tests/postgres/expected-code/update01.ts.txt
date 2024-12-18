@@ -1,0 +1,28 @@
+import pg from 'pg';
+
+export type Update01Data = {
+	param1: number | null;
+}
+
+export type Update01Params = {
+	param2: number;
+}
+
+export type Update01Result = {
+	rowCount: number;
+}
+
+export async function update01(client: pg.Client | pg.Pool, data: Update01Data, params: Update01Params): Promise<Update01Result> {
+	const sql = `
+	UPDATE mytable1 SET value=$1 WHERE id=$2
+	`
+	return client.query({ text: sql, values: [data.param1, params.param2] })
+		.then(res => mapArrayToUpdate01Result(res));
+}
+
+function mapArrayToUpdate01Result(data: any) {
+	const result: Update01Result = {
+		rowCount: data.rowCount
+	}
+	return result;
+}

@@ -12,9 +12,8 @@ import {
 	type Table_nameContext,
 	type Join_operatorContext,
 	type Returning_clauseContext,
-	type Select_coreContext,
-	Table_function_nameContext
-} from '@wsporto/ts-mysql-parser/dist/sqlite';
+	type Select_coreContext
+} from '@wsporto/typesql-parser/sqlite';
 import type { ColumnDef, ColumnSchema, ExtensionFunctionCatalog, FieldName, TraverseContext, TypeAndNullInfer, TypeAndNullInferParam } from '../mysql-query-analyzer/types';
 import { filterColumns, findColumn, getExpressions, includeColumn, splitName } from '../mysql-query-analyzer/select-columns';
 import { freshVar } from '../mysql-query-analyzer/collect-constraints';
@@ -30,7 +29,7 @@ import {
 import type { Relation2 } from './sqlite-describe-nested-query';
 import { type Either, left, right } from 'fp-ts/lib/Either';
 import type { TypeSqlError } from '../types';
-import type { ParserRuleContext } from '@wsporto/ts-mysql-parser';
+import type { ParserRuleContext } from '@wsporto/typesql-parser';
 
 function traverse_Sql_stmtContext(sql_stmt: Sql_stmtContext, traverseContext: TraverseContext): TraverseResult2 {
 	const select_stmt = sql_stmt.select_stmt();

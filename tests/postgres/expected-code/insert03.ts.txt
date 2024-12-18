@@ -1,0 +1,26 @@
+import pg from 'pg';
+
+export type Insert03Params = {
+	value: number | null;
+}
+
+export type Insert03Result = {
+	id: number;
+	value?: number;
+}
+
+export async function insert03(client: pg.Client | pg.Pool, params: Insert03Params): Promise<Insert03Result> {
+	const sql = `
+	INSERT INTO mytable1(value) VALUES($1) RETURNING *
+	`
+	return client.query({ text: sql, rowMode: 'array', values: [params.value] })
+		.then(res => mapArrayToInsert03Result(res.rows[0]));
+}
+
+function mapArrayToInsert03Result(data: any) {
+	const result: Insert03Result = {
+		id: data[0],
+		value: data[1]
+	}
+	return result;
+}

@@ -1,0 +1,24 @@
+import pg from 'pg';
+
+export type Select03Params = {
+	id: number;
+}
+
+export type Select03Result = {
+	id: number;
+}
+
+export async function select03(client: pg.Client | pg.Pool, params: Select03Params): Promise<Select03Result[]> {
+	const sql = `
+	select id from mytable1 where id = $1 or value = $1
+	`
+	return client.query({ text: sql, rowMode: 'array', values: [params.id] })
+		.then(res => res.rows.map(row => mapArrayToSelect03Result(row)));
+}
+
+function mapArrayToSelect03Result(data: any) {
+	const result: Select03Result = {
+		id: data[0]
+	}
+	return result;
+}

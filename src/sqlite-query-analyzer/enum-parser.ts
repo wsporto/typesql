@@ -1,4 +1,4 @@
-import { Column_defContext, Create_table_stmtContext, ExprContext, parseSql, Sql_stmtContext } from '@wsporto/ts-mysql-parser/dist/sqlite';
+import { Column_defContext, Create_table_stmtContext, ExprContext, parseSql, Sql_stmtContext } from '@wsporto/typesql-parser/sqlite';
 import { EnumColumnMap, EnumMap, EnumType } from './types';
 
 export function enumParser(createStmts: string): EnumMap {

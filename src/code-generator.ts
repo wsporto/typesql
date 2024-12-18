@@ -7,12 +7,12 @@ import {
 	MySqlDialect,
 	TypeSqlError,
 	TsParameterDescriptor,
-	TypeSqlDialect, type SQLiteDialect, type LibSqlClient, type BunDialect, D1Dialect
+	TypeSqlDialect, type SQLiteDialect, type LibSqlClient, type BunDialect, PgDielect
 } from './types';
 import fs from 'node:fs';
 import path, { parse } from 'node:path';
 import camelCase from 'camelcase';
-import { type Either, isLeft, right } from 'fp-ts/lib/Either';
+import { type Either, isLeft, left, right } from 'fp-ts/lib/Either';
 import { converToTsType, type MySqlType } from './mysql-mapping';
 import { parseSql } from './describe-query';
 import CodeBlockWriter from 'code-block-writer';
@@ -21,6 +21,7 @@ import { mapToDynamicResultColumns, mapToDynamicParams, mapToDynamicSelectColumn
 import type { ColumnSchema, DynamicSqlInfoResult, DynamicSqlInfoResult2, FragmentInfoResult } from './mysql-query-analyzer/types';
 import { EOL } from 'node:os';
 import { validateAndGenerateCode } from './sqlite-query-analyzer/code-generator';
+import { generateCode } from './code-generator2';
 
 export function generateTsCodeForMySQL(tsDescriptor: TsDescriptor, fileName: string, crud = false): string {
 	const writer = new CodeBlockWriter();
@@ -538,7 +539,8 @@ export function generateTsDescriptor(queryInfo: SchemaDef): TsDescriptor {
 			name: escapedParametersNames[paramIndex],
 			tsType: mapColumnType(col.columnType as MySqlType) + arraySymbol,
 			notNull: col.notNull ? col.notNull : false,
-			toDriver: col.name
+			toDriver: col.name,
+			isArray: false
 		};
 		return tsDesc;
 	});
@@ -549,7 +551,8 @@ export function generateTsDescriptor(queryInfo: SchemaDef): TsDescriptor {
 			name: escapedDataNames[dataIndex],
 			tsType: mapColumnType(col.columnType as MySqlType),
 			notNull: col.notNull ? col.notNull : false,
-			toDriver: col.name
+			toDriver: col.name,
+			isArray: false
 		};
 		return tsDesc;
 	});
@@ -700,6 +703,12 @@ export async function generateTsFile(client: DatabaseClient, sqlFile: string, db
 			case 'libsql':
 			case 'd1':
 				return validateAndGenerateCode(client as SQLiteDialect | LibSqlClient | BunDialect, sqlContent, queryName, dbSchema, isCrudFile);
+			case 'pg':
+				const result = await generateCode(client as PgDielect, sqlContent, queryName);
+				if (result.isErr()) {
+					return left(result.error);
+				}
+				return right(result.value);
 		}
 	})(client.type);
 

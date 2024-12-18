@@ -5,7 +5,7 @@ import type { PreprocessedSql } from '../src/types';
 describe('preprocess-sql', () => {
 	it('preprocess sql with one parameter', async () => {
 		const sql = 'select * from mytable1 where :id = 10';
-		const actual = preprocessSql(sql);
+		const actual = preprocessSql(sql, 'mysql');
 
 		const expected: PreprocessedSql = {
 			sql: 'select * from mytable1 where ? = 10',
@@ -17,7 +17,7 @@ describe('preprocess-sql', () => {
 
 	it('preprocess sql with several parameters', async () => {
 		const sql = 'select * from mytable1 where :id = 10 or :id=1 or : name > 10or:param1>0and :PARAM>0 and :PARAM1>0 and 10>20';
-		const actual = preprocessSql(sql);
+		const actual = preprocessSql(sql, 'mysql');
 
 		const expected: PreprocessedSql = {
 			sql: 'select * from mytable1 where ? = 10 or ?=1 or : name > 10or?>0and ?>0 and ?>0 and 10>20',
@@ -29,7 +29,7 @@ describe('preprocess-sql', () => {
 
 	it('preprocess sql with undescore and dollar in the param name', async () => {
 		const sql = 'select * from mytable1 where id = :emp_id or id = :$1';
-		const actual = preprocessSql(sql);
+		const actual = preprocessSql(sql, 'mysql');
 
 		const expected: PreprocessedSql = {
 			sql: 'select * from mytable1 where id = ? or id = ?',
@@ -41,7 +41,7 @@ describe('preprocess-sql', () => {
 
 	it('preprocess sql without parameters', async () => {
 		const sql = 'select * from mytable1';
-		const actual = preprocessSql(sql);
+		const actual = preprocessSql(sql, 'mysql');
 
 		const expected: PreprocessedSql = {
 			sql: 'select * from mytable1',
@@ -53,7 +53,7 @@ describe('preprocess-sql', () => {
 
 	it('preprocess with string literal', async () => {
 		const sql = `SELECT HOUR('13:01:02')`;
-		const actual = preprocessSql(sql);
+		const actual = preprocessSql(sql, 'mysql');
 
 		const expected: PreprocessedSql = {
 			sql: `SELECT HOUR('13:01:02')`,
@@ -65,7 +65,7 @@ describe('preprocess-sql', () => {
 
 	it('preprocess with string literal', async () => {
 		const sql = `SELECT HOUR("13:01:02")`;
-		const actual = preprocessSql(sql);
+		const actual = preprocessSql(sql, 'mysql');
 
 		const expected: PreprocessedSql = {
 			sql: `SELECT HOUR("13:01:02")`,
@@ -77,7 +77,7 @@ describe('preprocess-sql', () => {
 
 	it.skip('preprocess sql with invalid parameter names', async () => {
 		const sql = 'select * from mytable1 where :1 > 0 or :=0 or :111 > 0';
-		const actual = preprocessSql(sql);
+		const actual = preprocessSql(sql, 'mysql');
 
 		const expected: PreprocessedSql = {
 			sql: 'select * from mytable1',
@@ -119,11 +119,39 @@ describe('preprocess-sql', () => {
         -- @safeIntegers:true
         select * from mytable1`;
 
-		const actual = preprocessSql(sql);
+		const actual = preprocessSql(sql, 'mysql');
 		const expected: PreprocessedSql = {
 			sql: `
         -- @safeIntegers:true
         select * from mytable1`,
+			namedParameters: []
+		};
+
+		assert.deepStrictEqual(actual, expected);
+	});
+
+	it('postgres-replace named paramters', async () => {
+		const sql = `
+        select :value1, :value1, :value2, :value3, :value2 from mytable1`;
+
+		const actual = preprocessSql(sql, 'postgres');
+		const expected: PreprocessedSql = {
+			sql: `
+        select $1, $1, $2, $3, $2 from mytable1`,
+			namedParameters: ['value1', 'value1', 'value2', 'value3', 'value2']
+		};
+
+		assert.deepStrictEqual(actual, expected);
+	});
+
+	it('handle type-cast id::int2', async () => {
+		const sql = `
+        select id::int2 from mytable1`;
+
+		const actual = preprocessSql(sql, 'postgres');
+		const expected: PreprocessedSql = {
+			sql: `
+        select id::int2 from mytable1`,
 			namedParameters: []
 		};
 
