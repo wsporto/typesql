@@ -6,6 +6,10 @@ Access your database directly without a heavy ORM, gain effortless type-safety, 
 
 TypeSQL supports multiple SQL database backends:
 
+##### PostgreSQL (Experimental)
+
+- [pg](https://www.npmjs.com/package/pg) - PostgreSQL client for node.js.
+
 ##### MySQL / MariaDB
 
 - [mysql2](https://www.npmjs.com/package/mysql2) - the standard driver for mysql in NodeJS
@@ -57,7 +61,7 @@ deno syntax:
 
 1. _npm install -g typesql-cli_
 
-2. Add the `typesql.json` configuration file in project root folder. You can generate an template with cli command `typesql init`. The client option can be: 'mysql2', 'better-sqlite3', 'libsql', 'bun:sqlite' or 'd1'. The `authToken` configuration is used only for the libsql client.
+2. Add the `typesql.json` configuration file in project root folder. You can generate an template with cli command `typesql init`. The client option can be: 'pg', 'mysql2', 'better-sqlite3', 'libsql', 'bun:sqlite' or 'd1'. The `authToken` configuration is used only for the libsql client.
 
 ```json
 {
