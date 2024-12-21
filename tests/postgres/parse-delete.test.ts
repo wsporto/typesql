@@ -57,4 +57,82 @@ describe('postgres-parse-delete', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('DELETE FROM mytable1 WHERE id = :id RETURNING *', async () => {
+		const sql = 'DELETE FROM mytable1 WHERE id = $1 RETURNING *';
+		const actual = await describeQuery(postres, sql, ['id']);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Delete',
+			multipleRowsResult: false,
+			returning: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'table'
+				},
+				{
+					columnName: 'value',
+					type: 'int4',
+					notNull: false,
+					table: 'table'
+				}
+			],
+			parameters: [
+				{
+					name: 'id',
+					columnType: 'int4',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('DELETE FROM mytable1 WHERE id = :id RETURNING id, id+id, value', async () => {
+		const sql = 'DELETE FROM mytable1 WHERE id = $1 RETURNING id, id+id, value';
+		const actual = await describeQuery(postres, sql, ['id']);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Delete',
+			multipleRowsResult: false,
+			returning: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'table'
+				},
+				{
+					columnName: '?column?',
+					type: 'int4',
+					notNull: true,
+					table: ''
+				},
+				{
+					columnName: 'value',
+					type: 'int4',
+					notNull: false,
+					table: 'table'
+				}
+			],
+			parameters: [
+				{
+					name: 'id',
+					columnType: 'int4',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });

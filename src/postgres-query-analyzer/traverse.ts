@@ -890,13 +890,24 @@ function traverse_insert_a_expr_list(expr_list: Expr_listContext, dbSchema: NotN
 
 function traverseDeletestmt(deleteStmt: DeletestmtContext, dbSchema: PostgresColumnSchema[], traverseResult: TraverseResult): PostgresTraverseResult {
 
-	return {
+	const relation_expr = deleteStmt.relation_expr_opt_alias().relation_expr();
+	const tableName = relation_expr.getText();
+	const deleteColumns = dbSchema.filter(col => col.table_name === tableName);
+
+	const returning_clause = deleteStmt.returning_clause();
+	const returninColumns = returning_clause ? traverse_target_list(returning_clause.target_list(), dbSchema, deleteColumns, traverseResult) : [];
+
+	const result: PostgresTraverseResult = {
 		queryType: 'Delete',
 		multipleRowsResult: false,
 		parametersNullability: traverseResult.parameters.map(param => param.isNotNull),
-		columnsNullability: [],
+		columnsNullability: returninColumns.map(col => !col.is_nullable),
 		parameterList: []
 	}
+	if (returning_clause) {
+		result.returning = true;
+	}
+	return result;
 }
 
 function traverseUpdatestmt(updatestmt: UpdatestmtContext, dbSchema: PostgresColumnSchema[], traverseResult: TraverseResult): PostgresTraverseResult {
