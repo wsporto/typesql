@@ -380,7 +380,7 @@ function writeCrud(writer: CodeBlockWriter, crudParamters: CrudParameters): stri
 		case 'Update':
 			return writeCrudUpdate(writer, crudParamters);
 		case 'Delete':
-			return writeCrudUpdate(writer, crudParamters);
+			return writeCrudDelete(writer, crudParamters);
 	}
 }
 
@@ -436,6 +436,30 @@ function writeCrudUpdate(writer: CodeBlockWriter, crudParamters: CrudParameters)
 			writer.indent().write(`.then(res => mapArrayTo${resultTypeName}(res));`);
 		})
 		writer.writeLine('return Promise.resolve({ rowCount: 0 });');
+	})
+
+	writer.blankLine();
+	writer.write(`function mapArrayTo${resultTypeName}(data: any) `).block(() => {
+		writer.write(`const result: ${resultTypeName} = `).block(() => {
+			columns.forEach((col, index) => {
+				const separator = index < columns.length - 1 ? ',' : '';
+				writer.writeLine(`${col.name}: ${toDriver(`data[${index}]`, col)}${separator}`);
+			});
+		});
+		writer.writeLine('return result;');
+	});
+	return writer.toString();
+}
+
+function writeCrudDelete(writer: CodeBlockWriter, crudParamters: CrudParameters): string {
+	const { tableName, queryName, paramsTypeName, resultTypeName, columns, keys } = crudParamters;
+	const keyName = keys[0];
+	writer.write(`export async function ${queryName}(client: pg.Client | pg.Pool, params: ${paramsTypeName}): Promise<${resultTypeName} | null>`).block(() => {
+		writer.writeLine('const sql = `');
+		writer.indent().write(`DELETE FROM ${tableName} WHERE ${keyName} = $1`).newLine();
+		writer.indent().write('`').newLine();
+		writer.writeLine(`return client.query({ text: sql, rowMode: 'array', values: [params.${keyName}] })`);
+		writer.indent(1).write(`.then(res => res.rows.length > 0 ? mapArrayTo${resultTypeName}(res.rows[0]) : null);`).newLine();
 	})
 
 	writer.blankLine();
