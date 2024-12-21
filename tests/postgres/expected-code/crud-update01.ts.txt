@@ -1,0 +1,40 @@
+import pg from 'pg';
+
+export type UpdateMytable1Data = {
+	value: number | null;
+}
+
+export type UpdateMytable1Params = {
+	id: number;
+}
+
+export type UpdateMytable1Result = {
+	id: number;
+	value?: number;
+}
+
+export async function updateMytable1(client: pg.Client | pg.Pool, data: UpdateMytable1Data, params: UpdateMytable1Params): Promise<UpdateMytable1Result> {
+	let sql = 'UPDATE mytable1 SET';
+	const values: any[] = [];
+	let update = false;
+	if (data.value !== undefined) {
+		sql += ' value = $1';
+		values.push(data.value);
+		update = true;
+	}
+	sql += ' WHERE id = $2 RETURNING *';
+	values.push(params.id);
+	if (update) {
+		return client.query({ text: sql, values })
+			.then(res => mapArrayToUpdateMytable1Result(res));
+	}
+	return Promise.resolve({ rowCount: 0 });
+}
+
+function mapArrayToUpdateMytable1Result(data: any) {
+	const result: UpdateMytable1Result = {
+		id: data[0],
+		value: data[1]
+	}
+	return result;
+}

@@ -116,7 +116,7 @@ export function generateCrud(client: SQLiteClient, queryType: QueryType, tableNa
 	return code;
 }
 
-function getQueryName(queryType: QueryType, tableName: string) {
+export function getQueryName(queryType: QueryType, tableName: string) {
 	const camelCaseName = convertToCamelCaseName(tableName);
 	const captitalizedName = capitalize(camelCaseName);
 	switch (queryType) {

@@ -1,12 +1,14 @@
 import CodeBlockWriter from 'code-block-writer';
 import { capitalize, convertToCamelCaseName, removeDuplicatedParameters2, TsDescriptor } from './code-generator';
-import { ParameterDef, PgDielect, SchemaDef, TsFieldDescriptor, TsParameterDescriptor, TypeSqlError } from './types';
+import { ParameterDef, PgDielect, QueryType, SchemaDef, TsFieldDescriptor, TsParameterDescriptor, TypeSqlError } from './types';
 import { describeQuery } from './postgres-query-analyzer/describe';
 import { ColumnInfo } from './mysql-query-analyzer/types';
-import { mapColumnType } from './dialects/postgres';
+import { mapColumnType, postgresTypes } from './dialects/postgres';
 import { PostgresType } from './sqlite-query-analyzer/types';
 import { preprocessSql } from './describe-query';
 import { okAsync, ResultAsync } from 'neverthrow';
+import { PostgresColumnSchema } from './drivers/types';
+import { getQueryName } from './sqlite-query-analyzer/code-generator';
 
 
 
@@ -61,37 +63,14 @@ function generateTsCode(
 	const uniqueDataParams = removeDuplicatedParameters2(tsDescriptor.data || []);
 	if (uniqueDataParams.length > 0) {
 		writer.blankLine();
-		writer.write(`export type ${dataTypeName} =`).block(() => {
-			uniqueDataParams.forEach((field) => {
-				const optionalOp = field.optional ? '?' : '';
-				const orNull = field.notNull ? '' : ' | null';
-				writer.writeLine(`${field.name}${optionalOp}: ${field.tsType}${orNull};`);
-			});
-			if (generateOrderBy) {
-				writer.writeLine(`orderBy: [${orderByTypeName}, 'asc' | 'desc'][];`);
-			}
-		});
+		writeDataType(writer, dataTypeName, uniqueDataParams);
 	}
 	if (uniqueParams.length > 0 || generateOrderBy) {
 		writer.blankLine();
-		writer.write(`export type ${paramsTypeName} =`).block(() => {
-			uniqueParams.forEach((field) => {
-				const optionalOp = field.optional ? '?' : '';
-				const orNull = field.notNull ? '' : ' | null';
-				writer.writeLine(`${field.name}${optionalOp}: ${field.tsType}${orNull};`);
-			});
-			if (generateOrderBy) {
-				writer.writeLine(`orderBy: [${orderByTypeName}, 'asc' | 'desc'][];`);
-			}
-		});
+		writeParamsType(writer, paramsTypeName, uniqueParams, generateOrderBy, orderByTypeName)
 	}
 	writer.blankLine();
-	writer.write(`export type ${resultTypeName} =`).block(() => {
-		tsDescriptor.columns.forEach((field) => {
-			const optionalOp = field.notNull ? '' : '?';
-			writer.writeLine(`${field.name}${optionalOp}: ${field.tsType};`);
-		});
-	});
+	writeResultType(writer, resultTypeName, tsDescriptor.columns);
 	writer.blankLine();
 	const execFunctionParams: ExecFunctionParameters = {
 		sql,
@@ -109,6 +88,38 @@ function generateTsCode(
 	codeWriter.writeExecFunction(writer, execFunctionParams);
 
 	return writer.toString();
+}
+
+function writeDataType(writer: CodeBlockWriter, dataTypeName: string, params: TsFieldDescriptor[]) {
+	writer.write(`export type ${dataTypeName} =`).block(() => {
+		params.forEach((field) => {
+			const optionalOp = field.optional ? '?' : '';
+			const orNull = field.notNull ? '' : ' | null';
+			writer.writeLine(`${field.name}${optionalOp}: ${field.tsType}${orNull};`);
+		});
+	});
+}
+
+function writeParamsType(writer: CodeBlockWriter, paramsTypeName: string, params: TsFieldDescriptor[], generateOrderBy: boolean, orderByTypeName: string) {
+	writer.write(`export type ${paramsTypeName} =`).block(() => {
+		params.forEach((field) => {
+			const optionalOp = field.optional ? '?' : '';
+			const orNull = field.notNull ? '' : ' | null';
+			writer.writeLine(`${field.name}${optionalOp}: ${field.tsType}${orNull};`);
+		});
+		if (generateOrderBy) {
+			writer.writeLine(`orderBy: [${orderByTypeName}, 'asc' | 'desc'][];`);
+		}
+	});
+}
+
+function writeResultType(writer: CodeBlockWriter, resultTypeName: string, columns: TsFieldDescriptor[]) {
+	writer.write(`export type ${resultTypeName} =`).block(() => {
+		columns.forEach((field) => {
+			const optionalOp = field.notNull ? '' : '?';
+			writer.writeLine(`${field.name}${optionalOp}: ${field.tsType};`);
+		});
+	});
 }
 
 function createTsDescriptor(schemaDef: SchemaDef) {
@@ -252,30 +263,6 @@ const postgresCodeWriter: CodeWriter = {
 			});
 			writer.indent().write('`').newLine();
 		}
-
-		function toDriver(variableData: string, param: TsFieldDescriptor) {
-			if (param.tsType === 'Date') {
-				if (param.notNull) {
-					return `new Date(${variableData})`;
-				}
-				return `${variableData} != null ? new Date(${variableData}) : ${variableData}`;
-			}
-			if (param.tsType === 'boolean') {
-				return `${variableData} != null ? Boolean(${variableData}) : ${variableData}`;
-			}
-			return variableData;
-		}
-
-		function paramToDriver(param: TsParameterDescriptor, objName: string): any {
-			if (!param.tsType.endsWith('[]')) {
-				return `${objName}.${param.name}`;
-			}
-			return param.isArray ? `[...${objName}.${param.name}]` : `${objName}.${param.name}[0]`;
-		}
-
-		function isList(param: TsParameterDescriptor) {
-			return param.tsType.endsWith('[]') && !param.isArray;
-		}
 	}
 }
 
@@ -293,3 +280,107 @@ function getColumnsForQuery(schemaDef: SchemaDef): TsFieldDescriptor[] {
 	return columns;
 }
 
+function toDriver(variableData: string, param: TsFieldDescriptor) {
+	if (param.tsType === 'Date') {
+		if (param.notNull) {
+			return `new Date(${variableData})`;
+		}
+		return `${variableData} != null ? new Date(${variableData}) : ${variableData}`;
+	}
+	if (param.tsType === 'boolean') {
+		return `${variableData} != null ? Boolean(${variableData}) : ${variableData}`;
+	}
+	return variableData;
+}
+
+function paramToDriver(param: TsParameterDescriptor, objName: string): any {
+	if (!param.tsType.endsWith('[]')) {
+		return `${objName}.${param.name}`;
+	}
+	return param.isArray ? `[...${objName}.${param.name}]` : `${objName}.${param.name}[0]`;
+}
+
+function isList(param: TsParameterDescriptor) {
+	return param.tsType.endsWith('[]') && !param.isArray;
+}
+
+export async function generateCrud(client: PgDielect, queryType: QueryType, tableName: string, dbSchema: PostgresColumnSchema[]) {
+
+	const queryName = getQueryName(queryType, tableName);
+	const camelCaseName = convertToCamelCaseName(queryName);
+	const capitalizedName = capitalize(camelCaseName);
+	const dataTypeName = `${capitalizedName}Data`;
+	const resultTypeName = `${capitalizedName}Result`;
+	const paramsTypeName = `${capitalizedName}Params`;
+
+	const writer = new CodeBlockWriter({
+		useTabs: true
+	});
+
+	const allColumns = dbSchema.filter((col) => col.table_name === tableName);
+	const keys = allColumns.filter((col) => col.column_key === 'PRI');
+	if (keys.length === 0) {
+		keys.push(...allColumns.filter((col) => col.column_key === 'UNI'));
+	}
+	const nonKeys = allColumns.filter(col => col.column_key !== 'PRI');
+
+	const codeWriter = getCodeWriter(client.type);
+	codeWriter.writeImports(writer);
+	const uniqueDataParams = queryType === 'Update' ? nonKeys.map(col => mapPostgresColumnSchemaToTsFieldDescriptor(col)) : [];
+	if (uniqueDataParams.length > 0) {
+		writer.blankLine();
+		writeDataType(writer, dataTypeName, uniqueDataParams);
+	}
+	const uniqueParams = keys.map(col => mapPostgresColumnSchemaToTsFieldDescriptor(col));
+	if (uniqueParams.length > 0) {
+		writer.blankLine();
+		writeParamsType(writer, paramsTypeName, uniqueParams, false, '');
+	}
+	writer.blankLine();
+	const columns = allColumns.map(col => mapPostgresColumnSchemaToTsFieldDescriptor(col))
+	writeResultType(writer, resultTypeName, columns);
+	writer.blankLine();
+
+	writer.write(`export async function ${queryName}(client: pg.Client | pg.Pool, data: ${dataTypeName}, params: ${paramsTypeName}): Promise<${resultTypeName}>`).block(() => {
+		writer.writeLine(`let sql = 'UPDATE ${tableName} SET';`);
+		writer.writeLine('const values: any[] = [];');
+		writer.writeLine('let update = false;');
+		nonKeys.forEach((col, index) => {
+			writer.write(`if (data.${col.column_name} !== undefined)`).block(() => {
+				writer.writeLine(`sql += ' ${col.column_name} = $${index + 1}';`)
+				writer.writeLine(`values.push(data.${col.column_name});`);
+				writer.writeLine('update = true;');
+			})
+		})
+		const keyName = keys[0].column_name;
+		writer.writeLine(`sql += ' WHERE ${keyName} = $${nonKeys.length + 1} RETURNING *';`);
+		writer.writeLine(`values.push(params.${keyName});`);
+		writer.write('if (update)').block(() => {
+			writer.writeLine('return client.query({ text: sql, values })');
+			writer.indent().write('.then(res => mapArrayToUpdateMytable1Result(res));');
+		})
+		writer.writeLine('return Promise.resolve({ rowCount: 0 });');
+	})
+
+	writer.blankLine();
+	writer.write(`function mapArrayTo${resultTypeName}(data: any) `).block(() => {
+		writer.write(`const result: ${resultTypeName} = `).block(() => {
+			columns.forEach((col, index) => {
+				const separator = index < columns.length - 1 ? ',' : '';
+				writer.writeLine(`${col.name}: ${toDriver(`data[${index}]`, col)}${separator}`);
+			});
+		});
+		writer.writeLine('return result;');
+	});
+
+	return writer.toString();
+}
+
+export function mapPostgresColumnSchemaToTsFieldDescriptor(col: PostgresColumnSchema): TsFieldDescriptor {
+	const postgresType = postgresTypes[col.type_id] as any ?? '?'
+	return {
+		name: col.column_name,
+		notNull: !col.is_nullable,
+		tsType: mapColumnType(postgresType as PostgresType),
+	}
+}

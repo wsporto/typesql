@@ -14,6 +14,7 @@ export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], stri
 				t.table_schema,
 				t.table_name,
 				col.column_name,
+				ty.oid as type_id,
 				col.is_nullable,
 				CASE 
 					WHEN con.contype = 'p' THEN 'PRI'  -- Primary key
@@ -28,6 +29,8 @@ export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], stri
 				information_schema.columns col
 				ON t.table_name = col.table_name 
 				AND t.table_schema = col.table_schema
+			JOIN
+				pg_catalog.pg_type ty on pg_catalog.format_type(ty.oid, NULL) = col.data_type
 			LEFT JOIN 
 			    pg_constraint con ON con.conrelid = c.oid
 			    AND col.ordinal_position = ANY (con.conkey)
@@ -42,9 +45,10 @@ export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], stri
 				table_schema: row.table_schema,
 				table_name: row.table_name,
 				column_name: row.column_name,
+				type_id: row.type_id,
 				is_nullable: row.is_nullable === 'YES',
 				column_key: row.column_key
-			}));
+			} satisfies PostgresColumnSchema));
 		},
 		(reason: any) => {
 			if (reason.errors && reason.errors.length > 0) {

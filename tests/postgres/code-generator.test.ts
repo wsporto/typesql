@@ -1,11 +1,15 @@
 import assert from 'node:assert';
 
 import { readFileSync } from 'node:fs';
-import { generateCode } from '../../src/code-generator2';
+import { generateCode, generateCrud } from '../../src/code-generator2';
 import { PgDielect } from '../../src/types';
 import postgres from 'postgres';
+import { loadDbSchema } from '../../src/drivers/postgres';
+import { PostgresColumnSchema } from '../../src/drivers/types';
 
 describe('postgres-code-generator', () => {
+
+	let dbSchema: PostgresColumnSchema[] = [];
 
 	const databaseClient = postgres({
 		host: 'localhost',
@@ -18,6 +22,14 @@ describe('postgres-code-generator', () => {
 		type: 'pg',
 		client: databaseClient
 	}
+
+	before(async function () {
+		const dbSchemaResult = await await loadDbSchema(databaseClient);
+		if (dbSchemaResult.isErr()) {
+			assert.fail(`Shouldn't return an error: ${dbSchemaResult.error}`);
+		}
+		dbSchema = dbSchemaResult.value;
+	});
 
 	it('select01 - select id, name from mytable2 where id = ?', async () => {
 		const sql = 'select id, name from mytable2 where id = $1';
@@ -189,5 +201,11 @@ WHERE :param1 is true OR (:param2 is true OR :param2::bool is null)`;
 			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
 		}
 		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('crud-update01', async () => {
+		const actual = await generateCrud(dialect, 'Update', 'mytable1', dbSchema);
+		const expected = readFileSync('tests/postgres/expected-code/crud-update01.ts.txt', 'utf-8').replace(/\r/gm, '');
+		assert.deepStrictEqual(actual, expected);
 	});
 });
