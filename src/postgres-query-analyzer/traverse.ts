@@ -564,7 +564,8 @@ function excludeColumns(fromColumns: NotNullInfo[], excludeList: FieldName[]) {
 
 function traversec_expr_case(c_expr_case: C_expr_caseContext, dbSchema: NotNullInfo[], fromColumns: NotNullInfo[], traverseResult: TraverseResult): boolean {
 	const case_expr = c_expr_case.case_expr();
-	const whenIsNotNull = case_expr.when_clause_list().when_clause_list().every(when_clause => traversewhen_clause(when_clause, dbSchema, fromColumns, traverseResult));
+	const whenResult = case_expr.when_clause_list().when_clause_list().map(when_clause => traversewhen_clause(when_clause, dbSchema, fromColumns, traverseResult));
+	const whenIsNotNull = whenResult.every(when => when);
 	const elseExpr = case_expr.case_default()?.a_expr();
 	const elseIsNotNull = elseExpr ? !traverse_a_expr(elseExpr, dbSchema, fromColumns, traverseResult).is_nullable : false;
 	return elseIsNotNull && whenIsNotNull;
@@ -572,8 +573,28 @@ function traversec_expr_case(c_expr_case: C_expr_caseContext, dbSchema: NotNullI
 
 function traversewhen_clause(when_clause: When_clauseContext, dbSchema: NotNullInfo[], fromColumns: NotNullInfo[], traverseResult: TraverseResult): boolean {
 	const a_expr_list = when_clause.a_expr_list();
-	const thenExprList = a_expr_list.filter((_, index) => index % 2 == 1);
-	return thenExprList.every(thenExpr => traverse_a_expr(thenExpr, dbSchema, fromColumns, traverseResult));
+	const [whenExprList, thenExprList] = partition(a_expr_list, (index) => index % 2 === 0);
+
+	const whenExprResult = thenExprList.map((thenExpr, index) => {
+		traverse_a_expr(whenExprList[index], dbSchema, fromColumns, traverseResult);
+		const thenExprResult = traverse_a_expr(thenExpr, dbSchema, fromColumns, traverseResult);
+		return thenExprResult;
+	});
+	return whenExprResult.every(res => res);
+}
+
+function partition<T>(array: T[], predicate: (index: number) => boolean): [T[], T[]] {
+	return array.reduce(
+		(acc, curr, index) => {
+			if (predicate(index)) {
+				acc[0].push(curr);
+			} else {
+				acc[1].push(curr);
+			}
+			return acc;
+		},
+		[[] as T[], [] as T[]]
+	);
 }
 
 function traversefunc_application(func_application: Func_applicationContext, dbSchema: NotNullInfo[], fromColumns: NotNullInfo[], traverseResult: TraverseResult): boolean {

@@ -71,4 +71,78 @@ describe('postgres-parse-update', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('UPDATE mytable1 SET id = CASE WHEN :valueSet THEN :value ELSE value END WHERE id = :id', async () => {
+		const sql = `
+			UPDATE mytable5 SET id = CASE WHEN $1 THEN $2 ELSE year END WHERE id = $3
+				`;
+
+		const actual = await describeQuery(postres, sql, ['valueSet', 'value', 'id']);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Update',
+			multipleRowsResult: false,
+			columns: [],
+			data: [
+				{
+					name: 'valueSet',
+					columnType: 'bool',
+					notNull: true //different from mysql and sqlite
+				},
+				{
+					name: 'value',
+					columnType: 'int4',
+					notNull: true //different from mysql and sqlite
+				}
+			],
+			parameters: [
+				{
+					name: 'id',
+					columnType: 'int4',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('UPDATE mytable2 SET name = CASE WHEN :nameSet THEN :name ELSE name END WHERE id = :id', async () => {
+		const sql = `
+			UPDATE mytable2 SET name = CASE WHEN $1 THEN $2 ELSE name END WHERE id = $3
+				`;
+
+		const actual = await describeQuery(postres, sql, ['nameSet', 'name', 'id']);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Update',
+			multipleRowsResult: false,
+			columns: [],
+			data: [
+				{
+					name: 'nameSet',
+					columnType: 'bool',
+					notNull: true //different from mysql and sqlite
+				},
+				{
+					name: 'name',
+					columnType: 'text',
+					notNull: true //different from mysql and sqlite
+				}
+			],
+			parameters: [
+				{
+					name: 'id',
+					columnType: 'int4',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });
