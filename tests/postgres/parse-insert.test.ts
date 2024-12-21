@@ -342,7 +342,7 @@ describe('postgres-parse-insert', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
-	it('INSERT INTO mytable1 (value) RETURNING id', async () => {
+	it('INSERT INTO mytable1 (value) RETURNING id, id+id, value', async () => {
 		const sql = 'INSERT INTO mytable1 (value) VALUES ($1) RETURNING id, id+id, value';
 		const actual = await describeQuery(postres, sql, ['value']);
 		const expected: SchemaDef = {
