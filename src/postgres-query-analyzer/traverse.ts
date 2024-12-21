@@ -916,14 +916,21 @@ function traverseUpdatestmt(updatestmt: UpdatestmtContext, dbSchema: PostgresCol
 	}
 	const whereParameters = traverseResult.parameters.slice(parametersBefore);
 
-	return {
+	const returning_clause = updatestmt.returning_clause();
+	const returninColumns = returning_clause ? traverse_target_list(returning_clause.target_list(), dbSchema, updateColumns, traverseResult) : [];
+
+	const result: PostgresTraverseResult = {
 		queryType: 'Update',
 		multipleRowsResult: false,
 		parametersNullability: traverseResult.parameters.slice(0, parametersBefore).map(param => param.isNotNull),
-		columnsNullability: [],
+		columnsNullability: returninColumns.map(col => !col.is_nullable),
 		parameterList: [],
 		whereParamtersNullability: whereParameters.map(param => param.isNotNull)
 	}
+	if (returning_clause) {
+		result.returning = true;
+	}
+	return result;
 }
 
 function traverse_set_clause(set_clause: Set_clauseContext, dbSchema: NotNullInfo[], updateColumns: PostgresColumnSchema[], traverseResult: TraverseResult): void {

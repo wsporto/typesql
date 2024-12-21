@@ -280,4 +280,84 @@ describe('postgres-parse-update', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('UPDATE mytable1 SET value = $1 RETURNING *', async () => {
+		const sql = 'UPDATE mytable1 SET value = $1 RETURNING *';
+		const actual = await describeQuery(postres, sql, ['value']);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Update',
+			multipleRowsResult: false,
+			returning: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'table'
+				},
+				{
+					columnName: 'value',
+					type: 'int4',
+					notNull: false,
+					table: 'table'
+				}
+			],
+			data: [
+				{
+					name: 'value',
+					columnType: 'int4',
+					notNull: false
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('UPDATE mytable1 SET value = $1 RETURNING id, id+id, value', async () => {
+		const sql = 'UPDATE mytable1 SET value = $1 RETURNING id, id+id, value';
+		const actual = await describeQuery(postres, sql, ['value']);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Update',
+			multipleRowsResult: false,
+			returning: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'table'
+				},
+				{
+					columnName: '?column?',
+					type: 'int4',
+					notNull: true,
+					table: ''
+				},
+				{
+					columnName: 'value',
+					type: 'int4',
+					notNull: false,
+					table: 'table'
+				}
+			],
+			data: [
+				{
+					name: 'value',
+					columnType: 'int4',
+					notNull: false
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });
