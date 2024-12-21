@@ -341,23 +341,99 @@ export async function generateCrud(client: PgDielect, queryType: QueryType, tabl
 	writeResultType(writer, resultTypeName, columns);
 	writer.blankLine();
 
+	const crudParameters: CrudParameters = {
+		queryType,
+		tableName,
+		queryName,
+		dataTypeName,
+		paramsTypeName,
+		resultTypeName,
+		columns,
+		nonKeys: nonKeys.map(col => col.column_name),
+		keys: keys.map(col => col.column_name)
+	}
+
+	const result = writeCrud(writer, crudParameters);
+
+	return result;
+}
+
+type CrudParameters = {
+	queryType: QueryType;
+	tableName: string;
+	queryName: string;
+	dataTypeName: string;
+	paramsTypeName: string;
+	resultTypeName: string;
+	columns: TsFieldDescriptor[];
+	nonKeys: string[];
+	keys: string[]
+}
+
+function writeCrud(writer: CodeBlockWriter, crudParamters: CrudParameters): string {
+	const { queryType } = crudParamters;
+	switch (queryType) {
+		case 'Select':
+			return writeCrudSelect(writer, crudParamters);
+		case 'Insert':
+			return writeCrudUpdate(writer, crudParamters);
+		case 'Update':
+			return writeCrudUpdate(writer, crudParamters);
+		case 'Delete':
+			return writeCrudUpdate(writer, crudParamters);
+	}
+}
+
+function writeCrudSelect(writer: CodeBlockWriter, crudParamters: CrudParameters): string {
+	const { tableName, queryName, paramsTypeName, resultTypeName, columns, keys } = crudParamters;
+	writer.write(`export async function ${queryName}(client: pg.Client | pg.Pool, params: ${paramsTypeName}): Promise<${resultTypeName} | null>`).block(() => {
+		writer.writeLine('const sql = `');
+		writer.indent().write('SELECT').newLine();
+		columns.forEach((col, columnIndex) => {
+			writer.indent(2).write(col.name);
+			writer.conditionalWrite(columnIndex < columns.length - 1, ',');
+			writer.newLine();
+		});
+		writer.indent().write(`FROM ${tableName}`).newLine();
+		const keyName = keys[0];
+		writer.indent().write(`WHERE ${keyName} = $1`).newLine();
+		writer.indent().write('`').newLine();
+		writer.writeLine(`return client.query({ text: sql, rowMode: 'array', values: [params.${keyName}] })`);
+		writer.indent(1).write(`.then(res => res.rows.length > 0 ? mapArrayTo${resultTypeName}(res.rows[0]) : null);`).newLine();
+	})
+
+	writer.blankLine();
+	writer.write(`function mapArrayTo${resultTypeName}(data: any) `).block(() => {
+		writer.write(`const result: ${resultTypeName} = `).block(() => {
+			columns.forEach((col, index) => {
+				const separator = index < columns.length - 1 ? ',' : '';
+				writer.writeLine(`${col.name}: ${toDriver(`data[${index}]`, col)}${separator}`);
+			});
+		});
+		writer.writeLine('return result;');
+	});
+	return writer.toString();
+}
+
+function writeCrudUpdate(writer: CodeBlockWriter, crudParamters: CrudParameters): string {
+	const { tableName, queryName, dataTypeName, paramsTypeName, resultTypeName, columns, nonKeys, keys } = crudParamters;
 	writer.write(`export async function ${queryName}(client: pg.Client | pg.Pool, data: ${dataTypeName}, params: ${paramsTypeName}): Promise<${resultTypeName}>`).block(() => {
 		writer.writeLine(`let sql = 'UPDATE ${tableName} SET';`);
 		writer.writeLine('const values: any[] = [];');
 		writer.writeLine('let update = false;');
 		nonKeys.forEach((col, index) => {
-			writer.write(`if (data.${col.column_name} !== undefined)`).block(() => {
-				writer.writeLine(`sql += ' ${col.column_name} = $${index + 1}';`)
-				writer.writeLine(`values.push(data.${col.column_name});`);
+			writer.write(`if (data.${col} !== undefined)`).block(() => {
+				writer.writeLine(`sql += ' ${col} = $${index + 1}';`)
+				writer.writeLine(`values.push(data.${col});`);
 				writer.writeLine('update = true;');
 			})
 		})
-		const keyName = keys[0].column_name;
+		const keyName = keys[0];
 		writer.writeLine(`sql += ' WHERE ${keyName} = $${nonKeys.length + 1} RETURNING *';`);
 		writer.writeLine(`values.push(params.${keyName});`);
 		writer.write('if (update)').block(() => {
 			writer.writeLine('return client.query({ text: sql, values })');
-			writer.indent().write('.then(res => mapArrayToUpdateMytable1Result(res));');
+			writer.indent().write(`.then(res => mapArrayTo${resultTypeName}(res));`);
 		})
 		writer.writeLine('return Promise.resolve({ rowCount: 0 });');
 	})
@@ -372,7 +448,6 @@ export async function generateCrud(client: PgDielect, queryType: QueryType, tabl
 		});
 		writer.writeLine('return result;');
 	});
-
 	return writer.toString();
 }
 
