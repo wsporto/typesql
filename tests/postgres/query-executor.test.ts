@@ -4,7 +4,6 @@ import postgres from 'postgres';
 import { postgresDescribe, loadDbSchema } from '../../src/drivers/postgres';
 import { schema } from './schema';
 import { PostgresDescribe } from '../../src/drivers/types';
-import { isLeft } from 'fp-ts/lib/Either';
 
 describe('postgres-query-executor', () => {
 

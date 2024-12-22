@@ -116,7 +116,7 @@ export function generateCrud(client: SQLiteClient, queryType: QueryType, tableNa
 	return code;
 }
 
-function getQueryName(queryType: QueryType, tableName: string) {
+export function getQueryName(queryType: QueryType, tableName: string) {
 	const camelCaseName = convertToCamelCaseName(tableName);
 	const captitalizedName = capitalize(camelCaseName);
 	switch (queryType) {
@@ -237,8 +237,6 @@ function getInsertUpdateResult(client: SQLiteClient) {
 			return libSqlInsertColumns;
 		case 'd1':
 			return d1InsertColumns;
-		case 'pg':
-			return [];
 	}
 }
 
@@ -1126,8 +1124,6 @@ function writeImports(writer: CodeBlockWriter, client: SQLiteClient, isDynamicQu
 				writer.writeLine(`const EOL = '\\n';`);
 			}
 			return;
-		case 'pg':
-			throw Error('postgres not execpted');
 		default:
 			return client satisfies never;
 	}
@@ -1289,9 +1285,6 @@ function writeExecFunction(writer: CodeBlockWriter, client: SQLiteClient, params
 				writeMapFunction(writer, mapFunctionParams);
 			}
 			return;
-		case 'pg': {
-			throw Error('postgres not expected')
-		}
 		default:
 			return client satisfies never;
 	}

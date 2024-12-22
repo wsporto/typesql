@@ -128,7 +128,7 @@ export type DatabaseClient = MySqlDialect | SQLiteDialect | LibSqlClient | BunDi
 
 export type TypeSqlDialect = DatabaseClient['type'];
 
-export type SQLiteClient = SQLiteDialect['type'] | LibSqlClient['type'] | BunDialect['type'] | D1Dialect['type'] | PgDielect['type'];
+export type SQLiteClient = SQLiteDialect['type'] | LibSqlClient['type'] | BunDialect['type'] | D1Dialect['type'];
 
 export type MySqlDialect = {
 	type: 'mysql2';

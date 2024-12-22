@@ -1,0 +1,26 @@
+import pg from 'pg';
+
+export type DeleteFromMytable1Params = {
+	id: number;
+}
+
+export type DeleteFromMytable1Result = {
+	id: number;
+	value?: number;
+}
+
+export async function deleteFromMytable1(client: pg.Client | pg.Pool, params: DeleteFromMytable1Params): Promise<DeleteFromMytable1Result | null> {
+	const sql = `
+	DELETE FROM mytable1 WHERE id = $1
+	`
+	return client.query({ text: sql, rowMode: 'array', values: [params.id] })
+		.then(res => res.rows.length > 0 ? mapArrayToDeleteFromMytable1Result(res.rows[0]) : null);
+}
+
+function mapArrayToDeleteFromMytable1Result(data: any) {
+	const result: DeleteFromMytable1Result = {
+		id: data[0],
+		value: data[1]
+	}
+	return result;
+}

@@ -7,7 +7,7 @@ import { generateTsFile, writeFile } from './code-generator';
 import { createMysqlClient, loadMysqlSchema, loadMySqlTableSchema, selectTablesFromSchema } from './queryExectutor';
 import { generateInsertStatement, generateUpdateStatement, generateDeleteStatement, generateSelectStatement } from './sql-generator';
 import type { ColumnSchema, Table } from './mysql-query-analyzer/types';
-import type { TypeSqlConfig, SqlGenOption, DatabaseClient, TypeSqlDialect, TypeSqlError, SQLiteClient, QueryType } from './types';
+import type { TypeSqlConfig, SqlGenOption, DatabaseClient, TypeSqlDialect, TypeSqlError, SQLiteClient, QueryType, PgDielect } from './types';
 import { type Either, isLeft, left, right } from 'fp-ts/lib/Either';
 import CodeBlockWriter from 'code-block-writer';
 import { globSync } from 'glob';
@@ -19,7 +19,9 @@ import {
 } from './sqlite-query-analyzer/query-executor';
 import { createLibSqlClient } from './drivers/libsql';
 import { generateCrud } from './sqlite-query-analyzer/code-generator';
-import { createPostgresClient } from './drivers/postgres';
+import { generateCrud as generatePgCrud } from './code-generator2';
+import { createPostgresClient, loadDbSchema as loadPostgresDbSchema, mapToColumnSchema } from './drivers/postgres';
+import uniqBy from 'lodash.uniqby';
 
 const CRUD_FOLDER = 'crud';
 
@@ -244,13 +246,10 @@ function generateSql(dialect: TypeSqlDialect, stmtType: SqlGenOption, tableName:
 main().then(() => console.log('finished!'));
 
 async function generateCrudTables(client: DatabaseClient, sqlFolderPath: string, dbSchema: ColumnSchema[], includeCrudTables: string[]) {
-	const allTables = await selectAllTables(client);
-	if (isLeft(allTables)) {
-		console.error(allTables.left);
-		return;
-	}
-	const filteredTables = filterTables(allTables.right, includeCrudTables);
 
+	const allTables = dbSchema.map(col => ({ schema: col.schema, table: col.table } satisfies Table));
+	const uniqueTables = uniqBy(allTables, (item) => `${item.schema}:${item.table}`);
+	const filteredTables = filterTables(uniqueTables, includeCrudTables);
 	for (const tableInfo of filteredTables) {
 		const tableName = tableInfo.table;
 		const filePath = `${sqlFolderPath}/${CRUD_FOLDER}/${tableName}/`;
@@ -273,8 +272,9 @@ async function generateCrudTables(client: DatabaseClient, sqlFolderPath: string,
 	}
 }
 
-function generateAndWriteCrud(client: SQLiteClient, filePath: string, queryType: QueryType, tableName: string, columns: ColumnSchema[]) {
-	const content = generateCrud(client, queryType, tableName, columns);
+function generateAndWriteCrud(client: SQLiteClient | PgDielect['type'], filePath: string, queryType: QueryType, tableName: string, columns: ColumnSchema[]) {
+
+	const content = client === 'pg' ? generatePgCrud(client, queryType, tableName, columns) : generateCrud(client, queryType, tableName, columns);
 	writeFile(filePath, content);
 	console.log('Generated file:', filePath);
 }
@@ -317,8 +317,16 @@ async function loadSchema(databaseClient: DatabaseClient): Promise<Either<TypeSq
 		case 'd1':
 			return loadDbSchema(databaseClient.client);
 		case 'pg':
-			return right([]);
-
+			const postgresSchema = await loadPostgresDbSchema(databaseClient.client);
+			const columnSchema = postgresSchema.map(schema => schema.map(col => mapToColumnSchema(col)));
+			if (columnSchema.isErr()) {
+				const typesqlError: TypeSqlError = {
+					description: columnSchema.error,
+					name: columnSchema.error
+				}
+				return left(typesqlError);
+			}
+			return right(columnSchema.value);
 	}
 }
 

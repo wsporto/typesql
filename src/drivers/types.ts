@@ -5,6 +5,7 @@ export type PostgresColumnSchema = {
 	table_schema: string;
 	table_name: string;
 	column_name: string;
+	type_id: number;
 	is_nullable: boolean;
 	column_key: 'PRI' | 'UNI' | '';
 };

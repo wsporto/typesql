@@ -4,6 +4,8 @@ import { TaskEither, tryCatch } from 'fp-ts/lib/TaskEither';
 import { DatabaseClient, TypeSqlError } from '../types';
 import { Either, right } from 'fp-ts/lib/Either';
 import { ResultAsync } from 'neverthrow';
+import { ColumnSchema } from '../mysql-query-analyzer/types';
+import { postgresTypes } from '../dialects/postgres';
 
 export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], string> {
 	return ResultAsync.fromThrowable(
@@ -14,6 +16,7 @@ export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], stri
 				t.table_schema,
 				t.table_name,
 				col.column_name,
+				ty.oid as type_id,
 				col.is_nullable,
 				CASE 
 					WHEN con.contype = 'p' THEN 'PRI'  -- Primary key
@@ -28,6 +31,8 @@ export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], stri
 				information_schema.columns col
 				ON t.table_name = col.table_name 
 				AND t.table_schema = col.table_schema
+			JOIN
+				pg_catalog.pg_type ty on pg_catalog.format_type(ty.oid, NULL) = col.data_type
 			LEFT JOIN 
 			    pg_constraint con ON con.conrelid = c.oid
 			    AND col.ordinal_position = ANY (con.conkey)
@@ -42,9 +47,10 @@ export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], stri
 				table_schema: row.table_schema,
 				table_name: row.table_name,
 				column_name: row.column_name,
+				type_id: row.type_id,
 				is_nullable: row.is_nullable === 'YES',
 				column_key: row.column_key
-			}));
+			} satisfies PostgresColumnSchema));
 		},
 		(reason: any) => {
 			if (reason.errors && reason.errors.length > 0) {
@@ -53,6 +59,19 @@ export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], stri
 			return 'Unknown error';
 		}
 	)();
+}
+
+export function mapToColumnSchema(col: PostgresColumnSchema): ColumnSchema {
+	const columnSchema: ColumnSchema = {
+		column: col.column_name,
+		column_type: postgresTypes[col.type_id],
+		columnKey: col.column_key,
+		notNull: !col.is_nullable,
+		schema: col.table_schema,
+		table: col.table_name,
+		hidden: 0
+	}
+	return columnSchema;
 }
 
 export const postgresDescribe = (sql: Sql, sqlQuery: string): ResultAsync<PostgresDescribe, string> => {

@@ -1,11 +1,15 @@
 import assert from 'node:assert';
 
 import { readFileSync } from 'node:fs';
-import { generateCode } from '../../src/code-generator2';
+import { generateCode, generateCrud } from '../../src/code-generator2';
 import { PgDielect } from '../../src/types';
 import postgres from 'postgres';
+import { loadDbSchema, mapToColumnSchema } from '../../src/drivers/postgres';
+import { ColumnSchema } from '../../src/mysql-query-analyzer/types';
 
 describe('postgres-code-generator', () => {
+
+	let dbSchema: ColumnSchema[] = [];
 
 	const databaseClient = postgres({
 		host: 'localhost',
@@ -18,6 +22,14 @@ describe('postgres-code-generator', () => {
 		type: 'pg',
 		client: databaseClient
 	}
+
+	before(async function () {
+		const dbSchemaResult = await await loadDbSchema(databaseClient);
+		if (dbSchemaResult.isErr()) {
+			assert.fail(`Shouldn't return an error: ${dbSchemaResult.error}`);
+		}
+		dbSchema = dbSchemaResult.value.map(col => mapToColumnSchema(col));
+	});
 
 	it('select01 - select id, name from mytable2 where id = ?', async () => {
 		const sql = 'select id, name from mytable2 where id = $1';
@@ -189,5 +201,30 @@ WHERE :param1 is true OR (:param2 is true OR :param2::bool is null)`;
 			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
 		}
 		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('crud-select01', () => {
+		const actual = generateCrud('pg', 'Select', 'mytable1', dbSchema);
+		const expected = readFileSync('tests/postgres/expected-code/crud-select01.ts.txt', 'utf-8').replace(/\r/gm, '');
+		assert.deepStrictEqual(actual, expected);
+	});
+
+	it('crud-insert01', () => {
+		const actual = generateCrud('pg', 'Insert', 'mytable1', dbSchema);
+		const expected = readFileSync('tests/postgres/expected-code/crud-insert01.ts.txt', 'utf-8').replace(/\r/gm, '');
+		assert.deepStrictEqual(actual, expected);
+	});
+
+	it('crud-update01', () => {
+		const actual = generateCrud('pg', 'Update', 'mytable1', dbSchema);
+		const expected = readFileSync('tests/postgres/expected-code/crud-update01.ts.txt', 'utf-8').replace(/\r/gm, '');
+		assert.deepStrictEqual(actual, expected);
+	});
+
+	it('crud-delete01', () => {
+		const actual = generateCrud('pg', 'Delete', 'mytable1', dbSchema);
+		const expected = readFileSync('tests/postgres/expected-code/crud-delete01.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		assert.deepStrictEqual(actual, expected);
 	});
 });
