@@ -209,6 +209,12 @@ WHERE :param1 is true OR (:param2 is true OR :param2::bool is null)`;
 		assert.deepStrictEqual(actual, expected);
 	});
 
+	it('crud-insert01', async () => {
+		const actual = await generateCrud(dialect, 'Insert', 'mytable1', dbSchema);
+		const expected = readFileSync('tests/postgres/expected-code/crud-insert01.ts.txt', 'utf-8').replace(/\r/gm, '');
+		assert.deepStrictEqual(actual, expected);
+	});
+
 	it('crud-update01', async () => {
 		const actual = await generateCrud(dialect, 'Update', 'mytable1', dbSchema);
 		const expected = readFileSync('tests/postgres/expected-code/crud-update01.ts.txt', 'utf-8').replace(/\r/gm, '');

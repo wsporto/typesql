@@ -331,7 +331,7 @@ export async function generateCrud(client: PgDielect, queryType: QueryType, tabl
 		writer.blankLine();
 		writeDataType(writer, dataTypeName, uniqueDataParams);
 	}
-	const uniqueParams = keys.map(col => mapPostgresColumnSchemaToTsFieldDescriptor(col));
+	const uniqueParams = queryType === 'Insert' ? nonKeys.map(col => mapPostgresColumnSchemaToTsFieldDescriptor(col)) : keys.map(col => mapPostgresColumnSchemaToTsFieldDescriptor(col));
 	if (uniqueParams.length > 0) {
 		writer.blankLine();
 		writeParamsType(writer, paramsTypeName, uniqueParams, false, '');
@@ -376,7 +376,7 @@ function writeCrud(writer: CodeBlockWriter, crudParamters: CrudParameters): stri
 		case 'Select':
 			return writeCrudSelect(writer, crudParamters);
 		case 'Insert':
-			return writeCrudUpdate(writer, crudParamters);
+			return writeCrudInsert(writer, crudParamters);
 		case 'Update':
 			return writeCrudUpdate(writer, crudParamters);
 		case 'Delete':
@@ -400,6 +400,31 @@ function writeCrudSelect(writer: CodeBlockWriter, crudParamters: CrudParameters)
 		writer.indent().write('`').newLine();
 		writer.writeLine(`return client.query({ text: sql, rowMode: 'array', values: [params.${keyName}] })`);
 		writer.indent(1).write(`.then(res => res.rows.length > 0 ? mapArrayTo${resultTypeName}(res.rows[0]) : null);`).newLine();
+	})
+
+	writer.blankLine();
+	writer.write(`function mapArrayTo${resultTypeName}(data: any) `).block(() => {
+		writer.write(`const result: ${resultTypeName} = `).block(() => {
+			columns.forEach((col, index) => {
+				const separator = index < columns.length - 1 ? ',' : '';
+				writer.writeLine(`${col.name}: ${toDriver(`data[${index}]`, col)}${separator}`);
+			});
+		});
+		writer.writeLine('return result;');
+	});
+	return writer.toString();
+}
+
+function writeCrudInsert(writer: CodeBlockWriter, crudParamters: CrudParameters): string {
+	const { tableName, queryName, dataTypeName, paramsTypeName, resultTypeName, columns, nonKeys, keys } = crudParamters;
+	writer.write(`export async function ${queryName}(client: pg.Client | pg.Pool, params: ${paramsTypeName}): Promise<${resultTypeName} | null>`).block(() => {
+		writer.writeLine('const sql = `');
+		writer.indent().write(`INSERT INTO ${tableName} (${nonKeys.join(',')})`).newLine();
+		writer.indent().write(`VALUES (${nonKeys.map((_, index) => `$${index + 1}`).join(',')})`).newLine();
+		writer.indent().write('RETURNING *').newLine();
+		writer.indent().write('`').newLine();
+		writer.writeLine(`return client.query({ text: sql, values: [${nonKeys.map(col => `params.${col}`)}] })`);
+		writer.indent().write(`.then(res => mapArrayTo${resultTypeName}(res));`);
 	})
 
 	writer.blankLine();
