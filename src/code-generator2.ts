@@ -2,7 +2,7 @@ import CodeBlockWriter from 'code-block-writer';
 import { capitalize, convertToCamelCaseName, removeDuplicatedParameters2, TsDescriptor } from './code-generator';
 import { ParameterDef, PgDielect, QueryType, SchemaDef, TsFieldDescriptor, TsParameterDescriptor, TypeSqlError } from './types';
 import { describeQuery } from './postgres-query-analyzer/describe';
-import { ColumnInfo } from './mysql-query-analyzer/types';
+import { ColumnInfo, ColumnSchema } from './mysql-query-analyzer/types';
 import { mapColumnType, postgresTypes } from './dialects/postgres';
 import { PostgresType } from './sqlite-query-analyzer/types';
 import { preprocessSql } from './describe-query';
@@ -304,7 +304,7 @@ function isList(param: TsParameterDescriptor) {
 	return param.tsType.endsWith('[]') && !param.isArray;
 }
 
-export async function generateCrud(client: PgDielect, queryType: QueryType, tableName: string, dbSchema: PostgresColumnSchema[]) {
+export function generateCrud(client: 'pg', queryType: QueryType, tableName: string, dbSchema: ColumnSchema[]) {
 
 	const queryName = getQueryName(queryType, tableName);
 	const camelCaseName = convertToCamelCaseName(queryName);
@@ -317,14 +317,14 @@ export async function generateCrud(client: PgDielect, queryType: QueryType, tabl
 		useTabs: true
 	});
 
-	const allColumns = dbSchema.filter((col) => col.table_name === tableName);
-	const keys = allColumns.filter((col) => col.column_key === 'PRI');
+	const allColumns = dbSchema.filter((col) => col.table === tableName);
+	const keys = allColumns.filter((col) => col.columnKey === 'PRI');
 	if (keys.length === 0) {
-		keys.push(...allColumns.filter((col) => col.column_key === 'UNI'));
+		keys.push(...allColumns.filter((col) => col.columnKey === 'UNI'));
 	}
-	const nonKeys = allColumns.filter(col => col.column_key !== 'PRI');
+	const nonKeys = allColumns.filter(col => col.columnKey !== 'PRI');
 
-	const codeWriter = getCodeWriter(client.type);
+	const codeWriter = getCodeWriter(client);
 	codeWriter.writeImports(writer);
 	const uniqueDataParams = queryType === 'Update' ? nonKeys.map(col => mapPostgresColumnSchemaToTsFieldDescriptor(col)) : [];
 	if (uniqueDataParams.length > 0) {
@@ -349,8 +349,8 @@ export async function generateCrud(client: PgDielect, queryType: QueryType, tabl
 		paramsTypeName,
 		resultTypeName,
 		columns,
-		nonKeys: nonKeys.map(col => col.column_name),
-		keys: keys.map(col => col.column_name)
+		nonKeys: nonKeys.map(col => col.column),
+		keys: keys.map(col => col.column)
 	}
 
 	const result = writeCrud(writer, crudParameters);
@@ -442,7 +442,7 @@ function writeCrudInsert(writer: CodeBlockWriter, crudParamters: CrudParameters)
 
 function writeCrudUpdate(writer: CodeBlockWriter, crudParamters: CrudParameters): string {
 	const { tableName, queryName, dataTypeName, paramsTypeName, resultTypeName, columns, nonKeys, keys } = crudParamters;
-	writer.write(`export async function ${queryName}(client: pg.Client | pg.Pool, data: ${dataTypeName}, params: ${paramsTypeName}): Promise<${resultTypeName}>`).block(() => {
+	writer.write(`export async function ${queryName}(client: pg.Client | pg.Pool, data: ${dataTypeName}, params: ${paramsTypeName}): Promise<${resultTypeName} | null>`).block(() => {
 		writer.writeLine(`let sql = 'UPDATE ${tableName} SET';`);
 		writer.writeLine('const values: any[] = [];');
 		writer.writeLine('let update = false;');
@@ -460,7 +460,7 @@ function writeCrudUpdate(writer: CodeBlockWriter, crudParamters: CrudParameters)
 			writer.writeLine('return client.query({ text: sql, values })');
 			writer.indent().write(`.then(res => mapArrayTo${resultTypeName}(res));`);
 		})
-		writer.writeLine('return Promise.resolve({ rowCount: 0 });');
+		writer.writeLine('return null;');
 	})
 
 	writer.blankLine();
@@ -500,11 +500,10 @@ function writeCrudDelete(writer: CodeBlockWriter, crudParamters: CrudParameters)
 	return writer.toString();
 }
 
-export function mapPostgresColumnSchemaToTsFieldDescriptor(col: PostgresColumnSchema): TsFieldDescriptor {
-	const postgresType = postgresTypes[col.type_id] as any ?? '?'
+export function mapPostgresColumnSchemaToTsFieldDescriptor(col: ColumnSchema): TsFieldDescriptor {
 	return {
-		name: col.column_name,
-		notNull: !col.is_nullable,
-		tsType: mapColumnType(postgresType as PostgresType),
+		name: col.column,
+		notNull: col.notNull,
+		tsType: mapColumnType(col.column_type as PostgresType),
 	}
 }

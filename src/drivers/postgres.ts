@@ -4,6 +4,8 @@ import { TaskEither, tryCatch } from 'fp-ts/lib/TaskEither';
 import { DatabaseClient, TypeSqlError } from '../types';
 import { Either, right } from 'fp-ts/lib/Either';
 import { ResultAsync } from 'neverthrow';
+import { ColumnSchema } from '../mysql-query-analyzer/types';
+import { postgresTypes } from '../dialects/postgres';
 
 export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], string> {
 	return ResultAsync.fromThrowable(
@@ -57,6 +59,19 @@ export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], stri
 			return 'Unknown error';
 		}
 	)();
+}
+
+export function mapToColumnSchema(col: PostgresColumnSchema): ColumnSchema {
+	const columnSchema: ColumnSchema = {
+		column: col.column_name,
+		column_type: postgresTypes[col.type_id],
+		columnKey: col.column_key,
+		notNull: !col.is_nullable,
+		schema: col.table_schema,
+		table: col.table_name,
+		hidden: 0
+	}
+	return columnSchema;
 }
 
 export const postgresDescribe = (sql: Sql, sqlQuery: string): ResultAsync<PostgresDescribe, string> => {

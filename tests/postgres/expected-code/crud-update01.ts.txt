@@ -13,7 +13,7 @@ export type UpdateMytable1Result = {
 	value?: number;
 }
 
-export async function updateMytable1(client: pg.Client | pg.Pool, data: UpdateMytable1Data, params: UpdateMytable1Params): Promise<UpdateMytable1Result> {
+export async function updateMytable1(client: pg.Client | pg.Pool, data: UpdateMytable1Data, params: UpdateMytable1Params): Promise<UpdateMytable1Result | null> {
 	let sql = 'UPDATE mytable1 SET';
 	const values: any[] = [];
 	let update = false;
@@ -28,7 +28,7 @@ export async function updateMytable1(client: pg.Client | pg.Pool, data: UpdateMy
 		return client.query({ text: sql, values })
 			.then(res => mapArrayToUpdateMytable1Result(res));
 	}
-	return Promise.resolve({ rowCount: 0 });
+	return null;
 }
 
 function mapArrayToUpdateMytable1Result(data: any) {
