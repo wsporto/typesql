@@ -4,17 +4,17 @@ import { PostgresColumnSchema } from '../drivers/types';
 import { Result, err, ok } from 'neverthrow';
 
 
-export function parseSql(sql: string, dbSchema: PostgresColumnSchema[]): PostgresTraverseResult {
+export function parseSql(sql: string, dbSchema: PostgresColumnSchema[], gererateNested = false): PostgresTraverseResult {
 	const parser = _parseSql(sql);
 
-	const traverseResult = traverseSmt(parser.stmt(), dbSchema);
+	const traverseResult = traverseSmt(parser.stmt(), dbSchema, gererateNested);
 
 	return traverseResult;
 }
 
-export function safeParseSql(sql: string, dbSchema: PostgresColumnSchema[]): Result<PostgresTraverseResult, string> {
+export function safeParseSql(sql: string, dbSchema: PostgresColumnSchema[], gererateNested: boolean): Result<PostgresTraverseResult, string> {
 	try {
-		const result = parseSql(sql, dbSchema);
+		const result = parseSql(sql, dbSchema, gererateNested);
 		return ok(result);
 	}
 	catch (e) {

@@ -1,6 +1,5 @@
 import postgres, { Sql } from 'postgres';
-import { PostgresColumnSchema, DescribeQueryColumn, PostgresDescribe, PostgresType } from './types';
-import { TaskEither, tryCatch } from 'fp-ts/lib/TaskEither';
+import { PostgresColumnSchema, DescribeQueryColumn, PostgresDescribe } from './types';
 import { DatabaseClient, TypeSqlError } from '../types';
 import { Either, right } from 'fp-ts/lib/Either';
 import { ResultAsync } from 'neverthrow';
@@ -115,18 +114,6 @@ export function postgresAnalyze(sql: Sql, sqlQuery: string): ResultAsync<string[
 			return reason.message;
 		}
 	)();
-}
-
-export function loadTypes(postgres: Sql): TaskEither<string, PostgresType[]> {
-	return tryCatch(
-		async () => {
-			const result = await postgres`SELECT 
-				oid as "typeId", typname as "typeName"
-			FROM pg_type`.execute();
-			return result.columns as unknown as PostgresType[];
-		},
-		(reason) => String(reason)
-	);
 }
 
 export function createPostgresClient(databaseUri: string): Either<TypeSqlError, DatabaseClient> {

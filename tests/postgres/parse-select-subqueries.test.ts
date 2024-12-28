@@ -28,7 +28,7 @@ describe('postgres-parse-select-subqueries', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 'mytable1'
 				}
 			],
 			parameters: []
@@ -56,13 +56,13 @@ describe('postgres-parse-select-subqueries', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 'mytable1'
 				},
 				{
 					columnName: 'name',
 					type: 'text',
 					notNull: false,
-					table: 'table'
+					table: 'mytable2'
 				}
 			],
 			parameters: []
@@ -89,7 +89,7 @@ describe('postgres-parse-select-subqueries', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: false,
-					table: 'table'
+					table: 'mytable1'
 				}
 			],
 			parameters: []
@@ -116,7 +116,7 @@ describe('postgres-parse-select-subqueries', () => {
 					columnName: 'code',
 					type: 'int4',
 					notNull: false,
-					table: 'table'
+					table: 'mytable1'
 				}
 			],
 			parameters: []
@@ -143,13 +143,13 @@ describe('postgres-parse-select-subqueries', () => {
 					columnName: 'name',
 					type: 'text',
 					notNull: false,
-					table: 'table'
+					table: 'mytable2'
 				},
 				{
 					columnName: 'id',
 					type: 'text',
 					notNull: false,
-					table: 'table'
+					table: 'mytable2'
 				}
 			],
 			parameters: []
@@ -178,13 +178,13 @@ describe('postgres-parse-select-subqueries', () => {
 					columnName: 'name',
 					type: 'text',
 					notNull: true,
-					table: 'table'
+					table: 'mytable2'
 				},
 				{
 					columnName: 'id',
 					type: 'text',
 					notNull: true,
-					table: 'table'
+					table: 'mytable2'
 				}
 			],
 			parameters: [
@@ -224,7 +224,7 @@ describe('postgres-parse-select-subqueries', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 'mytable1'
 				}
 			],
 			parameters: []
@@ -278,13 +278,13 @@ describe('postgres-parse-select-subqueries', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 'mytable2'
 				},
 				{
 					columnName: 'name',
 					type: 'text',
 					notNull: false,
-					table: 'table'
+					table: 'mytable2'
 				}
 			],
 			parameters: []
@@ -313,7 +313,7 @@ describe('postgres-parse-select-subqueries', () => {
 					columnName: 'id',
 					type: 'text',
 					notNull: false,
-					table: 'table'
+					table: 'mytable2'
 				}
 			],
 			parameters: []
@@ -429,7 +429,7 @@ describe('postgres-parse-select-subqueries', () => {
 					columnName: 'name',
 					type: 'text',
 					notNull: false,
-					table: 'table'
+					table: 'mytable2'
 				}
 			],
 			parameters: [
@@ -450,7 +450,7 @@ describe('postgres-parse-select-subqueries', () => {
 		const sql = 'select name from mytable2 where not exists ( select id from mytable1 where id = $1 and value = $2)';
 		const actual = await describeQuery(postres, sql, ['a', 'b']);
 		const expected: SchemaDef = {
-			sql: 'select name from mytable2 where not exists ( select id from mytable1 where id = $1 and value = $2)',
+			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
@@ -458,7 +458,7 @@ describe('postgres-parse-select-subqueries', () => {
 					columnName: 'name',
 					type: 'text',
 					notNull: false,
-					table: 'table'
+					table: 'mytable2'
 				}
 			],
 			parameters: [
@@ -494,7 +494,7 @@ describe('postgres-parse-select-subqueries', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 'mytable1'
 				}
 			],
 			parameters: [
@@ -525,7 +525,7 @@ describe('postgres-parse-select-subqueries', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 'mytable1'
 				},
 				{
 					columnName: 'has',

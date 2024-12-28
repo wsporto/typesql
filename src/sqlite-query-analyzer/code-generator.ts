@@ -19,6 +19,7 @@ import type {
 	BunDialect,
 	LibSqlClient,
 	ParameterDef,
+	PgDielect,
 	QueryType,
 	SQLiteClient,
 	SQLiteDialect,
@@ -27,14 +28,16 @@ import type {
 	TsParameterDescriptor,
 	TypeSqlError
 } from '../types';
-import type { SQLiteType } from './types';
+import type { PostgresType, SQLiteType } from './types';
 import type { Field2 } from './sqlite-describe-nested-query';
 import { type RelationType2, type TsField2, mapToTsRelation2 } from '../ts-nested-descriptor';
 import { preprocessSql } from '../describe-query';
 import { explainSql } from './query-executor';
 import { mapToDynamicParams, mapToDynamicResultColumns, mapToDynamicSelectColumns } from '../ts-dynamic-query-descriptor';
 import { EOL } from 'node:os';
-import type { TsType } from '../mysql-mapping';
+import type { DbType, TsType } from '../mysql-mapping';
+import { mapColumnType } from '../drivers/sqlite';
+import { mapColumnType as mapPgColumnType } from '../dialects/postgres';
 
 type ExecFunctionParams = {
 	functionName: string;
@@ -240,14 +243,18 @@ function getInsertUpdateResult(client: SQLiteClient) {
 	}
 }
 
-function mapFieldToTsField(columns: ColumnInfo[], field: Field2, client: SQLiteClient): TsField2 {
+export function mapFieldToTsField(columns: ColumnInfo[], field: Field2, client: SQLiteClient | PgDielect['type']): TsField2 {
 	const tsField: TsField2 = {
 		name: field.name,
 		index: field.index,
-		tsType: mapColumnType(columns[field.index].type as SQLiteType, client),
+		tsType: mapDbColumnType(columns[field.index].type, client),
 		notNull: false
 	};
 	return tsField;
+}
+
+export function mapDbColumnType(type: DbType | '?', client: SQLiteClient | PgDielect['type']): TsType {
+	return client === 'pg' ? mapPgColumnType(type as PostgresType) : mapColumnType(type as SQLiteType, client)
 }
 
 function mapParameterToTsFieldDescriptor(col: ParameterDef, client: SQLiteClient): TsParameterDescriptor {
@@ -301,40 +308,6 @@ function mapColumnToTsParameterDescriptor(col: ColumnInfo, client: SQLiteClient)
 		isArray: false
 	};
 	return tsDesc;
-}
-
-function mapColumnType(sqliteType: SQLiteType, client: SQLiteClient): TsType {
-	switch (sqliteType) {
-		case 'INTEGER':
-			return 'number';
-		case 'INTEGER[]':
-			return 'number[]';
-		case 'TEXT':
-			return 'string';
-		case 'TEXT[]':
-			return 'string[]';
-		case 'NUMERIC':
-			return 'number';
-		case 'NUMERIC[]':
-			return 'number[]';
-		case 'REAL':
-			return 'number';
-		case 'REAL[]':
-			return 'number[]';
-		case 'DATE':
-			return 'Date';
-		case 'DATE_TIME':
-			return 'Date';
-		case 'BLOB':
-			return client === 'better-sqlite3' ? 'Uint8Array' : 'ArrayBuffer';
-		case 'BOOLEAN':
-			return 'boolean';
-	}
-	if (sqliteType.startsWith('ENUM')) {
-		const enumValues = sqliteType.substring(sqliteType.indexOf('(') + 1, sqliteType.indexOf(')'));
-		return enumValues.split(',').join(' | ') as TsType;
-	}
-	return 'any';
 }
 
 function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, tsDescriptor: TsDescriptor, isCrud = false, tableName = '') {
@@ -1066,7 +1039,7 @@ function fromDriver(variableName: string, param: TsParameterDescriptor): string 
 	}
 	return `${variableName}.${param.name}`;
 }
-function writeCollectFunction(
+export function writeCollectFunction(
 	writer: CodeBlockWriter,
 	relation: RelationType2,
 	columns: TsFieldDescriptor[],

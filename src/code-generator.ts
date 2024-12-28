@@ -474,8 +474,8 @@ function generateParam(param: ParamInfo) {
 	return `params.${param.name}`;
 }
 
-export function generateRelationType(capitalizedName: string, relationName: string) {
-	return `${capitalizedName}Nested${capitalizeStr(relationName)}`;
+export function generateRelationType(functionName: string, relationName: string) {
+	return `${capitalizeStr(functionName)}Nested${capitalizeStr(relationName)}`;
 }
 
 export function writeTypeBlock(
