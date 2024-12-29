@@ -1,0 +1,78 @@
+import pg from 'pg';
+
+export type Nested03Result = {
+	surveyid: number;
+	surveyname: string;
+	userid: number;
+	username: string;
+}
+
+export type Nested03NestedSurveys = {
+	surveyid: number;
+	surveyname: string;
+	users: Nested03NestedUsers[];
+}
+
+export type Nested03NestedUsers = {
+	userid: number;
+	username: string;
+}
+
+export async function nested03(client: pg.Client | pg.Pool): Promise<Nested03Result[]> {
+	const sql = `
+	-- @nested
+	SELECT
+		s.id as surveyId,
+		s.name as surveyName,
+		u.id as userId,
+		u.name as userName
+	FROM surveys s
+	INNER JOIN participants p on p.fk_survey = s.id
+	INNER JOIN users u on u.id = p.fk_user
+	`
+	return client.query({ text: sql, rowMode: 'array' })
+		.then(res => res.rows.map(row => mapArrayToNested03Result(row)));
+}
+
+function mapArrayToNested03Result(data: any) {
+	const result: Nested03Result = {
+		surveyid: data[0],
+		surveyname: data[1],
+		userid: data[2],
+		username: data[3]
+	}
+	return result;
+}
+
+export async function nested03Nested(client: pg.Client | pg.Pool): Promise<Nested03NestedSurveys[]> {
+	const selectResult = await nested03(client);
+	if (selectResult.length == 0) {
+		return [];
+	}
+	return collectNested03NestedSurveys(selectResult);
+}
+
+function collectNested03NestedSurveys(selectResult: Nested03Result[]): Nested03NestedSurveys[] {
+	const grouped = groupBy(selectResult.filter(r => r.surveyid != null), r => r.surveyid);
+	return [...grouped.values()].map(row => ({
+		surveyid: row[0].surveyid!,
+		surveyname: row[0].surveyname!,
+		users: collectNested03NestedUsers(row),
+	}))
+}
+
+function collectNested03NestedUsers(selectResult: Nested03Result[]): Nested03NestedUsers[] {
+	const grouped = groupBy(selectResult.filter(r => r.userid != null), r => r.userid);
+	return [...grouped.values()].map(row => ({
+		userid: row[0].userid!,
+		username: row[0].username!,
+	}))
+}
+
+const groupBy = <T, Q>(array: T[], predicate: (value: T, index: number, array: T[]) => Q) => {
+	return array.reduce((map, value, index, array) => {
+		const key = predicate(value, index, array);
+		map.get(key)?.push(value) ?? map.set(key, [value]);
+		return map;
+	}, new Map<Q, T[]>());
+}

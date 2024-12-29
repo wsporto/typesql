@@ -54,7 +54,7 @@ export function describeNestedQuery(columns: ColumnInfo[], relations: Relation2[
 	for (const [index, relation] of filterJunctionTables.entries()) {
 		const parent = isJunctionTableMap.get(relation.parentRelation) ? parentRef.get(relation.parentRelation) : undefined;
 		const groupIndex = columns.findIndex(
-			(col) => col.columnName === relation.joinColumn && (col.table === relation.name || col.table === relation.alias)
+			(col) => col.columnName.toLowerCase() === relation.joinColumn.toLowerCase() && (col.table === relation.name || col.table === relation.alias)
 		);
 		if (groupIndex === -1) {
 			const error: TypeSqlError = {

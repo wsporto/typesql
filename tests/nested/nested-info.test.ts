@@ -329,4 +329,61 @@ describe('nested-info', () => {
 
 		assert.deepStrictEqual(actual._unsafeUnwrap().nestedInfo, expected);
 	});
+
+	it('many to many - surveys with users', async () => {
+		const sql = `-- @nested
+		SELECT
+			s.id as surveyId,
+			s.name as surveyName,
+			u.id as userId,
+			u.name as userName
+		FROM surveys s
+		INNER JOIN participants p on p.fk_survey = s.id
+		INNER JOIN users u on u.id = p.fk_user`;
+
+		const actual = await describeQuery(pg, sql, []);
+
+		const expected: RelationInfo2[] = [
+			{
+				name: 'surveys',
+				alias: 's',
+				groupIndex: 0,
+				fields: [
+					{
+						name: 'surveyid',
+						index: 0
+					},
+					{
+						name: 'surveyname',
+						index: 1
+					}
+				],
+				relations: [
+					{
+						name: 'users',
+						alias: 'u',
+						cardinality: 'many'
+					}
+				]
+			},
+			{
+				name: 'users',
+				alias: 'u',
+				groupIndex: 2,
+				fields: [
+
+					{
+						name: 'userid',
+						index: 2
+					},
+					{
+						name: 'username',
+						index: 3
+					}
+				],
+				relations: []
+			}
+		]
+		assert.deepStrictEqual(actual._unsafeUnwrap().nestedInfo, expected);
+	});
 });

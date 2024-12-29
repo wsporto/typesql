@@ -266,5 +266,25 @@ WHERE c.id = :clientId`;
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('nested03 - many to many', async () => {
+		const sql = `-- @nested
+SELECT
+	s.id as surveyId,
+	s.name as surveyName,
+	u.id as userId,
+	u.name as userName
+FROM surveys s
+INNER JOIN participants p on p.fk_survey = s.id
+INNER JOIN users u on u.id = p.fk_user`;
+
+		const actual = await generateCode(dialect, sql, 'nested03');
+		const expected = readFileSync('tests/postgres/expected-code/nested03-many-to-many.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });
 

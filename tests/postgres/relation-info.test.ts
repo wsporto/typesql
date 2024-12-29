@@ -231,4 +231,49 @@ describe('postgres-relation-info', () => {
 		const actual = parseSql(sql, dbSchema, true);
 		assert.deepStrictEqual(actual.relations, expectedModel);
 	});
+
+	it('many to many - surveys with users', () => {
+		const sql = `
+SELECT
+	s.id as surveyId,
+	s.name as surveyName,
+	u.id as userId,
+	u.name as userName
+FROM surveys s
+INNER JOIN participants p on p.fk_survey = s.id
+INNER JOIN users u on u.id = p.fk_user`;
+
+		const expectedModel: Relation2[] = [
+			{
+				name: 'surveys',
+				alias: 's',
+				renameAs: false,
+				parentRelation: '',
+				joinColumn: 'surveyId',
+				cardinality: 'one',
+				parentCardinality: 'one'
+			},
+			{
+				name: 'participants',
+				alias: 'p',
+				renameAs: false,
+				parentRelation: 's',
+				joinColumn: 'id',
+				cardinality: 'many',
+				parentCardinality: 'one'
+			},
+			{
+				name: 'users',
+				alias: 'u',
+				renameAs: false,
+				parentRelation: 'p',
+				joinColumn: 'userId',
+				cardinality: 'one',
+				parentCardinality: 'many'
+			}
+		];
+
+		const actual = parseSql(sql, dbSchema, true);
+		assert.deepStrictEqual(actual.relations, expectedModel);
+	});
 });
