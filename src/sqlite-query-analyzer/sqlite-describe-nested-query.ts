@@ -29,6 +29,7 @@ export type Field2 = {
 export type RelationField2 = {
 	name: string;
 	alias: string;
+	notNull: boolean;
 	cardinality: Cardinality;
 };
 
@@ -84,11 +85,16 @@ export function describeNestedQuery(columns: ColumnInfo[], relations: Relation2[
 					const parent = isJunctionTableMap.get(child.parentRelation) ? parentRef.get(child.parentRelation)! : relation;
 					return child.parentRelation === parent.name || (child.alias !== '' && child.parentRelation === parent.alias);
 				})
-				.map((relation) => ({
-					name: relation.renameAs ? relation.alias : relation.name,
-					alias: relation.alias,
-					cardinality: isJunctionTableMap.get(relation.parentRelation) ? 'many' : relation.cardinality
-				}))
+				.map((relation) => {
+					const fields = columns.filter(col => col.table === relation.name || col.table === relation.alias);
+					const relationField: RelationField2 = {
+						name: relation.renameAs ? relation.alias : relation.name,
+						alias: relation.alias,
+						notNull: fields.some(field => field.notNull),
+						cardinality: isJunctionTableMap.get(relation.parentRelation) ? 'many' : relation.cardinality
+					}
+					return relationField;
+				})
 		};
 		result.push(relationInfo);
 	}

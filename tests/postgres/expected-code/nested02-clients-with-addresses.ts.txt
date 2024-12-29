@@ -15,7 +15,7 @@ export type Nested02Result = {
 export type Nested02NestedC = {
 	id: number;
 	a1: Nested02NestedA1;
-	a2: Nested02NestedA2;
+	a2?: Nested02NestedA2;
 }
 
 export type Nested02NestedA1 = {

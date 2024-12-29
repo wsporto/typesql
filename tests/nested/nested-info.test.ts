@@ -103,6 +103,7 @@ describe('nested-info', () => {
 					{
 						name: 'posts',
 						alias: 'p',
+						notNull: true,
 						cardinality: 'many'
 					}
 				]
@@ -225,6 +226,7 @@ describe('nested-info', () => {
 					{
 						name: 'users',
 						alias: 'u',
+						notNull: true,
 						cardinality: 'one'
 					}
 				]
@@ -281,11 +283,13 @@ describe('nested-info', () => {
 					{
 						name: 'a1',
 						alias: 'a1',
+						notNull: true,
 						cardinality: 'one'
 					},
 					{
 						name: 'a2',
 						alias: 'a2',
+						notNull: false,
 						cardinality: 'one'
 					}
 				]
@@ -362,6 +366,7 @@ describe('nested-info', () => {
 					{
 						name: 'users',
 						alias: 'u',
+						notNull: true,
 						cardinality: 'many'
 					}
 				]

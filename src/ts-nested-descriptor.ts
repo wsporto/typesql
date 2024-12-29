@@ -113,7 +113,7 @@ export function mapToTsRelation2(relationField: RelationField2): TsRelationField
 		list: relationField.cardinality === 'many',
 		name: relationField.name,
 		tsType: relationField.name + (relationField.cardinality === 'many' ? '[]' : ''),
-		notNull: true
+		notNull: relationField.notNull
 	};
 	return field;
 }
