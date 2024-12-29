@@ -28,7 +28,7 @@ describe('postgres-parse-select-subqueries', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'mytable1'
+					table: 't'
 				}
 			],
 			parameters: []
@@ -56,13 +56,13 @@ describe('postgres-parse-select-subqueries', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'mytable1'
+					table: 't'
 				},
 				{
 					columnName: 'name',
 					type: 'text',
 					notNull: false,
-					table: 'mytable2'
+					table: 't'
 				}
 			],
 			parameters: []
@@ -89,7 +89,7 @@ describe('postgres-parse-select-subqueries', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: false,
-					table: 'mytable1'
+					table: 't1'
 				}
 			],
 			parameters: []
@@ -116,7 +116,7 @@ describe('postgres-parse-select-subqueries', () => {
 					columnName: 'code',
 					type: 'int4',
 					notNull: false,
-					table: 'mytable1'
+					table: 't1'
 				}
 			],
 			parameters: []
@@ -143,13 +143,13 @@ describe('postgres-parse-select-subqueries', () => {
 					columnName: 'name',
 					type: 'text',
 					notNull: false,
-					table: 'mytable2'
+					table: 't2'
 				},
 				{
 					columnName: 'id',
 					type: 'text',
 					notNull: false,
-					table: 'mytable2'
+					table: 't2'
 				}
 			],
 			parameters: []
@@ -178,13 +178,13 @@ describe('postgres-parse-select-subqueries', () => {
 					columnName: 'name',
 					type: 'text',
 					notNull: true,
-					table: 'mytable2'
+					table: 't2'
 				},
 				{
 					columnName: 'id',
 					type: 'text',
 					notNull: true,
-					table: 'mytable2'
+					table: 't2'
 				}
 			],
 			parameters: [
@@ -224,7 +224,7 @@ describe('postgres-parse-select-subqueries', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'mytable1'
+					table: 't2'
 				}
 			],
 			parameters: []
@@ -253,7 +253,7 @@ describe('postgres-parse-select-subqueries', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: ''
+					table: 't2'
 				}
 			],
 			parameters: []
@@ -278,13 +278,13 @@ describe('postgres-parse-select-subqueries', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'mytable2'
+					table: 't2'
 				},
 				{
 					columnName: 'name',
 					type: 'text',
 					notNull: false,
-					table: 'mytable2'
+					table: 't2'
 				}
 			],
 			parameters: []
@@ -313,7 +313,7 @@ describe('postgres-parse-select-subqueries', () => {
 					columnName: 'id',
 					type: 'text',
 					notNull: false,
-					table: 'mytable2'
+					table: 't2'
 				}
 			],
 			parameters: []
@@ -346,7 +346,7 @@ describe('postgres-parse-select-subqueries', () => {
 					columnName: 'id',
 					type: 'text',
 					notNull: false,
-					table: ''
+					table: 't3'
 				}
 			],
 			parameters: []
@@ -379,7 +379,7 @@ describe('postgres-parse-select-subqueries', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: ''
+					table: 't3'
 				}
 			],
 			parameters: []
@@ -404,7 +404,7 @@ describe('postgres-parse-select-subqueries', () => {
 					columnName: 'name',
 					type: 'int8',
 					notNull: true,
-					table: ''
+					table: 't2'
 				}
 			],
 			parameters: []
@@ -494,7 +494,7 @@ describe('postgres-parse-select-subqueries', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'mytable1'
+					table: 't1'
 				}
 			],
 			parameters: [
@@ -525,7 +525,7 @@ describe('postgres-parse-select-subqueries', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'mytable1'
+					table: 't1'
 				},
 				{
 					columnName: 'has',

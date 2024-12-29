@@ -32,19 +32,19 @@ describe('parse-select-complex-queries', () => {
 					columnName: 'value',
 					type: 'int4',
 					notNull: false,
-					table: 'mytable1'
+					table: 't1'
 				},
 				{
 					columnName: 'name',
 					type: 'text',
 					notNull: false,
-					table: 'mytable2'
+					table: 't2'
 				},
 				{
 					columnName: 'id',
 					type: 'int4',
 					notNull: false,
-					table: 'mytable3'
+					table: 't3'
 				},
 				{
 					columnName: 'quantity',
@@ -306,7 +306,7 @@ describe('parse-select-complex-queries', () => {
 					columnName: 'name',
 					type: 'text',
 					notNull: false,
-					table: 'mytable2'
+					table: 'names'
 				}
 			],
 			parameters: []
@@ -336,19 +336,19 @@ describe('parse-select-complex-queries', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'mytable2'
+					table: 'n'
 				},
 				{
 					columnName: 'name',
 					type: 'text',
 					notNull: false,
-					table: 'mytable2'
+					table: 'n'
 				},
 				{
 					columnName: 'value',
 					type: 'int4',
 					notNull: false,
-					table: 'mytable1'
+					table: 'v'
 				}
 			],
 			parameters: []
@@ -376,13 +376,13 @@ describe('parse-select-complex-queries', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'mytable1'
+					table: 'allvalues'
 				},
 				{
 					columnName: 'name',
 					type: 'text',
 					notNull: false,
-					table: 'mytable2'
+					table: 'allvalues'
 				}
 			],
 			parameters: []
@@ -410,13 +410,13 @@ describe('parse-select-complex-queries', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'mytable2'
+					table: 'names'
 				},
 				{
 					columnName: 'name',
 					type: 'text',
 					notNull: false,
-					table: 'mytable2'
+					table: 'names'
 				}
 			],
 			parameters: []
@@ -447,7 +447,7 @@ describe('parse-select-complex-queries', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: ''
+					table: 'result'
 				}
 			],
 			parameters: []
@@ -482,19 +482,19 @@ describe('parse-select-complex-queries', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'mytable1'
+					table: 't1'
 				},
 				{
 					columnName: 'value',
 					type: 'int4',
 					notNull: true,
-					table: 'mytable1'
+					table: 't1'
 				},
 				{
 					columnName: 'name',
 					type: 'text',
 					notNull: true,
-					table: 'mytable2'
+					table: 't1'
 				}
 			],
 			parameters: [

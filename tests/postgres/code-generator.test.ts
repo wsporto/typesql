@@ -246,5 +246,25 @@ INNER JOIN posts p on p.fk_user = u.id`;
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('nested02 - self relation', async () => {
+		const sql = `-- @nested
+SELECT
+	c.id,
+	a1.*,
+	a2.*
+FROM clients as c
+INNER JOIN addresses as a1 ON a1.id = c.primaryAddress
+LEFT JOIN addresses as a2 ON a2.id = c.secondaryAddress
+WHERE c.id = :clientId`;
+
+		const actual = await generateCode(dialect, sql, 'nested02');
+		const expected = readFileSync('tests/postgres/expected-code/nested02-clients-with-addresses.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });
 

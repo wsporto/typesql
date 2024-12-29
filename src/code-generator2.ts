@@ -103,7 +103,8 @@ function generateTsCode(
 		parameters: tsDescriptor.parameters,
 		data: tsDescriptor.data || [],
 		returning: schemaDef.returning || false,
-		generateNested: schemaDef.nestedInfo != null
+		generateNested: tsDescriptor.nestedDescriptor2 != null,
+		nestedType: tsDescriptor.nestedDescriptor2 ? tsDescriptor.nestedDescriptor2[0].name : ''
 	}
 	codeWriter.writeExecFunction(writer, execFunctionParams);
 
@@ -226,6 +227,7 @@ type ExecFunctionParameters = {
 	data: TsParameterDescriptor[];
 	returning: boolean;
 	generateNested: boolean;
+	nestedType: string;
 }
 
 const postgresCodeWriter: CodeWriter = {
@@ -234,7 +236,7 @@ const postgresCodeWriter: CodeWriter = {
 	},
 
 	writeExecFunction: function (writer: CodeBlockWriter, params: ExecFunctionParameters): void {
-		const { functionName, paramsType, dataType, returnType, parameters, generateNested } = params;
+		const { functionName, paramsType, dataType, returnType, parameters, generateNested, nestedType } = params;
 		let functionParams = 'client: pg.Client | pg.Pool';
 		if (params.data.length > 0) {
 			functionParams += `, data: ${dataType}`;
@@ -313,13 +315,12 @@ const postgresCodeWriter: CodeWriter = {
 			});
 			writer.indent().write('`').newLine();
 		}
-
 		if (generateNested) {
 			writer.blankLine();
-			const relationType = generateRelationType(functionName, 'users');
-			writer.write(`export function ${functionName}Nested(${functionParams}): Promise<${relationType}[]>`).block(() => {
+			const relationType = generateRelationType(functionName, nestedType);
+			writer.write(`export async function ${functionName}Nested(${functionParams}): Promise<${relationType}[]>`).block(() => {
 				const params = parameters.length > 0 ? ', params' : '';
-				writer.writeLine(`const selectResult = ${functionName}(client${params});`);
+				writer.writeLine(`const selectResult = await ${functionName}(client${params});`);
 				writer.write('if (selectResult.length == 0)').block(() => {
 					writer.writeLine('return [];');
 				});
@@ -331,7 +332,9 @@ const postgresCodeWriter: CodeWriter = {
 
 function getColumnsForQuery(schemaDef: SchemaDef): TsFieldDescriptor[] {
 	if (schemaDef.queryType === 'Select' || schemaDef.returning) {
-		return schemaDef.columns.map(col => mapColumnInfoToTsFieldDescriptor(col))
+		const columns = schemaDef.columns.map(col => mapColumnInfoToTsFieldDescriptor(col))
+		const escapedColumnsNames = renameInvalidNames(schemaDef.columns.map((col) => col.columnName));
+		return columns.map((col, index) => ({ ...col, name: escapedColumnsNames[index] }));
 	}
 	const columns: TsFieldDescriptor[] = [
 		{

@@ -43,8 +43,8 @@ function mapArrayToNested01Result(data: any) {
 	return result;
 }
 
-export function nested01Nested(client: pg.Client | pg.Pool): Promise<Nested01NestedUsers[]> {
-	const selectResult = nested01(client);
+export async function nested01Nested(client: pg.Client | pg.Pool): Promise<Nested01NestedUsers[]> {
+	const selectResult = await nested01(client);
 	if (selectResult.length == 0) {
 		return [];
 	}

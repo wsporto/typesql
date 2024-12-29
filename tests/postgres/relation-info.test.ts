@@ -42,6 +42,7 @@ describe('postgres-relation-info', () => {
 			{
 				name: 'users',
 				alias: 'u',
+				renameAs: false,
 				parentRelation: '',
 				joinColumn: 'user_id',
 				cardinality: 'one',
@@ -50,6 +51,7 @@ describe('postgres-relation-info', () => {
 			{
 				name: 'posts',
 				alias: 'p',
+				renameAs: false,
 				parentRelation: 'u',
 				joinColumn: 'post_id',
 				cardinality: 'many',
@@ -74,6 +76,7 @@ describe('postgres-relation-info', () => {
 			{
 				name: 'users',
 				alias: '',
+				renameAs: false,
 				parentRelation: '',
 				joinColumn: 'id',
 				cardinality: 'one',
@@ -82,6 +85,7 @@ describe('postgres-relation-info', () => {
 			{
 				name: 'posts',
 				alias: '',
+				renameAs: false,
 				parentRelation: 'users',
 				joinColumn: 'id',
 				cardinality: 'many',
@@ -110,6 +114,7 @@ describe('postgres-relation-info', () => {
 			{
 				name: 'posts',
 				alias: 'p',
+				renameAs: false,
 				parentRelation: '',
 				joinColumn: 'post_id',
 				cardinality: 'one',
@@ -118,6 +123,7 @@ describe('postgres-relation-info', () => {
 			{
 				name: 'users',
 				alias: 'u',
+				renameAs: false,
 				parentRelation: 'p',
 				joinColumn: 'user_id',
 				cardinality: 'one',
@@ -149,6 +155,7 @@ describe('postgres-relation-info', () => {
 			{
 				name: 'users',
 				alias: 'u',
+				renameAs: false,
 				parentRelation: '',
 				joinColumn: 'user_id',
 				cardinality: 'one',
@@ -157,6 +164,7 @@ describe('postgres-relation-info', () => {
 			{
 				name: 'posts',
 				alias: 'p',
+				renameAs: false,
 				parentRelation: 'u',
 				joinColumn: 'post_id',
 				cardinality: 'many',
@@ -165,10 +173,58 @@ describe('postgres-relation-info', () => {
 			{
 				name: 'comments',
 				alias: 'c',
+				renameAs: false,
 				parentRelation: 'p',
 				joinColumn: 'comment_id',
 				cardinality: 'many',
 				parentCardinality: 'one'
+			}
+		];
+
+		const actual = parseSql(sql, dbSchema, true);
+		assert.deepStrictEqual(actual.relations, expectedModel);
+	});
+
+	it('self relation - clients with primaryAddress and secondaryAddress', () => {
+		const sql = `
+		-- @nested
+        SELECT
+            c.id,
+            a1.*,
+            a2.*
+        FROM clients as c
+        INNER JOIN addresses as a1 ON a1.id = c.primaryAddress
+        LEFT JOIN addresses as a2 ON a2.id = c.secondaryAddress
+        WHERE c.id = $1
+        `;
+
+		const expectedModel: Relation2[] = [
+			{
+				name: 'clients',
+				alias: 'c',
+				renameAs: true,
+				parentRelation: '',
+				joinColumn: 'id',
+				cardinality: 'one',
+				parentCardinality: 'one'
+			},
+			{
+				name: 'addresses',
+				alias: 'a1',
+				renameAs: true,
+				parentRelation: 'c',
+				joinColumn: 'id',
+				cardinality: 'one',
+				parentCardinality: 'many'
+			},
+			{
+				name: 'addresses',
+				alias: 'a2',
+				renameAs: true,
+				parentRelation: 'c',
+				joinColumn: 'id',
+				cardinality: 'one',
+				parentCardinality: 'many'
 			}
 		];
 

@@ -6,6 +6,7 @@ import type { TypeSqlError } from '../types';
 export type Relation2 = {
 	name: string;
 	alias: string;
+	renameAs: boolean;
 	joinColumn: string;
 	parentRelation: string;
 	cardinality: Cardinality;
@@ -65,7 +66,7 @@ export function describeNestedQuery(columns: ColumnInfo[], relations: Relation2[
 
 		const relationInfo: RelationInfo2 = {
 			groupIndex: groupIndex,
-			name: relation.name,
+			name: relation.renameAs ? relation.alias : relation.name,
 			alias: relation.alias,
 			fields: columns
 				.map((item, index) => ({ item, index }))
@@ -84,7 +85,7 @@ export function describeNestedQuery(columns: ColumnInfo[], relations: Relation2[
 					return child.parentRelation === parent.name || (child.alias !== '' && child.parentRelation === parent.alias);
 				})
 				.map((relation) => ({
-					name: relation.name,
+					name: relation.renameAs ? relation.alias : relation.name,
 					alias: relation.alias,
 					cardinality: isJunctionTableMap.get(relation.parentRelation) ? 'many' : relation.cardinality
 				}))

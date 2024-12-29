@@ -6,7 +6,7 @@ import { FieldName } from '../mysql-query-analyzer/types';
 import { QueryType } from '../types';
 import { Relation2 } from '../sqlite-query-analyzer/sqlite-describe-nested-query';
 
-type NotNullInfo = {
+export type NotNullInfo = {
 	table_schema: string;
 	table_name: string;
 	column_name: string;
@@ -16,7 +16,7 @@ type NotNullInfo = {
 export type PostgresTraverseResult = {
 	queryType: QueryType;
 	multipleRowsResult: boolean;
-	columnsNullability: boolean[];
+	columns: NotNullInfo[];
 	parametersNullability: boolean[];
 	whereParamtersNullability?: boolean[];
 	parameterList: boolean[];
@@ -110,7 +110,6 @@ function traverseSelectstmt(selectstmt: SelectstmtContext, context: TraverseCont
 	const columns = traverse_selectstmt(selectstmt, context, traverseResult);
 	//select parameters are collected after from paramters
 	traverseResult.parameters.sort((param1, param2) => param1.paramIndex - param2.paramIndex);
-	const columnsNullability = columns.map(col => !col.is_nullable);
 
 	const multipleRowsResult = !isSingleRowResult(selectstmt, context.dbSchema);
 
@@ -118,7 +117,7 @@ function traverseSelectstmt(selectstmt: SelectstmtContext, context: TraverseCont
 	const postgresTraverseResult: PostgresTraverseResult = {
 		queryType: 'Select',
 		multipleRowsResult,
-		columnsNullability,
+		columns,
 		parametersNullability: traverseResult.parameters.map(param => param.isNotNull),
 		parameterList: paramIsListResult,
 		limit
@@ -178,8 +177,10 @@ function traverse_select_clause(select_clause: Select_clauseContext, context: Tr
 		const unionNotNull = traverse_simple_select_intersect(simple_select_intersect_list[index], context, traverseResult);
 		selectColumns = selectColumns.map((value, columnIndex) => {
 			const col: NotNullInfo = {
-				...value,
-				is_nullable: value.is_nullable || unionNotNull[columnIndex].is_nullable
+				column_name: value.column_name,
+				is_nullable: value.is_nullable || unionNotNull[columnIndex].is_nullable,
+				table_name: '',
+				table_schema: ''
 			}
 			return col;
 		});
@@ -212,7 +213,8 @@ function traverse_simple_select_pramary(simple_select_pramary: Simple_select_pra
 		return valuesColumns;
 	}
 	const where_a_expr = simple_select_pramary.where_clause()?.a_expr();
-	const newContext = { ...context, fromColumns: context.fromColumns.concat(fromColumns) };
+	//fromColumns has precedence
+	const newContext = { ...context, fromColumns: fromColumns.concat(context.fromColumns) };
 	if (where_a_expr) {
 		traverse_a_expr(where_a_expr, newContext, traverseResult);
 	}
@@ -232,7 +234,7 @@ function traverse_expr_list(expr_list: Expr_listContext, context: TraverseContex
 	const columns = expr_list.a_expr_list().map(a_expr => {
 		const notNull = traverse_a_expr(a_expr, context, traverseResult);
 		const result: NotNullInfo = {
-			column_name: a_expr.getText(),
+			column_name: '?column?',
 			is_nullable: !notNull,
 			table_name: '',
 			table_schema: ''
@@ -276,7 +278,6 @@ function isNotNull_target_el(target_el: Target_elContext, context: TraverseConte
 		const exprResult = traverse_a_expr(a_expr, context, traverseResult);
 		const colLabel = target_el.colLabel();
 		const alias = colLabel != null ? colLabel.getText() : '';
-		const fieldName = splitName(a_expr.getText());
 
 		if (alias) {
 			traverseResult.relations?.forEach(relation => {
@@ -287,10 +288,10 @@ function isNotNull_target_el(target_el: Target_elContext, context: TraverseConte
 			})
 		}
 		return {
-			column_name: alias || fieldName.name,
+			column_name: alias || exprResult.column_name,
 			is_nullable: exprResult.is_nullable,
-			table_name: fieldName.prefix,
-			table_schema: ''
+			table_name: exprResult.table_name,
+			table_schema: exprResult.table_schema
 		};
 	}
 	throw Error('Column not found');
@@ -340,7 +341,7 @@ function traverse_expr_and(a_expr_and: A_expr_andContext, context: TraverseConte
 		return result[0];
 	}
 	return {
-		column_name: a_expr_and.getText(),
+		column_name: '?column?',
 		is_nullable: result.some(col => col.is_nullable),
 		table_name: '',
 		table_schema: ''
@@ -422,7 +423,7 @@ function traverse_expr_compare(a_expr_compare: A_expr_compareContext, context: T
 			return result[0];
 		}
 		return {
-			column_name: a_expr_compare.getText(),
+			column_name: '?column?',
 			is_nullable: result.some(col => col.is_nullable),
 			table_name: '',
 			table_schema: ''
@@ -439,7 +440,7 @@ function traverse_expr_like(a_expr_like: A_expr_likeContext, context: TraverseCo
 			return result[0];
 		}
 		return {
-			column_name: a_expr_like.getText(),
+			column_name: '?column?',
 			is_nullable: result.some(col => col.is_nullable),
 			table_name: '',
 			table_schema: ''
@@ -464,7 +465,7 @@ function traverse_expr_unary_qualop(a_expr_unary_qualop: A_expr_unary_qualopCont
 			return exprResult[0];
 		}
 		const result: NotNullInfo = {
-			column_name: a_expr_unary_qualop.getText(),
+			column_name: '?column?',
 			is_nullable: exprResult.some(col => col.is_nullable),
 			table_name: '',
 			table_schema: ''
@@ -482,7 +483,7 @@ function traverse_expr_mul(a_expr_mul: A_expr_mulContext, context: TraverseConte
 			return notNullInfo[0];
 		}
 		const result: NotNullInfo = {
-			column_name: a_expr_mul.getText(),
+			column_name: '?column?',
 			is_nullable: notNullInfo.some(notNullInfo => notNullInfo.is_nullable),
 			table_name: '',
 			table_schema: ''
@@ -501,7 +502,7 @@ function traverse_expr_caret(a_expr_caret: A_expr_caretContext, context: Travers
 			return notNullInfo[0];
 		}
 		const result: NotNullInfo = {
-			column_name: a_expr_caret.getText(),
+			column_name: '?column?',
 			is_nullable: notNullInfo.some(notNullInfo => notNullInfo.is_nullable),
 			table_name: '',
 			table_schema: ''
@@ -582,7 +583,7 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 		if (func_application) {
 			const isNotNull = traversefunc_application(func_application, context, traverseResult);
 			return {
-				column_name: func_application.getText(),
+				column_name: func_application.func_name()?.getText() || func_application.getText(),
 				is_nullable: !isNotNull,
 				table_name: '',
 				table_schema: ''
@@ -592,7 +593,7 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 		if (func_expr_common_subexpr) {
 			const isNotNull = traversefunc_expr_common_subexpr(func_expr_common_subexpr, context, traverseResult);
 			return {
-				column_name: func_expr_common_subexpr.getText(),
+				column_name: func_expr_common_subexpr.getText().split('(')?.[0]?.trim() || func_expr_common_subexpr.getText(),
 				is_nullable: !isNotNull,
 				table_name: '',
 				table_schema: ''
@@ -602,7 +603,7 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 		if (select_with_parens) {
 			traverse_select_with_parens(select_with_parens, context, traverseResult);
 			return {
-				column_name: select_with_parens.getText(),
+				column_name: '?column?',
 				is_nullable: true,
 				table_name: '',
 				table_schema: ''
@@ -616,7 +617,7 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 	if (c_expr instanceof C_expr_caseContext) {
 		const isNotNull = traversec_expr_case(c_expr, context, traverseResult);
 		return {
-			column_name: c_expr.getText(),
+			column_name: '?column?',
 			is_nullable: !isNotNull,
 			table_name: '',
 			table_schema: ''
@@ -625,7 +626,7 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 	if (c_expr instanceof C_expr_existsContext) {
 		//todo - traverse
 		return {
-			column_name: c_expr.getText(),
+			column_name: '?column?',
 			is_nullable: false,
 			table_name: '',
 			table_schema: ''
@@ -636,7 +637,15 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 
 function filterColumns(fromColumns: NotNullInfo[], fieldName: FieldName) {
 	return fromColumns.filter(col => (fieldName.prefix === '' || col.table_name === fieldName.prefix)
-		&& (fieldName.name === '*' || col.column_name === fieldName.name));
+		&& (fieldName.name === '*' || col.column_name === fieldName.name)).map(col => {
+			const result: NotNullInfo = {
+				column_name: col.column_name,
+				is_nullable: col.is_nullable,
+				table_name: col.table_name,
+				table_schema: col.table_schema
+			}
+			return result;
+		});
 }
 
 function excludeColumns(fromColumns: NotNullInfo[], excludeList: FieldName[]) {
@@ -779,15 +788,18 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 	if (relation_expr) {
 		const tableName = traverse_relation_expr(relation_expr, dbSchema);
 		const tableNameWithAlias = alias ? alias : tableName.name;
-		const fromColumnsResult = fromColumns.concat(dbSchema).filter(col => col.table_name === tableName.name).map(col => ({ ...col, table_name: tableNameWithAlias }));
+		const fromColumnsResult = fromColumns.concat(dbSchema).filter(col => col.table_name === tableName.name)
+			.map(col => ({ ...col, table_name: tableNameWithAlias }));
 		allColumns.push(...fromColumnsResult);
 		if (context.generateNestedInfo) {
 
 			const key = fromColumnsResult.filter(col => (col as PostgresColumnSchema).column_key === 'PRI');
 
+			const renameAs = aliasClause?.AS() != null;
 			const relation: Relation2 = {
 				name: tableName.name,
 				alias: alias || '',
+				renameAs,
 				parentRelation: '',
 				joinColumn: key[0]?.column_name || '',
 				cardinality: 'one',
@@ -983,7 +995,7 @@ function traverseInsertstmt(insertstmt: InsertstmtContext, dbSchema: PostgresCol
 		queryType: 'Insert',
 		multipleRowsResult: false,
 		parametersNullability: traverseResult.parameters.map(param => param.isNotNull),
-		columnsNullability: returninColumns.map(col => !col.is_nullable),
+		columns: returninColumns,
 		parameterList: []
 	}
 	if (returning_clause) {
@@ -1045,7 +1057,7 @@ function traverseDeletestmt(deleteStmt: DeletestmtContext, dbSchema: PostgresCol
 		queryType: 'Delete',
 		multipleRowsResult: false,
 		parametersNullability: traverseResult.parameters.map(param => param.isNotNull),
-		columnsNullability: returninColumns.map(col => !col.is_nullable),
+		columns: returninColumns,
 		parameterList: []
 	}
 	if (returning_clause) {
@@ -1084,7 +1096,7 @@ function traverseUpdatestmt(updatestmt: UpdatestmtContext, dbSchema: PostgresCol
 		queryType: 'Update',
 		multipleRowsResult: false,
 		parametersNullability: traverseResult.parameters.slice(0, parametersBefore).map(param => param.isNotNull),
-		columnsNullability: returninColumns.map(col => !col.is_nullable),
+		columns: returninColumns,
 		parameterList: [],
 		whereParamtersNullability: whereParameters.map(param => param.isNotNull)
 	}

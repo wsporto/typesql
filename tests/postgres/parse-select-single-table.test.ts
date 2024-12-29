@@ -133,13 +133,13 @@ describe('select-single-table', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'mytable1'
+					table: 't'
 				},
 				{
 					columnName: 'value',
 					type: 'int4',
 					notNull: false,
-					table: 'mytable1'
+					table: 't'
 				}
 			],
 			parameters: []
@@ -508,13 +508,13 @@ describe('select-single-table', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'mytable1'
+					table: 't'
 				},
 				{
 					columnName: 'value',
 					type: 'int4',
 					notNull: false,
-					table: 'mytable1'
+					table: 't'
 				}
 			],
 			parameters: [
@@ -545,7 +545,7 @@ describe('select-single-table', () => {
 					columnName: 'id',
 					type: 'int2',
 					notNull: true,
-					table: ''
+					table: 'mytable1'
 				}
 			],
 			parameters: []
@@ -571,13 +571,13 @@ describe('select-single-table', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'mytable1'
+					table: 't'
 				},
 				{
 					columnName: 'value',
 					type: 'int4',
 					notNull: false,
-					table: 'mytable1'
+					table: 't'
 				}
 			],
 			parameters: [
