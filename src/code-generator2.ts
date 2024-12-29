@@ -80,7 +80,8 @@ function generateTsCode(
 			writer.write(`export type ${relationType} = `).block(() => {
 				const uniqueNameFields = renameInvalidNames(relation.fields.map((f) => f.name));
 				relation.fields.forEach((field, index) => {
-					writer.writeLine(`${uniqueNameFields[index]}: ${field.tsType};`);
+					const nullableOperator = field.notNull ? '' : ' | null';
+					writer.writeLine(`${uniqueNameFields[index]}: ${field.tsType}${nullableOperator};`);
 				});
 				relation.relations.forEach((field) => {
 					const nestedRelationType = generateRelationType(capitalizedName, field.tsType);

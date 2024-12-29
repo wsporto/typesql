@@ -24,8 +24,8 @@ export type Nested03NestedA1 = {
 }
 
 export type Nested03NestedA2 = {
-	id: number;
-	address: string;
+	id: number | null;
+	address: string | null;
 }
 
 export async function nested03(client: pg.Client | pg.Pool, params: Nested03Params): Promise<Nested03Result[]> {

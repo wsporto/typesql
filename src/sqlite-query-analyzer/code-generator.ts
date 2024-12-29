@@ -248,7 +248,7 @@ export function mapFieldToTsField(columns: ColumnInfo[], field: Field2, client: 
 		name: field.name,
 		index: field.index,
 		tsType: mapDbColumnType(columns[field.index].type, client),
-		notNull: false
+		notNull: columns[field.index].notNull
 	};
 	return tsField;
 }

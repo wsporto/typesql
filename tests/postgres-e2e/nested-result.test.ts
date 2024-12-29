@@ -1,6 +1,6 @@
 import assert from 'node:assert';
 import pg from 'pg'
-import { nested01Nested, Nested01NestedUsers, nested02Nested, Nested02NestedUsers, nested03Nested, Nested03NestedC, nested04Nested, Nested04NestedSurveys } from './sql'
+import { nested01Nested, Nested01NestedUsers, nested02Nested, Nested02NestedUsers, nested03Nested, Nested03NestedC, nested04Nested, Nested04NestedSurveys, nested04WithoutJoinTableNested, Nested04WithoutJoinTableNestedSurveys } from './sql'
 
 describe('postgres-nested-result', () => {
 
@@ -299,6 +299,69 @@ describe('postgres-nested-result', () => {
 							userid: 3,
 							username: 'user3'
 						}
+					}
+				]
+			}
+		];
+
+		assert.deepStrictEqual(result, expectedResult);
+	});
+
+	it('nested04 - surveys -> participants -> users (without join table)', async () => {
+		const result = await nested04WithoutJoinTableNested(pool);
+
+		const expectedResult: Nested04WithoutJoinTableNestedSurveys[] = [
+			{
+				id: 1,
+				name: 's1',
+				users: [
+					{
+						id: 1,
+						name: 'user1',
+						email: null
+					}
+				]
+			},
+			{
+				id: 2,
+				name: 's2',
+				users: [
+					{
+						id: 1,
+						name: 'user1',
+						email: null
+					},
+					{
+						id: 3,
+						name: 'user3',
+						email: null
+					}
+				]
+			},
+			{
+				id: 3,
+				name: 's3',
+				users: [
+					{
+						id: 3,
+						name: 'user3',
+						email: null
+					},
+					{
+						id: 4,
+						name: 'user4',
+						email: null
+					}
+				]
+			},
+			{
+				id: 4,
+				name: 's4',
+				users: [
+					{
+						id: 3,
+						name: 'user3',
+						email: null
 					}
 				]
 			}
