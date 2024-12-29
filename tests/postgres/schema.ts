@@ -2,7 +2,7 @@ import { PostgresColumnSchema } from '../../src/drivers/types';
 
 export const schema: PostgresColumnSchema[] = [
 	{
-		oid: 24618,
+		oid: 16613,
 		table_schema: "public",
 		table_name: "addresses",
 		column_name: "id",
@@ -11,7 +11,7 @@ export const schema: PostgresColumnSchema[] = [
 		column_key: "PRI",
 	},
 	{
-		oid: 24618,
+		oid: 16613,
 		table_schema: "public",
 		table_name: "addresses",
 		column_name: "address",
@@ -227,7 +227,7 @@ export const schema: PostgresColumnSchema[] = [
 		column_key: "",
 	},
 	{
-		oid: 24589,
+		oid: 16584,
 		table_schema: "public",
 		table_name: "authors",
 		column_name: "id",
@@ -236,7 +236,7 @@ export const schema: PostgresColumnSchema[] = [
 		column_key: "PRI",
 	},
 	{
-		oid: 24589,
+		oid: 16584,
 		table_schema: "public",
 		table_name: "authors",
 		column_name: "fullname",
@@ -245,7 +245,7 @@ export const schema: PostgresColumnSchema[] = [
 		column_key: "",
 	},
 	{
-		oid: 24589,
+		oid: 16584,
 		table_schema: "public",
 		table_name: "authors",
 		column_name: "shortname",
@@ -254,7 +254,7 @@ export const schema: PostgresColumnSchema[] = [
 		column_key: "",
 	},
 	{
-		oid: 24578,
+		oid: 16573,
 		table_schema: "public",
 		table_name: "books",
 		column_name: "id",
@@ -263,7 +263,7 @@ export const schema: PostgresColumnSchema[] = [
 		column_key: "PRI",
 	},
 	{
-		oid: 24578,
+		oid: 16573,
 		table_schema: "public",
 		table_name: "books",
 		column_name: "title",
@@ -272,7 +272,7 @@ export const schema: PostgresColumnSchema[] = [
 		column_key: "",
 	},
 	{
-		oid: 24578,
+		oid: 16573,
 		table_schema: "public",
 		table_name: "books",
 		column_name: "isbn",
@@ -281,7 +281,7 @@ export const schema: PostgresColumnSchema[] = [
 		column_key: "",
 	},
 	{
-		oid: 24600,
+		oid: 16595,
 		table_schema: "public",
 		table_name: "books_authors",
 		column_name: "id",
@@ -290,7 +290,7 @@ export const schema: PostgresColumnSchema[] = [
 		column_key: "PRI",
 	},
 	{
-		oid: 24600,
+		oid: 16595,
 		table_schema: "public",
 		table_name: "books_authors",
 		column_name: "book_id",
@@ -299,7 +299,7 @@ export const schema: PostgresColumnSchema[] = [
 		column_key: "",
 	},
 	{
-		oid: 24600,
+		oid: 16595,
 		table_schema: "public",
 		table_name: "books_authors",
 		column_name: "author_id",
@@ -308,7 +308,7 @@ export const schema: PostgresColumnSchema[] = [
 		column_key: "",
 	},
 	{
-		oid: 24600,
+		oid: 16595,
 		table_schema: "public",
 		table_name: "books_authors",
 		column_name: "author_ordinal",
@@ -317,7 +317,7 @@ export const schema: PostgresColumnSchema[] = [
 		column_key: "",
 	},
 	{
-		oid: 24629,
+		oid: 16624,
 		table_schema: "public",
 		table_name: "clients",
 		column_name: "id",
@@ -326,7 +326,7 @@ export const schema: PostgresColumnSchema[] = [
 		column_key: "PRI",
 	},
 	{
-		oid: 24629,
+		oid: 16624,
 		table_schema: "public",
 		table_name: "clients",
 		column_name: "primaryaddress",
@@ -335,7 +335,7 @@ export const schema: PostgresColumnSchema[] = [
 		column_key: "",
 	},
 	{
-		oid: 24629,
+		oid: 16624,
 		table_schema: "public",
 		table_name: "clients",
 		column_name: "secondaryaddress",
