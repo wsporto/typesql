@@ -24,114 +24,114 @@ describe('postgres-type-mapping', () => {
 					columnName: 'bool_column',
 					type: 'bool',
 					notNull: false,
-					table: 'table'
+					table: 'all_types'
 				},
 				{
 					columnName: 'bytea_column',
 					type: 'bytea',
 					notNull: false,
-					table: 'table'
+					table: 'all_types'
 				},
 				{
 					columnName: 'char_column',
 					type: 'bpchar',
 					notNull: false,
-					table: 'table'
+					table: 'all_types'
 				},
 				{
 					columnName: 'name_column',
 					type: 'name',
 					notNull: false,
-					table: 'table'
+					table: 'all_types'
 				},
 				{
 					columnName: 'int8_column',
 					type: 'int8',
 					notNull: false,
-					table: 'table'
+					table: 'all_types'
 				},
 				{
 					columnName: 'int2_column',
 					type: 'int2',
 					notNull: false,
-					table: 'table'
+					table: 'all_types'
 				},
 				{
 					columnName: 'int4_column',
 					type: 'int4',
 					notNull: false,
-					table: 'table'
+					table: 'all_types'
 				},
 				{
 					columnName: 'text_column',
 					type: 'text',
 					notNull: false,
-					table: 'table'
+					table: 'all_types'
 				},
 				{
 					columnName: 'varchar_column',
 					type: 'varchar',
 					notNull: false,
-					table: 'table'
+					table: 'all_types'
 				},
 				{
 					columnName: 'date_column',
 					type: 'date',
 					notNull: false,
-					table: 'table'
+					table: 'all_types'
 				},
 				{
 					columnName: 'bit_column',
 					type: 'bit',
 					notNull: false,
-					table: 'table'
+					table: 'all_types'
 				},
 				{
 					columnName: 'numeric_column',
 					type: 'numeric',
 					notNull: false,
-					table: 'table'
+					table: 'all_types'
 				},
 				{
 					columnName: 'uuid_column',
 					type: 'uuid',
 					notNull: false,
-					table: 'table'
+					table: 'all_types'
 				},
 				{
 					columnName: 'float4_column',
 					type: 'float4',
 					notNull: false,
-					table: 'table'
+					table: 'all_types'
 				},
 				{
 					columnName: 'float8_column',
 					type: 'float8',
 					notNull: false,
-					table: 'table'
+					table: 'all_types'
 				},
 				{
 					columnName: "timestamp_column",
 					notNull: false,
-					table: "table",
+					table: "all_types",
 					type: "timestamp"
 				},
 				{
 					columnName: "timestamp_not_null_column",
 					notNull: true,
-					table: "table",
+					table: "all_types",
 					type: "timestamp"
 				},
 				{
 					columnName: "timestamptz_column",
 					notNull: false,
-					table: "table",
+					table: "all_types",
 					type: "timestamptz"
 				},
 				{
 					columnName: "timestamptz_not_null_column",
 					notNull: true,
-					table: "table",
+					table: "all_types",
 					type: "timestamptz"
 				}
 			],

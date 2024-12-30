@@ -294,13 +294,13 @@ describe('postgres-parse-update', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 'mytable1'
 				},
 				{
 					columnName: 'value',
 					type: 'int4',
 					notNull: false,
-					table: 'table'
+					table: 'mytable1'
 				}
 			],
 			data: [
@@ -331,7 +331,7 @@ describe('postgres-parse-update', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 'mytable1'
 				},
 				{
 					columnName: '?column?',
@@ -343,7 +343,7 @@ describe('postgres-parse-update', () => {
 					columnName: 'value',
 					type: 'int4',
 					notNull: false,
-					table: 'table'
+					table: 'mytable1'
 				}
 			],
 			data: [

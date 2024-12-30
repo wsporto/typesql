@@ -32,19 +32,19 @@ describe('parse-select-complex-queries', () => {
 					columnName: 'value',
 					type: 'int4',
 					notNull: false,
-					table: 'table'
+					table: 't1'
 				},
 				{
 					columnName: 'name',
 					type: 'text',
 					notNull: false,
-					table: 'table'
+					table: 't2'
 				},
 				{
 					columnName: 'id',
 					type: 'int4',
 					notNull: false,
-					table: 'table'
+					table: 't3'
 				},
 				{
 					columnName: 'quantity',
@@ -82,7 +82,7 @@ describe('parse-select-complex-queries', () => {
 					columnName: 'name',
 					type: 'text',
 					notNull: true,
-					table: 'table'
+					table: 'mytable3'
 				},
 				{
 					columnName: 'value',
@@ -131,7 +131,7 @@ describe('parse-select-complex-queries', () => {
 					columnName: 'name',
 					type: 'text',
 					notNull: true,
-					table: 'table'
+					table: 'mytable3'
 				},
 				{
 					columnName: 'value',
@@ -306,7 +306,7 @@ describe('parse-select-complex-queries', () => {
 					columnName: 'name',
 					type: 'text',
 					notNull: false,
-					table: 'table'
+					table: 'names'
 				}
 			],
 			parameters: []
@@ -336,19 +336,19 @@ describe('parse-select-complex-queries', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 'n'
 				},
 				{
 					columnName: 'name',
 					type: 'text',
 					notNull: false,
-					table: 'table'
+					table: 'n'
 				},
 				{
 					columnName: 'value',
 					type: 'int4',
 					notNull: false,
-					table: 'table'
+					table: 'v'
 				}
 			],
 			parameters: []
@@ -376,13 +376,13 @@ describe('parse-select-complex-queries', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 'allvalues'
 				},
 				{
 					columnName: 'name',
 					type: 'text',
 					notNull: false,
-					table: 'table'
+					table: 'allvalues'
 				}
 			],
 			parameters: []
@@ -410,13 +410,13 @@ describe('parse-select-complex-queries', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 'names'
 				},
 				{
 					columnName: 'name',
 					type: 'text',
 					notNull: false,
-					table: 'table'
+					table: 'names'
 				}
 			],
 			parameters: []
@@ -447,7 +447,7 @@ describe('parse-select-complex-queries', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: ''
+					table: 'result'
 				}
 			],
 			parameters: []
@@ -482,19 +482,19 @@ describe('parse-select-complex-queries', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 't1'
 				},
 				{
 					columnName: 'value',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 't1'
 				},
 				{
 					columnName: 'name',
 					type: 'text',
 					notNull: true,
-					table: 'table'
+					table: 't1'
 				}
 			],
 			parameters: [

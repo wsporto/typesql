@@ -227,4 +227,64 @@ WHERE :param1 is true OR (:param2 is true OR :param2::bool is null)`;
 
 		assert.deepStrictEqual(actual, expected);
 	});
+
+	it('nested01 - FROM users u INNER JOIN posts p', async () => {
+		const sql = `-- @nested
+SELECT 
+	u.id as user_id, 
+	u.name as user_name,
+	p.id as post_id,
+	p.title as post_title
+FROM users u
+INNER JOIN posts p on p.fk_user = u.id`;
+
+		const actual = await generateCode(dialect, sql, 'nested01');
+		const expected = readFileSync('tests/postgres/expected-code/nested01.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('nested02 - self relation', async () => {
+		const sql = `-- @nested
+SELECT
+	c.id,
+	a1.*,
+	a2.*
+FROM clients as c
+INNER JOIN addresses as a1 ON a1.id = c.primaryAddress
+LEFT JOIN addresses as a2 ON a2.id = c.secondaryAddress
+WHERE c.id = :clientId`;
+
+		const actual = await generateCode(dialect, sql, 'nested02');
+		const expected = readFileSync('tests/postgres/expected-code/nested02-clients-with-addresses.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('nested03 - many to many', async () => {
+		const sql = `-- @nested
+SELECT
+	s.id as surveyId,
+	s.name as surveyName,
+	u.id as userId,
+	u.name as userName
+FROM surveys s
+INNER JOIN participants p on p.fk_survey = s.id
+INNER JOIN users u on u.id = p.fk_user`;
+
+		const actual = await generateCode(dialect, sql, 'nested03');
+		const expected = readFileSync('tests/postgres/expected-code/nested03-many-to-many.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });
+

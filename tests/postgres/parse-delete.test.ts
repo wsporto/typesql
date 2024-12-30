@@ -71,13 +71,13 @@ describe('postgres-parse-delete', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 'mytable1'
 				},
 				{
 					columnName: 'value',
 					type: 'int4',
 					notNull: false,
-					table: 'table'
+					table: 'mytable1'
 				}
 			],
 			parameters: [
@@ -107,7 +107,7 @@ describe('postgres-parse-delete', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 'mytable1'
 				},
 				{
 					columnName: '?column?',
@@ -119,7 +119,7 @@ describe('postgres-parse-delete', () => {
 					columnName: 'value',
 					type: 'int4',
 					notNull: false,
-					table: 'table'
+					table: 'mytable1'
 				}
 			],
 			parameters: [

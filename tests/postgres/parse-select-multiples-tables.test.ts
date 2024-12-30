@@ -29,31 +29,31 @@ describe('postgres-parse-select-multiples-tables', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 't1'
 				},
 				{
 					columnName: 'value',
 					type: 'int4',
 					notNull: false,
-					table: 'table'
+					table: 't1'
 				},
 				{
 					columnName: 'id', //TODO - rename fields
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 't2'
 				},
 				{
 					columnName: 'name',
 					type: 'text',
 					notNull: false,
-					table: 'table'
+					table: 't2'
 				},
 				{
 					columnName: 'descr',
 					type: 'text',
 					notNull: false,
-					table: 'table'
+					table: 't2'
 				}
 			],
 			parameters: []
@@ -80,31 +80,31 @@ describe('postgres-parse-select-multiples-tables', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 't1'
 				},
 				{
 					columnName: 'value',
 					type: 'int4',
 					notNull: false,
-					table: 'table'
+					table: 't1'
 				},
 				{
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 't2'
 				},
 				{
 					columnName: 'name',
 					type: 'text',
 					notNull: false,
-					table: 'table'
+					table: 't2'
 				},
 				{
 					columnName: 'descr',
 					type: 'text',
 					notNull: false,
-					table: 'table'
+					table: 't2'
 				}
 			],
 			parameters: []
@@ -131,13 +131,13 @@ describe('postgres-parse-select-multiples-tables', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 't1'
 				},
 				{
 					columnName: 'value',
 					type: 'int4',
 					notNull: false,
-					table: 'table'
+					table: 't1'
 				}
 			],
 			parameters: []
@@ -164,19 +164,19 @@ describe('postgres-parse-select-multiples-tables', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 't2'
 				},
 				{
 					columnName: 'name',
 					type: 'text',
 					notNull: false,
-					table: 'table'
+					table: 't2'
 				},
 				{
 					columnName: 'descr',
 					type: 'text',
 					notNull: false,
-					table: 'table'
+					table: 't2'
 				}
 			],
 			parameters: []
@@ -203,31 +203,31 @@ describe('postgres-parse-select-multiples-tables', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 't2'
 				},
 				{
 					columnName: 'name',
 					type: 'text',
 					notNull: false,
-					table: 'table'
+					table: 't2'
 				},
 				{
 					columnName: 'descr',
 					type: 'text',
 					notNull: false,
-					table: 'table'
+					table: 't2'
 				},
 				{
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 't1'
 				},
 				{
 					columnName: 'value',
 					type: 'int4',
 					notNull: false,
-					table: 'table'
+					table: 't1'
 				}
 			],
 			parameters: []
@@ -255,7 +255,7 @@ describe('postgres-parse-select-multiples-tables', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 't1'
 				}
 			],
 			parameters: [
@@ -426,13 +426,13 @@ describe('postgres-parse-select-multiples-tables', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 't1'
 				},
 				{
 					columnName: 'name',
 					type: 'text',
 					notNull: false,
-					table: 'table'
+					table: 't2'
 				}
 			],
 			parameters: []
@@ -458,7 +458,7 @@ describe('postgres-parse-select-multiples-tables', () => {
 					columnName: 'name',
 					type: 'text',
 					notNull: false,
-					table: 'table'
+					table: 'mytable2'
 				}
 			],
 			parameters: []
@@ -501,7 +501,7 @@ describe('postgres-parse-select-multiples-tables', () => {
 					columnName: 'fullname',
 					type: 'text',
 					notNull: false,
-					table: 'table'
+					table: 't2'
 				}
 			],
 			parameters: []
@@ -527,7 +527,7 @@ describe('postgres-parse-select-multiples-tables', () => {
 					columnName: 'name',
 					type: 'text',
 					notNull: false,
-					table: 'table'
+					table: 't'
 				}
 			],
 			parameters: []
@@ -580,37 +580,37 @@ describe('postgres-parse-select-multiples-tables', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 't1'
 				},
 				{
 					columnName: 'id', //TODO - rename field
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 't2'
 				},
 				{
 					columnName: 'name',
 					type: 'int4',
 					notNull: false,
-					table: 'table'
+					table: 't1'
 				},
 				{
 					columnName: 'name', //TODO - rename field
 					type: 'text',
 					notNull: false,
-					table: 'table'
+					table: 't2'
 				},
 				{
 					columnName: 'id', //TODO - rename field
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 't1'
 				},
 				{
 					columnName: 'descr',
 					type: 'text',
 					notNull: false,
-					table: 'table'
+					table: 't2'
 				}
 			],
 			parameters: []
@@ -638,25 +638,25 @@ describe('postgres-parse-select-multiples-tables', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 't1'
 				},
 				{
 					columnName: 'value',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 't1'
 				},
 				{
 					columnName: 'name',
 					type: 'text',
 					notNull: true,
-					table: 'table'
+					table: 't2'
 				},
 				{
 					columnName: 'descr',
 					type: 'text',
 					notNull: false,
-					table: 'table'
+					table: 't2'
 				}
 			],
 			parameters: []
@@ -683,25 +683,25 @@ describe('postgres-parse-select-multiples-tables', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 't1'
 				},
 				{
 					columnName: 'name',
 					type: 'text',
 					notNull: false, //TODO - using(id, name) makes the name notNull
-					table: 'table'
+					table: 't1'
 				},
 				{
 					columnName: 'descr',
 					type: 'text',
 					notNull: false,
-					table: 'table'
+					table: 't1'
 				},
 				{
 					columnName: 'descr',
 					type: 'text',
 					notNull: false,
-					table: 'table'
+					table: 't2'
 				}
 			],
 			parameters: []
@@ -800,31 +800,31 @@ describe('postgres-parse-select-multiples-tables', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 't1'
 				},
 				{
 					columnName: 'value',
 					type: 'int4',
 					notNull: false,
-					table: 'table'
+					table: 't1'
 				},
 				{
 					columnName: 'id', //TODO - rename fields
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 't2'
 				},
 				{
 					columnName: 'name',
 					type: 'text',
 					notNull: false,
-					table: 'table'
+					table: 't2'
 				},
 				{
 					columnName: 'descr',
 					type: 'text',
 					notNull: false,
-					table: 'table'
+					table: 't2'
 				}
 			],
 			parameters: []
@@ -852,31 +852,31 @@ describe('postgres-parse-select-multiples-tables', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 't1'
 				},
 				{
 					columnName: 'value',
 					type: 'int4',
 					notNull: false,
-					table: 'table'
+					table: 't1'
 				},
 				{
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 't2'
 				},
 				{
 					columnName: 'name',
 					type: 'text',
 					notNull: false,
-					table: 'table'
+					table: 't2'
 				},
 				{
 					columnName: 'descr',
 					type: 'text',
 					notNull: false,
-					table: 'table'
+					table: 't2'
 				}
 			],
 			parameters: []

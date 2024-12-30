@@ -48,6 +48,7 @@ describe('sqlite-nested-query', () => {
 					{
 						name: 'posts',
 						alias: 'p',
+						notNull: true,
 						cardinality: 'many'
 					}
 				]
@@ -116,6 +117,7 @@ describe('sqlite-nested-query', () => {
 					{
 						name: 'posts',
 						alias: '',
+						notNull: true,
 						cardinality: 'many'
 					}
 				]
@@ -197,6 +199,7 @@ describe('sqlite-nested-query', () => {
 					{
 						name: 'users',
 						alias: 'u',
+						notNull: true,
 						cardinality: 'one'
 					}
 				]
@@ -274,6 +277,7 @@ describe('sqlite-nested-query', () => {
 					{
 						name: 'posts',
 						alias: 'p',
+						notNull: true,
 						cardinality: 'many'
 					}
 				]
@@ -300,6 +304,7 @@ describe('sqlite-nested-query', () => {
 					{
 						name: 'comments',
 						alias: 'c',
+						notNull: true,
 						cardinality: 'many'
 					}
 				]
@@ -378,11 +383,13 @@ describe('sqlite-nested-query', () => {
 					{
 						name: 'posts',
 						alias: 'p',
+						notNull: true,
 						cardinality: 'many'
 					},
 					{
 						name: 'roles',
 						alias: 'r',
+						notNull: true,
 						cardinality: 'many'
 					}
 				]
@@ -484,11 +491,13 @@ describe('sqlite-nested-query', () => {
 					{
 						name: 'posts',
 						alias: 'p',
+						notNull: true,
 						cardinality: 'many'
 					},
 					{
 						name: 'roles',
 						alias: 'r',
+						notNull: true,
 						cardinality: 'many'
 					}
 				]
@@ -515,6 +524,7 @@ describe('sqlite-nested-query', () => {
 					{
 						name: 'comments',
 						alias: 'c',
+						notNull: true,
 						cardinality: 'many'
 					}
 				]
@@ -590,6 +600,7 @@ describe('sqlite-nested-query', () => {
 					{
 						name: 'posts',
 						alias: 'p',
+						notNull: true,
 						cardinality: 'many'
 					}
 				]
@@ -662,6 +673,7 @@ describe('sqlite-nested-query', () => {
 					{
 						name: 'books_authors',
 						alias: 'ba',
+						notNull: true,
 						cardinality: 'many'
 					}
 				]
@@ -692,6 +704,7 @@ describe('sqlite-nested-query', () => {
 					{
 						name: 'authors',
 						alias: 'a',
+						notNull: true,
 						cardinality: 'one'
 					}
 				]
@@ -761,6 +774,7 @@ describe('sqlite-nested-query', () => {
 					{
 						name: 'authors',
 						alias: 'a',
+						notNull: true,
 						cardinality: 'many'
 					}
 				]
@@ -829,6 +843,7 @@ describe('sqlite-nested-query', () => {
 					{
 						name: 'tracks',
 						alias: 't',
+						notNull: true,
 						cardinality: 'many'
 					}
 				]
@@ -895,11 +910,13 @@ describe('sqlite-nested-query', () => {
 					{
 						name: 'a1',
 						alias: 'a1',
+						notNull: true,
 						cardinality: 'one'
 					},
 					{
 						name: 'a2',
 						alias: 'a2',
+						notNull: true,
 						cardinality: 'one'
 					}
 				]
@@ -980,6 +997,7 @@ describe('sqlite-nested-query', () => {
 					{
 						name: 'actors',
 						alias: 'a',
+						notNull: true,
 						cardinality: 'many'
 					}
 				]
@@ -998,6 +1016,7 @@ describe('sqlite-nested-query', () => {
 					{
 						name: 'persons',
 						alias: 'p',
+						notNull: true,
 						cardinality: 'one'
 					}
 				]
@@ -1073,6 +1092,7 @@ describe('sqlite-nested-query', () => {
 					{
 						name: 'actors',
 						alias: 'a',
+						notNull: true,
 						cardinality: 'many'
 					}
 				]
@@ -1091,6 +1111,7 @@ describe('sqlite-nested-query', () => {
 					{
 						name: 'persons',
 						alias: 'p',
+						notNull: true,
 						cardinality: 'one'
 					}
 				]
@@ -1184,6 +1205,7 @@ INNER JOIN media_types mt on mt.MediaTypeId = t.MediaTypeId`;
 					{
 						name: 'albums',
 						alias: 'al',
+						notNull: true,
 						cardinality: 'many'
 					}
 				]
@@ -1206,6 +1228,7 @@ INNER JOIN media_types mt on mt.MediaTypeId = t.MediaTypeId`;
 					{
 						name: 'tracks',
 						alias: 't',
+						notNull: true,
 						cardinality: 'many'
 					}
 				]
@@ -1228,6 +1251,7 @@ INNER JOIN media_types mt on mt.MediaTypeId = t.MediaTypeId`;
 					{
 						name: 'media_types',
 						alias: 'mt',
+						notNull: true,
 						cardinality: 'one'
 					}
 				]

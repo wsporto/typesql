@@ -26,7 +26,7 @@ describe('select-single-table', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 'mytable1'
 				}
 			],
 			parameters: []
@@ -49,7 +49,7 @@ describe('select-single-table', () => {
 					columnName: 'name',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 'mytable1'
 				}
 			],
 			parameters: []
@@ -73,13 +73,13 @@ describe('select-single-table', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 'mytable1'
 				},
 				{
 					columnName: 'value',
 					type: 'int4',
 					notNull: false,
-					table: 'table'
+					table: 'mytable1'
 				}
 			],
 			parameters: []
@@ -103,13 +103,13 @@ describe('select-single-table', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 'mytable1'
 				},
 				{
 					columnName: 'value',
 					type: 'int4',
 					notNull: false,
-					table: 'table'
+					table: 'mytable1'
 				}
 			],
 			parameters: []
@@ -133,13 +133,13 @@ describe('select-single-table', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 't'
 				},
 				{
 					columnName: 'value',
 					type: 'int4',
 					notNull: false,
-					table: 'table'
+					table: 't'
 				}
 			],
 			parameters: []
@@ -163,13 +163,13 @@ describe('select-single-table', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 'mytable1'
 				},
 				{
 					columnName: 'value',
 					type: 'int4',
 					notNull: false,
-					table: 'table'
+					table: 'mytable1'
 				}
 			],
 			parameters: []
@@ -193,19 +193,19 @@ describe('select-single-table', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 'mytable2'
 				},
 				{
 					columnName: 'name',
 					type: 'text',
 					notNull: false,
-					table: 'table'
+					table: 'mytable2'
 				},
 				{
 					columnName: 'description',
 					type: 'text',
 					notNull: false,
-					table: 'table'
+					table: 'mytable2'
 				}
 			],
 			parameters: []
@@ -228,13 +228,13 @@ describe('select-single-table', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 'mytable1'
 				},
 				{
 					columnName: 'value',
 					type: 'int4',
 					notNull: false,
-					table: 'table'
+					table: 'mytable1'
 				}
 			],
 			parameters: []
@@ -257,13 +257,13 @@ describe('select-single-table', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 'mytable1'
 				},
 				{
 					columnName: 'value',
 					type: 'int4',
 					notNull: false,
-					table: 'table'
+					table: 'mytable1'
 				}
 			],
 			parameters: []
@@ -286,7 +286,7 @@ describe('select-single-table', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 'mytable1'
 				}
 			],
 			parameters: []
@@ -310,13 +310,13 @@ describe('select-single-table', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 'mytable1'
 				},
 				{
 					columnName: 'value',
 					type: 'int4',
 					notNull: false,
-					table: 'table'
+					table: 'mytable1'
 				}
 			],
 			parameters: [
@@ -346,7 +346,7 @@ describe('select-single-table', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 'mytable1'
 				}
 			],
 			parameters: [
@@ -376,7 +376,7 @@ describe('select-single-table', () => {
 					columnName: 'value',
 					type: 'int4',
 					notNull: false,
-					table: 'table'
+					table: 'mytable1'
 				}
 			],
 			parameters: [
@@ -400,11 +400,10 @@ describe('select-single-table', () => {
 
 	it('SELECT id FROM mytable1 where value between :start and :end', async () => {
 		const sql = 'SELECT id FROM mytable1 where value between $1 and $2';
-		const expectedSql = 'SELECT id FROM mytable1 where value between $1 and $2';
 
 		const actual = await describeQuery(postres, sql, ['start', 'end']);
 		const expected: SchemaDef = {
-			sql: expectedSql,
+			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
@@ -412,7 +411,7 @@ describe('select-single-table', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 'mytable1'
 				}
 			],
 			parameters: [
@@ -509,13 +508,13 @@ describe('select-single-table', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 't'
 				},
 				{
 					columnName: 'value',
 					type: 'int4',
 					notNull: false,
-					table: 'table'
+					table: 't'
 				}
 			],
 			parameters: [
@@ -546,7 +545,7 @@ describe('select-single-table', () => {
 					columnName: 'id',
 					type: 'int2',
 					notNull: true,
-					table: ''
+					table: 'mytable1'
 				}
 			],
 			parameters: []
@@ -572,13 +571,13 @@ describe('select-single-table', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 't'
 				},
 				{
 					columnName: 'value',
 					type: 'int4',
 					notNull: false,
-					table: 'table'
+					table: 't'
 				}
 			],
 			parameters: [
@@ -637,7 +636,7 @@ describe('select-single-table', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 'mytable1'
 				}
 			],
 			parameters: [
@@ -668,7 +667,7 @@ describe('select-single-table', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 'mytable1'
 				}
 			],
 			parameters: [
@@ -704,7 +703,7 @@ describe('select-single-table', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 'mytable1'
 				}
 			],
 			parameters: [
@@ -735,7 +734,7 @@ describe('select-single-table', () => {
 					columnName: 'value',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 'mytable1'
 				}
 			],
 			parameters: []
@@ -760,7 +759,7 @@ describe('select-single-table', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 'mytable1'
 				}
 			],
 			parameters: []
@@ -810,7 +809,7 @@ describe('select-single-table', () => {
 					columnName: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 'mytable1'
 				}
 			],
 			parameters: [

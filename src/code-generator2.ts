@@ -1,14 +1,14 @@
 import CodeBlockWriter from 'code-block-writer';
-import { capitalize, convertToCamelCaseName, removeDuplicatedParameters2, TsDescriptor } from './code-generator';
+import { capitalize, convertToCamelCaseName, generateRelationType, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor } from './code-generator';
 import { ParameterDef, PgDielect, QueryType, SchemaDef, TsFieldDescriptor, TsParameterDescriptor, TypeSqlError } from './types';
 import { describeQuery } from './postgres-query-analyzer/describe';
 import { ColumnInfo, ColumnSchema } from './mysql-query-analyzer/types';
-import { mapColumnType, postgresTypes } from './dialects/postgres';
+import { mapColumnType } from './dialects/postgres';
 import { PostgresType } from './sqlite-query-analyzer/types';
 import { preprocessSql } from './describe-query';
 import { okAsync, ResultAsync } from 'neverthrow';
-import { PostgresColumnSchema } from './drivers/types';
-import { getQueryName } from './sqlite-query-analyzer/code-generator';
+import { getQueryName, mapFieldToTsField, writeCollectFunction } from './sqlite-query-analyzer/code-generator';
+import { mapToTsRelation2, RelationType2 } from './ts-nested-descriptor';
 
 
 
@@ -36,12 +36,12 @@ function _describeQuery(databaseClient: PgDielect, sql: string, namedParameters:
 function generateTsCode(
 	sqlOld: string,
 	queryName: string,
-	dbSchema: SchemaDef,
+	schemaDef: SchemaDef,
 	client: 'pg',
 	isCrud = false
 ): string {
 
-	const { sql } = dbSchema;
+	const { sql } = schemaDef;
 
 	const writer = new CodeBlockWriter({
 		useTabs: true
@@ -54,7 +54,7 @@ function generateTsCode(
 	const paramsTypeName = `${capitalizedName}Params`;
 	const orderByTypeName = `${capitalizedName}OrderBy`;
 
-	const tsDescriptor = createTsDescriptor(dbSchema);
+	const tsDescriptor = createTsDescriptor(schemaDef);
 	const uniqueParams = removeDuplicatedParameters2(tsDescriptor.parameters);
 	const generateOrderBy = tsDescriptor.orderByColumns != null && tsDescriptor.orderByColumns.length > 0;
 
@@ -71,6 +71,26 @@ function generateTsCode(
 	}
 	writer.blankLine();
 	writeResultType(writer, resultTypeName, tsDescriptor.columns);
+
+	if (tsDescriptor.nestedDescriptor2) {
+		const relations = tsDescriptor.nestedDescriptor2;
+		relations.forEach((relation) => {
+			const relationType = generateRelationType(capitalizedName, relation.name);
+			writer.blankLine();
+			writer.write(`export type ${relationType} = `).block(() => {
+				const uniqueNameFields = renameInvalidNames(relation.fields.map((f) => f.name));
+				relation.fields.forEach((field, index) => {
+					const nullableOperator = field.notNull ? '' : ' | null';
+					writer.writeLine(`${uniqueNameFields[index]}: ${field.tsType}${nullableOperator};`);
+				});
+				relation.relations.forEach((field) => {
+					const nestedRelationType = generateRelationType(capitalizedName, field.tsType);
+					const nullableOperator = field.notNull ? '' : '?';
+					writer.writeLine(`${field.name}${nullableOperator}: ${nestedRelationType};`);
+				});
+			});
+		});
+	}
 	writer.blankLine();
 	const execFunctionParams: ExecFunctionParameters = {
 		sql,
@@ -83,10 +103,29 @@ function generateTsCode(
 		columns: tsDescriptor.columns,
 		parameters: tsDescriptor.parameters,
 		data: tsDescriptor.data || [],
-		returning: dbSchema.returning || false
+		returning: schemaDef.returning || false,
+		generateNested: tsDescriptor.nestedDescriptor2 != null,
+		nestedType: tsDescriptor.nestedDescriptor2 ? tsDescriptor.nestedDescriptor2[0].name : ''
 	}
 	codeWriter.writeExecFunction(writer, execFunctionParams);
 
+	if (tsDescriptor.nestedDescriptor2) {
+		const relations = tsDescriptor.nestedDescriptor2;
+		relations.forEach((relation, index) => {
+			writeCollectFunction(writer, relation, tsDescriptor.columns, capitalizedName, resultTypeName);
+		});
+		writer.blankLine();
+		writer.write('const groupBy = <T, Q>(array: T[], predicate: (value: T, index: number, array: T[]) => Q) =>').block(() => {
+			writer
+				.write('return array.reduce((map, value, index, array) => ')
+				.inlineBlock(() => {
+					writer.writeLine('const key = predicate(value, index, array);');
+					writer.writeLine('map.get(key)?.push(value) ?? map.set(key, [value]);');
+					writer.writeLine('return map;');
+				})
+				.write(', new Map<Q, T[]>());');
+		});
+	}
 	return writer.toString();
 }
 
@@ -132,6 +171,18 @@ function createTsDescriptor(schemaDef: SchemaDef) {
 		parameterNames: [],
 		data: schemaDef.data?.map(param => mapParameterToTsFieldDescriptor(param))
 	}
+	if (schemaDef.nestedInfo) {
+		const nestedDescriptor2 = schemaDef.nestedInfo.map((relation) => {
+			const tsRelation: RelationType2 = {
+				groupIndex: relation.groupIndex,
+				name: relation.name,
+				fields: relation.fields.map((field) => mapFieldToTsField(schemaDef.columns, field, 'pg')),
+				relations: relation.relations.map((relation) => mapToTsRelation2(relation))
+			};
+			return tsRelation;
+		});
+		tsDescriptor.nestedDescriptor2 = nestedDescriptor2;
+	}
 	return tsDescriptor;
 }
 
@@ -176,6 +227,8 @@ type ExecFunctionParameters = {
 	parameters: TsParameterDescriptor[];
 	data: TsParameterDescriptor[];
 	returning: boolean;
+	generateNested: boolean;
+	nestedType: string;
 }
 
 const postgresCodeWriter: CodeWriter = {
@@ -184,7 +237,7 @@ const postgresCodeWriter: CodeWriter = {
 	},
 
 	writeExecFunction: function (writer: CodeBlockWriter, params: ExecFunctionParameters): void {
-		const { functionName, paramsType, dataType, returnType, parameters } = params;
+		const { functionName, paramsType, dataType, returnType, parameters, generateNested, nestedType } = params;
 		let functionParams = 'client: pg.Client | pg.Pool';
 		if (params.data.length > 0) {
 			functionParams += `, data: ${dataType}`;
@@ -263,12 +316,26 @@ const postgresCodeWriter: CodeWriter = {
 			});
 			writer.indent().write('`').newLine();
 		}
+		if (generateNested) {
+			writer.blankLine();
+			const relationType = generateRelationType(functionName, nestedType);
+			writer.write(`export async function ${functionName}Nested(${functionParams}): Promise<${relationType}[]>`).block(() => {
+				const params = parameters.length > 0 ? ', params' : '';
+				writer.writeLine(`const selectResult = await ${functionName}(client${params});`);
+				writer.write('if (selectResult.length == 0)').block(() => {
+					writer.writeLine('return [];');
+				});
+				writer.writeLine(`return collect${relationType}(selectResult);`);
+			});
+		}
 	}
 }
 
 function getColumnsForQuery(schemaDef: SchemaDef): TsFieldDescriptor[] {
 	if (schemaDef.queryType === 'Select' || schemaDef.returning) {
-		return schemaDef.columns.map(col => mapColumnInfoToTsFieldDescriptor(col))
+		const columns = schemaDef.columns.map(col => mapColumnInfoToTsFieldDescriptor(col))
+		const escapedColumnsNames = renameInvalidNames(schemaDef.columns.map((col) => col.columnName));
+		return columns.map((col, index) => ({ ...col, name: escapedColumnsNames[index] }));
 	}
 	const columns: TsFieldDescriptor[] = [
 		{

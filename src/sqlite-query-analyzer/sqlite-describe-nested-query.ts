@@ -6,6 +6,7 @@ import type { TypeSqlError } from '../types';
 export type Relation2 = {
 	name: string;
 	alias: string;
+	renameAs: boolean;
 	joinColumn: string;
 	parentRelation: string;
 	cardinality: Cardinality;
@@ -28,6 +29,7 @@ export type Field2 = {
 export type RelationField2 = {
 	name: string;
 	alias: string;
+	notNull: boolean;
 	cardinality: Cardinality;
 };
 
@@ -53,7 +55,7 @@ export function describeNestedQuery(columns: ColumnInfo[], relations: Relation2[
 	for (const [index, relation] of filterJunctionTables.entries()) {
 		const parent = isJunctionTableMap.get(relation.parentRelation) ? parentRef.get(relation.parentRelation) : undefined;
 		const groupIndex = columns.findIndex(
-			(col) => col.columnName === relation.joinColumn && (col.table === relation.name || col.table === relation.alias)
+			(col) => col.columnName.toLowerCase() === relation.joinColumn.toLowerCase() && (col.table === relation.name || col.table === relation.alias)
 		);
 		if (groupIndex === -1) {
 			const error: TypeSqlError = {
@@ -65,7 +67,7 @@ export function describeNestedQuery(columns: ColumnInfo[], relations: Relation2[
 
 		const relationInfo: RelationInfo2 = {
 			groupIndex: groupIndex,
-			name: relation.name,
+			name: relation.renameAs ? relation.alias : relation.name,
 			alias: relation.alias,
 			fields: columns
 				.map((item, index) => ({ item, index }))
@@ -83,11 +85,16 @@ export function describeNestedQuery(columns: ColumnInfo[], relations: Relation2[
 					const parent = isJunctionTableMap.get(child.parentRelation) ? parentRef.get(child.parentRelation)! : relation;
 					return child.parentRelation === parent.name || (child.alias !== '' && child.parentRelation === parent.alias);
 				})
-				.map((relation) => ({
-					name: relation.name,
-					alias: relation.alias,
-					cardinality: isJunctionTableMap.get(relation.parentRelation) ? 'many' : relation.cardinality
-				}))
+				.map((relation) => {
+					const fields = columns.filter(col => col.table === relation.name || col.table === relation.alias);
+					const relationField: RelationField2 = {
+						name: relation.renameAs ? relation.alias : relation.name,
+						alias: relation.alias,
+						notNull: fields.some(field => field.notNull),
+						cardinality: isJunctionTableMap.get(relation.parentRelation) ? 'many' : relation.cardinality
+					}
+					return relationField;
+				})
 		};
 		result.push(relationInfo);
 	}

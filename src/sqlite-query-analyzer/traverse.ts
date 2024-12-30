@@ -459,6 +459,7 @@ function traverse_table_or_subquery(
 		const relation: Relation2 = {
 			name: asAlias ? table_alias : tableOrSubqueryName,
 			alias: table_alias,
+			renameAs: false,
 			parentRelation: '',
 			cardinality: 'one',
 			parentCardinality: 'one',

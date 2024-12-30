@@ -3,7 +3,7 @@ import postgres from 'postgres';
 import { loadDbSchema } from '../../src/drivers/postgres';
 import { PostgresColumnSchema } from '../../src/drivers/types';
 import { parseSql } from '../../src/postgres-query-analyzer/parser';
-import { PostgresTraverseResult } from '../../src/postgres-query-analyzer/traverse';
+import { NotNullInfo, PostgresTraverseResult } from '../../src/postgres-query-analyzer/traverse';
 
 let dbSchema: PostgresColumnSchema[] = [];
 describe('Infer column nullability', () => {
@@ -27,260 +27,469 @@ describe('Infer column nullability', () => {
 	it('SELECT id FROM mytable1', async () => {
 		const sql = 'SELECT id FROM mytable1';
 		const actual = await parseSql(sql, dbSchema);
-		const expected = [true];
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'id',
+				is_nullable: false,
+				table_name: 'mytable1',
+				table_schema: 'public',
+			}
+		];
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('select value from mytable1 where value is not null', () => {
 		const sql = 'select value from mytable1 where value is not null';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'value',
+				is_nullable: false,
+				table_name: 'mytable1',
+				table_schema: 'public',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('select value from mytable1 where value = 10', () => {
 		const sql = 'select value from mytable1 where value = 10';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'value',
+				is_nullable: false,
+				table_name: 'mytable1',
+				table_schema: 'public',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('select value from mytable1 where value = $1', () => {
 		const sql = 'select value from mytable1 where value = $1';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'value',
+				is_nullable: false,
+				table_name: 'mytable1',
+				table_schema: 'public',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('select value from mytable1 t1 where t1.value is not null', () => {
 		const sql = 'select value from mytable1 t1 where t1.value is not null';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'value',
+				is_nullable: false,
+				table_name: 't1',
+				table_schema: 'public',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('select * from mytable1 where value is not null', () => {
 		const sql = 'select * from mytable1 where value is not null';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true, true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'id',
+				is_nullable: false,
+				table_name: 'mytable1',
+				table_schema: 'public',
+			},
+			{
+				column_name: 'value',
+				is_nullable: false,
+				table_name: 'mytable1',
+				table_schema: 'public',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('select value+10 from mytable1 where value is not null', () => {
 		const sql = 'select value+10 from mytable1 where value is not null';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: '?column?',
+				is_nullable: false,
+				table_name: '',
+				table_schema: '',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('select t1.value from mytable1 t1 where t1.value is not null', () => {
 		const sql = 'select t1.value from mytable1 t1 where t1.value is not null';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'value',
+				is_nullable: false,
+				table_name: 't1',
+				table_schema: 'public',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('select t1.value from mytable1 t1 where value is not null', () => {
 		const sql = 'select t1.value from mytable1 t1 where value is not null';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'value',
+				is_nullable: false,
+				table_name: 't1',
+				table_schema: 'public',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('select value from mytable1 t1 where t1.value is not null', () => {
 		const sql = 'select value from mytable1 t1 where t1.value is not null';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'value',
+				is_nullable: false,
+				table_name: 't1',
+				table_schema: 'public',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('select t1.value + value from mytable1 t1 where t1.value is not null', () => {
 		const sql = 'select t1.value + value from mytable1 t1 where t1.value is not null';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: '?column?',
+				is_nullable: false,
+				table_name: '',
+				table_schema: '',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('select value as alias from mytable1 t1 where t1.value is not null', () => {
 		const sql = 'select value as alias from mytable1 t1 where t1.value is not null';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'alias',
+				is_nullable: false,
+				table_name: 't1',
+				table_schema: 'public',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('select t1.value from mytable1 t1 where id is not null', () => {
 		const sql = 'select t1.value from mytable1 t1 where id is not null';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [false];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'value',
+				is_nullable: true,
+				table_name: 't1',
+				table_schema: 'public',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('select value from mytable1 where value is not null or (id > 0 or value is not null)', () => {
 		const sql = 'select value from mytable1 where value is not null or (id > 0 or value is not null)';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [false];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'value',
+				is_nullable: true,
+				table_name: 'mytable1',
+				table_schema: 'public',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('select value from mytable1 where value is not null and (id > 0 or value is not null)', () => {
 		const sql = 'select value from mytable1 where value is not null and (id > 0 or value is not null)';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'value',
+				is_nullable: false,
+				table_name: 'mytable1',
+				table_schema: 'public',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('select value from mytable1 where value is not null or (id > 0 and (id < 10 and value is not null))', () => {
 		const sql = 'select value from mytable1 where value is not null or (id > 0 and (id < 10 and value is not null))';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'value',
+				is_nullable: false,
+				table_name: 'mytable1',
+				table_schema: 'public',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('select value from mytable1 where id > 0 and id < 10 and value > 1', () => {
 		const sql = 'select value from mytable1 where id > 0 and id < 10 and value > 1';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'value',
+				is_nullable: false,
+				table_name: 'mytable1',
+				table_schema: 'public',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('select value from mytable1 where value is not null and (value > 1 or value is null)', () => {
 		const sql = 'select value from mytable1 where value is not null and (value > 1 or value is null)';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'value',
+				is_nullable: false,
+				table_name: 'mytable1',
+				table_schema: 'public',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it(' select value from mytable1 where value is not null or (value > 1 and value is null)', () => {
 		const sql = ' select value from mytable1 where value is not null or (value > 1 and value is null)';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'value',
+				is_nullable: false,
+				table_name: 'mytable1',
+				table_schema: 'public',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('select value from mytable1 where value > 1 and value is null', () => {
 		const sql = 'select value from mytable1 where value > 1 and value is null';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'value',
+				is_nullable: false,
+				table_name: 'mytable1',
+				table_schema: 'public',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('select value + value from mytable1 where value > 1', () => {
 		const sql = 'select value + value from mytable1 where value > 1';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: '?column?',
+				is_nullable: false,
+				table_name: '',
+				table_schema: '',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('select value + value from mytable1 where id > 1', () => {
 		const sql = 'select value + value from mytable1 where id > 1';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [false];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: '?column?',
+				is_nullable: true,
+				table_name: '',
+				table_schema: '',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('select value + id from mytable1 where value > 1', () => {
 		const sql = 'select value + id from mytable1 where value > 1';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: '?column?',
+				is_nullable: false,
+				table_name: '',
+				table_schema: '',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('select value+id from mytable1 where id > 10', () => {
 		const sql = 'select value+id from mytable1 where id > 10';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [false];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: '?column?',
+				is_nullable: true,
+				table_name: '',
+				table_schema: '',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('select id+id from mytable1 where value > 10', () => {
 		const sql = 'select id+id from mytable1 where value > 10';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: '?column?',
+				is_nullable: false,
+				table_name: '',
+				table_schema: '',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('select sum(value) from mytable1 where value > 10', () => {
 		const sql = 'select sum(value) from mytable1 where value > 10';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [false];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'sum',
+				is_nullable: true,
+				table_name: '',
+				table_schema: '',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('select sum(value) from mytable1 where value is not null', () => {
 		const sql = 'select sum(value) from mytable1 where value is not null';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [false];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'sum',
+				is_nullable: true,
+				table_name: '',
+				table_schema: '',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('select t2.name from mytable2 t2 inner join mytable3 t3 on t3.id = t2.id where t2.name is not null', () => {
 		const sql = 'select t2.name from mytable2 t2 inner join mytable3 t3 on t3.id = t2.id where t2.name is not null';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'name',
+				is_nullable: false,
+				table_name: 't2',
+				table_schema: 'public',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('select t2.name from mytable2 t2 inner join mytable3 t3 on t3.id = t2.id where t3.name is not null', () => {
 		const sql = 'select t2.name from mytable2 t2 inner join mytable3 t3 on t3.id = t2.id where t3.name is not null';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [false];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'name',
+				is_nullable: true,
+				table_name: 't2',
+				table_schema: 'public',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('UNION (id and value)', () => {
@@ -291,9 +500,16 @@ describe('Infer column nullability', () => {
 		`;
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [false];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'id',
+				is_nullable: true,
+				table_name: '',
+				table_schema: '',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('UNION 1', () => {
@@ -306,9 +522,16 @@ describe('Infer column nullability', () => {
 		`;
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'name',
+				is_nullable: false,
+				table_name: '',
+				table_schema: '',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('UNION 2', () => {
@@ -321,9 +544,16 @@ describe('Infer column nullability', () => {
 		`;
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [false];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'name',
+				is_nullable: true,
+				table_name: '',
+				table_schema: '',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('UNION 3', () => {
@@ -336,9 +566,16 @@ describe('Infer column nullability', () => {
 		`;
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [false];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'name',
+				is_nullable: true,
+				table_name: '',
+				table_schema: '',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('UNION 4', () => {
@@ -351,9 +588,16 @@ describe('Infer column nullability', () => {
 		`;
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [false];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'name',
+				is_nullable: true,
+				table_name: '',
+				table_schema: '',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('UNION 5', () => {
@@ -366,9 +610,28 @@ describe('Infer column nullability', () => {
 		`;
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true, true, false];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'id',
+				is_nullable: false,
+				table_name: '',
+				table_schema: '',
+			},
+			{
+				column_name: 'value',
+				is_nullable: false,
+				table_name: '',
+				table_schema: '',
+			},
+			{
+				column_name: '?column?',
+				is_nullable: true,
+				table_name: '',
+				table_schema: '',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('UNION 6', () => {
@@ -381,9 +644,16 @@ describe('Infer column nullability', () => {
 		`;
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [false];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'name',
+				is_nullable: true,
+				table_name: '',
+				table_schema: '',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('UNION 7', () => {
@@ -396,9 +666,16 @@ describe('Infer column nullability', () => {
 		`;
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'name',
+				is_nullable: false,
+				table_name: '',
+				table_schema: '',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('select with alias', () => {
@@ -407,180 +684,374 @@ describe('Infer column nullability', () => {
 		`;
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [false, true, true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: '?column?',
+				is_nullable: true,
+				table_name: '',
+				table_schema: '',
+			},
+			{
+				column_name: 'name',
+				is_nullable: false,
+				table_name: 'mytable2',
+				table_schema: 'public',
+			},
+			{
+				column_name: 'name2',
+				is_nullable: false,
+				table_name: 'mytable2',
+				table_schema: 'public',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('select with subquery', () => {
 		const sql = 'select name, (select id from mytable1 where id = 10) from mytable2 where id is not null';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [false, false];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'name',
+				is_nullable: true,
+				table_name: 'mytable2',
+				table_schema: 'public',
+			},
+			{
+				column_name: '?column?',
+				is_nullable: true,
+				table_name: '',
+				table_schema: '',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('select value + subquery', () => {
 		const sql = 'select id + (select id from mytable2 where id = 10 and id is not null) from mytable1 m1 where id is not null';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [false];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: '?column?',
+				is_nullable: true,
+				table_name: '',
+				table_schema: '',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('select name from (select name from mytable2 where name is not null) t1', () => {
 		const sql = 'select name from (select name from mytable2 where name is not null) t1';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'name',
+				is_nullable: false,
+				table_name: 't1',
+				table_schema: 'public',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('select name from (select id as name from mytable2) t1', () => {
 		const sql = 'select name from (select id as name from mytable2) t1';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'name',
+				is_nullable: false,
+				table_name: 't1',
+				table_schema: 'public',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('select id from (select * from mytable2) t1', () => {
 		const sql = 'select id from (select * from mytable2) t1';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'id',
+				is_nullable: false,
+				table_name: 't1',
+				table_schema: 'public',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('select * from (select * from mytable2 where name is not null and descr is not null) t1', () => {
 		const sql = 'select * from (select * from mytable2 where name is not null and descr is not null) t1';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true, true, true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'id',
+				is_nullable: false,
+				table_name: 't1',
+				table_schema: 'public',
+			},
+			{
+				column_name: 'name',
+				is_nullable: false,
+				table_name: 't1',
+				table_schema: 'public',
+			},
+			{
+				column_name: 'descr',
+				is_nullable: false,
+				table_name: 't1',
+				table_schema: 'public',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('select * from (select * from mytable2 where name is not null or descr is not null) t1', () => {
 		const sql = 'select * from (select * from mytable2 where name is not null or descr is not null) t1';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true, false, false];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'id',
+				is_nullable: false,
+				table_name: 't1',
+				table_schema: 'public',
+			},
+			{
+				column_name: 'name',
+				is_nullable: true,
+				table_name: 't1',
+				table_schema: 'public',
+			},
+			{
+				column_name: 'descr',
+				is_nullable: true,
+				table_name: 't1',
+				table_schema: 'public',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('select * from (select * from (select * from mytable2 where name is not null and descr is not null) t1) t2', () => {
 		const sql = 'select * from (select * from (select * from mytable2 where name is not null and descr is not null) t1) t2';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true, true, true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'id',
+				is_nullable: false,
+				table_name: 't2',
+				table_schema: 'public',
+			},
+			{
+				column_name: 'name',
+				is_nullable: false,
+				table_name: 't2',
+				table_schema: 'public',
+			},
+			{
+				column_name: 'descr',
+				is_nullable: false,
+				table_name: 't2',
+				table_schema: 'public',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('SELECT count(*) FROM mytable1', () => {
 		const sql = 'SELECT count(*) FROM mytable1';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'count',
+				is_nullable: false,
+				table_name: '',
+				table_schema: '',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('SELECT count(value) FROM mytable1', () => {
 		const sql = 'SELECT count(value) FROM mytable1';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'count',
+				is_nullable: false,
+				table_name: '',
+				table_schema: '',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('SELECT concat(id, id, id) FROM mytable1', () => {
 		const sql = 'SELECT concat(id, id, id) FROM mytable1';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'concat',
+				is_nullable: false,
+				table_name: '',
+				table_schema: '',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it(`SELECT concat(id, '-- - ', id) FROM mytable1`, () => {
 		const sql = `SELECT concat(id, '-- - ', id) FROM mytable1`;
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'concat',
+				is_nullable: false,
+				table_name: '',
+				table_schema: '',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('SELECT concat(id, null, id) FROM mytable1', () => {
 		const sql = 'SELECT concat(id, null, id) FROM mytable1';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [false];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'concat',
+				is_nullable: true,
+				table_name: '',
+				table_schema: '',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('SELECT concat(id, id, value) FROM mytable1', () => {
 		const sql = 'SELECT concat(id, id, value) FROM mytable1';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [false];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'concat',
+				is_nullable: true,
+				table_name: '',
+				table_schema: '',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('SELECT concat(id, id, value) FROM mytable1 where value is not null', () => {
 		const sql = 'SELECT concat(id, id, value) FROM mytable1 where value is not null';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'concat',
+				is_nullable: false,
+				table_name: '',
+				table_schema: '',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('SELECT case when id = 1 then id end FROM mytable1', () => {
 		const sql = 'SELECT case when id = 1 then id end FROM mytable1';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [false];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: '?column?',
+				is_nullable: true,
+				table_name: '',
+				table_schema: '',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('SELECT case when id = 1 then id else id end FROM mytable1', () => {
 		const sql = 'SELECT case when id = 1 then id else id end FROM mytable1';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: '?column?',
+				is_nullable: false,
+				table_name: '',
+				table_schema: '',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('SELECT case when id = 1 then id else value end FROM mytable1', () => {
 		const sql = 'SELECT case when id = 1 then id else value end FROM mytable1';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [false];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: '?column?',
+				is_nullable: true,
+				table_name: '',
+				table_schema: '',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('SELECT case when id = 1 then id else value end FROM mytable1 WHERE value is not null', () => {
 		const sql = 'SELECT case when id = 1 then id else value end FROM mytable1 WHERE value is not null';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: '?column?',
+				is_nullable: false,
+				table_name: '',
+				table_schema: '',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('SELECT * FROM mytable1 t1 INNER JOIN mytable2 t2 on t2.id = t1.id', () => {
@@ -588,62 +1059,147 @@ describe('Infer column nullability', () => {
 		const actual = parseSql(sql, dbSchema);
 
 		//id, value, id, name, description
-		const expected = [true, false, true, false, false];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'id',
+				is_nullable: false,
+				table_name: 't1',
+				table_schema: 'public',
+			},
+			{
+				column_name: 'value',
+				is_nullable: true,
+				table_name: 't1',
+				table_schema: 'public',
+			},
+			{
+				column_name: 'id',
+				is_nullable: false,
+				table_name: 't2',
+				table_schema: 'public',
+			},
+			{
+				column_name: 'name',
+				is_nullable: true,
+				table_name: 't2',
+				table_schema: 'public',
+			},
+			{
+				column_name: 'descr',
+				is_nullable: true,
+				table_name: 't2',
+				table_schema: 'public',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('select quantity from mytable1, (select count(*) as quantity from mytable2) t2', () => {
 		const sql = 'select quantity from mytable1, (select count(*) as quantity from mytable2) t2';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'quantity',
+				is_nullable: false,
+				table_name: 't2',
+				table_schema: '',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('SELECT name from mytable1, (SELECT name from mytable2 where name is not null) t', () => {
 		const sql = 'SELECT name from mytable1, (SELECT name from mytable2 where name is not null) t';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'name',
+				is_nullable: false,
+				table_name: 't',
+				table_schema: 'public',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('SELECT name from (SELECT name from mytable2 where name is not null) t', () => {
 		const sql = 'SELECT name from (SELECT name from mytable2 where name is not null) t';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'name',
+				is_nullable: false,
+				table_name: 't',
+				table_schema: 'public',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('SELECT name from (SELECT name from mytable2) t WHERE name is not null', () => {
 		const sql = 'SELECT name from (SELECT name from mytable2) t WHERE name is not null';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'name',
+				is_nullable: false,
+				table_name: 't',
+				table_schema: 'public',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('SELECT COALESCE(id, id, id+id), COALESCE(value, id+value), COALESCE(value, id+value, id+id) from mytable1', () => {
 		const sql = 'SELECT COALESCE(id, id, id+id), COALESCE(value, id+value), COALESCE(value, id+value, id+id) from mytable1';
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true, false, true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'COALESCE',
+				is_nullable: false,
+				table_name: '',
+				table_schema: '',
+			},
+			{
+				column_name: 'COALESCE',
+				is_nullable: true,
+				table_name: '',
+				table_schema: '',
+			},
+			{
+				column_name: 'COALESCE',
+				is_nullable: false,
+				table_name: '',
+				table_schema: '',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('SELECT COALESCE(SUM(value), 0) as total from mytable1', () => {
 		const sql = 'SELECT COALESCE(SUM(value), 0) as total from mytable1';
 		const actual = parseSql(sql, dbSchema);
-		const expected = [true];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'total',
+				is_nullable: false,
+				table_name: '',
+				table_schema: '',
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('select with left join', () => {
@@ -654,9 +1210,34 @@ describe('Infer column nullability', () => {
         `;
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true, false, false, false];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'id',
+				is_nullable: false,
+				table_name: 't1',
+				table_schema: 'public',
+			},
+			{
+				column_name: 'id',
+				is_nullable: true,
+				table_name: 't2',
+				table_schema: 'public',
+			},
+			{
+				column_name: 'value',
+				is_nullable: true,
+				table_name: 't1',
+				table_schema: 'public',
+			},
+			{
+				column_name: 'name',
+				is_nullable: true,
+				table_name: 't2',
+				table_schema: 'public'
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it.skip('select with inner join after left join', () => {
@@ -670,7 +1251,7 @@ describe('Infer column nullability', () => {
 
 		const expected = [true, true, true, false, false, false];
 
-		assert.deepStrictEqual(actualInnerJoin.columnsNullability, expected);
+		assert.deepStrictEqual(actualInnerJoin.columns, expected);
 
 		// USE JOIN instead of INNER JOIN. The same result is expected
 		const sqlJoin = `
@@ -681,7 +1262,7 @@ describe('Infer column nullability', () => {
 		`;
 		const actualJoin = parseSql(sqlJoin, dbSchema);
 
-		assert.deepStrictEqual(actualJoin.columnsNullability, expected);
+		assert.deepStrictEqual(actualJoin.columns, expected);
 	});
 
 	it('select with left join after inner join', () => {
@@ -693,26 +1274,70 @@ describe('Infer column nullability', () => {
         `;
 		const actual = parseSql(sql, dbSchema);
 
-		const expected = [true, true, false, false, false, false];
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'id',
+				is_nullable: false,
+				table_name: 't1',
+				table_schema: 'public',
+			},
+			{
+				column_name: 'id',
+				is_nullable: false,
+				table_name: 't2',
+				table_schema: 'public',
+			},
+			{
+				column_name: 'id',
+				is_nullable: true,
+				table_name: 't3',
+				table_schema: 'public',
+			},
+			{
+				column_name: 'value',
+				is_nullable: true,
+				table_name: 't1',
+				table_schema: 'public'
+			},
+			{
+				column_name: 'name',
+				is_nullable: true,
+				table_name: 't2',
+				table_schema: 'public'
+			},
+			{
+				column_name: 'double_value',
+				is_nullable: true,
+				table_name: 't3',
+				table_schema: 'public'
+			}
+		];
 
-		assert.deepStrictEqual(actual.columnsNullability, expected);
+		assert.deepStrictEqual(actual.columns, expected);
 	});
 
 	it('SELECT FROM (subquery with IN operator)', async () => {
 		const sql = `
-        SELECT id
+	    SELECT id
 		FROM (
 			SELECT id FROM mytable1 WHERE id = coalesce($1, 10)
 			AND id IN ($2)
 		) t
 		WHERE id = $3
-        `;
+	    `;
 		const actual = parseSql(sql, dbSchema);
 		const expected: PostgresTraverseResult = {
 			queryType: 'Select',
 			multipleRowsResult: true, //could be false
 			limit: undefined,
-			columnsNullability: [true],
+			columns: [
+				{
+					column_name: 'id',
+					is_nullable: false,
+					table_name: 't',
+					table_schema: 'public'
+				}
+			],
 			parameterList: [false, true, false],
 			parametersNullability: [false, true, true]
 		};
@@ -721,17 +1346,30 @@ describe('Infer column nullability', () => {
 
 	it('SELECT FROM (subquery with IN operator)', async () => {
 		const sql = `
-        SELECT id, concat($1::text, 'a')
+	    SELECT id, concat($1::text, 'a')
 		FROM (
 			SELECT id FROM mytable1 WHERE id = coalesce($2, 10)
 		) t
-        `;
+	    `;
 		const actual = parseSql(sql, dbSchema);
 		const expected: PostgresTraverseResult = {
 			queryType: 'Select',
 			multipleRowsResult: true, //could be false
 			limit: undefined,
-			columnsNullability: [true, true],
+			columns: [
+				{
+					column_name: 'id',
+					is_nullable: false,
+					table_name: 't',
+					table_schema: 'public'
+				},
+				{
+					column_name: 'concat',
+					is_nullable: false,
+					table_name: '',
+					table_schema: ''
+				}
+			],
 			parameterList: [false, false],
 			parametersNullability: [true, false]
 		};
