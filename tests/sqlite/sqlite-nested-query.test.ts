@@ -916,7 +916,7 @@ describe('sqlite-nested-query', () => {
 					{
 						name: 'a2',
 						alias: 'a2',
-						notNull: true,
+						notNull: false,
 						cardinality: 'one'
 					}
 				]

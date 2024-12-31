@@ -334,10 +334,14 @@ function traverse_select_core(
 		});
 	}
 	const querySpecification: QuerySpecificationResult = {
-		columns: listType.map((col) => ({
-			...col,
-			notNull: col.notNull || isNotNull(col.name, whereExpr) || isNotNull(col.name, havingExpr)
-		})),
+		columns: listType.map((col) => {
+			const columnName: ColumnName = { name: col.name, table: col.table };
+			const column: TypeAndNullInfer = {
+				...col,
+				notNull: col.notNull || isNotNull(columnName, whereExpr) || isNotNull(columnName, havingExpr)
+			}
+			return column;
+		}),
 		fromColumns: columnsResult //TODO - return isMultipleRowResult instead
 	};
 	return querySpecification;
@@ -1686,7 +1690,11 @@ function removeDoubleQuotes(columnName: string): string {
 	return columnName.replace(/^"|"$/g, '');
 }
 
-export function isNotNull(columnName: string, where: ExprContext | null): boolean {
+export type ColumnName = {
+	name: string;
+	table: string;
+}
+export function isNotNull(columnName: ColumnName, where: ExprContext | null): boolean {
 	if (where == null) {
 		return false;
 	}
@@ -1703,7 +1711,7 @@ export function isNotNull(columnName: string, where: ExprContext | null): boolea
 	return isNotNullExpr(columnName, where);
 }
 
-function isNotNullExpr(columnName: string, expr: ExprContext): boolean {
+function isNotNullExpr(columnName: ColumnName, expr: ExprContext): boolean {
 	if (expr.OPEN_PAR() && expr.CLOSE_PAR()) {
 		const innerExpr = expr.expr(0);
 		return isNotNull(columnName, innerExpr);
@@ -1722,8 +1730,11 @@ function isNotNullExpr(columnName: string, expr: ExprContext): boolean {
 		const column_name_right = exprRight.column_name();
 		if (column_name_left || column_name_right) {
 			const columnLeft = column_name_left?.getText();
+			const tableNameLeft = exprLeft.table_name()?.getText() || '';
+			const tableNameRight = exprRight.table_name()?.getText() || '';
 			const columnRight = column_name_right?.getText();
-			if (columnLeft === columnName || columnRight === columnName) {
+			if ((columnLeft === columnName.name && (tableNameLeft === '' || tableNameLeft === columnName.table))
+				|| (columnRight === columnName.name && (tableNameRight === '' || tableNameRight === columnName.table))) {
 				return true;
 			}
 		}
