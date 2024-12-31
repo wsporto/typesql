@@ -221,7 +221,6 @@ describe('sqlite-nested-result', () => {
 					id: 3,
 					address: 'address3'
 				},
-				//@ts-ignore
 				a2: undefined
 			}
 		];

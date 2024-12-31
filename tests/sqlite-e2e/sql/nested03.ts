@@ -8,7 +8,7 @@ export type Nested03Result = {
 	id: number;
 	id_2: number;
 	address: string;
-	id_3: number;
+	id_3?: number;
 	address_2?: string;
 }
 
@@ -44,7 +44,7 @@ function mapArrayToNested03Result(data: any) {
 export type Nested03NestedC = {
 	id: number;
 	a1: Nested03NestedA1;
-	a2: Nested03NestedA2;
+	a2?: Nested03NestedA2;
 }
 
 export type Nested03NestedA1 = {
