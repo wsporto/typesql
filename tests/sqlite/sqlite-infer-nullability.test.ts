@@ -14,7 +14,7 @@ describe('sqlite-infer-nullability', () => {
 		const sql = 'SELECT value FROM mytable1 WHERE value is not null';
 		const whereExpr = getWhereExpr(sql);
 
-		const actual = isNotNull('value', whereExpr);
+		const actual = isNotNull({ name: 'value', table: '' }, whereExpr);
 
 		assert.deepStrictEqual(actual, true);
 	});
@@ -23,7 +23,7 @@ describe('sqlite-infer-nullability', () => {
 		const sql = 'select value from mytable1 where 10 > value';
 		const whereExpr = getWhereExpr(sql);
 
-		const actual = isNotNull('value', whereExpr);
+		const actual = isNotNull({ name: 'value', table: '' }, whereExpr);
 
 		assert.deepStrictEqual(actual, true);
 	});
@@ -32,7 +32,7 @@ describe('sqlite-infer-nullability', () => {
 		const sql = 'select value from mytable1 where value is not null or (id > 0 or value is not null)';
 		const whereExpr = getWhereExpr(sql);
 
-		const actual = isNotNull('value', whereExpr);
+		const actual = isNotNull({ name: 'value', table: '' }, whereExpr);
 
 		assert.deepStrictEqual(actual, false); //todo changed
 	});
@@ -41,7 +41,7 @@ describe('sqlite-infer-nullability', () => {
 		const sql = 'select value from mytable1 where value is not null and (id > 0 or value is not null)';
 		const whereExpr = getWhereExpr(sql);
 
-		const actual = isNotNull('value', whereExpr);
+		const actual = isNotNull({ name: 'value', table: '' }, whereExpr);
 
 		assert.deepStrictEqual(actual, true);
 	});
@@ -50,7 +50,7 @@ describe('sqlite-infer-nullability', () => {
 		const sql = 'select value from mytable1 where value is not null or (id > 0 and (id < 10 and value is not null))';
 		const whereExpr = getWhereExpr(sql);
 
-		const actual = isNotNull('value', whereExpr);
+		const actual = isNotNull({ name: 'value', table: '' }, whereExpr);
 
 		assert.deepStrictEqual(actual, true);
 	});
@@ -59,7 +59,7 @@ describe('sqlite-infer-nullability', () => {
 		const sql = 'select value from mytable1 where id > 0 and id < 10 and value > 1';
 		const whereExpr = getWhereExpr(sql);
 
-		const actual = isNotNull('value', whereExpr);
+		const actual = isNotNull({ name: 'value', table: '' }, whereExpr);
 
 		assert.deepStrictEqual(actual, true);
 	});
@@ -68,7 +68,7 @@ describe('sqlite-infer-nullability', () => {
 		const sql = 'select value from mytable1 where value is not null and (value > 1 or value is null)';
 		const whereExpr = getWhereExpr(sql);
 
-		const actual = isNotNull('value', whereExpr);
+		const actual = isNotNull({ name: 'value', table: '' }, whereExpr);
 
 		assert.deepStrictEqual(actual, true);
 	});
@@ -77,8 +77,17 @@ describe('sqlite-infer-nullability', () => {
 		const sql = 'select value from mytable1 where value is not null or (value > 1 and value is null)';
 		const whereExpr = getWhereExpr(sql);
 
-		const actual = isNotNull('value', whereExpr);
+		const actual = isNotNull({ name: 'value', table: '' }, whereExpr);
 
 		assert.deepStrictEqual(actual, true);
+	});
+
+	it('select value from mytable1 t1 left join mytable2 t2 on t1.id = t2.id where t1.id = 1', () => {
+		const sql = 'select t2.id from mytable1 t1 left join mytable2 t2 on t1.id = t2.id where t1.id = 1';
+		const whereExpr = getWhereExpr(sql);
+
+		const actual = isNotNull({ name: 'id', table: 't2' }, whereExpr);
+
+		assert.deepStrictEqual(actual, false);
 	});
 });
