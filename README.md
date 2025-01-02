@@ -10,7 +10,7 @@ TypeSQL supports multiple SQL database backends:
 
 - [pg](https://www.npmjs.com/package/pg) - PostgreSQL client for node.js.
 
-##### MySQL / MariaDB
+##### MySQL
 
 - [mysql2](https://www.npmjs.com/package/mysql2) - the standard driver for mysql in NodeJS
 
