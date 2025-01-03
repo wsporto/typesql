@@ -512,20 +512,19 @@ function writeCrudUpdate(writer: CodeBlockWriter, crudParamters: CrudParameters)
 	writer.write(`export async function ${queryName}(client: pg.Client | pg.Pool, data: ${dataTypeName}, params: ${paramsTypeName}): Promise<${resultTypeName} | null>`).block(() => {
 		writer.writeLine(`let sql = 'UPDATE ${tableName} SET';`);
 		writer.writeLine('const values: any[] = [];');
-		writer.writeLine('let update = false;');
 		nonKeys.forEach((col, index) => {
 			writer.write(`if (data.${col} !== undefined)`).block(() => {
-				writer.writeLine(`sql += ' ${col} = $${index + 1}';`)
+				writer.conditionalWriteLine(index > 0, `if (values.length > 0) sql += ',';`);
+				writer.writeLine(`sql += ' ${col} = $${index + 1}';`);
 				writer.writeLine(`values.push(data.${col});`);
-				writer.writeLine('update = true;');
 			})
 		})
 		const keyName = keys[0];
 		writer.writeLine(`sql += ' WHERE ${keyName} = $${nonKeys.length + 1} RETURNING *';`);
 		writer.writeLine(`values.push(params.${keyName});`);
-		writer.write('if (update)').block(() => {
+		writer.write('if (values.length > 0)').block(() => {
 			writer.writeLine('return client.query({ text: sql, values })');
-			writer.indent().write(`.then(res => mapArrayTo${resultTypeName}(res));`);
+			writer.indent().write(`.then(res => res.rows.length > 0 ? mapArrayTo${resultTypeName}(res) : null);`);
 		})
 		writer.writeLine('return null;');
 	})
