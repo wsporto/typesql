@@ -870,4 +870,44 @@ describe('select-single-table', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('SELECT id FROM mytable2 WHERE row(id, name, descr) = row($1, $2, $3)', async () => {
+		const sql = 'SELECT id FROM mytable2 WHERE row(id, name, descr) = row($1, $2, $3)';
+
+		const actual = await describeQuery(postres, sql, ['id', 'name', 'descr']);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'mytable2'
+				}
+			],
+			parameters: [
+				{
+					name: 'id',
+					columnType: 'int4',
+					notNull: true
+				},
+				{
+					name: 'name',
+					columnType: 'text',
+					notNull: true
+				},
+				{
+					name: 'descr',
+					columnType: 'text',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });

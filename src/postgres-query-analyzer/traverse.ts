@@ -620,6 +620,17 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 		if (a_expr_in_parens) {
 			return traverse_a_expr(a_expr_in_parens, context, traverseResult);
 		}
+		const explicit_row = c_expr.explicit_row();
+		if (explicit_row) {
+			const expr_list = explicit_row.expr_list().a_expr_list()
+				.map(a_expr => traverse_a_expr(a_expr, context, traverseResult));
+			return {
+				column_name: '?column?',
+				is_nullable: expr_list.some(col => col.is_nullable),
+				table_name: '',
+				table_schema: ''
+			}
+		}
 		const implicit_row = c_expr.implicit_row();
 		if (implicit_row) {
 			const expr_list = implicit_row.expr_list().a_expr_list().concat(implicit_row.a_expr())
