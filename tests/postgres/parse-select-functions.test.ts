@@ -249,6 +249,44 @@ describe('postgres-parse-select-functions', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('SELECT id FROM mytable1 WHERE coalesce(abs($1), id) = 1 and coalesce($2, id) = 2', async () => {
+		const sql = `
+        SELECT id
+		FROM mytable1 
+		WHERE coalesce(abs($1::int4), id) = 1 OR coalesce($2, id) = 2
+        `;
+		const actual = await describeQuery(postres, sql, ['id1', 'id2']);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'mytable1'
+				}
+			],
+			parameters: [
+				{
+					name: 'id1',
+					columnType: 'int4',
+					notNull: false
+				},
+				{
+					name: 'id2',
+					columnType: 'int4',
+					notNull: false
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('parse a select with SUM and with expression from multiple tables', async () => {
 		const sql = `
         select sum(t2.id + (t1.value + 2)) from mytable1 t1 inner join mytable2 t2 on t1.id = t2.id

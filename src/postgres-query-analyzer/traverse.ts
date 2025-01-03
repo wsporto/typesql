@@ -40,6 +40,7 @@ type TraverseResult = {
 type TraverseContext = {
 	dbSchema: PostgresColumnSchema[];
 	fromColumns: NotNullInfo[];
+	propagatesNull?: boolean;
 	generateNestedInfo: boolean;
 }
 
@@ -328,11 +329,17 @@ function traverse_a_expr_lessless(a_expr_lessless: A_expr_lesslessContext, conte
 }
 
 function traverse_expr_or(a_expr_or: A_expr_orContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
-	const a_expr_and = a_expr_or.a_expr_and_list()[0];
-	if (a_expr_and) {
-		return traverse_expr_and(a_expr_and, context, traverseResult);
+	// expr1 OR expr2
+	const result = a_expr_or.a_expr_and_list().map(a_expr_and => traverse_expr_and(a_expr_and, context, traverseResult));
+	if (result.length === 1) {
+		return result[0];
 	}
-	throw Error('traverse_expr_or -  Not expected:' + a_expr_or.getText());
+	return {
+		column_name: '?column?',
+		is_nullable: result.some(col => col.is_nullable),
+		table_name: '',
+		table_schema: ''
+	} satisfies NotNullInfo;
 }
 
 function traverse_expr_and(a_expr_and: A_expr_andContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
@@ -570,11 +577,11 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 		if (c_expr.PARAM()) {
 			traverseResult.parameters.push({
 				paramIndex: c_expr.start.start,
-				isNotNull: true
+				isNotNull: !context.propagatesNull
 			});
 			return {
 				column_name: c_expr.PARAM().getText(),
-				is_nullable: false,
+				is_nullable: !!context.propagatesNull,
 				table_name: '',
 				table_schema: ''
 			}
@@ -711,9 +718,6 @@ function traversefunc_application(func_application: Func_applicationContext, con
 	if (functionName === 'generate_series') {
 		return true;
 	}
-	if (func_arg_expr_list) {
-		func_arg_expr_list.forEach(func_arg_expr => traversefunc_arg_expr(func_arg_expr, context, traverseResult))
-	}
 
 	return false;
 }
@@ -722,11 +726,7 @@ function traversefunc_expr_common_subexpr(func_expr_common_subexpr: Func_expr_co
 	if (func_expr_common_subexpr.COALESCE()) {
 		const func_arg_list = func_expr_common_subexpr.expr_list().a_expr_list();
 		const result = func_arg_list.map(func_arg_expr => {
-			const paramResult = traverse_a_expr(func_arg_expr, context, traverseResult);
-			if (isParameter(paramResult.column_name)) {
-				traverseResult.parameters[traverseResult.parameters.length - 1].isNotNull = false;
-				paramResult.is_nullable = true;
-			}
+			const paramResult = traverse_a_expr(func_arg_expr, { ...context, propagatesNull: true }, traverseResult);
 			return paramResult;
 		});
 		return result.some(col => !col.is_nullable);
