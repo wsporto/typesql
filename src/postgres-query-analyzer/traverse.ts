@@ -345,6 +345,7 @@ function traverse_target_list(target_list: Target_listContext, context: Traverse
 function traverse_target_el(target_el: Target_elContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
 	if (target_el instanceof Target_labelContext) {
 		const a_expr = target_el.a_expr();
+		const numParamsBefore = traverseResult.parameters.length;
 		const exprResult = traverse_a_expr(a_expr, context, traverseResult);
 		const colLabel = target_el.colLabel();
 		const alias = colLabel != null ? colLabel.getText() : '';
@@ -358,11 +359,13 @@ function traverse_target_el(target_el: Target_elContext, context: TraverseContex
 			})
 		}
 		if (context.collectDynamicQueryInfo) {
+			const parameters = traverseResult.parameters.slice(numParamsBefore).map((_, index) => index + numParamsBefore);
+			const relations = extractRelations(target_el.a_expr());
 			traverseResult.dynamicQueryInfo?.select.push({
 				fragment: extractOriginalSql(target_el),
 				fragmentWitoutAlias: extractOriginalSql(target_el.a_expr()),
-				dependOnRelations: [exprResult.table_name],
-				parameters: []
+				dependOnRelations: relations,
+				parameters
 			})
 		}
 		return {

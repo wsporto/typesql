@@ -282,4 +282,112 @@ describe('postgres-generate-dynamic-info', () => {
 		};
 		assert.deepStrictEqual(actual.dynamicQueryInfo, expected);
 	});
+
+	it('dynamic-traverse-result: where t3.id > 1', () => {
+		const sql = `-- @dynamicQuery
+		select t2.name, t3.name as name2
+		from mytable2 t2
+		inner join mytable3 t3 on t3.id = t2.id
+		where t3.id > 1`;
+
+		const actual = parseSql(sql, dbSchema, { collectDynamicQueryInfo: true });
+		const expected: DynamicSqlInfo2 = {
+			with: [],
+			select: [
+				{
+					fragment: 't2.name',
+					fragmentWitoutAlias: 't2.name',
+					dependOnRelations: ['t2'],
+					parameters: []
+				},
+				{
+					fragment: 't3.name as name2',
+					fragmentWitoutAlias: 't3.name',
+					dependOnRelations: ['t3'],
+					parameters: []
+				}
+			],
+			from: [
+				{
+					fragment: 'FROM mytable2 t2',
+					relationName: 'mytable2',
+					relationAlias: 't2',
+					parentRelation: '',
+					fields: ['id', 'name', 'descr'],
+					parameters: []
+				},
+				{
+					fragment: 'inner JOIN mytable3 t3 on t3.id = t2.id',
+					relationName: 'mytable3',
+					relationAlias: 't3',
+					parentRelation: 't2',
+					fields: ['id', 'double_value', 'name'],
+					parameters: []
+				}
+			],
+			where: [
+				{
+					fragment: 'AND t3.id > 1',
+					dependOnRelations: ['t3'],
+					parameters: []
+				}
+			]
+		};
+		assert.deepStrictEqual(actual.dynamicQueryInfo, expected);
+	});
+
+	it('dynamic-traverse-result: SELECT with parameters', () => {
+		const sql = `-- @dynamicQuery
+		SELECT 
+			t2.id, 
+			t3.double_value, 
+			$1 is null OR concat('%', t2.name, t3.name, '%') LIKE $1 as likeName
+		FROM mytable2 t2
+		INNER JOIN mytable3 t3 on t3.id = t2.id`;
+
+		const actual = parseSql(sql, dbSchema, { collectDynamicQueryInfo: true });
+		const expected: DynamicSqlInfo2 = {
+			with: [],
+			select: [
+				{
+					fragment: 't2.id',
+					fragmentWitoutAlias: 't2.id',
+					dependOnRelations: ['t2'],
+					parameters: []
+				},
+				{
+					fragment: 't3.double_value',
+					fragmentWitoutAlias: 't3.double_value',
+					dependOnRelations: ['t3'],
+					parameters: []
+				},
+				{
+					fragment: `$1 is null OR concat('%', t2.name, t3.name, '%') LIKE $1 as likeName`,
+					fragmentWitoutAlias: `$1 is null OR concat('%', t2.name, t3.name, '%') LIKE $1`,
+					dependOnRelations: ['t2', 't3'],
+					parameters: [0, 1]
+				}
+			],
+			from: [
+				{
+					fragment: 'FROM mytable2 t2',
+					relationName: 'mytable2',
+					relationAlias: 't2',
+					parentRelation: '',
+					fields: ['id', 'name', 'descr'],
+					parameters: []
+				},
+				{
+					fragment: 'INNER JOIN mytable3 t3 on t3.id = t2.id',
+					relationName: 'mytable3',
+					relationAlias: 't3',
+					parentRelation: 't2',
+					fields: ['id', 'double_value', 'name'],
+					parameters: []
+				}
+			],
+			where: []
+		};
+		assert.deepStrictEqual(actual.dynamicQueryInfo, expected);
+	});
 });
