@@ -173,7 +173,7 @@ function traverse_select_no_parens(select_no_parens: Select_no_parensContext, co
 	if (with_clause) {
 		with_clause.cte_list().common_table_expr_list()
 			.forEach(common_table_expr => {
-				const newContext = { ...context, fromColumns: withColumns.concat(context.fromColumns) };
+				const newContext: TraverseContext = { ...context, fromColumns: withColumns.concat(context.fromColumns) };
 				const withResult = traverse_common_table_expr(common_table_expr, newContext, traverseResult);
 				withColumns.push(...withResult);
 			});
@@ -189,8 +189,15 @@ function traverse_select_no_parens(select_no_parens: Select_no_parensContext, co
 function traverse_common_table_expr(common_table_expr: Common_table_exprContext, context: TraverseContext, traverseResult: TraverseResult) {
 	const tableName = common_table_expr.name().getText();
 	const select_stmt = common_table_expr.preparablestmt().selectstmt();
+	if (context.collectDynamicQueryInfo) {
+		traverseResult.dynamicQueryInfo?.with.push({
+			fragment: extractOriginalSql(common_table_expr),
+			relationName: tableName,
+			parameters: []
+		})
+	}
 	if (select_stmt) {
-		const columns = traverse_selectstmt(select_stmt, context, traverseResult);
+		const columns = traverse_selectstmt(select_stmt, { ...context, collectDynamicQueryInfo: false }, traverseResult);
 		const columnsWithTalbeName = columns.map(col => ({ ...col, table_name: tableName }));
 		return columnsWithTalbeName;
 	}
