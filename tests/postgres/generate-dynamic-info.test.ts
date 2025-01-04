@@ -82,4 +82,63 @@ describe('postgres-generate-dynamic-info', () => {
 
 		assert.deepStrictEqual(actual.dynamicQueryInfo, expected);
 	});
+
+	it('dynamic-traverse-result-02', () => {
+		const sql = `-- @dynamicQuery
+		SELECT m1.id, m2.name
+		FROM mytable1 m1
+		INNER JOIN ( -- derivated table
+			SELECT id, name from mytable2 m 
+			WHERE m.name = $1
+		) m2 on m2.id = m1.id
+		WHERE ($2 is NULL or m2.name = $3)`;
+
+		const actual = parseSql(sql, dbSchema, { collectDynamicQueryInfo: true });
+		const expected: DynamicSqlInfo2 = {
+			with: [],
+			select: [
+				{
+					fragment: 'm1.id',
+					fragmentWitoutAlias: 'm1.id',
+					dependOnRelations: ['m1'],
+					parameters: []
+				},
+				{
+					fragment: 'm2.name',
+					fragmentWitoutAlias: 'm2.name',
+					dependOnRelations: ['m2'],
+					parameters: []
+				}
+			],
+			from: [
+				{
+					fragment: 'FROM mytable1 m1',
+					relationName: 'mytable1',
+					relationAlias: 'm1',
+					parentRelation: '',
+					fields: ['id', 'value'],
+					parameters: []
+				},
+				{
+					fragment: `INNER JOIN ( -- derivated table
+			SELECT id, name from mytable2 m 
+			WHERE m.name = $1
+		) m2 on m2.id = m1.id`,
+					relationName: 'm2',
+					relationAlias: 'm2',
+					parentRelation: 'm1',
+					fields: ['id', 'name'],
+					parameters: [0]
+				}
+			],
+			where: [
+				{
+					fragment: 'AND ($2 is NULL or m2.name = $3)',
+					dependOnRelations: ['m2'],
+					parameters: [1, 2]
+				}
+			]
+		};
+		assert.deepStrictEqual(actual.dynamicQueryInfo, expected);
+	});
 });

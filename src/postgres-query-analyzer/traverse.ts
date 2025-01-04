@@ -247,10 +247,32 @@ function traverse_simple_select_pramary(simple_select_pramary: Simple_select_pra
 	//fromColumns has precedence
 	const newContext = { ...context, fromColumns: fromColumns.concat(context.fromColumns) };
 	if (where_a_expr) {
+		const numParamsBefore = traverseResult.parameters.length;
 		traverse_a_expr(where_a_expr, newContext, traverseResult);
+		if (context.collectDynamicQueryInfo) {
+			const parameters = traverseResult.parameters.slice(numParamsBefore).map((_, index) => index + numParamsBefore);
+			const relations = extractRelations(where_a_expr);
+			traverseResult.dynamicQueryInfo?.where.push({
+				fragment: `AND ${extractOriginalSql(where_a_expr)}`,
+				parameters,
+				dependOnRelations: relations
+			})
+		}
 	}
 	const filteredColumns = filterColumns_simple_select_pramary(simple_select_pramary, newContext, traverseResult);
 	return filteredColumns;
+}
+
+function extractRelations(a_expr: A_exprContext): string[] {
+	const columnsRef = collectContextsOfType(a_expr, ColumnrefContext);
+	const relations = columnsRef
+		.map((colRefExpr) => {
+			const colRef = colRefExpr as ColumnrefContext;
+			const tableName = splitName(colRef.getText());
+			return tableName;
+		});
+	const uniqueRelations = [...new Set(relations.map(relation => relation.prefix))]
+	return uniqueRelations;
 }
 
 function traverse_values_clause(values_clause: Values_clauseContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo[] {
@@ -872,13 +894,14 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 		const join_qual_list = table_ref.join_qual_list();
 
 		if (context.collectDynamicQueryInfo && traverseResult.dynamicQueryInfo!.from.length == 0) {
-			collectDynamicQueryInfoTableRef(table_ref, null, null, fromColumnsResult, traverseResult);
+			collectDynamicQueryInfoTableRef(table_ref, null, null, fromColumnsResult, [], traverseResult);
 		}
 
 		if (table_ref_list) {
 			const joinColumns = table_ref_list.flatMap((table_ref, joinIndex) => {
 				const joinType = join_type_list[joinIndex]; //INNER, LEFT
 				const joinQual = join_qual_list[joinIndex];
+				const numParamsBefore = traverseResult.parameters.length;
 				const joinColumns = traverse_table_ref(table_ref, context, traverseResult);
 				const isUsing = joinQual?.USING() ? true : false;
 				const isLeftJoin = joinType?.LEFT();
@@ -889,7 +912,8 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 					collectNestedInfo(joinQual, resultColumns, traverseResult);
 				}
 				if (context.collectDynamicQueryInfo) {
-					collectDynamicQueryInfoTableRef(table_ref, joinType, joinQual, resultColumns, traverseResult);
+					const parameters = traverseResult.parameters.slice(numParamsBefore).map((_, index) => index + numParamsBefore);
+					collectDynamicQueryInfoTableRef(table_ref, joinType, joinQual, resultColumns, parameters, traverseResult);
 				}
 
 				return resultColumns;
@@ -899,7 +923,7 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 	}
 	const select_with_parens = table_ref.select_with_parens();
 	if (select_with_parens) {
-		const columns = traverse_select_with_parens(select_with_parens, context, traverseResult);
+		const columns = traverse_select_with_parens(select_with_parens, { ...context, collectDynamicQueryInfo: false }, traverseResult);
 		const withAlias = columns.map(col => ({ ...col, table_name: alias || col.table_name }));
 		return withAlias;
 	}
@@ -907,13 +931,14 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 }
 
 function collectDynamicQueryInfoTableRef(table_ref: Table_refContext, joinType: Join_typeContext | null,
-	joinQual: Join_qualContext | null, columns: NotNullInfo[], traverseResult: TraverseResult) {
+	joinQual: Join_qualContext | null, columns: NotNullInfo[], parameters: number[], traverseResult: TraverseResult) {
 	const alias = extractOriginalSql(table_ref.alias_clause());
-	const tableName = extractOriginalSql(table_ref.relation_expr());
+	const fromExpr = extractOriginalSql(table_ref.relation_expr() || table_ref.select_with_parens());
+	const tableName = table_ref.relation_expr()?.getText() || alias;
 	const fromOrJoin = joinType ? `${extractOriginalSql(joinType)} JOIN` : 'FROM';
 	const join = joinQual ? ` ${extractOriginalSql(joinQual)}` : '';
 
-	const fromFragment = `${fromOrJoin} ${tableName} ${alias}${join}`;
+	const fromFragment = `${fromOrJoin} ${fromExpr} ${alias}${join}`;
 	const fields = columns.map(col => col.column_name);
 	const joinColumns = joinQual ? getJoinColumns(joinQual) : [];
 	const parentList = joinColumns.filter(joinRef => joinRef.prefix !== tableName && joinRef.prefix !== alias);
@@ -921,7 +946,7 @@ function collectDynamicQueryInfoTableRef(table_ref: Table_refContext, joinType: 
 	traverseResult.dynamicQueryInfo?.from.push({
 		fragment: fromFragment,
 		fields,
-		parameters: [],
+		parameters,
 		relationName: tableName,
 		relationAlias: alias,
 		parentRelation
