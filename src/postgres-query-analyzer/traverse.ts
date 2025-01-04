@@ -324,6 +324,16 @@ function traverse_target_list(target_list: Target_listContext, context: Traverse
 		const fieldName = splitName(target_el.getText());
 		if (fieldName.name == '*') {
 			const columns = filterColumns(context.fromColumns, fieldName);
+			if (context.collectDynamicQueryInfo) {
+				columns.forEach(col => {
+					traverseResult.dynamicQueryInfo?.select.push({
+						fragment: `${col.table_name}.${col.column_name}`,
+						fragmentWitoutAlias: `${col.table_name}.${col.column_name}`,
+						dependOnRelations: [col.table_name],
+						parameters: []
+					});
+				})
+			}
 			return columns;
 		}
 		const column = traverse_target_el(target_el, context, traverseResult);

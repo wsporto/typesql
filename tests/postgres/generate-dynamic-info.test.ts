@@ -209,4 +209,77 @@ describe('postgres-generate-dynamic-info', () => {
 
 		assert.deepStrictEqual(actual.dynamicQueryInfo, expected);
 	});
+
+	it('dynamic-traverse-result-06', () => {
+		const sql = `-- @dynamicQuery
+		SELECT m1.*, m3.*
+		FROM mytable1 m1
+		INNER JOIN mytable2 m2 on m2.id = m1.id
+		INNER JOIN mytable3 m3 on m3.id = m2.id`;
+
+		const actual = parseSql(sql, dbSchema, { collectDynamicQueryInfo: true });
+		const expected: DynamicSqlInfo2 = {
+			with: [],
+			select: [
+				{
+					fragment: 'm1.id',
+					fragmentWitoutAlias: 'm1.id',
+					dependOnRelations: ['m1'],
+					parameters: []
+				},
+				{
+					fragment: 'm1.value',
+					fragmentWitoutAlias: 'm1.value',
+					dependOnRelations: ['m1'],
+					parameters: []
+				},
+				{
+					fragment: 'm3.id',
+					fragmentWitoutAlias: 'm3.id',
+					dependOnRelations: ['m3'],
+					parameters: []
+				},
+				{
+					fragment: 'm3.double_value',
+					fragmentWitoutAlias: 'm3.double_value',
+					dependOnRelations: ['m3'],
+					parameters: []
+				},
+				{
+					fragment: 'm3.name',
+					fragmentWitoutAlias: 'm3.name',
+					dependOnRelations: ['m3'],
+					parameters: []
+				}
+			],
+			from: [
+				{
+					fragment: 'FROM mytable1 m1',
+					relationName: 'mytable1',
+					relationAlias: 'm1',
+					parentRelation: '',
+					fields: ['id', 'value'],
+					parameters: []
+				},
+				{
+					fragment: 'INNER JOIN mytable2 m2 on m2.id = m1.id',
+					relationName: 'mytable2',
+					relationAlias: 'm2',
+					parentRelation: 'm1',
+					fields: ['id', 'name', 'descr'],
+					parameters: []
+				},
+				{
+					fragment: 'INNER JOIN mytable3 m3 on m3.id = m2.id',
+					relationName: 'mytable3',
+					relationAlias: 'm3',
+					parentRelation: 'm2',
+					fields: ['id', 'double_value', 'name'],
+					parameters: []
+				}
+			],
+			where: []
+		};
+		assert.deepStrictEqual(actual.dynamicQueryInfo, expected);
+	});
 });
