@@ -11,6 +11,7 @@ import { NotNullInfo, PostgresTraverseResult } from './traverse';
 import { describeNestedQuery } from '../sqlite-query-analyzer/sqlite-describe-nested-query';
 import { isLeft } from 'fp-ts/lib/Either';
 import { hasAnnotation } from '../describe-query';
+import { describeDynamicQuery2 } from '../describe-dynamic-query';
 
 function describeQueryRefine(sql: string, postgresDescribeResult: PostgresDescribe, dbSchema: PostgresColumnSchema[], namedParameters: string[]): Result<SchemaDef, string> {
 
@@ -48,6 +49,10 @@ function describeQueryRefine(sql: string, postgresDescribeResult: PostgresDescri
 			return err('Error during nested query result: ' + nestedResult.left.description);
 		}
 		descResult.nestedInfo = nestedResult.right;
+	}
+	if (traverseResult.dynamicQueryInfo) {
+		const dynamicSqlQueryInfo = describeDynamicQuery2(traverseResult.dynamicQueryInfo, namedParameters, []);
+		descResult.dynamicSqlQuery2 = dynamicSqlQueryInfo;
 	}
 	return ok(descResult);
 }

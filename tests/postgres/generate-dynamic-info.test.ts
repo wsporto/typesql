@@ -1,9 +1,10 @@
 import assert from 'node:assert';
-import type { DynamicSqlInfo2 } from '../../src/mysql-query-analyzer/types';
+import type { DynamicSqlInfo2, DynamicSqlInfoResult2 } from '../../src/mysql-query-analyzer/types';
 import { PostgresColumnSchema } from '../../src/drivers/types';
 import postgres from 'postgres';
 import { loadDbSchema } from '../../src/drivers/postgres';
 import { parseSql } from '../../src/postgres-query-analyzer/parser';
+import { describeQuery } from '../../src/postgres-query-analyzer/describe';
 
 describe('postgres-generate-dynamic-info', () => {
 	let dbSchema: PostgresColumnSchema[] = [];
@@ -83,6 +84,61 @@ describe('postgres-generate-dynamic-info', () => {
 		assert.deepStrictEqual(actual.dynamicQueryInfo, expected);
 	});
 
+	it('dynamic-info-result01', async () => {
+		const sql = `-- @dynamicQuery
+		SELECT m1.id, m1.value, m2.name, m2.descr as description
+		FROM mytable1 m1
+		INNER JOIN mytable2 m2 on m1.id = m2.id`;
+
+		const actual = await describeQuery(databaseClient, sql, []);
+		const expected: DynamicSqlInfoResult2 = {
+			with: [],
+			select: [
+				{
+					fragment: 'm1.id',
+					fragmentWitoutAlias: 'm1.id',
+					parameters: []
+				},
+				{
+					fragment: 'm1.value',
+					fragmentWitoutAlias: 'm1.value',
+					parameters: []
+				},
+				{
+					fragment: 'm2.name',
+					fragmentWitoutAlias: 'm2.name',
+					parameters: []
+				},
+				{
+					fragment: 'm2.descr as description',
+					fragmentWitoutAlias: 'm2.descr',
+					parameters: []
+				}
+			],
+			from: [
+				{
+					fragment: 'FROM mytable1 m1',
+					relationName: 'mytable1',
+					dependOnFields: [],
+					dependOnOrderBy: [],
+					parameters: []
+				},
+				{
+					fragment: 'INNER JOIN mytable2 m2 on m1.id = m2.id',
+					relationName: 'mytable2',
+					dependOnFields: [2, 3],
+					dependOnOrderBy: [],
+					parameters: []
+				}
+			],
+			where: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value.dynamicSqlQuery2, expected);
+	});
+
 	it('dynamic-traverse-result-02', () => {
 		const sql = `-- @dynamicQuery
 		SELECT m1.id, m2.name
@@ -140,6 +196,114 @@ describe('postgres-generate-dynamic-info', () => {
 			]
 		};
 		assert.deepStrictEqual(actual.dynamicQueryInfo, expected);
+	});
+
+	it('dynamic-info-result02', async () => {
+		const sql = `-- @dynamicQuery
+		SELECT m1.id, m2.name
+		FROM mytable1 m1
+		INNER JOIN ( -- derivated table
+			SELECT id, name from mytable2 m 
+			WHERE m.name = $1
+		) m2 on m2.id = m1.id`;
+
+		const actual = await describeQuery(databaseClient, sql, []);
+		const expected: DynamicSqlInfoResult2 = {
+			with: [],
+			select: [
+				{
+					fragment: 'm1.id',
+					fragmentWitoutAlias: 'm1.id',
+					parameters: []
+				},
+				{
+					fragment: 'm2.name',
+					fragmentWitoutAlias: 'm2.name',
+					parameters: []
+				}
+			],
+			from: [
+				{
+					fragment: 'FROM mytable1 m1',
+					relationName: 'mytable1',
+					dependOnFields: [],
+					dependOnOrderBy: [],
+					parameters: []
+				},
+				{
+					fragment: `INNER JOIN ( -- derivated table
+			SELECT id, name from mytable2 m 
+			WHERE m.name = $1
+		) m2 on m2.id = m1.id`,
+					relationName: 'm2',
+					dependOnFields: [1],
+					dependOnOrderBy: [],
+					parameters: [0]
+				}
+			],
+			where: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value.dynamicSqlQuery2, expected);
+	});
+
+	it('dynamic-info-result02-with-where', async () => {
+		const sql = `-- @dynamicQuery
+		SELECT m1.id, m2.name
+		FROM mytable1 m1
+		INNER JOIN ( -- derivated table
+			SELECT id, name from mytable2 m 
+			WHERE m.name = $1
+		) m2 on m2.id = m1.id
+		WHERE ($2::text is NULL or m2.name = $2)`;
+
+		const actual = await describeQuery(databaseClient, sql, ['subqueryName', 'name', 'name']);
+		const expected: DynamicSqlInfoResult2 = {
+			with: [],
+			select: [
+				{
+					fragment: 'm1.id',
+					fragmentWitoutAlias: 'm1.id',
+					parameters: []
+				},
+				{
+					fragment: 'm2.name',
+					fragmentWitoutAlias: 'm2.name',
+					parameters: []
+				}
+			],
+			from: [
+				{
+					fragment: 'FROM mytable1 m1',
+					relationName: 'mytable1',
+					dependOnFields: [],
+					dependOnOrderBy: [],
+					parameters: []
+				},
+				{
+					fragment: `INNER JOIN ( -- derivated table
+			SELECT id, name from mytable2 m 
+			WHERE m.name = $1
+		) m2 on m2.id = m1.id`,
+					relationName: 'm2',
+					dependOnFields: [],
+					dependOnOrderBy: [],
+					parameters: [0]
+				}
+			],
+			where: [
+				{
+					fragment: 'AND ($2::text is NULL or m2.name = $2)',
+					parameters: [1, 2]
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value.dynamicSqlQuery2, expected);
 	});
 
 	it('dynamic-traverse-result-05', () => {
@@ -206,8 +370,135 @@ describe('postgres-generate-dynamic-info', () => {
 				}
 			]
 		};
-
 		assert.deepStrictEqual(actual.dynamicQueryInfo, expected);
+	});
+
+	it('dynamic-info-result05', async () => {
+		const sql = `-- @dynamicQuery
+		WITH 
+			cte as (
+				select id, name from mytable2
+			)
+		SELECT 
+			m1.id,
+			m2.name
+		FROM mytable1 m1
+		INNER JOIN cte m2 on m2.id = m1.id`;
+
+		const actual = await describeQuery(databaseClient, sql, []);
+		const expected: DynamicSqlInfoResult2 = {
+			with: [
+				{
+					fragment: `cte as (
+				select id, name from mytable2
+			)`,
+					relationName: 'cte',
+					dependOnFields: [1],
+					dependOnOrderBy: [],
+					parameters: []
+				}
+			],
+			select: [
+				{
+					fragment: 'm1.id',
+					fragmentWitoutAlias: 'm1.id',
+					parameters: []
+				},
+				{
+					fragment: 'm2.name',
+					fragmentWitoutAlias: 'm2.name',
+					parameters: []
+				}
+			],
+			from: [
+				{
+					fragment: 'FROM mytable1 m1',
+					relationName: 'mytable1',
+					dependOnFields: [],
+					dependOnOrderBy: [],
+					parameters: []
+				},
+				{
+					fragment: 'INNER JOIN cte m2 on m2.id = m1.id',
+					relationName: 'cte',
+					dependOnFields: [1], //m2.name
+					dependOnOrderBy: [],
+					parameters: []
+				}
+			],
+			where: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value.dynamicSqlQuery2, expected);
+	});
+
+	it('dynamic-info-result05-with-where', async () => {
+		const sql = `-- @dynamicQuery
+		WITH 
+			cte as (
+				select id, name from mytable2
+			)
+		SELECT 
+			m1.id,
+			m2.name
+		FROM mytable1 m1
+		INNER JOIN cte m2 on m2.id = m1.id
+		WHERE m2.name LIKE concat('%', $1::text, '%')`;
+
+		const actual = await describeQuery(databaseClient, sql, ['name']);
+		const expected: DynamicSqlInfoResult2 = {
+			with: [
+				{
+					fragment: `cte as (
+				select id, name from mytable2
+			)`,
+					relationName: 'cte',
+					dependOnFields: [], //where expr made this block mandatory
+					dependOnOrderBy: [],
+					parameters: []
+				}
+			],
+			select: [
+				{
+					fragment: 'm1.id',
+					fragmentWitoutAlias: 'm1.id',
+					parameters: []
+				},
+				{
+					fragment: 'm2.name',
+					fragmentWitoutAlias: 'm2.name',
+					parameters: []
+				}
+			],
+			from: [
+				{
+					fragment: 'FROM mytable1 m1',
+					relationName: 'mytable1',
+					dependOnFields: [],
+					dependOnOrderBy: [],
+					parameters: []
+				},
+				{
+					fragment: 'INNER JOIN cte m2 on m2.id = m1.id',
+					relationName: 'cte',
+					dependOnFields: [], //m2.name
+					dependOnOrderBy: [],
+					parameters: []
+				}
+			],
+			where: [
+				{
+					fragment: `AND m2.name LIKE concat('%', $1::text, '%')`,
+					parameters: [0]
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value.dynamicSqlQuery2, expected);
 	});
 
 	it('dynamic-traverse-result-06', () => {
@@ -283,6 +574,223 @@ describe('postgres-generate-dynamic-info', () => {
 		assert.deepStrictEqual(actual.dynamicQueryInfo, expected);
 	});
 
+	it('dynamic-info-result06', async () => {
+		const sql = `-- @dynamicQuery
+		SELECT m1.*, m3.*
+		FROM mytable1 m1
+		INNER JOIN mytable2 m2 on m2.id = m1.id
+		INNER JOIN mytable3 m3 on m3.id = m2.id`;
+
+		const actual = await describeQuery(databaseClient, sql, []);
+		const expected: DynamicSqlInfoResult2 = {
+			with: [],
+			select: [
+				{
+					fragment: 'm1.id',
+					fragmentWitoutAlias: 'm1.id',
+					parameters: []
+				},
+				{
+					fragment: 'm1.value',
+					fragmentWitoutAlias: 'm1.value',
+					parameters: []
+				},
+				{
+					fragment: 'm3.id',
+					fragmentWitoutAlias: 'm3.id',
+					parameters: []
+				},
+				{
+					fragment: 'm3.double_value',
+					fragmentWitoutAlias: 'm3.double_value',
+					parameters: []
+				},
+				{
+					fragment: 'm3.name',
+					fragmentWitoutAlias: 'm3.name',
+					parameters: []
+				}
+			],
+			from: [
+				{
+					fragment: 'FROM mytable1 m1',
+					relationName: 'mytable1',
+					dependOnFields: [],
+					dependOnOrderBy: [],
+					parameters: []
+				},
+				{
+					fragment: 'INNER JOIN mytable2 m2 on m2.id = m1.id',
+					relationName: 'mytable2',
+					dependOnFields: [2, 3, 4],
+					dependOnOrderBy: [],
+					parameters: []
+				},
+				{
+					fragment: 'INNER JOIN mytable3 m3 on m3.id = m2.id',
+					relationName: 'mytable3',
+					dependOnFields: [2, 3, 4],
+					dependOnOrderBy: [],
+					parameters: []
+				}
+			],
+			where: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value.dynamicSqlQuery2, expected);
+	});
+
+	it('dynamic-traverse-result-06 - with where', () => {
+		const sql = `-- @dynamicQuery
+		select t2.name, t3.name as name2
+		from mytable2 t2
+		inner join mytable3 t3 on t3.id = t2.id
+		where (concat('%', t2.name, '%') = $1 OR concat('%', t3.name, '%') = $1)`;
+
+		const actual = parseSql(sql, dbSchema, { collectDynamicQueryInfo: true });
+		const expected: DynamicSqlInfo2 = {
+			with: [],
+			select: [
+				{
+					fragment: 't2.name',
+					fragmentWitoutAlias: 't2.name',
+					dependOnRelations: ['t2'],
+					parameters: []
+				},
+				{
+					fragment: 't3.name as name2',
+					fragmentWitoutAlias: 't3.name',
+					dependOnRelations: ['t3'],
+					parameters: []
+				}
+			],
+			from: [
+				{
+					fragment: 'FROM mytable2 t2',
+					relationName: 'mytable2',
+					relationAlias: 't2',
+					parentRelation: '',
+					fields: ['id', 'name', 'descr'],
+					parameters: []
+				},
+				{
+					fragment: 'inner JOIN mytable3 t3 on t3.id = t2.id',
+					relationName: 'mytable3',
+					relationAlias: 't3',
+					parentRelation: 't2',
+					fields: ['id', 'double_value', 'name'],
+					parameters: []
+				}
+			],
+			where: [
+				{
+					fragment: `AND (concat('%', t2.name, '%') = $1 OR concat('%', t3.name, '%') = $1)`,
+					dependOnRelations: ['t2', 't3'],
+					parameters: [0, 1]
+				}
+			]
+		};
+		assert.deepStrictEqual(actual.dynamicQueryInfo, expected);
+	});
+
+	it('dynamic-info-result06', async () => {
+		const sql = `-- @dynamicQuery
+		select t2.name, t3.name as name2
+		from mytable2 t2
+		inner join mytable3 t3 on t3.id = t2.id`;
+
+		const actual = await describeQuery(databaseClient, sql, []);
+		const expected: DynamicSqlInfoResult2 = {
+			with: [],
+			select: [
+				{
+					fragment: 't2.name',
+					fragmentWitoutAlias: 't2.name',
+					parameters: []
+				},
+				{
+					fragment: 't3.name as name2',
+					fragmentWitoutAlias: 't3.name',
+					parameters: []
+				}
+			],
+			from: [
+				{
+					fragment: 'FROM mytable2 t2',
+					relationName: 'mytable2',
+					dependOnFields: [],
+					dependOnOrderBy: [],
+					parameters: []
+				},
+				{
+					fragment: 'inner JOIN mytable3 t3 on t3.id = t2.id',
+					relationName: 'mytable3',
+					dependOnFields: [1],
+					dependOnOrderBy: [],
+					parameters: []
+				}
+			],
+			where: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value.dynamicSqlQuery2, expected);
+	});
+
+	it('dynamic-info-result06-with-where', async () => {
+		const sql = `-- @dynamicQuery
+		select t2.name, t3.name as name2
+		from mytable2 t2
+		inner join mytable3 t3 on t3.id = t2.id
+		where (concat('%', t2.name, '%') = $1 OR concat('%', t3.name, '%') = $1)`;
+
+		const actual = await describeQuery(databaseClient, sql, ['name']);
+		const expected: DynamicSqlInfoResult2 = {
+			with: [],
+			select: [
+				{
+					fragment: 't2.name',
+					fragmentWitoutAlias: 't2.name',
+					parameters: []
+				},
+				{
+					fragment: 't3.name as name2',
+					fragmentWitoutAlias: 't3.name',
+					parameters: []
+				}
+			],
+			from: [
+				{
+					fragment: 'FROM mytable2 t2',
+					relationName: 'mytable2',
+					dependOnFields: [],
+					dependOnOrderBy: [],
+					parameters: []
+				},
+				{
+					fragment: 'inner JOIN mytable3 t3 on t3.id = t2.id',
+					relationName: 'mytable3',
+					dependOnFields: [], //where made this block mandatory (t3.name)
+					dependOnOrderBy: [],
+					parameters: []
+				}
+			],
+			where: [
+				{
+					fragment: `AND (concat('%', t2.name, '%') = $1 OR concat('%', t3.name, '%') = $1)`,
+					parameters: [0, 1]
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value.dynamicSqlQuery2, expected);
+	});
+
 	it('dynamic-traverse-result: where t3.id > 1', () => {
 		const sql = `-- @dynamicQuery
 		select t2.name, t3.name as name2
@@ -334,6 +842,57 @@ describe('postgres-generate-dynamic-info', () => {
 			]
 		};
 		assert.deepStrictEqual(actual.dynamicQueryInfo, expected);
+	});
+
+	it('dynamic-info-result: where t3.id > 1', async () => {
+		const sql = `-- @dynamicQuery
+		select t2.name, t3.name as name2
+		from mytable2 t2
+		inner join mytable3 t3 on t3.id = t2.id
+		where t3.id > 1`;
+
+		const actual = await describeQuery(databaseClient, sql, []);
+		const expected: DynamicSqlInfoResult2 = {
+			with: [],
+			select: [
+				{
+					fragment: 't2.name',
+					fragmentWitoutAlias: 't2.name',
+					parameters: []
+				},
+				{
+					fragment: 't3.name as name2',
+					fragmentWitoutAlias: 't3.name',
+					parameters: []
+				}
+			],
+			from: [
+				{
+					fragment: 'FROM mytable2 t2',
+					relationName: 'mytable2',
+					dependOnFields: [],
+					dependOnOrderBy: [],
+					parameters: []
+				},
+				{
+					fragment: 'inner JOIN mytable3 t3 on t3.id = t2.id',
+					relationName: 'mytable3',
+					dependOnFields: [],
+					dependOnOrderBy: [],
+					parameters: []
+				}
+			],
+			where: [
+				{
+					fragment: 'AND t3.id > 1',
+					parameters: []
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value.dynamicSqlQuery2, expected);
 	});
 
 	it('dynamic-traverse-result: SELECT with parameters', () => {
@@ -389,6 +948,59 @@ describe('postgres-generate-dynamic-info', () => {
 			where: []
 		};
 		assert.deepStrictEqual(actual.dynamicQueryInfo, expected);
+	});
+
+	it('dynamic-info-result: SELECT with parameters', async () => {
+		const sql = `-- @dynamicQuery
+		SELECT 
+			t2.id, 
+			t3.double_value, 
+			$1::text is null OR concat('%', t2.name, t3.name, '%') LIKE $1 as likeName
+		FROM mytable2 t2
+		INNER JOIN mytable3 t3 on t3.id = t2.id`;
+
+		const actual = await describeQuery(databaseClient, sql, ['name', 'name']);
+		const expected: DynamicSqlInfoResult2 = {
+			with: [],
+			select: [
+				{
+					fragment: 't2.id',
+					fragmentWitoutAlias: 't2.id',
+					parameters: []
+				},
+				{
+					fragment: 't3.double_value',
+					fragmentWitoutAlias: 't3.double_value',
+					parameters: []
+				},
+				{
+					fragment: `$1::text is null OR concat('%', t2.name, t3.name, '%') LIKE $1 as likeName`,
+					fragmentWitoutAlias: `$1::text is null OR concat('%', t2.name, t3.name, '%') LIKE $1`,
+					parameters: ['name', 'name']
+				}
+			],
+			from: [
+				{
+					fragment: 'FROM mytable2 t2',
+					relationName: 'mytable2',
+					dependOnFields: [],
+					dependOnOrderBy: [],
+					parameters: []
+				},
+				{
+					fragment: 'INNER JOIN mytable3 t3 on t3.id = t2.id',
+					relationName: 'mytable3',
+					dependOnFields: [1, 2],
+					dependOnOrderBy: [],
+					parameters: []
+				}
+			],
+			where: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value.dynamicSqlQuery2, expected);
 	});
 
 	it('dynamic-traverse-result-limit and offset', () => {
