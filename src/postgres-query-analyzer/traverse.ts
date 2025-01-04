@@ -179,11 +179,38 @@ function traverse_select_no_parens(select_no_parens: Select_no_parensContext, co
 			});
 	}
 	const select_clause = select_no_parens.select_clause();
-	if (select_clause) {
-		const newContext = { ...context, fromColumns: withColumns.concat(context.fromColumns) };
-		return traverse_select_clause(select_clause, newContext, traverseResult);
+	const newContext = { ...context, fromColumns: withColumns.concat(context.fromColumns) };
+	const selectResult = traverse_select_clause(select_clause, newContext, traverseResult);
+	const select_limit = select_no_parens.select_limit();
+	if (select_limit) {
+		const numParamsBefore = traverseResult.parameters.length;
+		const limit_clause = select_limit.limit_clause();
+		const limit_a_expr = limit_clause.select_limit_value().a_expr();
+		traverse_a_expr(limit_a_expr, context, traverseResult);
+		let fragment = '';
+		if (limit_clause) {
+			if (context.collectDynamicQueryInfo) {
+				fragment += extractOriginalSql(limit_clause);
+			}
+		}
+		const offset_clause = select_limit.offset_clause();
+		if (offset_clause) {
+			const offset_a_expr = offset_clause.select_offset_value().a_expr();
+			traverse_a_expr(offset_a_expr, context, traverseResult);
+			if (context.collectDynamicQueryInfo) {
+				fragment += ' ' + extractOriginalSql(offset_clause);
+			}
+		}
+		if (fragment) {
+			const parameters = traverseResult.parameters.slice(numParamsBefore).map((_, index) => index + numParamsBefore);
+			traverseResult.dynamicQueryInfo!.limitOffset = {
+				fragment,
+				parameters
+			}
+		}
 	}
-	return [];
+
+	return selectResult;
 }
 
 function traverse_common_table_expr(common_table_expr: Common_table_exprContext, context: TraverseContext, traverseResult: TraverseResult) {

@@ -390,4 +390,62 @@ describe('postgres-generate-dynamic-info', () => {
 		};
 		assert.deepStrictEqual(actual.dynamicQueryInfo, expected);
 	});
+
+	it('dynamic-traverse-result-limit and offset', () => {
+		const sql = `-- @dynamicQuery
+		SELECT m1.id, m2.name
+		FROM mytable1 m1
+		INNER JOIN mytable2 m2 on m1.id = m2.id
+		WHERE m2.name = $1
+		LIMIT $2 OFFSET $3`;
+
+		const actual = parseSql(sql, dbSchema, { collectDynamicQueryInfo: true });
+		const expected: DynamicSqlInfo2 = {
+			with: [],
+			select: [
+				{
+					fragment: 'm1.id',
+					fragmentWitoutAlias: 'm1.id',
+					dependOnRelations: ['m1'],
+					parameters: []
+				},
+				{
+					fragment: 'm2.name',
+					fragmentWitoutAlias: 'm2.name',
+					dependOnRelations: ['m2'],
+					parameters: []
+				}
+			],
+			from: [
+				{
+					fragment: 'FROM mytable1 m1',
+					relationName: 'mytable1',
+					relationAlias: 'm1',
+					parentRelation: '',
+					fields: ['id', 'value'],
+					parameters: []
+				},
+				{
+					fragment: 'INNER JOIN mytable2 m2 on m1.id = m2.id',
+					relationName: 'mytable2',
+					relationAlias: 'm2',
+					parentRelation: 'm1',
+					fields: ['id', 'name', 'descr'],
+					parameters: []
+				}
+			],
+			where: [
+				{
+					fragment: 'AND m2.name = $1',
+					dependOnRelations: ['m2'],
+					parameters: [0]
+				}
+			],
+			limitOffset: {
+				fragment: 'LIMIT $2 OFFSET $3',
+				parameters: [1, 2]
+			}
+		};
+		assert.deepStrictEqual(actual.dynamicQueryInfo, expected);
+	});
 });
