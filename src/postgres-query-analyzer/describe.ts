@@ -14,10 +14,10 @@ import { hasAnnotation } from '../describe-query';
 
 function describeQueryRefine(sql: string, postgresDescribeResult: PostgresDescribe, dbSchema: PostgresColumnSchema[], namedParameters: string[]): Result<SchemaDef, string> {
 
-	const gererateNested = hasAnnotation(sql, '@nested');
-	// const gererateDynamicQuery = hasAnnotation(sql, '@dynamicQuery');
+	const generateNestedInfo = hasAnnotation(sql, '@nested');
+	const generateDynamicQueryInfo = hasAnnotation(sql, '@dynamicQuery');
 
-	const parseResult = safeParseSql(sql, dbSchema, gererateNested);
+	const parseResult = safeParseSql(sql, dbSchema, { collectNestedInfo: generateNestedInfo, collectDynamicQueryInfo: generateDynamicQueryInfo });
 	if (parseResult.isErr()) {
 		return err(parseResult.error)
 	}
