@@ -1060,4 +1060,155 @@ describe('postgres-generate-dynamic-info', () => {
 		};
 		assert.deepStrictEqual(actual.dynamicQueryInfo, expected);
 	});
+
+	it('dynamic-traverse-result-11', () => {
+		const sql = `-- @dynamicQuery
+		WITH 
+			cte1 as (
+				select id, value from mytable1
+				WHERE greatest(value, $1) = least(value, $1)
+			),
+			cte2 as (
+				select id, name from mytable2
+				WHERE greatest(name, $2) = least(name, $2)
+			)
+		SELECT 
+			c1.id,
+			c2.name
+		FROM cte1 c1
+		INNER JOIN cte2 c2 on c1.id = c2.id`;
+
+		const actual = parseSql(sql, dbSchema, { collectDynamicQueryInfo: true });
+		const expected: DynamicSqlInfo2 = {
+			with: [
+				{
+					fragment: `cte1 as (
+				select id, value from mytable1
+				WHERE greatest(value, $1) = least(value, $1)
+			)`,
+					relationName: 'cte1',
+					parameters: [0, 1]
+				},
+				{
+					fragment: `cte2 as (
+				select id, name from mytable2
+				WHERE greatest(name, $2) = least(name, $2)
+			)`,
+					relationName: 'cte2',
+					parameters: [2, 3]
+				}
+			],
+			select: [
+				{
+					fragment: 'c1.id',
+					fragmentWitoutAlias: 'c1.id',
+					dependOnRelations: ['c1'],
+					parameters: []
+				},
+				{
+					fragment: 'c2.name',
+					fragmentWitoutAlias: 'c2.name',
+					dependOnRelations: ['c2'],
+					parameters: []
+				}
+			],
+			from: [
+				{
+					fragment: 'FROM cte1 c1',
+					relationName: 'cte1',
+					relationAlias: 'c1',
+					parentRelation: '',
+					fields: ['id', 'value'],
+					parameters: []
+				},
+				{
+					fragment: 'INNER JOIN cte2 c2 on c1.id = c2.id',
+					relationName: 'cte2',
+					relationAlias: 'c2',
+					parentRelation: 'c1',
+					fields: ['id', 'name'],
+					parameters: []
+				}
+			],
+			where: []
+		};
+		assert.deepStrictEqual(actual.dynamicQueryInfo, expected);
+	});
+
+	it('dynamic-info-result11', async () => {
+		const sql = `-- @dynamicQuery
+		WITH 
+			cte1 as (
+				select id, value from mytable1
+				WHERE greatest(value, $1) = least(value, $1)
+			),
+			cte2 as (
+				select id, name from mytable2
+				WHERE greatest(name, $2) = least(name, $2)
+			)
+		SELECT 
+			c1.id,
+			c2.name
+		FROM cte1 c1
+		INNER JOIN cte2 c2 on c1.id = c2.id`;
+
+		const actual = await describeQuery(databaseClient, sql, ['param1', 'param1', 'param2', 'param2']);
+		const expected: DynamicSqlInfoResult2 = {
+			with: [
+				{
+					fragment: `cte1 as (
+				select id, value from mytable1
+				WHERE greatest(value, $1) = least(value, $1)
+			)`,
+					relationName: 'cte1',
+					dependOnFields: [], //FROM made this block mandatory
+					dependOnOrderBy: [],
+					parameters: [0, 1]
+				},
+				{
+					fragment: `cte2 as (
+				select id, name from mytable2
+				WHERE greatest(name, $2) = least(name, $2)
+			)`,
+					relationName: 'cte2',
+					dependOnFields: [1], //c2.name
+					dependOnOrderBy: [],
+					parameters: [2, 3]
+				}
+			],
+			select: [
+				{
+					fragment: 'c1.id',
+					fragmentWitoutAlias: 'c1.id',
+					parameters: []
+				},
+				{
+					fragment: 'c2.name',
+					fragmentWitoutAlias: 'c2.name',
+					parameters: []
+				}
+			],
+			from: [
+				{
+					fragment: 'FROM cte1 c1',
+					relationName: 'cte1',
+					dependOnFields: [], //FROM dependOnFields always []; Can't remove the FROM
+					dependOnOrderBy: [],
+					parameters: []
+				},
+				{
+					fragment: 'INNER JOIN cte2 c2 on c1.id = c2.id',
+					relationName: 'cte2',
+					dependOnFields: [1], //c2.name;
+					dependOnOrderBy: [],
+					parameters: []
+				}
+			],
+			where: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value.dynamicSqlQuery2, expected);
+	});
 });

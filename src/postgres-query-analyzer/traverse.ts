@@ -216,19 +216,18 @@ function traverse_select_no_parens(select_no_parens: Select_no_parensContext, co
 function traverse_common_table_expr(common_table_expr: Common_table_exprContext, context: TraverseContext, traverseResult: TraverseResult) {
 	const tableName = common_table_expr.name().getText();
 	const select_stmt = common_table_expr.preparablestmt().selectstmt();
+	const numParamsBefore = traverseResult.parameters.length;
+	const columns = traverse_selectstmt(select_stmt, { ...context, collectDynamicQueryInfo: false }, traverseResult);
+	const columnsWithTalbeName = columns.map(col => ({ ...col, table_name: tableName }));
 	if (context.collectDynamicQueryInfo) {
+		const parameters = traverseResult.parameters.slice(numParamsBefore).map((_, index) => index + numParamsBefore);
 		traverseResult.dynamicQueryInfo?.with.push({
 			fragment: extractOriginalSql(common_table_expr),
 			relationName: tableName,
-			parameters: []
+			parameters
 		})
 	}
-	if (select_stmt) {
-		const columns = traverse_selectstmt(select_stmt, { ...context, collectDynamicQueryInfo: false }, traverseResult);
-		const columnsWithTalbeName = columns.map(col => ({ ...col, table_name: tableName }));
-		return columnsWithTalbeName;
-	}
-	return [];
+	return columnsWithTalbeName;
 }
 
 function traverse_select_clause(select_clause: Select_clauseContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo[] {
@@ -852,7 +851,7 @@ function traversefunc_application(func_application: Func_applicationContext, con
 }
 
 function traversefunc_expr_common_subexpr(func_expr_common_subexpr: Func_expr_common_subexprContext, context: TraverseContext, traverseResult: TraverseResult): boolean {
-	if (func_expr_common_subexpr.COALESCE()) {
+	if (func_expr_common_subexpr.COALESCE() || func_expr_common_subexpr.GREATEST() || func_expr_common_subexpr.LEAST()) {
 		const func_arg_list = func_expr_common_subexpr.expr_list().a_expr_list();
 		const result = func_arg_list.map(func_arg_expr => {
 			const paramResult = traverse_a_expr(func_arg_expr, { ...context, propagatesNull: true }, traverseResult);
