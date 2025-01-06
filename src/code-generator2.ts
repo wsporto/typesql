@@ -127,7 +127,9 @@ function generateTsCode(
 		// 	functionParams += `, data: ${dataType}`;
 		// }
 		functionArguments += `, params?: ${dynamicParamsTypeName}`;
+		writer.writeLine('let currentIndex: number;');
 		writer.write(`export async function ${camelCaseName}(${functionArguments}): Promise<${resultTypeName}[]>`).block(() => {
+			writer.writeLine('currentIndex = 0;');
 			writer.writeLine('const where = whereConditionsToObject(params?.where);');
 			// if (orderByField != null) {
 			// 	writer.writeLine('const orderBy = orderByToObject(params.orderBy);');
@@ -203,8 +205,8 @@ function generateTsCode(
 				});
 			});
 			writer.write(');').newLine();
-			writer.write(`return client.query({ text: sql, rowMode: 'array', args: paramValues })`).newLine();
-			writer.indent().write(`.then(res => res.rows.map(row => mapArrayTo${resultTypeName}(row)));`)
+			writer.write(`return client.query({ text: sql, rowMode: 'array', values: paramsValues })`).newLine();
+			writer.indent().write(`.then(res => res.rows.map(row => mapArrayTo${resultTypeName}(row, params?.select)));`)
 		});
 		writer.blankLine();
 		writer.write(`function mapArrayTo${resultTypeName}(data: any, select?: ${selectColumnsTypeName})`).block(() => {
@@ -231,10 +233,7 @@ function generateTsCode(
 		writer.write(`function whereConditionsToObject(whereConditions?: ${whereTypeName}[])`).block(() => {
 			writer.writeLine('const obj = {} as any;');
 			writer.write('whereConditions?.forEach(condition => ').inlineBlock(() => {
-				writer.writeLine('const where = whereCondition(condition);');
-				writer.write('if (where?.hasValue) ').block(() => {
-					writer.writeLine('obj[condition[0]] = true;');
-				});
+				writer.writeLine('obj[condition[0]] = true;');
 			});
 			writer.write(');');
 			writer.writeLine('return obj;');
@@ -257,7 +256,7 @@ function generateTsCode(
 			writer.writeLine('values: any[];');
 		});
 		writer.blankLine();
-		writer.write(`function whereCondition(condition: ${whereTypeName}): WhereConditionResult | undefined `).block(() => {
+		writer.write(`function whereCondition(condition: ${whereTypeName}): WhereConditionResult | null `).block(() => {
 			writer.blankLine();
 			writer.writeLine('const selectFragment = selectFragments[condition[0]];');
 			writer.writeLine('const operator = condition[1];');
@@ -265,7 +264,7 @@ function generateTsCode(
 			if (hasStringColumn(tsDescriptor.columns)) {
 				writer.write(`if (operator == 'LIKE') `).block(() => {
 					writer.write('return ').block(() => {
-						writer.writeLine("sql: `${selectFragment} LIKE concat('%', ?, '%')`,");
+						writer.writeLine("sql: `${selectFragment} LIKE concat('%', ${placeholder()}, '%')`,");
 						writer.writeLine('hasValue: condition[2] != null,');
 						writer.writeLine('values: [condition[2]]');
 					});
@@ -283,7 +282,7 @@ function generateTsCode(
 					});
 				} else {
 					writer.write('return ').block(() => {
-						writer.writeLine('sql: `${selectFragment} BETWEEN ? AND ?`,');
+						writer.writeLine('sql: `${selectFragment} BETWEEN ${placeholder()} AND ${placeholder()}`,');
 						writer.writeLine('hasValue: condition[2] != null && condition[3] != null,');
 						writer.writeLine('values: [condition[2], condition[3]]');
 					});
@@ -293,14 +292,14 @@ function generateTsCode(
 				if (hasDateColumn(tsDescriptor.columns)) {
 					writer.write('return ').block(() => {
 						writer.writeLine(
-							"sql: `${selectFragment} ${operator} (${condition[2]?.map(value => isDate(value) ? 'date(?)' : '?').join(', ')})`,"
+							"sql: `${selectFragment} ${operator} (${condition[2]?.map(value => isDate(value) ? 'date(?)' : placeholder()).join(', ')})`,"
 						);
 						writer.writeLine('hasValue: condition[2] != null && condition[2].length > 0,');
 						writer.writeLine('values: condition[2].map(value => isDate(value) ? value.toISOString() : value)');
 					});
 				} else {
 					writer.write('return ').block(() => {
-						writer.writeLine("sql: `${selectFragment} ${operator} (${condition[2]?.map(_ => '?').join(', ')})`,");
+						writer.writeLine("sql: `${selectFragment} ${operator} (${condition[2]?.map(_ => placeholder()).join(', ')})`,");
 						writer.writeLine('hasValue: condition[2] != null && condition[2].length > 0,');
 						writer.writeLine('values: condition[2]');
 					});
@@ -317,12 +316,13 @@ function generateTsCode(
 					});
 				} else {
 					writer.write('return ').block(() => {
-						writer.writeLine('sql: `${selectFragment} ${operator} ?`,');
+						writer.writeLine('sql: `${selectFragment} ${operator} ${placeholder()}`,');
 						writer.writeLine('hasValue: condition[2] != null,');
 						writer.writeLine('values: [condition[2]]');
 					});
 				}
 			});
+			writer.writeLine('return null;');
 		});
 		if (hasDateColumn(tsDescriptor.columns)) {
 			writer.blankLine();
@@ -330,6 +330,10 @@ function generateTsCode(
 				writer.writeLine('return value instanceof Date;');
 			});
 		}
+		writer.blankLine();
+		writer.write('function placeholder(): string').block(() => {
+			writer.writeLine('return `$${++currentIndex}`;');
+		})
 	}
 
 	if (tsDescriptor.nestedDescriptor2) {
