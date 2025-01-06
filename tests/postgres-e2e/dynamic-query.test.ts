@@ -1,7 +1,7 @@
 import assert from 'node:assert';
 import pg from 'pg'
 import { dynamicQuery01, DynamicQuery01Result } from './sql/dynamic-query-01';
-import { derivatedTable, DerivatedTableResult, dynamicQuery03, DynamicQuery03Result } from './sql';
+import { derivatedTable, DerivatedTableResult, dynamicQuery03, DynamicQuery03Result, dynamicQuery04, DynamicQuery04Result } from './sql';
 
 describe('e2e-postgres-dynamic-query', () => {
 
@@ -204,6 +204,56 @@ describe('e2e-postgres-dynamic-query', () => {
 		const expectedResult: DynamicQuery03Result[] = [
 			{
 				value: 2
+			}
+		];
+
+		assert.deepStrictEqual(result, expectedResult);
+	});
+
+	it('dynamic-query-04 - LIKE o%', async () => {
+		const result = await dynamicQuery04(pool, {
+			select: {
+				value: true,
+				name: true
+			},
+			where: [
+				['name', 'LIKE', 'o%']
+			]
+		});
+
+		const expectedResult: DynamicQuery04Result[] = [
+			{
+				value: 1,
+				name: 'one'
+			}
+		];
+
+		assert.deepStrictEqual(result, expectedResult);
+	});
+
+	it('dynamic-query-04 - LIKE %o%', async () => {
+		const result = await dynamicQuery04(pool, {
+			select: {
+				value: true,
+				name: true
+			},
+			where: [
+				['name', 'LIKE', '%o%']
+			]
+		});
+
+		const expectedResult: DynamicQuery04Result[] = [
+			{
+				value: 1,
+				name: 'one'
+			},
+			{
+				value: 2,
+				name: 'two'
+			},
+			{
+				value: 4,
+				name: 'four'
 			}
 		];
 

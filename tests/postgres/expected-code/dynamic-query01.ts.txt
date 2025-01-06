@@ -137,7 +137,7 @@ function whereCondition(condition: DynamicQuery01Where): WhereConditionResult | 
 
 	if (operator == 'LIKE') {
 		return {
-			sql: `${selectFragment} LIKE concat('%', ${placeholder()}, '%')`,
+			sql: `${selectFragment} LIKE ${placeholder()}`,
 			hasValue: condition[2] != null,
 			values: [condition[2]]
 		}

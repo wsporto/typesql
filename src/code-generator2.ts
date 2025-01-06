@@ -264,7 +264,7 @@ function generateTsCode(
 			if (hasStringColumn(tsDescriptor.columns)) {
 				writer.write(`if (operator == 'LIKE') `).block(() => {
 					writer.write('return ').block(() => {
-						writer.writeLine("sql: `${selectFragment} LIKE concat('%', ${placeholder()}, '%')`,");
+						writer.writeLine("sql: `${selectFragment} LIKE ${placeholder()}`,");
 						writer.writeLine('hasValue: condition[2] != null,');
 						writer.writeLine('values: [condition[2]]');
 					});

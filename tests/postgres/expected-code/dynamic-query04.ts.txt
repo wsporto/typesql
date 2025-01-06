@@ -1,29 +1,33 @@
 import pg from 'pg';
 import { EOL } from 'os';
 
-export type DerivatedTableParams = {
-	subqueryName: string;
-}
-
-export type DerivatedTableResult = {
+export type DynamicQuery04Result = {
 	id?: number;
+	value?: number;
+	id_2?: number;
 	name?: string;
+	descr?: string;
 }
 
-export type DerivatedTableDynamicParams = {
-	select?: DerivatedTableSelect;
-	params: DerivatedTableParams;
-	where?: DerivatedTableWhere[];
+export type DynamicQuery04DynamicParams = {
+	select?: DynamicQuery04Select;
+	where?: DynamicQuery04Where[];
 }
 
-export type DerivatedTableSelect = {
+export type DynamicQuery04Select = {
 	id?: boolean;
+	value?: boolean;
+	id_2?: boolean;
 	name?: boolean;
+	descr?: boolean;
 }
 
 const selectFragments = {
 	id: `m1.id`,
+	value: `m1.value`,
+	id_2: `m2.id`,
 	name: `m2.name`,
+	descr: `m2.descr`,
 } as const;
 
 const NumericOperatorList = ['=', '<>', '>', '<', '>=', '<='] as const;
@@ -32,16 +36,25 @@ type StringOperator = '=' | '<>' | '>' | '<' | '>=' | '<=' | 'LIKE';
 type SetOperator = 'IN' | 'NOT IN';
 type BetweenOperator = 'BETWEEN';
 
-export type DerivatedTableWhere =
+export type DynamicQuery04Where =
 	| ['id', NumericOperator, number | null]
 	| ['id', SetOperator, number[]]
 	| ['id', BetweenOperator, number | null, number | null]
+	| ['value', NumericOperator, number | null]
+	| ['value', SetOperator, number[]]
+	| ['value', BetweenOperator, number | null, number | null]
+	| ['id_2', NumericOperator, number | null]
+	| ['id_2', SetOperator, number[]]
+	| ['id_2', BetweenOperator, number | null, number | null]
 	| ['name', StringOperator, string | null]
 	| ['name', SetOperator, string[]]
 	| ['name', BetweenOperator, string | null, string | null]
+	| ['descr', StringOperator, string | null]
+	| ['descr', SetOperator, string[]]
+	| ['descr', BetweenOperator, string | null, string | null]
 
 let currentIndex: number;
-export async function derivatedTable(client: pg.Client | pg.Pool, params?: DerivatedTableDynamicParams): Promise<DerivatedTableResult[]> {
+export async function dynamicQuery04(client: pg.Client | pg.Pool, params?: DynamicQuery04DynamicParams): Promise<DynamicQuery04Result[]> {
 	currentIndex = 0;
 	const where = whereConditionsToObject(params?.where);
 	const paramsValues: any = [];
@@ -49,18 +62,27 @@ export async function derivatedTable(client: pg.Client | pg.Pool, params?: Deriv
 	if (params?.select == null || params.select.id) {
 		sql = appendSelect(sql, `m1.id`);
 	}
+	if (params?.select == null || params.select.value) {
+		sql = appendSelect(sql, `m1.value`);
+	}
+	if (params?.select == null || params.select.id_2) {
+		sql = appendSelect(sql, `m2.id`);
+	}
 	if (params?.select == null || params.select.name) {
 		sql = appendSelect(sql, `m2.name`);
 	}
+	if (params?.select == null || params.select.descr) {
+		sql = appendSelect(sql, `m2.descr`);
+	}
 	sql += EOL + `FROM mytable1 m1`;
 	if (params?.select == null
+		|| params.select.id_2
 		|| params.select.name
-		|| where.name != null) {
-		sql += EOL + `INNER JOIN ( -- derivated table
-	SELECT id, name from mytable2 m 
-	WHERE m.name = $1
-) m2 on m2.id = m1.id`;
-		paramsValues.push(params?.params?.subqueryName);
+		|| params.select.descr
+		|| where.id_2 != null
+		|| where.name != null
+		|| where.descr != null) {
+		sql += EOL + `INNER JOIN mytable2 m2 on m2.id = m1.id`;
 	}
 	sql += EOL + `WHERE 1 = 1`;
 	params?.where?.forEach(condition => {
@@ -71,19 +93,31 @@ export async function derivatedTable(client: pg.Client | pg.Pool, params?: Deriv
 		}
 	});
 	return client.query({ text: sql, rowMode: 'array', values: paramsValues })
-		.then(res => res.rows.map(row => mapArrayToDerivatedTableResult(row, params?.select)));
+		.then(res => res.rows.map(row => mapArrayToDynamicQuery04Result(row, params?.select)));
 }
 
-function mapArrayToDerivatedTableResult(data: any, select?: DerivatedTableSelect) {
-	const result = {} as DerivatedTableResult;
+function mapArrayToDynamicQuery04Result(data: any, select?: DynamicQuery04Select) {
+	const result = {} as DynamicQuery04Result;
 	let rowIndex = -1;
 	if (select == null || select.id) {
 		rowIndex++;
 		result.id = data[rowIndex];
 	}
+	if (select == null || select.value) {
+		rowIndex++;
+		result.value = data[rowIndex];
+	}
+	if (select == null || select.id_2) {
+		rowIndex++;
+		result.id_2 = data[rowIndex];
+	}
 	if (select == null || select.name) {
 		rowIndex++;
 		result.name = data[rowIndex];
+	}
+	if (select == null || select.descr) {
+		rowIndex++;
+		result.descr = data[rowIndex];
 	}
 	return result;
 }
@@ -97,7 +131,7 @@ function appendSelect(sql: string, selectField: string) {
 	}
 }
 
-function whereConditionsToObject(whereConditions?: DerivatedTableWhere[]) {
+function whereConditionsToObject(whereConditions?: DynamicQuery04Where[]) {
 	const obj = {} as any;
 	whereConditions?.forEach(condition => {
 		obj[condition[0]] = true;
@@ -111,7 +145,7 @@ type WhereConditionResult = {
 	values: any[];
 }
 
-function whereCondition(condition: DerivatedTableWhere): WhereConditionResult | null {
+function whereCondition(condition: DynamicQuery04Where): WhereConditionResult | null {
 
 	const selectFragment = selectFragments[condition[0]];
 	const operator = condition[1];
