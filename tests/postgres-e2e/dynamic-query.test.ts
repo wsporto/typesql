@@ -280,4 +280,23 @@ describe('e2e-postgres-dynamic-query', () => {
 
 		assert.deepStrictEqual(result, expectedResult);
 	});
+
+	it('dynamic-query-05 - exclude CTE', async () => {
+		const result = await dynamicQuery05(pool, {
+			select: {
+				id: true
+			},
+			where: [
+				['id', '=', 1]
+			]
+		});
+
+		const expectedResult: DynamicQuery05Result[] = [
+			{
+				id: 1
+			}
+		];
+
+		assert.deepStrictEqual(result, expectedResult);
+	});
 });
