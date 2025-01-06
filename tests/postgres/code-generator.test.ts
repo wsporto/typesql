@@ -355,5 +355,26 @@ INNER JOIN ( -- derivated table
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('dynamic-query-05', async () => {
+		const sql = `-- @dynamicQuery
+WITH 
+	cte as (
+		select id, name from mytable2
+	)
+SELECT 
+	m1.id,
+	m2.name
+FROM mytable1 m1
+INNER JOIN cte m2 on m2.id = m1.id`;
+
+		const actual = await generateCode(dialect, sql, 'dynamic-query-05');
+		const expected = readFileSync('tests/postgres/expected-code/dynamic-query05.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });
 

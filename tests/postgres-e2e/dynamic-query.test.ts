@@ -1,7 +1,7 @@
 import assert from 'node:assert';
 import pg from 'pg'
 import { dynamicQuery01, DynamicQuery01Result } from './sql/dynamic-query-01';
-import { derivatedTable, DerivatedTableResult, dynamicQuery03, DynamicQuery03Result, dynamicQuery04, DynamicQuery04Result } from './sql';
+import { derivatedTable, DerivatedTableResult, dynamicQuery03, DynamicQuery03Result, dynamicQuery04, DynamicQuery04Result, dynamicQuery05, DynamicQuery05Result } from './sql';
 
 describe('e2e-postgres-dynamic-query', () => {
 
@@ -254,6 +254,27 @@ describe('e2e-postgres-dynamic-query', () => {
 			{
 				value: 4,
 				name: 'four'
+			}
+		];
+
+		assert.deepStrictEqual(result, expectedResult);
+	});
+
+	it('dynamic-query-05 - cte', async () => {
+		const result = await dynamicQuery05(pool, {
+			select: {
+				id: true,
+				name: true
+			},
+			where: [
+				['name', '=', 'two']
+			]
+		});
+
+		const expectedResult: DynamicQuery05Result[] = [
+			{
+				id: 2,
+				name: 'two'
 			}
 		];
 

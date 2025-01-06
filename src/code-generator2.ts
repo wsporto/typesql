@@ -138,10 +138,43 @@ function generateTsCode(
 			if (dynamicQueryInfo.with.length > 0) {
 				writer.writeLine(`let withClause = '';`);
 				dynamicQueryInfo.with.forEach((withFragment) => {
-					// generateDynamicQueryFrom(writer, 'withClause', withFragment, tsDescriptor.columns);
+					const selectConditions = withFragment.dependOnFields.map(
+						(fieldIndex) => `params.select.${tsDescriptor.columns[fieldIndex].name}`
+					);
+					if (selectConditions.length > 0) {
+						selectConditions.unshift('params?.select == null');
+					}
+					const whereConditions = withFragment.dependOnFields.map((fieldIndex) => `where.${tsDescriptor.columns[fieldIndex].name} != null`);
+					const orderByConditions = withFragment.dependOnOrderBy?.map((orderBy) => `orderBy['${orderBy}'] != null`) || [];
+					const allConditions = [...selectConditions, ...whereConditions, ...orderByConditions];
+					const paramValues = withFragment.parameters.map((paramIndex) => {
+						const param = tsDescriptor.parameters[paramIndex];
+						return `params?.params?.${param.name}`;
+					});
+					if (allConditions.length > 0) {
+						writer.write(`if (${allConditions.join(`${EOL}\t|| `)})`).block(() => {
+							writer.writeLine(`if (withClause !== '') withClause += ',' + EOL;`);
+							writer.write(`withClause += \`${withFragment.fragment}\`;`);
+							paramValues.forEach((paramValues) => {
+								writer.writeLine(`paramsValues.push(${paramValues});`);
+							});
+						});
+					}
+					else {
+						writer.write(`withClause.push(\`${withFragment.fragment}\`);`);
+						paramValues.forEach((paramValues) => {
+							writer.writeLine(`paramsValues.push(${paramValues});`);
+						});
+					}
 				});
 			}
 			writer.writeLine(`let sql = 'SELECT';`);
+			if (dynamicQueryInfo.with.length > 0) {
+				writer.write('if (withClause)').block(() => {
+					writer.writeLine(`sql = 'WITH' + EOL + withClause + EOL + sql;`);
+				})
+			}
+
 			dynamicQueryInfo.select.forEach((select, index) => {
 				writer.write(`if (params?.select == null || params.select.${tsDescriptor.columns[index].name})`).block(() => {
 					writer.writeLine(`sql = appendSelect(sql, \`${select.fragment}\`);`);
