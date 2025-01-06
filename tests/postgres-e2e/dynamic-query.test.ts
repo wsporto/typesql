@@ -1,7 +1,7 @@
 import assert from 'node:assert';
 import pg from 'pg'
 import { dynamicQuery01, DynamicQuery01Result } from './sql/dynamic-query-01';
-import { derivatedTable, DerivatedTableResult, dynamicQuery03, DynamicQuery03Result, dynamicQuery04, DynamicQuery04Result, dynamicQuery05, DynamicQuery05Result } from './sql';
+import { derivatedTable, DerivatedTableResult, dynamicQuery03, DynamicQuery03Result, dynamicQuery04, DynamicQuery04Result, dynamicQuery05, DynamicQuery05Result, dynamicQuery08, DynamicQuery08Result } from './sql';
 
 describe('e2e-postgres-dynamic-query', () => {
 
@@ -294,6 +294,46 @@ describe('e2e-postgres-dynamic-query', () => {
 		const expectedResult: DynamicQuery05Result[] = [
 			{
 				id: 1
+			}
+		];
+
+		assert.deepStrictEqual(result, expectedResult);
+	});
+
+	it('dynamic-query-08 - date', async () => {
+		const result = await dynamicQuery08(pool, {
+			params: {
+				param1: 2024,
+				param2: 12
+			}
+		});
+
+		const expectedResult: DynamicQuery08Result[] = [
+			{
+				timestamp_not_null_column: new Date(2024, 11, 31)
+			}
+		];
+
+		assert.deepStrictEqual(result, expectedResult);
+	});
+
+	it('dynamic-query-08 - date >= new Date(2025, 0, 2)', async () => {
+		const result = await dynamicQuery08(pool, {
+			params: {
+				param1: 2025,
+				param2: 1
+			},
+			where: [
+				['timestamp_not_null_column', '>=', new Date(2025, 0, 2)]
+			]
+		});
+
+		const expectedResult: DynamicQuery08Result[] = [
+			{
+				timestamp_not_null_column: new Date(2025, 0, 2)
+			},
+			{
+				timestamp_not_null_column: new Date(2025, 0, 3)
 			}
 		];
 

@@ -42,7 +42,7 @@ export type DerivatedTableWhere =
 
 let currentIndex: number;
 export async function derivatedTable(client: pg.Client | pg.Pool, params?: DerivatedTableDynamicParams): Promise<DerivatedTableResult[]> {
-	currentIndex = 0;
+	currentIndex = 1;
 	const where = whereConditionsToObject(params?.where);
 	const paramsValues: any = [];
 	let sql = 'SELECT';

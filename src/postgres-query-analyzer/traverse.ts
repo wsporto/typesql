@@ -978,7 +978,7 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 
 function collectDynamicQueryInfoTableRef(table_ref: Table_refContext, joinType: Join_typeContext | null,
 	joinQual: Join_qualContext | null, columns: NotNullInfo[], parameters: number[], traverseResult: TraverseResult) {
-	const alias = extractOriginalSql(table_ref.alias_clause());
+	const alias = table_ref.alias_clause() ? extractOriginalSql(table_ref.alias_clause()) : '';
 	const fromExpr = extractOriginalSql(table_ref.relation_expr() || table_ref.select_with_parens());
 	const tableName = table_ref.relation_expr()?.getText() || alias;
 	const fromOrJoin = joinType ? `${extractOriginalSql(joinType)} JOIN` : 'FROM';

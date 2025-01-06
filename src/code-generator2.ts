@@ -1,5 +1,5 @@
 import CodeBlockWriter from 'code-block-writer';
-import { capitalize, convertToCamelCaseName, generateRelationType, getOperator, hasDateColumn, hasStringColumn, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor } from './code-generator';
+import { capitalize, convertToCamelCaseName, generateRelationType, getOperator, hasStringColumn, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor } from './code-generator';
 import { ParameterDef, PgDielect, QueryType, SchemaDef, TsFieldDescriptor, TsParameterDescriptor, TypeSqlError } from './types';
 import { describeQuery } from './postgres-query-analyzer/describe';
 import { ColumnInfo, ColumnSchema } from './mysql-query-analyzer/types';
@@ -129,7 +129,7 @@ function generateTsCode(
 		functionArguments += `, params?: ${dynamicParamsTypeName}`;
 		writer.writeLine('let currentIndex: number;');
 		writer.write(`export async function ${camelCaseName}(${functionArguments}): Promise<${resultTypeName}[]>`).block(() => {
-			writer.writeLine('currentIndex = 0;');
+			writer.writeLine(`currentIndex = ${tsDescriptor.parameters.length};`);
 			writer.writeLine('const where = whereConditionsToObject(params?.where);');
 			// if (orderByField != null) {
 			// 	writer.writeLine('const orderBy = orderByToObject(params.orderBy);');
@@ -214,7 +214,7 @@ function generateTsCode(
 			dynamicQueryInfo.where.forEach((fragment) => {
 				const paramValues = fragment.parameters.map((paramIndex) => {
 					const param = tsDescriptor.parameters[paramIndex];
-					return `${toDriver('params?.params?', param)} ?? null`
+					return `params?.params?.${param.name} ?? null`;
 				});
 				writer.writeLine(`sql += EOL + \`${fragment.fragment}\`;`);
 				paramValues.forEach((paramValues) => {
@@ -304,65 +304,28 @@ function generateTsCode(
 				});
 			}
 			writer.write(`if (operator == 'BETWEEN') `).block(() => {
-				if (hasDateColumn(tsDescriptor.columns)) {
-					writer.writeLine('const value1 = isDate(condition[2]) ? condition[2]?.toISOString() : condition[2];');
-					writer.writeLine('const value2 = isDate(condition[3]) ? condition[3]?.toISOString() : condition[3];');
-					writer.writeLine(`const param = isDate(condition[2]) && isDate(condition[3]) ? 'date(?)' : '?';`);
-					writer.write('return ').block(() => {
-						writer.writeLine('sql: `${selectFragment} BETWEEN ${param} AND ${param}`,');
-						writer.writeLine('hasValue: value1 != null && value2 != null,');
-						writer.writeLine('values: [value1, value2]');
-					});
-				} else {
-					writer.write('return ').block(() => {
-						writer.writeLine('sql: `${selectFragment} BETWEEN ${placeholder()} AND ${placeholder()}`,');
-						writer.writeLine('hasValue: condition[2] != null && condition[3] != null,');
-						writer.writeLine('values: [condition[2], condition[3]]');
-					});
-				}
+				writer.write('return ').block(() => {
+					writer.writeLine('sql: `${selectFragment} BETWEEN ${placeholder()} AND ${placeholder()}`,');
+					writer.writeLine('hasValue: condition[2] != null && condition[3] != null,');
+					writer.writeLine('values: [condition[2], condition[3]]');
+				});
 			});
 			writer.write(`if (operator == 'IN' || operator == 'NOT IN') `).block(() => {
-				if (hasDateColumn(tsDescriptor.columns)) {
-					writer.write('return ').block(() => {
-						writer.writeLine(
-							"sql: `${selectFragment} ${operator} (${condition[2]?.map(value => isDate(value) ? 'date(?)' : placeholder()).join(', ')})`,"
-						);
-						writer.writeLine('hasValue: condition[2] != null && condition[2].length > 0,');
-						writer.writeLine('values: condition[2].map(value => isDate(value) ? value.toISOString() : value)');
-					});
-				} else {
-					writer.write('return ').block(() => {
-						writer.writeLine("sql: `${selectFragment} ${operator} (${condition[2]?.map(_ => placeholder()).join(', ')})`,");
-						writer.writeLine('hasValue: condition[2] != null && condition[2].length > 0,');
-						writer.writeLine('values: condition[2]');
-					});
-				}
+				writer.write('return ').block(() => {
+					writer.writeLine("sql: `${selectFragment} ${operator} (${condition[2]?.map(_ => placeholder()).join(', ')})`,");
+					writer.writeLine('hasValue: condition[2] != null && condition[2].length > 0,');
+					writer.writeLine('values: condition[2]');
+				});
 			});
 			writer.write('if (NumericOperatorList.includes(operator)) ').block(() => {
-				if (hasDateColumn(tsDescriptor.columns)) {
-					writer.writeLine('const value = isDate(condition[2]) ? condition[2]?.toISOString() : condition[2];');
-					writer.writeLine(`const param = isDate(condition[2]) ? 'date(?)' : '?';`);
-					writer.write('return ').block(() => {
-						writer.writeLine('sql: `${selectFragment} ${operator} ${param}`,');
-						writer.writeLine('hasValue: value != null,');
-						writer.writeLine('values: [value]');
-					});
-				} else {
-					writer.write('return ').block(() => {
-						writer.writeLine('sql: `${selectFragment} ${operator} ${placeholder()}`,');
-						writer.writeLine('hasValue: condition[2] != null,');
-						writer.writeLine('values: [condition[2]]');
-					});
-				}
+				writer.write('return ').block(() => {
+					writer.writeLine('sql: `${selectFragment} ${operator} ${placeholder()}`,');
+					writer.writeLine('hasValue: condition[2] != null,');
+					writer.writeLine('values: [condition[2]]');
+				});
 			});
 			writer.writeLine('return null;');
 		});
-		if (hasDateColumn(tsDescriptor.columns)) {
-			writer.blankLine();
-			writer.write('function isDate(value: any): value is Date').block(() => {
-				writer.writeLine('return value instanceof Date;');
-			});
-		}
 		writer.blankLine();
 		writer.write('function placeholder(): string').block(() => {
 			writer.writeLine('return `$${++currentIndex}`;');

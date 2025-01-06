@@ -376,5 +376,21 @@ INNER JOIN cte m2 on m2.id = m1.id`;
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('dynamic-query-08 - date', async () => {
+		const sql = `-- @dynamicQuery
+SELECT 
+	timestamp_not_null_column
+FROM all_types 
+WHERE EXTRACT(YEAR FROM timestamp_not_null_column) = :param1 AND EXTRACT(MONTH FROM timestamp_not_null_column) = :param2`;
+
+		const actual = await generateCode(dialect, sql, 'dynamic-query-08');
+		const expected = readFileSync('tests/postgres/expected-code/dynamic-query08-date.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });
 
