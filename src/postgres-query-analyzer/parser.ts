@@ -1,20 +1,19 @@
 import { parseSql as _parseSql } from '@wsporto/typesql-parser/postgres';
-import { PostgresTraverseResult, traverseSmt } from './traverse';
+import { defaultOptions, PostgresTraverseResult, traverseSmt } from './traverse';
 import { PostgresColumnSchema } from '../drivers/types';
 import { Result, err, ok } from 'neverthrow';
 
-
-export function parseSql(sql: string, dbSchema: PostgresColumnSchema[], gererateNested = false): PostgresTraverseResult {
+export function parseSql(sql: string, dbSchema: PostgresColumnSchema[], options = defaultOptions()): PostgresTraverseResult {
 	const parser = _parseSql(sql);
 
-	const traverseResult = traverseSmt(parser.stmt(), dbSchema, gererateNested);
+	const traverseResult = traverseSmt(parser.stmt(), dbSchema, options);
 
 	return traverseResult;
 }
 
-export function safeParseSql(sql: string, dbSchema: PostgresColumnSchema[], gererateNested: boolean): Result<PostgresTraverseResult, string> {
+export function safeParseSql(sql: string, dbSchema: PostgresColumnSchema[], options = defaultOptions()): Result<PostgresTraverseResult, string> {
 	try {
-		const result = parseSql(sql, dbSchema, gererateNested);
+		const result = parseSql(sql, dbSchema, options);
 		return ok(result);
 	}
 	catch (e) {

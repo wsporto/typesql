@@ -292,5 +292,105 @@ INNER JOIN users u on u.id = p.fk_user`;
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('dynamic-query-01', async () => {
+		const sql = `-- @dynamicQuery
+	SELECT m1.id, m1.value, m2.name, m2.descr as description
+	FROM mytable1 m1
+	INNER JOIN mytable2 m2 on m1.id = m2.id`;
+
+		const actual = await generateCode(dialect, sql, 'dynamic-query-01');
+		const expected = readFileSync('tests/postgres/expected-code/dynamic-query01.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('dynamic-query-02', async () => {
+		const sql = `-- @dynamicQuery
+SELECT m1.id, m2.name
+FROM mytable1 m1
+INNER JOIN ( -- derivated table
+	SELECT id, name from mytable2 m 
+	WHERE m.name = :subqueryName
+) m2 on m2.id = m1.id`;
+
+		const actual = await generateCode(dialect, sql, 'derivated-table');
+		const expected = readFileSync('tests/postgres/expected-code/dynamic-query02.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('dynamic-query-03', async () => {
+		const sql = `-- @dynamicQuery
+	SELECT t1.id, t1.value
+	FROM mytable1 t1`;
+
+		const actual = await generateCode(dialect, sql, 'dynamic-query-03');
+		const expected = readFileSync('tests/postgres/expected-code/dynamic-query03.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('dynamic-query-04', async () => {
+		const sql = `-- @dynamicQuery
+	SELECT 
+		*
+	FROM mytable1 m1
+	INNER JOIN mytable2 m2 on m2.id = m1.id`;
+
+		const actual = await generateCode(dialect, sql, 'dynamic-query-04');
+		const expected = readFileSync('tests/postgres/expected-code/dynamic-query04.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('dynamic-query-05', async () => {
+		const sql = `-- @dynamicQuery
+WITH 
+	cte as (
+		select id, name from mytable2
+	)
+SELECT 
+	m1.id,
+	m2.name
+FROM mytable1 m1
+INNER JOIN cte m2 on m2.id = m1.id`;
+
+		const actual = await generateCode(dialect, sql, 'dynamic-query-05');
+		const expected = readFileSync('tests/postgres/expected-code/dynamic-query05.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('dynamic-query-08 - date', async () => {
+		const sql = `-- @dynamicQuery
+SELECT 
+	timestamp_not_null_column
+FROM all_types 
+WHERE EXTRACT(YEAR FROM timestamp_not_null_column) = :param1 AND EXTRACT(MONTH FROM timestamp_not_null_column) = :param2`;
+
+		const actual = await generateCode(dialect, sql, 'dynamic-query-08');
+		const expected = readFileSync('tests/postgres/expected-code/dynamic-query08-date.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });
 

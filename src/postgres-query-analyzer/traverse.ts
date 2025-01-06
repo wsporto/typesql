@@ -1,8 +1,8 @@
-import { A_expr_addContext, A_expr_andContext, A_expr_at_time_zoneContext, A_expr_betweenContext, A_expr_caretContext, A_expr_collateContext, A_expr_compareContext, A_expr_inContext, A_expr_is_notContext, A_expr_isnullContext, A_expr_lesslessContext, A_expr_likeContext, A_expr_mulContext, A_expr_orContext, A_expr_qual_opContext, A_expr_qualContext, A_expr_typecastContext, A_expr_unary_notContext, A_expr_unary_qualopContext, A_expr_unary_signContext, A_exprContext, C_expr_caseContext, C_expr_existsContext, C_expr_exprContext, C_exprContext, ColidContext, ColumnrefContext, Common_table_exprContext, DeletestmtContext, Expr_listContext, From_clauseContext, From_listContext, Func_applicationContext, Func_arg_exprContext, Func_expr_common_subexprContext, Func_exprContext, IdentifierContext, In_expr_listContext, In_expr_selectContext, In_exprContext, Insert_column_itemContext, InsertstmtContext, Join_qualContext, Qualified_nameContext, Relation_exprContext, Select_clauseContext, Select_no_parensContext, Select_with_parensContext, SelectstmtContext, Set_clauseContext, Simple_select_intersectContext, Simple_select_pramaryContext, StmtContext, Table_refContext, Target_elContext, Target_labelContext, Target_listContext, Unreserved_keywordContext, UpdatestmtContext, Values_clauseContext, When_clauseContext, Where_clauseContext } from '@wsporto/typesql-parser/postgres/PostgreSQLParser';
+import { A_expr_addContext, A_expr_andContext, A_expr_at_time_zoneContext, A_expr_betweenContext, A_expr_caretContext, A_expr_collateContext, A_expr_compareContext, A_expr_inContext, A_expr_is_notContext, A_expr_isnullContext, A_expr_lesslessContext, A_expr_likeContext, A_expr_mulContext, A_expr_orContext, A_expr_qual_opContext, A_expr_qualContext, A_expr_typecastContext, A_expr_unary_notContext, A_expr_unary_qualopContext, A_expr_unary_signContext, A_exprContext, C_expr_caseContext, C_expr_existsContext, C_expr_exprContext, C_exprContext, ColidContext, ColumnrefContext, Common_table_exprContext, DeletestmtContext, Expr_listContext, From_clauseContext, From_listContext, Func_applicationContext, Func_arg_exprContext, Func_expr_common_subexprContext, Func_exprContext, IdentifierContext, In_expr_listContext, In_expr_selectContext, In_exprContext, Insert_column_itemContext, InsertstmtContext, Join_qualContext, Join_typeContext, Qualified_nameContext, Relation_exprContext, Select_clauseContext, Select_no_parensContext, Select_with_parensContext, SelectstmtContext, Set_clauseContext, Simple_select_intersectContext, Simple_select_pramaryContext, StmtContext, Table_refContext, Target_elContext, Target_labelContext, Target_listContext, Unreserved_keywordContext, UpdatestmtContext, Values_clauseContext, When_clauseContext, Where_clauseContext } from '@wsporto/typesql-parser/postgres/PostgreSQLParser';
 import { ParserRuleContext } from '@wsporto/typesql-parser';
 import { PostgresColumnSchema } from '../drivers/types';
-import { splitName } from '../mysql-query-analyzer/select-columns';
-import { FieldName } from '../mysql-query-analyzer/types';
+import { extractOriginalSql, splitName } from '../mysql-query-analyzer/select-columns';
+import { DynamicSqlInfo2, FieldName } from '../mysql-query-analyzer/types';
 import { QueryType } from '../types';
 import { Relation2 } from '../sqlite-query-analyzer/sqlite-describe-nested-query';
 
@@ -23,6 +23,7 @@ export type PostgresTraverseResult = {
 	limit?: number;
 	returning?: boolean;
 	relations?: Relation2[];
+	dynamicQueryInfo?: DynamicSqlInfo2;
 }
 
 type ParamInfo = {
@@ -35,13 +36,15 @@ type TraverseResult = {
 	parameters: ParamInfo[],
 	singleRow: boolean;
 	relations?: Relation2[];
+	dynamicQueryInfo?: DynamicSqlInfo2;
 }
 
 type TraverseContext = {
 	dbSchema: PostgresColumnSchema[];
 	fromColumns: NotNullInfo[];
 	propagatesNull?: boolean;
-	generateNestedInfo: boolean;
+	collectNestedInfo: boolean;
+	collectDynamicQueryInfo: boolean;
 }
 
 export type Relation3 = {
@@ -51,18 +54,42 @@ export type Relation3 = {
 	joinColumn: string;
 };
 
-export function traverseSmt(stmt: StmtContext, dbSchema: PostgresColumnSchema[], generateNestedInfo: boolean): PostgresTraverseResult {
+export type TraverseOptions = {
+	collectNestedInfo?: boolean;
+	collectDynamicQueryInfo?: boolean;
+}
+
+export function defaultOptions(): TraverseOptions {
+	return {
+		collectNestedInfo: false,
+		collectDynamicQueryInfo: false
+	};
+}
+
+export function traverseSmt(stmt: StmtContext, dbSchema: PostgresColumnSchema[], options: TraverseOptions): PostgresTraverseResult {
+	const { collectNestedInfo = false, collectDynamicQueryInfo = false } = options;
+
 	const traverseResult: TraverseResult = {
 		columnsNullability: [],
 		parameters: [],
 		singleRow: false
 	}
-	if (generateNestedInfo) {
+	if (collectNestedInfo) {
 		traverseResult.relations = [];
+	}
+	if (collectDynamicQueryInfo) {
+		const dynamicQueryInfo: DynamicSqlInfo2 = {
+			with: [],
+			select: [],
+			from: [],
+			where: []
+		}
+		traverseResult.dynamicQueryInfo = dynamicQueryInfo;
 	}
 	const traverseContext: TraverseContext = {
 		dbSchema,
-		generateNestedInfo,
+		collectNestedInfo,
+		collectDynamicQueryInfo,
 		fromColumns: []
 	}
 	const selectstmt = stmt.selectstmt();
@@ -126,6 +153,9 @@ function traverseSelectstmt(selectstmt: SelectstmtContext, context: TraverseCont
 	if (traverseResult.relations) {
 		postgresTraverseResult.relations = traverseResult.relations;
 	}
+	if (traverseResult.dynamicQueryInfo) {
+		postgresTraverseResult.dynamicQueryInfo = traverseResult.dynamicQueryInfo;
+	}
 	return postgresTraverseResult;
 }
 
@@ -143,28 +173,61 @@ function traverse_select_no_parens(select_no_parens: Select_no_parensContext, co
 	if (with_clause) {
 		with_clause.cte_list().common_table_expr_list()
 			.forEach(common_table_expr => {
-				const newContext = { ...context, fromColumns: withColumns.concat(context.fromColumns) };
+				const newContext: TraverseContext = { ...context, fromColumns: withColumns.concat(context.fromColumns) };
 				const withResult = traverse_common_table_expr(common_table_expr, newContext, traverseResult);
 				withColumns.push(...withResult);
 			});
 	}
 	const select_clause = select_no_parens.select_clause();
-	if (select_clause) {
-		const newContext = { ...context, fromColumns: withColumns.concat(context.fromColumns) };
-		return traverse_select_clause(select_clause, newContext, traverseResult);
+	const newContext = { ...context, fromColumns: withColumns.concat(context.fromColumns) };
+	const selectResult = traverse_select_clause(select_clause, newContext, traverseResult);
+	const select_limit = select_no_parens.select_limit();
+	if (select_limit) {
+		const numParamsBefore = traverseResult.parameters.length;
+		const limit_clause = select_limit.limit_clause();
+		const limit_a_expr = limit_clause.select_limit_value().a_expr();
+		traverse_a_expr(limit_a_expr, context, traverseResult);
+		let fragment = '';
+		if (limit_clause) {
+			if (context.collectDynamicQueryInfo) {
+				fragment += extractOriginalSql(limit_clause);
+			}
+		}
+		const offset_clause = select_limit.offset_clause();
+		if (offset_clause) {
+			const offset_a_expr = offset_clause.select_offset_value().a_expr();
+			traverse_a_expr(offset_a_expr, context, traverseResult);
+			if (context.collectDynamicQueryInfo) {
+				fragment += ' ' + extractOriginalSql(offset_clause);
+			}
+		}
+		if (fragment) {
+			const parameters = traverseResult.parameters.slice(numParamsBefore).map((_, index) => index + numParamsBefore);
+			traverseResult.dynamicQueryInfo!.limitOffset = {
+				fragment,
+				parameters
+			}
+		}
 	}
-	return [];
+
+	return selectResult;
 }
 
 function traverse_common_table_expr(common_table_expr: Common_table_exprContext, context: TraverseContext, traverseResult: TraverseResult) {
 	const tableName = common_table_expr.name().getText();
 	const select_stmt = common_table_expr.preparablestmt().selectstmt();
-	if (select_stmt) {
-		const columns = traverse_selectstmt(select_stmt, context, traverseResult);
-		const columnsWithTalbeName = columns.map(col => ({ ...col, table_name: tableName }));
-		return columnsWithTalbeName;
+	const numParamsBefore = traverseResult.parameters.length;
+	const columns = traverse_selectstmt(select_stmt, { ...context, collectDynamicQueryInfo: false }, traverseResult);
+	const columnsWithTalbeName = columns.map(col => ({ ...col, table_name: tableName }));
+	if (context.collectDynamicQueryInfo) {
+		const parameters = traverseResult.parameters.slice(numParamsBefore).map((_, index) => index + numParamsBefore);
+		traverseResult.dynamicQueryInfo?.with.push({
+			fragment: extractOriginalSql(common_table_expr),
+			relationName: tableName,
+			parameters
+		})
 	}
-	return [];
+	return columnsWithTalbeName;
 }
 
 function traverse_select_clause(select_clause: Select_clauseContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo[] {
@@ -217,10 +280,32 @@ function traverse_simple_select_pramary(simple_select_pramary: Simple_select_pra
 	//fromColumns has precedence
 	const newContext = { ...context, fromColumns: fromColumns.concat(context.fromColumns) };
 	if (where_a_expr) {
+		const numParamsBefore = traverseResult.parameters.length;
 		traverse_a_expr(where_a_expr, newContext, traverseResult);
+		if (context.collectDynamicQueryInfo) {
+			const parameters = traverseResult.parameters.slice(numParamsBefore).map((_, index) => index + numParamsBefore);
+			const relations = extractRelations(where_a_expr);
+			traverseResult.dynamicQueryInfo?.where.push({
+				fragment: `AND ${extractOriginalSql(where_a_expr)}`,
+				parameters,
+				dependOnRelations: relations
+			})
+		}
 	}
 	const filteredColumns = filterColumns_simple_select_pramary(simple_select_pramary, newContext, traverseResult);
 	return filteredColumns;
+}
+
+function extractRelations(a_expr: A_exprContext): string[] {
+	const columnsRef = collectContextsOfType(a_expr, ColumnrefContext);
+	const relations = columnsRef
+		.map((colRefExpr) => {
+			const colRef = colRefExpr as ColumnrefContext;
+			const tableName = splitName(colRef.getText());
+			return tableName;
+		});
+	const uniqueRelations = [...new Set(relations.map(relation => relation.prefix))]
+	return uniqueRelations;
 }
 
 function traverse_values_clause(values_clause: Values_clauseContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo[] {
@@ -265,17 +350,28 @@ function traverse_target_list(target_list: Target_listContext, context: Traverse
 		const fieldName = splitName(target_el.getText());
 		if (fieldName.name == '*') {
 			const columns = filterColumns(context.fromColumns, fieldName);
+			if (context.collectDynamicQueryInfo) {
+				columns.forEach(col => {
+					traverseResult.dynamicQueryInfo?.select.push({
+						fragment: `${col.table_name}.${col.column_name}`,
+						fragmentWitoutAlias: `${col.table_name}.${col.column_name}`,
+						dependOnRelations: [col.table_name],
+						parameters: []
+					});
+				})
+			}
 			return columns;
 		}
-		const column = isNotNull_target_el(target_el, context, traverseResult);
+		const column = traverse_target_el(target_el, context, traverseResult);
 		return [column];
 	})
 	return columns;
 }
 
-function isNotNull_target_el(target_el: Target_elContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
+function traverse_target_el(target_el: Target_elContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
 	if (target_el instanceof Target_labelContext) {
 		const a_expr = target_el.a_expr();
+		const numParamsBefore = traverseResult.parameters.length;
 		const exprResult = traverse_a_expr(a_expr, context, traverseResult);
 		const colLabel = target_el.colLabel();
 		const alias = colLabel != null ? colLabel.getText() : '';
@@ -286,6 +382,16 @@ function isNotNull_target_el(target_el: Target_elContext, context: TraverseConte
 					&& relation.joinColumn === exprResult.column_name) {
 					relation.joinColumn = alias;
 				}
+			})
+		}
+		if (context.collectDynamicQueryInfo) {
+			const parameters = traverseResult.parameters.slice(numParamsBefore).map((_, index) => index + numParamsBefore);
+			const relations = extractRelations(target_el.a_expr());
+			traverseResult.dynamicQueryInfo?.select.push({
+				fragment: extractOriginalSql(target_el),
+				fragmentWitoutAlias: extractOriginalSql(target_el.a_expr()),
+				dependOnRelations: relations,
+				parameters
 			})
 		}
 		return {
@@ -745,7 +851,7 @@ function traversefunc_application(func_application: Func_applicationContext, con
 }
 
 function traversefunc_expr_common_subexpr(func_expr_common_subexpr: Func_expr_common_subexprContext, context: TraverseContext, traverseResult: TraverseResult): boolean {
-	if (func_expr_common_subexpr.COALESCE()) {
+	if (func_expr_common_subexpr.COALESCE() || func_expr_common_subexpr.GREATEST() || func_expr_common_subexpr.LEAST()) {
 		const func_arg_list = func_expr_common_subexpr.expr_list().a_expr_list();
 		const result = func_arg_list.map(func_arg_expr => {
 			const paramResult = traverse_a_expr(func_arg_expr, { ...context, propagatesNull: true }, traverseResult);
@@ -806,21 +912,21 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 	const allColumns: NotNullInfo[] = [];
 	const relation_expr = table_ref.relation_expr();
 	const aliasClause = table_ref.alias_clause();
-	const alias = aliasClause ? aliasClause.colid().getText() : undefined;
+	const alias = aliasClause ? aliasClause.colid().getText() : '';
 	if (relation_expr) {
 		const tableName = traverse_relation_expr(relation_expr, dbSchema);
 		const tableNameWithAlias = alias ? alias : tableName.name;
 		const fromColumnsResult = fromColumns.concat(dbSchema).filter(col => col.table_name === tableName.name)
 			.map(col => ({ ...col, table_name: tableNameWithAlias }));
 		allColumns.push(...fromColumnsResult);
-		if (context.generateNestedInfo) {
+		if (context.collectNestedInfo) {
 
 			const key = fromColumnsResult.filter(col => (col as PostgresColumnSchema).column_key === 'PRI');
 
 			const renameAs = aliasClause?.AS() != null;
 			const relation: Relation2 = {
 				name: tableName.name,
-				alias: alias || '',
+				alias: alias,
 				renameAs,
 				parentRelation: '',
 				joinColumn: key[0]?.column_name || '',
@@ -829,63 +935,104 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 			}
 			traverseResult.relations?.push(relation);
 		}
-	}
-	const table_ref_list = table_ref.table_ref_list();
-	const join_type_list = table_ref.join_type_list();
-	const join_qual_list = table_ref.join_qual_list();
-	if (table_ref_list) {
-		const joinColumns = table_ref_list.flatMap((table_ref, joinIndex) => {
-			const joinType = join_type_list[joinIndex]; //INNER, LEFT
-			const joinQual = join_qual_list[joinIndex];
-			const joinColumns = traverse_table_ref(table_ref, context, traverseResult);
-			const isUsing = joinQual?.USING() ? true : false;
-			const isLeftJoin = joinType?.LEFT();
-			const filteredColumns = isUsing ? filterUsingColumns(joinColumns, joinQual) : joinColumns;
-			const resultColumns = isLeftJoin ? filteredColumns.map(col => ({ ...col, is_nullable: true })) : filteredColumns;
+		const table_ref_list = table_ref.table_ref_list();
+		const join_type_list = table_ref.join_type_list();
+		const join_qual_list = table_ref.join_qual_list();
 
-			if (context.generateNestedInfo) {
-				collectNestedInfo(joinQual, resultColumns, traverseResult);
-			}
-			return resultColumns;
-		});
-		allColumns.push(...joinColumns);
+		if (context.collectDynamicQueryInfo && traverseResult.dynamicQueryInfo!.from.length == 0) {
+			collectDynamicQueryInfoTableRef(table_ref, null, null, fromColumnsResult, [], traverseResult);
+		}
+
+		if (table_ref_list) {
+			const joinColumns = table_ref_list.flatMap((table_ref, joinIndex) => {
+				const joinType = join_type_list[joinIndex]; //INNER, LEFT
+				const joinQual = join_qual_list[joinIndex];
+				const numParamsBefore = traverseResult.parameters.length;
+				const joinColumns = traverse_table_ref(table_ref, context, traverseResult);
+				const isUsing = joinQual?.USING() ? true : false;
+				const isLeftJoin = joinType?.LEFT();
+				const filteredColumns = isUsing ? filterUsingColumns(joinColumns, joinQual) : joinColumns;
+				const resultColumns = isLeftJoin ? filteredColumns.map(col => ({ ...col, is_nullable: true })) : filteredColumns;
+
+				if (context.collectNestedInfo) {
+					collectNestedInfo(joinQual, resultColumns, traverseResult);
+				}
+				if (context.collectDynamicQueryInfo) {
+					const parameters = traverseResult.parameters.slice(numParamsBefore).map((_, index) => index + numParamsBefore);
+					collectDynamicQueryInfoTableRef(table_ref, joinType, joinQual, resultColumns, parameters, traverseResult);
+				}
+
+				return resultColumns;
+			});
+			allColumns.push(...joinColumns);
+		}
 	}
 	const select_with_parens = table_ref.select_with_parens();
 	if (select_with_parens) {
-		const columns = traverse_select_with_parens(select_with_parens, context, traverseResult);
+		const columns = traverse_select_with_parens(select_with_parens, { ...context, collectDynamicQueryInfo: false }, traverseResult);
 		const withAlias = columns.map(col => ({ ...col, table_name: alias || col.table_name }));
 		return withAlias;
 	}
 	return allColumns;
 }
 
-function collectNestedInfo(joinQual: Join_qualContext, resultColumns: NotNullInfo[], traverseResult: TraverseResult) {
+function collectDynamicQueryInfoTableRef(table_ref: Table_refContext, joinType: Join_typeContext | null,
+	joinQual: Join_qualContext | null, columns: NotNullInfo[], parameters: number[], traverseResult: TraverseResult) {
+	const alias = table_ref.alias_clause() ? extractOriginalSql(table_ref.alias_clause()) : '';
+	const fromExpr = extractOriginalSql(table_ref.relation_expr() || table_ref.select_with_parens());
+	const tableName = table_ref.relation_expr()?.getText() || alias;
+	const fromOrJoin = joinType ? `${extractOriginalSql(joinType)} JOIN` : 'FROM';
+	const join = joinQual ? ` ${extractOriginalSql(joinQual)}` : '';
+
+	const fromFragment = `${fromOrJoin} ${fromExpr} ${alias}${join}`;
+	const fields = columns.map(col => col.column_name);
+	const joinColumns = joinQual ? getJoinColumns(joinQual) : [];
+	const parentList = joinColumns.filter(joinRef => joinRef.prefix !== tableName && joinRef.prefix !== alias);
+	const parentRelation = parentList.length === 1 ? parentList[0].prefix : '';
+	traverseResult.dynamicQueryInfo?.from.push({
+		fragment: fromFragment,
+		fields,
+		parameters,
+		relationName: tableName,
+		relationAlias: alias,
+		parentRelation
+	})
+}
+
+function getJoinColumns(joinQual: Join_qualContext): FieldName[] {
 	const a_expr_or_list = joinQual ? collectContextsOfType(joinQual, A_expr_orContext) : [];
 	if (a_expr_or_list.length == 1) {
 		const a_expr_or = a_expr_or_list[0] as A_expr_orContext;
 		const a_expr_and = a_expr_or.a_expr_and_list()[0];
 		const columnref = collectContextsOfType(a_expr_and, ColumnrefContext);
 		const joinColumns = columnref.map(colRef => splitName(colRef.getText()));
+		return joinColumns;
+	}
+	return [];
+}
 
-		const currentRelation = traverseResult.relations?.at(-1);
-		joinColumns.forEach(joinRef => {
-			if (currentRelation) {
-				const joinColumn = resultColumns.filter(col => col.column_name === joinRef.name)[0] as PostgresColumnSchema;
-				const unique = joinColumn && (joinColumn.column_key === 'PRI' || joinColumn.column_key === 'UNI');
-				if (joinRef.prefix === currentRelation.name || joinRef.prefix === currentRelation.alias) {
-					if (!unique) {
-						currentRelation.cardinality = 'many';
-					}
-				}
-				else {
-					currentRelation.parentRelation = joinRef.prefix;
-					if (!unique) {
-						currentRelation.parentCardinality = 'many';
-					}
+function collectNestedInfo(joinQual: Join_qualContext, resultColumns: NotNullInfo[], traverseResult: TraverseResult) {
+
+	const joinColumns = getJoinColumns(joinQual);
+
+	const currentRelation = traverseResult.relations?.at(-1);
+	joinColumns.forEach(joinRef => {
+		if (currentRelation) {
+			const joinColumn = resultColumns.filter(col => col.column_name === joinRef.name)[0] as PostgresColumnSchema;
+			const unique = joinColumn && (joinColumn.column_key === 'PRI' || joinColumn.column_key === 'UNI');
+			if (joinRef.prefix === currentRelation.name || joinRef.prefix === currentRelation.alias) {
+				if (!unique) {
+					currentRelation.cardinality = 'many';
 				}
 			}
-		})
-	}
+			else {
+				currentRelation.parentRelation = joinRef.prefix;
+				if (!unique) {
+					currentRelation.parentCardinality = 'many';
+				}
+			}
+		}
+	})
 }
 
 function filterUsingColumns(fromColumns: NotNullInfo[], joinQual: Join_qualContext): NotNullInfo[] {
@@ -998,7 +1145,8 @@ function traverseInsertstmt(insertstmt: InsertstmtContext, dbSchema: PostgresCol
 	const context: TraverseContext = {
 		dbSchema,
 		fromColumns: insertColumns,
-		generateNestedInfo: false
+		collectNestedInfo: false,
+		collectDynamicQueryInfo: false
 	}
 
 	const selectstmt = insert_rest.selectstmt();
@@ -1042,7 +1190,7 @@ function traverse_insert_select_stmt(selectstmt: SelectstmtContext, context: Tra
 				const from_clause = simple_select_pramary.from_clause();
 				const fromColumns = from_clause ? traverse_from_clause(from_clause, { ...context, fromColumns: [] }, traverseResult) : [];
 				target_list.target_el_list().forEach((target_el, index) => {
-					const targetResult = isNotNull_target_el(target_el, { ...context, fromColumns }, traverseResult);
+					const targetResult = traverse_target_el(target_el, { ...context, fromColumns }, traverseResult);
 					if (isParameter(targetResult.column_name)) {
 						traverseResult.parameters.at(-1)!.isNotNull = !context.fromColumns[index].is_nullable;
 					}
@@ -1071,7 +1219,8 @@ function traverseDeletestmt(deleteStmt: DeletestmtContext, dbSchema: PostgresCol
 	const context: TraverseContext = {
 		dbSchema,
 		fromColumns: deleteColumns,
-		generateNestedInfo: false
+		collectNestedInfo: false,
+		collectDynamicQueryInfo: false
 	}
 	const returninColumns = returning_clause ? traverse_target_list(returning_clause.target_list(), context, traverseResult) : [];
 
@@ -1096,7 +1245,8 @@ function traverseUpdatestmt(updatestmt: UpdatestmtContext, dbSchema: PostgresCol
 	const context: TraverseContext = {
 		dbSchema,
 		fromColumns: updateColumns,
-		generateNestedInfo: false
+		collectNestedInfo: false,
+		collectDynamicQueryInfo: false
 	}
 
 	updatestmt.set_clause_list().set_clause_list()
