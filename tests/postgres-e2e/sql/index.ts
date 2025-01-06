@@ -1,3 +1,5 @@
+export * from "./derivated-table";
+export * from "./dynamic-query-01";
 export * from "./nested01";
 export * from "./nested02";
 export * from "./nested03";

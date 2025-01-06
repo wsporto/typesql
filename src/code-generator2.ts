@@ -84,7 +84,7 @@ function generateTsCode(
 		writer.write(`export type ${dynamicParamsTypeName} = `).block(() => {
 			writer.writeLine(`select?: ${selectColumnsTypeName};`);
 			if (tsDescriptor.parameters.length > 0) {
-				writer.writeLine(`params?: ${paramsTypeName};`);
+				writer.writeLine(`params: ${paramsTypeName};`);
 			}
 			writer.writeLine(`where?: ${whereTypeName}[];`);
 			// if (orderByField) {
@@ -160,7 +160,7 @@ function generateTsCode(
 				const allConditions = [...selectConditions, ...whereConditions, ...orderByConditions];
 				const paramValues = from.parameters.map((paramIndex) => {
 					const param = tsDescriptor.parameters[paramIndex];
-					return toDriver('params?.params?', param);
+					return `params?.params?.${param.name}`;
 				});
 				if (allConditions.length > 0) {
 					writer.write(`if (${allConditions.join(`${EOL}\t|| `)})`).block(() => {

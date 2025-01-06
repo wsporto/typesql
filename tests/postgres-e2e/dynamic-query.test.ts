@@ -1,8 +1,9 @@
 import assert from 'node:assert';
 import pg from 'pg'
 import { dynamicQuery01, DynamicQuery01Result } from './sql/dynamic-query-01';
+import { derivatedTable } from './sql';
 
-describe('postgres-nested-result', () => {
+describe('e2e-postgres-dynamic-query', () => {
 
 	const pool = new pg.Pool({
 		connectionString: 'postgres://postgres:password@127.0.0.1:5432/postgres'
@@ -167,6 +168,23 @@ describe('postgres-nested-result', () => {
 			{
 				id: 3,
 				name: 'three'
+			}
+		];
+
+		assert.deepStrictEqual(result, expectedResult);
+	});
+
+	it('derivated-table ', async () => {
+		const result = await derivatedTable(pool, {
+			params: {
+				subqueryName: 'two'
+			}
+		});
+
+		const expectedResult: DynamicQuery01Result[] = [
+			{
+				id: 2,
+				name: 'two'
 			}
 		];
 

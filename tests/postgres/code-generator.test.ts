@@ -307,5 +307,23 @@ INNER JOIN users u on u.id = p.fk_user`;
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('dynamic-query-02', async () => {
+		const sql = `-- @dynamicQuery
+SELECT m1.id, m2.name
+FROM mytable1 m1
+INNER JOIN ( -- derivated table
+	SELECT id, name from mytable2 m 
+	WHERE m.name = :subqueryName
+) m2 on m2.id = m1.id`;
+
+		const actual = await generateCode(dialect, sql, 'derivated-table');
+		const expected = readFileSync('tests/postgres/expected-code/dynamic-query02.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });
 
