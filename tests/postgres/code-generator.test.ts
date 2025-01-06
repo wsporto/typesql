@@ -325,5 +325,19 @@ INNER JOIN ( -- derivated table
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('dynamic-query-03', async () => {
+		const sql = `-- @dynamicQuery
+	SELECT t1.id, t1.value
+	FROM mytable1 t1`;
+
+		const actual = await generateCode(dialect, sql, 'dynamic-query-03');
+		const expected = readFileSync('tests/postgres/expected-code/dynamic-query03.ts.txt', 'utf-8').replace(/\r/gm, '');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });
 
