@@ -221,10 +221,10 @@ describe('type-mapping', () => {
 		});
 
 		const schema = await loadMysqlSchema(client.client, client.schema);
-		if (isLeft(schema)) {
+		if (schema.isErr()) {
 			assert.fail(`Shouldn't return an error`);
 		}
-		const expected = schema.right
+		const expected = schema.value
 			.filter((colInfo) => actualColumns.find((col) => col.name === colInfo.column))
 			.map((col) => {
 				const nameAndType = {

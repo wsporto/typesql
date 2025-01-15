@@ -10,10 +10,10 @@ describe('sqlite-query-executor', () => {
 	it('loadDbSchema - Type Affinity', async () => {
 		const db = new Database('./mydb.db');
 		const dbSchema = loadDbSchema(db);
-		if (isLeft(dbSchema)) {
+		if (dbSchema.isErr()) {
 			assert.fail(`Shouldn't return an error`);
 		}
-		const actual = dbSchema.right.filter((col) => col.table === 'all_types');
+		const actual = dbSchema.value.filter((col) => col.table === 'all_types');
 		const expected = sqliteDbSchema.filter((col) => col.table === 'all_types');
 
 		assert.deepStrictEqual(actual, expected);
@@ -22,10 +22,10 @@ describe('sqlite-query-executor', () => {
 	it('loadDbSchema - test composite primary', async () => {
 		const db = new Database('./mydb.db');
 		const dbSchema = loadDbSchema(db);
-		if (isLeft(dbSchema)) {
+		if (dbSchema.isErr()) {
 			assert.fail(`Shouldn't return an error`);
 		}
-		const actual = dbSchema.right.filter((col) => col.table === 'playlist_track');
+		const actual = dbSchema.value.filter((col) => col.table === 'playlist_track');
 		const expected: ColumnSchema[] = [
 			{
 				schema: 'main',
@@ -55,11 +55,11 @@ describe('sqlite-query-executor', () => {
 		db.exec(`attach database './users.db' as users`);
 
 		const dbSchema = loadDbSchema(db);
-		if (isLeft(dbSchema)) {
+		if (dbSchema.isErr()) {
 			assert.fail(`Shouldn't return an error`);
 		}
 
-		const actual = dbSchema.right.filter((col) => col.table === 'mytable1' || (col.table === 'users' && col.schema === 'users'));
+		const actual = dbSchema.value.filter((col) => col.table === 'mytable1' || (col.table === 'users' && col.schema === 'users'));
 		const expected: ColumnSchema[] = [
 			{
 				column: 'id',
@@ -105,11 +105,11 @@ describe('sqlite-query-executor', () => {
 		const db = new Database('./mydb.db');
 
 		const dbSchema = loadDbSchema(db);
-		if (isLeft(dbSchema)) {
+		if (dbSchema.isErr()) {
 			assert.fail(`Shouldn't return an error`);
 		}
 
-		const actual = dbSchema.right.filter((col) => col.table === 'mytable2_fts');
+		const actual = dbSchema.value.filter((col) => col.table === 'mytable2_fts');
 		const expected: ColumnSchema[] = [
 			{
 				column: 'id',
@@ -164,11 +164,11 @@ describe('sqlite-query-executor', () => {
 		const db = new Database('./mydb.db');
 
 		const dbSchema = loadDbSchema(db);
-		if (isLeft(dbSchema)) {
+		if (dbSchema.isErr()) {
 			assert.fail(`Shouldn't return an error`);
 		}
 
-		const actual = dbSchema.right.filter((col) => col.table === 'generated_column');
+		const actual = dbSchema.value.filter((col) => col.table === 'generated_column');
 		const expected: ColumnSchema[] = [
 			{
 				column: 'id',
@@ -214,11 +214,11 @@ describe('sqlite-query-executor', () => {
 		const db = new Database('./mydb.db');
 
 		const dbSchema = loadDbSchema(db);
-		if (isLeft(dbSchema)) {
+		if (dbSchema.isErr()) {
 			assert.fail(`Shouldn't return an error`);
 		}
 
-		const actual = dbSchema.right.filter((col) => col.table === 'json_each');
+		const actual = dbSchema.value.filter((col) => col.table === 'json_each');
 		const expected: ColumnSchema[] = [
 			{
 				column: 'key',
@@ -334,11 +334,11 @@ describe('sqlite-query-executor', () => {
 		const db = new Database('./mydb.db');
 
 		const dbSchema = loadDbSchema(db);
-		if (isLeft(dbSchema)) {
+		if (dbSchema.isErr()) {
 			assert.fail(`Shouldn't return an error`);
 		}
 
-		const actual = dbSchema.right.filter(col => col.table === 'albums');
+		const actual = dbSchema.value.filter(col => col.table === 'albums');
 		const expected: ColumnSchema[] = [
 			{
 				column: "AlbumId",
@@ -375,11 +375,11 @@ describe('sqlite-query-executor', () => {
 		const db = new Database('./mydb.db');
 
 		const queryResult = loadCreateTableStmtWithCheckConstraint(db);
-		if (isLeft(queryResult)) {
-			assert.fail(`Shouldn't return an error: ` + queryResult.left.description);
+		if (queryResult.isErr()) {
+			assert.fail(`Shouldn't return an error: ` + queryResult.error.description);
 		}
 
-		const actual = queryResult.right;
+		const actual = queryResult.value;
 		const expected = replaceNewlines(`CREATE TABLE all_types (
     int_column INT,
     integer_column INTEGER,

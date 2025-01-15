@@ -1,7 +1,6 @@
 import assert from 'node:assert';
 import { type NestedResultInfo, describeNestedQuery } from '../src/describe-nested-query';
 import { createMysqlClientForTest, loadMysqlSchema } from '../src/queryExectutor';
-import { isLeft } from 'fp-ts/lib/Either';
 import type { MySqlDialect } from '../src/types';
 
 describe('nested-query', () => {
@@ -77,10 +76,10 @@ describe('nested-query', () => {
 				}
 			]
 		};
-		if (isLeft(dbSchema)) {
-			assert.fail(`Shouldn't return an error: ${dbSchema.left.description}`);
+		if (dbSchema.isErr()) {
+			assert.fail(`Shouldn't return an error: ${dbSchema.error.description}`);
 		}
-		const actual = describeNestedQuery(sql, dbSchema.right);
+		const actual = describeNestedQuery(sql, dbSchema.value);
 
 		assert.deepStrictEqual(actual, expectedModel);
 	});
@@ -153,10 +152,10 @@ describe('nested-query', () => {
 				}
 			]
 		};
-		if (isLeft(dbSchema)) {
-			assert.fail(`Shouldn't return an error: ${dbSchema.left.description}`);
+		if (dbSchema.isErr()) {
+			assert.fail(`Shouldn't return an error: ${dbSchema.error.description}`);
 		}
-		const actual = describeNestedQuery(sql, dbSchema.right);
+		const actual = describeNestedQuery(sql, dbSchema.value);
 
 		assert.deepStrictEqual(actual, expectedModel);
 	});
@@ -229,10 +228,10 @@ describe('nested-query', () => {
 				}
 			]
 		};
-		if (isLeft(dbSchema)) {
-			assert.fail(`Shouldn't return an error: ${dbSchema.left.description}`);
+		if (dbSchema.isErr()) {
+			assert.fail(`Shouldn't return an error: ${dbSchema.error.description}`);
 		}
-		const actual = describeNestedQuery(sql, dbSchema.right);
+		const actual = describeNestedQuery(sql, dbSchema.value);
 
 		assert.deepStrictEqual(actual, expectedModel);
 	});
@@ -329,10 +328,10 @@ describe('nested-query', () => {
 				}
 			]
 		};
-		if (isLeft(dbSchema)) {
-			assert.fail(`Shouldn't return an error: ${dbSchema.left.description}`);
+		if (dbSchema.isErr()) {
+			assert.fail(`Shouldn't return an error: ${dbSchema.error.description}`);
 		}
-		const actual = describeNestedQuery(sql, dbSchema.right);
+		const actual = describeNestedQuery(sql, dbSchema.value);
 
 		assert.deepStrictEqual(actual, expectedModel);
 	});
@@ -429,10 +428,10 @@ describe('nested-query', () => {
 				}
 			]
 		};
-		if (isLeft(dbSchema)) {
-			assert.fail(`Shouldn't return an error: ${dbSchema.left.description}`);
+		if (dbSchema.isErr()) {
+			assert.fail(`Shouldn't return an error: ${dbSchema.error.description}`);
 		}
-		const actual = describeNestedQuery(sql, dbSchema.right);
+		const actual = describeNestedQuery(sql, dbSchema.value);
 
 		assert.deepStrictEqual(actual, expectedModel);
 	});
@@ -549,10 +548,10 @@ describe('nested-query', () => {
 				}
 			]
 		};
-		if (isLeft(dbSchema)) {
-			assert.fail(`Shouldn't return an error: ${dbSchema.left.description}`);
+		if (dbSchema.isErr()) {
+			assert.fail(`Shouldn't return an error: ${dbSchema.error.description}`);
 		}
-		const actual = describeNestedQuery(sql, dbSchema.right);
+		const actual = describeNestedQuery(sql, dbSchema.value);
 
 		assert.deepStrictEqual(actual, expectedModel);
 	});
@@ -692,10 +691,10 @@ describe('nested-query', () => {
 				}
 			]
 		};
-		if (isLeft(dbSchema)) {
-			assert.fail(`Shouldn't return an error: ${dbSchema.left.description}`);
+		if (dbSchema.isErr()) {
+			assert.fail(`Shouldn't return an error: ${dbSchema.error.description}`);
 		}
-		const actual = describeNestedQuery(sql, dbSchema.right);
+		const actual = describeNestedQuery(sql, dbSchema.value);
 
 		assert.deepStrictEqual(actual, expectedModel);
 	});
@@ -763,10 +762,10 @@ describe('nested-query', () => {
 				}
 			]
 		};
-		if (isLeft(dbSchema)) {
-			assert.fail(`Shouldn't return an error: ${dbSchema.left.description}`);
+		if (dbSchema.isErr()) {
+			assert.fail(`Shouldn't return an error: ${dbSchema.error.description}`);
 		}
-		const actual = describeNestedQuery(sql, dbSchema.right);
+		const actual = describeNestedQuery(sql, dbSchema.value);
 
 		assert.deepStrictEqual(actual, expectedModel);
 	});
@@ -854,10 +853,10 @@ describe('nested-query', () => {
 				}
 			]
 		};
-		if (isLeft(dbSchema)) {
-			assert.fail(`Shouldn't return an error: ${dbSchema.left.description}`);
+		if (dbSchema.isErr()) {
+			assert.fail(`Shouldn't return an error: ${dbSchema.error.description}`);
 		}
-		const actual = describeNestedQuery(sql, dbSchema.right);
+		const actual = describeNestedQuery(sql, dbSchema.value);
 
 		assert.deepStrictEqual(actual, expectedModel);
 	});
@@ -936,10 +935,10 @@ describe('nested-query', () => {
 				}
 			]
 		};
-		if (isLeft(dbSchema)) {
-			assert.fail(`Shouldn't return an error: ${dbSchema.left.description}`);
+		if (dbSchema.isErr()) {
+			assert.fail(`Shouldn't return an error: ${dbSchema.error.description}`);
 		}
-		const actual = describeNestedQuery(sql, dbSchema.right);
+		const actual = describeNestedQuery(sql, dbSchema.value);
 
 		assert.deepStrictEqual(actual, expectedModel);
 	});

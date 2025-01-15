@@ -4,23 +4,15 @@ import path, { parse } from 'node:path';
 import chokidar from 'chokidar';
 import yargs from 'yargs';
 import { generateTsFile, writeFile } from './code-generator';
-import { createMysqlClient, loadMysqlSchema, loadMySqlTableSchema, selectTablesFromSchema } from './queryExectutor';
 import { generateInsertStatement, generateUpdateStatement, generateDeleteStatement, generateSelectStatement } from './sql-generator';
 import type { ColumnSchema, Table } from './mysql-query-analyzer/types';
-import type { TypeSqlConfig, SqlGenOption, DatabaseClient, TypeSqlDialect, TypeSqlError, SQLiteClient, QueryType, PgDielect } from './types';
-import { type Either, isLeft, left, right } from 'fp-ts/lib/Either';
+import type { TypeSqlConfig, SqlGenOption, DatabaseClient, TypeSqlDialect, SQLiteClient, QueryType, PgDielect } from './types';
+import { type Either, isLeft, left } from 'fp-ts/lib/Either';
 import CodeBlockWriter from 'code-block-writer';
 import { globSync } from 'glob';
-import {
-	createD1Client,
-	createSqliteClient,
-	loadDbSchema,
-	selectSqliteTablesFromSchema
-} from './sqlite-query-analyzer/query-executor';
-import { createLibSqlClient } from './drivers/libsql';
+import { createClient, loadSchema, loadTableSchema, selectTables } from './schema-info';
 import { generateCrud } from './sqlite-query-analyzer/code-generator';
 import { generateCrud as generatePgCrud } from './code-generator2';
-import { createPostgresClient, loadDbSchema as loadPostgresDbSchema, mapToColumnSchema } from './drivers/postgres';
 import uniqBy from 'lodash.uniqby';
 
 const CRUD_FOLDER = 'crud';
@@ -134,33 +126,33 @@ async function compile(watch: boolean, config: TypeSqlConfig) {
 	validateDirectories(sqlDir);
 
 	const databaseClientResult = await createClient(databaseUri, dialect, attach, loadExtensions, authToken);
-	if (isLeft(databaseClientResult)) {
-		console.error(`Error: ${databaseClientResult.left.description}.`);
+	if (databaseClientResult.isErr()) {
+		console.error(`Error: ${databaseClientResult.error.description}.`);
 		return;
 	}
 
 	const includeCrudTables = config.includeCrudTables || [];
-	const databaseClient = databaseClientResult.right;
+	const databaseClient = databaseClientResult.value;
 
 	const dbSchema = await loadSchema(databaseClient);
-	if (isLeft(dbSchema)) {
-		console.error(`Error: ${dbSchema.left.description}.`);
+	if (dbSchema.isErr()) {
+		console.error(`Error: ${dbSchema.error.description}.`);
 		return;
 	}
 
-	await generateCrudTables(databaseClient, sqlDir, dbSchema.right, includeCrudTables);
+	await generateCrudTables(databaseClient, sqlDir, dbSchema.value, includeCrudTables);
 	const dirGlob = `${sqlDir}/**/*.sql`;
 
 	const sqlFiles = globSync(dirGlob);
 
-	const filesGeneration = sqlFiles.map((sqlFile) => generateTsFile(databaseClient, sqlFile, dbSchema.right, isCrudFile(sqlDir, sqlFile)));
+	const filesGeneration = sqlFiles.map((sqlFile) => generateTsFile(databaseClient, sqlFile, dbSchema.value, isCrudFile(sqlDir, sqlFile)));
 	await Promise.all(filesGeneration);
 
 	writeIndexFile(sqlDir, config);
 
 	if (watch) {
 		console.log('watching mode!');
-		watchDirectories(databaseClient, sqlDir, dbSchema.right, config);
+		watchDirectories(databaseClient, sqlDir, dbSchema.value, config);
 	} else {
 		// databaseClient.client.closeConnection();
 	}
@@ -188,20 +180,20 @@ function generateIndexContent(tsFiles: string[], config: TypeSqlConfig) {
 async function writeSql(stmtType: SqlGenOption, tableName: string, queryName: string, config: TypeSqlConfig): Promise<boolean> {
 	const { sqlDir, databaseUri, client: dialect } = config;
 	const clientResult = await createClient(databaseUri, dialect);
-	if (isLeft(clientResult)) {
-		console.error(clientResult.left.name);
+	if (clientResult.isErr()) {
+		console.error(clientResult.error.name);
 		return false;
 	}
 
-	const client = clientResult.right;
+	const client = clientResult.value;
 
 	const columnsOption = await loadTableSchema(client, tableName);
-	if (isLeft(columnsOption)) {
-		console.error(columnsOption.left.description);
+	if (columnsOption.isErr()) {
+		console.error(columnsOption.error.description);
 		return false;
 	}
 
-	const columns = columnsOption.right;
+	const columns = columnsOption.value;
 	const filePath = `${sqlDir}/${queryName}`;
 
 	const generatedOk = checkAndGenerateSql(client.type, filePath, stmtType, tableName, columns);
@@ -290,72 +282,6 @@ async function selectAllTables(client: DatabaseClient): Promise<Either<string, T
 		return left(`Error selecting table names: ${selectTablesResult.left.description}`);
 	}
 	return selectTablesResult;
-}
-
-async function createClient(databaseUri: string, dialect: TypeSqlDialect, attach?: string[], loadExtensions?: string[], authToken?: string): Promise<Either<TypeSqlError, DatabaseClient>> {
-	switch (dialect) {
-		case 'mysql2':
-			return createMysqlClient(databaseUri);
-		case 'better-sqlite3':
-		case 'bun:sqlite':
-			return createSqliteClient(dialect, databaseUri, attach || [], loadExtensions || []);
-		case 'libsql':
-			return createLibSqlClient(databaseUri, attach || [], loadExtensions || [], authToken || '');
-		case 'd1':
-			return createD1Client(dialect, databaseUri, loadExtensions || []);
-		case 'pg':
-			return createPostgresClient(databaseUri);
-	}
-}
-async function loadSchema(databaseClient: DatabaseClient): Promise<Either<TypeSqlError, ColumnSchema[]>> {
-	switch (databaseClient.type) {
-		case 'mysql2':
-			return loadMysqlSchema(databaseClient.client, databaseClient.schema);
-		case 'better-sqlite3':
-		case 'libsql':
-		case 'bun:sqlite':
-		case 'd1':
-			return loadDbSchema(databaseClient.client);
-		case 'pg':
-			const postgresSchema = await loadPostgresDbSchema(databaseClient.client);
-			const columnSchema = postgresSchema.map(schema => schema.map(col => mapToColumnSchema(col)));
-			if (columnSchema.isErr()) {
-				const typesqlError: TypeSqlError = {
-					description: columnSchema.error,
-					name: columnSchema.error
-				}
-				return left(typesqlError);
-			}
-			return right(columnSchema.value);
-	}
-}
-
-async function loadTableSchema(databaseClient: DatabaseClient, tableName: string): Promise<Either<TypeSqlError, ColumnSchema[]>> {
-	switch (databaseClient.type) {
-		case 'mysql2':
-			return loadMySqlTableSchema(databaseClient.client, databaseClient.schema, tableName);
-		case 'better-sqlite3':
-		case 'libsql':
-		case 'bun:sqlite':
-		case 'd1':
-			return await loadDbSchema(databaseClient.client);
-		case 'pg':
-			return right([]);
-	}
-}
-
-async function selectTables(databaseClient: DatabaseClient): Promise<Either<TypeSqlError, Table[]>> {
-	switch (databaseClient.type) {
-		case 'mysql2':
-			return await selectTablesFromSchema(databaseClient.client);
-		case 'better-sqlite3':
-		case 'libsql':
-		case 'bun:sqlite':
-		case 'd1':
-			return selectSqliteTablesFromSchema(databaseClient.client);
-		case 'pg':
-			return right([])
-	}
 }
 
 //https://stackoverflow.com/a/45242825

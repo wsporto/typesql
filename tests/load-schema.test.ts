@@ -1,6 +1,5 @@
 import assert from 'node:assert';
 import { createMysqlClientForTest, loadMysqlSchema } from '../src/queryExectutor';
-import { isLeft } from 'fp-ts/lib/Either';
 import type { MySqlDialect } from '../src/types';
 
 describe('load-schema', () => {
@@ -11,10 +10,10 @@ describe('load-schema', () => {
 
 	it('filter schema', async () => {
 		const actual = await loadMysqlSchema(client.client, client.schema);
-		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
 		}
-		const schemas = actual.right.map((s) => s.schema);
+		const schemas = actual.value.map((s) => s.schema);
 		const uniqueSchemas = [...new Set(schemas)];
 		assert.deepStrictEqual(uniqueSchemas, ['mydb']);
 	});

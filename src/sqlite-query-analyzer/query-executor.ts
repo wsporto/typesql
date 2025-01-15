@@ -1,4 +1,4 @@
-import { type Either, isLeft, left, right } from 'fp-ts/lib/Either';
+import { type Either, left, right } from 'fp-ts/lib/Either';
 import type { DatabaseClient, TypeSqlError } from '../types';
 import type { ColumnSchema, Table } from '../mysql-query-analyzer/types';
 import Database, { type Database as DatabaseType } from 'better-sqlite3';
@@ -6,8 +6,9 @@ import type { Database as LibSqlDatabase } from 'libsql';
 import type { EnumColumnMap, EnumMap, SQLiteType } from './types';
 import { enumParser } from './enum-parser';
 import { virtualTablesSchema } from './virtual-tables';
+import { err, ok, Result } from 'neverthrow';
 
-export function createSqliteClient(client: 'better-sqlite3' | 'bun:sqlite', databaseUri: string, attachList: string[], loadExtensions: string[]): Either<TypeSqlError, DatabaseClient> {
+export function createSqliteClient(client: 'better-sqlite3' | 'bun:sqlite' | 'd1', databaseUri: string, attachList: string[], loadExtensions: string[]): Result<DatabaseClient, TypeSqlError> {
 	const db = new Database(databaseUri);
 	for (const attach of attachList) {
 		db.exec(`attach database ${attach}`);
@@ -15,24 +16,13 @@ export function createSqliteClient(client: 'better-sqlite3' | 'bun:sqlite', data
 	for (const extension of loadExtensions) {
 		db.loadExtension(extension);
 	}
-	return right({
+	return ok({
 		type: client,
 		client: db
 	});
 }
 
-export function createD1Client(client: 'd1', databaseUri: string, loadExtensions: string[]): Either<TypeSqlError, DatabaseClient> {
-	const db = new Database(databaseUri);
-	for (const extension of loadExtensions) {
-		db.loadExtension(extension);
-	}
-	return right({
-		type: client,
-		client: db
-	});
-}
-
-export function loadDbSchema(db: DatabaseType | LibSqlDatabase): Either<TypeSqlError, ColumnSchema[]> {
+export function loadDbSchema(db: DatabaseType | LibSqlDatabase): Result<ColumnSchema[], TypeSqlError> {
 	const database_list = db
 		//@ts-ignore
 		.prepare('select name from pragma_database_list')
@@ -41,13 +31,13 @@ export function loadDbSchema(db: DatabaseType | LibSqlDatabase): Either<TypeSqlE
 	const result: ColumnSchema[] = [];
 	for (const schema of database_list) {
 		const schemaResult = loadDbSchemaForSchema(db, schema);
-		if (isLeft(schemaResult)) {
+		if (schemaResult.isErr()) {
 			return schemaResult;
 		}
-		result.push(...schemaResult.right);
+		result.push(...schemaResult.value);
 	}
 
-	return right(result.concat(virtualTablesSchema));
+	return ok(result.concat(virtualTablesSchema));
 }
 
 type TableInfo = {
@@ -122,14 +112,14 @@ function checkAffinity(type: string): SQLiteType {
 	return 'NUMERIC';
 }
 
-function loadDbSchemaForSchema(db: DatabaseType | LibSqlDatabase, schema: '' | string = ''): Either<TypeSqlError, ColumnSchema[]> {
+function loadDbSchemaForSchema(db: DatabaseType | LibSqlDatabase, schema: '' | string = ''): Result<ColumnSchema[], TypeSqlError> {
 	const tables = getTables(db, schema);
 	const createTableStmtsResult = loadCreateTableStmtWithCheckConstraint(db);
-	if (isLeft(createTableStmtsResult)) {
-		return left(createTableStmtsResult.left);
+	if (createTableStmtsResult.isErr()) {
+		return err(createTableStmtsResult.error);
 	}
-	const createTableStmts = createTableStmtsResult.right;
-	const enumMap: EnumMap = createTableStmts ? enumParser(createTableStmtsResult.right) : {};
+	const createTableStmts = createTableStmtsResult.value;
+	const enumMap: EnumMap = createTableStmts ? enumParser(createTableStmtsResult.value) : {};
 
 	const result = tables.flatMap(({ name, type }) => {
 		const tableInfoList = getTableInfo(db, schema, name);
@@ -154,7 +144,7 @@ function loadDbSchemaForSchema(db: DatabaseType | LibSqlDatabase, schema: '' | s
 		});
 		return columnSchema;
 	});
-	return right(result);
+	return ok(result);
 }
 
 function checkType(columnName: string, columnType: SQLiteType, isVT: boolean, enumColumnMap: EnumColumnMap): SQLiteType | '?' {
@@ -228,7 +218,7 @@ type CreateTableStatement = {
 	sql: string;
 }
 
-export function loadForeignKeys(db: DatabaseType | LibSqlDatabase): Either<TypeSqlError, ForeignKeyInfo[]> {
+export function loadForeignKeys(db: DatabaseType | LibSqlDatabase): Result<ForeignKeyInfo[], TypeSqlError> {
 	const sql = `
     SELECT 
 		tab.name as fromTable, 
@@ -242,12 +232,12 @@ export function loadForeignKeys(db: DatabaseType | LibSqlDatabase): Either<TypeS
 	try {
 		//@ts-ignore
 		const result = db.prepare(sql).all() as ForeignKeyInfo[];
-		return right(result);
+		return ok(result);
 	} catch (e) {
-		const err = e as Error;
-		return left({
-			name: err.name,
-			description: err.message
+		const error = e as Error;
+		return err({
+			name: error.name,
+			description: error.message
 		});
 	}
 }
@@ -272,7 +262,7 @@ export function loadCreateTableStmt(db: DatabaseType | LibSqlDatabase, tableName
 	}
 }
 
-export function loadCreateTableStmtWithCheckConstraint(db: DatabaseType | LibSqlDatabase): Either<TypeSqlError, string | null> {
+export function loadCreateTableStmtWithCheckConstraint(db: DatabaseType | LibSqlDatabase): Result<string | null, TypeSqlError> {
 	const sql = `
     SELECT 
 		GROUP_CONCAT(sql, ';') as sql
@@ -282,12 +272,12 @@ export function loadCreateTableStmtWithCheckConstraint(db: DatabaseType | LibSql
 	try {
 		//@ts-ignore
 		const result = db.prepare(sql).all() as CreateTableStatement[];
-		return right(result[0].sql);
+		return ok(result[0].sql);
 	} catch (e) {
-		const err = e as Error;
-		return left({
-			name: err.name,
-			description: err.message
+		const error = e as Error;
+		return err({
+			name: error.name,
+			description: error.message
 		});
 	}
 }

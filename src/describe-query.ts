@@ -127,11 +127,11 @@ export async function parseSql(client: MySqlDialect, sql: string): Promise<Eithe
 		return explainResult;
 	}
 	const dbSchema = await loadMysqlSchema(client.client, client.schema);
-	if (isLeft(dbSchema)) {
-		return left(dbSchema.left);
+	if (dbSchema.isErr()) {
+		return left(dbSchema.error);
 	}
 	try {
-		const result = describeSql(dbSchema.right, sql);
+		const result = describeSql(dbSchema.value, sql);
 		return right(result);
 	} catch (e: any) {
 		const InvalidSqlError: TypeSqlError = {

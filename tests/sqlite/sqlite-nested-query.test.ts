@@ -869,11 +869,11 @@ describe('sqlite-nested-query', () => {
 		const chinookDb = new Database('./mydb.db');
 		const dbSchema = loadDbSchema(chinookDb);
 
-		if (isLeft(dbSchema)) {
-			assert.fail(`Shouldn't return an error: ${dbSchema.left.description}`);
+		if (dbSchema.isErr()) {
+			assert.fail(`Shouldn't return an error: ${dbSchema.error.description}`);
 		}
 
-		const actual = parseSql(sql, dbSchema.right);
+		const actual = parseSql(sql, dbSchema.value);
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
 		}
@@ -1041,11 +1041,11 @@ describe('sqlite-nested-query', () => {
 
 		const dbSchema = loadDbSchema(db);
 
-		if (isLeft(dbSchema)) {
-			assert.fail(`Shouldn't return an error: ${dbSchema.left.description}`);
+		if (dbSchema.isErr()) {
+			assert.fail(`Shouldn't return an error: ${dbSchema.error.description}`);
 		}
 
-		const actual = parseSql(sql, dbSchema.right);
+		const actual = parseSql(sql, dbSchema.value);
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
 		}
@@ -1136,11 +1136,11 @@ describe('sqlite-nested-query', () => {
 
 		const dbSchema = loadDbSchema(db);
 
-		if (isLeft(dbSchema)) {
-			assert.fail(`Shouldn't return an error: ${dbSchema.left.description}`);
+		if (dbSchema.isErr()) {
+			assert.fail(`Shouldn't return an error: ${dbSchema.error.description}`);
 		}
 
-		const actual = parseSql(sql, dbSchema.right);
+		const actual = parseSql(sql, dbSchema.value);
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
 		}
@@ -1276,11 +1276,11 @@ INNER JOIN media_types mt on mt.MediaTypeId = t.MediaTypeId`;
 
 		const dbSchema = loadDbSchema(db);
 
-		if (isLeft(dbSchema)) {
-			assert.fail(`Shouldn't return an error: ${dbSchema.left.description}`);
+		if (dbSchema.isErr()) {
+			assert.fail(`Shouldn't return an error: ${dbSchema.error.description}`);
 		}
 
-		const actual = parseSql(sql, dbSchema.right);
+		const actual = parseSql(sql, dbSchema.value);
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
 		}

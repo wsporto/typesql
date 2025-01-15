@@ -1,8 +1,8 @@
-import { type Either, right } from 'fp-ts/lib/Either';
+import { ok, Result } from 'neverthrow';
 import type { DatabaseClient, TypeSqlError } from '../types';
 import Database from 'libsql';
 
-export function createLibSqlClient(url: string, attachList: string[], loadExtensions: string[], authToken: string): Either<TypeSqlError, DatabaseClient> {
+export function createLibSqlClient(url: string, attachList: string[], loadExtensions: string[], authToken: string): Result<DatabaseClient, TypeSqlError> {
 	const opts = {
 		authToken: authToken
 	} as any;
@@ -15,7 +15,7 @@ export function createLibSqlClient(url: string, attachList: string[], loadExtens
 		db.loadExtension(extension);
 	}
 
-	return right({
+	return ok({
 		type: 'libsql',
 		client: db
 	});

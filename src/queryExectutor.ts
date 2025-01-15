@@ -2,6 +2,7 @@ import { type Connection, type Pool, createPool } from 'mysql2/promise';
 import { type Either, right, left, isLeft } from 'fp-ts/lib/Either';
 import type { MySqlDialect, TypeSqlError } from './types';
 import type { ColumnSchema, Table } from './mysql-query-analyzer/types';
+import { ResultAsync } from 'neverthrow';
 
 const connectionNotOpenError: TypeSqlError = {
 	name: 'Connection error',
@@ -10,33 +11,38 @@ const connectionNotOpenError: TypeSqlError = {
 
 export async function createMysqlClientForTest(databaseUri: string): Promise<MySqlDialect> {
 	const client = await createMysqlClient(databaseUri);
-	if (isLeft(client)) {
+	if (client.isErr()) {
 		throw Error('Error createMysqlClientForTest');
 	}
-	return client.right;
+	return client.value;
 }
 
-export async function createMysqlClient(databaseUri: string): Promise<Either<TypeSqlError, MySqlDialect>> {
-	try {
-		const pool = await createPool(databaseUri);
-		//@ts-ignore
-		const schema = pool.pool.config.connectionConfig.database;
-		const databaseVersion = await getDatabaseVersion(pool);
+export function createMysqlClient(databaseUri: string): ResultAsync<MySqlDialect, TypeSqlError> {
+	return ResultAsync.fromThrowable(
+		async () => {
+			const pool = await createPool(databaseUri);
+			//@ts-ignore
+			const schema = pool.pool.config.connectionConfig.database;
+			const databaseVersion = await getDatabaseVersion(pool);
 
-		return right({
-			type: 'mysql2',
-			client: pool,
-			databaseVersion,
-			schema,
-			isVersion8: isVersion8(databaseVersion)
-		});
-	} catch (e: any) {
-		const connError: TypeSqlError = {
-			name: 'Connection error',
-			description: e.message
-		};
-		return left(connError);
-	}
+			const result: MySqlDialect = {
+				type: 'mysql2',
+				client: pool,
+				databaseVersion,
+				schema,
+				isVersion8: isVersion8(databaseVersion)
+			};
+			return result;
+		},
+		(err) => {
+			const error = err as Error;
+			const connError: TypeSqlError = {
+				name: 'Connection error',
+				description: error.message
+			};
+			return connError;
+		}
+	)()
 }
 
 async function getDatabaseVersion(conn: Connection) {
@@ -45,7 +51,7 @@ async function getDatabaseVersion(conn: Connection) {
 	return mySqlVersion;
 }
 
-export async function loadMysqlSchema(conn: Connection, schema: string): Promise<Either<TypeSqlError, ColumnSchema[]>> {
+export function loadMysqlSchema(conn: Connection, schema: string): ResultAsync<ColumnSchema[], TypeSqlError> {
 	const sql = `
         SELECT 
             TABLE_SCHEMA as "schema", TABLE_NAME as "table", 
@@ -59,17 +65,28 @@ export async function loadMysqlSchema(conn: Connection, schema: string): Promise
         ORDER BY TABLE_NAME, ORDINAL_POSITION
         `;
 
-	return conn.execute(sql, [schema]).then((res) => {
-		const columns = res[0] as ColumnSchema[];
-		return right(columns.map((col) => ({ ...col, notNull: !!+col.notNull }))); //convert 1 to true, 0 to false
-	});
+
+	return ResultAsync.fromThrowable(
+		async () => {
+			const result1 = conn.execute(sql, [schema]).then((res) => {
+				const columns = res[0] as ColumnSchema[];
+				return columns.map((col) => ({ ...col, notNull: !!+col.notNull })); //convert 1 to true, 0 to false
+			});
+			return result1;
+		},
+		(err) => {
+			const error = err as Error;
+			const connError: TypeSqlError = {
+				name: 'Connection error',
+				description: error.message
+			};
+			return connError;
+		}
+	)();
 }
 
-export async function loadMySqlTableSchema(
-	conn: Connection,
-	schema: string,
-	tableName: string
-): Promise<Either<TypeSqlError, ColumnSchema[]>> {
+export function loadMySqlTableSchema(conn: Connection, schema: string, tableName: string
+): ResultAsync<ColumnSchema[], TypeSqlError> {
 	const sql = `
     SELECT 
         TABLE_SCHEMA as "schema", 
@@ -85,10 +102,22 @@ export async function loadMySqlTableSchema(
     ORDER BY TABLE_NAME, ORDINAL_POSITION
     `;
 
-	return conn.execute(sql, [schema, tableName]).then((res) => {
-		const columns = res[0] as ColumnSchema[];
-		return right(columns);
-	});
+	return ResultAsync.fromThrowable(
+		async () => {
+			return conn.execute(sql, [schema, tableName]).then((res) => {
+				const columns = res[0] as ColumnSchema[];
+				return columns;
+			})
+		},
+		(err: any) => {
+			const error = err as Error;
+			const connError: TypeSqlError = {
+				name: 'Connection error',
+				description: error.message
+			};
+			return connError;
+		})()
+
 }
 
 export async function selectTablesFromSchema(conn: Connection): Promise<Either<TypeSqlError, Table[]>> {

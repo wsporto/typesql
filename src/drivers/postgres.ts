@@ -1,8 +1,7 @@
 import postgres, { Sql } from 'postgres';
 import { PostgresColumnSchema, DescribeQueryColumn, PostgresDescribe } from './types';
 import { DatabaseClient, TypeSqlError } from '../types';
-import { Either, right } from 'fp-ts/lib/Either';
-import { ResultAsync } from 'neverthrow';
+import { ok, Result, ResultAsync } from 'neverthrow';
 import { ColumnSchema } from '../mysql-query-analyzer/types';
 import { postgresTypes } from '../dialects/postgres';
 
@@ -116,9 +115,9 @@ export function postgresAnalyze(sql: Sql, sqlQuery: string): ResultAsync<string[
 	)();
 }
 
-export function createPostgresClient(databaseUri: string): Either<TypeSqlError, DatabaseClient> {
+export function createPostgresClient(databaseUri: string): Result<DatabaseClient, TypeSqlError> {
 	const db = postgres(databaseUri);
-	return right({
+	return ok({
 		type: 'pg',
 		client: db
 	});
