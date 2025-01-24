@@ -4,6 +4,7 @@ import { DatabaseClient, TypeSqlError } from '../types';
 import { ok, Result, ResultAsync } from 'neverthrow';
 import { ColumnSchema } from '../mysql-query-analyzer/types';
 import { postgresTypes } from '../dialects/postgres';
+import { ForeignKeyInfo } from '../sqlite-query-analyzer/query-executor';
 
 export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], string> {
 	return ResultAsync.fromThrowable(
@@ -121,4 +122,43 @@ export function createPostgresClient(databaseUri: string): Result<DatabaseClient
 		type: 'pg',
 		client: db
 	});
+}
+
+export function loadForeignKeys(sql: Sql): ResultAsync<ForeignKeyInfo[], TypeSqlError> {
+	return ResultAsync.fromThrowable(
+		async () => {
+			const result = await sql<ForeignKeyInfo[]>`
+			SELECT 
+				cl1.relname AS "fromTable",
+				cl2.relname AS "toTable",
+				att1.attname AS "fromColumn",
+				att2.attname AS "toColumn"
+			FROM 
+				pg_constraint AS c
+			JOIN 
+				pg_attribute AS att1 ON att1.attnum = ANY(c.conkey) AND att1.attrelid = c.conrelid
+			JOIN 
+				pg_attribute AS att2 ON att2.attnum = ANY(c.confkey) AND att2.attrelid = c.confrelid
+			JOIN 
+				pg_class AS cl1 ON cl1.oid = att1.attrelid
+			JOIN 
+				pg_class AS cl2 ON cl2.oid = att2.attrelid
+			JOIN 
+				pg_namespace AS ns1 ON ns1.oid = cl1.relnamespace
+			JOIN 
+				pg_namespace AS ns2 ON ns2.oid = cl2.relnamespace
+			WHERE 
+				c.contype = 'f'`;
+
+			return result;
+		},
+		(err) => {
+			const error = err as Error;
+			const typesqlError: TypeSqlError = {
+				name: error.name,
+				description: error.message
+			}
+			return typesqlError;
+		}
+	)();
 }

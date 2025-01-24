@@ -4,7 +4,7 @@ import { ColumnSchema, Table } from './mysql-query-analyzer/types';
 import { createMysqlClient, loadMysqlSchema, loadMySqlTableSchema, selectTablesFromSchema } from './queryExectutor';
 import { createSqliteClient, ForeignKeyInfo, loadDbSchema, loadForeignKeys as loadSqliteForeignKeys, selectSqliteTablesFromSchema } from './sqlite-query-analyzer/query-executor';
 import { DatabaseClient, TypeSqlDialect, TypeSqlError } from './types';
-import { loadDbSchema as loadPostgresDbSchema, mapToColumnSchema } from './drivers/postgres';
+import { loadDbSchema as loadPostgresDbSchema, mapToColumnSchema, loadForeignKeys as loadPostgresForeignKeys } from './drivers/postgres';
 import { okAsync, ResultAsync } from 'neverthrow';
 import { Either, right } from 'fp-ts/lib/Either';
 
@@ -74,8 +74,9 @@ export function loadForeignKeys(databaseClient: DatabaseClient): ResultAsync<For
 		case 'd1':
 			return loadSqliteForeignKeys(databaseClient.client).asyncAndThen(res => okAsync(res));
 		case 'mysql2':
-		case 'pg':
 			return okAsync([]);
+		case 'pg':
+			return loadPostgresForeignKeys(databaseClient.client);
 	}
 }
 
