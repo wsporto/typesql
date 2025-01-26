@@ -9,6 +9,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "PRI",
+		autoincrement: true
 	},
 	{
 		oid: 16613,
@@ -18,6 +19,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 25,
 		is_nullable: false,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16437,
@@ -27,6 +29,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 16,
 		is_nullable: true,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16437,
@@ -36,6 +39,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 17,
 		is_nullable: true,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16437,
@@ -45,6 +49,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 1042,
 		is_nullable: true,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16437,
@@ -54,6 +59,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 19,
 		is_nullable: true,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16437,
@@ -63,6 +69,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 20,
 		is_nullable: true,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16437,
@@ -72,6 +79,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 21,
 		is_nullable: true,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16437,
@@ -81,6 +89,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: true,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16437,
@@ -90,6 +99,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 25,
 		is_nullable: true,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16437,
@@ -99,6 +109,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 1043,
 		is_nullable: true,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16437,
@@ -108,6 +119,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 1082,
 		is_nullable: true,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16437,
@@ -117,6 +129,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 1560,
 		is_nullable: true,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16437,
@@ -126,6 +139,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 1700,
 		is_nullable: true,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16437,
@@ -135,6 +149,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 2950,
 		is_nullable: true,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16437,
@@ -144,6 +159,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 700,
 		is_nullable: true,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16437,
@@ -153,6 +169,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 701,
 		is_nullable: true,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16437,
@@ -162,6 +179,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 1114,
 		is_nullable: true,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16437,
@@ -171,6 +189,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 1114,
 		is_nullable: false,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16437,
@@ -180,6 +199,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 1184,
 		is_nullable: true,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16437,
@@ -189,6 +209,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 1184,
 		is_nullable: false,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16555,
@@ -198,6 +219,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "PRI",
+		autoincrement: true
 	},
 	{
 		oid: 16555,
@@ -207,6 +229,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 1043,
 		is_nullable: true,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16555,
@@ -216,6 +239,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16555,
@@ -225,6 +249,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16584,
@@ -234,6 +259,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "PRI",
+		autoincrement: true
 	},
 	{
 		oid: 16584,
@@ -243,6 +269,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 25,
 		is_nullable: false,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16584,
@@ -252,6 +279,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 25,
 		is_nullable: true,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16573,
@@ -261,6 +289,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "PRI",
+		autoincrement: true
 	},
 	{
 		oid: 16573,
@@ -270,6 +299,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 25,
 		is_nullable: false,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16573,
@@ -279,6 +309,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 25,
 		is_nullable: false,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16595,
@@ -288,6 +319,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "PRI",
+		autoincrement: true
 	},
 	{
 		oid: 16595,
@@ -297,6 +329,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 20,
 		is_nullable: false,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16595,
@@ -306,6 +339,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 20,
 		is_nullable: false,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16595,
@@ -315,6 +349,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16624,
@@ -324,6 +359,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "PRI",
+		autoincrement: true
 	},
 	{
 		oid: 16624,
@@ -333,6 +369,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16624,
@@ -342,6 +379,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: true,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16472,
@@ -351,6 +389,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "PRI",
+		autoincrement: true
 	},
 	{
 		oid: 16472,
@@ -360,6 +399,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 25,
 		is_nullable: false,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16472,
@@ -369,6 +409,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16472,
@@ -378,6 +419,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16396,
@@ -387,6 +429,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "PRI",
+		autoincrement: true
 	},
 	{
 		oid: 16396,
@@ -396,6 +439,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: true,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16403,
@@ -405,6 +449,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "PRI",
+		autoincrement: true
 	},
 	{
 		oid: 16403,
@@ -414,6 +459,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 25,
 		is_nullable: true,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16403,
@@ -423,6 +469,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 25,
 		is_nullable: true,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16413,
@@ -432,6 +479,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "PRI",
+		autoincrement: true
 	},
 	{
 		oid: 16413,
@@ -441,6 +489,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 700,
 		is_nullable: true,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16413,
@@ -450,6 +499,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 25,
 		is_nullable: false,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16421,
@@ -459,6 +509,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 25,
 		is_nullable: false,
 		column_key: "PRI",
+		autoincrement: false
 	},
 	{
 		oid: 16421,
@@ -468,6 +519,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 25,
 		is_nullable: true,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16421,
@@ -477,6 +529,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: true,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16429,
@@ -486,6 +539,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "PRI",
+		autoincrement: false
 	},
 	{
 		oid: 16429,
@@ -495,6 +549,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 25,
 		is_nullable: true,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16429,
@@ -504,6 +559,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: true,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16521,
@@ -513,6 +569,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "PRI",
+		autoincrement: true
 	},
 	{
 		oid: 16521,
@@ -522,6 +579,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16521,
@@ -531,6 +589,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16456,
@@ -540,6 +599,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "PRI",
+		autoincrement: true
 	},
 	{
 		oid: 16456,
@@ -549,6 +609,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 25,
 		is_nullable: false,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16456,
@@ -558,6 +619,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 25,
 		is_nullable: false,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16456,
@@ -567,6 +629,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: true,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16539,
@@ -576,6 +639,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "PRI",
+		autoincrement: true
 	},
 	{
 		oid: 16539,
@@ -585,6 +649,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 25,
 		is_nullable: false,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16539,
@@ -594,6 +659,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16493,
@@ -603,6 +669,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "PRI",
+		autoincrement: true
 	},
 	{
 		oid: 16493,
@@ -612,6 +679,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 25,
 		is_nullable: false,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16493,
@@ -621,6 +689,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16510,
@@ -630,6 +699,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "PRI",
+		autoincrement: true
 	},
 	{
 		oid: 16510,
@@ -639,6 +709,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 25,
 		is_nullable: false,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16445,
@@ -648,6 +719,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "PRI",
+		autoincrement: true
 	},
 	{
 		oid: 16445,
@@ -657,6 +729,7 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 25,
 		is_nullable: false,
 		column_key: "",
+		autoincrement: false
 	},
 	{
 		oid: 16445,
@@ -666,5 +739,6 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 25,
 		is_nullable: true,
 		column_key: "",
+		autoincrement: false
 	}
 ]

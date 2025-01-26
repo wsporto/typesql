@@ -21,7 +21,17 @@ export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], stri
 					WHEN con.contype = 'p' THEN 'PRI'  -- Primary key
 					WHEN con.contype = 'u' THEN 'UNI'  -- Unique constraint
 					ELSE ''  -- Otherwise, empty string
-    			END AS column_key
+    			END AS column_key,
+				CASE
+					WHEN (
+						-- Check if the column is of type SERIAL
+						col.column_default LIKE 'nextval%'
+						OR 
+						-- Check if the column is GENERATED ALWAYS AS IDENTITY
+						col.is_identity = 'YES'
+					) THEN true
+					ELSE false
+				END AS autoincrement
 			FROM 
 				information_schema.tables t
 			JOIN 
@@ -48,7 +58,8 @@ export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], stri
 				column_name: row.column_name,
 				type_id: row.type_id,
 				is_nullable: row.is_nullable === 'YES',
-				column_key: row.column_key
+				column_key: row.column_key,
+				autoincrement: row.autoincrement
 			} satisfies PostgresColumnSchema));
 		},
 		(reason: any) => {
@@ -68,7 +79,8 @@ export function mapToColumnSchema(col: PostgresColumnSchema): ColumnSchema {
 		notNull: !col.is_nullable,
 		schema: col.table_schema,
 		table: col.table_name,
-		hidden: 0
+		hidden: 0,
+		autoincrement: col.autoincrement
 	}
 	return columnSchema;
 }
