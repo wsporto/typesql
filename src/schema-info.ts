@@ -100,10 +100,10 @@ export function loadSchemaInfo(databaseUri: string, client: TypeSqlDialect): Res
 	return result;
 }
 
-function closeClient(db: DatabaseClient) {
+export async function closeClient(db: DatabaseClient) {
 	switch (db.type) {
 		case 'mysql2':
-			db.client.end();
+			await db.client.end();
 			return;
 		case 'better-sqlite3':
 			db.client.close();
@@ -118,7 +118,7 @@ function closeClient(db: DatabaseClient) {
 			db.client.close();
 			return;
 		case 'pg':
-			db.client.end();
+			await db.client.end();
 			return;
 	}
 }

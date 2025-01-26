@@ -10,7 +10,7 @@ import type { TypeSqlConfig, SqlGenOption, DatabaseClient, TypeSqlDialect, SQLit
 import { type Either, isLeft, left } from 'fp-ts/lib/Either';
 import CodeBlockWriter from 'code-block-writer';
 import { globSync } from 'glob';
-import { createClient, loadSchema, loadTableSchema, selectTables } from './schema-info';
+import { closeClient, createClient, loadSchema, loadTableSchema, selectTables } from './schema-info';
 import { generateCrud } from './sqlite-query-analyzer/code-generator';
 import { generateCrud as generatePgCrud } from './code-generator2';
 import uniqBy from 'lodash.uniqby';
@@ -154,7 +154,7 @@ async function compile(watch: boolean, config: TypeSqlConfig) {
 		console.log('watching mode!');
 		watchDirectories(databaseClient, sqlDir, dbSchema.value, config);
 	} else {
-		// databaseClient.client.closeConnection();
+		closeClient(databaseClient);
 	}
 }
 
