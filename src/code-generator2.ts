@@ -1,6 +1,6 @@
 import CodeBlockWriter from 'code-block-writer';
 import { capitalize, convertToCamelCaseName, generateRelationType, getOperator, hasStringColumn, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor } from './code-generator';
-import { ParameterDef, PgDielect, QueryType, SchemaDef, TsFieldDescriptor, TsParameterDescriptor, TypeSqlError } from './types';
+import { CrudQueryType, ParameterDef, PgDielect, QueryType, SchemaDef, TsFieldDescriptor, TsParameterDescriptor, TypeSqlError } from './types';
 import { describeQuery } from './postgres-query-analyzer/describe';
 import { ColumnInfo, ColumnSchema } from './mysql-query-analyzer/types';
 import { mapColumnType } from './dialects/postgres';
@@ -63,7 +63,7 @@ function generateTsCode(
 	const generateOrderBy = tsDescriptor.orderByColumns != null && tsDescriptor.orderByColumns.length > 0;
 
 	const codeWriter = getCodeWriter(client);
-	codeWriter.writeImports(writer);
+	codeWriter.writeImports(writer, schemaDef.queryType);
 	if (tsDescriptor.dynamicQuery2) {
 		writer.writeLine(`import { EOL } from 'os';`);
 	}
@@ -76,8 +76,10 @@ function generateTsCode(
 		writer.blankLine();
 		writeParamsType(writer, paramsTypeName, uniqueParams, generateOrderBy, orderByTypeName)
 	}
-	writer.blankLine();
-	writeResultType(writer, resultTypeName, tsDescriptor.columns);
+	if (schemaDef.queryType !== 'Copy') {
+		writer.blankLine();
+		writeResultType(writer, resultTypeName, tsDescriptor.columns);
+	}
 	const dynamicQueryInfo = tsDescriptor.dynamicQuery2;
 	if (dynamicQueryInfo) {
 		writer.blankLine();
@@ -476,7 +478,7 @@ function getCodeWriter(client: 'pg'): CodeWriter {
 }
 
 type CodeWriter = {
-	writeImports: (writer: CodeBlockWriter) => void;
+	writeImports: (writer: CodeBlockWriter, queryType: QueryType) => void;
 	writeExecFunction: (writer: CodeBlockWriter, params: ExecFunctionParameters) => void;
 }
 
@@ -497,103 +499,156 @@ type ExecFunctionParameters = {
 }
 
 const postgresCodeWriter: CodeWriter = {
-	writeImports: function (writer: CodeBlockWriter): void {
+	writeImports: function (writer: CodeBlockWriter, queryType: QueryType): void {
 		writer.writeLine(`import pg from 'pg';`);
+		if (queryType === 'Copy') {
+			writer.writeLine(`import { from as copyFrom } from 'pg-copy-streams';`);
+			writer.writeLine(`import { pipeline } from 'stream/promises';`);
+			writer.writeLine(`import { Readable } from 'stream';`);
+		}
 	},
-
 	writeExecFunction: function (writer: CodeBlockWriter, params: ExecFunctionParameters): void {
-		const { functionName, paramsType, dataType, returnType, parameters, generateNested, nestedType } = params;
-		let functionParams = 'client: pg.Client | pg.Pool';
-		if (params.data.length > 0) {
-			functionParams += `, data: ${dataType}`;
+		if (params.queryType === 'Copy') {
+			_writeCopyFunction(writer, params);
 		}
-		if (parameters.length > 0) {
-			functionParams += `, params: ${paramsType}`;
-		}
-		const allParamters = [...params.data.map(param => paramToDriver(param, 'data')),
-		...parameters.map(param => paramToDriver(param, 'params')),
-		...parameters.filter(param => isList(param)).map(param => `...params.${param.name}.slice(1)`)];
-		const paramValues = allParamters.length > 0 ? `, values: [${allParamters.join(', ')}]` : '';
-		const orNull = params.queryType === 'Select' ? ' | null' : '';
-		const functionReturnType = params.multipleRowsResult ? `${returnType}[]` : `${returnType}${orNull}`;
-		const hasListParams = parameters.some(param => !param.isArray && param.tsType.endsWith('[]'));
-		if (hasListParams) {
-			writer.writeLine('let currentIndex: number;');
-		}
-		writer.write(`export async function ${functionName}(${functionParams}): Promise<${functionReturnType}>`).block(() => {
-			if (hasListParams) {
-				writer.writeLine(`currentIndex = ${params.data.length + params.parameters.length};`);
-			}
-			writeSql(writer, params.sql);
-			if (params.queryType === 'Select' || params.returning) {
-				writer.write(`return client.query({ text: sql, rowMode: 'array'${paramValues} })`).newLine();
-				if (params.multipleRowsResult) {
-					writer.indent().write(`.then(res => res.rows.map(row => mapArrayTo${returnType}(row)));`)
-				}
-				else if (params.returning) {
-					writer.indent().write(`.then(res => mapArrayTo${returnType}(res.rows[0]));`)
-				}
-				else {
-					writer.indent().write(`.then(res => res.rows.length > 0 ? mapArrayTo${returnType}(res.rows[0]) : null);`)
-				}
-			}
-			else {
-				writer.write(`return client.query({ text: sql${paramValues} })`).newLine();
-				writer.indent().write(`.then(res => mapArrayTo${returnType}(res));`)
-			}
-		});
-
-		if (hasListParams) {
-			writer.blankLine();
-			writer.write(`function generatePlaceholders(param: string, paramsArray: any[]): string`).block(() => {
-				writer.write('return paramsArray').newLine();
-				writer.indent().write('.map((_, index) => {').newLine();
-				writer.indent(2).write(`if (index === 0) {`).newLine();
-				writer.indent(3).write(`return param`).newLine();
-				writer.indent(2).write(`}`).newLine();
-				writer.indent(2).write('currentIndex++;').newLine();
-				writer.indent(2).write('return `$${currentIndex}`;').newLine();
-				writer.indent().write('})');
-				writer.newLine();
-				writer.indent().write(`.join(', ');`);
-			})
-		}
-		writer.blankLine();
-		writer.write(`function mapArrayTo${returnType}(data: any) `).block(() => {
-			writer.write(`const result: ${returnType} = `).block(() => {
-				params.columns.forEach((col, index) => {
-					const separator = index < params.columns.length - 1 ? ',' : '';
-					if (params.queryType === 'Select' || params.returning) {
-						writer.writeLine(`${col.name}: ${toDriver(`data[${index}]`, col)}${separator}`);
-					}
-					else {
-						writer.writeLine(`${col.name}: data.${col.name}${separator}`);
-					}
-				});
-			});
-			writer.writeLine('return result;');
-		});
-		function writeSql(writer: CodeBlockWriter, sql: string) {
-			const sqlSplit = sql.split('\n');
-			writer.write('const sql = `').newLine();
-			sqlSplit.forEach((sqlLine) => {
-				writer.indent().write(sqlLine).newLine();
-			});
-			writer.indent().write('`').newLine();
-		}
-		if (generateNested) {
-			writer.blankLine();
-			const relationType = generateRelationType(functionName, nestedType);
-			writer.write(`export async function ${functionName}Nested(${functionParams}): Promise<${relationType}[]>`).block(() => {
-				const params = parameters.length > 0 ? ', params' : '';
-				writer.writeLine(`const selectResult = await ${functionName}(client${params});`);
-				writer.write('if (selectResult.length == 0)').block(() => {
-					writer.writeLine('return [];');
-				});
-				writer.writeLine(`return collect${relationType}(selectResult);`);
-			});
+		else {
+			_writeExecFunction(writer, params);
 		}
 	}
+}
+
+function _writeCopyFunction(writer: CodeBlockWriter, params: ExecFunctionParameters) {
+	const { functionName, paramsType } = params;
+	let functionParams = `client: pg.Client | pg.PoolClient, values: ${paramsType}[]`;
+	writer.write(`export async function ${functionName}(${functionParams}): Promise<void>`).block(() => {
+		writeSql(writer, params.sql);
+		writer.writeLine('const csv = jsonToCsv(values);');
+		writer.blankLine();
+		writer.writeLine('const sourceStream = Readable.from(csv);');
+		writer.writeLine('const stream = client.query(copyFrom(sql));');
+		writer.writeLine('await pipeline(sourceStream, stream)');
+	});
+	writer.blankLine();
+	writer.write(`function jsonToCsv(values: ${paramsType}[]): string`).block(() => {
+		writer.writeLine('return values');
+		writer.indent().write('.map(value =>').newLine();
+		writer.indent(2).write('Object.values(value)').newLine();
+		writer.indent(3).write('.map(val => escapeValue(val))').newLine();
+		writer.indent(3).write(`.join(',')`).newLine();
+		writer.indent().write(')').newLine();
+		writer.indent().write(`.join('\\n');`).newLine();
+	});
+	writer.blankLine();
+	writer.write(`function escapeValue(val: any): string`).block(() => {
+		writer.writeLine(`return JSON.stringify(val).replace(/"/g, '""').replace(/\\n/g, '\\\\n');`);
+	});
+}
+
+function _writeExecFunction(writer: CodeBlockWriter, params: ExecFunctionParameters) {
+	const { functionName, paramsType, dataType, returnType, parameters, generateNested, nestedType } = params;
+	let functionParams = params.queryType === 'Copy' ? 'client: pg.Client | pg.PoolClient' : 'client: pg.Client | pg.Pool';
+	if (params.data.length > 0) {
+		functionParams += `, data: ${dataType}`;
+	}
+	if (parameters.length > 0) {
+		functionParams += `, params: ${paramsType}`;
+	}
+	const allParamters = [...params.data.map(param => paramToDriver(param, 'data')),
+	...parameters.map(param => paramToDriver(param, 'params')),
+	...parameters.filter(param => isList(param)).map(param => `...params.${param.name}.slice(1)`)];
+	const paramValues = allParamters.length > 0 ? `, values: [${allParamters.join(', ')}]` : '';
+	const orNull = params.queryType === 'Select' ? ' | null' : '';
+	const functionReturnType = params.multipleRowsResult ? `${returnType}[]` : `${returnType}${orNull}`;
+	const hasListParams = parameters.some(param => !param.isArray && param.tsType.endsWith('[]'));
+	if (hasListParams) {
+		writer.writeLine('let currentIndex: number;');
+	}
+	writer.write(`export async function ${functionName}(${functionParams}): Promise<${functionReturnType}>`).block(() => {
+		if (hasListParams) {
+			writer.writeLine(`currentIndex = ${params.data.length + params.parameters.length};`);
+		}
+		writeSql(writer, params.sql);
+		if (params.queryType === 'Select' || params.returning) {
+			writer.write(`return client.query({ text: sql, rowMode: 'array'${paramValues} })`).newLine();
+			if (params.multipleRowsResult) {
+				writer.indent().write(`.then(res => res.rows.map(row => mapArrayTo${returnType}(row)));`)
+			}
+			else if (params.returning) {
+				writer.indent().write(`.then(res => mapArrayTo${returnType}(res.rows[0]));`)
+			}
+			else {
+				writer.indent().write(`.then(res => res.rows.length > 0 ? mapArrayTo${returnType}(res.rows[0]) : null);`)
+			}
+		}
+		else {
+			writer.write(`return client.query({ text: sql${paramValues} })`).newLine();
+			writer.indent().write(`.then(res => mapArrayTo${returnType}(res));`)
+		}
+	});
+
+	if (hasListParams) {
+		writer.blankLine();
+		writer.write(`function generatePlaceholders(param: string, paramsArray: any[]): string`).block(() => {
+			writer.write('return paramsArray').newLine();
+			writer.indent().write('.map((_, index) => {').newLine();
+			writer.indent(2).write(`if (index === 0) {`).newLine();
+			writer.indent(3).write(`return param`).newLine();
+			writer.indent(2).write(`}`).newLine();
+			writer.indent(2).write('currentIndex++;').newLine();
+			writer.indent(2).write('return `$${currentIndex}`;').newLine();
+			writer.indent().write('})');
+			writer.newLine();
+			writer.indent().write(`.join(', ');`);
+		})
+	}
+	writer.blankLine();
+	writer.write(`function mapArrayTo${returnType}(data: any) `).block(() => {
+		writer.write(`const result: ${returnType} = `).block(() => {
+			params.columns.forEach((col, index) => {
+				const separator = index < params.columns.length - 1 ? ',' : '';
+				if (params.queryType === 'Select' || params.returning) {
+					writer.writeLine(`${col.name}: ${toDriver(`data[${index}]`, col)}${separator}`);
+				}
+				else {
+					writer.writeLine(`${col.name}: data.${col.name}${separator}`);
+				}
+			});
+		});
+		writer.writeLine('return result;');
+	});
+
+	if (generateNested) {
+		writer.blankLine();
+		const relationType = generateRelationType(functionName, nestedType);
+		writer.write(`export async function ${functionName}Nested(${functionParams}): Promise<${relationType}[]>`).block(() => {
+			const params = parameters.length > 0 ? ', params' : '';
+			writer.writeLine(`const selectResult = await ${functionName}(client${params});`);
+			writer.write('if (selectResult.length == 0)').block(() => {
+				writer.writeLine('return [];');
+			});
+			writer.writeLine(`return collect${relationType}(selectResult);`);
+		});
+	}
+}
+
+function writeSql(writer: CodeBlockWriter, sql: string) {
+	const sqlSplit = sql.split('\n');
+	writer.write('const sql = `').newLine();
+	sqlSplit.forEach((sqlLine) => {
+		writer.indent().write(sqlLine).newLine();
+	});
+	writer.indent().write('`').newLine();
+}
+
+function getFunctionReturnType(queryType: QueryType, multipleRowsResult: boolean, returnType: string): string {
+	if (queryType === 'Copy') {
+		return 'void';
+	}
+	if (multipleRowsResult) {
+		return `${returnType}[]`;
+	}
+	const orNull = queryType === 'Select' ? ' | null' : '';
+	return `${returnType}${orNull}`;
 }
 
 function getColumnsForQuery(schemaDef: SchemaDef): TsFieldDescriptor[] {
@@ -601,6 +656,9 @@ function getColumnsForQuery(schemaDef: SchemaDef): TsFieldDescriptor[] {
 		const columns = schemaDef.columns.map(col => mapColumnInfoToTsFieldDescriptor(col, schemaDef.dynamicSqlQuery2 != null))
 		const escapedColumnsNames = renameInvalidNames(schemaDef.columns.map((col) => col.columnName));
 		return columns.map((col, index) => ({ ...col, name: escapedColumnsNames[index] }));
+	}
+	if (schemaDef.queryType === 'Copy') {
+		return [];
 	}
 	const columns: TsFieldDescriptor[] = [
 		{
@@ -636,7 +694,7 @@ function isList(param: TsParameterDescriptor) {
 	return param.tsType.endsWith('[]') && !param.isArray;
 }
 
-export function generateCrud(client: 'pg', queryType: QueryType, tableName: string, dbSchema: ColumnSchema[]) {
+export function generateCrud(client: 'pg', queryType: CrudQueryType, tableName: string, dbSchema: ColumnSchema[]) {
 
 	const queryName = getQueryName(queryType, tableName);
 	const camelCaseName = convertToCamelCaseName(queryName);
@@ -657,7 +715,7 @@ export function generateCrud(client: 'pg', queryType: QueryType, tableName: stri
 	const nonKeys = allColumns.filter(col => col.columnKey !== 'PRI');
 
 	const codeWriter = getCodeWriter(client);
-	codeWriter.writeImports(writer);
+	codeWriter.writeImports(writer, queryType);
 	const uniqueDataParams = queryType === 'Update' ? nonKeys.map(col => mapPostgresColumnSchemaToTsFieldDescriptor(col)) : [];
 	if (uniqueDataParams.length > 0) {
 		writer.blankLine();
@@ -691,7 +749,7 @@ export function generateCrud(client: 'pg', queryType: QueryType, tableName: stri
 }
 
 type CrudParameters = {
-	queryType: QueryType;
+	queryType: CrudQueryType;
 	tableName: string;
 	queryName: string;
 	dataTypeName: string;

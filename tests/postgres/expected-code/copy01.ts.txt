@@ -1,0 +1,33 @@
+import pg from 'pg';
+import { from as copyFrom } from 'pg-copy-streams';
+import { pipeline } from 'stream/promises';
+import { Readable } from 'stream';
+
+export type Copy01Params = {
+	value: number | null;
+}
+
+export async function copy01(client: pg.Client | pg.PoolClient, values: Copy01Params[]): Promise<void> {
+	const sql = `
+	COPY mytable1 (value) FROM STDIN WITH CSV
+	`
+	const csv = jsonToCsv(values);
+
+	const sourceStream = Readable.from(csv);
+	const stream = client.query(copyFrom(sql));
+	await pipeline(sourceStream, stream)
+}
+
+function jsonToCsv(values: Copy01Params[]): string {
+	return values
+		.map(value =>
+			Object.values(value)
+				.map(val => escapeValue(val))
+				.join(',')
+		)
+		.join('\n');
+}
+
+function escapeValue(val: any): string {
+	return JSON.stringify(val).replace(/"/g, '""').replace(/\n/g, '\\n');
+}

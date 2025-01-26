@@ -1,4 +1,4 @@
-import { A_expr_addContext, A_expr_andContext, A_expr_at_time_zoneContext, A_expr_betweenContext, A_expr_caretContext, A_expr_collateContext, A_expr_compareContext, A_expr_inContext, A_expr_is_notContext, A_expr_isnullContext, A_expr_lesslessContext, A_expr_likeContext, A_expr_mulContext, A_expr_orContext, A_expr_qual_opContext, A_expr_qualContext, A_expr_typecastContext, A_expr_unary_notContext, A_expr_unary_qualopContext, A_expr_unary_signContext, A_exprContext, C_expr_caseContext, C_expr_existsContext, C_expr_exprContext, C_exprContext, ColidContext, ColumnrefContext, Common_table_exprContext, DeletestmtContext, Expr_listContext, From_clauseContext, From_listContext, Func_applicationContext, Func_arg_exprContext, Func_expr_common_subexprContext, Func_exprContext, IdentifierContext, In_expr_listContext, In_expr_selectContext, In_exprContext, Insert_column_itemContext, InsertstmtContext, Join_qualContext, Join_typeContext, Qualified_nameContext, Relation_exprContext, Select_clauseContext, Select_no_parensContext, Select_with_parensContext, SelectstmtContext, Set_clauseContext, Simple_select_intersectContext, Simple_select_pramaryContext, StmtContext, Table_refContext, Target_elContext, Target_labelContext, Target_listContext, Unreserved_keywordContext, UpdatestmtContext, Values_clauseContext, When_clauseContext, Where_clauseContext } from '@wsporto/typesql-parser/postgres/PostgreSQLParser';
+import { A_expr_addContext, A_expr_andContext, A_expr_at_time_zoneContext, A_expr_betweenContext, A_expr_caretContext, A_expr_collateContext, A_expr_compareContext, A_expr_inContext, A_expr_is_notContext, A_expr_isnullContext, A_expr_lesslessContext, A_expr_likeContext, A_expr_mulContext, A_expr_orContext, A_expr_qual_opContext, A_expr_qualContext, A_expr_typecastContext, A_expr_unary_notContext, A_expr_unary_qualopContext, A_expr_unary_signContext, A_exprContext, C_expr_caseContext, C_expr_existsContext, C_expr_exprContext, C_exprContext, ColidContext, ColumnElemContext, ColumnrefContext, Common_table_exprContext, CopystmtContext, DeletestmtContext, Expr_listContext, From_clauseContext, From_listContext, Func_applicationContext, Func_arg_exprContext, Func_expr_common_subexprContext, Func_exprContext, IdentifierContext, In_expr_listContext, In_expr_selectContext, In_exprContext, Insert_column_itemContext, InsertstmtContext, Join_qualContext, Join_typeContext, Qualified_nameContext, Relation_exprContext, Select_clauseContext, Select_no_parensContext, Select_with_parensContext, SelectstmtContext, Set_clauseContext, Simple_select_intersectContext, Simple_select_pramaryContext, StmtContext, Table_refContext, Target_elContext, Target_labelContext, Target_listContext, Unreserved_keywordContext, UpdatestmtContext, Values_clauseContext, When_clauseContext, Where_clauseContext } from '@wsporto/typesql-parser/postgres/PostgreSQLParser';
 import { ParserRuleContext } from '@wsporto/typesql-parser';
 import { PostgresColumnSchema } from '../drivers/types';
 import { extractOriginalSql, splitName } from '../mysql-query-analyzer/select-columns';
@@ -11,6 +11,7 @@ export type NotNullInfo = {
 	table_name: string;
 	column_name: string;
 	is_nullable: boolean;
+	type_id?: number;
 }
 
 export type PostgresTraverseResult = {
@@ -108,6 +109,10 @@ export function traverseSmt(stmt: StmtContext, dbSchema: PostgresColumnSchema[],
 	const deletestmt = stmt.deletestmt();
 	if (deletestmt) {
 		return traverseDeletestmt(deletestmt, dbSchema, traverseResult);
+	}
+	const copystmt = stmt.copystmt();
+	if (copystmt) {
+		return traverseCopystmt(copystmt, dbSchema, traverseResult);
 	}
 	throw Error('Stmt not supported: ' + stmt.getText());
 }
@@ -1060,7 +1065,7 @@ function traverse_relation_expr(relation_expr: Relation_exprContext, dbSchema: N
 }
 
 function traverse_qualified_name(qualified_name: Qualified_nameContext, dbSchema: NotNullInfo[]): TableName {
-	const colid_name = qualified_name.colid() ? traverse_colid(qualified_name.colid(), dbSchema) : '';
+	const colid_name = qualified_name.colid() ? get_colid_text(qualified_name.colid(), dbSchema) : '';
 
 	const indirection_el_list = qualified_name.indirection()?.indirection_el_list();
 	if (indirection_el_list && indirection_el_list.length === 1) {
@@ -1075,7 +1080,7 @@ function traverse_qualified_name(qualified_name: Qualified_nameContext, dbSchema
 	}
 }
 
-function traverse_colid(colid: ColidContext, dbSchema: NotNullInfo[]): string {
+function get_colid_text(colid: ColidContext, dbSchema: NotNullInfo[]): string {
 	const identifier = colid.identifier();
 	if (identifier) {
 		return traverse_identifier(identifier, dbSchema);
@@ -1290,12 +1295,12 @@ function traverse_set_clause(set_clause: Set_clauseContext, context: TraverseCon
 	}
 }
 
-function traverse_insert_column_item(insert_column_item: Insert_column_itemContext, dbSchema: PostgresColumnSchema[]): NotNullInfo {
+function traverse_insert_column_item(insert_column_item: Insert_column_itemContext, fromColumns: PostgresColumnSchema[]): NotNullInfo {
 	const colid = insert_column_item.colid();
-	return isNotNull_colid(colid, dbSchema);
+	return traverse_colid(colid, fromColumns);
 }
 
-function isNotNull_colid(colid: ColidContext, dbSchema: PostgresColumnSchema[]): NotNullInfo {
+function traverse_colid(colid: ColidContext, dbSchema: PostgresColumnSchema[]): NotNullInfo {
 	const columnName = colid.getText();
 	const fieldName = splitName(columnName);
 	const column = findColumn(fieldName, dbSchema);
@@ -1743,4 +1748,25 @@ function checkLimit(selectstmt: SelectstmtContext): number | undefined {
 		return checkLimit_select_with_parens(select_with_parens);
 	}
 	return undefined;
+}
+
+function traverseCopystmt(copyStmt: CopystmtContext, dbSchema: PostgresColumnSchema[], traverseResult: TraverseResult): PostgresTraverseResult {
+
+	const tableName = copyStmt.qualified_name().getText();
+	const copyColumns = dbSchema.filter(col => col.table_name.toLowerCase() === tableName.toLowerCase());
+	const columnlist = copyStmt.column_list_()?.columnlist()?.columnElem_list()
+		.map(columnElem => traverse_columnElem(columnElem, copyColumns, traverseResult));
+
+	return {
+		queryType: 'Copy',
+		columns: columnlist,
+		multipleRowsResult: false,
+		parameterList: [],
+		parametersNullability: []
+	}
+}
+
+function traverse_columnElem(columnElem: ColumnElemContext, fromColumns: PostgresColumnSchema[], traverseResult: TraverseResult): NotNullInfo {
+	const colid = columnElem.colid();
+	return traverse_colid(colid, fromColumns);
 }

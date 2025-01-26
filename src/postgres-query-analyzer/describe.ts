@@ -106,8 +106,22 @@ function getColumnsForQuery(traverseResult: PostgresTraverseResult, postgresDesc
 }
 
 function getParamtersForQuery(traverseResult: PostgresTraverseResult, postgresDescribeResult: PostgresDescribe, paramNames: string[]): ParameterDef[] {
+	if (traverseResult.queryType === 'Copy') {
+		return getColumnsForCopyStmt(traverseResult);
+	}
 	return postgresDescribeResult.parameters
 		.map((param, index) => mapToParamDef(paramNames[index], param, traverseResult.parametersNullability[index] ?? true, traverseResult.parameterList[index]))
+}
+
+function getColumnsForCopyStmt(traverseResult: PostgresTraverseResult): ParameterDef[] {
+	return traverseResult.columns.map(col => {
+		const result: ParameterDef = {
+			name: col.column_name,
+			columnType: col.type_id ? postgresTypes[col.type_id] as any ?? '?' : '?',
+			notNull: !col.is_nullable
+		}
+		return result;
+	});
 }
 
 function getParamtersForWhere(traverseResult: PostgresTraverseResult, postgresDescribeResult: PostgresDescribe, paramNames: string[]): ParameterDef[] {

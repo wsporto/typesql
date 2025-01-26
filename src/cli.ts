@@ -6,7 +6,7 @@ import yargs from 'yargs';
 import { generateTsFile, writeFile } from './code-generator';
 import { generateInsertStatement, generateUpdateStatement, generateDeleteStatement, generateSelectStatement } from './sql-generator';
 import type { ColumnSchema, Table } from './mysql-query-analyzer/types';
-import type { TypeSqlConfig, SqlGenOption, DatabaseClient, TypeSqlDialect, SQLiteClient, QueryType, PgDielect } from './types';
+import type { TypeSqlConfig, SqlGenOption, DatabaseClient, TypeSqlDialect, SQLiteClient, PgDielect, CrudQueryType } from './types';
 import { type Either, isLeft, left } from 'fp-ts/lib/Either';
 import CodeBlockWriter from 'code-block-writer';
 import { globSync } from 'glob';
@@ -264,7 +264,7 @@ async function generateCrudTables(client: DatabaseClient, sqlFolderPath: string,
 	}
 }
 
-function generateAndWriteCrud(client: SQLiteClient | PgDielect['type'], filePath: string, queryType: QueryType, tableName: string, columns: ColumnSchema[]) {
+function generateAndWriteCrud(client: SQLiteClient | PgDielect['type'], filePath: string, queryType: CrudQueryType, tableName: string, columns: ColumnSchema[]) {
 
 	const content = client === 'pg' ? generatePgCrud(client, queryType, tableName, columns) : generateCrud(client, queryType, tableName, columns);
 	writeFile(filePath, content);
