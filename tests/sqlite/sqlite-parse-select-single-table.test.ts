@@ -1951,13 +1951,13 @@ describe('sqlite-Test simple select statements', () => {
 	it('multipleRowsResult for table with composite key', async () => {
 		const db = new Database('./mydb.db');
 		const dbSchemaResult = loadDbSchema(db);
-		if (isLeft(dbSchemaResult)) {
+		if (dbSchemaResult.isErr()) {
 			assert.fail(`Shouldn't return an error`);
 		}
 
 		const sql = 'select * from playlist_track where PlaylistId = 1';
 
-		const actual = await parseSql(sql, dbSchemaResult.right);
+		const actual = await parseSql(sql, dbSchemaResult.value);
 		const expected: SchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -1988,13 +1988,13 @@ describe('sqlite-Test simple select statements', () => {
 	it('multipleRowsResult for table with composite key (all keys)', async () => {
 		const db = new Database('./mydb.db');
 		const dbSchemaResult = loadDbSchema(db);
-		if (isLeft(dbSchemaResult)) {
+		if (dbSchemaResult.isErr()) {
 			assert.fail(`Shouldn't return an error`);
 		}
 
 		const sql = 'select * from playlist_track where PlaylistId = 1 and TrackId = 1';
 
-		const actual = await parseSql(sql, dbSchemaResult.right);
+		const actual = await parseSql(sql, dbSchemaResult.value);
 		const expected: SchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -2025,13 +2025,13 @@ describe('sqlite-Test simple select statements', () => {
 	it('multipleRowsResult for table with composite key (all keys, with OR)', async () => {
 		const db = new Database('./mydb.db');
 		const dbSchemaResult = loadDbSchema(db);
-		if (isLeft(dbSchemaResult)) {
+		if (dbSchemaResult.isErr()) {
 			assert.fail(`Shouldn't return an error`);
 		}
 
 		const sql = 'select * from playlist_track where PlaylistId = 1 OR TrackId = 1';
 
-		const actual = await parseSql(sql, dbSchemaResult.right);
+		const actual = await parseSql(sql, dbSchemaResult.value);
 		const expected: SchemaDef = {
 			sql,
 			queryType: 'Select',

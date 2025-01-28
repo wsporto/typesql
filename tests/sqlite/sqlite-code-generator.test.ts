@@ -846,12 +846,12 @@ INNER JOIN participants p on p.fk_survey = s.id
 INNER JOIN users u on u.id = p.fk_user`;
 
 		const schemaResult = loadDbSchema(db);
-		if (isLeft(schemaResult)) {
-			assert.fail(`Shouldn't return an error: ${schemaResult.left.description}`);
+		if (schemaResult.isErr()) {
+			assert.fail(`Shouldn't return an error: ${schemaResult.error.description}`);
 		}
 
 		const isCrud = false;
-		const actual = generateTsCode(sql, 'nested03', schemaResult.right, 'libsql', isCrud);
+		const actual = generateTsCode(sql, 'nested03', schemaResult.value, 'libsql', isCrud);
 		const expected = readFileSync('tests/sqlite/expected-code/nested03-libsql-many-to-many.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {
@@ -872,12 +872,12 @@ INNER JOIN participants p on p.fk_survey = s.id
 INNER JOIN users u on u.id = p.fk_user`;
 
 		const schemaResult = loadDbSchema(db);
-		if (isLeft(schemaResult)) {
-			assert.fail(`Shouldn't return an error: ${schemaResult.left.description}`);
+		if (schemaResult.isErr()) {
+			assert.fail(`Shouldn't return an error: ${schemaResult.error.description}`);
 		}
 
 		const isCrud = false;
-		const actual = generateTsCode(sql, 'nested03', schemaResult.right, 'bun:sqlite', isCrud);
+		const actual = generateTsCode(sql, 'nested03', schemaResult.value, 'bun:sqlite', isCrud);
 		const expected = readFileSync('tests/sqlite/expected-code/nested03-bun-many-to-many.ts.txt', 'utf-8').replace(/\r/gm, '');
 
 		if (isLeft(actual)) {

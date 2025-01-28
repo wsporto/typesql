@@ -1,6 +1,6 @@
 {
 	"name": "typesql-cli",
-	"version": "0.15.3",
+	"version": "0.16.0-experimental.4",
 	"description": "",
 	"main": "index.js",
 	"bin": {
@@ -32,6 +32,7 @@
 		"@types/yargs": "^17.0.33",
 		"mocha": "^10.8.2",
 		"pg": "^8.13.1",
+		"pg-copy-streams": "^6.0.6",
 		"prettier": "^3.4.2",
 		"shx": "^0.3.4",
 		"ts-node": "^10.9.2",

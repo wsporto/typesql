@@ -1,7 +1,6 @@
 import assert from 'node:assert';
 import { describeNestedQuery } from '../src/describe-nested-query';
 import { createMysqlClientForTest, loadMysqlSchema } from '../src/queryExectutor';
-import { isLeft } from 'fp-ts/lib/Either';
 import { extractQueryInfo } from '../src/mysql-query-analyzer/parse';
 import { type NestedTsDescriptor, createNestedTsDescriptor } from '../src/ts-nested-descriptor';
 import type { MySqlDialect } from '../src/types';
@@ -25,11 +24,11 @@ describe('Test nested-ts-descriptor', () => {
         INNER JOIN posts p on p.fk_user = u.id
         `;
 
-		if (isLeft(dbSchema)) {
-			assert.fail(`Shouldn't return an error: ${dbSchema.left.description}`);
+		if (dbSchema.isErr()) {
+			assert.fail(`Shouldn't return an error: ${dbSchema.error.description}`);
 		}
-		const model = describeNestedQuery(sql, dbSchema.right);
-		const queryInfo = extractQueryInfo(sql, dbSchema.right);
+		const model = describeNestedQuery(sql, dbSchema.value);
+		const queryInfo = extractQueryInfo(sql, dbSchema.value);
 		assert(queryInfo.kind === 'Select');
 		const actual = createNestedTsDescriptor(queryInfo.columns, model);
 		const expected: NestedTsDescriptor = {

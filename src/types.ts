@@ -21,7 +21,8 @@ export type ParseResult = {
 	queryContext: QueryContext;
 };
 
-export type QueryType = 'Select' | 'Insert' | 'Update' | 'Delete';
+export type CrudQueryType = 'Select' | 'Insert' | 'Update' | 'Delete';
+export type QueryType = CrudQueryType | 'Copy';
 
 export type SchemaDef = {
 	sql: string;

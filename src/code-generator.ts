@@ -7,7 +7,8 @@ import {
 	MySqlDialect,
 	TypeSqlError,
 	TsParameterDescriptor,
-	TypeSqlDialect, type SQLiteDialect, type LibSqlClient, type BunDialect, PgDielect
+	TypeSqlDialect, type SQLiteDialect, type LibSqlClient, type BunDialect, PgDielect,
+	QueryType
 } from './types';
 import fs from 'node:fs';
 import path, { parse } from 'node:path';
@@ -747,7 +748,7 @@ export type ParamInfo = {
 
 export type TsDescriptor = {
 	sql: string;
-	queryType: 'Select' | 'Insert' | 'Update' | 'Delete';
+	queryType: QueryType;
 	returning?: true;
 	multipleRowsResult: boolean;
 	columns: TsFieldDescriptor[];

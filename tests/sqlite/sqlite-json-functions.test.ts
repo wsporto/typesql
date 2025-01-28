@@ -11,10 +11,10 @@ describe('sqlite-Test simple select statements', () => {
 		client: new Database('./mydb.db')
 	};
 	const dbSchemaResult = loadDbSchema(client.client);
-	if (isLeft(dbSchemaResult)) {
-		assert.fail(`Shouldn't return an error` + dbSchemaResult.left.description);
+	if (dbSchemaResult.isErr()) {
+		assert.fail(`Shouldn't return an error` + dbSchemaResult.error.description);
 	}
-	const dbSchema = dbSchemaResult.right;
+	const dbSchema = dbSchemaResult.value;
 
 
 	it(`SELECT * FROM json_each('{"hello": "world"}')`, () => {

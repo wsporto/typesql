@@ -1,12 +1,12 @@
-import postgres, { Sql } from 'postgres';
+import postgres, { PostgresError, Sql } from 'postgres';
 import { PostgresColumnSchema, DescribeQueryColumn, PostgresDescribe } from './types';
 import { DatabaseClient, TypeSqlError } from '../types';
-import { Either, right } from 'fp-ts/lib/Either';
-import { ResultAsync } from 'neverthrow';
+import { ok, Result, ResultAsync } from 'neverthrow';
 import { ColumnSchema } from '../mysql-query-analyzer/types';
 import { postgresTypes } from '../dialects/postgres';
+import { ForeignKeyInfo } from '../sqlite-query-analyzer/query-executor';
 
-export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], string> {
+export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], TypeSqlError> {
 	return ResultAsync.fromThrowable(
 		async () => {
 			const result = await sql`
@@ -21,7 +21,17 @@ export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], stri
 					WHEN con.contype = 'p' THEN 'PRI'  -- Primary key
 					WHEN con.contype = 'u' THEN 'UNI'  -- Unique constraint
 					ELSE ''  -- Otherwise, empty string
-    			END AS column_key
+    			END AS column_key,
+				CASE
+					WHEN (
+						-- Check if the column is of type SERIAL
+						col.column_default LIKE 'nextval%'
+						OR 
+						-- Check if the column is GENERATED ALWAYS AS IDENTITY
+						col.is_identity = 'YES'
+					) THEN true
+					ELSE false
+				END AS autoincrement
 			FROM 
 				information_schema.tables t
 			JOIN 
@@ -48,15 +58,11 @@ export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], stri
 				column_name: row.column_name,
 				type_id: row.type_id,
 				is_nullable: row.is_nullable === 'YES',
-				column_key: row.column_key
+				column_key: row.column_key,
+				autoincrement: row.autoincrement
 			} satisfies PostgresColumnSchema));
 		},
-		(reason: any) => {
-			if (reason.errors && reason.errors.length > 0) {
-				return reason.errors.map((e: { message: string }) => e.message).join(', '); // Join all error messages into one string
-			}
-			return 'Unknown error';
-		}
+		err => convertPostgresErrorToTypeSQLError(err)
 	)();
 }
 
@@ -68,12 +74,13 @@ export function mapToColumnSchema(col: PostgresColumnSchema): ColumnSchema {
 		notNull: !col.is_nullable,
 		schema: col.table_schema,
 		table: col.table_name,
-		hidden: 0
+		hidden: 0,
+		autoincrement: col.autoincrement
 	}
 	return columnSchema;
 }
 
-export const postgresDescribe = (sql: Sql, sqlQuery: string): ResultAsync<PostgresDescribe, string> => {
+export const postgresDescribe = (sql: Sql, sqlQuery: string): ResultAsync<PostgresDescribe, TypeSqlError> => {
 	return ResultAsync.fromThrowable(
 		async () => {
 			const describeResult = await sql.unsafe(sqlQuery).describe();
@@ -89,37 +96,55 @@ export const postgresDescribe = (sql: Sql, sqlQuery: string): ResultAsync<Postgr
 			};
 			return result;
 		},
-		(reason: unknown): string => {
-			if (reason instanceof Error) {
-				return reason.message;
-			}
-			return 'Unknown error';
-		}
+		err => convertPostgresErrorToTypeSQLError(err)
 	)();
 }
 
-
-export function postgresAnalyze(sql: Sql, sqlQuery: string): ResultAsync<string[], string> {
-	return ResultAsync.fromThrowable(
-		async () => {
-			const analyzeResult = await sql.unsafe(`EXPLAIN ${sqlQuery}`);
-			return analyzeResult.map(res => {
-				return res['QUERY PLAN'];
-			});
-		},
-		(reason: any) => {
-			if (reason.errors && reason.errors.length > 0) {
-				return reason.errors.map((e: { message: string }) => e.message).join(', '); // Join all error messages into one string
-			}
-			return reason.message;
-		}
-	)();
+function convertPostgresErrorToTypeSQLError(err: any): TypeSqlError {
+	const error = err as PostgresError;
+	const typesqlError: TypeSqlError = {
+		name: error.name,
+		description: error.message
+	}
+	return typesqlError;
 }
 
-export function createPostgresClient(databaseUri: string): Either<TypeSqlError, DatabaseClient> {
+export function createPostgresClient(databaseUri: string): Result<DatabaseClient, TypeSqlError> {
 	const db = postgres(databaseUri);
-	return right({
+	return ok({
 		type: 'pg',
 		client: db
 	});
+}
+
+export function loadForeignKeys(sql: Sql): ResultAsync<ForeignKeyInfo[], TypeSqlError> {
+	return ResultAsync.fromThrowable(
+		async () => {
+			const result = await sql<ForeignKeyInfo[]>`
+			SELECT 
+				cl1.relname AS "fromTable",
+				cl2.relname AS "toTable",
+				att1.attname AS "fromColumn",
+				att2.attname AS "toColumn"
+			FROM 
+				pg_constraint AS c
+			JOIN 
+				pg_attribute AS att1 ON att1.attnum = ANY(c.conkey) AND att1.attrelid = c.conrelid
+			JOIN 
+				pg_attribute AS att2 ON att2.attnum = ANY(c.confkey) AND att2.attrelid = c.confrelid
+			JOIN 
+				pg_class AS cl1 ON cl1.oid = att1.attrelid
+			JOIN 
+				pg_class AS cl2 ON cl2.oid = att2.attrelid
+			JOIN 
+				pg_namespace AS ns1 ON ns1.oid = cl1.relnamespace
+			JOIN 
+				pg_namespace AS ns2 ON ns2.oid = cl2.relnamespace
+			WHERE 
+				c.contype = 'f'`;
+
+			return result;
+		},
+		err => convertPostgresErrorToTypeSQLError(err)
+	)();
 }

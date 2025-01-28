@@ -13,14 +13,17 @@ import { isLeft } from 'fp-ts/lib/Either';
 import { hasAnnotation } from '../describe-query';
 import { describeDynamicQuery2 } from '../describe-dynamic-query';
 
-function describeQueryRefine(sql: string, postgresDescribeResult: PostgresDescribe, dbSchema: PostgresColumnSchema[], namedParameters: string[]): Result<SchemaDef, string> {
+function describeQueryRefine(sql: string, postgresDescribeResult: PostgresDescribe, dbSchema: PostgresColumnSchema[], namedParameters: string[]): Result<SchemaDef, TypeSqlError> {
 
 	const generateNestedInfo = hasAnnotation(sql, '@nested');
 	const generateDynamicQueryInfo = hasAnnotation(sql, '@dynamicQuery');
 
 	const parseResult = safeParseSql(sql, dbSchema, { collectNestedInfo: generateNestedInfo, collectDynamicQueryInfo: generateDynamicQueryInfo });
 	if (parseResult.isErr()) {
-		return err(parseResult.error)
+		return err({
+			name: 'ParserError',
+			description: parseResult.error
+		})
 	}
 	const traverseResult = parseResult.value;
 
@@ -46,7 +49,10 @@ function describeQueryRefine(sql: string, postgresDescribeResult: PostgresDescri
 	if (traverseResult.relations) {
 		const nestedResult = describeNestedQuery(descResult.columns, traverseResult.relations || []);
 		if (isLeft(nestedResult)) {
-			return err('Error during nested query result: ' + nestedResult.left.description);
+			return err({
+				name: 'ParserError',
+				description: 'Error during nested query result: ' + nestedResult.left.description
+			})
 		}
 		descResult.nestedInfo = nestedResult.right;
 	}
@@ -93,12 +99,7 @@ export function describeQuery(postgres: Sql, sql: string, namedParameters: strin
 		.andThen(dbSchema => {
 			return postgresDescribe(postgres, sql)
 				.andThen(analyzeResult => describeQueryRefine(sql, analyzeResult, dbSchema, namedParameters));
-		}).mapErr(err => {
-			return {
-				name: 'error',
-				description: err
-			}
-		});
+		})
 }
 
 function getColumnsForQuery(traverseResult: PostgresTraverseResult, postgresDescribeResult: PostgresDescribe): ColumnInfo[] {
@@ -106,8 +107,22 @@ function getColumnsForQuery(traverseResult: PostgresTraverseResult, postgresDesc
 }
 
 function getParamtersForQuery(traverseResult: PostgresTraverseResult, postgresDescribeResult: PostgresDescribe, paramNames: string[]): ParameterDef[] {
+	if (traverseResult.queryType === 'Copy') {
+		return getColumnsForCopyStmt(traverseResult);
+	}
 	return postgresDescribeResult.parameters
 		.map((param, index) => mapToParamDef(paramNames[index], param, traverseResult.parametersNullability[index] ?? true, traverseResult.parameterList[index]))
+}
+
+function getColumnsForCopyStmt(traverseResult: PostgresTraverseResult): ParameterDef[] {
+	return traverseResult.columns.map(col => {
+		const result: ParameterDef = {
+			name: col.column_name,
+			columnType: col.type_id ? postgresTypes[col.type_id] as any ?? '?' : '?',
+			notNull: !col.is_nullable
+		}
+		return result;
+	});
 }
 
 function getParamtersForWhere(traverseResult: PostgresTraverseResult, postgresDescribeResult: PostgresDescribe, paramNames: string[]): ParameterDef[] {

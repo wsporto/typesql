@@ -8,6 +8,7 @@ export type PostgresColumnSchema = {
 	type_id: number;
 	is_nullable: boolean;
 	column_key: 'PRI' | 'UNI' | '';
+	autoincrement?: boolean;
 };
 
 export type DescribeQueryColumn = {

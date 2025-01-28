@@ -17,6 +17,7 @@ import {
 import CodeBlockWriter from 'code-block-writer';
 import type {
 	BunDialect,
+	CrudQueryType,
 	LibSqlClient,
 	ParameterDef,
 	PgDielect,
@@ -49,7 +50,7 @@ type ExecFunctionParams = {
 	multipleRowsResult: boolean;
 	parameters: string[];
 	columns: TsFieldDescriptor[];
-	queryType: 'Select' | 'Insert' | 'Update' | 'Delete';
+	queryType: QueryType;
 	returning: boolean;
 	orderBy: boolean;
 }
@@ -90,7 +91,7 @@ function mapToColumnInfo(col: ColumnSchema, checkOptional: boolean) {
 	return columnInfo;
 }
 
-export function generateCrud(client: SQLiteClient, queryType: QueryType, tableName: string, dbSchema: ColumnSchema[]) {
+export function generateCrud(client: SQLiteClient, queryType: CrudQueryType, tableName: string, dbSchema: ColumnSchema[]) {
 	const columns = dbSchema.filter((col) => col.table === tableName);
 
 	const columnInfo = columns.map((col) => mapToColumnInfo(col, queryType === 'Insert' || queryType === 'Update'));
@@ -119,7 +120,7 @@ export function generateCrud(client: SQLiteClient, queryType: QueryType, tableNa
 	return code;
 }
 
-export function getQueryName(queryType: QueryType, tableName: string) {
+export function getQueryName(queryType: CrudQueryType, tableName: string) {
 	const camelCaseName = convertToCamelCaseName(tableName);
 	const captitalizedName = capitalize(camelCaseName);
 	switch (queryType) {

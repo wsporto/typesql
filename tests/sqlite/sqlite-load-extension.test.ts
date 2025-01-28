@@ -10,15 +10,15 @@ describe('load-extension', () => {
 	it('better-sqlite3 - load_extension uuid4', () => {
 
 		const client = createSqliteClient('better-sqlite3', './mydb.db', [], ['./tests/ext/uuid.dll']);
-		if (isLeft(client)) {
+		if (client.isErr()) {
 			assert.fail(`Shouldn't return an Error`);
 		}
 
-		const clientType = client.right.type;
+		const clientType = client.value.type;
 		if (clientType != 'better-sqlite3') {
 			assert.fail(`Shouldn't return an Error`);
 		}
-		const explainSqlResult = explainSql(client.right.client, 'SELECT uuid4()');
+		const explainSqlResult = explainSql(client.value.client, 'SELECT uuid4()');
 
 		if (isLeft(explainSqlResult)) {
 			assert.fail(`Shouldn't return an Error`);
@@ -29,15 +29,15 @@ describe('load-extension', () => {
 	it('bun:sqlite - load_extension uuid4', () => {
 
 		const client = createSqliteClient('bun:sqlite', './mydb.db', [], ['./tests/ext/uuid.dll']);
-		if (isLeft(client)) {
+		if (client.isErr()) {
 			assert.fail(`Shouldn't return an Error`);
 		}
 
-		const clientType = client.right.type;
+		const clientType = client.value.type;
 		if (clientType != 'bun:sqlite') {
 			assert.fail(`Shouldn't return an Error`);
 		}
-		const explainSqlResult = explainSql(client.right.client, 'SELECT uuid4()');
+		const explainSqlResult = explainSql(client.value.client, 'SELECT uuid4()');
 
 		if (isLeft(explainSqlResult)) {
 			assert.fail(`Shouldn't return an Error`);
@@ -49,15 +49,15 @@ describe('load-extension', () => {
 
 		//C:\dev\typesql\tests\ext\uuid.dll
 		const client = createLibSqlClient('./mydb.db', [], ['./tests/ext/uuid.dll'], 'authtoken');
-		if (isLeft(client)) {
+		if (client.isErr()) {
 			assert.fail(`Shouldn't return an Error`);
 		}
 
-		const clientType = client.right.type;
+		const clientType = client.value.type;
 		if (clientType != 'libsql') {
 			assert.fail(`Shouldn't return an Error`);
 		}
-		const explainSqlResult = explainSql(client.right.client, 'SELECT uuid4()');
+		const explainSqlResult = explainSql(client.value.client, 'SELECT uuid4()');
 
 		if (isLeft(explainSqlResult)) {
 			assert.fail(`Shouldn't return an Error`);
