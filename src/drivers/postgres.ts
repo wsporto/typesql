@@ -1,4 +1,4 @@
-import postgres, { Sql } from 'postgres';
+import postgres, { PostgresError, Sql } from 'postgres';
 import { PostgresColumnSchema, DescribeQueryColumn, PostgresDescribe } from './types';
 import { DatabaseClient, TypeSqlError } from '../types';
 import { ok, Result, ResultAsync } from 'neverthrow';
@@ -6,7 +6,7 @@ import { ColumnSchema } from '../mysql-query-analyzer/types';
 import { postgresTypes } from '../dialects/postgres';
 import { ForeignKeyInfo } from '../sqlite-query-analyzer/query-executor';
 
-export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], string> {
+export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], TypeSqlError> {
 	return ResultAsync.fromThrowable(
 		async () => {
 			const result = await sql`
@@ -62,12 +62,7 @@ export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], stri
 				autoincrement: row.autoincrement
 			} satisfies PostgresColumnSchema));
 		},
-		(reason: any) => {
-			if (reason.errors && reason.errors.length > 0) {
-				return reason.errors.map((e: { message: string }) => e.message).join(', '); // Join all error messages into one string
-			}
-			return 'Unknown error';
-		}
+		err => convertPostgresErrorToTypeSQLError(err)
 	)();
 }
 
@@ -85,7 +80,7 @@ export function mapToColumnSchema(col: PostgresColumnSchema): ColumnSchema {
 	return columnSchema;
 }
 
-export const postgresDescribe = (sql: Sql, sqlQuery: string): ResultAsync<PostgresDescribe, string> => {
+export const postgresDescribe = (sql: Sql, sqlQuery: string): ResultAsync<PostgresDescribe, TypeSqlError> => {
 	return ResultAsync.fromThrowable(
 		async () => {
 			const describeResult = await sql.unsafe(sqlQuery).describe();
@@ -101,31 +96,17 @@ export const postgresDescribe = (sql: Sql, sqlQuery: string): ResultAsync<Postgr
 			};
 			return result;
 		},
-		(reason: unknown): string => {
-			if (reason instanceof Error) {
-				return reason.message;
-			}
-			return 'Unknown error';
-		}
+		err => convertPostgresErrorToTypeSQLError(err)
 	)();
 }
 
-
-export function postgresAnalyze(sql: Sql, sqlQuery: string): ResultAsync<string[], string> {
-	return ResultAsync.fromThrowable(
-		async () => {
-			const analyzeResult = await sql.unsafe(`EXPLAIN ${sqlQuery}`);
-			return analyzeResult.map(res => {
-				return res['QUERY PLAN'];
-			});
-		},
-		(reason: any) => {
-			if (reason.errors && reason.errors.length > 0) {
-				return reason.errors.map((e: { message: string }) => e.message).join(', '); // Join all error messages into one string
-			}
-			return reason.message;
-		}
-	)();
+function convertPostgresErrorToTypeSQLError(err: any): TypeSqlError {
+	const error = err as PostgresError;
+	const typesqlError: TypeSqlError = {
+		name: error.name,
+		description: error.message
+	}
+	return typesqlError;
 }
 
 export function createPostgresClient(databaseUri: string): Result<DatabaseClient, TypeSqlError> {
@@ -164,13 +145,6 @@ export function loadForeignKeys(sql: Sql): ResultAsync<ForeignKeyInfo[], TypeSql
 
 			return result;
 		},
-		(err) => {
-			const error = err as Error;
-			const typesqlError: TypeSqlError = {
-				name: error.name,
-				description: error.message
-			}
-			return typesqlError;
-		}
+		err => convertPostgresErrorToTypeSQLError(err)
 	)();
 }

@@ -476,8 +476,8 @@ describe('postgres-parse-select-multiples-tables', () => {
         `;
 		const actual = await describeQuery(postres, sql, []);
 		const expected: TypeSqlError = {
-			name: 'error',
-			description: `column reference \"id\" is ambiguous`
+			name: 'PostgresError',
+			description: `column reference "id" is ambiguous`
 		};
 
 		if (actual.isOk()) {

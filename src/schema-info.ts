@@ -40,13 +40,6 @@ export function loadSchema(databaseClient: DatabaseClient): ResultAsync<ColumnSc
 		case 'pg':
 			const result = loadPostgresDbSchema(databaseClient.client)
 				.map(schema => schema.map(col => mapToColumnSchema(col)))
-				.mapErr(err => {
-					const typesqlError: TypeSqlError = {
-						description: err,
-						name: err
-					}
-					return typesqlError;
-				});
 			return result;
 
 	}
