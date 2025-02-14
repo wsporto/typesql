@@ -29,5 +29,5 @@ function jsonToCsv(values: Copy01Params[]): string {
 }
 
 function escapeValue(val: any): string {
-	return JSON.stringify(val).replace(/"/g, '""').replace(/\n/g, '\\n');
+	return val != null ? JSON.stringify(val).replace(/\n/g, '\\n') : '';
 }

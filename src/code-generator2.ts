@@ -546,7 +546,7 @@ function _writeCopyFunction(writer: CodeBlockWriter, params: ExecFunctionParamet
 	});
 	writer.blankLine();
 	writer.write(`function escapeValue(val: any): string`).block(() => {
-		writer.writeLine(`return JSON.stringify(val).replace(/"/g, '""').replace(/\\n/g, '\\\\n');`);
+		writer.writeLine(`return val != null ? JSON.stringify(val).replace(/\\n/g, '\\\\n') : '';`);
 	});
 }
 
