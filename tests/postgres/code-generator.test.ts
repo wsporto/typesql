@@ -83,7 +83,7 @@ AND name IN (:names)`;
 	});
 
 	it('select06 - SELECT id FROM mytable2 WHERE name = $1 OR id in ($2) OR name = $3', async () => {
-		const sql = `SELECT id 
+		const sql = `SELECT id
 FROM mytable2
 WHERE name = $1
 OR id in ($2)
@@ -119,7 +119,7 @@ AND name <> :name`;
 	id,
 	:param1::bool as param1,
 	:param2::bool as param2
-FROM mytable1 
+FROM mytable1
 WHERE :param1 is true OR (:param2 is true OR :param2::bool is null)`;
 
 		const actual = await generateCode(dialect, sql, 'select08');
@@ -236,8 +236,8 @@ WHERE :param1 is true OR (:param2 is true OR :param2::bool is null)`;
 
 	it('nested01 - FROM users u INNER JOIN posts p', async () => {
 		const sql = `-- @nested
-SELECT 
-	u.id as user_id, 
+SELECT
+	u.id as user_id,
 	u.name as user_name,
 	p.id as post_id,
 	p.title as post_title
@@ -394,7 +394,7 @@ WHERE EXTRACT(YEAR FROM timestamp_not_null_column) = :param1 AND EXTRACT(MONTH F
 	});
 
 	it('copy01', async () => {
-		const sql = 'COPY mytable1 (value) FROM STDIN WITH CSV';
+		const sql = `COPY mytable1 (value) FROM STDIN WITH CSV`;
 
 		const actual = await generateCode(dialect, sql, 'copy01');
 		const expected = readFileSync('tests/postgres/expected-code/copy01.ts.txt', 'utf-8');

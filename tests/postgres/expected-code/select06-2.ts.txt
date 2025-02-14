@@ -14,7 +14,7 @@ let currentIndex: number;
 export async function select06(client: pg.Client | pg.Pool, params: Select06Params): Promise<Select06Result[]> {
 	currentIndex = 3;
 	const sql = `
-	SELECT id 
+	SELECT id
 	FROM mytable2
 	WHERE name = $1
 	OR id in (${generatePlaceholders('$2', params.param2)})
