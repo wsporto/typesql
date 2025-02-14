@@ -34,6 +34,14 @@ function _describeQuery(databaseClient: PgDielect, sql: string, namedParameters:
 	return describeQuery(databaseClient.client, sql, namedParameters);
 }
 
+function createCodeBlockWriter() {
+	const writer = new CodeBlockWriter({
+		useTabs: true,
+		newLine: EOL as '\n' | '\r\n'
+	});
+	return writer;
+}
+
 function generateTsCode(
 	sqlOld: string,
 	queryName: string,
@@ -44,9 +52,7 @@ function generateTsCode(
 
 	const { sql } = schemaDef;
 
-	const writer = new CodeBlockWriter({
-		useTabs: true
-	});
+	const writer = createCodeBlockWriter();
 
 	const camelCaseName = convertToCamelCaseName(queryName);
 	const capitalizedName = capitalize(camelCaseName);
@@ -703,9 +709,7 @@ export function generateCrud(client: 'pg', queryType: CrudQueryType, tableName: 
 	const resultTypeName = `${capitalizedName}Result`;
 	const paramsTypeName = `${capitalizedName}Params`;
 
-	const writer = new CodeBlockWriter({
-		useTabs: true
-	});
+	const writer = createCodeBlockWriter();
 
 	const allColumns = dbSchema.filter((col) => col.table === tableName);
 	const keys = allColumns.filter((col) => col.columnKey === 'PRI');
