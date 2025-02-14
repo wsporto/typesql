@@ -8,11 +8,10 @@ import { generateInsertStatement, generateUpdateStatement, generateDeleteStateme
 import type { ColumnSchema, Table } from './mysql-query-analyzer/types';
 import type { TypeSqlConfig, SqlGenOption, DatabaseClient, TypeSqlDialect, SQLiteClient, PgDielect, CrudQueryType } from './types';
 import { type Either, isLeft, left } from 'fp-ts/lib/Either';
-import CodeBlockWriter from 'code-block-writer';
 import { globSync } from 'glob';
 import { closeClient, createClient, loadSchema, loadTableSchema, selectTables } from './schema-info';
 import { generateCrud } from './sqlite-query-analyzer/code-generator';
-import { generateCrud as generatePgCrud } from './code-generator2';
+import { createCodeBlockWriter, generateCrud as generatePgCrud } from './code-generator2';
 import uniqBy from 'lodash.uniqby';
 
 const CRUD_FOLDER = 'crud';
@@ -168,7 +167,7 @@ async function writeIndexFile(sqlDir: string, config: TypeSqlConfig) {
 
 //Move to code-generator
 function generateIndexContent(tsFiles: string[], config: TypeSqlConfig) {
-	const writer = new CodeBlockWriter();
+	const writer = createCodeBlockWriter();
 	for (const filePath of tsFiles) {
 		const fileName = path.basename(filePath, '.ts'); //remove the ts extension
 		const suffix = config.moduleExtension ? `.${config.moduleExtension}` : '.js';

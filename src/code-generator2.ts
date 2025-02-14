@@ -34,7 +34,7 @@ function _describeQuery(databaseClient: PgDielect, sql: string, namedParameters:
 	return describeQuery(databaseClient.client, sql, namedParameters);
 }
 
-function createCodeBlockWriter() {
+export function createCodeBlockWriter() {
 	const writer = new CodeBlockWriter({
 		useTabs: true,
 		newLine: EOL as '\n' | '\r\n'
