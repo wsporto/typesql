@@ -832,6 +832,100 @@ describe('sqlite-Test simple select statements', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('SELECT * FROM mytable1 t WHERE :value is null OR id IN (:ids)', () => {
+		const sql = 'SELECT * FROM mytable1 t WHERE :value is null OR id IN (:ids)';
+
+		const expectedSql = `SELECT * FROM mytable1 t WHERE ? is null OR id IN (\${params.ids.map(() => '?')})`;
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql: expectedSql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'INTEGER',
+					notNull: true,
+					table: 't'
+				},
+				{
+					columnName: 'value',
+					type: 'INTEGER',
+					notNull: false,
+					table: 't'
+				}
+			],
+			parameters: [
+				{
+					name: 'value',
+					columnType: 'any',
+					notNull: false
+				},
+				{
+					name: 'ids',
+					columnType: 'INTEGER[]',
+					notNull: true
+				}
+			]
+		};
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('SELECT * FROM mytable1 t WHERE (:value is null OR id IN (:ids)) OR (:value2 is null OR value in (:values))', () => {
+		const sql = 'SELECT * FROM mytable1 t WHERE (:value is null OR id IN (:ids)) OR (:value2 is null OR value IN (:values))';
+
+		const expectedSql = `SELECT * FROM mytable1 t WHERE (? is null OR id IN (\${params.ids.map(() => '?')})) OR (? is null OR value IN (\${params.values.map(() => '?')}))`;
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql: expectedSql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'INTEGER',
+					notNull: true,
+					table: 't'
+				},
+				{
+					columnName: 'value',
+					type: 'INTEGER',
+					notNull: false,
+					table: 't'
+				}
+			],
+			parameters: [
+				{
+					name: 'value',
+					columnType: 'any',
+					notNull: false
+				},
+				{
+					name: 'ids',
+					columnType: 'INTEGER[]',
+					notNull: true
+				},
+				{
+					name: 'value2',
+					columnType: 'any',
+					notNull: false
+				},
+				{
+					name: 'values',
+					columnType: 'INTEGER[]',
+					notNull: true
+				}
+			]
+		};
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('SELECT id FROM mytable1 t WHERE id in (select id from mytable2 where id > :id)', () => {
 		const sql = 'SELECT id FROM mytable1 t WHERE id in (select id from mytable2 where id > :id)';
 

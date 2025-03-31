@@ -138,13 +138,15 @@ function createSchemaDefinition(
 		});
 
 		const nameAndParamPosition = paramsResult
-			.filter((param) => param.columnType?.endsWith('[]'))
-			.map((param, index) => {
-				const nameAndPosition: ParameterNameAndPosition = {
-					name: param.name,
-					paramPosition: queryResult.parameters[index].paramIndex
-				};
-				return nameAndPosition;
+			.flatMap((param, index) => {
+				if (param.columnType?.endsWith('[]')) {
+					const nameAndPosition: ParameterNameAndPosition = {
+						name: param.name,
+						paramPosition: queryResult.parameters[index].paramIndex
+					};
+					return nameAndPosition;
+				}
+				return []
 			});
 
 		const newSql = replaceListParams(sql, nameAndParamPosition);
