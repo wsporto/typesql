@@ -1708,4 +1708,71 @@ describe('sqlite-parse-select-functions', () => {
 		}
 		assert.deepStrictEqual(actual.right, expected);
 	});
+
+	it('SELECT likelihood(?, ?) as result', () => {
+		const sql = 'SELECT likelihood(?, ?) as result';
+		const actual = parseSql(sql, sqliteDbSchema);
+
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'result',
+					type: 'TEXT',
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: [
+				{
+					columnType: 'TEXT',
+					name: 'param1',
+					notNull: true
+				},
+				{
+					columnType: 'REAL',
+					name: 'param2',
+					notNull: true
+				}
+			]
+		};
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('SELECT likelihood(name, ?) as result FROM mytable2', () => {
+		const sql = 'SELECT likelihood(name, ?) as result FROM mytable2';
+		const actual = parseSql(sql, sqliteDbSchema);
+
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'result',
+					type: 'TEXT',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: [
+				{
+					columnType: 'REAL',
+					name: 'param1',
+					notNull: true
+				}
+			]
+		};
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
 });

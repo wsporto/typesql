@@ -1556,6 +1556,22 @@ function traverse_function(expr: ExprContext, function_name: string, traverseCon
 				notNull: 0
 			}
 		},
+		'likelihood': {
+			paramsTypes: [
+				{
+					type: 'TEXT',
+					notNull: true
+				},
+				{
+					type: 'REAL',
+					notNull: true
+				}
+			],
+			returnType: {
+				type: 'TEXT',
+				notNull: 0
+			}
+		},
 		'json': {
 			paramsTypes: [
 				{
