@@ -1519,6 +1519,30 @@ function traverse_function(expr: ExprContext, function_name: string, traverseCon
 				notNull: true
 			}
 		},
+		'lower': {
+			paramsTypes: [
+				{
+					type: 'TEXT',
+					notNull: true
+				}
+			],
+			returnType: {
+				type: 'TEXT',
+				notNull: 0
+			}
+		},
+		'upper': {
+			paramsTypes: [
+				{
+					type: 'TEXT',
+					notNull: true
+				}
+			],
+			returnType: {
+				type: 'TEXT',
+				notNull: 0
+			}
+		},
 		'json': {
 			paramsTypes: [
 				{

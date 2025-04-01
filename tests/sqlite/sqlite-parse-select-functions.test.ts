@@ -572,6 +572,79 @@ describe('sqlite-parse-select-functions', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('SELECT lower(?), upper(?)', () => {
+		const sql = `
+			SELECT lower(?), upper(?)
+			`;
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'lower(?)',
+					type: 'TEXT',
+					notNull: true,
+					table: ''
+				},
+				{
+					columnName: 'upper(?)',
+					type: 'TEXT',
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: [
+				{
+					columnType: 'TEXT',
+					name: 'param1',
+					notNull: true
+				},
+				{
+					columnType: 'TEXT',
+					name: 'param2',
+					notNull: true
+				}
+			]
+		};
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('SELECT lower(name), upper(name) FROM mytable2', () => {
+		const sql = `
+			SELECT lower(name), upper(name) FROM mytable2
+			`;
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'lower(name)',
+					type: 'TEXT',
+					notNull: false,
+					table: ''
+				},
+				{
+					columnName: 'upper(name)',
+					type: 'TEXT',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('SELECT COALESCE (VALUE, ID) FROM mytable1', () => {
 		const sql = `
         SELECT COALESCE(VALUE, ID) FROM mytable1
