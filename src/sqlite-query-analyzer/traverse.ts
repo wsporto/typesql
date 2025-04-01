@@ -1543,6 +1543,19 @@ function traverse_function(expr: ExprContext, function_name: string, traverseCon
 				notNull: 0
 			}
 		},
+		'concat_ws': {
+			paramsTypes: [
+				{
+					type: 'TEXT',
+					notNull: true
+				}
+			],
+			variableParameters: true,
+			returnType: {
+				type: 'TEXT',
+				notNull: 0
+			}
+		},
 		'json': {
 			paramsTypes: [
 				{

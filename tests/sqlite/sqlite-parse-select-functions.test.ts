@@ -1290,6 +1290,95 @@ describe('sqlite-parse-select-functions', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it(`SELECT concat_ws('-', 'b', 'c')`, () => {
+		const sql = `
+			SELECT concat_ws('-', 'b', 'c')
+			`;
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: `concat_ws('-','b','c')`, //If the separator is NULL, the result is NULL.
+					type: 'TEXT',
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it(`SELECT concat_ws(?, name, descr, ?) FROM mytable2`, () => {
+		const sql = `
+			SELECT concat_ws(?, name, descr, ?) FROM mytable2
+			`;
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: `concat_ws(?,name,descr,?)`, //If the separator is NULL, the result is NULL.
+					type: 'TEXT',
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: [
+				{
+					columnType: 'TEXT',
+					name: 'param1',
+					notNull: true
+				},
+				{
+					columnType: 'TEXT',
+					name: 'param2',
+					notNull: true
+				}
+			]
+		};
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it(`SELECT concat_ws(name, descr) FROM mytable2`, () => {
+		const sql = `
+			SELECT concat_ws(name, descr) FROM mytable2
+			`;
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: `concat_ws(name,descr)`, //If the separator (name) is NULL, the result is NULL.
+					type: 'TEXT',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('SELECT id, random() as rand FROM mytable1 ORDER BY random()', () => {
 		const sql = `
         SELECT id, random() as rand 
