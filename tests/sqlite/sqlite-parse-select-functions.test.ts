@@ -510,6 +510,68 @@ describe('sqlite-parse-select-functions', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it(`SELECT NULLIF(?, 'a') FROM mytable1`, async () => {
+		const sql = `
+			SELECT NULLIF(?, 'a') FROM mytable1
+			`;
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: `NULLIF(?,'a')`,
+					type: 'TEXT',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: [
+				{
+					columnType: 'TEXT',
+					name: 'param1',
+					notNull: false
+				}
+			]
+		};
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it(`SELECT NULLIF(?, id) FROM mytable1`, async () => {
+		const sql = `
+			SELECT NULLIF(?, id) FROM mytable1
+			`;
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: `NULLIF(?,id)`,
+					type: 'INTEGER',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: [
+				{
+					columnType: 'INTEGER',
+					name: 'param1',
+					notNull: false
+				}
+			]
+		};
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('SELECT COALESCE (VALUE, ID) FROM mytable1', () => {
 		const sql = `
         SELECT COALESCE(VALUE, ID) FROM mytable1

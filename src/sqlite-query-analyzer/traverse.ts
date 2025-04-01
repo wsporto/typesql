@@ -1135,6 +1135,24 @@ function traverse_function(expr: ExprContext, function_name: string, traverseCon
 			table: param1Type.table || ''
 		};
 	}
+	if (function_name === 'nullif') {
+		const functionType = freshVar(expr.getText(), '?');
+		expr.expr_list().forEach((paramExpr) => {
+			const paramType = traverse_expr(paramExpr, traverseContext);
+			traverseContext.constraints.push({
+				expression: expr.getText(),
+				type1: functionType,
+				type2: paramType.type
+			});
+			return paramType;
+		});
+		return {
+			name: functionType.name,
+			type: functionType,
+			notNull: false,
+			table: functionType.table || ''
+		};
+	}
 	if (function_name === 'coalesce') {
 		const functionType = freshVar(expr.getText(), '?');
 		const paramTypes = expr.expr_list().map((paramExpr) => {
