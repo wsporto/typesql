@@ -243,12 +243,12 @@ describe('sqlite-parse-insert', () => {
 				{
 					name: 'param1',
 					columnType: 'INTEGER',
-					notNull: false
+					notNull: true
 				},
 				{
 					name: 'param2',
 					columnType: 'INTEGER',
-					notNull: false
+					notNull: true
 				}
 			]
 		};
@@ -271,12 +271,12 @@ describe('sqlite-parse-insert', () => {
 				{
 					name: 'param1',
 					columnType: 'REAL',
-					notNull: false
+					notNull: true
 				},
 				{
 					name: 'param2',
 					columnType: 'REAL',
-					notNull: false
+					notNull: true
 				}
 			]
 		};
@@ -382,12 +382,12 @@ describe('sqlite-parse-insert', () => {
 				{
 					name: 'param3',
 					columnType: 'TEXT',
-					notNull: false
+					notNull: true
 				},
 				{
 					name: 'param4',
 					columnType: 'TEXT',
-					notNull: false
+					notNull: true
 				}
 			]
 		};
@@ -419,17 +419,17 @@ describe('sqlite-parse-insert', () => {
 				{
 					name: 'param2',
 					columnType: 'TEXT',
-					notNull: false
+					notNull: true
 				},
 				{
 					name: 'param3',
 					columnType: 'TEXT',
-					notNull: false
+					notNull: true
 				},
 				{
 					name: 'param4',
 					columnType: 'TEXT',
-					notNull: false
+					notNull: true
 				}
 			]
 		};
@@ -471,7 +471,7 @@ describe('sqlite-parse-insert', () => {
 				{
 					name: 'param4',
 					columnType: 'TEXT',
-					notNull: false
+					notNull: true
 				}
 			]
 		};
@@ -555,22 +555,22 @@ describe('sqlite-parse-insert', () => {
 				{
 					name: 'param1',
 					columnType: 'TEXT',
-					notNull: false
+					notNull: true
 				},
 				{
 					name: 'param2',
 					columnType: 'TEXT',
-					notNull: false
+					notNull: true
 				},
 				{
 					name: 'param3',
 					columnType: 'INTEGER',
-					notNull: false
+					notNull: true
 				},
 				{
 					name: 'param4',
 					columnType: 'INTEGER',
-					notNull: false
+					notNull: true
 				}
 			]
 		};

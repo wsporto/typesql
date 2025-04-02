@@ -352,7 +352,7 @@ describe('sqlite-parse-select-functions', () => {
 				{
 					columnName: 'max',
 					type: 'INTEGER',
-					notNull: false,
+					notNull: true,
 					table: ''
 				},
 				{
@@ -366,22 +366,22 @@ describe('sqlite-parse-select-functions', () => {
 				{
 					name: 'param1',
 					columnType: 'INTEGER',
-					notNull: false
+					notNull: true
 				},
 				{
 					name: 'param2',
 					columnType: 'INTEGER',
-					notNull: false
+					notNull: true
 				},
 				{
 					name: 'param3',
 					columnType: 'INTEGER',
-					notNull: false
+					notNull: true
 				},
 				{
 					name: 'param4',
 					columnType: 'TEXT',
-					notNull: false
+					notNull: true
 				}
 			]
 		};
@@ -460,7 +460,7 @@ describe('sqlite-parse-select-functions', () => {
 				{
 					name: 'param1',
 					columnType: 'INTEGER',
-					notNull: false
+					notNull: true
 				}
 			]
 		};
@@ -500,7 +500,7 @@ describe('sqlite-parse-select-functions', () => {
 				{
 					name: 'param1',
 					columnType: 'TEXT',
-					notNull: false
+					notNull: true
 				}
 			]
 		};
@@ -531,7 +531,7 @@ describe('sqlite-parse-select-functions', () => {
 				{
 					columnType: 'TEXT',
 					name: 'param1',
-					notNull: false
+					notNull: true
 				}
 			]
 		};
@@ -562,7 +562,7 @@ describe('sqlite-parse-select-functions', () => {
 				{
 					columnType: 'INTEGER',
 					name: 'param1',
-					notNull: false
+					notNull: true
 				}
 			]
 		};
@@ -829,7 +829,7 @@ describe('sqlite-parse-select-functions', () => {
 				{
 					columnName: 'result',
 					type: 'REAL',
-					notNull: false,
+					notNull: true,
 					table: ''
 				}
 			],
@@ -837,7 +837,7 @@ describe('sqlite-parse-select-functions', () => {
 				{
 					name: 'param1',
 					columnType: 'DATE',
-					notNull: false
+					notNull: true
 				}
 			]
 		};
@@ -883,7 +883,7 @@ describe('sqlite-parse-select-functions', () => {
 				{
 					columnName: 'result',
 					type: 'INTEGER',
-					notNull: false,
+					notNull: true,
 					table: ''
 				}
 			],
@@ -891,7 +891,7 @@ describe('sqlite-parse-select-functions', () => {
 				{
 					name: 'param1',
 					columnType: 'DATE',
-					notNull: false
+					notNull: true
 				}
 			]
 		};
@@ -927,12 +927,12 @@ describe('sqlite-parse-select-functions', () => {
 				{
 					name: 'param1',
 					columnType: 'DATE',
-					notNull: false
+					notNull: true
 				},
 				{
 					name: 'param2',
 					columnType: 'DATE_TIME',
-					notNull: false
+					notNull: true
 				}
 			]
 		};
@@ -954,13 +954,13 @@ describe('sqlite-parse-select-functions', () => {
 				{
 					columnName: 'result',
 					type: 'DATE',
-					notNull: false,
+					notNull: false, //double_value is null
 					table: ''
 				},
 				{
 					columnName: 'result2',
 					type: 'DATE_TIME',
-					notNull: false,
+					notNull: false, //double_value is null
 					table: ''
 				}
 			],
@@ -968,12 +968,12 @@ describe('sqlite-parse-select-functions', () => {
 				{
 					name: 'param1',
 					columnType: 'DATE',
-					notNull: false
+					notNull: true
 				},
 				{
 					name: 'param2',
 					columnType: 'DATE_TIME',
-					notNull: false
+					notNull: true
 				}
 			]
 		};
@@ -1240,7 +1240,7 @@ describe('sqlite-parse-select-functions', () => {
 				{
 					columnName: 'result',
 					type: 'INTEGER',
-					notNull: false, //diff from mysql
+					notNull: true,
 					table: 'mytable1' //correct?
 				}
 			],
@@ -1248,7 +1248,7 @@ describe('sqlite-parse-select-functions', () => {
 				{
 					columnType: 'INTEGER',
 					name: 'param1',
-					notNull: false //diff from mysql
+					notNull: true
 				}
 			]
 		};
@@ -1271,7 +1271,7 @@ describe('sqlite-parse-select-functions', () => {
 				{
 					columnName: 'result',
 					type: 'INTEGER',
-					notNull: false,
+					notNull: true,
 					table: ''
 				}
 			],
@@ -1279,7 +1279,7 @@ describe('sqlite-parse-select-functions', () => {
 				{
 					columnType: 'TEXT',
 					name: 'param1',
-					notNull: false
+					notNull: true
 				}
 			]
 		};
@@ -1451,19 +1451,19 @@ describe('sqlite-parse-select-functions', () => {
 				{
 					columnName: 'result',
 					type: 'TEXT',
-					notNull: false,
+					notNull: true,
 					table: ''
 				},
 				{
 					columnName: 'result2',
 					type: 'TEXT',
-					notNull: false,
+					notNull: true,
 					table: ''
 				},
 				{
 					columnName: 'result3',
 					type: 'TEXT',
-					notNull: false,
+					notNull: true,
 					table: ''
 				}
 			],
@@ -1471,22 +1471,22 @@ describe('sqlite-parse-select-functions', () => {
 				{
 					columnType: 'TEXT',
 					name: 'param1',
-					notNull: false
+					notNull: true
 				},
 				{
 					columnType: 'TEXT',
 					name: 'param2',
-					notNull: false
+					notNull: true
 				},
 				{
 					columnType: 'TEXT',
 					name: 'param3',
-					notNull: false
+					notNull: true
 				},
 				{
 					columnType: 'TEXT',
 					name: 'param4',
-					notNull: false
+					notNull: true
 				}
 			]
 		};
