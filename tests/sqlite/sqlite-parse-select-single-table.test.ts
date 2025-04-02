@@ -447,7 +447,7 @@ describe('sqlite-Test simple select statements', () => {
 				{
 					columnName: '?', //TODO - PARAM1
 					type: 'any',
-					notNull: false, //todo - differente from mysql
+					notNull: true,
 					table: ''
 				}
 			],
@@ -455,7 +455,7 @@ describe('sqlite-Test simple select statements', () => {
 				{
 					name: 'param1',
 					columnType: 'any',
-					notNull: false //todo - differente from mysql
+					notNull: true
 				}
 			]
 		};
@@ -550,7 +550,7 @@ describe('sqlite-Test simple select statements', () => {
 				{
 					columnName: 'name',
 					type: 'any',
-					notNull: false, //TODO - differente from mysql
+					notNull: true,
 					table: ''
 				}
 			],
@@ -558,7 +558,7 @@ describe('sqlite-Test simple select statements', () => {
 				{
 					name: 'param1',
 					columnType: 'any',
-					notNull: false //TODO - differente from mysql
+					notNull: true
 				}
 			]
 		};
@@ -583,7 +583,7 @@ describe('sqlite-Test simple select statements', () => {
 				{
 					columnName: 'name',
 					type: 'any',
-					notNull: false, //todo - differente from mysql
+					notNull: true,
 					table: ''
 				},
 				{
@@ -603,7 +603,7 @@ describe('sqlite-Test simple select statements', () => {
 				{
 					name: 'param1',
 					columnType: 'any',
-					notNull: false //todo - differente from mysql
+					notNull: true
 				},
 				{
 					name: 'param2',
@@ -1764,7 +1764,7 @@ describe('sqlite-Test simple select statements', () => {
 				{
 					name: 'param1',
 					columnType: 'TEXT',
-					notNull: false
+					notNull: true
 				}
 			]
 		};

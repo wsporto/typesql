@@ -132,12 +132,12 @@ describe('parse-params', () => {
 			{
 				name: 'param1',
 				columnType: 'any',
-				notNull: false //diff from mysql
+				notNull: false
 			},
 			{
 				name: 'param2',
 				columnType: 'TEXT',
-				notNull: false //diff from mysql
+				notNull: true
 			}
 		];
 

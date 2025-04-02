@@ -305,7 +305,7 @@ describe('sqlite-parse-select-multiples-tables', () => {
 				{
 					columnName: 'param1',
 					type: 'any',
-					notNull: false, //diff from mysql
+					notNull: true,
 					table: ''
 				}
 			],
@@ -313,7 +313,7 @@ describe('sqlite-parse-select-multiples-tables', () => {
 				{
 					name: 'param1',
 					columnType: 'any',
-					notNull: false //diff from mysql
+					notNull: true
 				},
 				{
 					name: 'param2',
@@ -370,7 +370,7 @@ describe('sqlite-parse-select-multiples-tables', () => {
 				},
 				{
 					columnName: 'param1',
-					notNull: false, //diff from mysql
+					notNull: true,
 					type: 'any',
 					table: ''
 				}
@@ -379,7 +379,7 @@ describe('sqlite-parse-select-multiples-tables', () => {
 				{
 					name: 'param1',
 					columnType: 'any',
-					notNull: false //diff from mysql
+					notNull: true
 				},
 				{
 					name: 'param2',

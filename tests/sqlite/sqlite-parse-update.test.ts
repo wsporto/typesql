@@ -203,12 +203,12 @@ describe('sqlite-parse-update', () => {
 				{
 					name: 'valueSet',
 					columnType: 'INTEGER',
-					notNull: false
+					notNull: true
 				},
 				{
 					name: 'value',
 					columnType: 'INTEGER',
-					notNull: false
+					notNull: true
 				}
 			],
 			parameters: [

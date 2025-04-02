@@ -352,7 +352,7 @@ describe('sqlite-parse-select-functions', () => {
 				{
 					columnName: 'max',
 					type: 'INTEGER',
-					notNull: false,
+					notNull: true,
 					table: ''
 				},
 				{
@@ -366,22 +366,22 @@ describe('sqlite-parse-select-functions', () => {
 				{
 					name: 'param1',
 					columnType: 'INTEGER',
-					notNull: false
+					notNull: true
 				},
 				{
 					name: 'param2',
 					columnType: 'INTEGER',
-					notNull: false
+					notNull: true
 				},
 				{
 					name: 'param3',
 					columnType: 'INTEGER',
-					notNull: false
+					notNull: true
 				},
 				{
 					name: 'param4',
 					columnType: 'TEXT',
-					notNull: false
+					notNull: true
 				}
 			]
 		};
@@ -460,7 +460,7 @@ describe('sqlite-parse-select-functions', () => {
 				{
 					name: 'param1',
 					columnType: 'INTEGER',
-					notNull: false
+					notNull: true
 				}
 			]
 		};
@@ -500,9 +500,144 @@ describe('sqlite-parse-select-functions', () => {
 				{
 					name: 'param1',
 					columnType: 'TEXT',
-					notNull: false
+					notNull: true
 				}
 			]
+		};
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it(`SELECT NULLIF(?, 'a') FROM mytable1`, async () => {
+		const sql = `
+			SELECT NULLIF(?, 'a') FROM mytable1
+			`;
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: `NULLIF(?,'a')`,
+					type: 'TEXT',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: [
+				{
+					columnType: 'TEXT',
+					name: 'param1',
+					notNull: true
+				}
+			]
+		};
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it(`SELECT NULLIF(?, id) FROM mytable1`, async () => {
+		const sql = `
+			SELECT NULLIF(?, id) FROM mytable1
+			`;
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: `NULLIF(?,id)`,
+					type: 'INTEGER',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: [
+				{
+					columnType: 'INTEGER',
+					name: 'param1',
+					notNull: true
+				}
+			]
+		};
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('SELECT lower(?), upper(?)', () => {
+		const sql = `
+			SELECT lower(?), upper(?)
+			`;
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'lower(?)',
+					type: 'TEXT',
+					notNull: true,
+					table: ''
+				},
+				{
+					columnName: 'upper(?)',
+					type: 'TEXT',
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: [
+				{
+					columnType: 'TEXT',
+					name: 'param1',
+					notNull: true
+				},
+				{
+					columnType: 'TEXT',
+					name: 'param2',
+					notNull: true
+				}
+			]
+		};
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('SELECT lower(name), upper(name) FROM mytable2', () => {
+		const sql = `
+			SELECT lower(name), upper(name) FROM mytable2
+			`;
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'lower(name)',
+					type: 'TEXT',
+					notNull: false,
+					table: ''
+				},
+				{
+					columnName: 'upper(name)',
+					type: 'TEXT',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
 		};
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
@@ -694,7 +829,7 @@ describe('sqlite-parse-select-functions', () => {
 				{
 					columnName: 'result',
 					type: 'REAL',
-					notNull: false,
+					notNull: true,
 					table: ''
 				}
 			],
@@ -702,7 +837,7 @@ describe('sqlite-parse-select-functions', () => {
 				{
 					name: 'param1',
 					columnType: 'DATE',
-					notNull: false
+					notNull: true
 				}
 			]
 		};
@@ -748,7 +883,7 @@ describe('sqlite-parse-select-functions', () => {
 				{
 					columnName: 'result',
 					type: 'INTEGER',
-					notNull: false,
+					notNull: true,
 					table: ''
 				}
 			],
@@ -756,7 +891,7 @@ describe('sqlite-parse-select-functions', () => {
 				{
 					name: 'param1',
 					columnType: 'DATE',
-					notNull: false
+					notNull: true
 				}
 			]
 		};
@@ -792,12 +927,12 @@ describe('sqlite-parse-select-functions', () => {
 				{
 					name: 'param1',
 					columnType: 'DATE',
-					notNull: false
+					notNull: true
 				},
 				{
 					name: 'param2',
 					columnType: 'DATE_TIME',
-					notNull: false
+					notNull: true
 				}
 			]
 		};
@@ -819,13 +954,13 @@ describe('sqlite-parse-select-functions', () => {
 				{
 					columnName: 'result',
 					type: 'DATE',
-					notNull: false,
+					notNull: false, //double_value is null
 					table: ''
 				},
 				{
 					columnName: 'result2',
 					type: 'DATE_TIME',
-					notNull: false,
+					notNull: false, //double_value is null
 					table: ''
 				}
 			],
@@ -833,12 +968,12 @@ describe('sqlite-parse-select-functions', () => {
 				{
 					name: 'param1',
 					columnType: 'DATE',
-					notNull: false
+					notNull: true
 				},
 				{
 					name: 'param2',
 					columnType: 'DATE_TIME',
-					notNull: false
+					notNull: true
 				}
 			]
 		};
@@ -1105,7 +1240,7 @@ describe('sqlite-parse-select-functions', () => {
 				{
 					columnName: 'result',
 					type: 'INTEGER',
-					notNull: false, //diff from mysql
+					notNull: true,
 					table: 'mytable1' //correct?
 				}
 			],
@@ -1113,7 +1248,7 @@ describe('sqlite-parse-select-functions', () => {
 				{
 					columnType: 'INTEGER',
 					name: 'param1',
-					notNull: false //diff from mysql
+					notNull: true
 				}
 			]
 		};
@@ -1136,7 +1271,7 @@ describe('sqlite-parse-select-functions', () => {
 				{
 					columnName: 'result',
 					type: 'INTEGER',
-					notNull: false,
+					notNull: true,
 					table: ''
 				}
 			],
@@ -1144,9 +1279,98 @@ describe('sqlite-parse-select-functions', () => {
 				{
 					columnType: 'TEXT',
 					name: 'param1',
-					notNull: false
+					notNull: true
 				}
 			]
+		};
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it(`SELECT concat_ws('-', 'b', 'c')`, () => {
+		const sql = `
+			SELECT concat_ws('-', 'b', 'c')
+			`;
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: `concat_ws('-','b','c')`, //If the separator is NULL, the result is NULL.
+					type: 'TEXT',
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it(`SELECT concat_ws(?, name, descr, ?) FROM mytable2`, () => {
+		const sql = `
+			SELECT concat_ws(?, name, descr, ?) FROM mytable2
+			`;
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: `concat_ws(?,name,descr,?)`, //If the separator is NULL, the result is NULL.
+					type: 'TEXT',
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: [
+				{
+					columnType: 'TEXT',
+					name: 'param1',
+					notNull: true
+				},
+				{
+					columnType: 'TEXT',
+					name: 'param2',
+					notNull: true
+				}
+			]
+		};
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it(`SELECT concat_ws(name, descr) FROM mytable2`, () => {
+		const sql = `
+			SELECT concat_ws(name, descr) FROM mytable2
+			`;
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: `concat_ws(name,descr)`, //If the separator (name) is NULL, the result is NULL.
+					type: 'TEXT',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
 		};
 
 		if (isLeft(actual)) {
@@ -1227,19 +1451,19 @@ describe('sqlite-parse-select-functions', () => {
 				{
 					columnName: 'result',
 					type: 'TEXT',
-					notNull: false,
+					notNull: true,
 					table: ''
 				},
 				{
 					columnName: 'result2',
 					type: 'TEXT',
-					notNull: false,
+					notNull: true,
 					table: ''
 				},
 				{
 					columnName: 'result3',
 					type: 'TEXT',
-					notNull: false,
+					notNull: true,
 					table: ''
 				}
 			],
@@ -1247,22 +1471,22 @@ describe('sqlite-parse-select-functions', () => {
 				{
 					columnType: 'TEXT',
 					name: 'param1',
-					notNull: false
+					notNull: true
 				},
 				{
 					columnType: 'TEXT',
 					name: 'param2',
-					notNull: false
+					notNull: true
 				},
 				{
 					columnType: 'TEXT',
 					name: 'param3',
-					notNull: false
+					notNull: true
 				},
 				{
 					columnType: 'TEXT',
 					name: 'param4',
-					notNull: false
+					notNull: true
 				}
 			]
 		};
@@ -1474,6 +1698,134 @@ describe('sqlite-parse-select-functions', () => {
 				{
 					columnType: 'INTEGER',
 					name: 'param3',
+					notNull: true
+				}
+			]
+		};
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('SELECT glob(?, ?)', () => {
+		const sql = 'SELECT glob(?, ?)';
+		const actual = parseSql(sql, sqliteDbSchema);
+
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'glob(?,?)',
+					type: 'TEXT',
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: [
+				{
+					columnType: 'TEXT',
+					name: 'param1',
+					notNull: true
+				},
+				{
+					columnType: 'TEXT',
+					name: 'param2',
+					notNull: true
+				}
+			]
+		};
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('SELECT glob(name, descr) FROM mytable2', () => {
+		const sql = 'SELECT glob(name, descr) FROM mytable2';
+		const actual = parseSql(sql, sqliteDbSchema);
+
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'glob(name,descr)',
+					type: 'TEXT',
+					notNull: false,
+					table: 'mytable2'
+				}
+			],
+			parameters: []
+		};
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('SELECT likelihood(?, ?) as result', () => {
+		const sql = 'SELECT likelihood(?, ?) as result';
+		const actual = parseSql(sql, sqliteDbSchema);
+
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'result',
+					type: 'TEXT',
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: [
+				{
+					columnType: 'TEXT',
+					name: 'param1',
+					notNull: true
+				},
+				{
+					columnType: 'REAL',
+					name: 'param2',
+					notNull: true
+				}
+			]
+		};
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('SELECT likelihood(name, ?) as result FROM mytable2', () => {
+		const sql = 'SELECT likelihood(name, ?) as result FROM mytable2';
+		const actual = parseSql(sql, sqliteDbSchema);
+
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'result',
+					type: 'TEXT',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: [
+				{
+					columnType: 'REAL',
+					name: 'param1',
 					notNull: true
 				}
 			]
