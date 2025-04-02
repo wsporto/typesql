@@ -1065,6 +1065,28 @@ function traverse_function(expr: ExprContext, function_name: string, traverseCon
 			table: functionType.table || ''
 		};
 	}
+	if (function_name === 'glob') {
+		const functionType = freshVar(expr.getText(), 'TEXT');
+		const exprTypes = expr.expr_list().map((paramExpr) => {
+			const paramType = traverse_expr(paramExpr, traverseContext);
+			traverseContext.constraints.push({
+				expression: expr.getText(),
+				type1: functionType,
+				type2: paramType.type
+			});
+			if (paramType.type.kind === 'TypeVar') {
+				functionType.table = paramType.table;
+			}
+			return paramType;
+		});
+
+		return {
+			name: functionType.name,
+			type: functionType,
+			notNull: exprTypes.every(param => param.notNull),
+			table: functionType.table || ''
+		};
+	}
 	if (function_name === 'length') {
 		const functionType = freshVar(expr.getText(), 'INTEGER');
 		const paramExpr = expr.expr(0);

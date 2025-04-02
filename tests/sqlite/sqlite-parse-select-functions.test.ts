@@ -1709,6 +1709,67 @@ describe('sqlite-parse-select-functions', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('SELECT glob(?, ?)', () => {
+		const sql = 'SELECT glob(?, ?)';
+		const actual = parseSql(sql, sqliteDbSchema);
+
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'glob(?,?)',
+					type: 'TEXT',
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: [
+				{
+					columnType: 'TEXT',
+					name: 'param1',
+					notNull: true
+				},
+				{
+					columnType: 'TEXT',
+					name: 'param2',
+					notNull: true
+				}
+			]
+		};
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('SELECT glob(name, descr) FROM mytable2', () => {
+		const sql = 'SELECT glob(name, descr) FROM mytable2';
+		const actual = parseSql(sql, sqliteDbSchema);
+
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'glob(name,descr)',
+					type: 'TEXT',
+					notNull: false,
+					table: 'mytable2'
+				}
+			],
+			parameters: []
+		};
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('SELECT likelihood(?, ?) as result', () => {
 		const sql = 'SELECT likelihood(?, ?) as result';
 		const actual = parseSql(sql, sqliteDbSchema);
