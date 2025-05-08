@@ -137,7 +137,7 @@ describe('preprocess-sql', () => {
 		const actual = preprocessSql(sql, 'postgres');
 		const expected: PreprocessedSql = {
 			sql: `
-        select $1, $1, $2, $3, $2 from mytable1`,
+        select $1, $2, $3, $4, $5 from mytable1`,
 			namedParameters: ['value1', 'value1', 'value2', 'value3', 'value2']
 		};
 

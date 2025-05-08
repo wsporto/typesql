@@ -1375,4 +1375,53 @@ describe('Infer column nullability', () => {
 		};
 		assert.deepStrictEqual(actual, expected);
 	});
+
+	it('WHERE $1 is null OR $1 > id', async () => {
+		const sql = `
+	    SELECT id from mytable1
+		WHERE $1 is null OR $1 > id
+	    `;
+		const actual = parseSql(sql, dbSchema);
+		const expected: PostgresTraverseResult = {
+			queryType: 'Select',
+			multipleRowsResult: true,
+			limit: undefined,
+			columns: [
+				{
+					column_name: 'id',
+					is_nullable: false,
+					table_name: 'mytable1',
+					table_schema: 'public'
+				}
+			],
+			parameterList: [false, false],
+			parametersNullability: [false, true]
+		};
+		assert.deepStrictEqual(actual, expected);
+	});
+
+	it('WHERE $1 is null OR $1 > id', async () => {
+		const sql = `
+	    SELECT id from mytable1
+		WHERE ($1 is null OR $1 > id)
+		AND ($2::int4 is null OR $2 > value)
+	    `;
+		const actual = parseSql(sql, dbSchema);
+		const expected: PostgresTraverseResult = {
+			queryType: 'Select',
+			multipleRowsResult: true,
+			limit: undefined,
+			columns: [
+				{
+					column_name: 'id',
+					is_nullable: false,
+					table_name: 'mytable1',
+					table_schema: 'public'
+				}
+			],
+			parameterList: [false, false, false, false],
+			parametersNullability: [false, true, false, true]
+		};
+		assert.deepStrictEqual(actual, expected);
+	});
 });

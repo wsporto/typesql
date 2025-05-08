@@ -528,9 +528,23 @@ function traverse_expr_isnull(a_expr_isnull: A_expr_isnullContext, context: Trav
 function traverse_expr_is_not(a_expr_is_not: A_expr_is_notContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
 	const a_expr_compare = a_expr_is_not.a_expr_compare();
 	if (a_expr_compare) {
-		return traverse_expr_compare(a_expr_compare, context, traverseResult);
+		const result = traverse_expr_compare(a_expr_compare, context, traverseResult);
+		if (a_expr_is_not.IS() && a_expr_is_not.NULL_P()) {
+			checkParamterNullability(result, traverseResult);
+		}
+		return result;
 	}
 	throw Error('traverse_expr_is_not -  Not expected:' + a_expr_is_not.getText());
+}
+
+function checkParamterNullability(column: NotNullInfo, traverseResult: TraverseResult) {
+	if (isParameter(column.column_name)) {
+		column.is_nullable = true;
+		const param = traverseResult.parameters.at(-1);
+		if (param) {
+			param.isNotNull = false;
+		}
+	}
 }
 
 function traverse_expr_compare(a_expr_compare: A_expr_compareContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
