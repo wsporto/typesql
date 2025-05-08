@@ -871,6 +871,166 @@ describe('select-single-table', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('multipleRowsResult for table with composite key: where key1 = 1', async () => {
+
+		const sql = 'select key1, key2 from composite_key where key1 = 1';
+
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'key1',
+					type: 'int4',
+					notNull: true,
+					table: 'composite_key'
+				},
+				{
+					columnName: 'key2',
+					type: 'int4',
+					notNull: true,
+					table: 'composite_key'
+				}
+			],
+			parameters: []
+		};
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('multipleRowsResult for table with composite key: where key1 = 1 and key2 = 2', async () => {
+
+		const sql = 'select key1, key2 from composite_key where key1 = 1 and key2 = 2';
+
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'key1',
+					type: 'int4',
+					notNull: true,
+					table: 'composite_key'
+				},
+				{
+					columnName: 'key2',
+					type: 'int4',
+					notNull: true,
+					table: 'composite_key'
+				}
+			],
+			parameters: []
+		};
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('multipleRowsResult for table with composite key: where 1 = key2 and 2 = key1', async () => {
+
+		const sql = 'select key1, key2 from composite_key where 1 = key2 and 2 = key1';
+
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'key1',
+					type: 'int4',
+					notNull: true,
+					table: 'composite_key'
+				},
+				{
+					columnName: 'key2',
+					type: 'int4',
+					notNull: true,
+					table: 'composite_key'
+				}
+			],
+			parameters: []
+		};
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('multipleRowsResult for table with composite key: where key1 = 1 and key2 > 2', async () => {
+
+		const sql = 'select key1, key2 from composite_key where key1 = 1 and key2 > 2';
+
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'key1',
+					type: 'int4',
+					notNull: true,
+					table: 'composite_key'
+				},
+				{
+					columnName: 'key2',
+					type: 'int4',
+					notNull: true,
+					table: 'composite_key'
+				}
+			],
+			parameters: []
+		};
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('multipleRowsResult for table with composite key: where key1 = 1 and key2 = 2 or key2 = 3', async () => {
+
+		const sql = 'select key1, key2 from composite_key where key1 = 1 and key2 = 2 or key2 = 3';
+
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'key1',
+					type: 'int4',
+					notNull: true,
+					table: 'composite_key'
+				},
+				{
+					columnName: 'key2',
+					type: 'int4',
+					notNull: true,
+					table: 'composite_key'
+				}
+			],
+			parameters: []
+		};
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('SELECT id FROM mytable2 (id, name, descr) = ($1, $2, $3)', async () => {
 		const sql = 'SELECT id FROM mytable2 WHERE (id, name, descr) = ($1, $2, $3)';
 

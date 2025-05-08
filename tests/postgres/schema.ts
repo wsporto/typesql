@@ -422,6 +422,66 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
+		autoincrement: false,
+		column_key: 'PRI',
+		column_name: 'key1',
+		is_nullable: false,
+		oid: 16640,
+		table_name: 'composite_key',
+		table_schema: 'public',
+		type_id: 23
+	},
+	{
+		autoincrement: false,
+		column_key: 'PRI',
+		column_name: 'key2',
+		is_nullable: false,
+		oid: 16640,
+		table_name: 'composite_key',
+		table_schema: 'public',
+		type_id: 23
+	},
+	{
+		autoincrement: false,
+		column_key: '',
+		column_name: 'value',
+		is_nullable: true,
+		oid: 16640,
+		table_name: 'composite_key',
+		table_schema: 'public',
+		type_id: 23
+	},
+	{
+		autoincrement: false,
+		column_key: 'UNI',
+		column_name: 'key1',
+		is_nullable: true,
+		oid: 16645,
+		table_name: 'composite_unique_constraint',
+		table_schema: 'public',
+		type_id: 23
+	},
+	{
+		autoincrement: false,
+		column_key: 'UNI',
+		column_name: 'key2',
+		is_nullable: true,
+		oid: 16645,
+		table_name: 'composite_unique_constraint',
+		table_schema: 'public',
+		type_id: 23
+	},
+	{
+		autoincrement: false,
+		column_key: '',
+		column_name: 'value',
+		is_nullable: true,
+		oid: 16645,
+		table_name: 'composite_unique_constraint',
+		table_schema: 'public',
+		type_id: 23
+	},
+	{
 		oid: 16396,
 		table_schema: "public",
 		table_name: "mytable1",
