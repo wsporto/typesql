@@ -56,7 +56,7 @@ describe('postgres-code-generator', () => {
 	});
 
 	it('select03 - select with same parameter used twice', async () => {
-		const sql = 'select id from mytable1 where id = :id or value = :id';
+		const sql = 'select id from mytable1 where id = :id or value = :id and value = :value';
 
 		const actual = await generateCode(dialect, sql, 'select03');
 		const expected = readFileSync('tests/postgres/expected-code/select03.ts.txt', 'utf-8');
