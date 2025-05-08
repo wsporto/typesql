@@ -1709,17 +1709,23 @@ function isSingleRowResult_where(a_expr: A_exprContext, uniqueKeys: string[]): b
 
 function isSingleRowResult_a_expr_and(a_expr_and: A_expr_andContext, uniqueKeys: string[]): boolean {
 	const a_expr_between_list = a_expr_and.a_expr_between_list();
-	if (a_expr_between_list && a_expr_between_list.length > 0) {
-		return a_expr_between_list.some(a_expr_between => isSingleRowResult_a_expr_between(a_expr_between, uniqueKeys));
-	}
-	return false;
+	const uniqueCheck = a_expr_between_list.flatMap(a_expr_between => getCheckedKeys_a_expr_between(a_expr_between));
+	const allIncluded = uniqueKeys.every(key => uniqueCheck.includes(key));
+
+	return allIncluded;
 }
-function isSingleRowResult_a_expr_between(a_expr_between: A_expr_betweenContext, uniqueKeys: string[]): boolean {
-	const isSingleRow = a_expr_between.a_expr_in_list().every(a_expr_in => isSingleRowResult_a_expr_in(a_expr_in, uniqueKeys));
-	return isSingleRow;
+function getCheckedKeys_a_expr_between(a_expr_between: A_expr_betweenContext): string[] {
+	const checkedKeys = a_expr_between.a_expr_in_list().flatMap(a_expr_in => {
+		const result = getCheckedKey_a_expr_in(a_expr_in);
+		if (result) {
+			return result;
+		}
+		return [];
+	});
+	return checkedKeys;
 }
 
-function isSingleRowResult_a_expr_in(a_expr_in: A_expr_inContext, uniqueKeys: string[]): boolean {
+function getCheckedKey_a_expr_in(a_expr_in: A_expr_inContext): string | null {
 	const a_expr_compare = a_expr_in.a_expr_unary_not()?.a_expr_isnull()?.a_expr_is_not()?.a_expr_compare();
 	if (a_expr_compare) {
 		if (a_expr_compare.EQUAL() != null) {
@@ -1727,17 +1733,22 @@ function isSingleRowResult_a_expr_in(a_expr_in: A_expr_inContext, uniqueKeys: st
 			if (a_expr_like_list && a_expr_like_list.length == 2) {
 				const left = a_expr_like_list[0];
 				const right = a_expr_like_list[1];
-				const result = (isUniqueColumn(left, uniqueKeys) + isUniqueColumn(right, uniqueKeys));
-				return result == 1;
-			}
-		};
+				const col1 = getCheckedUniqueColumn(left);
+				const col2 = getCheckedUniqueColumn(right);
+				if (col1) {
+					return col1;
+				}
+				else if (col2) {
+					return col2;
+				}
+			};
+		}
 	}
-	return false;
+	return null;
 }
 
-//1 = yes
-//0 = no
-function isUniqueColumn(a_expr_like: A_expr_likeContext, uniqueKeys: string[]): number {
+//field or null
+function getCheckedUniqueColumn(a_expr_like: A_expr_likeContext): string | null {
 	const c_expr = a_expr_like.a_expr_qual_op_list()?.[0].a_expr_unary_qualop_list()?.[0].a_expr_add()
 		.a_expr_mul_list()[0].a_expr_caret_list()[0].a_expr_unary_sign_list()[0].a_expr_at_time_zone()
 		.a_expr_collate().a_expr_typecast().c_expr();
@@ -1746,10 +1757,10 @@ function isUniqueColumn(a_expr_like: A_expr_likeContext, uniqueKeys: string[]): 
 		if (columnref) {
 			const fieldName = splitName(columnref.getText());
 			// const col = traverseColumnRef(columnref, dbSchema);
-			return uniqueKeys.includes(fieldName.name) ? 1 : 0;
+			return fieldName.name;
 		}
 	}
-	return 0;
+	return null;
 }
 
 function checkLimit(selectstmt: SelectstmtContext): number | undefined {
