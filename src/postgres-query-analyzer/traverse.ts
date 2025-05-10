@@ -329,22 +329,16 @@ function extractRelations(a_expr: A_exprContext): string[] {
 
 function traverse_values_clause(values_clause: Values_clauseContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo[] {
 	const expr_list_list = values_clause.expr_list_list();
-	if (expr_list_list) {
-		return expr_list_list.flatMap(expr_list => traverse_expr_list(expr_list, context, traverseResult));
-	}
-	return [];
+	return expr_list_list.flatMap(expr_list => traverse_expr_list(expr_list, context, traverseResult));
 }
 
 function traverse_expr_list(expr_list: Expr_listContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo[] {
-	const columns = expr_list.a_expr_list().map(a_expr => {
-		const notNull = traverse_a_expr(a_expr, context, traverseResult);
-		const result: NotNullInfo = {
-			column_name: '?column?',
-			is_nullable: !notNull,
-			table_name: '',
-			table_schema: ''
+	const columns = expr_list.a_expr_list().map((a_expr, index) => {
+		const exprResult = traverse_a_expr(a_expr, context, traverseResult);
+		if (isParameter(exprResult.column_name)) {
+			traverseResult.parameters.at(-1)!.isNotNull = !context.fromColumns[index].is_nullable;
 		}
-		return result;
+		return exprResult;
 	});
 	return columns;
 }
@@ -365,7 +359,7 @@ function filterColumns_simple_select_pramary(simple_select_pramary: Simple_selec
 }
 
 function traverse_target_list(target_list: Target_listContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo[] {
-	const columns = target_list.target_el_list().flatMap(target_el => {
+	const columns = target_list.target_el_list().flatMap((target_el, index) => {
 		const fieldName = splitName(target_el.getText());
 		if (fieldName.name == '*') {
 			const columns = filterColumns(context.fromColumns, fieldName);
@@ -382,6 +376,9 @@ function traverse_target_list(target_list: Target_listContext, context: Traverse
 			return columns;
 		}
 		const column = traverse_target_el(target_el, context, traverseResult);
+		if (isParameter(column.column_name)) {
+			traverseResult.parameters.at(-1)!.isNotNull = !context.fromColumns[index].is_nullable;
+		}
 		return [column];
 	})
 	return columns;
@@ -1216,7 +1213,7 @@ function traverseInsertstmt(insertstmt: InsertstmtContext, dbSchema: PostgresCol
 	}
 
 	const selectstmt = insert_rest.selectstmt();
-	traverse_insert_select_stmt(selectstmt, { ...context, fromColumns: insertColumnsList }, traverseResult);
+	traverseSelectstmt(selectstmt, { ...context, fromColumns: insertColumnsList }, traverseResult);
 
 	const on_conflict = insertstmt.on_conflict_();
 	if (on_conflict) {
@@ -1238,41 +1235,6 @@ function traverseInsertstmt(insertstmt: InsertstmtContext, dbSchema: PostgresCol
 		result.returning = true;
 	}
 	return result;
-}
-
-function traverse_insert_select_stmt(selectstmt: SelectstmtContext, context: TraverseContext, traverseResult: TraverseResult): void {
-	const simple_select = selectstmt.select_no_parens()?.select_clause()?.simple_select_intersect_list()?.[0];
-	if (simple_select) {
-		const simple_select_pramary = simple_select?.simple_select_pramary_list()?.[0];
-		if (simple_select_pramary) {
-
-			const values_clause = simple_select_pramary.values_clause();
-			if (values_clause) {
-				values_clause.expr_list_list()
-					.forEach(expr_list => traverse_insert_a_expr_list(expr_list, context, traverseResult))
-			}
-			const target_list = simple_select_pramary.target_list_()?.target_list();
-			if (target_list) {
-				const from_clause = simple_select_pramary.from_clause();
-				const fromColumns = from_clause ? traverse_from_clause(from_clause, { ...context, fromColumns: [] }, traverseResult) : [];
-				target_list.target_el_list().forEach((target_el, index) => {
-					const targetResult = traverse_target_el(target_el, { ...context, fromColumns }, traverseResult);
-					if (isParameter(targetResult.column_name)) {
-						traverseResult.parameters.at(-1)!.isNotNull = !context.fromColumns[index].is_nullable;
-					}
-				});
-			}
-		}
-	}
-}
-
-function traverse_insert_a_expr_list(expr_list: Expr_listContext, context: TraverseContext, traverseResult: TraverseResult) {
-	expr_list.a_expr_list().forEach((a_expr, index) => {
-		const result = traverse_a_expr(a_expr, context, traverseResult);
-		if (isParameter(result.column_name)) {
-			traverseResult.parameters.at(-1)!.isNotNull = !context.fromColumns[index].is_nullable;
-		}
-	})
 }
 
 function traverseDeletestmt(deleteStmt: DeletestmtContext, dbSchema: PostgresColumnSchema[], traverseResult: TraverseResult): PostgresTraverseResult {
@@ -1617,7 +1579,7 @@ function isSingleRowResult(selectstmt: SelectstmtContext, dbSchema: PostgresColu
 	const simple_select_pramary = simple_select_pramary_list[0];
 	const from_clause = simple_select_pramary.from_clause();
 	if (!from_clause) {
-		const hasSetReturningFunction = simple_select_pramary.target_list_().target_list().target_el_list().some(target_el => isSetReturningFunction_target_el(target_el));
+		const hasSetReturningFunction = simple_select_pramary.target_list_()?.target_list().target_el_list().some(target_el => isSetReturningFunction_target_el(target_el));
 		return !hasSetReturningFunction;
 	}
 	if (!simple_select_pramary.group_clause()) {

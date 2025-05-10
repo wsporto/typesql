@@ -1550,7 +1550,7 @@ describe('Infer column nullability', () => {
 		assert.deepStrictEqual(actual.parametersNullability, expected);
 	});
 
-	it.skip('INSERT INTO mytable5 (id, name) SELECT id, descr FROM mytable2 WHERE name = $1 AND id > $2', async () => {
+	it('INSERT INTO mytable5 (id, name) SELECT id, descr FROM mytable2 WHERE name = $1 AND id > $2', async () => {
 		const sql = 'INSERT INTO mytable5 (id, name) SELECT id, descr FROM mytable2 WHERE name = $1 AND id > $2';
 		const actual = parseSql(sql, dbSchema);
 		const expected = [true, true]
