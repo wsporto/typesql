@@ -399,9 +399,9 @@ describe('select-single-table', () => {
 	});
 
 	it('SELECT name FROM mytable2 m WHERE (:name::text is null or m.name = :name) AND m.descr = :descr', async () => {
-		const sql = 'SELECT name FROM mytable2 m WHERE ($1::text is null or m.name = $2) AND m.descr = $3';
+		const sql = 'SELECT name FROM mytable2 m WHERE ($1::text is null or m.name = $1) AND m.descr = $2';
 
-		const actual = await describeQuery(postres, sql, ['name', 'name', 'descr']);
+		const actual = await describeQuery(postres, sql, ['name', 'descr']);
 		const expected: SchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -419,11 +419,6 @@ describe('select-single-table', () => {
 					name: 'name',
 					columnType: 'text',
 					notNull: false
-				},
-				{
-					name: 'name',
-					columnType: 'text',
-					notNull: true
 				},
 				{
 					name: 'descr',

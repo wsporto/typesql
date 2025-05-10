@@ -133,12 +133,15 @@ function collectContextsOfType(ctx: ParserRuleContext, targetType: any): ParserR
 	return results;
 }
 
+function getInParameterList(ctx: ParserRuleContext) {
+	const result = collectContextsOfType(ctx, C_expr_exprContext).filter(c_expr => (c_expr as any).PARAM());
+	const paramIsListResult = result.map(param => paramIsList(param));
+	return paramIsListResult;
+}
 
 function traverseSelectstmt(selectstmt: SelectstmtContext, context: TraverseContext, traverseResult: TraverseResult): PostgresTraverseResult {
 
-	const result = collectContextsOfType(selectstmt, C_expr_exprContext).filter(c_expr => (c_expr as any).PARAM());
-	const paramIsListResult = result.map(param => paramIsList(param));
-
+	const paramIsListResult = getInParameterList(selectstmt);
 
 	const columns = traverse_selectstmt(selectstmt, context, traverseResult);
 	//select parameters are collected after from paramters
@@ -297,6 +300,17 @@ function traverse_simple_select_pramary(simple_select_pramary: Simple_select_pra
 			})
 		}
 	}
+	simple_select_pramary.group_clause()?.group_by_list()?.group_by_item_list().forEach(group_by => {
+		const a_expr = group_by.a_expr();
+		if (a_expr) {
+			traverse_a_expr(a_expr, newContext, traverseResult);
+		}
+	});
+	const having_expr = simple_select_pramary.having_clause()?.a_expr();
+	if (having_expr) {
+		traverse_a_expr(having_expr, newContext, traverseResult);
+	}
+
 	const filteredColumns = filterColumns_simple_select_pramary(simple_select_pramary, newContext, traverseResult);
 	return filteredColumns;
 }
@@ -468,10 +482,19 @@ function traverse_expr_and(a_expr_and: A_expr_andContext, context: TraverseConte
 
 function traverse_expr_between(a_expr_between: A_expr_betweenContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
 	const a_expr_in = a_expr_between.a_expr_in_list()[0];
-	if (a_expr_in) {
+	if (!a_expr_between.AND()) {
 		return traverse_expr_in(a_expr_in, context, traverseResult);
 	}
-	throw Error('traverse_expr_between -  Not expected:' + a_expr_between.getText());
+	const start = a_expr_between.a_expr_in_list()[1];
+	traverse_expr_in(start, context, traverseResult);
+	const end = a_expr_between.a_expr_in_list()[2];
+	traverse_expr_in(end, context, traverseResult);
+	return {
+		column_name: a_expr_between.getText(),
+		is_nullable: false,
+		table_name: '',
+		table_schema: ''
+	}
 }
 
 function traverse_expr_in(a_expr_in: A_expr_inContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
@@ -549,14 +572,34 @@ function checkParamterNullability(column: NotNullInfo, traverseResult: TraverseR
 
 function traverse_expr_compare(a_expr_compare: A_expr_compareContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
 	const a_expr_like_list = a_expr_compare.a_expr_like_list();
-	if (a_expr_like_list) {
-		const result = a_expr_like_list.map(a_expr_like => traverse_expr_like(a_expr_like, context, traverseResult));
-		if (result.length === 1) {
+	const result = a_expr_like_list.map(a_expr_like => traverse_expr_like(a_expr_like, context, traverseResult));
+	if (!a_expr_compare.sub_type()) {
+		if (a_expr_like_list.length === 1) {
 			return result[0];
 		}
 		return {
 			column_name: '?column?',
 			is_nullable: result.some(col => col.is_nullable),
+			table_name: '',
+			table_schema: ''
+		}
+	}
+	const select_with_parens = a_expr_compare.select_with_parens();
+	if (select_with_parens) {
+		const result = traverse_select_with_parens(select_with_parens, context, traverseResult);
+		return {
+			column_name: '?column?',
+			is_nullable: result.some(col => col.is_nullable),
+			table_name: '',
+			table_schema: ''
+		}
+	}
+	const a_expr = a_expr_compare.a_expr();
+	if (a_expr) {
+		const result = traverse_a_expr(a_expr, context, traverseResult);
+		return {
+			column_name: '?column?',
+			is_nullable: result.is_nullable,
 			table_name: '',
 			table_schema: ''
 		}
@@ -778,7 +821,8 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 		}
 	}
 	if (c_expr instanceof C_expr_existsContext) {
-		//todo - traverse
+		const select_with_parens = c_expr.select_with_parens();
+		traverse_select_with_parens(select_with_parens, context, traverseResult);
 		return {
 			column_name: '?column?',
 			is_nullable: false,
@@ -883,6 +927,9 @@ function traversefunc_expr_common_subexpr(func_expr_common_subexpr: Func_expr_co
 		const result = traverse_a_expr(a_expr, context, traverseResult)
 		return !result.is_nullable;
 	}
+	func_expr_common_subexpr.a_expr_list().forEach(a_expr => {
+		traverse_a_expr(a_expr, context, traverseResult);
+	})
 	return false;
 }
 
@@ -1234,6 +1281,8 @@ function traverseDeletestmt(deleteStmt: DeletestmtContext, dbSchema: PostgresCol
 	const tableName = relation_expr.getText();
 	const deleteColumns = dbSchema.filter(col => col.table_name === tableName);
 
+	const paramIsListResult = getInParameterList(deleteStmt);
+
 	const returning_clause = deleteStmt.returning_clause();
 	const context: TraverseContext = {
 		dbSchema,
@@ -1241,6 +1290,11 @@ function traverseDeletestmt(deleteStmt: DeletestmtContext, dbSchema: PostgresCol
 		collectNestedInfo: false,
 		collectDynamicQueryInfo: false
 	}
+	const whereExpr = deleteStmt.where_or_current_clause()?.a_expr();
+	if (whereExpr) {
+		traverse_a_expr(whereExpr, context, traverseResult);
+	}
+
 	const returninColumns = returning_clause ? traverse_target_list(returning_clause.target_list(), context, traverseResult) : [];
 
 	const result: PostgresTraverseResult = {
@@ -1248,7 +1302,7 @@ function traverseDeletestmt(deleteStmt: DeletestmtContext, dbSchema: PostgresCol
 		multipleRowsResult: false,
 		parametersNullability: traverseResult.parameters.map(param => param.isNotNull),
 		columns: returninColumns,
-		parameterList: []
+		parameterList: paramIsListResult
 	}
 	if (returning_clause) {
 		result.returning = true;

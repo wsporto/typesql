@@ -11,9 +11,9 @@ export type Select03Result = {
 
 export async function select03(client: pg.Client | pg.Pool, params: Select03Params): Promise<Select03Result[]> {
 	const sql = `
-	select id from mytable1 where id = $1 or value = $2 and value = $3
+	select id from mytable1 where id = $1 or value = $1 and value = $2
 	`
-	return client.query({ text: sql, rowMode: 'array', values: [params.id, params.id, params.value] })
+	return client.query({ text: sql, rowMode: 'array', values: [params.id, params.value] })
 		.then(res => res.rows.map(row => mapArrayToSelect03Result(row)));
 }
 

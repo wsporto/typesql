@@ -18,9 +18,9 @@ export async function select08(client: pg.Client | pg.Pool, params: Select08Para
 		$1::bool as param1,
 		$2::bool as param2
 	FROM mytable1
-	WHERE $3 is true OR ($4 is true OR $5::bool is null)
+	WHERE $1 is true OR ($2 is true OR $2::bool is null)
 	`
-	return client.query({ text: sql, rowMode: 'array', values: [params.param1, params.param2, params.param1, params.param2, params.param2] })
+	return client.query({ text: sql, rowMode: 'array', values: [params.param1, params.param2] })
 		.then(res => res.rows.map(row => mapArrayToSelect08Result(row)));
 }
 
