@@ -26,9 +26,9 @@ function describeQueryRefine(sql: string, postgresDescribeResult: PostgresDescri
 		})
 	}
 	const traverseResult = parseResult.value;
-
-	const paramNames = postgresDescribeResult.parameters.map((_, index) => namedParameters[index] ? namedParameters[index] : `param${index + 1}`);
-
+	const totalNumberOfParameters = traverseResult.parametersNullability.length + (traverseResult.whereParamtersNullability?.length || 0);
+	const paramNames = namedParameters.length > 0 ? namedParameters : Array.from({ length: totalNumberOfParameters }).map((_, index) => `param${index + 1}`);
+	//replace list parameters
 	const newSql = replacePostgresParams(sql, traverseResult.parameterList, paramNames);
 
 	const descResult: SchemaDef = {
@@ -61,6 +61,23 @@ function describeQueryRefine(sql: string, postgresDescribeResult: PostgresDescri
 		descResult.dynamicSqlQuery2 = dynamicSqlQueryInfo;
 	}
 	return ok(descResult);
+}
+
+function createIndexToNameMap(names: string[]): Map<number, string> {
+	const indexToName = new Map<number, string>();
+	const nameToIndex = new Map<string, number>();
+
+	let currentIndex = 0;
+
+	for (const name of names) {
+		if (!nameToIndex.has(name)) {
+			nameToIndex.set(name, currentIndex);
+			indexToName.set(currentIndex, name);
+			currentIndex++;
+		}
+	}
+
+	return indexToName;
 }
 
 type TableNameHash = { [oid: number]: string }
@@ -107,11 +124,19 @@ function getColumnsForQuery(traverseResult: PostgresTraverseResult, postgresDesc
 }
 
 function getParamtersForQuery(traverseResult: PostgresTraverseResult, postgresDescribeResult: PostgresDescribe, paramNames: string[]): ParameterDef[] {
+	const namedParametersIndexes = createIndexToNameMap(paramNames);
 	if (traverseResult.queryType === 'Copy') {
 		return getColumnsForCopyStmt(traverseResult);
 	}
 	return postgresDescribeResult.parameters
-		.map((param, index) => mapToParamDef(paramNames[index], param, traverseResult.parametersNullability[index] ?? true, traverseResult.parameterList[index]))
+		.map((param, index) => {
+			const paramName = namedParametersIndexes.get(index)!;
+			const indexes = paramNames.flatMap((name, index) => name === paramName ? [index] : []);
+			const notNull = indexes.every(index => traverseResult.parametersNullability[index]);
+			const paramList = indexes.every(index => traverseResult.parameterList[index]);
+			const paramResult = mapToParamDef(paramName, param, notNull, paramList);
+			return paramResult;
+		})
 }
 
 function getColumnsForCopyStmt(traverseResult: PostgresTraverseResult): ParameterDef[] {

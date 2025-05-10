@@ -120,19 +120,14 @@ describe('postgres-parse-insert', () => {
 	});
 
 	it('insert same parameter into two fields', async () => {
-		const sql = 'insert into mytable2 (name, descr) values ($1, $2)';
+		const sql = 'insert into mytable2 (name, descr) values ($1, $1)';
 		const actual = await describeQuery(postres, sql, ['name', 'name']);
 		const expected: SchemaDef = {
 			multipleRowsResult: false,
 			queryType: 'Insert',
-			sql: 'insert into mytable2 (name, descr) values ($1, $2)',
+			sql: 'insert into mytable2 (name, descr) values ($1, $1)',
 			columns: [],
 			parameters: [
-				{
-					name: 'name',
-					columnType: 'text',
-					notNull: false
-				},
 				{
 					name: 'name',
 					columnType: 'text',

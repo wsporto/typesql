@@ -19,7 +19,7 @@ describe('Infer column nullability', () => {
 	before(async function () {
 		const dbSchemaResult = await await loadDbSchema(postres);
 		if (dbSchemaResult.isErr()) {
-			assert.fail(`Shouldn't return an error: ${dbSchemaResult.error}`);
+			assert.fail(`Shouldn't return an error: ${dbSchemaResult.error.description}`);
 		}
 		dbSchema = dbSchemaResult.value;
 	});
@@ -1423,5 +1423,137 @@ describe('Infer column nullability', () => {
 			parametersNullability: [false, true, false, true]
 		};
 		assert.deepStrictEqual(actual, expected);
+	});
+
+	it('DELETE FROM mytable1 WHERE id=?', async () => {
+		const sql = `
+	    DELETE FROM mytable1 WHERE id=$1
+	    `;
+		const actual = parseSql(sql, dbSchema);
+		const expected: PostgresTraverseResult = {
+			queryType: 'Delete',
+			multipleRowsResult: false,
+			columns: [],
+			parameterList: [false],
+			parametersNullability: [true]
+		};
+		assert.deepStrictEqual(actual, expected);
+	});
+
+	it('WHERE id < ANY ($1) AND name = SOME ($1) AND name <> $3', async () => {
+		const sql = `
+		SELECT id
+		FROM mytable2
+		WHERE id < ANY ($1)
+		AND name = SOME ($1)
+		AND name <> $3
+	    `;
+		const actual = parseSql(sql, dbSchema);
+		const expected: PostgresTraverseResult = {
+			queryType: 'Select',
+			multipleRowsResult: true,
+			limit: undefined,
+			columns: [
+				{
+					column_name: 'id',
+					is_nullable: false,
+					table_name: 'mytable2',
+					table_schema: 'public'
+				}
+			],
+			parameterList: [false, false, false],
+			parametersNullability: [true, true, true]
+		};
+		assert.deepStrictEqual(actual, expected);
+	});
+
+	it('select id from mytable2 where exists ( select id from mytable1 where value = $1)', async () => {
+		const sql = 'select id from mytable2 where exists ( select id from mytable1 where value = $1)';
+		const actual = parseSql(sql, dbSchema);
+		const expected: PostgresTraverseResult = {
+			queryType: 'Select',
+			multipleRowsResult: true,
+			limit: undefined,
+			columns: [
+				{
+					column_name: 'id',
+					is_nullable: false,
+					table_name: 'mytable2',
+					table_schema: 'public'
+				}
+			],
+			parameterList: [false],
+			parametersNullability: [true]
+		};
+		assert.deepStrictEqual(actual, expected);
+	});
+
+	it('SELECT id FROM mytable1 where value between $1 and $2', async () => {
+		const sql = 'SELECT id FROM mytable1 where value between $1 and $2';
+		const actual = parseSql(sql, dbSchema);
+		const expected: PostgresTraverseResult = {
+			queryType: 'Select',
+			multipleRowsResult: true,
+			limit: undefined,
+			columns: [
+				{
+					column_name: 'id',
+					is_nullable: false,
+					table_name: 'mytable1',
+					table_schema: 'public'
+				}
+			],
+			parameterList: [false, false],
+			parametersNullability: [true, true]
+		};
+		assert.deepStrictEqual(actual, expected);
+	});
+
+	it(`SELECT NULLIF(?, 'a') FROM mytable1`, async () => {
+		const sql = `SELECT NULLIF($1::text, 'a') FROM mytable1`;
+		const actual = parseSql(sql, dbSchema);
+		const expected: PostgresTraverseResult = {
+			queryType: 'Select',
+			multipleRowsResult: true,
+			limit: undefined,
+			columns: [
+				{
+					column_name: 'NULLIF',
+					is_nullable: true,
+					table_name: '',
+					table_schema: ''
+				}
+			],
+			parameterList: [false],
+			parametersNullability: [true]
+		};
+		assert.deepStrictEqual(actual, expected);
+	});
+
+	it(`HAVING value > ? and ? <`, async () => {
+		const sql = `
+        SELECT
+            name,
+            SUM(double_value) as value,
+            SUM(double_value * 0.01) as id
+        FROM mytable3
+        WHERE id > $1 -- this id is from mytable3 column
+        GROUP BY
+            name
+        HAVING
+            SUM(double_value) > $2
+            and SUM(double_value * 0.01) < $3 -- this id is from the SELECT alias
+            AND SUM(double_value) = $4
+        `;
+		const actual = parseSql(sql, dbSchema);
+		const expected = [true, true, true, true]
+		assert.deepStrictEqual(actual.parametersNullability, expected);
+	});
+
+	it('INSERT INTO mytable5 (id, name) SELECT id, descr FROM mytable2 WHERE name = $1 AND id > $2', async () => {
+		const sql = 'INSERT INTO mytable5 (id, name) SELECT id, descr FROM mytable2 WHERE name = $1 AND id > $2';
+		const actual = parseSql(sql, dbSchema);
+		const expected = [true, true]
+		assert.deepStrictEqual(actual.parametersNullability, expected);
 	});
 });
