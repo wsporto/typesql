@@ -310,7 +310,7 @@ describe('sqlite-Test simple select statements', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
-	it('SELECT id FROM main.MYTABLE1', () => {
+	it('SELECT id FROM main.mytable1', () => {
 		const sql = 'SELECT id FROM main.mytable1';
 		const actual = parseSql(sql, sqliteDbSchema);
 		const expected: SchemaDef = {

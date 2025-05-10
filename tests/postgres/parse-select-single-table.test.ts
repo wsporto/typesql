@@ -274,7 +274,7 @@ describe('select-single-table', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
-	it('SELECT id FROM mydb.MYTABLE1', async () => {
+	it('SELECT id FROM mydb.mytable1', async () => {
 		const sql = 'SELECT id FROM public.mytable1';
 		const actual = await describeQuery(postres, sql, []);
 		const expected: SchemaDef = {

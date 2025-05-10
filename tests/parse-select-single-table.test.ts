@@ -289,7 +289,7 @@ describe('Test simple select statements', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
-	it('SELECT id FROM mydb.MYTABLE1', async () => {
+	it('SELECT id FROM mydb.mytable1', async () => {
 		const sql = 'SELECT id FROM mydb.mytable1';
 		const actual = await parseSql(client, sql);
 		const expected: SchemaDef = {
