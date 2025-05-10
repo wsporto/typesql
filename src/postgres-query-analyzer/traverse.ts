@@ -979,8 +979,8 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 	if (relation_expr) {
 		const tableName = traverse_relation_expr(relation_expr, dbSchema);
 		const tableNameWithAlias = alias ? alias : tableName.name;
-		const fromColumnsResult = fromColumns.concat(dbSchema).filter(col => col.table_name === tableName.name)
-			.map(col => ({ ...col, table_name: tableNameWithAlias }));
+		const fromColumnsResult = fromColumns.concat(dbSchema).filter(col => col.table_name.toLowerCase() === tableName.name.toLowerCase())
+			.map(col => ({ ...col, table_name: tableNameWithAlias.toLowerCase() }));
 		allColumns.push(...fromColumnsResult);
 		if (context.collectNestedInfo) {
 
@@ -1198,7 +1198,7 @@ function traverseInsertstmt(insertstmt: InsertstmtContext, dbSchema: PostgresCol
 	}
 	const insert_target = insertstmt.insert_target();
 	const tableName = insert_target.getText();
-	const insertColumns = dbSchema.filter(col => col.table_name === tableName);
+	const insertColumns = dbSchema.filter(col => col.table_name.toLowerCase() === tableName.toLowerCase());
 
 	const insert_rest = insertstmt.insert_rest();
 	const insertColumnsList = insert_rest.insert_column_list()
@@ -1241,7 +1241,7 @@ function traverseDeletestmt(deleteStmt: DeletestmtContext, dbSchema: PostgresCol
 
 	const relation_expr = deleteStmt.relation_expr_opt_alias().relation_expr();
 	const tableName = relation_expr.getText();
-	const deleteColumns = dbSchema.filter(col => col.table_name === tableName);
+	const deleteColumns = dbSchema.filter(col => col.table_name.toLowerCase() === tableName.toLowerCase());
 
 	const paramIsListResult = getInParameterList(deleteStmt);
 
@@ -1276,7 +1276,7 @@ function traverseUpdatestmt(updatestmt: UpdatestmtContext, dbSchema: PostgresCol
 
 	const relation_expr_opt_alias = updatestmt.relation_expr_opt_alias();
 	const tableName = relation_expr_opt_alias.getText();
-	const updateColumns = dbSchema.filter(col => col.table_name === tableName);
+	const updateColumns = dbSchema.filter(col => col.table_name.toLowerCase() === tableName.toLowerCase());
 	const context: TraverseContext = {
 		dbSchema,
 		fromColumns: updateColumns,
@@ -1596,13 +1596,12 @@ function isSingleRowResult(selectstmt: SelectstmtContext, dbSchema: PostgresColu
 		return false;
 	}
 
-	const tableName = getTableName(table_ref_list[0]);
-	const uniqueKeys = dbSchema.filter(col => col.table_name.toLowerCase() === tableName.name.toLowerCase()
-		&& (col.column_key === 'PRI' || col.column_key === 'UNI'))
-		.map(col => col.column_name);
-
 	const where_clause = simple_select_pramary.where_clause();
 	if (where_clause) {
+		const tableName = getTableName(table_ref_list[0]);
+		const uniqueKeys = dbSchema.filter(col => col.table_name.toLowerCase() === tableName.name.toLowerCase()
+			&& (col.column_key === 'PRI' || col.column_key === 'UNI'))
+			.map(col => col.column_name);
 		return isSingleRowResult_where(where_clause.a_expr(), uniqueKeys)
 	}
 	return false;
@@ -1734,7 +1733,7 @@ function getCheckedKeys_a_expr_between(a_expr_between: A_expr_betweenContext): s
 	const checkedKeys = a_expr_between.a_expr_in_list().flatMap(a_expr_in => {
 		const result = getCheckedKey_a_expr_in(a_expr_in);
 		if (result) {
-			return result;
+			return result.toLowerCase();
 		}
 		return [];
 	});

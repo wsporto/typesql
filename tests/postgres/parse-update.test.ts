@@ -42,6 +42,36 @@ describe('postgres-parse-update', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('CASE INSENSITIVE - UPDATE MYTABLE1 SET VALUE = ? WHERE ID = ?', async () => {
+		const sql = 'UPDATE MYTABLE1 SET VALUE = $1 WHERE ID = $2';
+		const actual = await describeQuery(postres, sql, ['value', 'id']);
+		const expected: SchemaDef = {
+			multipleRowsResult: false,
+			queryType: 'Update',
+			sql,
+			columns: [],
+			data: [
+				{
+					name: 'value',
+					columnType: 'int4',
+					notNull: false
+				}
+			],
+			parameters: [
+				{
+					name: 'id',
+					columnType: 'int4',
+					notNull: true
+				}
+			]
+		};
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('update mytable3 set name = ? where id = ?', async () => {
 		const sql = 'update mytable3 set name = $1 where id = $2';
 		const actual = await describeQuery(postres, sql, ['name', 'id']);

@@ -333,6 +333,36 @@ describe('select-single-table', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('CASE INSENSITIVE - SELECT * FROM MYTABLE1 WHERE ID = ?', async () => {
+		const sql = 'SELECT ID FROM MYTABLE1 WHERE ID = $1';
+
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'mytable1'
+				}
+			],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'int4',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('parse a select with a single parameter (not using *)', async () => {
 		const sql = 'SELECT id FROM mytable1 WHERE id = $1 and value = 10';
 

@@ -58,6 +58,29 @@ describe('postgres-parse-delete', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('CASE INSENSITIVE - DELETE FROM MYTABLE1 WHERE ID = ?', async () => {
+		const sql = 'DELETE FROM MYTABLE1 WHERE ID = $1';
+		const actual = await describeQuery(postres, sql, ['id']);
+		const expected: SchemaDef = {
+			multipleRowsResult: false,
+			queryType: 'Delete',
+			sql,
+			columns: [],
+			parameters: [
+				{
+					name: 'id',
+					columnType: 'int4',
+					notNull: true
+				}
+			]
+		};
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('DELETE FROM mytable1 WHERE id = :id RETURNING *', async () => {
 		const sql = 'DELETE FROM mytable1 WHERE id = $1 RETURNING *';
 		const actual = await describeQuery(postres, sql, ['id']);
