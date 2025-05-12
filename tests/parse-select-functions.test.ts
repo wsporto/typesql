@@ -492,6 +492,7 @@ describe('Test parse select with functions', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	//PERIOD_ADD(period, number); period: YYYYMM
 	it('SELECT PERIOD_ADD(:p1, :p2) as add, PERIOD_DIFF(:p1, :p2) as diff', async () => {
 		const sql = 'SELECT PERIOD_ADD(:p1, :p2) as add_result, PERIOD_DIFF(:p1, :p2) as diff_result';
 		const actual = await parseSql(client, sql);
@@ -828,7 +829,7 @@ describe('Test parse select with functions', () => {
 				{
 					columnName: `NULLIF(?, 'a')`,
 					type: 'varchar',
-					notNull: true,
+					notNull: false,
 					table: ''
 				}
 			],

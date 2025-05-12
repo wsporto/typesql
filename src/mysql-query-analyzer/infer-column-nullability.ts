@@ -322,6 +322,9 @@ function inferNotNullFunctionCall(functionCall: FunctionCallContext, dbSchema: C
 
 		return false;
 	}
+	if (functionName === 'nullif') {
+		return false;
+	}
 	if (functionName === 'avg') {
 		return false;
 	}
