@@ -62,7 +62,7 @@ describe('postgres-code-generator', () => {
 		const expected = readFileSync('tests/postgres/expected-code/select03.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
-			assert.fail(`Shouldn't return an error: ${actual.error}`);
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
@@ -98,7 +98,7 @@ OR name = $3`;
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
-	it('select06-any - SELECT id FROM mytable1 ORDER BY ?', async () => {
+	it('select06-any - WHERE id < ANY (:ids) AND name = SOME (:names) AND name <> :name`', async () => {
 		const sql = `SELECT id
 FROM mytable2
 WHERE id < ANY (:ids)
