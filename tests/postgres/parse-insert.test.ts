@@ -654,4 +654,33 @@ describe('postgres-parse-insert', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('INSERT INTO mytable2 (id, name) SELECT id, descr FROM mytable2 WHERE id in (?)', async () => {
+		const sql = `
+			INSERT INTO mytable5 (id, name)
+			SELECT id, descr
+			FROM mytable2 WHERE id in ($1)`;
+		const expectedSql = `
+			INSERT INTO mytable5 (id, name)
+			SELECT id, descr
+			FROM mytable2 WHERE id in (\${generatePlaceholders('$1', params.param1)})`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql: expectedSql,
+			queryType: 'Insert',
+			multipleRowsResult: false,
+			columns: [],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'int4[]',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 });

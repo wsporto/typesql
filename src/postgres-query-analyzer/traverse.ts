@@ -1224,12 +1224,13 @@ function traverseInsertstmt(insertstmt: InsertstmtContext, dbSchema: PostgresCol
 	const returning_clause = insertstmt.returning_clause();
 	const returninColumns = returning_clause ? traverse_target_list(returning_clause.target_list(), context, traverseResult) : [];
 
+	const paramIsListResult = getInParameterList(insertstmt);
 	const result: PostgresTraverseResult = {
 		queryType: 'Insert',
 		multipleRowsResult: false,
 		parametersNullability: traverseResult.parameters.map(param => param.isNotNull),
 		columns: returninColumns,
-		parameterList: []
+		parameterList: paramIsListResult
 	}
 	if (returning_clause) {
 		result.returning = true;
@@ -1275,8 +1276,10 @@ function traverseDeletestmt(deleteStmt: DeletestmtContext, dbSchema: PostgresCol
 function traverseUpdatestmt(updatestmt: UpdatestmtContext, dbSchema: PostgresColumnSchema[], traverseResult: TraverseResult): PostgresTraverseResult {
 
 	const relation_expr_opt_alias = updatestmt.relation_expr_opt_alias();
-	const tableName = relation_expr_opt_alias.getText();
-	const updateColumns = dbSchema.filter(col => col.table_name.toLowerCase() === tableName.toLowerCase());
+	const tableName = relation_expr_opt_alias.relation_expr().getText();
+	const tableAlias = relation_expr_opt_alias.colid()?.getText() || '';
+	const updateColumns = dbSchema.filter(col => col.table_name.toLowerCase() === tableName.toLowerCase())
+		.map(col => ({ ...col, table_name: tableAlias || col.table_name }));
 	const context: TraverseContext = {
 		dbSchema,
 		fromColumns: updateColumns,
@@ -1299,12 +1302,13 @@ function traverseUpdatestmt(updatestmt: UpdatestmtContext, dbSchema: PostgresCol
 	const returning_clause = updatestmt.returning_clause();
 	const returninColumns = returning_clause ? traverse_target_list(returning_clause.target_list(), context, traverseResult) : [];
 
+	const paramIsListResult = getInParameterList(updatestmt);
 	const result: PostgresTraverseResult = {
 		queryType: 'Update',
 		multipleRowsResult: false,
 		parametersNullability: traverseResult.parameters.slice(0, parametersBefore).map(param => param.isNotNull),
 		columns: returninColumns,
-		parameterList: [],
+		parameterList: paramIsListResult,
 		whereParamtersNullability: whereParameters.map(param => param.isNotNull)
 	}
 	if (returning_clause) {

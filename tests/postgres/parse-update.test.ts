@@ -138,6 +138,80 @@ describe('postgres-parse-update', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it(`UPDATE mytable2 t2 SET name = 'a'`, async () => {
+		const sql = `
+			UPDATE mytable2 t2
+			SET name = 'a'
+				`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Update',
+			multipleRowsResult: false,
+			columns: [],
+			data: [],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it(`UPDATE mytable2 t2 SET name = 'a' WHERE t2.id = $1`, async () => {
+		const sql = `
+			UPDATE mytable2 t2
+			SET name = 'a'
+			WHERE t2.id = $1
+			`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Update',
+			multipleRowsResult: false,
+			columns: [],
+			data: [],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'int4',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it(`UPDATE mytable2 SET name = 'a' WHERE mytable2.id = $1`, async () => {
+		const sql = `
+			UPDATE mytable2
+			SET name = 'a'
+			WHERE mytable2.id = $1
+			`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Update',
+			multipleRowsResult: false,
+			columns: [],
+			data: [],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'int4',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('update mytable1 set value = :value where id > :min and id < :max', async () => {
 		const sql = `
 			update mytable1 set value = $1 where id > $2 and id < $3

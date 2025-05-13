@@ -26,8 +26,7 @@ function describeQueryRefine(sql: string, postgresDescribeResult: PostgresDescri
 		})
 	}
 	const traverseResult = parseResult.value;
-	const totalNumberOfParameters = traverseResult.parametersNullability.length + (traverseResult.whereParamtersNullability?.length || 0);
-	const paramNames = namedParameters.length > 0 ? namedParameters : Array.from({ length: totalNumberOfParameters }).map((_, index) => `param${index + 1}`);
+	const paramNames = namedParameters.length > 0 ? namedParameters : Array.from({ length: traverseResult.parameterList.length }).map((_, index) => `param${index + 1}`);
 	//replace list parameters
 	const newSql = replacePostgresParams(sql, traverseResult.parameterList, paramNames);
 
