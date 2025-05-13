@@ -1278,7 +1278,7 @@ function traverseUpdatestmt(updatestmt: UpdatestmtContext, dbSchema: PostgresCol
 	const relation_expr_opt_alias = updatestmt.relation_expr_opt_alias();
 	const tableName = relation_expr_opt_alias.relation_expr().getText();
 	const tableAlias = relation_expr_opt_alias.colid()?.getText() || '';
-	const updateColumns = dbSchema.filter(col => col.table_name.toLowerCase() === tableName.toLowerCase())
+	const updateColumns: NotNullInfo[] = dbSchema.filter(col => col.table_name.toLowerCase() === tableName.toLowerCase())
 		.map(col => ({ ...col, table_name: tableAlias || col.table_name }));
 	const context: TraverseContext = {
 		dbSchema,
@@ -1290,13 +1290,16 @@ function traverseUpdatestmt(updatestmt: UpdatestmtContext, dbSchema: PostgresCol
 	updatestmt.set_clause_list().set_clause_list()
 		.forEach(set_clause => traverse_set_clause(set_clause, context, traverseResult));
 
+	const from_clause = updatestmt.from_clause();
+	const fromColumns = from_clause ? traverse_from_clause(from_clause, context, traverseResult) : [];
 
 	const parametersBefore = traverseResult.parameters.length;
 	const where_clause = updatestmt.where_or_current_clause();
 	if (where_clause) {
 		const a_expr = where_clause.a_expr();
-		traverse_a_expr(a_expr, context, traverseResult);
+		traverse_a_expr(a_expr, { ...context, fromColumns: updateColumns.concat(fromColumns) }, traverseResult);
 	}
+
 	const whereParameters = traverseResult.parameters.slice(parametersBefore);
 
 	const returning_clause = updatestmt.returning_clause();

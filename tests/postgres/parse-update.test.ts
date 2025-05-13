@@ -212,6 +212,42 @@ describe('postgres-parse-update', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('UPDATE mytable2 t2 SET name = t2.descr FROM mytable3 t3 WHERE t2.id = t3.id AND t2.id IN ($1)', async () => {
+		const sql = `
+			UPDATE mytable2 t2
+			SET name = t2.descr
+			FROM mytable3 t3
+			WHERE t2.id = t3.id
+			AND t2.id IN ($1)
+			`;
+		const expectedSql = `
+			UPDATE mytable2 t2
+			SET name = t2.descr
+			FROM mytable3 t3
+			WHERE t2.id = t3.id
+			AND t2.id IN (\${generatePlaceholders('$1', params.param1)})
+			`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql: expectedSql,
+			queryType: 'Update',
+			multipleRowsResult: false,
+			columns: [],
+			data: [],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: 'int4[]',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('update mytable1 set value = :value where id > :min and id < :max', async () => {
 		const sql = `
 			update mytable1 set value = $1 where id > $2 and id < $3
