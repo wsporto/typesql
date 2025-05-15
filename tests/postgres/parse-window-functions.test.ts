@@ -80,7 +80,7 @@ describe('postgres-parse-window-functions', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
-	it('FIRST_VALUE(id), LAST_VALUE(name), RANK(), DENSE_RANK() and PERCENT_RANK()', async () => {
+	it('FIRST_VALUE(id), LAST_VALUE(name), RANK(), DENSE_RANK(), PERCENT_RANK() AND CUME_DIST()', async () => {
 		const sql = `
 			SELECT
 				FIRST_VALUE(id) OVER() as firstId,
@@ -285,6 +285,105 @@ describe('postgres-parse-window-functions', () => {
 					columnType: 'int4',
 					name: 'param2',
 					notNull: false
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('NTILE()', async () => {
+		const sql = `
+			SELECT
+				NTILE(2) OVER() as value1,
+				NTILE(id) OVER() as value2,
+				NTILE(value) OVER() as value3,
+				NTILE($1) OVER() as value4,
+				NTILE(COALESCE($2::int4, id)) OVER() as value5
+			FROM mytable1
+			`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'value1',
+					type: 'int4',
+					notNull: true,
+					table: ''
+				},
+				{
+					columnName: 'value2',
+					type: 'int4',
+					notNull: true,
+					table: ''
+				},
+				{
+					columnName: 'value3',
+					type: 'int4',
+					notNull: false,
+					table: ''
+				},
+				{
+					columnName: 'value4',
+					type: 'int4',
+					notNull: true,
+					table: ''
+				},
+				{
+					columnName: 'value5',
+					type: 'int4',
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: [
+				{
+					columnType: 'int4',
+					name: 'param1',
+					notNull: true
+				},
+				{
+					columnType: 'int4',
+					name: 'param2',
+					notNull: false
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('NTH_VALUE()', async () => {
+		const sql = `
+			SELECT
+				NTH_VALUE(value, $1) OVER() as nthValue
+			FROM mytable1
+			`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'nthvalue',
+					type: 'int4',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: [
+				{
+					columnType: 'int4',
+					name: 'param1',
+					notNull: true
 				}
 			]
 		};
