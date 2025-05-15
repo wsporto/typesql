@@ -906,6 +906,21 @@ function traversefunc_application(func_application: Func_applicationContext, con
 	if (functionName === 'generate_series') {
 		return true;
 	}
+	if (functionName === 'row_number'
+		|| functionName === 'rank'
+		|| functionName === 'dense_rank'
+		|| functionName === 'percent_rank'
+		|| functionName === 'cume_dist'
+	) {
+		return true;
+	}
+	if (functionName === 'first_value'
+		|| functionName === 'last_value'
+		|| functionName === 'ntile'
+	) {
+		const firstArg = argsResult[0];
+		return firstArg;
+	}
 
 	return false;
 }
@@ -1699,7 +1714,9 @@ const aggregateFunctions = new Set([
 
 function isAggregateFunction_c_expr(func_expr: Func_exprContext): boolean {
 	const funcName = func_expr?.func_application()?.func_name()?.getText()?.toLowerCase();
-	return aggregateFunctions.has(funcName);
+	// RANK(), DENSE_RANK(), PERCENT_RANK() - they are window functions, not aggregate functions, 
+	// even though your query is returning them from a join involving pg_aggregate.
+	return !func_expr.over_clause() && aggregateFunctions.has(funcName);
 }
 
 function isSetReturningFunction_target_el(target_el: Target_elContext): boolean {
