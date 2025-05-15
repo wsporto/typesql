@@ -910,11 +910,13 @@ function traversefunc_application(func_application: Func_applicationContext, con
 		|| functionName === 'rank'
 		|| functionName === 'dense_rank'
 		|| functionName === 'percent_rank'
+		|| functionName === 'cume_dist'
 	) {
 		return true;
 	}
 	if (functionName === 'first_value'
 		|| functionName === 'last_value'
+		|| functionName === 'ntile'
 	) {
 		const firstArg = argsResult[0];
 		return firstArg;
