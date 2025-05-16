@@ -41,7 +41,7 @@ export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], Type
 				ON t.table_name = col.table_name 
 				AND t.table_schema = col.table_schema
 			JOIN
-				pg_catalog.pg_type ty on pg_catalog.format_type(ty.oid, NULL) = col.data_type
+				pg_catalog.pg_type ty on ty.typname = col.udt_name
 			LEFT JOIN 
 			    pg_constraint con ON con.conrelid = c.oid
 			    AND col.ordinal_position = ANY (con.conkey)
