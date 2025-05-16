@@ -131,6 +131,21 @@ WHERE :param1 is true OR (:param2 is true OR :param2::bool is null)`;
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('select09 - enum', async () => {
+		const sql = `SELECT
+	enum_column
+FROM all_types
+where enum_column = :enum_value`;
+
+		const actual = await generateCode(dialect, sql, 'select09');
+		const expected = readFileSync('tests/postgres/expected-code/select09-enum.ts.txt', 'utf-8');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('select-type-cast ', async () => {
 		const sql = 'SELECT id::int2 FROM mytable1';
 

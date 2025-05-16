@@ -44,6 +44,10 @@ export const postgresTypes = {
 
 
 export function mapColumnType(postgresType: PostgresType): TsType {
+	if (postgresType.startsWith('enum(')) {
+		const enumValues = postgresType.substring(postgresType.indexOf('(') + 1, postgresType.indexOf(')'));
+		return enumValues.split(',').join(' | ') as TsType;
+	}
 	switch (postgresType) {
 		case 'bool':
 			return 'boolean';

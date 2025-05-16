@@ -1,7 +1,7 @@
 import assert from 'node:assert';
 
 import postgres from 'postgres';
-import { postgresDescribe, loadDbSchema, createPostgresClient, loadForeignKeys } from '../../src/drivers/postgres';
+import { postgresDescribe, loadDbSchema, createPostgresClient, loadForeignKeys, loadEnums, EnumMap, EnumResult } from '../../src/drivers/postgres';
 import { schema } from './schema';
 import { PostgresDescribe } from '../../src/drivers/types';
 import { TypeSqlError } from '../../src/types';
@@ -80,6 +80,39 @@ describe('postgres-query-executor', () => {
 		}
 		assert.deepStrictEqual(result.value.filter(col => !col.table_name.includes('flyway')), expected);
 	});
+
+	it('loadEnums', async () => {
+		const result = await loadEnums(sql);
+		const expected: EnumMap = new Map();
+		const enumValues: EnumResult[] = [
+			{
+				type_oid: 16651,
+				enumlabel: 'x-small'
+			},
+			{
+				type_oid: 16651,
+				enumlabel: 'small'
+			},
+			{
+				type_oid: 16651,
+				enumlabel: 'medium'
+			},
+			{
+				type_oid: 16651,
+				enumlabel: 'large'
+			},
+			{
+				type_oid: 16651,
+				enumlabel: 'x-large'
+			}
+		]
+		expected.set(16651, enumValues);
+
+		if (result.isErr()) {
+			assert.fail(`Shouldn't return an error: ${result.error}`);
+		}
+		assert.deepStrictEqual(result.value, expected);
+	})
 
 	it('postgresDescribe', async () => {
 		const actual = await postgresDescribe(sql, 'SELECT * FROM mytable1 WHERE id = $1');
