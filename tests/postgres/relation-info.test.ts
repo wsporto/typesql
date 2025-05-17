@@ -59,7 +59,7 @@ describe('postgres-relation-info', () => {
 			}
 		];
 
-		const actual = parseSql(sql, dbSchema, { collectNestedInfo: true });
+		const actual = parseSql(sql, dbSchema, {}, { collectNestedInfo: true });
 		assert.deepStrictEqual(actual.relations, expectedModel);
 	});
 
@@ -93,7 +93,7 @@ describe('postgres-relation-info', () => {
 			}
 		];
 
-		const actual = parseSql(sql, dbSchema, { collectNestedInfo: true });
+		const actual = parseSql(sql, dbSchema, {}, { collectNestedInfo: true });
 		assert.deepStrictEqual(actual.relations, expectedModel);
 	});
 
@@ -131,7 +131,7 @@ describe('postgres-relation-info', () => {
 			}
 		];
 
-		const actual = parseSql(sql, dbSchema, { collectNestedInfo: true });
+		const actual = parseSql(sql, dbSchema, {}, { collectNestedInfo: true });
 		assert.deepStrictEqual(actual.relations, expectedModel);
 	});
 
@@ -181,7 +181,7 @@ describe('postgres-relation-info', () => {
 			}
 		];
 
-		const actual = parseSql(sql, dbSchema, { collectNestedInfo: true });
+		const actual = parseSql(sql, dbSchema, {}, { collectNestedInfo: true });
 		assert.deepStrictEqual(actual.relations, expectedModel);
 	});
 
@@ -228,7 +228,7 @@ describe('postgres-relation-info', () => {
 			}
 		];
 
-		const actual = parseSql(sql, dbSchema, { collectNestedInfo: true });
+		const actual = parseSql(sql, dbSchema, {}, { collectNestedInfo: true });
 		assert.deepStrictEqual(actual.relations, expectedModel);
 	});
 
@@ -273,7 +273,7 @@ INNER JOIN users u on u.id = p.fk_user`;
 			}
 		];
 
-		const actual = parseSql(sql, dbSchema, { collectNestedInfo: true });
+		const actual = parseSql(sql, dbSchema, {}, { collectNestedInfo: true });
 		assert.deepStrictEqual(actual.relations, expectedModel);
 	});
 });

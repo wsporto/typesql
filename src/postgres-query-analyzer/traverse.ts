@@ -5,6 +5,7 @@ import { extractOriginalSql, splitName } from '../mysql-query-analyzer/select-co
 import { DynamicSqlInfo2, FieldName } from '../mysql-query-analyzer/types';
 import { QueryType } from '../types';
 import { Relation2 } from '../sqlite-query-analyzer/sqlite-describe-nested-query';
+import { CheckConstraintResult } from '../drivers/postgres';
 
 export type NotNullInfo = {
 	table_schema: string;
@@ -18,7 +19,7 @@ export type PostgresTraverseResult = {
 	queryType: QueryType;
 	multipleRowsResult: boolean;
 	columns: NotNullInfo[];
-	parametersNullability: boolean[];
+	parametersNullability: ParamInfo[];
 	whereParamtersNullability?: boolean[];
 	parameterList: boolean[];
 	limit?: number;
@@ -28,13 +29,17 @@ export type PostgresTraverseResult = {
 }
 
 type ParamInfo = {
-	paramIndex: number;
 	isNotNull: boolean;
+	checkConstraint?: string;
+}
+
+type ParamWithIndex = ParamInfo & {
+	paramIndex: number;
 }
 
 type TraverseResult = {
 	columnsNullability: boolean[],
-	parameters: ParamInfo[],
+	parameters: ParamWithIndex[],
 	singleRow: boolean;
 	relations?: Relation2[];
 	dynamicQueryInfo?: DynamicSqlInfo2;
@@ -43,6 +48,7 @@ type TraverseResult = {
 type TraverseContext = {
 	dbSchema: PostgresColumnSchema[];
 	fromColumns: NotNullInfo[];
+	checkConstraints: CheckConstraintResult;
 	propagatesNull?: boolean;
 	collectNestedInfo: boolean;
 	collectDynamicQueryInfo: boolean;
@@ -67,7 +73,7 @@ export function defaultOptions(): TraverseOptions {
 	};
 }
 
-export function traverseSmt(stmt: StmtContext, dbSchema: PostgresColumnSchema[], options: TraverseOptions): PostgresTraverseResult {
+export function traverseSmt(stmt: StmtContext, dbSchema: PostgresColumnSchema[], checkConstraints: CheckConstraintResult, options: TraverseOptions): PostgresTraverseResult {
 	const { collectNestedInfo = false, collectDynamicQueryInfo = false } = options;
 
 	const traverseResult: TraverseResult = {
@@ -91,7 +97,8 @@ export function traverseSmt(stmt: StmtContext, dbSchema: PostgresColumnSchema[],
 		dbSchema,
 		collectNestedInfo,
 		collectDynamicQueryInfo,
-		fromColumns: []
+		fromColumns: [],
+		checkConstraints
 	}
 	const selectstmt = stmt.selectstmt();
 	if (selectstmt) {
@@ -154,7 +161,7 @@ function traverseSelectstmt(selectstmt: SelectstmtContext, context: TraverseCont
 		queryType: 'Select',
 		multipleRowsResult,
 		columns,
-		parametersNullability: traverseResult.parameters.map(param => param.isNotNull),
+		parametersNullability: traverseResult.parameters.map(param => ({ isNotNull: param.isNotNull, ...addConstraintIfNotNull(param.checkConstraint) })),
 		parameterList: paramIsListResult,
 		limit
 	};
@@ -567,12 +574,27 @@ function checkParamterNullability(column: NotNullInfo, traverseResult: TraverseR
 	}
 }
 
+function getCheckConstraint(col: NotNullInfo, checkConstraints: CheckConstraintResult) {
+	const key = `[${col.table_schema}][${col.table_name}][${col.column_name}]`;
+	return checkConstraints[key];
+}
+
 function traverse_expr_compare(a_expr_compare: A_expr_compareContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
 	const a_expr_like_list = a_expr_compare.a_expr_like_list();
 	const result = a_expr_like_list.map(a_expr_like => traverse_expr_like(a_expr_like, context, traverseResult));
 	if (!a_expr_compare.sub_type()) {
 		if (a_expr_like_list.length === 1) {
 			return result[0];
+		}
+		if (a_expr_like_list.length === 2) {
+			const constraintLeft = getCheckConstraint(result[0], context.checkConstraints);
+			const constraintRight = getCheckConstraint(result[1], context.checkConstraints);
+			if (isParameter(result[0].column_name) && constraintRight) {
+				traverseResult.parameters.at(-1)!.checkConstraint = constraintRight;
+			}
+			if (isParameter(result[1].column_name) && constraintLeft) {
+				traverseResult.parameters.at(-1)!.checkConstraint = constraintLeft;
+			}
 		}
 		return {
 			column_name: '?column?',
@@ -1223,6 +1245,7 @@ function traverseInsertstmt(insertstmt: InsertstmtContext, dbSchema: PostgresCol
 	const context: TraverseContext = {
 		dbSchema,
 		fromColumns: insertColumns,
+		checkConstraints: {},
 		collectNestedInfo: false,
 		collectDynamicQueryInfo: false
 	}
@@ -1243,7 +1266,7 @@ function traverseInsertstmt(insertstmt: InsertstmtContext, dbSchema: PostgresCol
 	const result: PostgresTraverseResult = {
 		queryType: 'Insert',
 		multipleRowsResult: false,
-		parametersNullability: traverseResult.parameters.map(param => param.isNotNull),
+		parametersNullability: traverseResult.parameters.map(param => ({ isNotNull: param.isNotNull, ...addConstraintIfNotNull(param.checkConstraint) })),
 		columns: returninColumns,
 		parameterList: paramIsListResult
 	}
@@ -1265,6 +1288,7 @@ function traverseDeletestmt(deleteStmt: DeletestmtContext, dbSchema: PostgresCol
 	const context: TraverseContext = {
 		dbSchema,
 		fromColumns: deleteColumns,
+		checkConstraints: {},
 		collectNestedInfo: false,
 		collectDynamicQueryInfo: false
 	}
@@ -1278,7 +1302,7 @@ function traverseDeletestmt(deleteStmt: DeletestmtContext, dbSchema: PostgresCol
 	const result: PostgresTraverseResult = {
 		queryType: 'Delete',
 		multipleRowsResult: false,
-		parametersNullability: traverseResult.parameters.map(param => param.isNotNull),
+		parametersNullability: traverseResult.parameters.map(param => ({ isNotNull: param.isNotNull, ...addConstraintIfNotNull(param.checkConstraint) })),
 		columns: returninColumns,
 		parameterList: paramIsListResult
 	}
@@ -1286,6 +1310,10 @@ function traverseDeletestmt(deleteStmt: DeletestmtContext, dbSchema: PostgresCol
 		result.returning = true;
 	}
 	return result;
+}
+
+function addConstraintIfNotNull(checkConstraint: string | undefined) {
+	return checkConstraint !== undefined ? { checkConstraint } : {};
 }
 
 function traverseUpdatestmt(updatestmt: UpdatestmtContext, dbSchema: PostgresColumnSchema[], traverseResult: TraverseResult): PostgresTraverseResult {
@@ -1298,6 +1326,7 @@ function traverseUpdatestmt(updatestmt: UpdatestmtContext, dbSchema: PostgresCol
 	const context: TraverseContext = {
 		dbSchema,
 		fromColumns: updateColumns,
+		checkConstraints: {},
 		collectNestedInfo: false,
 		collectDynamicQueryInfo: false
 	}
@@ -1324,7 +1353,7 @@ function traverseUpdatestmt(updatestmt: UpdatestmtContext, dbSchema: PostgresCol
 	const result: PostgresTraverseResult = {
 		queryType: 'Update',
 		multipleRowsResult: false,
-		parametersNullability: traverseResult.parameters.slice(0, parametersBefore).map(param => param.isNotNull),
+		parametersNullability: traverseResult.parameters.slice(0, parametersBefore).map(param => ({ isNotNull: param.isNotNull, ...addConstraintIfNotNull(param.checkConstraint) })),
 		columns: returninColumns,
 		parameterList: paramIsListResult,
 		whereParamtersNullability: whereParameters.map(param => param.isNotNull)
@@ -1734,6 +1763,10 @@ function isSetReturningFunction_c_expr(func_expr: Func_exprContext) {
 }
 
 function isSingleRowResult_where(a_expr: A_exprContext, uniqueKeys: string[]): boolean {
+
+	if (uniqueKeys.length === 0) {
+		return false;
+	}
 
 	const a_expr_or_list = a_expr.a_expr_qual()?.a_expr_lessless()?.a_expr_or_list() || [];
 	if (a_expr_or_list.length > 1 || a_expr_or_list[0].OR_list().length > 0) {

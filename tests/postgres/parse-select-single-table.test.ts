@@ -885,6 +885,37 @@ describe('select-single-table', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it(`select enum_constraint from all_types where enum_constraint = $1`, async () => {
+		const sql = `
+			select enum_constraint from all_types where enum_constraint = $1
+			`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'enum_constraint',
+					type: `enum('x-small','small','medium','large','x-large')`,
+					notNull: true,
+					table: 'all_types'
+				}
+			],
+			parameters: [
+				{
+					name: 'param1',
+					columnType: `enum('x-small','small','medium','large','x-large')`,
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it.skip('select value from mytable1 order by ?', async () => {
 		const sql = `
 	    select value from mytable1 order by $1
