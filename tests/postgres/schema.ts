@@ -232,6 +232,36 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
+		oid: 16437,
+		table_schema: 'public',
+		table_name: 'all_types',
+		column_name: 'integer_column_default',
+		type_id: 23,
+		is_nullable: true,
+		column_key: '',
+		autoincrement: false
+	},
+	{
+		oid: 16437,
+		table_schema: 'public',
+		table_name: 'all_types',
+		column_name: 'enum_column_default',
+		type_id: 16651,
+		is_nullable: true,
+		column_key: '',
+		autoincrement: false
+	},
+	{
+		oid: 16437,
+		table_schema: 'public',
+		table_name: 'all_types',
+		column_name: 'enum_constraint_default',
+		type_id: 25,
+		is_nullable: true,
+		column_key: '',
+		autoincrement: false
+	},
+	{
 		oid: 16555,
 		table_schema: "public",
 		table_name: "answers",
@@ -442,64 +472,64 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		autoincrement: false,
-		column_key: 'PRI',
+		oid: 16640,
+		table_schema: 'public',
+		table_name: 'composite_key',
 		column_name: 'key1',
+		type_id: 23,
 		is_nullable: false,
-		oid: 16640,
-		table_name: 'composite_key',
-		table_schema: 'public',
-		type_id: 23
-	},
-	{
-		autoincrement: false,
 		column_key: 'PRI',
+		autoincrement: false
+	},
+	{
+		oid: 16640,
+		table_schema: 'public',
+		table_name: 'composite_key',
 		column_name: 'key2',
+		type_id: 23,
 		is_nullable: false,
-		oid: 16640,
-		table_name: 'composite_key',
-		table_schema: 'public',
-		type_id: 23
+		column_key: 'PRI',
+		autoincrement: false
 	},
 	{
-		autoincrement: false,
-		column_key: '',
+		oid: 16640,
+		table_schema: 'public',
+		table_name: 'composite_key',
 		column_name: 'value',
+		type_id: 23,
 		is_nullable: true,
-		oid: 16640,
-		table_name: 'composite_key',
-		table_schema: 'public',
-		type_id: 23
+		column_key: '',
+		autoincrement: false
 	},
 	{
-		autoincrement: false,
-		column_key: 'UNI',
+		oid: 16645,
+		table_schema: 'public',
+		table_name: 'composite_unique_constraint',
 		column_name: 'key1',
+		type_id: 23,
 		is_nullable: true,
-		oid: 16645,
-		table_name: 'composite_unique_constraint',
-		table_schema: 'public',
-		type_id: 23
-	},
-	{
-		autoincrement: false,
 		column_key: 'UNI',
-		column_name: 'key2',
-		is_nullable: true,
-		oid: 16645,
-		table_name: 'composite_unique_constraint',
-		table_schema: 'public',
-		type_id: 23
+		autoincrement: false
 	},
 	{
-		autoincrement: false,
-		column_key: '',
-		column_name: 'value',
-		is_nullable: true,
 		oid: 16645,
-		table_name: 'composite_unique_constraint',
 		table_schema: 'public',
-		type_id: 23
+		table_name: 'composite_unique_constraint',
+		column_name: 'key2',
+		type_id: 23,
+		is_nullable: true,
+		column_key: 'UNI',
+		autoincrement: false
+	},
+	{
+		oid: 16645,
+		table_schema: 'public',
+		table_name: 'composite_unique_constraint',
+		column_name: 'value',
+		type_id: 23,
+		is_nullable: true,
+		column_key: '',
+		autoincrement: false
 	},
 	{
 		oid: 16396,

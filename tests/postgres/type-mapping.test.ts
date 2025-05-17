@@ -145,6 +145,24 @@ describe('postgres-type-mapping', () => {
 					notNull: false,
 					table: 'all_types',
 					type: `enum('x-small','small','medium','large','x-large')`
+				},
+				{
+					columnName: 'integer_column_default',
+					notNull: false,
+					table: 'all_types',
+					type: 'int4'
+				},
+				{
+					columnName: 'enum_column_default',
+					notNull: false,
+					table: 'all_types',
+					type: 'enum(\'x-small\',\'small\',\'medium\',\'large\',\'x-large\')'
+				},
+				{
+					columnName: 'enum_constraint_default',
+					notNull: false,
+					table: 'all_types',
+					type: 'enum(\'x-small\',\'small\',\'medium\',\'large\',\'x-large\')'
 				}
 			],
 			parameters: []
