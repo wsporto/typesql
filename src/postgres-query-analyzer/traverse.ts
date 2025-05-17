@@ -12,6 +12,7 @@ export type NotNullInfo = {
 	table_name: string;
 	column_name: string;
 	is_nullable: boolean;
+	column_default?: true;
 	type_id?: number;
 }
 
@@ -259,7 +260,8 @@ function traverse_select_clause(select_clause: Select_clauseContext, context: Tr
 				column_name: value.column_name,
 				is_nullable: value.is_nullable || unionNotNull[columnIndex].is_nullable,
 				table_name: '',
-				table_schema: ''
+				table_schema: '',
+				...(value.column_default && { column_default: value.column_default }),
 			}
 			return col;
 		});
@@ -741,7 +743,9 @@ function traverse_expr_typecast(a_expr_typecast: A_expr_typecastContext, context
 function traverseColumnRef(columnref: ColumnrefContext, fromColumns: NotNullInfo[]): NotNullInfo {
 	const fieldName = splitName(columnref.getText());
 	const col = findColumn(fieldName, fromColumns);
-	return col;
+	return {
+		...col, is_nullable: col.is_nullable && col.column_default !== true
+	}
 }
 
 function traversec_expr(c_expr: C_exprContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {

@@ -209,6 +209,18 @@ where enum_constraint = :enum_value`;
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('insert04-default - INSERT INTO all_types(integer_column_default) VALUES (:value)', async () => {
+		const sql = 'INSERT INTO all_types(integer_column_default) VALUES (:value)';
+
+		const actual = await generateCode(dialect, sql, 'insert04');
+		const expected = readFileSync('tests/postgres/expected-code/insert04-default.ts.txt', 'utf-8');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('update01 - UPDATE mytable1 SET value=? WHERE id=?', async () => {
 		const sql = 'UPDATE mytable1 SET value=$1 WHERE id=$2';
 

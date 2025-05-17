@@ -1,19 +1,26 @@
 export function transformCheckToEnum(checkStr: string): string | null {
-	const regex = /ARRAY\[(.*?)\]/;
-	const match = checkStr.match(regex);
+	// Match only = ANY (ARRAY[...]) pattern
+	const anyArrayRegex = /=\s*ANY\s*\(\s*ARRAY\[(.*?)\]\s*\)/i;
+	const match = checkStr.match(anyArrayRegex);
 
 	if (!match || match.length < 2) {
-		return null; // Not a match or bad format
+		return null;
 	}
 
-	// Extract the array contents
 	const arrayContent = match[1];
 
-	// Split by commas that are not inside quotes (basic case)
-	const values = arrayContent
-		.split(',')
-		.map(s => s.trim().replace(/::text$/, '').replace(/^'(.*)'$/, '$1'))  // Remove ::text and surrounding single quotes
-		.map(s => `'${s}'`); // Re-wrap clean value in single quotes
+	const values = arrayContent.split(',').map((rawValue) => {
+		let value = rawValue.trim().replace(/::\w+$/, ''); // Remove type casts like ::text, ::int
+
+		// If it's a quoted string, clean and re-wrap it in single quotes
+		if (/^'.*'$/.test(value)) {
+			value = value.replace(/^'(.*)'$/, '$1');
+			return `'${value}'`;
+		}
+
+		// Otherwise assume it's a number or raw literal — return as-is
+		return value;
+	});
 
 	return `enum(${values.join(',')})`;
 }

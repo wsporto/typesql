@@ -9,7 +9,8 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "PRI",
-		autoincrement: true
+		autoincrement: true,
+		column_default: true
 	},
 	{
 		oid: 16613,
@@ -232,6 +233,39 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
+		oid: 16437,
+		table_schema: 'public',
+		table_name: 'all_types',
+		column_name: 'integer_column_default',
+		type_id: 23,
+		is_nullable: true,
+		column_key: '',
+		autoincrement: false,
+		column_default: true
+	},
+	{
+		oid: 16437,
+		table_schema: 'public',
+		table_name: 'all_types',
+		column_name: 'enum_column_default',
+		type_id: 16651,
+		is_nullable: true,
+		column_key: '',
+		autoincrement: false,
+		column_default: true
+	},
+	{
+		oid: 16437,
+		table_schema: 'public',
+		table_name: 'all_types',
+		column_name: 'enum_constraint_default',
+		type_id: 25,
+		is_nullable: true,
+		column_key: '',
+		autoincrement: false,
+		column_default: true
+	},
+	{
 		oid: 16555,
 		table_schema: "public",
 		table_name: "answers",
@@ -239,7 +273,8 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "PRI",
-		autoincrement: true
+		autoincrement: true,
+		column_default: true
 	},
 	{
 		oid: 16555,
@@ -279,7 +314,8 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "PRI",
-		autoincrement: true
+		autoincrement: true,
+		column_default: true
 	},
 	{
 		oid: 16584,
@@ -309,7 +345,8 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "PRI",
-		autoincrement: true
+		autoincrement: true,
+		column_default: true
 	},
 	{
 		oid: 16573,
@@ -339,7 +376,8 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "PRI",
-		autoincrement: true
+		autoincrement: true,
+		column_default: true
 	},
 	{
 		oid: 16595,
@@ -379,7 +417,8 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "PRI",
-		autoincrement: true
+		autoincrement: true,
+		column_default: true
 	},
 	{
 		oid: 16624,
@@ -409,7 +448,8 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "PRI",
-		autoincrement: true
+		autoincrement: true,
+		column_default: true
 	},
 	{
 		oid: 16472,
@@ -442,64 +482,154 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		autoincrement: false,
-		column_key: 'PRI',
+		oid: 16640,
+		table_schema: 'public',
+		table_name: 'composite_key',
 		column_name: 'key1',
+		type_id: 23,
 		is_nullable: false,
-		oid: 16640,
-		table_name: 'composite_key',
-		table_schema: 'public',
-		type_id: 23
-	},
-	{
-		autoincrement: false,
 		column_key: 'PRI',
+		autoincrement: false
+	},
+	{
+		oid: 16640,
+		table_schema: 'public',
+		table_name: 'composite_key',
 		column_name: 'key2',
+		type_id: 23,
 		is_nullable: false,
-		oid: 16640,
-		table_name: 'composite_key',
-		table_schema: 'public',
-		type_id: 23
+		column_key: 'PRI',
+		autoincrement: false
 	},
 	{
-		autoincrement: false,
-		column_key: '',
+		oid: 16640,
+		table_schema: 'public',
+		table_name: 'composite_key',
 		column_name: 'value',
+		type_id: 23,
 		is_nullable: true,
-		oid: 16640,
-		table_name: 'composite_key',
-		table_schema: 'public',
-		type_id: 23
+		column_key: '',
+		autoincrement: false
 	},
 	{
-		autoincrement: false,
-		column_key: 'UNI',
+		oid: 16645,
+		table_schema: 'public',
+		table_name: 'composite_unique_constraint',
 		column_name: 'key1',
+		type_id: 23,
 		is_nullable: true,
-		oid: 16645,
-		table_name: 'composite_unique_constraint',
-		table_schema: 'public',
-		type_id: 23
-	},
-	{
-		autoincrement: false,
 		column_key: 'UNI',
-		column_name: 'key2',
-		is_nullable: true,
-		oid: 16645,
-		table_name: 'composite_unique_constraint',
-		table_schema: 'public',
-		type_id: 23
+		autoincrement: false
 	},
 	{
-		autoincrement: false,
-		column_key: '',
-		column_name: 'value',
-		is_nullable: true,
 		oid: 16645,
-		table_name: 'composite_unique_constraint',
 		table_schema: 'public',
-		type_id: 23
+		table_name: 'composite_unique_constraint',
+		column_name: 'key2',
+		type_id: 23,
+		is_nullable: true,
+		column_key: 'UNI',
+		autoincrement: false
+	},
+	{
+		oid: 16645,
+		table_schema: 'public',
+		table_name: 'composite_unique_constraint',
+		column_name: 'value',
+		type_id: 23,
+		is_nullable: true,
+		column_key: '',
+		autoincrement: false
+	},
+	{
+		oid: 16683,
+		table_schema: 'public',
+		table_name: 'enum_types',
+		column_name: 'id',
+		type_id: 23,
+		is_nullable: false,
+		column_key: 'PRI',
+		autoincrement: false
+	},
+	{
+		oid: 16683,
+		table_schema: 'public',
+		table_name: 'enum_types',
+		column_name: 'column1',
+		type_id: 25,
+		is_nullable: true,
+		column_key: '',
+		autoincrement: false
+	},
+	{
+		oid: 16683,
+		table_schema: 'public',
+		table_name: 'enum_types',
+		column_name: 'column2',
+		type_id: 23,
+		is_nullable: true,
+		column_key: '',
+		autoincrement: false
+	},
+	{
+		oid: 16683,
+		table_schema: 'public',
+		table_name: 'enum_types',
+		column_name: 'column3',
+		type_id: 25,
+		is_nullable: true,
+		column_key: '',
+		autoincrement: false
+	},
+	{
+		oid: 16683,
+		table_schema: 'public',
+		table_name: 'enum_types',
+		column_name: 'column4',
+		type_id: 25,
+		is_nullable: true,
+		column_key: '',
+		autoincrement: false
+	},
+	{
+		oid: 16683,
+		table_schema: 'public',
+		table_name: 'enum_types',
+		column_name: 'column5',
+		type_id: 25,
+		is_nullable: false,
+		column_key: '',
+		autoincrement: false
+	},
+	{
+		oid: 16683,
+		table_schema: 'public',
+		table_name: 'enum_types',
+		column_name: 'column6',
+		type_id: 23,
+		is_nullable: true,
+		column_key: '',
+		autoincrement: false
+	},
+	{
+		oid: 16697,
+		table_schema: 'public',
+		table_name: 'enum_types2',
+		column_name: 'id',
+		type_id: 23,
+		is_nullable: false,
+		column_key: 'PRI',
+		autoincrement: false
+	},
+	{
+		oid: 16697,
+		table_schema: 'public',
+		table_name: 'enum_types2',
+		column_name: 'column1',
+		type_id: 25,
+		is_nullable: true,
+		column_key: '',
+		autoincrement: false
 	},
 	{
 		oid: 16396,
@@ -649,7 +779,8 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "PRI",
-		autoincrement: true
+		autoincrement: true,
+		column_default: true
 	},
 	{
 		oid: 16521,
@@ -679,7 +810,8 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "PRI",
-		autoincrement: true
+		autoincrement: true,
+		column_default: true
 	},
 	{
 		oid: 16456,
@@ -719,7 +851,8 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "PRI",
-		autoincrement: true
+		autoincrement: true,
+		column_default: true
 	},
 	{
 		oid: 16539,
@@ -749,7 +882,8 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "PRI",
-		autoincrement: true
+		autoincrement: true,
+		column_default: true
 	},
 	{
 		oid: 16493,
@@ -759,7 +893,8 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 25,
 		is_nullable: false,
 		column_key: "",
-		autoincrement: false
+		autoincrement: false,
+		column_default: true
 	},
 	{
 		oid: 16493,
@@ -779,7 +914,8 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "PRI",
-		autoincrement: true
+		autoincrement: true,
+		column_default: true
 	},
 	{
 		oid: 16510,
@@ -799,7 +935,8 @@ export const schema: PostgresColumnSchema[] = [
 		type_id: 23,
 		is_nullable: false,
 		column_key: "PRI",
-		autoincrement: true
+		autoincrement: true,
+		column_default: true
 	},
 	{
 		oid: 16445,

@@ -916,6 +916,55 @@ describe('select-single-table', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it(`select enum_constraint from all_types`, async () => {
+		const sql = `
+			select integer_column_default, enum_column, enum_column_default, enum_constraint, enum_constraint_default from all_types
+			`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'integer_column_default',
+					type: 'int4',
+					notNull: true,
+					table: 'all_types'
+				},
+				{
+					columnName: 'enum_column',
+					type: `enum('x-small','small','medium','large','x-large')`,
+					notNull: false,
+					table: 'all_types'
+				},
+				{
+					columnName: 'enum_column_default',
+					type: `enum('x-small','small','medium','large','x-large')`,
+					notNull: true,
+					table: 'all_types'
+				},
+				{
+					columnName: 'enum_constraint',
+					type: `enum('x-small','small','medium','large','x-large')`,
+					notNull: false,
+					table: 'all_types'
+				},
+				{
+					columnName: 'enum_constraint_default',
+					type: `enum('x-small','small','medium','large','x-large')`,
+					notNull: true,
+					table: 'all_types'
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it.skip('select value from mytable1 order by ?', async () => {
 		const sql = `
 	    select value from mytable1 order by $1

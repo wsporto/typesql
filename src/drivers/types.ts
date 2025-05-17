@@ -10,6 +10,7 @@ export type PostgresColumnSchema = {
 	is_nullable: boolean;
 	column_key: 'PRI' | 'UNI' | '';
 	autoincrement?: boolean;
+	column_default?: true;
 };
 
 export type DescribeQueryColumn = {

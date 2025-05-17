@@ -1,0 +1,24 @@
+import pg from 'pg';
+
+export type Insert04Params = {
+	value: number | null;
+}
+
+export type Insert04Result = {
+	rowCount: number;
+}
+
+export async function insert04(client: pg.Client | pg.Pool, params: Insert04Params): Promise<Insert04Result> {
+	const sql = `
+	INSERT INTO all_types(integer_column_default) VALUES ($1)
+	`
+	return client.query({ text: sql, values: [params.value] })
+		.then(res => mapArrayToInsert04Result(res));
+}
+
+function mapArrayToInsert04Result(data: any) {
+	const result: Insert04Result = {
+		rowCount: data.rowCount
+	}
+	return result;
+}
