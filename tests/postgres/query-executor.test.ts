@@ -118,7 +118,11 @@ describe('postgres-query-executor', () => {
 		const result = await loadCheckConstraints(sql);
 		const expected: CheckConstraintResult = {
 			'[public][all_types][enum_constraint]': `enum('x-small','small','medium','large','x-large')`,
-			'[public][all_types][enum_constraint_default]': `enum('x-small','small','medium','large','x-large')`
+			'[public][all_types][enum_constraint_default]': `enum('x-small','small','medium','large','x-large')`,
+			'[public][enum_types2][column1]': `enum('f','g')`,
+			'[public][enum_types][column1]': `enum('A','B','C')`,
+			'[public][enum_types][column2]': `enum(1,2)`,
+			'[public][enum_types][column5]': `enum('D','E')`,
 		}
 
 

@@ -542,6 +542,96 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
+		oid: 16683,
+		table_schema: 'public',
+		table_name: 'enum_types',
+		column_name: 'id',
+		type_id: 23,
+		is_nullable: false,
+		column_key: 'PRI',
+		autoincrement: false
+	},
+	{
+		oid: 16683,
+		table_schema: 'public',
+		table_name: 'enum_types',
+		column_name: 'column1',
+		type_id: 25,
+		is_nullable: true,
+		column_key: '',
+		autoincrement: false
+	},
+	{
+		oid: 16683,
+		table_schema: 'public',
+		table_name: 'enum_types',
+		column_name: 'column2',
+		type_id: 23,
+		is_nullable: true,
+		column_key: '',
+		autoincrement: false
+	},
+	{
+		oid: 16683,
+		table_schema: 'public',
+		table_name: 'enum_types',
+		column_name: 'column3',
+		type_id: 25,
+		is_nullable: true,
+		column_key: '',
+		autoincrement: false
+	},
+	{
+		oid: 16683,
+		table_schema: 'public',
+		table_name: 'enum_types',
+		column_name: 'column4',
+		type_id: 25,
+		is_nullable: true,
+		column_key: '',
+		autoincrement: false
+	},
+	{
+		oid: 16683,
+		table_schema: 'public',
+		table_name: 'enum_types',
+		column_name: 'column5',
+		type_id: 25,
+		is_nullable: false,
+		column_key: '',
+		autoincrement: false
+	},
+	{
+		oid: 16683,
+		table_schema: 'public',
+		table_name: 'enum_types',
+		column_name: 'column6',
+		type_id: 23,
+		is_nullable: true,
+		column_key: '',
+		autoincrement: false
+	},
+	{
+		oid: 16697,
+		table_schema: 'public',
+		table_name: 'enum_types2',
+		column_name: 'id',
+		type_id: 23,
+		is_nullable: false,
+		column_key: 'PRI',
+		autoincrement: false
+	},
+	{
+		oid: 16697,
+		table_schema: 'public',
+		table_name: 'enum_types2',
+		column_name: 'column1',
+		type_id: 25,
+		is_nullable: true,
+		column_key: '',
+		autoincrement: false
+	},
+	{
 		oid: 16396,
 		table_schema: "public",
 		table_name: "mytable1",
