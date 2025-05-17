@@ -6,6 +6,7 @@ import { ColumnSchema } from '../mysql-query-analyzer/types';
 import { postgresTypes } from '../dialects/postgres';
 import { ForeignKeyInfo } from '../sqlite-query-analyzer/query-executor';
 import { groupBy } from '../util';
+import { transformCheckToEnum } from '../postgres-query-analyzer/enum-parser';
 
 export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], TypeSqlError> {
 	return ResultAsync.fromThrowable(
@@ -90,6 +91,51 @@ async function _loadEnums(sql: Sql): Promise<EnumResult[]> {
 	JOIN pg_enum e ON t.oid = e.enumtypid
 	WHERE t.typname = 'sizes_enum'
 	ORDER BY e.enumsortorder`;
+	return result;
+}
+
+export type CheckConstraintResult = Record<string, string>
+export function loadCheckConstraints(sql: Sql): ResultAsync<CheckConstraintResult, TypeSqlError> {
+	return (ResultAsync.fromThrowable(() => _loadCheckConstraints(sql), err => convertPostgresErrorToTypeSQLError(err))()).map(enumResult => {
+		const checkConstraintResult: CheckConstraintResult = {}
+		for (const enumColumn of enumResult) {
+			const key = `[${enumColumn.schema_name}][${enumColumn.table_name}][${enumColumn.column_name}]`;
+			const value = transformCheckToEnum(enumColumn.constraint_definition);
+			if (value) {
+				checkConstraintResult[key] = value;
+			}
+		}
+		return checkConstraintResult;
+	});
+}
+
+export type CheckConstraintType = {
+	schema_name: string;
+	table_name: string;
+	column_name: string;
+	constraint_name: string;
+	constraint_definition: string;
+}
+async function _loadCheckConstraints(sql: Sql): Promise<CheckConstraintType[]> {
+	const result = await sql<CheckConstraintType[]>`
+		SELECT
+			n.nspname AS schema_name,
+			t.relname AS table_name,
+			c.conname AS constraint_name,
+			pg_get_constraintdef(c.oid) AS constraint_definition,
+			a.attname AS column_name
+		FROM
+			pg_constraint c
+		JOIN
+			pg_class t ON c.conrelid = t.oid
+		JOIN
+			pg_namespace n ON t.relnamespace = n.oid
+		LEFT JOIN
+			unnest(c.conkey) AS ck(attnum) ON TRUE
+		LEFT JOIN
+			pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = ck.attnum
+		WHERE
+			c.contype = 'c'`;
 	return result;
 }
 

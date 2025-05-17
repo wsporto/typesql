@@ -860,7 +860,7 @@ describe('select-single-table', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
-	it.skip(`select enum_constraint from all_types where enum_constraint = 'medium' or 'short' = enum_constraint`, async () => {
+	it(`select enum_constraint from all_types where enum_constraint = 'medium' or 'short' = enum_constraint`, async () => {
 		const sql = `
 			select enum_constraint from all_types where enum_constraint = 'medium' or 'short' = enum_constraint
 			`;

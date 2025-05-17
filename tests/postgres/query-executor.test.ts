@@ -1,7 +1,7 @@
 import assert from 'node:assert';
 
 import postgres from 'postgres';
-import { postgresDescribe, loadDbSchema, createPostgresClient, loadForeignKeys, loadEnums, EnumMap, EnumResult } from '../../src/drivers/postgres';
+import { postgresDescribe, loadDbSchema, createPostgresClient, loadForeignKeys, loadEnums, EnumMap, EnumResult, loadCheckConstraints, CheckConstraintResult } from '../../src/drivers/postgres';
 import { schema } from './schema';
 import { PostgresDescribe } from '../../src/drivers/types';
 import { TypeSqlError } from '../../src/types';
@@ -110,6 +110,19 @@ describe('postgres-query-executor', () => {
 
 		if (result.isErr()) {
 			assert.fail(`Shouldn't return an error: ${result.error}`);
+		}
+		assert.deepStrictEqual(result.value, expected);
+	})
+
+	it('loadCheckConstraints', async () => {
+		const result = await loadCheckConstraints(sql);
+		const expected: CheckConstraintResult = {
+			'[public][all_types][enum_constraint]': `enum('x-small','small','medium','large','x-large')`
+		}
+
+
+		if (result.isErr()) {
+			assert.fail(`Shouldn't return an error: ${result.error.description}`);
 		}
 		assert.deepStrictEqual(result.value, expected);
 	})

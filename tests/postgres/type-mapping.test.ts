@@ -144,7 +144,7 @@ describe('postgres-type-mapping', () => {
 					columnName: 'enum_constraint',
 					notNull: false,
 					table: 'all_types',
-					type: 'text'
+					type: `enum('x-small','small','medium','large','x-large')`
 				}
 			],
 			parameters: []
