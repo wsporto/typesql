@@ -33,7 +33,8 @@ export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], Type
 						col.is_identity = 'YES'
 					) THEN true
 					ELSE false
-				END AS autoincrement
+				END AS autoincrement,
+				col.column_default
 			FROM 
 				information_schema.tables t
 			JOIN 
@@ -61,7 +62,8 @@ export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], Type
 				type_id: row.type_id,
 				is_nullable: row.is_nullable === 'YES',
 				column_key: row.column_key,
-				autoincrement: row.autoincrement
+				autoincrement: row.autoincrement,
+				...(row.column_default && { column_default: true })
 			} satisfies PostgresColumnSchema));
 		},
 		err => convertPostgresErrorToTypeSQLError(err)
