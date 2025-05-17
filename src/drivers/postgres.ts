@@ -89,7 +89,6 @@ async function _loadEnums(sql: Sql): Promise<EnumResult[]> {
 		e.enumlabel
 	FROM pg_type t
 	JOIN pg_enum e ON t.oid = e.enumtypid
-	WHERE t.typname = 'sizes_enum'
 	ORDER BY e.enumsortorder`;
 	return result;
 }
