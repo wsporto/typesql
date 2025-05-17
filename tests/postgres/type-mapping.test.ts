@@ -133,6 +133,18 @@ describe('postgres-type-mapping', () => {
 					notNull: true,
 					table: "all_types",
 					type: "timestamptz"
+				},
+				{
+					columnName: 'enum_column',
+					notNull: false,
+					table: 'all_types',
+					type: `enum('x-small','small','medium','large','x-large')`
+				},
+				{
+					columnName: 'enum_constraint',
+					notNull: false,
+					table: 'all_types',
+					type: `enum('x-small','small','medium','large','x-large')`
 				}
 			],
 			parameters: []

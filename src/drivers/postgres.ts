@@ -5,6 +5,8 @@ import { ok, Result, ResultAsync } from 'neverthrow';
 import { ColumnSchema } from '../mysql-query-analyzer/types';
 import { postgresTypes } from '../dialects/postgres';
 import { ForeignKeyInfo } from '../sqlite-query-analyzer/query-executor';
+import { groupBy } from '../util';
+import { transformCheckToEnum } from '../postgres-query-analyzer/enum-parser';
 
 export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], TypeSqlError> {
 	return ResultAsync.fromThrowable(
@@ -41,7 +43,7 @@ export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], Type
 				ON t.table_name = col.table_name 
 				AND t.table_schema = col.table_schema
 			JOIN
-				pg_catalog.pg_type ty on pg_catalog.format_type(ty.oid, NULL) = col.data_type
+				pg_catalog.pg_type ty on ty.typname = col.udt_name
 			LEFT JOIN 
 			    pg_constraint con ON con.conrelid = c.oid
 			    AND col.ordinal_position = ANY (con.conkey)
@@ -64,6 +66,77 @@ export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], Type
 		},
 		err => convertPostgresErrorToTypeSQLError(err)
 	)();
+}
+
+export type EnumMap = Map<number, EnumResult[]>
+
+export function loadEnums(sql: Sql): ResultAsync<EnumMap, TypeSqlError> {
+	return (ResultAsync.fromThrowable(() => _loadEnums(sql), err => convertPostgresErrorToTypeSQLError(err))()).map(enumResult => {
+		const enumMap = groupBy(enumResult, (e) => e.type_oid);
+		return enumMap;
+	});
+}
+
+export type EnumResult = {
+	type_oid: number;
+	enumlabel: string;
+}
+
+async function _loadEnums(sql: Sql): Promise<EnumResult[]> {
+	const result = await sql<EnumResult[]>`
+		SELECT 
+		t.oid AS type_oid,
+		e.enumlabel
+	FROM pg_type t
+	JOIN pg_enum e ON t.oid = e.enumtypid
+	WHERE t.typname = 'sizes_enum'
+	ORDER BY e.enumsortorder`;
+	return result;
+}
+
+export type CheckConstraintResult = Record<string, string>
+export function loadCheckConstraints(sql: Sql): ResultAsync<CheckConstraintResult, TypeSqlError> {
+	return (ResultAsync.fromThrowable(() => _loadCheckConstraints(sql), err => convertPostgresErrorToTypeSQLError(err))()).map(enumResult => {
+		const checkConstraintResult: CheckConstraintResult = {}
+		for (const enumColumn of enumResult) {
+			const key = `[${enumColumn.schema_name}][${enumColumn.table_name}][${enumColumn.column_name}]`;
+			const value = transformCheckToEnum(enumColumn.constraint_definition);
+			if (value) {
+				checkConstraintResult[key] = value;
+			}
+		}
+		return checkConstraintResult;
+	});
+}
+
+export type CheckConstraintType = {
+	schema_name: string;
+	table_name: string;
+	column_name: string;
+	constraint_name: string;
+	constraint_definition: string;
+}
+async function _loadCheckConstraints(sql: Sql): Promise<CheckConstraintType[]> {
+	const result = await sql<CheckConstraintType[]>`
+		SELECT
+			n.nspname AS schema_name,
+			t.relname AS table_name,
+			c.conname AS constraint_name,
+			pg_get_constraintdef(c.oid) AS constraint_definition,
+			a.attname AS column_name
+		FROM
+			pg_constraint c
+		JOIN
+			pg_class t ON c.conrelid = t.oid
+		JOIN
+			pg_namespace n ON t.relnamespace = n.oid
+		LEFT JOIN
+			unnest(c.conkey) AS ck(attnum) ON TRUE
+		LEFT JOIN
+			pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = ck.attnum
+		WHERE
+			c.contype = 'c'`;
+	return result;
 }
 
 export function mapToColumnSchema(col: PostgresColumnSchema): ColumnSchema {

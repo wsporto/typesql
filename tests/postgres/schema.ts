@@ -212,6 +212,26 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
+		oid: 16437,
+		table_schema: 'public',
+		table_name: 'all_types',
+		column_name: 'enum_column',
+		type_id: 16651,
+		is_nullable: true,
+		column_key: '',
+		autoincrement: false
+	},
+	{
+		oid: 16437,
+		table_schema: 'public',
+		table_name: 'all_types',
+		column_name: 'enum_constraint',
+		type_id: 25,
+		is_nullable: true,
+		column_key: '',
+		autoincrement: false
+	},
+	{
 		oid: 16555,
 		table_schema: "public",
 		table_name: "answers",

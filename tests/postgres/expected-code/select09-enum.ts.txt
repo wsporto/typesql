@@ -1,0 +1,27 @@
+import pg from 'pg';
+
+export type Select09Params = {
+	enum_value: 'x-small' | 'small' | 'medium' | 'large' | 'x-large';
+}
+
+export type Select09Result = {
+	enum_column: 'x-small' | 'small' | 'medium' | 'large' | 'x-large';
+}
+
+export async function select09(client: pg.Client | pg.Pool, params: Select09Params): Promise<Select09Result[]> {
+	const sql = `
+	SELECT
+		enum_column
+	FROM all_types
+	where enum_column = $1
+	`
+	return client.query({ text: sql, rowMode: 'array', values: [params.enum_value] })
+		.then(res => res.rows.map(row => mapArrayToSelect09Result(row)));
+}
+
+function mapArrayToSelect09Result(data: any) {
+	const result: Select09Result = {
+		enum_column: data[0]
+	}
+	return result;
+}

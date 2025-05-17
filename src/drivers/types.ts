@@ -1,4 +1,5 @@
 import { TaskEither } from 'fp-ts/lib/TaskEither';
+import { CheckConstraintResult, EnumMap } from './postgres';
 
 export type PostgresColumnSchema = {
 	oid: number;
@@ -16,6 +17,15 @@ export type DescribeQueryColumn = {
 	tableId: number;
 	typeId: number;
 
+}
+
+export type DescribeParameters = {
+	sql: string;
+	postgresDescribeResult: PostgresDescribe;
+	dbSchema: PostgresColumnSchema[];
+	enumsTypes: EnumMap;
+	checkConstraints: CheckConstraintResult;
+	namedParameters: string[];
 }
 
 export type PostgresDescribe = {
