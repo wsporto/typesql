@@ -1,6 +1,6 @@
 import { ParameterDef, SchemaDef, TypeSqlError } from '../types';
 import { DescribeParameters, DescribeQueryColumn, PostgresColumnSchema, PostgresDescribe, PostgresType } from '../drivers/types';
-import { postgresDescribe, loadDbSchema, loadEnums, EnumMap, EnumResult, loadCheckConstraints, CheckConstraintResult } from '../drivers/postgres';
+import { postgresDescribe, loadDbSchema, loadEnumsMap, EnumMap, EnumResult, loadCheckConstraints, CheckConstraintResult } from '../drivers/postgres';
 import { Sql } from 'postgres';
 import { ColumnInfo } from '../mysql-query-analyzer/types';
 import { safeParseSql } from './parser';
@@ -127,7 +127,7 @@ function mapToParamDef(postgresTypes: PostgresType, enumTypes: EnumMap, paramNam
 }
 
 export function describeQuery(postgres: Sql, sql: string, namedParameters: string[]): ResultAsync<SchemaDef, TypeSqlError> {
-	return ResultAsync.combine([loadDbSchema(postgres), loadEnums(postgres), loadCheckConstraints(postgres)])
+	return ResultAsync.combine([loadDbSchema(postgres), loadEnumsMap(postgres), loadCheckConstraints(postgres)])
 		.andThen(([dbSchema, enumsTypes, checkConstraints]) => {
 			return postgresDescribe(postgres, sql)
 				.andThen(analyzeResult => {

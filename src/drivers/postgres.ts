@@ -72,8 +72,8 @@ export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], Type
 
 export type EnumMap = Map<number, EnumResult[]>
 
-export function loadEnums(sql: Sql): ResultAsync<EnumMap, TypeSqlError> {
-	return (ResultAsync.fromThrowable(() => _loadEnums(sql), err => convertPostgresErrorToTypeSQLError(err))()).map(enumResult => {
+export function loadEnumsMap(sql: Sql): ResultAsync<EnumMap, TypeSqlError> {
+	return loadEnums(sql).map(enumResult => {
 		const enumMap = groupBy(enumResult, (e) => e.type_oid);
 		return enumMap;
 	});
@@ -81,13 +81,19 @@ export function loadEnums(sql: Sql): ResultAsync<EnumMap, TypeSqlError> {
 
 export type EnumResult = {
 	type_oid: number;
+	enum_name: string;
 	enumlabel: string;
+}
+
+export function loadEnums(sql: Sql): ResultAsync<EnumResult[], TypeSqlError> {
+	return ResultAsync.fromThrowable(async () => _loadEnums(sql), err => convertPostgresErrorToTypeSQLError(err))()
 }
 
 async function _loadEnums(sql: Sql): Promise<EnumResult[]> {
 	const result = await sql<EnumResult[]>`
 		SELECT 
 		t.oid AS type_oid,
+		t.typname AS enum_name,
 		e.enumlabel
 	FROM pg_type t
 	JOIN pg_enum e ON t.oid = e.enumtypid

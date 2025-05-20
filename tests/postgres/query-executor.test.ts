@@ -1,7 +1,7 @@
 import assert from 'node:assert';
 
 import postgres from 'postgres';
-import { postgresDescribe, loadDbSchema, createPostgresClient, loadForeignKeys, loadEnums, EnumMap, EnumResult, loadCheckConstraints, CheckConstraintResult } from '../../src/drivers/postgres';
+import { postgresDescribe, loadDbSchema, createPostgresClient, loadForeignKeys, loadEnumsMap, EnumMap, EnumResult, loadCheckConstraints, CheckConstraintResult } from '../../src/drivers/postgres';
 import { schema } from './schema';
 import { PostgresDescribe } from '../../src/drivers/types';
 import { TypeSqlError } from '../../src/types';
@@ -82,28 +82,33 @@ describe('postgres-query-executor', () => {
 	});
 
 	it('loadEnums', async () => {
-		const result = await loadEnums(sql);
+		const result = await loadEnumsMap(sql);
 		const expected: EnumMap = new Map();
 		const enumValues: EnumResult[] = [
 			{
 				type_oid: 16651,
-				enumlabel: 'x-small'
+				enumlabel: 'x-small',
+				enum_name: 'sizes_enum'
 			},
 			{
 				type_oid: 16651,
-				enumlabel: 'small'
+				enumlabel: 'small',
+				enum_name: 'sizes_enum'
 			},
 			{
 				type_oid: 16651,
-				enumlabel: 'medium'
+				enumlabel: 'medium',
+				enum_name: 'sizes_enum'
 			},
 			{
 				type_oid: 16651,
-				enumlabel: 'large'
+				enumlabel: 'large',
+				enum_name: 'sizes_enum'
 			},
 			{
 				type_oid: 16651,
-				enumlabel: 'x-large'
+				enumlabel: 'x-large',
+				enum_name: 'sizes_enum'
 			}
 		]
 		expected.set(16651, enumValues);

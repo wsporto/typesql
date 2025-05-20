@@ -1,16 +1,17 @@
 import { createLibSqlClient } from './drivers/libsql';
-import { createPostgresClient } from './drivers/postgres';
+import { createPostgresClient, EnumResult } from './drivers/postgres';
 import { ColumnSchema, Table } from './mysql-query-analyzer/types';
 import { createMysqlClient, loadMysqlSchema, loadMySqlTableSchema, selectTablesFromSchema } from './queryExectutor';
 import { createSqliteClient, ForeignKeyInfo, loadDbSchema, loadForeignKeys as loadSqliteForeignKeys, selectSqliteTablesFromSchema } from './sqlite-query-analyzer/query-executor';
 import { DatabaseClient, TypeSqlDialect, TypeSqlError } from './types';
-import { loadDbSchema as loadPostgresDbSchema, mapToColumnSchema, loadForeignKeys as loadPostgresForeignKeys } from './drivers/postgres';
+import { loadDbSchema as loadPostgresDbSchema, mapToColumnSchema, loadForeignKeys as loadPostgresForeignKeys, loadEnums as loadPostgresEnums } from './drivers/postgres';
 import { okAsync, ResultAsync } from 'neverthrow';
 import { Either, right } from 'fp-ts/lib/Either';
 
-type SchemaInfo = {
+export type SchemaInfo = {
 	columns: ColumnSchema[];
 	foreignKeys: ForeignKeyInfo[];
+	enumTypes: string[];
 }
 
 export function createClient(databaseUri: string, dialect: TypeSqlDialect, attach?: string[], loadExtensions?: string[], authToken?: string): ResultAsync<DatabaseClient, TypeSqlError> {
@@ -73,16 +74,31 @@ export function loadForeignKeys(databaseClient: DatabaseClient): ResultAsync<For
 	}
 }
 
+function loadEnums(databaseClient: DatabaseClient): ResultAsync<EnumResult[], TypeSqlError> {
+	switch (databaseClient.type) {
+		case 'better-sqlite3':
+		case 'libsql':
+		case 'bun:sqlite':
+		case 'd1':
+		case 'mysql2':
+			return okAsync([]);
+		case 'pg':
+			return loadPostgresEnums(databaseClient.client);
+	}
+}
+
 export function loadSchemaInfo(databaseUri: string, client: TypeSqlDialect): ResultAsync<SchemaInfo, TypeSqlError> {
 	const result = createClient(databaseUri, client)
 		.andThen(db => {
 			const schemaResult = loadSchema(db);
 			const foreignKeysResult = loadForeignKeys(db);
-			const schemaInfo = ResultAsync.combine([schemaResult, foreignKeysResult])
-				.map(([schema, foreignKeys]) => {
+			const enumTypesResult = loadEnums(db);
+			const schemaInfo = ResultAsync.combine([schemaResult, foreignKeysResult, enumTypesResult])
+				.map(([schema, foreignKeys, enumTypes]) => {
 					const result: SchemaInfo = {
 						columns: schema,
-						foreignKeys
+						foreignKeys,
+						enumTypes: [...new Set(enumTypes.map(enumType => enumType.enum_name))]
 					}
 					return result;
 				});
