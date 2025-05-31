@@ -542,7 +542,7 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16683,
+		oid: 16666,
 		table_schema: 'public',
 		table_name: 'enum_types',
 		column_name: 'id',
@@ -552,7 +552,7 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16683,
+		oid: 16666,
 		table_schema: 'public',
 		table_name: 'enum_types',
 		column_name: 'column1',
@@ -562,7 +562,7 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16683,
+		oid: 16666,
 		table_schema: 'public',
 		table_name: 'enum_types',
 		column_name: 'column2',
@@ -572,7 +572,7 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16683,
+		oid: 16666,
 		table_schema: 'public',
 		table_name: 'enum_types',
 		column_name: 'column3',
@@ -582,7 +582,7 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16683,
+		oid: 16666,
 		table_schema: 'public',
 		table_name: 'enum_types',
 		column_name: 'column4',
@@ -592,7 +592,7 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16683,
+		oid: 16666,
 		table_schema: 'public',
 		table_name: 'enum_types',
 		column_name: 'column5',
@@ -602,7 +602,7 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16683,
+		oid: 16666,
 		table_schema: 'public',
 		table_name: 'enum_types',
 		column_name: 'column6',
@@ -612,7 +612,7 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16697,
+		oid: 16680,
 		table_schema: 'public',
 		table_name: 'enum_types2',
 		column_name: 'id',
@@ -622,7 +622,7 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16697,
+		oid: 16680,
 		table_schema: 'public',
 		table_name: 'enum_types2',
 		column_name: 'column1',
