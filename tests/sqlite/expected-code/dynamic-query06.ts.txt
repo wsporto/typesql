@@ -197,6 +197,7 @@ function whereCondition(condition: DynamicQuery06Where): WhereConditionResult | 
 			values: [condition[2]]
 		}
 	}
+	return undefined;
 }
 
 const orderByFragments = {

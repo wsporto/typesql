@@ -146,4 +146,5 @@ function whereCondition(condition: DerivatedTableWhere): WhereConditionResult | 
 			values: [condition[2]]
 		}
 	}
+	return undefined;
 }

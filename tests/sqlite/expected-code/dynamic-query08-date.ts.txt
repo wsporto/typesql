@@ -160,6 +160,7 @@ function whereCondition(condition: DynamicQuery08Where): WhereConditionResult | 
 			values: [value]
 		}
 	}
+	return undefined;
 }
 
 function isDate(value: any): value is Date {

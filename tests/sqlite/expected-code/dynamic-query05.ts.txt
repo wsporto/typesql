@@ -146,4 +146,5 @@ function whereCondition(condition: CteWhere): WhereConditionResult | undefined {
 			values: [condition[2]]
 		}
 	}
+	return undefined;
 }

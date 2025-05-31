@@ -125,4 +125,5 @@ function whereCondition(condition: DynamicQuery03Where): WhereConditionResult | 
 			values: [condition[2]]
 		}
 	}
+	return undefined;
 }

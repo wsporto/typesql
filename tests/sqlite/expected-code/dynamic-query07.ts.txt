@@ -154,6 +154,7 @@ function whereCondition(condition: DynamicQuery07Where): WhereConditionResult | 
 			values: [condition[2]]
 		}
 	}
+	return undefined;
 }
 
 const orderByFragments = {

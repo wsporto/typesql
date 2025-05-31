@@ -156,4 +156,5 @@ function whereCondition(condition: DynamicQuery09Where): WhereConditionResult | 
 			values: [condition[2]]
 		}
 	}
+	return undefined;
 }
