@@ -677,6 +677,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 					});
 				}
 			});
+			writer.writeLine('return undefined;');
 		});
 		if (hasDateColumn(tsDescriptor.columns)) {
 			writer.blankLine();
