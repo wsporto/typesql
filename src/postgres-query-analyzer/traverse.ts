@@ -21,7 +21,7 @@ export type PostgresTraverseResult = {
 	multipleRowsResult: boolean;
 	columns: NotNullInfo[];
 	parametersNullability: ParamInfo[];
-	whereParamtersNullability?: boolean[];
+	whereParamtersNullability?: ParamInfo[];
 	parameterList: boolean[];
 	limit?: number;
 	returning?: boolean;
@@ -112,7 +112,7 @@ export function traverseSmt(stmt: StmtContext, dbSchema: PostgresColumnSchema[],
 	}
 	const updatestmt = stmt.updatestmt();
 	if (updatestmt) {
-		return traverseUpdatestmt(updatestmt, dbSchema, traverseResult);
+		return traverseUpdatestmt(updatestmt, traverseContext, traverseResult);
 	}
 	const deletestmt = stmt.deletestmt();
 	if (deletestmt) {
@@ -1320,17 +1320,16 @@ function addConstraintIfNotNull(checkConstraint: string | undefined) {
 	return checkConstraint !== undefined ? { checkConstraint } : {};
 }
 
-function traverseUpdatestmt(updatestmt: UpdatestmtContext, dbSchema: PostgresColumnSchema[], traverseResult: TraverseResult): PostgresTraverseResult {
+function traverseUpdatestmt(updatestmt: UpdatestmtContext, traverseContext: TraverseContext, traverseResult: TraverseResult): PostgresTraverseResult {
 
 	const relation_expr_opt_alias = updatestmt.relation_expr_opt_alias();
 	const tableName = relation_expr_opt_alias.relation_expr().getText();
 	const tableAlias = relation_expr_opt_alias.colid()?.getText() || '';
-	const updateColumns: NotNullInfo[] = dbSchema.filter(col => col.table_name.toLowerCase() === tableName.toLowerCase())
+	const updateColumns: NotNullInfo[] = traverseContext.dbSchema.filter(col => col.table_name.toLowerCase() === tableName.toLowerCase())
 		.map(col => ({ ...col, table_name: tableAlias || col.table_name }));
 	const context: TraverseContext = {
-		dbSchema,
+		...traverseContext,
 		fromColumns: updateColumns,
-		checkConstraints: {},
 		collectNestedInfo: false,
 		collectDynamicQueryInfo: false
 	}
@@ -1360,7 +1359,7 @@ function traverseUpdatestmt(updatestmt: UpdatestmtContext, dbSchema: PostgresCol
 		parametersNullability: traverseResult.parameters.slice(0, parametersBefore).map(param => ({ isNotNull: param.isNotNull, ...addConstraintIfNotNull(param.checkConstraint) })),
 		columns: returninColumns,
 		parameterList: paramIsListResult,
-		whereParamtersNullability: whereParameters.map(param => param.isNotNull)
+		whereParamtersNullability: whereParameters.map(param => ({ isNotNull: param.isNotNull, ...addConstraintIfNotNull(param.checkConstraint) }))
 	}
 	if (returning_clause) {
 		result.returning = true;
@@ -1376,7 +1375,11 @@ function traverse_set_clause(set_clause: Set_clauseContext, context: TraverseCon
 	const excludedColumns = context.fromColumns.map((col) => ({ ...col, table_name: 'excluded' }) satisfies NotNullInfo);
 	const a_exprResult = traverse_a_expr(a_expr, { ...context, fromColumns: context.fromColumns.concat(excludedColumns) }, traverseResult);
 	if (isParameter(a_exprResult.column_name)) {
-		traverseResult.parameters[traverseResult.parameters.length - 1].isNotNull = !column.is_nullable;
+		traverseResult.parameters.at(-1)!.isNotNull = !column.is_nullable;
+		const columnConstraint = getCheckConstraint(column, context.checkConstraints);
+		if (columnConstraint) {
+			traverseResult.parameters.at(-1)!.checkConstraint = columnConstraint;
+		}
 	}
 }
 
