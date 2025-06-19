@@ -500,4 +500,38 @@ describe('postgres-parse-update', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('UPDATE all_types SET enum_column = :enum1, enum_column_constraint = :enum2 WHERE int4_column = :id', async () => {
+		const sql = 'UPDATE all_types SET enum_column = $1, enum_constraint = $2 WHERE enum_constraint = $3';
+		const actual = await describeQuery(postres, sql, ['enum1', 'enum2', 'enum3']);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Update',
+			multipleRowsResult: false,
+			columns: [],
+			data: [
+				{
+					name: 'enum1',
+					columnType: `enum('x-small','small','medium','large','x-large')`,
+					notNull: false
+				},
+				{
+					name: 'enum2',
+					columnType: `enum('x-small','small','medium','large','x-large')`,
+					notNull: false
+				}
+			],
+			parameters: [
+				{
+					name: 'enum3',
+					columnType: `enum('x-small','small','medium','large','x-large')`,
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });

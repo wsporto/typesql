@@ -36,11 +36,11 @@ function describeQueryRefine(describeParameters: DescribeParameters): Result<Sch
 		multipleRowsResult: traverseResult.multipleRowsResult,
 		columns: getColumnsForQuery(traverseResult, postgresDescribeResult, enumsTypes, checkConstraints),
 		parameters: traverseResult.queryType === 'Update'
-			? getParamtersForWhere(traverseResult, postgresDescribeResult, enumsTypes, checkConstraints, paramNames)
+			? getParamtersForWhere(traverseResult, postgresDescribeResult, enumsTypes, paramNames)
 			: getParamtersForQuery(traverseResult, postgresDescribeResult, enumsTypes, paramNames)
 	}
 	if (traverseResult.queryType === 'Update') {
-		descResult.data = getDataForQuery(traverseResult, postgresDescribeResult, enumsTypes, checkConstraints, paramNames);
+		descResult.data = getDataForQuery(traverseResult, postgresDescribeResult, enumsTypes, paramNames);
 	}
 	if (traverseResult.returning) {
 		descResult.returning = traverseResult.returning;
@@ -102,7 +102,7 @@ function mapToColumnInfo(col: DescribeQueryColumn, posgresTypes: PostgresType, e
 	}
 }
 
-function createType(typeId: number, postgresTypes: PostgresType, enumType: EnumResult[] | undefined, checkConstraint: string | null) {
+function createType(typeId: number, postgresTypes: PostgresType, enumType: EnumResult[] | undefined, checkConstraint: string | undefined) {
 	if (enumType) {
 		return createEnumType(enumType!);
 	}
@@ -117,7 +117,7 @@ function createEnumType(enumList: EnumResult[]) {
 	return `enum(${enumListStr})`;
 }
 
-function mapToParamDef(postgresTypes: PostgresType, enumTypes: EnumMap, paramName: string, paramType: number, checkConstraint: string | null, notNull: boolean, isList: boolean): ParameterDef {
+function mapToParamDef(postgresTypes: PostgresType, enumTypes: EnumMap, paramName: string, paramType: number, checkConstraint: string | undefined, notNull: boolean, isList: boolean): ParameterDef {
 	const arrayType = isList ? '[]' : ''
 	return {
 		name: paramName,
@@ -159,7 +159,7 @@ function getParamtersForQuery(traverseResult: PostgresTraverseResult, postgresDe
 			const indexes = paramNames.flatMap((name, index) => name === paramName ? [index] : []);
 			const notNull = indexes.every(index => traverseResult.parametersNullability[index].isNotNull);
 			const paramList = indexes.every(index => traverseResult.parameterList[index]);
-			const paramCheckConstraint = indexes.map(i => traverseResult.parametersNullability[i]?.checkConstraint).find(Boolean) || null;
+			const paramCheckConstraint = indexes.map(i => traverseResult.parametersNullability[i]?.checkConstraint).find(Boolean);
 			const paramResult = mapToParamDef(postgresTypes, enumTypes, paramName, paramType, paramCheckConstraint, notNull, paramList);
 			return paramResult;
 		})
@@ -176,13 +176,13 @@ function getColumnsForCopyStmt(traverseResult: PostgresTraverseResult): Paramete
 	});
 }
 
-function getParamtersForWhere(traverseResult: PostgresTraverseResult, postgresDescribeResult: PostgresDescribe, enumTypes: EnumMap, checkConstraints: CheckConstraintResult, paramNames: string[]): ParameterDef[] {
+function getParamtersForWhere(traverseResult: PostgresTraverseResult, postgresDescribeResult: PostgresDescribe, enumTypes: EnumMap, paramNames: string[]): ParameterDef[] {
 	const indexOffset = traverseResult.parametersNullability.length;
 	return postgresDescribeResult.parameters.slice(indexOffset)
-		.map((paramType, index) => mapToParamDef(postgresTypes, enumTypes, paramNames[index + indexOffset], paramType, checkConstraints[index + indexOffset], traverseResult.whereParamtersNullability?.[index] ?? true, traverseResult.parameterList[index + indexOffset]))
+		.map((paramType, index) => mapToParamDef(postgresTypes, enumTypes, paramNames[index + indexOffset], paramType, traverseResult.whereParamtersNullability?.[index]?.checkConstraint, traverseResult.whereParamtersNullability?.[index].isNotNull ?? true, traverseResult.parameterList[index + indexOffset]))
 }
 
-function getDataForQuery(traverseResult: PostgresTraverseResult, postgresDescribeResult: PostgresDescribe, enumTypes: EnumMap, checkConstraints: CheckConstraintResult, paramNames: string[]): ParameterDef[] {
+function getDataForQuery(traverseResult: PostgresTraverseResult, postgresDescribeResult: PostgresDescribe, enumTypes: EnumMap, paramNames: string[]): ParameterDef[] {
 	return postgresDescribeResult.parameters.slice(0, traverseResult.parametersNullability.length)
-		.map((paramType, index) => mapToParamDef(postgresTypes, enumTypes, paramNames[index], paramType, checkConstraints[index], traverseResult.parametersNullability[index].isNotNull ?? true, traverseResult.parameterList[index]))
+		.map((paramType, index) => mapToParamDef(postgresTypes, enumTypes, paramNames[index], paramType, traverseResult.parametersNullability[index]?.checkConstraint, traverseResult.parametersNullability[index].isNotNull ?? true, traverseResult.parameterList[index]))
 }
