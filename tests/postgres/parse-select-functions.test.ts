@@ -837,13 +837,14 @@ describe('postgres-parse-select-functions', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
-	it(`SELECT name from mytable2 to_tsvector(name) @@ to_tsquery('one')`, async () => {
+	it(`SELECT name, ts_rank(...) from mytable2 WHERE to_tsvector(name) @@ to_tsquery('one')`, async () => {
 		const sql = `
          SELECT 
 		 	name, 
 		 	ts_rank(to_tsvector('one'), to_tsquery($1)) as rank,
 		 	ts_rank(to_tsvector(null), to_tsquery($1)) as rank2
-		 FROM mytable2 WHERE to_tsvector(name) @@ to_tsquery($1)
+		 FROM mytable2 
+		 WHERE to_tsvector(name) @@ to_tsquery($1)
 		 ORDER BY rank
         `;
 		const actual = await describeQuery(postres, sql, ['query']);
