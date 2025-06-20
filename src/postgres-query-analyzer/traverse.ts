@@ -932,7 +932,9 @@ function traversefunc_application(func_application: Func_applicationContext, con
 		|| functionName === 'concat_ws'
 		|| functionName === 'to_tsvector'
 		|| functionName === 'to_tsquery'
-		|| functionName === 'ts_rank') {
+		|| functionName === 'ts_rank'
+		|| functionName === 'plainto_tsquery'
+		|| functionName === 'phraseto_tsquery') {
 		if (func_arg_expr_list) {
 			return argsResult.every(col => col);
 		}
