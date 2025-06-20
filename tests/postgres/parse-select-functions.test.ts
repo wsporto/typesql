@@ -760,7 +760,12 @@ describe('postgres-parse-select-functions', () => {
 
 	it(`SELECT to_tsvector(name) as tsvector_result, to_tsquery('one') as tsquery_result from mytable2`, async () => {
 		const sql = `
-         SELECT to_tsvector(name) as tsvector_result, to_tsquery('one') as tsquery_result from mytable2
+         SELECT 
+		 	to_tsvector(name) as tsvector_result,  
+			to_tsvector('str') as tsvector_result2,
+			to_tsquery('one') as tsquery_result,
+			to_tsquery(null) as tsquery_result2 
+		from mytable2
         `;
 		const actual = await describeQuery(postres, sql, []);
 		const expected: SchemaDef = {
@@ -775,7 +780,19 @@ describe('postgres-parse-select-functions', () => {
 					table: ''
 				},
 				{
+					columnName: 'tsvector_result2',
+					type: 'tsvector',
+					notNull: true,
+					table: ''
+				},
+				{
 					columnName: 'tsquery_result',
+					type: 'tsquery',
+					notNull: true,
+					table: ''
+				},
+				{
+					columnName: 'tsquery_result2',
 					type: 'tsquery',
 					notNull: false,
 					table: ''

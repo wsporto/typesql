@@ -928,7 +928,11 @@ function traversefunc_application(func_application: Func_applicationContext, con
 	if (functionName === 'count') {
 		return true;
 	}
-	if (functionName === 'concat' || functionName === 'concat_ws') {
+	if (functionName === 'concat'
+		|| functionName === 'concat_ws'
+		|| functionName === 'to_tsvector'
+		|| functionName === 'to_tsquery'
+		|| functionName === 'ts_rank') {
 		if (func_arg_expr_list) {
 			return argsResult.every(col => col);
 		}
