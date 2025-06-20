@@ -836,4 +836,52 @@ describe('postgres-parse-select-functions', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it(`SELECT name from mytable2 to_tsvector(name) @@ to_tsquery('one')`, async () => {
+		const sql = `
+         SELECT 
+		 	name, 
+		 	ts_rank(to_tsvector('one'), to_tsquery($1)) as rank,
+		 	ts_rank(to_tsvector(null), to_tsquery($1)) as rank2
+		 FROM mytable2 WHERE to_tsvector(name) @@ to_tsquery($1)
+		 ORDER BY rank
+        `;
+		const actual = await describeQuery(postres, sql, ['query']);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'name',
+					type: 'text',
+					notNull: false,
+					table: 'mytable2'
+				},
+				{
+					columnName: 'rank',
+					type: 'float4',
+					notNull: true,
+					table: ''
+				},
+				{
+					columnName: 'rank2',
+					type: 'float4',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: [
+				{
+					name: 'query',
+					columnType: 'text',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });
