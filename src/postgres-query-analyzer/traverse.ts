@@ -934,7 +934,8 @@ function traversefunc_application(func_application: Func_applicationContext, con
 		|| functionName === 'to_tsquery'
 		|| functionName === 'ts_rank'
 		|| functionName === 'plainto_tsquery'
-		|| functionName === 'phraseto_tsquery') {
+		|| functionName === 'phraseto_tsquery'
+		|| functionName === 'websearch_to_tsquery') {
 		if (func_arg_expr_list) {
 			return argsResult.every(col => col);
 		}

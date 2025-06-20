@@ -886,13 +886,15 @@ describe('postgres-parse-select-functions', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
-	it(`SELECT name from mytable2 to_tsvector(name) @@ to_tsquery('one')`, async () => {
+	it.only(`SELECT name from mytable2 to_tsvector(name) @@ to_tsquery('one')`, async () => {
 		const sql = `
          SELECT 
 		 	plainto_tsquery($1) as plain,
 			plainto_tsquery(name) as plain2,
 			phraseto_tsquery($1) as phrase,
-			phraseto_tsquery(name) as phrase2
+			phraseto_tsquery(name) as phrase2,
+			websearch_to_tsquery($1) as web,
+			websearch_to_tsquery(name) as web2
 		 FROM mytable2
         `;
 		const actual = await describeQuery(postres, sql, ['query']);
@@ -921,6 +923,18 @@ describe('postgres-parse-select-functions', () => {
 				},
 				{
 					columnName: 'phrase2',
+					type: 'tsquery',
+					notNull: false,
+					table: ''
+				},
+				{
+					columnName: 'web',
+					type: 'tsquery',
+					notNull: true,
+					table: ''
+				},
+				{
+					columnName: 'web2',
 					type: 'tsquery',
 					notNull: false,
 					table: ''
