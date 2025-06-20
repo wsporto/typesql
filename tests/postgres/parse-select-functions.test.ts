@@ -757,4 +757,35 @@ describe('postgres-parse-select-functions', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it(`SELECT to_tsvector(name) as tsvector_result, to_tsquery('one') as tsquery_result from mytable2`, async () => {
+		const sql = `
+         SELECT to_tsvector(name) as tsvector_result, to_tsquery('one') as tsquery_result from mytable2
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'tsvector_result',
+					type: 'tsvector',
+					notNull: false,
+					table: ''
+				},
+				{
+					columnName: 'tsquery_result',
+					type: 'tsquery',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });
