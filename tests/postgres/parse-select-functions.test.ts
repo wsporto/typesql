@@ -788,4 +788,35 @@ describe('postgres-parse-select-functions', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it(`SELECT name from mytable2 to_tsvector(name) @@ to_tsquery('one')`, async () => {
+		const sql = `
+         SELECT name FROM mytable2 WHERE to_tsvector(name) @@ to_tsquery($1)
+        `;
+		const actual = await describeQuery(postres, sql, ['query']);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'name',
+					type: 'text',
+					notNull: false,
+					table: 'mytable2'
+				}
+			],
+			parameters: [
+				{
+					name: 'query',
+					columnType: 'text',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });
