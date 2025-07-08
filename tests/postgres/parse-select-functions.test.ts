@@ -886,7 +886,7 @@ describe('postgres-parse-select-functions', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
-	it.only(`SELECT name from mytable2 to_tsvector(name) @@ to_tsquery('one')`, async () => {
+	it(`SELECT name from mytable2 to_tsvector(name) @@ to_tsquery('one')`, async () => {
 		const sql = `
          SELECT 
 		 	plainto_tsquery($1) as plain,
