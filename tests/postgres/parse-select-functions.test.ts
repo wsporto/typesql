@@ -757,4 +757,200 @@ describe('postgres-parse-select-functions', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it(`SELECT to_tsvector(name) as tsvector_result, to_tsquery('one') as tsquery_result from mytable2`, async () => {
+		const sql = `
+         SELECT 
+		 	to_tsvector(name) as tsvector_result,  
+			to_tsvector('str') as tsvector_result2,
+			to_tsquery('one') as tsquery_result,
+			to_tsquery(null) as tsquery_result2 
+		from mytable2
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'tsvector_result',
+					type: 'tsvector',
+					notNull: false,
+					table: ''
+				},
+				{
+					columnName: 'tsvector_result2',
+					type: 'tsvector',
+					notNull: true,
+					table: ''
+				},
+				{
+					columnName: 'tsquery_result',
+					type: 'tsquery',
+					notNull: true,
+					table: ''
+				},
+				{
+					columnName: 'tsquery_result2',
+					type: 'tsquery',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it(`SELECT name from mytable2 to_tsvector(name) @@ to_tsquery('one')`, async () => {
+		const sql = `
+         SELECT name FROM mytable2 WHERE to_tsvector(name) @@ to_tsquery($1)
+        `;
+		const actual = await describeQuery(postres, sql, ['query']);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'name',
+					type: 'text',
+					notNull: false,
+					table: 'mytable2'
+				}
+			],
+			parameters: [
+				{
+					name: 'query',
+					columnType: 'text',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it(`SELECT name, ts_rank(...) from mytable2 WHERE to_tsvector(name) @@ to_tsquery('one')`, async () => {
+		const sql = `
+         SELECT 
+		 	name, 
+		 	ts_rank(to_tsvector('one'), to_tsquery($1)) as rank,
+		 	ts_rank(to_tsvector(null), to_tsquery($1)) as rank2
+		 FROM mytable2 
+		 WHERE to_tsvector(name) @@ to_tsquery($1)
+		 ORDER BY rank
+        `;
+		const actual = await describeQuery(postres, sql, ['query']);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'name',
+					type: 'text',
+					notNull: false,
+					table: 'mytable2'
+				},
+				{
+					columnName: 'rank',
+					type: 'float4',
+					notNull: true,
+					table: ''
+				},
+				{
+					columnName: 'rank2',
+					type: 'float4',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: [
+				{
+					name: 'query',
+					columnType: 'text',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it(`SELECT name from mytable2 to_tsvector(name) @@ to_tsquery('one')`, async () => {
+		const sql = `
+         SELECT 
+		 	plainto_tsquery($1) as plain,
+			plainto_tsquery(name) as plain2,
+			phraseto_tsquery($1) as phrase,
+			phraseto_tsquery(name) as phrase2,
+			websearch_to_tsquery($1) as web,
+			websearch_to_tsquery(name) as web2
+		 FROM mytable2
+        `;
+		const actual = await describeQuery(postres, sql, ['query']);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'plain',
+					type: 'tsquery',
+					notNull: true,
+					table: ''
+				},
+				{
+					columnName: 'plain2',
+					type: 'tsquery',
+					notNull: false,
+					table: ''
+				},
+				{
+					columnName: 'phrase',
+					type: 'tsquery',
+					notNull: true,
+					table: ''
+				},
+				{
+					columnName: 'phrase2',
+					type: 'tsquery',
+					notNull: false,
+					table: ''
+				},
+				{
+					columnName: 'web',
+					type: 'tsquery',
+					notNull: true,
+					table: ''
+				},
+				{
+					columnName: 'web2',
+					type: 'tsquery',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: [
+				{
+					name: 'query',
+					columnType: 'text',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });

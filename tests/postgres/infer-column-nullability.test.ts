@@ -1621,4 +1621,11 @@ describe('Infer column nullability', () => {
 		const expected = [true, true]
 		assert.deepStrictEqual(actual.parametersNullability.map(param => param.isNotNull), expected);
 	});
+
+	it('SELECT name FROM mytable2 WHERE to_tsvector(name) @@ to_tsquery($1)', async () => {
+		const sql = 'SELECT name FROM mytable2 WHERE to_tsvector(name) @@ to_tsquery($1)';
+		const actual = parseSql(sql, dbSchema, {});
+		const expected = [true];
+		assert.deepStrictEqual(actual.parametersNullability.map(param => param.isNotNull), expected);
+	});
 });

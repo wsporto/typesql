@@ -157,7 +157,7 @@ function getParamtersForQuery(traverseResult: PostgresTraverseResult, postgresDe
 		.map((paramType, index) => {
 			const paramName = namedParametersIndexes.get(index)!;
 			const indexes = paramNames.flatMap((name, index) => name === paramName ? [index] : []);
-			const notNull = indexes.every(index => traverseResult.parametersNullability[index].isNotNull);
+			const notNull = indexes.every(index => traverseResult.parametersNullability[index]?.isNotNull);
 			const paramList = indexes.every(index => traverseResult.parameterList[index]);
 			const paramCheckConstraint = indexes.map(i => traverseResult.parametersNullability[i]?.checkConstraint).find(Boolean);
 			const paramResult = mapToParamDef(postgresTypes, enumTypes, paramName, paramType, paramCheckConstraint, notNull, paramList);

@@ -29,7 +29,7 @@ export type PostgresTraverseResult = {
 	dynamicQueryInfo?: DynamicSqlInfo2;
 }
 
-type ParamInfo = {
+export type ParamInfo = {
 	isNotNull: boolean;
 	checkConstraint?: string;
 }
@@ -646,9 +646,18 @@ function traverse_expr_like(a_expr_like: A_expr_likeContext, context: TraverseCo
 }
 
 function traverse_expr_qual_op(a_expr_qual_op: A_expr_qual_opContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
-	const a_expr_unary_qualop = a_expr_qual_op.a_expr_unary_qualop_list()[0];
+	const a_expr_unary_qualop = a_expr_qual_op.a_expr_unary_qualop_list();
 	if (a_expr_unary_qualop) {
-		return traverse_expr_unary_qualop(a_expr_unary_qualop, context, traverseResult);
+		const result = a_expr_unary_qualop.map(a_expr_unary_qualop => traverse_expr_unary_qualop(a_expr_unary_qualop, context, traverseResult));
+		if (result.length === 1) {
+			return result[0];
+		}
+		return {
+			column_name: '?column?',
+			is_nullable: result.some(col => col.is_nullable),
+			table_name: '',
+			table_schema: ''
+		} satisfies NotNullInfo
 	}
 	throw Error('traverse_expr_qual_op -  Not expected:' + a_expr_qual_op.getText());
 }
@@ -919,7 +928,14 @@ function traversefunc_application(func_application: Func_applicationContext, con
 	if (functionName === 'count') {
 		return true;
 	}
-	if (functionName === 'concat' || functionName === 'concat_ws') {
+	if (functionName === 'concat'
+		|| functionName === 'concat_ws'
+		|| functionName === 'to_tsvector'
+		|| functionName === 'to_tsquery'
+		|| functionName === 'ts_rank'
+		|| functionName === 'plainto_tsquery'
+		|| functionName === 'phraseto_tsquery'
+		|| functionName === 'websearch_to_tsquery') {
 		if (func_arg_expr_list) {
 			return argsResult.every(col => col);
 		}

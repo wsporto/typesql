@@ -39,7 +39,9 @@ export const postgresTypes = {
 	1185: '_timestamptz',
 	1231: '_numeric',
 	1561: '_bit',
-	2951: '_uuid'
+	2951: '_uuid',
+	3614: 'tsvector',
+	3615: 'tsquery'
 } as any;
 
 
@@ -139,5 +141,11 @@ export function mapColumnType(postgresType: PostgresType): TsType {
 		case '_timestamptz':
 		case 'timestamptz[]':
 			return 'Date[]';
+		case 'tsvector':
+		case 'tsquery':
+			return 'string';
+		case 'tsvector[]':
+		case 'tsquery[]':
+			return 'string[]';
 	}
 }

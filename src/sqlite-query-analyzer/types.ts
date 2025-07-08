@@ -78,4 +78,8 @@ export type PostgresType =
 	| 'timestamp[]'
 	| 'timestamptz'
 	| '_timestamptz'
-	| 'timestamptz[]';
+	| 'timestamptz[]'
+	| 'tsvector'
+	| 'tsvector[]'
+	| 'tsquery'
+	| 'tsquery[]';
