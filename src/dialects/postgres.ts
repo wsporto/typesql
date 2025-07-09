@@ -12,6 +12,8 @@ export const postgresTypes = {
 	25: 'text',
 	29: 'varchar',
 	36: 'uuid',
+	114: 'json',
+	199: '_json',
 	700: 'float4',
 	701: 'float8',
 	1001: '_bytea',
@@ -41,7 +43,11 @@ export const postgresTypes = {
 	1561: '_bit',
 	2951: '_uuid',
 	3614: 'tsvector',
-	3615: 'tsquery'
+	3615: 'tsquery',
+	3802: 'jsonb',
+	3807: '_jsonb',
+	4072: 'jsonpath',
+	4073: '_jsonpath'
 } as any;
 
 
@@ -147,5 +153,13 @@ export function mapColumnType(postgresType: PostgresType): TsType {
 		case 'tsvector[]':
 		case 'tsquery[]':
 			return 'string[]';
+		case 'json':
+		case 'jsonb':
+			return 'any';
+		case '_json':
+		case 'json[]':
+		case '_jsonb':
+		case 'jsonb[]':
+			return 'any[]';
 	}
 }

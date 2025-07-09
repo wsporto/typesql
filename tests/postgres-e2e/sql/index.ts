@@ -9,3 +9,5 @@ export * from "./nested02";
 export * from "./nested03";
 export * from "./nested04-without-join-table";
 export * from "./nested04";
+export * from "./select-json-build-array01";
+export * from "./select-json-build-object01";

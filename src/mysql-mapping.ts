@@ -76,6 +76,7 @@ export type TsType =
 	| 'ArrayBuffer'
 	| 'ArrayBuffer[]'
 	| 'any'
+	| 'any[]'
 	| 'null';
 
 export function converToTsType(mySqlType: MySqlType | 'any'): TsType {

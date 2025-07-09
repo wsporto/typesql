@@ -963,6 +963,13 @@ function traversefunc_application(func_application: Func_applicationContext, con
 		const firstArg = argsResult[0];
 		return firstArg;
 	}
+	if (functionName === 'json_build_object'
+		|| functionName === 'jsonb_build_object'
+		|| functionName === 'json_build_array'
+		|| functionName === 'jsonb_build_array'
+	) {
+		return true;
+	}
 
 	return false;
 }
