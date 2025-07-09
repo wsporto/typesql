@@ -1,4 +1,4 @@
-import { A_expr_addContext, A_expr_andContext, A_expr_at_time_zoneContext, A_expr_betweenContext, A_expr_caretContext, A_expr_collateContext, A_expr_compareContext, A_expr_inContext, A_expr_is_notContext, A_expr_isnullContext, A_expr_lesslessContext, A_expr_likeContext, A_expr_mulContext, A_expr_orContext, A_expr_qual_opContext, A_expr_qualContext, A_expr_typecastContext, A_expr_unary_notContext, A_expr_unary_qualopContext, A_expr_unary_signContext, A_exprContext, C_expr_caseContext, C_expr_existsContext, C_expr_exprContext, C_exprContext, ColidContext, ColumnElemContext, ColumnrefContext, Common_table_exprContext, CopystmtContext, DeletestmtContext, Expr_listContext, From_clauseContext, From_listContext, Func_applicationContext, Func_arg_exprContext, Func_expr_common_subexprContext, Func_exprContext, IdentifierContext, In_expr_listContext, In_expr_selectContext, In_exprContext, Insert_column_itemContext, InsertstmtContext, Join_qualContext, Join_typeContext, Qualified_nameContext, Relation_exprContext, Select_clauseContext, Select_no_parensContext, Select_with_parensContext, SelectstmtContext, Set_clauseContext, Simple_select_intersectContext, Simple_select_pramaryContext, StmtContext, Table_refContext, Target_elContext, Target_labelContext, Target_listContext, Unreserved_keywordContext, UpdatestmtContext, Values_clauseContext, When_clauseContext, Where_clauseContext } from '@wsporto/typesql-parser/postgres/PostgreSQLParser';
+import { A_expr_addContext, A_expr_andContext, A_expr_at_time_zoneContext, A_expr_betweenContext, A_expr_caretContext, A_expr_collateContext, A_expr_compareContext, A_expr_inContext, A_expr_is_notContext, A_expr_isnullContext, A_expr_lesslessContext, A_expr_likeContext, A_expr_mulContext, A_expr_orContext, A_expr_qual_opContext, A_expr_qualContext, A_expr_typecastContext, A_expr_unary_notContext, A_expr_unary_qualopContext, A_expr_unary_signContext, A_exprContext, Array_expr_listContext, Array_exprContext, C_expr_caseContext, C_expr_existsContext, C_expr_exprContext, C_exprContext, ColidContext, ColumnElemContext, ColumnrefContext, Common_table_exprContext, CopystmtContext, DeletestmtContext, Expr_listContext, From_clauseContext, From_listContext, Func_applicationContext, Func_arg_exprContext, Func_expr_common_subexprContext, Func_exprContext, IdentifierContext, In_expr_listContext, In_expr_selectContext, In_exprContext, Insert_column_itemContext, InsertstmtContext, Join_qualContext, Join_typeContext, Qualified_nameContext, Relation_exprContext, Select_clauseContext, Select_no_parensContext, Select_with_parensContext, SelectstmtContext, Set_clauseContext, Simple_select_intersectContext, Simple_select_pramaryContext, StmtContext, Table_refContext, Target_elContext, Target_labelContext, Target_listContext, Unreserved_keywordContext, UpdatestmtContext, Values_clauseContext, When_clauseContext, Where_clauseContext } from '@wsporto/typesql-parser/postgres/PostgreSQLParser';
 import { ParserRuleContext } from '@wsporto/typesql-parser';
 import { PostgresColumnSchema } from '../drivers/types';
 import { extractOriginalSql, splitName } from '../mysql-query-analyzer/select-columns';
@@ -759,6 +759,29 @@ function traverseColumnRef(columnref: ColumnrefContext, fromColumns: NotNullInfo
 
 function traversec_expr(c_expr: C_exprContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
 	if (c_expr instanceof C_expr_exprContext) {
+		if (c_expr.ARRAY()) {
+			const select_with_parens = c_expr.select_with_parens();
+			if (select_with_parens) {
+				traverse_select_with_parens(select_with_parens, context, traverseResult);
+				return {
+					column_name: '?column?',
+					is_nullable: true,
+					table_schema: '',
+					table_name: ''
+				}
+			}
+			const array_expr = c_expr.array_expr();
+			if (array_expr) {
+				traverse_array_expr(array_expr, context, traverseResult);
+				return {
+					column_name: '?column?',
+					is_nullable: false,
+					table_schema: '',
+					table_name: ''
+				}
+
+			}
+		}
 		const columnref = c_expr.columnref();
 		if (columnref) {
 			const col = traverseColumnRef(columnref, context.fromColumns);
@@ -936,10 +959,7 @@ function traversefunc_application(func_application: Func_applicationContext, con
 		|| functionName === 'plainto_tsquery'
 		|| functionName === 'phraseto_tsquery'
 		|| functionName === 'websearch_to_tsquery') {
-		if (func_arg_expr_list) {
-			return argsResult.every(col => col);
-		}
-		return false;
+		return argsResult.every(col => col);
 	}
 	if (functionName === 'to_date') {
 		const firstArg = argsResult[0];
@@ -970,6 +990,9 @@ function traversefunc_application(func_application: Func_applicationContext, con
 	) {
 		return true;
 	}
+	if (functionName === 'to_json' || functionName === 'to_jsonb') {
+		return argsResult.every(col => col);
+	}
 
 	return false;
 }
@@ -999,6 +1022,22 @@ function traversefunc_arg_expr(func_arg_expr: Func_arg_exprContext, context: Tra
 	return !traverse_a_expr(a_expr, context, traverseResult).is_nullable;
 }
 
+function traverse_array_expr(array_expr: Array_exprContext, context: TraverseContext, traverseResult: TraverseResult) {
+	const expr_list = array_expr.expr_list();
+	if (expr_list) {
+		traverse_expr_list(expr_list, context, traverseResult);
+	}
+	const array_expr_list = array_expr.array_expr_list();
+	if (array_expr_list) {
+		traverse_array_expr_list(array_expr_list, context, traverseResult);
+	}
+}
+
+function traverse_array_expr_list(array_expr_list: Array_expr_listContext, context: TraverseContext, traverseResult: TraverseResult) {
+	array_expr_list.array_expr_list().forEach(array_expr => {
+		traverse_array_expr(array_expr, context, traverseResult);
+	})
+}
 
 function findColumn(fieldName: FieldName, fromColumns: NotNullInfo[]) {
 	const col = fromColumns.find(col => (fieldName.prefix === '' || col.table_name.toLowerCase() === fieldName.prefix.toLowerCase()) && col.column_name.toLowerCase() === fieldName.name.toLowerCase());
