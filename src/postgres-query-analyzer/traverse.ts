@@ -987,6 +987,8 @@ function traversefunc_application(func_application: Func_applicationContext, con
 		|| functionName === 'jsonb_build_object'
 		|| functionName === 'json_build_array'
 		|| functionName === 'jsonb_build_array'
+		|| functionName === 'json_agg'
+		|| functionName === 'jsonb_agg'
 	) {
 		return true;
 	}

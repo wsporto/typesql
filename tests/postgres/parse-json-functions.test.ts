@@ -164,4 +164,50 @@ describe('postgres-json-functions', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	})
+
+	it(`select json_agg()`, async () => {
+		const sql = `select 
+			json_agg(json_build_object('key', 10)) as col1, 
+			jsonb_agg(json_build_object('key', 10)) as col2, 
+			json_agg(null::text) as col3,
+			jsonb_agg(null::text) as col4
+			`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					columnName: 'col1',
+					type: 'json',
+					notNull: true,
+					table: ''
+				},
+				{
+					columnName: 'col2',
+					type: 'jsonb',
+					notNull: true,
+					table: ''
+				},
+				{
+					columnName: 'col3',
+					type: 'json',
+					notNull: true,
+					table: ''
+				},
+				{
+					columnName: 'col4',
+					type: 'jsonb',
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
 })
