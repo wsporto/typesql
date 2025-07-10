@@ -17,181 +17,181 @@ describe('type-mapping', () => {
 
 		const expected: ColumnInfo[] = [
 			{
-				columnName: 'decimal_column',
+				name: 'decimal_column',
 				type: 'decimal',
 				notNull: false,
 				table: 'all_types'
 			},
 			{
-				columnName: 'tinyint_column',
+				name: 'tinyint_column',
 				type: 'tinyint',
 				notNull: false,
 				table: 'all_types'
 			},
 			{
-				columnName: 'smallint_column',
+				name: 'smallint_column',
 				type: 'smallint',
 				notNull: false,
 				table: 'all_types'
 			},
 			{
-				columnName: 'int_column',
+				name: 'int_column',
 				type: 'int',
 				notNull: false,
 				table: 'all_types'
 			},
 			{
-				columnName: 'float_column',
+				name: 'float_column',
 				type: 'float',
 				notNull: false,
 				table: 'all_types'
 			},
 			{
-				columnName: 'double_column',
+				name: 'double_column',
 				type: 'double',
 				notNull: false,
 				table: 'all_types'
 			},
 			{
-				columnName: 'timestamp_column',
+				name: 'timestamp_column',
 				type: 'timestamp',
 				notNull: false,
 				table: 'all_types'
 			},
 			{
-				columnName: 'bigint_column',
+				name: 'bigint_column',
 				type: 'bigint',
 				notNull: false,
 				table: 'all_types'
 			},
 			{
-				columnName: 'mediumint_column',
+				name: 'mediumint_column',
 				type: 'mediumint',
 				notNull: false,
 				table: 'all_types'
 			},
 			{
-				columnName: 'date_column',
+				name: 'date_column',
 				type: 'date',
 				notNull: false,
 				table: 'all_types'
 			},
 			{
-				columnName: 'time_column',
+				name: 'time_column',
 				type: 'time',
 				notNull: false,
 				table: 'all_types'
 			},
 			{
-				columnName: 'datetime_column',
+				name: 'datetime_column',
 				type: 'datetime',
 				notNull: false,
 				table: 'all_types'
 			},
 			{
-				columnName: 'year_column',
+				name: 'year_column',
 				type: 'year',
 				notNull: false,
 				table: 'all_types'
 			},
 			{
-				columnName: 'varchar_column',
+				name: 'varchar_column',
 				type: 'varchar',
 				notNull: false,
 				table: 'all_types'
 			},
 			{
-				columnName: 'bit_column',
+				name: 'bit_column',
 				type: 'bit',
 				notNull: false,
 				table: 'all_types'
 			},
 			{
-				columnName: 'json_column',
+				name: 'json_column',
 				type: 'json',
 				notNull: false,
 				table: 'all_types'
 			},
 			{
-				columnName: 'enum_column',
+				name: 'enum_column',
 				type: `enum('x-small','small','medium','large','x-large')`,
 				notNull: false,
 				table: 'all_types'
 			},
 			{
-				columnName: 'set_column',
+				name: 'set_column',
 				type: 'set',
 				notNull: false,
 				table: 'all_types'
 			},
 			{
 				type: 'tinyblob',
-				columnName: 'tinyblob_column',
+				name: 'tinyblob_column',
 				notNull: false,
 				table: 'all_types'
 			},
 			{
 				type: 'mediumblob',
-				columnName: 'mediumblob_column',
+				name: 'mediumblob_column',
 				notNull: false,
 				table: 'all_types'
 			},
 			{
 				type: 'longblob',
-				columnName: 'longblob_column',
+				name: 'longblob_column',
 				notNull: false,
 				table: 'all_types'
 			},
 			{
 				type: 'blob',
-				columnName: 'blob_column',
+				name: 'blob_column',
 				notNull: false,
 				table: 'all_types'
 			},
 			{
-				columnName: 'tinytext_column',
+				name: 'tinytext_column',
 				type: 'tinytext',
 				notNull: false,
 				table: 'all_types'
 			},
 			{
-				columnName: 'mediumtext_column',
+				name: 'mediumtext_column',
 				type: 'mediumtext',
 				notNull: false,
 				table: 'all_types'
 			},
 			{
-				columnName: 'longtext_column',
+				name: 'longtext_column',
 				type: 'longtext',
 				notNull: false,
 				table: 'all_types'
 			},
 			{
-				columnName: 'text_column',
+				name: 'text_column',
 				type: 'text',
 				notNull: false,
 				table: 'all_types'
 			},
 			{
-				columnName: 'varbinary_column',
+				name: 'varbinary_column',
 				type: 'varbinary',
 				notNull: false,
 				table: 'all_types'
 			},
 			{
-				columnName: 'binary_column',
+				name: 'binary_column',
 				type: 'binary',
 				notNull: false,
 				table: 'all_types'
 			},
 			{
-				columnName: 'char_column',
+				name: 'char_column',
 				type: 'char',
 				notNull: false,
 				table: 'all_types'
 			},
 			{
-				columnName: 'geometry_column',
+				name: 'geometry_column',
 				type: 'geometry',
 				notNull: false,
 				table: 'all_types'
@@ -214,7 +214,7 @@ describe('type-mapping', () => {
 
 		const actualColumns = actual.right.columns.map((col) => {
 			const nameAndType = {
-				name: col.columnName,
+				name: col.name,
 				type: col.type
 			};
 			return nameAndType;

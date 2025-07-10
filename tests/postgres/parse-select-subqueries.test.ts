@@ -25,7 +25,7 @@ describe('postgres-parse-select-subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't'
@@ -53,13 +53,13 @@ describe('postgres-parse-select-subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't'
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: false,
 					table: 't'
@@ -86,7 +86,7 @@ describe('postgres-parse-select-subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: false,
 					table: 't1'
@@ -113,7 +113,7 @@ describe('postgres-parse-select-subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'code',
+					name: 'code',
 					type: 'int4',
 					notNull: false,
 					table: 't1'
@@ -140,13 +140,13 @@ describe('postgres-parse-select-subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: false,
 					table: 't2'
 				},
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'text',
 					notNull: false,
 					table: 't2'
@@ -175,13 +175,13 @@ describe('postgres-parse-select-subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: true,
 					table: 't2'
 				},
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'text',
 					notNull: true,
 					table: 't2'
@@ -221,7 +221,7 @@ describe('postgres-parse-select-subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't2'
@@ -250,7 +250,7 @@ describe('postgres-parse-select-subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't2'
@@ -275,13 +275,13 @@ describe('postgres-parse-select-subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't2'
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: false,
 					table: 't2'
@@ -310,7 +310,7 @@ describe('postgres-parse-select-subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'text',
 					notNull: false,
 					table: 't2'
@@ -343,7 +343,7 @@ describe('postgres-parse-select-subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'text',
 					notNull: false,
 					table: 't3'
@@ -376,7 +376,7 @@ describe('postgres-parse-select-subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't3'
@@ -401,7 +401,7 @@ describe('postgres-parse-select-subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'int8',
 					notNull: true,
 					table: 't2'
@@ -426,7 +426,7 @@ describe('postgres-parse-select-subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: false,
 					table: 'mytable2'
@@ -455,7 +455,7 @@ describe('postgres-parse-select-subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: false,
 					table: 'mytable2'
@@ -491,7 +491,7 @@ describe('postgres-parse-select-subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't1'
@@ -522,13 +522,13 @@ describe('postgres-parse-select-subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't1'
 				},
 				{
-					columnName: 'has',
+					name: 'has',
 					type: 'bool',
 					notNull: true,
 					table: ''
@@ -555,13 +555,13 @@ describe('postgres-parse-select-subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'subquery',
+					name: 'subquery',
 					type: 'int4',
 					notNull: false,
 					table: ''
@@ -586,13 +586,13 @@ describe('postgres-parse-select-subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't1'
 				},
 				{
-					columnName: 'has',
+					name: 'has',
 					type: 'bool',
 					notNull: true,
 					table: ''

@@ -23,7 +23,7 @@ describe('postgres-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'sum', //different from mysql and sqlite
+					name: 'sum', //different from mysql and sqlite
 					type: 'int8',
 					notNull: false,
 					table: ''
@@ -48,7 +48,7 @@ describe('postgres-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'total',
+					name: 'total',
 					type: 'int8',
 					notNull: false,
 					table: ''
@@ -73,7 +73,7 @@ describe('postgres-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'total',
+					name: 'total',
 					type: 'int8',
 					notNull: false,
 					table: ''
@@ -98,7 +98,7 @@ describe('postgres-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'count',
+					name: 'count',
 					type: 'int8',
 					notNull: true,
 					table: ''
@@ -123,7 +123,7 @@ describe('postgres-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'count',
+					name: 'count',
 					type: 'int8',
 					notNull: true,
 					table: ''
@@ -148,7 +148,7 @@ describe('postgres-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'sum',
+					name: 'sum',
 					type: 'int8',
 					notNull: false,
 					table: ''
@@ -173,7 +173,7 @@ describe('postgres-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'avg',
+					name: 'avg',
 					type: 'numeric',
 					notNull: false,
 					table: ''
@@ -198,7 +198,7 @@ describe('postgres-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'avg',
+					name: 'avg',
 					type: 'numeric',
 					notNull: false,
 					table: ''
@@ -229,7 +229,7 @@ describe('postgres-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'avg',
+					name: 'avg',
 					type: 'numeric',
 					notNull: false,
 					table: ''
@@ -262,7 +262,7 @@ describe('postgres-parse-select-functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
@@ -298,7 +298,7 @@ describe('postgres-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'sum',
+					name: 'sum',
 					type: 'int8',
 					notNull: false,
 					table: ''
@@ -323,7 +323,7 @@ describe('postgres-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: `to_date`,
+					name: `to_date`,
 					type: 'date',
 					notNull: true, // //PostgreSQL gives an error for an invalid date, while MySQL returns NULL;
 					table: ''
@@ -353,25 +353,25 @@ describe('postgres-parse-select-functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'month1',
+					name: 'month1',
 					type: 'float8',
 					notNull: false,
 					table: ''
 				},
 				{
-					columnName: 'month2',
+					name: 'month2',
 					type: 'float8',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'month3',
+					name: 'month3',
 					type: 'float8',
 					notNull: false,
 					table: ''
 				},
 				{
-					columnName: 'month4',
+					name: 'month4',
 					type: 'float8',
 					notNull: true,
 					table: ''
@@ -396,19 +396,19 @@ describe('postgres-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: '?column?', //different from mysql and sqlite
+					name: '?column?', //different from mysql and sqlite
 					type: 'int4',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: `concat_ws`, //If the separator is NULL, the result is NULL.
+					name: `concat_ws`, //If the separator is NULL, the result is NULL.
 					type: 'text',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: true,
 					table: ''
@@ -434,7 +434,7 @@ describe('postgres-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: `to_date`,
+					name: `to_date`,
 					type: 'date',
 					notNull: true,  //PostgreSQL gives an error for an invalid date, while MySQL returns NULL;
 					table: ''
@@ -475,7 +475,7 @@ describe('postgres-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: `to_date`,
+					name: `to_date`,
 					type: 'date',
 					notNull: false,  //TO_DATE(null, 'DD/MM/YYYY')
 					table: ''
@@ -504,7 +504,7 @@ describe('postgres-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'days_stayed',
+					name: 'days_stayed',
 					type: 'int4',
 					notNull: true,
 					table: ''
@@ -540,7 +540,7 @@ describe('postgres-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'days_stayed',
+					name: 'days_stayed',
 					type: 'int4',
 					notNull: true,
 					table: ''
@@ -581,13 +581,13 @@ describe('postgres-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'result1',
+					name: 'result1',
 					type: 'text',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'result2',
+					name: 'result2',
 					type: 'text',
 					notNull: true,
 					table: ''
@@ -612,7 +612,7 @@ describe('postgres-parse-select-functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'result',
+					name: 'result',
 					type: 'int4',
 					notNull: true,
 					table: ''
@@ -637,7 +637,7 @@ describe('postgres-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'string_agg',
+					name: 'string_agg',
 					type: 'text',
 					notNull: false,
 					table: ''
@@ -662,7 +662,7 @@ describe('postgres-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'string_agg',
+					name: 'string_agg',
 					type: 'text',
 					notNull: false,
 					table: ''
@@ -688,7 +688,7 @@ describe('postgres-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'result',
+					name: 'result',
 					type: 'text',
 					notNull: false,
 					table: ''
@@ -713,7 +713,7 @@ describe('postgres-parse-select-functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'nullif',
+					name: 'nullif',
 					type: 'text',
 					notNull: false,
 					table: ''
@@ -744,7 +744,7 @@ describe('postgres-parse-select-functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'month',
+					name: 'month',
 					type: 'int4',
 					notNull: true,
 					table: ''
@@ -774,25 +774,25 @@ describe('postgres-parse-select-functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'tsvector_result',
+					name: 'tsvector_result',
 					type: 'tsvector',
 					notNull: false,
 					table: ''
 				},
 				{
-					columnName: 'tsvector_result2',
+					name: 'tsvector_result2',
 					type: 'tsvector',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'tsquery_result',
+					name: 'tsquery_result',
 					type: 'tsquery',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'tsquery_result2',
+					name: 'tsquery_result2',
 					type: 'tsquery',
 					notNull: false,
 					table: ''
@@ -817,7 +817,7 @@ describe('postgres-parse-select-functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: false,
 					table: 'mytable2'
@@ -854,19 +854,19 @@ describe('postgres-parse-select-functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: false,
 					table: 'mytable2'
 				},
 				{
-					columnName: 'rank',
+					name: 'rank',
 					type: 'float4',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'rank2',
+					name: 'rank2',
 					type: 'float4',
 					notNull: false,
 					table: ''
@@ -904,37 +904,37 @@ describe('postgres-parse-select-functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'plain',
+					name: 'plain',
 					type: 'tsquery',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'plain2',
+					name: 'plain2',
 					type: 'tsquery',
 					notNull: false,
 					table: ''
 				},
 				{
-					columnName: 'phrase',
+					name: 'phrase',
 					type: 'tsquery',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'phrase2',
+					name: 'phrase2',
 					type: 'tsquery',
 					notNull: false,
 					table: ''
 				},
 				{
-					columnName: 'web',
+					name: 'web',
 					type: 'tsquery',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'web2',
+					name: 'web2',
 					type: 'tsquery',
 					notNull: false,
 					table: ''

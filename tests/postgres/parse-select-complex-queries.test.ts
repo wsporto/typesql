@@ -29,25 +29,25 @@ describe('parse-select-complex-queries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int4',
 					notNull: false,
 					table: 't1'
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: false,
 					table: 't2'
 				},
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: false,
 					table: 't3'
 				},
 				{
-					columnName: 'quantity',
+					name: 'quantity',
 					notNull: true,
 					type: 'int8',
 					table: ''
@@ -79,13 +79,13 @@ describe('parse-select-complex-queries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: true,
 					table: 'mytable3'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'float4',
 					notNull: false, //SUM(double_value) > $1; then notNull should be true
 					table: ''
@@ -128,19 +128,19 @@ describe('parse-select-complex-queries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: true,
 					table: 'mytable3'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'float4',
 					notNull: false,
 					table: ''
 				},
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'float8',
 					notNull: false,
 					table: '' //TODO - could be mytable3?
@@ -190,7 +190,7 @@ describe('parse-select-complex-queries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: ''
@@ -217,7 +217,7 @@ describe('parse-select-complex-queries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'col',
+					name: 'col',
 					type: 'int8',
 					notNull: false,
 					table: ''
@@ -243,7 +243,7 @@ describe('parse-select-complex-queries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'fullname',
+					name: 'fullname',
 					type: 'text',
 					notNull: false,
 					table: ''
@@ -269,7 +269,7 @@ describe('parse-select-complex-queries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'fullname',
+					name: 'fullname',
 					type: 'text',
 					notNull: false,
 					table: '' //TODO - subselect table name should be ''
@@ -303,7 +303,7 @@ describe('parse-select-complex-queries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: false,
 					table: 'names'
@@ -333,19 +333,19 @@ describe('parse-select-complex-queries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'n'
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: false,
 					table: 'n'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int4',
 					notNull: false,
 					table: 'v'
@@ -373,13 +373,13 @@ describe('parse-select-complex-queries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'allvalues'
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: false,
 					table: 'allvalues'
@@ -407,13 +407,13 @@ describe('parse-select-complex-queries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'names'
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: false,
 					table: 'names'
@@ -444,7 +444,7 @@ describe('parse-select-complex-queries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'result'
@@ -479,19 +479,19 @@ describe('parse-select-complex-queries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int4',
 					notNull: true,
 					table: 't1'
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: true,
 					table: 't1'

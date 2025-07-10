@@ -20,7 +20,7 @@ describe('parse delete statements', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'affectedRows',
+					name: 'affectedRows',
 					type: 'int',
 					notNull: true
 				}
@@ -50,7 +50,7 @@ describe('parse delete statements', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'affectedRows',
+					name: 'affectedRows',
 					type: 'int',
 					notNull: true
 				}
@@ -79,7 +79,7 @@ describe('parse delete statements', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'affectedRows',
+					name: 'affectedRows',
 					type: 'int',
 					notNull: true
 				}
@@ -115,7 +115,7 @@ describe('parse delete statements', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'affectedRows',
+					name: 'affectedRows',
 					type: 'int',
 					notNull: true
 				}

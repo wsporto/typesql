@@ -54,7 +54,7 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'mytable1'
@@ -78,7 +78,7 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'mytable1'
@@ -103,13 +103,13 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'INTEGER',
 					notNull: false,
 					table: 'mytable1'
@@ -133,13 +133,13 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'INTEGER',
 					notNull: false,
 					table: 'mytable1'
@@ -163,13 +163,13 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 't'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'INTEGER',
 					notNull: false,
 					table: 't'
@@ -193,13 +193,13 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'INTEGER',
 					notNull: false,
 					table: 'mytable1'
@@ -223,19 +223,19 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'mytable2'
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'TEXT',
 					notNull: false,
 					table: 'mytable2'
 				},
 				{
-					columnName: 'description',
+					name: 'description',
 					type: 'TEXT',
 					notNull: false,
 					table: 'mytable2'
@@ -259,13 +259,13 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'INTEGER',
 					notNull: false,
 					table: 'mytable1'
@@ -289,13 +289,13 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'INTEGER',
 					notNull: false,
 					table: 'mytable1'
@@ -319,7 +319,7 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'mytable1'
@@ -344,13 +344,13 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'INTEGER',
 					notNull: false,
 					table: 'mytable1'
@@ -380,7 +380,7 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: false, //changed at v.0.3.0
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'mytable1'
@@ -410,7 +410,7 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'INTEGER',
 					notNull: false,
 					table: 'mytable1'
@@ -445,7 +445,7 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: '?', //TODO - PARAM1
+					name: '?', //TODO - PARAM1
 					type: 'any',
 					notNull: true,
 					table: ''
@@ -476,7 +476,7 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'mytable1'
@@ -513,7 +513,7 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'mytable1'
@@ -548,7 +548,7 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'any',
 					notNull: true,
 					table: ''
@@ -581,19 +581,19 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'any',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'mytable2'
 				},
 				{
-					columnName: 'description',
+					name: 'description',
 					type: 'TEXT',
 					notNull: false,
 					table: 'mytable2'
@@ -639,13 +639,13 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: false, //changed at v0.3.0
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 't'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'INTEGER',
 					notNull: false,
 					table: 't'
@@ -676,13 +676,13 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'INTEGER',
 					notNull: false,
 					table: 'mytable1'
@@ -707,13 +707,13 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'INTEGER',
 					notNull: false,
 					table: 'mytable1'
@@ -738,13 +738,13 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 't'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'INTEGER',
 					notNull: false,
 					table: 't'
@@ -769,13 +769,13 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 't'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'INTEGER',
 					notNull: false,
 					table: 't'
@@ -806,13 +806,13 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 't'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'INTEGER',
 					notNull: false,
 					table: 't'
@@ -843,13 +843,13 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 't'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'INTEGER',
 					notNull: false,
 					table: 't'
@@ -885,13 +885,13 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 't'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'INTEGER',
 					notNull: false,
 					table: 't'
@@ -937,7 +937,7 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 't'
@@ -968,7 +968,7 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 't'
@@ -999,7 +999,7 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 't'
@@ -1030,7 +1030,7 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 't'
@@ -1061,13 +1061,13 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: false, //changed at v0.3.0
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'INTEGER',
 					notNull: false,
 					table: 'mytable1'
@@ -1098,7 +1098,7 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'bigger',
+					name: 'bigger',
 					type: 'INTEGER', //changed at v0.0.2
 					notNull: true,
 					table: ''
@@ -1123,7 +1123,7 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'bigger',
+					name: 'bigger',
 					type: 'INTEGER',
 					notNull: true,
 					table: ''
@@ -1148,7 +1148,7 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'mytable2'
@@ -1179,7 +1179,7 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'mytable2'
@@ -1209,13 +1209,13 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'INTEGER',
 					notNull: false,
 					table: 'mytable1'
@@ -1240,13 +1240,13 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'INTEGER',
 					notNull: false,
 					table: 'mytable1'
@@ -1271,7 +1271,7 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'mytable2'
@@ -1307,7 +1307,7 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'TEXT',
 					notNull: false, //not null can't be inferred
 					table: ''
@@ -1339,7 +1339,7 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'TEXT',
 					notNull: true,
 					table: ''
@@ -1372,7 +1372,7 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'mytable2'
@@ -1406,7 +1406,7 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'sumById',
+					name: 'sumById',
 					type: 'INTEGER',
 					notNull: false,
 					table: 't1'
@@ -1434,13 +1434,13 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id2',
+					name: 'id2',
 					type: 'INTEGER',
 					notNull: true,
 					table: 't1'
 				},
 				{
-					columnName: 'sumById',
+					name: 'sumById',
 					type: 'INTEGER',
 					notNull: false,
 					table: 't1'
@@ -1468,7 +1468,7 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'sumById',
+					name: 'sumById',
 					type: 'REAL',
 					notNull: false,
 					table: 't1'
@@ -1494,7 +1494,7 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'mytable1'
@@ -1520,7 +1520,7 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'mytable1'
@@ -1546,7 +1546,7 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'enum_column',
+					name: 'enum_column',
 					type: `ENUM('x-small','small','medium','large','x-large')`,
 					notNull: true,
 					table: 'all_types'
@@ -1572,7 +1572,7 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'INTEGER',
 					notNull: false,
 					table: 'mytable1'
@@ -1599,7 +1599,7 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'myValue',
+					name: 'myValue',
 					type: 'INTEGER',
 					notNull: false,
 					table: 'mytable1'
@@ -1626,7 +1626,7 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'INTEGER',
 					notNull: false,
 					table: 'mytable1'
@@ -1654,13 +1654,13 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'INTEGER',
 					notNull: false,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'ordering',
+					name: 'ordering',
 					type: 'INTEGER',
 					notNull: true,
 					table: ''
@@ -1691,13 +1691,13 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 't2'
 				},
 				{
-					columnName: 'sort',
+					name: 'sort',
 					type: 'INTEGER',
 					notNull: true,
 					table: ''
@@ -1725,7 +1725,7 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'INTEGER',
 					notNull: false,
 					table: 't'
@@ -1752,7 +1752,7 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'TEXT',
 					notNull: false,
 					table: 'mytable2'
@@ -1788,7 +1788,7 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'INTEGER',
 					notNull: false,
 					table: 't'
@@ -1814,7 +1814,7 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'mytable1'
@@ -1851,7 +1851,7 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'year',
+					name: 'year',
 					type: 'INTEGER',
 					notNull: false,
 					table: 'mytable4'
@@ -1876,13 +1876,13 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'users'
 				},
 				{
-					columnName: 'username',
+					name: 'username',
 					type: 'TEXT',
 					notNull: true,
 					table: 'users'
@@ -1907,13 +1907,13 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'users'
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'TEXT',
 					notNull: true,
 					table: 'users'
@@ -1948,19 +1948,19 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'vector',
+					name: 'vector',
 					type: 'TEXT',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'embedded',
+					name: 'embedded',
 					type: 'BLOB',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'vector_distance_cos',
+					name: 'vector_distance_cos',
 					type: 'REAL',
 					notNull: true,
 					table: ''
@@ -1996,7 +1996,7 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'col_alias',
+					name: 'col_alias',
 					type: 'INTEGER',
 					notNull: true,
 					table: ''
@@ -2021,13 +2021,13 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'INTEGER',
 					notNull: false,
 					table: 'mytable1'
@@ -2058,13 +2058,13 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'PlaylistId',
+					name: 'PlaylistId',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'playlist_track'
 				},
 				{
-					columnName: 'TrackId',
+					name: 'TrackId',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'playlist_track'
@@ -2095,13 +2095,13 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'PlaylistId',
+					name: 'PlaylistId',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'playlist_track'
 				},
 				{
-					columnName: 'TrackId',
+					name: 'TrackId',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'playlist_track'
@@ -2132,13 +2132,13 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'PlaylistId',
+					name: 'PlaylistId',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'playlist_track'
 				},
 				{
-					columnName: 'TrackId',
+					name: 'TrackId',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'playlist_track'

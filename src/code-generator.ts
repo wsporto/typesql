@@ -515,7 +515,7 @@ function tsFieldToStr(tsField: TsFieldDescriptor, isCrudUpdate: boolean) {
 }
 
 export function generateTsDescriptor(queryInfo: SchemaDef): TsDescriptor {
-	const escapedColumnsNames = renameInvalidNames(queryInfo.columns.map((col) => col.columnName));
+	const escapedColumnsNames = renameInvalidNames(queryInfo.columns.map((col) => col.name));
 	const columns = queryInfo.columns.map((col, columnIndex) => {
 		const tsDesc: TsFieldDescriptor = {
 			name: escapedColumnsNames[columnIndex],

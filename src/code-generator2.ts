@@ -7,9 +7,10 @@ import { mapColumnType } from './dialects/postgres';
 import { PostgresType } from './sqlite-query-analyzer/types';
 import { preprocessSql } from './describe-query';
 import { okAsync, ResultAsync } from 'neverthrow';
-import { getQueryName, mapFieldToTsField, writeCollectFunction } from './sqlite-query-analyzer/code-generator';
+import { getQueryName, mapFieldToTsField, mapPostgrsFieldToTsField, writeCollectFunction } from './sqlite-query-analyzer/code-generator';
 import { mapToTsRelation2, RelationType2 } from './ts-nested-descriptor';
 import { EOL } from 'node:os';
+import { PostgresColumnInfo, PostgresSchemaDef } from './postgres-query-analyzer/types';
 
 
 
@@ -30,7 +31,7 @@ function isEmptySql(sql: string) {
 	return lines.every(line => line.trim() === '' || line.trim().startsWith('//'))
 }
 
-function _describeQuery(databaseClient: PgDielect, sql: string, namedParameters: string[]): ResultAsync<SchemaDef, TypeSqlError> {
+function _describeQuery(databaseClient: PgDielect, sql: string, namedParameters: string[]): ResultAsync<PostgresSchemaDef, TypeSqlError> {
 	return describeQuery(databaseClient.client, sql, namedParameters);
 }
 
@@ -45,7 +46,7 @@ export function createCodeBlockWriter() {
 function generateTsCode(
 	sqlOld: string,
 	queryName: string,
-	schemaDef: SchemaDef,
+	schemaDef: PostgresSchemaDef,
 	client: 'pg',
 	isCrud = false
 ): string {
@@ -431,7 +432,7 @@ function writeResultType(writer: CodeBlockWriter, resultTypeName: string, column
 	});
 }
 
-function createTsDescriptor(schemaDef: SchemaDef) {
+function createTsDescriptor(schemaDef: PostgresSchemaDef) {
 	const tsDescriptor: TsDescriptor = {
 		columns: getColumnsForQuery(schemaDef),
 		parameters: schemaDef.parameters.map((param) => mapParameterToTsFieldDescriptor(param)),
@@ -446,7 +447,7 @@ function createTsDescriptor(schemaDef: SchemaDef) {
 			const tsRelation: RelationType2 = {
 				groupIndex: relation.groupIndex,
 				name: relation.name,
-				fields: relation.fields.map((field) => mapFieldToTsField(schemaDef.columns, field, 'pg')),
+				fields: relation.fields.map((field) => mapPostgrsFieldToTsField(schemaDef.columns, field)),
 				relations: relation.relations.map((relation) => mapToTsRelation2(relation))
 			};
 			return tsRelation;
@@ -459,10 +460,10 @@ function createTsDescriptor(schemaDef: SchemaDef) {
 	return tsDescriptor;
 }
 
-function mapColumnInfoToTsFieldDescriptor(col: ColumnInfo, dynamicQuery: boolean): TsFieldDescriptor {
+function mapColumnInfoToTsFieldDescriptor(col: PostgresColumnInfo, dynamicQuery: boolean): TsFieldDescriptor {
 	const tsField: TsFieldDescriptor = {
-		name: col.columnName,
-		tsType: mapColumnType(col.type as PostgresType),
+		name: col.name,
+		tsType: mapColumnType(col.type),
 		notNull: dynamicQuery ? false : col.notNull
 	}
 	return tsField;
@@ -657,10 +658,10 @@ function getFunctionReturnType(queryType: QueryType, multipleRowsResult: boolean
 	return `${returnType}${orNull}`;
 }
 
-function getColumnsForQuery(schemaDef: SchemaDef): TsFieldDescriptor[] {
+function getColumnsForQuery(schemaDef: PostgresSchemaDef): TsFieldDescriptor[] {
 	if (schemaDef.queryType === 'Select' || schemaDef.returning) {
 		const columns = schemaDef.columns.map(col => mapColumnInfoToTsFieldDescriptor(col, schemaDef.dynamicSqlQuery2 != null))
-		const escapedColumnsNames = renameInvalidNames(schemaDef.columns.map((col) => col.columnName));
+		const escapedColumnsNames = renameInvalidNames(schemaDef.columns.map((col) => col.name));
 		return columns.map((col, index) => ({ ...col, name: escapedColumnsNames[index] }));
 	}
 	if (schemaDef.queryType === 'Copy') {

@@ -23,7 +23,7 @@ describe('select-single-table', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
@@ -46,7 +46,7 @@ describe('select-single-table', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
@@ -70,13 +70,13 @@ describe('select-single-table', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int4',
 					notNull: false,
 					table: 'mytable1'
@@ -100,13 +100,13 @@ describe('select-single-table', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int4',
 					notNull: false,
 					table: 'mytable1'
@@ -130,13 +130,13 @@ describe('select-single-table', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int4',
 					notNull: false,
 					table: 't'
@@ -160,13 +160,13 @@ describe('select-single-table', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int4',
 					notNull: false,
 					table: 'mytable1'
@@ -190,19 +190,19 @@ describe('select-single-table', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable2'
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: false,
 					table: 'mytable2'
 				},
 				{
-					columnName: 'description',
+					name: 'description',
 					type: 'text',
 					notNull: false,
 					table: 'mytable2'
@@ -225,13 +225,13 @@ describe('select-single-table', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int4',
 					notNull: false,
 					table: 'mytable1'
@@ -254,13 +254,13 @@ describe('select-single-table', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int4',
 					notNull: false,
 					table: 'mytable1'
@@ -283,7 +283,7 @@ describe('select-single-table', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
@@ -307,13 +307,13 @@ describe('select-single-table', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int4',
 					notNull: false,
 					table: 'mytable1'
@@ -343,7 +343,7 @@ describe('select-single-table', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
@@ -373,7 +373,7 @@ describe('select-single-table', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
@@ -403,7 +403,7 @@ describe('select-single-table', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int4',
 					notNull: false,
 					table: 'mytable1'
@@ -438,7 +438,7 @@ describe('select-single-table', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: false,
 					table: 'm'
@@ -473,7 +473,7 @@ describe('select-single-table', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
@@ -511,19 +511,19 @@ describe('select-single-table', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text', //different from sqlite
 					notNull: false, //todo - differente from mysql
 					table: ''
 				},
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'table'
 				},
 				{
-					columnName: 'description',
+					name: 'description',
 					type: 'text',
 					notNull: false,
 					table: 'table'
@@ -570,13 +570,13 @@ describe('select-single-table', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int4',
 					notNull: false,
 					table: 't'
@@ -607,7 +607,7 @@ describe('select-single-table', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int2',
 					notNull: true,
 					table: 'mytable1'
@@ -633,13 +633,13 @@ describe('select-single-table', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int4',
 					notNull: false,
 					table: 't'
@@ -672,7 +672,7 @@ describe('select-single-table', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'sumById',
+					name: 'sumById',
 					type: 'int8',
 					notNull: false,
 					table: ''
@@ -698,7 +698,7 @@ describe('select-single-table', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
@@ -729,7 +729,7 @@ describe('select-single-table', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
@@ -765,7 +765,7 @@ describe('select-single-table', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
@@ -796,7 +796,7 @@ describe('select-single-table', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
@@ -821,7 +821,7 @@ describe('select-single-table', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
@@ -846,7 +846,7 @@ describe('select-single-table', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'enum_column',
+					name: 'enum_column',
 					type: `enum('x-small','small','medium','large','x-large')`,
 					notNull: true,
 					table: 'all_types'
@@ -871,7 +871,7 @@ describe('select-single-table', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'enum_constraint',
+					name: 'enum_constraint',
 					type: `enum('x-small','small','medium','large','x-large')`,
 					notNull: true,
 					table: 'all_types'
@@ -896,7 +896,7 @@ describe('select-single-table', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'enum_constraint',
+					name: 'enum_constraint',
 					type: `enum('x-small','small','medium','large','x-large')`,
 					notNull: true,
 					table: 'all_types'
@@ -927,31 +927,31 @@ describe('select-single-table', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'integer_column_default',
+					name: 'integer_column_default',
 					type: 'int4',
 					notNull: true,
 					table: 'all_types'
 				},
 				{
-					columnName: 'enum_column',
+					name: 'enum_column',
 					type: `enum('x-small','small','medium','large','x-large')`,
 					notNull: false,
 					table: 'all_types'
 				},
 				{
-					columnName: 'enum_column_default',
+					name: 'enum_column_default',
 					type: `enum('x-small','small','medium','large','x-large')`,
 					notNull: true,
 					table: 'all_types'
 				},
 				{
-					columnName: 'enum_constraint',
+					name: 'enum_constraint',
 					type: `enum('x-small','small','medium','large','x-large')`,
 					notNull: false,
 					table: 'all_types'
 				},
 				{
-					columnName: 'enum_constraint_default',
+					name: 'enum_constraint_default',
 					type: `enum('x-small','small','medium','large','x-large')`,
 					notNull: true,
 					table: 'all_types'
@@ -976,7 +976,7 @@ describe('select-single-table', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int',
 					notNull: false,
 					table: 'mytable1'
@@ -1001,7 +1001,7 @@ describe('select-single-table', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
@@ -1037,13 +1037,13 @@ describe('select-single-table', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'key1',
+					name: 'key1',
 					type: 'int4',
 					notNull: true,
 					table: 'composite_key'
 				},
 				{
-					columnName: 'key2',
+					name: 'key2',
 					type: 'int4',
 					notNull: true,
 					table: 'composite_key'
@@ -1069,13 +1069,13 @@ describe('select-single-table', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'key1',
+					name: 'key1',
 					type: 'int4',
 					notNull: true,
 					table: 'composite_key'
 				},
 				{
-					columnName: 'key2',
+					name: 'key2',
 					type: 'int4',
 					notNull: true,
 					table: 'composite_key'
@@ -1101,13 +1101,13 @@ describe('select-single-table', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'key1',
+					name: 'key1',
 					type: 'int4',
 					notNull: true,
 					table: 'composite_key'
 				},
 				{
-					columnName: 'key2',
+					name: 'key2',
 					type: 'int4',
 					notNull: true,
 					table: 'composite_key'
@@ -1133,13 +1133,13 @@ describe('select-single-table', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'key1',
+					name: 'key1',
 					type: 'int4',
 					notNull: true,
 					table: 'composite_key'
 				},
 				{
-					columnName: 'key2',
+					name: 'key2',
 					type: 'int4',
 					notNull: true,
 					table: 'composite_key'
@@ -1165,13 +1165,13 @@ describe('select-single-table', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'key1',
+					name: 'key1',
 					type: 'int4',
 					notNull: true,
 					table: 'composite_key'
 				},
 				{
-					columnName: 'key2',
+					name: 'key2',
 					type: 'int4',
 					notNull: true,
 					table: 'composite_key'
@@ -1196,7 +1196,7 @@ describe('select-single-table', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable2'
@@ -1236,7 +1236,7 @@ describe('select-single-table', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable2'

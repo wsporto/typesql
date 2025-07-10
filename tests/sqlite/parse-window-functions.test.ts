@@ -18,7 +18,7 @@ describe('sqlite-parse-window-functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'num',
+					name: 'num',
 					type: 'INTEGER',
 					notNull: true,
 					table: ''
@@ -46,19 +46,19 @@ describe('sqlite-parse-window-functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'INTEGER',
 					notNull: false,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'num',
+					name: 'num',
 					type: 'INTEGER',
 					notNull: true,
 					table: ''
@@ -88,25 +88,25 @@ describe('sqlite-parse-window-functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'firstId',
+					name: 'firstId',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'mytable2'
 				},
 				{
-					columnName: 'lastName',
+					name: 'lastName',
 					type: 'TEXT',
 					notNull: false,
 					table: 'mytable2'
 				},
 				{
-					columnName: 'rankValue',
+					name: 'rankValue',
 					type: 'INTEGER',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'denseRankValue',
+					name: 'denseRankValue',
 					type: 'INTEGER',
 					notNull: true,
 					table: ''
@@ -133,7 +133,7 @@ describe('sqlite-parse-window-functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'total',
+					name: 'total',
 					type: 'INTEGER',
 					notNull: false,
 					table: 'mytable1'
@@ -161,7 +161,7 @@ describe('sqlite-parse-window-functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'total',
+					name: 'total',
 					type: 'REAL',
 					notNull: false,
 					table: 'all_types'
@@ -186,7 +186,7 @@ describe('sqlite-parse-window-functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'avgResult',
+					name: 'avgResult',
 					type: 'REAL',
 					notNull: false,
 					table: 'mytable1'
@@ -214,13 +214,13 @@ describe('sqlite-parse-window-functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'leadValue',
+					name: 'leadValue',
 					type: 'INTEGER',
 					notNull: false,
 					table: 'mytable2'
 				},
 				{
-					columnName: 'lagValue',
+					name: 'lagValue',
 					type: 'TEXT',
 					notNull: false,
 					table: 'mytable2'

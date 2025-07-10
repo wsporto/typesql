@@ -1,4 +1,4 @@
-import { ParameterDef, SchemaDef, TypeSqlError } from '../types';
+import { ParameterDef, TypeSqlError } from '../types';
 import { DescribeParameters, DescribeQueryColumn, PostgresColumnSchema, PostgresDescribe, PostgresType } from '../drivers/types';
 import { postgresDescribe, loadDbSchema, loadEnumsMap, EnumMap, EnumResult, loadCheckConstraints, CheckConstraintResult } from '../drivers/postgres';
 import { Sql } from 'postgres';
@@ -12,8 +12,9 @@ import { describeNestedQuery } from '../sqlite-query-analyzer/sqlite-describe-ne
 import { isLeft } from 'fp-ts/lib/Either';
 import { hasAnnotation } from '../describe-query';
 import { describeDynamicQuery2 } from '../describe-dynamic-query';
+import { PostgresColumnInfo, PostgresSchemaDef } from './types';
 
-function describeQueryRefine(describeParameters: DescribeParameters): Result<SchemaDef, TypeSqlError> {
+function describeQueryRefine(describeParameters: DescribeParameters): Result<PostgresSchemaDef, TypeSqlError> {
 	const { sql, dbSchema, postgresDescribeResult, enumsTypes, checkConstraints, namedParameters } = describeParameters;
 	const generateNestedInfo = hasAnnotation(sql, '@nested');
 	const generateDynamicQueryInfo = hasAnnotation(sql, '@dynamicQuery');
@@ -30,7 +31,7 @@ function describeQueryRefine(describeParameters: DescribeParameters): Result<Sch
 	//replace list parameters
 	const newSql = replacePostgresParams(sql, traverseResult.parameterList, paramNames);
 
-	const descResult: SchemaDef = {
+	const descResult: PostgresSchemaDef = {
 		sql: newSql,
 		queryType: traverseResult.queryType,
 		multipleRowsResult: traverseResult.multipleRowsResult,
@@ -92,10 +93,10 @@ export type NullabilityMapping = {
 	[key: string]: boolean;  // key is "oid-column_name" and value is the is_nullable boolean
 };
 
-function mapToColumnInfo(col: DescribeQueryColumn, posgresTypes: PostgresType, enumTypes: EnumMap, checkConstraints: CheckConstraintResult, colInfo: NotNullInfo): ColumnInfo {
+function mapToColumnInfo(col: DescribeQueryColumn, posgresTypes: PostgresType, enumTypes: EnumMap, checkConstraints: CheckConstraintResult, colInfo: NotNullInfo): PostgresColumnInfo {
 	const constraintKey = `[${colInfo.table_schema}][${colInfo.table_name}][${colInfo.column_name}]`;
 	return {
-		columnName: col.name,
+		name: col.name,
 		notNull: !colInfo.is_nullable,
 		type: createType(col.typeId, posgresTypes, enumTypes.get(col.typeId), checkConstraints[constraintKey]) as any ?? '?',
 		table: colInfo.table_name
@@ -126,7 +127,7 @@ function mapToParamDef(postgresTypes: PostgresType, enumTypes: EnumMap, paramNam
 	}
 }
 
-export function describeQuery(postgres: Sql, sql: string, namedParameters: string[]): ResultAsync<SchemaDef, TypeSqlError> {
+export function describeQuery(postgres: Sql, sql: string, namedParameters: string[]): ResultAsync<PostgresSchemaDef, TypeSqlError> {
 	return ResultAsync.combine([loadDbSchema(postgres), loadEnumsMap(postgres), loadCheckConstraints(postgres)])
 		.andThen(([dbSchema, enumsTypes, checkConstraints]) => {
 			return postgresDescribe(postgres, sql)
@@ -144,7 +145,7 @@ export function describeQuery(postgres: Sql, sql: string, namedParameters: strin
 		})
 }
 
-function getColumnsForQuery(traverseResult: PostgresTraverseResult, postgresDescribeResult: PostgresDescribe, enumTypes: EnumMap, checkConstraints: CheckConstraintResult): ColumnInfo[] {
+function getColumnsForQuery(traverseResult: PostgresTraverseResult, postgresDescribeResult: PostgresDescribe, enumTypes: EnumMap, checkConstraints: CheckConstraintResult): PostgresColumnInfo[] {
 	return postgresDescribeResult.columns.map((col, index) => mapToColumnInfo(col, postgresTypes, enumTypes, checkConstraints, traverseResult.columns[index]))
 }
 

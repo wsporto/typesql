@@ -33,7 +33,7 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
@@ -57,7 +57,7 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
@@ -82,13 +82,13 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int',
 					notNull: false,
 					table: 'mytable1'
@@ -112,13 +112,13 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int',
 					notNull: false,
 					table: 'mytable1'
@@ -142,13 +142,13 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 't'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int',
 					notNull: false,
 					table: 't'
@@ -172,13 +172,13 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int',
 					notNull: false,
 					table: 'mytable1'
@@ -202,19 +202,19 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 'mytable2'
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'varchar',
 					notNull: false,
 					table: 'mytable2'
 				},
 				{
-					columnName: 'description',
+					name: 'description',
 					type: 'varchar',
 					notNull: false,
 					table: 'mytable2'
@@ -238,13 +238,13 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int',
 					notNull: false,
 					table: 'mytable1'
@@ -268,13 +268,13 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int',
 					notNull: false,
 					table: 'mytable1'
@@ -298,7 +298,7 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
@@ -323,13 +323,13 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: false, //changed at v0.3.0
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int',
 					notNull: false,
 					table: 'mytable1'
@@ -359,7 +359,7 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: false, //changed at v.0.3.0
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
@@ -389,7 +389,7 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int',
 					notNull: false,
 					table: 'mytable1'
@@ -424,7 +424,7 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: '?', //TODO - PARAM1
+					name: '?', //TODO - PARAM1
 					type: 'any',
 					notNull: true,
 					table: ''
@@ -455,7 +455,7 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
@@ -491,7 +491,7 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
@@ -527,7 +527,7 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'any',
 					notNull: true,
 					table: ''
@@ -560,19 +560,19 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'any',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 'mytable2'
 				},
 				{
-					columnName: 'description',
+					name: 'description',
 					type: 'varchar',
 					notNull: false,
 					table: 'mytable2'
@@ -618,7 +618,7 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'varchar',
 					notNull: false,
 					table: 't'
@@ -643,13 +643,13 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: false, //changed at v0.3.0
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 't'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int',
 					notNull: false,
 					table: 't'
@@ -680,13 +680,13 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int',
 					notNull: false,
 					table: 'mytable1'
@@ -711,13 +711,13 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int',
 					notNull: false,
 					table: 'mytable1'
@@ -742,13 +742,13 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 't'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int',
 					notNull: false,
 					table: 't'
@@ -773,13 +773,13 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 't'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int',
 					notNull: false,
 					table: 't'
@@ -810,13 +810,13 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 't'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int',
 					notNull: false,
 					table: 't'
@@ -847,7 +847,7 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 't'
@@ -878,7 +878,7 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 't'
@@ -909,7 +909,7 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 't'
@@ -940,13 +940,13 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: false, //changed at v0.3.0
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int',
 					notNull: false,
 					table: 'mytable1'
@@ -977,7 +977,7 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'bigger',
+					name: 'bigger',
 					type: 'tinyint', //changed at v0.0.2
 					notNull: true,
 					table: ''
@@ -1002,7 +1002,7 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'bigger',
+					name: 'bigger',
 					type: 'tinyint', //changed at v0.0.2
 					notNull: false, //TODO - not null true
 					table: ''
@@ -1027,7 +1027,7 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 'mytable2'
@@ -1058,7 +1058,7 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 'mytable2'
@@ -1095,7 +1095,7 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'varchar',
 					notNull: false, //not null can't be inferred
 					table: ''
@@ -1127,7 +1127,7 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'varchar',
 					notNull: true,
 					table: ''
@@ -1160,7 +1160,7 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 'mytable2'
@@ -1194,7 +1194,7 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'sumById',
+					name: 'sumById',
 					type: 'decimal',
 					notNull: false,
 					table: 't1'
@@ -1220,7 +1220,7 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
@@ -1252,7 +1252,7 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
@@ -1290,7 +1290,7 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
@@ -1316,7 +1316,7 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
@@ -1342,7 +1342,7 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'enum_column',
+					name: 'enum_column',
 					type: `enum('x-small','small','medium','large','x-large')`,
 					notNull: true,
 					table: 'all_types'
@@ -1368,7 +1368,7 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'result',
+					name: 'result',
 					type: 'double',
 					notNull: false,
 					table: ''
@@ -1400,7 +1400,7 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int',
 					notNull: false,
 					table: 'mytable1'
@@ -1427,7 +1427,7 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'myValue',
+					name: 'myValue',
 					type: 'int',
 					notNull: false,
 					table: 'mytable1'
@@ -1454,7 +1454,7 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int',
 					notNull: false,
 					table: 'mytable1'
@@ -1482,13 +1482,13 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int',
 					notNull: false,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'ordering',
+					name: 'ordering',
 					type: 'int',
 					notNull: true,
 					table: ''
@@ -1517,7 +1517,7 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int',
 					notNull: false,
 					table: 't'
@@ -1544,7 +1544,7 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'varchar',
 					notNull: false,
 					table: 'mytable2'
@@ -1580,7 +1580,7 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int',
 					notNull: false,
 					table: 't'
@@ -1606,7 +1606,7 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
@@ -1667,7 +1667,7 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'bit_column',
+					name: 'bit_column',
 					type: 'bit',
 					notNull: true,
 					table: 'all_types'

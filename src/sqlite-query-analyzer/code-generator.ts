@@ -20,7 +20,6 @@ import type {
 	CrudQueryType,
 	LibSqlClient,
 	ParameterDef,
-	PgDielect,
 	QueryType,
 	SQLiteClient,
 	SQLiteDialect,
@@ -29,16 +28,16 @@ import type {
 	TsParameterDescriptor,
 	TypeSqlError
 } from '../types';
-import type { PostgresType, SQLiteType } from './types';
+import type { SQLiteType } from './types';
 import type { Field2 } from './sqlite-describe-nested-query';
 import { type RelationType2, type TsField2, mapToTsRelation2 } from '../ts-nested-descriptor';
 import { preprocessSql } from '../describe-query';
 import { explainSql } from './query-executor';
 import { mapToDynamicParams, mapToDynamicResultColumns, mapToDynamicSelectColumns } from '../ts-dynamic-query-descriptor';
 import { EOL } from 'node:os';
-import type { DbType, TsType } from '../mysql-mapping';
 import { mapColumnType } from '../drivers/sqlite';
 import { mapColumnType as mapPgColumnType } from '../dialects/postgres';
+import { PostgresColumnInfo } from '../postgres-query-analyzer/types';
 
 type ExecFunctionParams = {
 	functionName: string;
@@ -82,7 +81,7 @@ export function validateAndGenerateCode(
 function mapToColumnInfo(col: ColumnSchema, checkOptional: boolean) {
 	const defaultValue = col.columnKey === 'PRI' && col.column_type === 'INTEGER' ? 'AUTOINCREMENT' : col.defaultValue;
 	const columnInfo: ColumnInfo = {
-		columnName: col.column,
+		name: col.column,
 		notNull: col.notNull,
 		type: col.column_type,
 		table: col.table,
@@ -189,8 +188,8 @@ function mapColumns(client: SQLiteClient, queryType: SchemaDef['queryType'], col
 		return [resultColumns[0]];
 	}
 
-	const escapedColumnsNames = renameInvalidNames(columns.map((col) => col.columnName));
-	return columns.map((col, index) => mapColumnToTsFieldDescriptor({ ...col, columnName: escapedColumnsNames[index] }, client));
+	const escapedColumnsNames = renameInvalidNames(columns.map((col) => col.name));
+	return columns.map((col, index) => mapColumnToTsFieldDescriptor({ ...col, name: escapedColumnsNames[index] }, client));
 }
 
 function getInsertUpdateResult(client: SQLiteClient) {
@@ -244,18 +243,24 @@ function getInsertUpdateResult(client: SQLiteClient) {
 	}
 }
 
-export function mapFieldToTsField(columns: ColumnInfo[], field: Field2, client: SQLiteClient | PgDielect['type']): TsField2 {
+export function mapPostgrsFieldToTsField(columns: PostgresColumnInfo[], field: Field2): TsField2 {
 	const tsField: TsField2 = {
 		name: field.name,
 		index: field.index,
-		tsType: mapDbColumnType(columns[field.index].type, client),
+		tsType: mapPgColumnType(columns[field.index].type),
 		notNull: columns[field.index].notNull
 	};
 	return tsField;
 }
 
-export function mapDbColumnType(type: DbType | '?', client: SQLiteClient | PgDielect['type']): TsType {
-	return client === 'pg' ? mapPgColumnType(type as PostgresType) : mapColumnType(type as SQLiteType, client)
+export function mapFieldToTsField(columns: ColumnInfo[], field: Field2, client: SQLiteClient): TsField2 {
+	const tsField: TsField2 = {
+		name: field.name,
+		index: field.index,
+		tsType: mapColumnType(columns[field.index].type as SQLiteType, client),
+		notNull: columns[field.index].notNull
+	};
+	return tsField;
 }
 
 function mapParameterToTsFieldDescriptor(col: ParameterDef, client: SQLiteClient): TsParameterDescriptor {
@@ -281,17 +286,17 @@ function parameterToDriver(param: ParameterDef): string {
 
 function columnToDriver(col: ColumnInfo): string {
 	if (col.type === 'DATE') {
-		return `${col.columnName}?.toISOString().split('T')[0]`
+		return `${col.name}?.toISOString().split('T')[0]`
 	}
 	if (col.type === 'DATE_TIME') {
-		return `${col.columnName}?.toISOString().split('.')[0].replace('T', ' ')`
+		return `${col.name}?.toISOString().split('.')[0].replace('T', ' ')`
 	}
-	return col.columnName;
+	return col.name;
 }
 
 function mapColumnToTsFieldDescriptor(col: ColumnInfo, client: SQLiteClient) {
 	const tsDesc: TsFieldDescriptor = {
-		name: col.columnName,
+		name: col.name,
 		tsType: mapColumnType(col.type as SQLiteType, client),
 		notNull: col.notNull,
 		optional: col.optional
@@ -301,7 +306,7 @@ function mapColumnToTsFieldDescriptor(col: ColumnInfo, client: SQLiteClient) {
 
 function mapColumnToTsParameterDescriptor(col: ColumnInfo, client: SQLiteClient): TsParameterDescriptor {
 	const tsDesc: TsParameterDescriptor = {
-		name: col.columnName,
+		name: col.name,
 		tsType: mapColumnType(col.type as SQLiteType, client),
 		notNull: col.notNull,
 		optional: col.optional,

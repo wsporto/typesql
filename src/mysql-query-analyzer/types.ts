@@ -84,7 +84,7 @@ export type FieldName = {
 };
 
 export type ColumnInfo = {
-	columnName: string;
+	name: string;
 	type: DbType | '?';
 	notNull: boolean;
 	table?: string;

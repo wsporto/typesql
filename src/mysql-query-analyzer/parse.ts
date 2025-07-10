@@ -257,7 +257,7 @@ function extractSelectQueryInfo(traverseResult: SelectStatementResult): QueryInf
 		const columnType = getVarType(substitutions, col.type);
 		const columnNotNull = col.notNull === true;
 		const colInfo: ColumnInfo = {
-			columnName: col.name,
+			name: col.name,
 			type: verifyNotInferred(columnType),
 			notNull: columnNotNull,
 			table: col.table

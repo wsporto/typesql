@@ -75,13 +75,13 @@ describe('load-extension', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'uuid4',
+					name: 'uuid4',
 					type: 'TEXT',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'uuid7',
+					name: 'uuid7',
 					type: 'TEXT',
 					notNull: true,
 					table: ''

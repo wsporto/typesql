@@ -22,25 +22,25 @@ describe('sqlite-parse-select-complex-queries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'INTEGER',
 					notNull: false,
 					table: 't1'
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'TEXT',
 					notNull: false,
 					table: 't2'
 				},
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: false,
 					table: 't3'
 				},
 				{
-					columnName: 'quantity',
+					name: 'quantity',
 					notNull: true,
 					type: 'INTEGER',
 					table: ''
@@ -72,13 +72,13 @@ describe('sqlite-parse-select-complex-queries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'TEXT',
 					notNull: true,
 					table: 'mytable3'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'REAL',
 					notNull: true, //diff from mysql
 					table: 'mytable3'
@@ -121,19 +121,19 @@ describe('sqlite-parse-select-complex-queries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'TEXT',
 					notNull: true,
 					table: 'mytable3'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'REAL',
 					notNull: true, //diff from mysql
 					table: 'mytable3'
 				},
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'REAL',
 					notNull: true, //diff from mysql
 					table: '' //TODO - could be mytable3?
@@ -183,7 +183,7 @@ describe('sqlite-parse-select-complex-queries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: ''
@@ -210,7 +210,7 @@ describe('sqlite-parse-select-complex-queries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'fullname',
+					name: 'fullname',
 					type: 'TEXT',
 					notNull: false,
 					table: ''
@@ -236,7 +236,7 @@ describe('sqlite-parse-select-complex-queries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'fullname',
+					name: 'fullname',
 					type: 'TEXT',
 					notNull: false,
 					table: ''
@@ -270,7 +270,7 @@ describe('sqlite-parse-select-complex-queries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'TEXT',
 					notNull: false,
 					table: 'names'
@@ -300,19 +300,19 @@ describe('sqlite-parse-select-complex-queries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'n'
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'TEXT',
 					notNull: false,
 					table: 'n'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'INTEGER',
 					notNull: false,
 					table: 'v'
@@ -340,13 +340,13 @@ describe('sqlite-parse-select-complex-queries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'names'
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'TEXT',
 					notNull: false,
 					table: 'names'
@@ -377,7 +377,7 @@ describe('sqlite-parse-select-complex-queries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'result'
@@ -412,19 +412,19 @@ describe('sqlite-parse-select-complex-queries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 't1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'INTEGER',
 					notNull: true,
 					table: 't1'
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'TEXT',
 					notNull: true,
 					table: 't1'
@@ -466,7 +466,7 @@ describe('sqlite-parse-select-complex-queries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'n',
+					name: 'n',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'seq'
@@ -497,7 +497,7 @@ describe('sqlite-parse-select-complex-queries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'a',
+					name: 'a',
 					type: 'TEXT',
 					notNull: true,
 					table: 'conc'
@@ -528,7 +528,7 @@ describe('sqlite-parse-select-complex-queries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'n',
+					name: 'n',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'cte'
@@ -559,13 +559,13 @@ describe('sqlite-parse-select-complex-queries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'n',
+					name: 'n',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'cte'
 				},
 				{
-					columnName: 'str',
+					name: 'str',
 					type: 'TEXT',
 					notNull: true,
 					table: 'cte'
@@ -597,7 +597,7 @@ describe('sqlite-parse-select-complex-queries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'date',
+					name: 'date',
 					type: 'DATE',
 					notNull: false,
 					table: 'dates'
@@ -632,13 +632,13 @@ describe('sqlite-parse-select-complex-queries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'parent'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'INTEGER',
 					notNull: false,
 					table: 'parent'
@@ -684,13 +684,13 @@ describe('sqlite-parse-select-complex-queries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'a',
+					name: 'a',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'parent'
 				},
 				{
-					columnName: 'b',
+					name: 'b',
 					type: 'INTEGER',
 					notNull: false,
 					table: 'parent'
@@ -730,13 +730,13 @@ describe('sqlite-parse-select-complex-queries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 't'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'INTEGER',
 					notNull: true,
 					table: ''
@@ -780,13 +780,13 @@ describe('sqlite-parse-select-complex-queries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'TEXT',
 					notNull: false,
 					table: 'names'
 				},
 				{
-					columnName: 'idFilter',
+					name: 'idFilter',
 					type: 'INTEGER',
 					notNull: true,
 					table: ''

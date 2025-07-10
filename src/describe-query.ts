@@ -39,12 +39,12 @@ export function describeSql(dbSchema: ColumnSchema[], sql: string): SchemaDef {
 	if (queryInfo.kind === 'Insert') {
 		const resultColumns: ColumnInfo[] = [
 			{
-				columnName: 'affectedRows',
+				name: 'affectedRows',
 				type: 'int',
 				notNull: true
 			},
 			{
-				columnName: 'insertId',
+				name: 'insertId',
 				type: 'int',
 				notNull: true
 			}
@@ -67,7 +67,7 @@ export function describeSql(dbSchema: ColumnSchema[], sql: string): SchemaDef {
 	if (queryInfo.kind === 'Update') {
 		const resultColumns: ColumnInfo[] = [
 			{
-				columnName: 'affectedRows',
+				name: 'affectedRows',
 				type: 'int',
 				notNull: true
 			}
@@ -85,7 +85,7 @@ export function describeSql(dbSchema: ColumnSchema[], sql: string): SchemaDef {
 	if (queryInfo.kind === 'Delete') {
 		const resultColumns: ColumnInfo[] = [
 			{
-				columnName: 'affectedRows',
+				name: 'affectedRows',
 				type: 'int',
 				notNull: true
 			}

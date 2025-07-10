@@ -685,12 +685,12 @@ describe('sqlite-parse-insert', () => {
 			returning: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'INTEGER',
 					notNull: false
 				}

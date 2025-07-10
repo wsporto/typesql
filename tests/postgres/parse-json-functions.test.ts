@@ -21,13 +21,13 @@ describe('postgres-json-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'json_build_object',
+					name: 'json_build_object',
 					type: 'json',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'jsonb_build_object',
+					name: 'jsonb_build_object',
 					type: 'jsonb',
 					notNull: true,
 					table: ''
@@ -50,7 +50,7 @@ describe('postgres-json-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'json_build_array',
+					name: 'json_build_array',
 					type: 'json',
 					notNull: true,
 					table: ''
@@ -85,73 +85,73 @@ describe('postgres-json-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'col1', //to_json(10::int) as col1
+					name: 'col1', //to_json(10::int) as col1
 					type: 'json',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'col2', //to_jsonb(10::int) as col2
+					name: 'col2', //to_jsonb(10::int) as col2
 					type: 'jsonb',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'col3', //to_json('a'::text) as col3
+					name: 'col3', //to_json('a'::text) as col3
 					type: 'json',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'col4', //to_jsonb('a'::text) as col4
+					name: 'col4', //to_jsonb('a'::text) as col4
 					type: 'jsonb',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'col5', //to_json(array[1, 2, 3]) as col5
+					name: 'col5', //to_json(array[1, 2, 3]) as col5
 					type: 'json',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'col6', //to_jsonb(array[1, 2, 3]) as col6
+					name: 'col6', //to_jsonb(array[1, 2, 3]) as col6
 					type: 'jsonb',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'col7', //to_json(array['a', 'b', 'c']) as col7
+					name: 'col7', //to_json(array['a', 'b', 'c']) as col7
 					type: 'json',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'col8', //to_jsonb(array['a', 'b', 'c']) as col8
+					name: 'col8', //to_jsonb(array['a', 'b', 'c']) as col8
 					type: 'jsonb',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'col9', //to_json(null) as col9
+					name: 'col9', //to_json(null) as col9
 					type: 'json',
 					notNull: false,
 					table: ''
 				},
 				{
-					columnName: 'col10', //to_jsonb(null) as col9
+					name: 'col10', //to_jsonb(null) as col9
 					type: 'jsonb',
 					notNull: false,
 					table: ''
 				},
 				{
-					columnName: 'col11', //to_json(array[null]) as col11
+					name: 'col11', //to_json(array[null]) as col11
 					type: 'json',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'col12', //to_jsonb(array[null]) as col11
+					name: 'col12', //to_jsonb(array[null]) as col11
 					type: 'jsonb',
 					notNull: true,
 					table: ''
@@ -179,25 +179,25 @@ describe('postgres-json-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'col1',
+					name: 'col1',
 					type: 'json',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'col2',
+					name: 'col2',
 					type: 'jsonb',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'col3',
+					name: 'col3',
 					type: 'json',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'col4',
+					name: 'col4',
 					type: 'jsonb',
 					notNull: true,
 					table: ''

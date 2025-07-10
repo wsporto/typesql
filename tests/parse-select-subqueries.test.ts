@@ -24,7 +24,7 @@ describe('Test parse select with subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 't'
@@ -52,13 +52,13 @@ describe('Test parse select with subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 't'
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'varchar',
 					notNull: false,
 					table: 't'
@@ -85,7 +85,7 @@ describe('Test parse select with subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: false,
 					table: 't1'
@@ -112,7 +112,7 @@ describe('Test parse select with subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'code',
+					name: 'code',
 					type: 'int',
 					notNull: false,
 					table: 't1'
@@ -139,13 +139,13 @@ describe('Test parse select with subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'varchar',
 					notNull: false,
 					table: 't2'
 				},
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'varchar',
 					notNull: false,
 					table: 't2'
@@ -173,13 +173,13 @@ describe('Test parse select with subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'varchar',
 					notNull: true, //if pass null on parameters the result query will be empty
 					table: 't2'
 				},
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'varchar',
 					notNull: true, //if pass null on parameters the result query will be empty
 					table: 't2'
@@ -219,7 +219,7 @@ describe('Test parse select with subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 't2'
@@ -248,7 +248,7 @@ describe('Test parse select with subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'bigint',
 					notNull: true,
 					table: 't2'
@@ -273,13 +273,13 @@ describe('Test parse select with subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 't2'
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'varchar',
 					notNull: false,
 					table: 't2'
@@ -308,7 +308,7 @@ describe('Test parse select with subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'varchar',
 					notNull: false,
 					table: 't2'
@@ -341,7 +341,7 @@ describe('Test parse select with subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'varchar',
 					notNull: false,
 					table: 't3'
@@ -374,7 +374,7 @@ describe('Test parse select with subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 't3'
@@ -399,7 +399,7 @@ describe('Test parse select with subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'bigint',
 					notNull: true,
 					table: 't2'
@@ -424,7 +424,7 @@ describe('Test parse select with subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'varchar',
 					notNull: false,
 					table: 'mytable2'
@@ -453,7 +453,7 @@ describe('Test parse select with subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'varchar',
 					notNull: false,
 					table: 'mytable2'
@@ -489,7 +489,7 @@ describe('Test parse select with subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 't1'
@@ -520,13 +520,13 @@ describe('Test parse select with subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 't1'
 				},
 				{
-					columnName: 'has',
+					name: 'has',
 					type: 'int',
 					notNull: true,
 					table: ''
@@ -553,13 +553,13 @@ describe('Test parse select with subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'subQuery',
+					name: 'subQuery',
 					type: 'int',
 					notNull: false,
 					table: ''
@@ -584,13 +584,13 @@ describe('Test parse select with subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 't1'
 				},
 				{
-					columnName: 'has',
+					name: 'has',
 					type: 'int',
 					notNull: true,
 					table: ''

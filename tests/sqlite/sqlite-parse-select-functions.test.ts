@@ -16,7 +16,7 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'total',
+					name: 'total',
 					type: 'INTEGER',
 					notNull: false,
 					table: 'mytable1'
@@ -41,7 +41,7 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'total',
+					name: 'total',
 					type: 'INTEGER',
 					notNull: false,
 					table: 't1'
@@ -66,7 +66,7 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'count(id)',
+					name: 'count(id)',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'mytable1'
@@ -91,7 +91,7 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'count(*)',
+					name: 'count(*)',
 					type: 'INTEGER',
 					notNull: true,
 					table: ''
@@ -116,7 +116,7 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'sum(2*value)',
+					name: 'sum(2*value)',
 					type: 'INTEGER',
 					notNull: false,
 					table: ''
@@ -141,7 +141,7 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'avg(value)',
+					name: 'avg(value)',
 					type: 'REAL',
 					notNull: false,
 					table: 'mytable1' //TODO: empty?
@@ -166,7 +166,7 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'avg(value+(value+2))', //TODO: spaces
+					name: 'avg(value+(value+2))', //TODO: spaces
 					type: 'REAL',
 					notNull: false,
 					table: ''
@@ -191,7 +191,7 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'avgResult',
+					name: 'avgResult',
 					type: 'REAL',
 					notNull: false,
 					table: 'mytable1' //TODO - empty?
@@ -216,7 +216,7 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'sum(t2.id+(t1.value+2))', //TODO - spaces
+					name: 'sum(t2.id+(t1.value+2))', //TODO - spaces
 					type: 'INTEGER',
 					notNull: false,
 					table: ''
@@ -241,7 +241,7 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'MIN(value)',
+					name: 'MIN(value)',
 					type: 'INTEGER',
 					notNull: false,
 					table: ''
@@ -267,7 +267,7 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'min',
+					name: 'min',
 					type: 'INTEGER',
 					notNull: false,
 					table: ''
@@ -293,7 +293,7 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'INTEGER',
 					notNull: false,
 					table: ''
@@ -319,13 +319,13 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'INTEGER',
 					notNull: false,
 					table: ''
@@ -350,13 +350,13 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'max',
+					name: 'max',
 					type: 'INTEGER',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'min',
+					name: 'min',
 					type: 'TEXT',
 					notNull: false,
 					table: ''
@@ -402,7 +402,7 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'MIN(name)',
+					name: 'MIN(name)',
 					type: 'TEXT',
 					notNull: false,
 					table: ''
@@ -432,25 +432,25 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'round1',
+					name: 'round1',
 					type: 'REAL',
 					notNull: false,
 					table: 'mytable3'
 				},
 				{
-					columnName: 'round2',
+					name: 'round2',
 					type: 'REAL',
 					notNull: false,
 					table: 'mytable3'
 				},
 				{
-					columnName: 'round3',
+					name: 'round3',
 					type: 'REAL',
 					notNull: false,
 					table: 'mytable3'
 				},
 				{
-					columnName: 'round4',
+					name: 'round4',
 					type: 'REAL',
 					notNull: false,
 					table: 'mytable3'
@@ -484,13 +484,13 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'group1',
+					name: 'group1',
 					type: 'TEXT',
 					notNull: false,
 					table: ''
 				},
 				{
-					columnName: 'group2',
+					name: 'group2',
 					type: 'TEXT',
 					notNull: false,
 					table: ''
@@ -521,7 +521,7 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: `NULLIF(?,'a')`,
+					name: `NULLIF(?,'a')`,
 					type: 'TEXT',
 					notNull: false,
 					table: ''
@@ -552,7 +552,7 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: `NULLIF(?,id)`,
+					name: `NULLIF(?,id)`,
 					type: 'INTEGER',
 					notNull: false,
 					table: ''
@@ -583,13 +583,13 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'lower(?)',
+					name: 'lower(?)',
 					type: 'TEXT',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'upper(?)',
+					name: 'upper(?)',
 					type: 'TEXT',
 					notNull: true,
 					table: ''
@@ -625,13 +625,13 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'lower(name)',
+					name: 'lower(name)',
 					type: 'TEXT',
 					notNull: false,
 					table: ''
 				},
 				{
-					columnName: 'upper(name)',
+					name: 'upper(name)',
 					type: 'TEXT',
 					notNull: false,
 					table: ''
@@ -656,7 +656,7 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'COALESCE(VALUE,ID)',
+					name: 'COALESCE(VALUE,ID)',
 					type: 'INTEGER',
 					notNull: true,
 					table: ''
@@ -681,19 +681,19 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: `strftime('%d/%m/%Y','2013-05-21')`,
+					name: `strftime('%d/%m/%Y','2013-05-21')`,
 					type: 'TEXT',
 					notNull: false, //invalid date
 					table: ''
 				},
 				{
-					columnName: `date('2013-05-21')`,
+					name: `date('2013-05-21')`,
 					type: 'DATE',
 					notNull: false, //invalid date
 					table: ''
 				},
 				{
-					columnName: `datetime('2013-05-21')`,
+					name: `datetime('2013-05-21')`,
 					type: 'DATE_TIME',
 					notNull: false, //invalid date
 					table: ''
@@ -717,19 +717,19 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: `strftime('%d/%m/%Y',?)`,
+					name: `strftime('%d/%m/%Y',?)`,
 					type: 'TEXT',
 					notNull: false, //invalid date
 					table: ''
 				},
 				{
-					columnName: 'date(?)',
+					name: 'date(?)',
 					type: 'DATE',
 					notNull: false, //invalid date
 					table: ''
 				},
 				{
-					columnName: 'datetime(?)',
+					name: 'datetime(?)',
 					type: 'DATE_TIME',
 					notNull: false, //invalid date
 					table: ''
@@ -773,13 +773,13 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'result',
+					name: 'result',
 					type: 'DATE',
 					notNull: false, //invalid date
 					table: ''
 				},
 				{
-					columnName: 'result2',
+					name: 'result2',
 					type: 'DATE_TIME',
 					notNull: false, //invalid date
 					table: ''
@@ -803,7 +803,7 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'result',
+					name: 'result',
 					type: 'REAL',
 					notNull: true,
 					table: ''
@@ -827,7 +827,7 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'result',
+					name: 'result',
 					type: 'REAL',
 					notNull: true,
 					table: ''
@@ -857,7 +857,7 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'result',
+					name: 'result',
 					type: 'INTEGER',
 					notNull: true,
 					table: ''
@@ -881,7 +881,7 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'result',
+					name: 'result',
 					type: 'INTEGER',
 					notNull: true,
 					table: ''
@@ -911,13 +911,13 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'result',
+					name: 'result',
 					type: 'DATE',
 					notNull: false,
 					table: ''
 				},
 				{
-					columnName: 'result2',
+					name: 'result2',
 					type: 'DATE_TIME',
 					notNull: false,
 					table: ''
@@ -952,13 +952,13 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'result',
+					name: 'result',
 					type: 'DATE',
 					notNull: false, //double_value is null
 					table: ''
 				},
 				{
-					columnName: 'result2',
+					name: 'result2',
 					type: 'DATE_TIME',
 					notNull: false, //double_value is null
 					table: ''
@@ -997,13 +997,13 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'result',
+					name: 'result',
 					type: 'DATE',
 					notNull: false,
 					table: ''
 				},
 				{
-					columnName: 'result2',
+					name: 'result2',
 					type: 'DATE_TIME',
 					notNull: false,
 					table: ''
@@ -1048,13 +1048,13 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'double_value',
+					name: 'double_value',
 					type: 'REAL',
 					notNull: false,
 					table: 't3'
 				},
 				{
-					columnName: 'result',
+					name: 'result',
 					type: 'DATE',
 					notNull: false,
 					table: ''
@@ -1092,13 +1092,13 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'TEXT',
 					notNull: false,
 					table: 'c1'
 				},
 				{
-					columnName: 'result2',
+					name: 'result2',
 					type: 'DATE',
 					notNull: false,
 					table: ''
@@ -1134,7 +1134,7 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'result',
+					name: 'result',
 					type: 'INTEGER',
 					notNull: true,
 					table: ''
@@ -1160,7 +1160,7 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'result',
+					name: 'result',
 					type: 'TEXT',
 					notNull: true,
 					table: ''
@@ -1186,7 +1186,7 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'result',
+					name: 'result',
 					type: 'TEXT',
 					notNull: false,
 					table: ''
@@ -1212,7 +1212,7 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'result',
+					name: 'result',
 					type: 'TEXT',
 					notNull: false,
 					table: ''
@@ -1238,7 +1238,7 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'result',
+					name: 'result',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'mytable1' //correct?
@@ -1269,7 +1269,7 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'result',
+					name: 'result',
 					type: 'INTEGER',
 					notNull: true,
 					table: ''
@@ -1301,7 +1301,7 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: `concat_ws('-','b','c')`, //If the separator is NULL, the result is NULL.
+					name: `concat_ws('-','b','c')`, //If the separator is NULL, the result is NULL.
 					type: 'TEXT',
 					notNull: true,
 					table: ''
@@ -1327,7 +1327,7 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: `concat_ws(?,name,descr,?)`, //If the separator is NULL, the result is NULL.
+					name: `concat_ws(?,name,descr,?)`, //If the separator is NULL, the result is NULL.
 					type: 'TEXT',
 					notNull: true,
 					table: ''
@@ -1364,7 +1364,7 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: `concat_ws(name,descr)`, //If the separator (name) is NULL, the result is NULL.
+					name: `concat_ws(name,descr)`, //If the separator (name) is NULL, the result is NULL.
 					type: 'TEXT',
 					notNull: false,
 					table: ''
@@ -1393,13 +1393,13 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'rand',
+					name: 'rand',
 					type: 'INTEGER',
 					notNull: true,
 					table: ''
@@ -1424,7 +1424,7 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'result',
+					name: 'result',
 					type: 'TEXT',
 					notNull: true,
 					table: ''
@@ -1449,19 +1449,19 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'result',
+					name: 'result',
 					type: 'TEXT',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'result2',
+					name: 'result2',
 					type: 'TEXT',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'result3',
+					name: 'result3',
 					type: 'TEXT',
 					notNull: true,
 					table: ''
@@ -1507,19 +1507,19 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'result1',
+					name: 'result1',
 					type: 'TEXT',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'result2',
+					name: 'result2',
 					type: 'TEXT',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'result3',
+					name: 'result3',
 					type: 'TEXT',
 					notNull: true,
 					table: ''
@@ -1544,19 +1544,19 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'result1',
+					name: 'result1',
 					type: 'TEXT',
 					notNull: false,
 					table: ''
 				},
 				{
-					columnName: 'result2',
+					name: 'result2',
 					type: 'TEXT',
 					notNull: false,
 					table: ''
 				},
 				{
-					columnName: 'result3',
+					name: 'result3',
 					type: 'TEXT',
 					notNull: false,
 					table: ''
@@ -1612,7 +1612,7 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'result',
+					name: 'result',
 					type: 'TEXT',
 					notNull: true,
 					table: ''
@@ -1637,7 +1637,7 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'result',
+					name: 'result',
 					type: 'TEXT',
 					notNull: false,
 					table: ''
@@ -1678,7 +1678,7 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'result',
+					name: 'result',
 					type: 'TEXT',
 					notNull: true,
 					table: ''
@@ -1719,7 +1719,7 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'glob(?,?)',
+					name: 'glob(?,?)',
 					type: 'TEXT',
 					notNull: true,
 					table: ''
@@ -1755,7 +1755,7 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'glob(name,descr)',
+					name: 'glob(name,descr)',
 					type: 'TEXT',
 					notNull: false,
 					table: 'mytable2'
@@ -1780,7 +1780,7 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'result',
+					name: 'result',
 					type: 'TEXT',
 					notNull: true,
 					table: ''
@@ -1816,7 +1816,7 @@ describe('sqlite-parse-select-functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'result',
+					name: 'result',
 					type: 'TEXT',
 					notNull: false,
 					table: ''

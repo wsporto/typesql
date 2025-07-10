@@ -1,5 +1,5 @@
 import assert from 'node:assert';
-import { describeNestedQuery, Relation2, RelationInfo2 } from '../../src/sqlite-query-analyzer/sqlite-describe-nested-query';
+import { ColumnDescription, describeNestedQuery, Relation2, RelationInfo2 } from '../../src/sqlite-query-analyzer/sqlite-describe-nested-query';
 import { ColumnInfo } from '../../src/mysql-query-analyzer/types';
 import { isLeft } from 'fp-ts/lib/Either';
 import { describeQuery } from '../../src/postgres-query-analyzer/describe';
@@ -25,35 +25,30 @@ describe('nested-info', () => {
 		// FROM users u
 		// INNER JOIN posts p on p.fk_user = u.id
 
-		const columns: ColumnInfo[] = [
+		const columns: ColumnDescription[] = [
 			{
-				columnName: 'user_id',
+				name: 'user_id',
 				notNull: true,
-				type: 'int4',
 				table: 'users',
 			},
 			{
-				columnName: 'user_name',
+				name: 'user_name',
 				notNull: true,
-				type: 'text',
 				table: 'users',
 			},
 			{
-				columnName: 'post_id',
+				name: 'post_id',
 				notNull: true,
-				type: 'int4',
 				table: 'posts',
 			},
 			{
-				columnName: 'post_title',
+				name: 'post_title',
 				notNull: true,
-				type: 'text',
 				table: 'posts',
 			},
 			{
-				columnName: 'post_body',
+				name: 'post_body',
 				notNull: true,
-				type: 'text',
 				table: 'posts',
 			},
 		];
@@ -144,35 +139,30 @@ describe('nested-info', () => {
 		// FROM posts p
 		// INNER JOIN users u on u.id = p.fk_user
 
-		const columns: ColumnInfo[] = [
+		const columns: ColumnDescription[] = [
 			{
-				columnName: 'user_id',
+				name: 'user_id',
 				notNull: true,
-				type: 'int4',
 				table: 'users',
 			},
 			{
-				columnName: 'user_name',
+				name: 'user_name',
 				notNull: true,
-				type: 'text',
 				table: 'users',
 			},
 			{
-				columnName: 'post_id',
+				name: 'post_id',
 				notNull: true,
-				type: 'int4',
 				table: 'posts',
 			},
 			{
-				columnName: 'post_title',
+				name: 'post_title',
 				notNull: true,
-				type: 'text',
 				table: 'posts',
 			},
 			{
-				columnName: 'post_body',
+				name: 'post_body',
 				notNull: true,
-				type: 'text',
 				table: 'posts',
 			},
 		];
