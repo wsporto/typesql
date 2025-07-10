@@ -1,16 +1,16 @@
 import CodeBlockWriter from 'code-block-writer';
 import { capitalize, convertToCamelCaseName, generateRelationType, getOperator, hasStringColumn, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor } from './code-generator';
-import { CrudQueryType, ParameterDef, PgDielect, QueryType, SchemaDef, TsFieldDescriptor, TsParameterDescriptor, TypeSqlError } from './types';
+import { CrudQueryType, PgDielect, QueryType, TsFieldDescriptor, TsParameterDescriptor, TypeSqlError } from './types';
 import { describeQuery } from './postgres-query-analyzer/describe';
-import { ColumnInfo, ColumnSchema } from './mysql-query-analyzer/types';
+import { ColumnSchema } from './mysql-query-analyzer/types';
 import { mapColumnType } from './dialects/postgres';
 import { PostgresType } from './sqlite-query-analyzer/types';
 import { preprocessSql } from './describe-query';
 import { okAsync, ResultAsync } from 'neverthrow';
-import { getQueryName, mapFieldToTsField, mapPostgrsFieldToTsField, writeCollectFunction } from './sqlite-query-analyzer/code-generator';
+import { getQueryName, mapPostgrsFieldToTsField, writeCollectFunction } from './sqlite-query-analyzer/code-generator';
 import { mapToTsRelation2, RelationType2 } from './ts-nested-descriptor';
 import { EOL } from 'node:os';
-import { PostgresColumnInfo, PostgresSchemaDef } from './postgres-query-analyzer/types';
+import { PostgresColumnInfo, PostgresParameterDef, PostgresSchemaDef } from './postgres-query-analyzer/types';
 
 
 
@@ -469,13 +469,13 @@ function mapColumnInfoToTsFieldDescriptor(col: PostgresColumnInfo, dynamicQuery:
 	return tsField;
 }
 
-function mapParameterToTsFieldDescriptor(param: ParameterDef): TsParameterDescriptor {
+function mapParameterToTsFieldDescriptor(param: PostgresParameterDef): TsParameterDescriptor {
 	const tsDesc: TsParameterDescriptor = {
 		name: param.name,
-		tsType: mapColumnType(param.columnType as PostgresType),
+		tsType: mapColumnType(param.type),
 		notNull: param.notNull ? param.notNull : false,
 		toDriver: '',
-		isArray: param.columnType.startsWith('_')
+		isArray: param.type.startsWith('_')
 	};
 	return tsDesc;
 }

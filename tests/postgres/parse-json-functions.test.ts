@@ -1,7 +1,7 @@
 import assert from 'node:assert';
-import type { ParameterDef, SchemaDef } from '../../src/types';
 import postgres from 'postgres';
 import { describeQuery } from '../../src/postgres-query-analyzer/describe';
+import { PostgresSchemaDef } from '../../src/postgres-query-analyzer/types';
 
 describe('postgres-json-functions', () => {
 	const postres = postgres({
@@ -15,7 +15,7 @@ describe('postgres-json-functions', () => {
 	it(`SELECT json_build_object('key', 'value')`, async () => {
 		const sql = `SELECT json_build_object('key', 'value'), jsonb_build_object('key', 'value')`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: false,
@@ -44,7 +44,7 @@ describe('postgres-json-functions', () => {
 	it(`select json_build_array(1,2,'foo',4,5)`, async () => {
 		const sql = `select json_build_array(1,2,'foo',4,5)`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: false,
@@ -79,7 +79,7 @@ describe('postgres-json-functions', () => {
 			to_json(array[null]) as col11,
 			to_jsonb(array[null]) as col12`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: false,
@@ -173,7 +173,7 @@ describe('postgres-json-functions', () => {
 			jsonb_agg(null::text) as col4
 			`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: false,

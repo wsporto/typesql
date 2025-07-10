@@ -26,8 +26,8 @@ export type PostgresSchemaDef = {
 	returning?: true;
 	columns: PostgresColumnInfo[];
 	orderByColumns?: string[];
-	parameters: ParameterDef[];
-	data?: ParameterDef[];
+	parameters: PostgresParameterDef[];
+	data?: PostgresParameterDef[];
 	dynamicSqlQuery2?: DynamicSqlInfoResult2;
 	nestedInfo?: RelationInfo2[];
 };

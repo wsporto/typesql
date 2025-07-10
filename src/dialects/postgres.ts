@@ -50,9 +50,12 @@ export const postgresTypes = {
 	4073: '_jsonpath'
 } as any;
 
+function isEnumType(type: PostgresType): type is `enum(${string})` {
+	return type.startsWith('enum(');
+}
 
 export function mapColumnType(postgresType: PostgresType): TsType {
-	if (postgresType.startsWith('enum(')) {
+	if (isEnumType(postgresType)) {
 		const enumValues = postgresType.substring(postgresType.indexOf('(') + 1, postgresType.indexOf(')'));
 		return enumValues.split(',').join(' | ') as TsType;
 	}

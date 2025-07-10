@@ -1,7 +1,7 @@
 import assert from 'node:assert';
-import type { SchemaDef } from '../../src/types';
 import postgres from 'postgres';
 import { describeQuery } from '../../src/postgres-query-analyzer/describe';
+import { PostgresSchemaDef } from '../../src/postgres-query-analyzer/types';
 
 describe('postgres-parse-select-functions', () => {
 	const postres = postgres({
@@ -17,7 +17,7 @@ describe('postgres-parse-select-functions', () => {
         select sum(value) from mytable1
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: false,
@@ -42,7 +42,7 @@ describe('postgres-parse-select-functions', () => {
         select sum(value) as total from mytable1
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: false,
@@ -67,7 +67,7 @@ describe('postgres-parse-select-functions', () => {
         select sum(t1.value) as total from mytable1 t1
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: false,
@@ -92,7 +92,7 @@ describe('postgres-parse-select-functions', () => {
         select count(id) from mytable1
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: false,
@@ -117,7 +117,7 @@ describe('postgres-parse-select-functions', () => {
         select count(*) from mytable1
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: false,
@@ -142,7 +142,7 @@ describe('postgres-parse-select-functions', () => {
         select sum(2*value) from  mytable1
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: false,
@@ -167,7 +167,7 @@ describe('postgres-parse-select-functions', () => {
         select avg(value) from mytable1
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: false,
@@ -192,7 +192,7 @@ describe('postgres-parse-select-functions', () => {
         select avg(value + (value + $1)) from mytable1
         `;
 		const actual = await describeQuery(postres, sql, ['value']);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: false,
@@ -206,7 +206,7 @@ describe('postgres-parse-select-functions', () => {
 			],
 			parameters: [
 				{
-					columnType: 'int4',
+					type: 'int4',
 					name: 'value',
 					notNull: true
 				}
@@ -223,7 +223,7 @@ describe('postgres-parse-select-functions', () => {
         select avg(value + (value + coalesce($1, 10))) from mytable1
         `;
 		const actual = await describeQuery(postres, sql, ['value']);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: false,
@@ -237,7 +237,7 @@ describe('postgres-parse-select-functions', () => {
 			],
 			parameters: [
 				{
-					columnType: 'int4',
+					type: 'int4',
 					name: 'value',
 					notNull: false
 				}
@@ -256,7 +256,7 @@ describe('postgres-parse-select-functions', () => {
 		WHERE coalesce(abs($1::int4), id) = 1 OR coalesce($2, id) = 2
         `;
 		const actual = await describeQuery(postres, sql, ['id1', 'id2']);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
@@ -271,12 +271,12 @@ describe('postgres-parse-select-functions', () => {
 			parameters: [
 				{
 					name: 'id1',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: false
 				},
 				{
 					name: 'id2',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: false
 				}
 			]
@@ -292,7 +292,7 @@ describe('postgres-parse-select-functions', () => {
         select sum(t2.id + (t1.value + 2)) from mytable1 t1 inner join mytable2 t2 on t1.id = t2.id
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: false,
@@ -317,7 +317,7 @@ describe('postgres-parse-select-functions', () => {
        SELECT TO_DATE('21/5/2013', 'DD/MM/YYYY');
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: false,
@@ -347,7 +347,7 @@ describe('postgres-parse-select-functions', () => {
         from all_types t 
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
@@ -390,7 +390,7 @@ describe('postgres-parse-select-functions', () => {
         select 10, CONCAT_WS('a', 'b'), 'a' as name
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: false,
@@ -428,7 +428,7 @@ describe('postgres-parse-select-functions', () => {
         SELECT TO_DATE(CONCAT_WS('/', $1::text, $2::text, $3::text),'DD/MM/YYYY')
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: false,
@@ -443,17 +443,17 @@ describe('postgres-parse-select-functions', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'text',
+					type: 'text',
 					notNull: true
 				},
 				{
 					name: 'param2',
-					columnType: 'text',
+					type: 'text',
 					notNull: true
 				},
 				{
 					name: 'param3',
-					columnType: 'text',
+					type: 'text',
 					notNull: true
 				}
 			]
@@ -469,7 +469,7 @@ describe('postgres-parse-select-functions', () => {
         SELECT TO_DATE(COALESCE($1, null),'DD/MM/YYYY')
         `;
 		const actual = await describeQuery(postres, sql, ['date']);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: false,
@@ -484,7 +484,7 @@ describe('postgres-parse-select-functions', () => {
 			parameters: [
 				{
 					name: 'date',
-					columnType: 'text',
+					type: 'text',
 					notNull: false
 				}
 			]
@@ -498,7 +498,7 @@ describe('postgres-parse-select-functions', () => {
 	it('SELECT datediff(:date1, :date2) as days_stayed', async () => {
 		const sql = 'SELECT $1::date - $2::date as days_stayed';
 		const actual = await describeQuery(postres, sql, ['date1', 'date2']);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: false,
@@ -513,12 +513,12 @@ describe('postgres-parse-select-functions', () => {
 			parameters: [
 				{
 					name: 'date1',
-					columnType: 'date',
+					type: 'date',
 					notNull: true
 				},
 				{
 					name: 'date2',
-					columnType: 'date',
+					type: 'date',
 					notNull: true
 				}
 			]
@@ -534,7 +534,7 @@ describe('postgres-parse-select-functions', () => {
         SELECT (TO_DATE(CONCAT_WS('/', $1::text, $2::text, $3::text), 'DD/MM/YYYY') - TO_DATE('01/01/2020', 'DD/MM/YYYY')) AS days_stayed
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: false,
@@ -549,17 +549,17 @@ describe('postgres-parse-select-functions', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'text',
+					type: 'text',
 					notNull: true
 				},
 				{
 					name: 'param2',
-					columnType: 'text',
+					type: 'text',
 					notNull: true
 				},
 				{
 					name: 'param3',
-					columnType: 'text',
+					type: 'text',
 					notNull: true
 				}
 			]
@@ -575,7 +575,7 @@ describe('postgres-parse-select-functions', () => {
         SELECT coalesce(NULL, 'yes') as result1, coalesce('10', 'yes') as result2
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: false,
@@ -606,7 +606,7 @@ describe('postgres-parse-select-functions', () => {
         SELECT coalesce(value, id) as result from mytable1
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
@@ -631,7 +631,7 @@ describe('postgres-parse-select-functions', () => {
         SELECT STRING_AGG(name, ', ') FROM mytable2
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: false,
@@ -656,7 +656,7 @@ describe('postgres-parse-select-functions', () => {
         SELECT STRING_AGG(id::text, ', ') FROM mytable2
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: false,
@@ -682,7 +682,7 @@ describe('postgres-parse-select-functions', () => {
 		FROM mytable2;
         `; //different from mysql; must use the displayed column (name) in the ORDER BY
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: false,
@@ -707,7 +707,7 @@ describe('postgres-parse-select-functions', () => {
         SELECT NULLIF($1, 'a') FROM mytable1
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
@@ -721,7 +721,7 @@ describe('postgres-parse-select-functions', () => {
 			],
 			parameters: [
 				{
-					columnType: 'text',
+					type: 'text',
 					name: 'param1',
 					notNull: true
 				}
@@ -738,7 +738,7 @@ describe('postgres-parse-select-functions', () => {
          SELECT generate_series(1, 12) AS month
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
@@ -768,7 +768,7 @@ describe('postgres-parse-select-functions', () => {
 		from mytable2
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
@@ -811,7 +811,7 @@ describe('postgres-parse-select-functions', () => {
          SELECT name FROM mytable2 WHERE to_tsvector(name) @@ to_tsquery($1)
         `;
 		const actual = await describeQuery(postres, sql, ['query']);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
@@ -826,7 +826,7 @@ describe('postgres-parse-select-functions', () => {
 			parameters: [
 				{
 					name: 'query',
-					columnType: 'text',
+					type: 'text',
 					notNull: true
 				}
 			]
@@ -848,7 +848,7 @@ describe('postgres-parse-select-functions', () => {
 		 ORDER BY rank
         `;
 		const actual = await describeQuery(postres, sql, ['query']);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
@@ -875,7 +875,7 @@ describe('postgres-parse-select-functions', () => {
 			parameters: [
 				{
 					name: 'query',
-					columnType: 'text',
+					type: 'text',
 					notNull: true
 				}
 			]
@@ -898,7 +898,7 @@ describe('postgres-parse-select-functions', () => {
 		 FROM mytable2
         `;
 		const actual = await describeQuery(postres, sql, ['query']);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
@@ -943,7 +943,7 @@ describe('postgres-parse-select-functions', () => {
 			parameters: [
 				{
 					name: 'query',
-					columnType: 'text',
+					type: 'text',
 					notNull: true
 				}
 			]

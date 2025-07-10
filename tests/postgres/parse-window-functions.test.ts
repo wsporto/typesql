@@ -1,7 +1,7 @@
 import assert from 'node:assert';
-import type { SchemaDef } from '../../src/types';
 import postgres from 'postgres';
 import { describeQuery } from '../../src/postgres-query-analyzer/describe';
+import { PostgresSchemaDef } from '../../src/postgres-query-analyzer/types';
 
 //https://www.postgresql.org/docs/current/functions-window.html
 describe('postgres-parse-window-functions', () => {
@@ -20,7 +20,7 @@ describe('postgres-parse-window-functions', () => {
         FROM mytable1
         `;
 		const actual = await describeQuery(postres, sql, ['id']);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
@@ -48,7 +48,7 @@ describe('postgres-parse-window-functions', () => {
 			FROM mytable1
 			`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
@@ -92,7 +92,7 @@ describe('postgres-parse-window-functions', () => {
 			FROM mytable2
 			`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
@@ -149,7 +149,7 @@ describe('postgres-parse-window-functions', () => {
 			FROM mytable1
 			`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
@@ -174,7 +174,7 @@ describe('postgres-parse-window-functions', () => {
 			SELECT AVG(value) OVER() as avgResult FROM mytable1
 			`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
@@ -202,7 +202,7 @@ describe('postgres-parse-window-functions', () => {
 			FROM mytable2
 			`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
@@ -239,7 +239,7 @@ describe('postgres-parse-window-functions', () => {
 			FROM mytable1
 			`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
@@ -277,12 +277,12 @@ describe('postgres-parse-window-functions', () => {
 			],
 			parameters: [
 				{
-					columnType: 'int4',
+					type: 'int4',
 					name: 'param1',
 					notNull: true
 				},
 				{
-					columnType: 'int4',
+					type: 'int4',
 					name: 'param2',
 					notNull: false
 				}
@@ -305,7 +305,7 @@ describe('postgres-parse-window-functions', () => {
 			FROM mytable1
 			`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
@@ -343,12 +343,12 @@ describe('postgres-parse-window-functions', () => {
 			],
 			parameters: [
 				{
-					columnType: 'int4',
+					type: 'int4',
 					name: 'param1',
 					notNull: true
 				},
 				{
-					columnType: 'int4',
+					type: 'int4',
 					name: 'param2',
 					notNull: false
 				}
@@ -367,7 +367,7 @@ describe('postgres-parse-window-functions', () => {
 			FROM mytable1
 			`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
@@ -381,7 +381,7 @@ describe('postgres-parse-window-functions', () => {
 			],
 			parameters: [
 				{
-					columnType: 'int4',
+					type: 'int4',
 					name: 'param1',
 					notNull: true
 				}

@@ -1,7 +1,7 @@
 import assert from 'node:assert';
-import type { SchemaDef } from '../../src/types';
 import postgres from 'postgres';
 import { describeQuery } from '../../src/postgres-query-analyzer/describe';
+import { PostgresSchemaDef } from '../../src/postgres-query-analyzer/types';
 
 describe('postgres-describe-copy-stmt', () => {
 	const postres = postgres({
@@ -15,7 +15,7 @@ describe('postgres-describe-copy-stmt', () => {
 	it('COPY mytable1 (value) FROM STDIN WITH CSV', async () => {
 		const sql = 'COPY mytable1 (value) FROM STDIN WITH CSV';
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			multipleRowsResult: false,
 			queryType: 'Copy',
 			sql,
@@ -23,7 +23,7 @@ describe('postgres-describe-copy-stmt', () => {
 			parameters: [
 				{
 					name: 'value',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: false
 				}
 			]

@@ -1,7 +1,7 @@
 import assert from 'node:assert';
-import type { ParameterDef, SchemaDef } from '../../src/types';
 import postgres from 'postgres';
 import { describeQuery } from '../../src/postgres-query-analyzer/describe';
+import { PostgresParameterDef, PostgresSchemaDef } from '../../src/postgres-query-analyzer/types';
 
 describe('postgres-parse-insert', () => {
 	const postres = postgres({
@@ -15,7 +15,7 @@ describe('postgres-parse-insert', () => {
 	it('insert into mytable1 (value) values (?)', async () => {
 		const sql = 'insert into mytable1 (value) values ($1)';
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			multipleRowsResult: false,
 			queryType: 'Insert',
 			sql: 'insert into mytable1 (value) values ($1)',
@@ -23,7 +23,7 @@ describe('postgres-parse-insert', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: false
 				}
 			]
@@ -38,7 +38,7 @@ describe('postgres-parse-insert', () => {
 	it('CASE INSENSITIVE - INSERT INTO MYTABLE1 (VALUE) VALUES(?)', async () => {
 		const sql = 'INSERT INTO MYTABLE1 (VALUE) VALUES($1)';
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			multipleRowsResult: false,
 			queryType: 'Insert',
 			sql,
@@ -46,7 +46,7 @@ describe('postgres-parse-insert', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: false
 				}
 			]
@@ -61,7 +61,7 @@ describe('postgres-parse-insert', () => {
 	it('insert into mytable3 (name, double_value) values (?, ?)', async () => {
 		const sql = 'insert into mytable3 (name, double_value) values ($1, $2)';
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			multipleRowsResult: false,
 			queryType: 'Insert',
 			sql: 'insert into mytable3 (name, double_value) values ($1, $2)',
@@ -69,12 +69,12 @@ describe('postgres-parse-insert', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'text',
+					type: 'text',
 					notNull: true
 				},
 				{
 					name: 'param2',
-					columnType: 'float4',
+					type: 'float4',
 					notNull: false
 				}
 			]
@@ -89,7 +89,7 @@ describe('postgres-parse-insert', () => {
 	it('insert into mytable3 (double_value, name) values (?, ?)', async () => {
 		const sql = 'insert into mytable3 (double_value, name) values ($1, $2)';
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			multipleRowsResult: false,
 			queryType: 'Insert',
 			sql: 'insert into mytable3 (double_value, name) values ($1, $2)',
@@ -97,12 +97,12 @@ describe('postgres-parse-insert', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'float4',
+					type: 'float4',
 					notNull: false
 				},
 				{
 					name: 'param2',
-					columnType: 'text',
+					type: 'text',
 					notNull: true
 				}
 			]
@@ -117,7 +117,7 @@ describe('postgres-parse-insert', () => {
 	it('insert into mytable3 (name, double_value) values (:fullname, :value)', async () => {
 		const sql = 'insert into mytable3 (name, double_value) values ($1, $2)';
 		const actual = await describeQuery(postres, sql, ['fullname', 'value']);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			multipleRowsResult: false,
 			queryType: 'Insert',
 			sql: 'insert into mytable3 (name, double_value) values ($1, $2)',
@@ -125,12 +125,12 @@ describe('postgres-parse-insert', () => {
 			parameters: [
 				{
 					name: 'fullname',
-					columnType: 'text',
+					type: 'text',
 					notNull: true
 				},
 				{
 					name: 'value',
-					columnType: 'float4',
+					type: 'float4',
 					notNull: false
 				}
 			]
@@ -145,7 +145,7 @@ describe('postgres-parse-insert', () => {
 	it('insert same parameter into two fields', async () => {
 		const sql = 'insert into mytable2 (name, descr) values ($1, $1)';
 		const actual = await describeQuery(postres, sql, ['name', 'name']);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			multipleRowsResult: false,
 			queryType: 'Insert',
 			sql: 'insert into mytable2 (name, descr) values ($1, $1)',
@@ -153,7 +153,7 @@ describe('postgres-parse-insert', () => {
 			parameters: [
 				{
 					name: 'name',
-					columnType: 'text',
+					type: 'text',
 					notNull: false
 				}
 			]
@@ -170,10 +170,10 @@ describe('postgres-parse-insert', () => {
         insert into mytable1 (value) values (coalesce($1, 100))
             `;
 		const actual = await describeQuery(postres, sql, ['value']);
-		const expected: ParameterDef[] = [
+		const expected: PostgresParameterDef[] = [
 			{
 				name: 'value',
-				columnType: 'int4',
+				type: 'int4',
 				notNull: false
 			}
 		];
@@ -190,20 +190,20 @@ describe('postgres-parse-insert', () => {
         insert into mytable3 (double_value, name) values (coalesce($1, $2::float4), $3)
             `;
 		const actual = await describeQuery(postres, sql, ['value1', 'value2', 'name1']);
-		const expected: ParameterDef[] = [
+		const expected: PostgresParameterDef[] = [
 			{
 				name: 'value1',
-				columnType: 'float4',
+				type: 'float4',
 				notNull: false
 			},
 			{
 				name: 'value2',
-				columnType: 'float4',
+				type: 'float4',
 				notNull: false
 			},
 			{
 				name: 'name1',
-				columnType: 'text',
+				type: 'text',
 				notNull: true
 			}
 		];
@@ -218,15 +218,15 @@ describe('postgres-parse-insert', () => {
         insert into mytable1 (value) values (coalesce($1, $2, 10))
             `;
 		const actual = await describeQuery(postres, sql, ['id', 'id2']);
-		const expected: ParameterDef[] = [
+		const expected: PostgresParameterDef[] = [
 			{
 				name: 'id',
-				columnType: 'int4',
+				type: 'int4',
 				notNull: false
 			},
 			{
 				name: 'id2',
-				columnType: 'int4',
+				type: 'int4',
 				notNull: false
 			}
 		];
@@ -242,25 +242,25 @@ describe('postgres-parse-insert', () => {
         insert into mytable3 (double_value, name) values (coalesce($1, $2::float4), coalesce($3, $4, 'name2'))
             `;
 		const actual = await describeQuery(postres, sql, ['value1', 'value2', 'descr1', 'descr2']);
-		const expected: ParameterDef[] = [
+		const expected: PostgresParameterDef[] = [
 			{
 				name: 'value1',
-				columnType: 'float4',
+				type: 'float4',
 				notNull: false
 			},
 			{
 				name: 'value2',
-				columnType: 'float4',
+				type: 'float4',
 				notNull: false
 			},
 			{
 				name: 'descr1',
-				columnType: 'text',
+				type: 'text',
 				notNull: false
 			},
 			{
 				name: 'descr2',
-				columnType: 'text',
+				type: 'text',
 				notNull: false
 			}
 		];
@@ -273,7 +273,7 @@ describe('postgres-parse-insert', () => {
 	it('insert into all_types (int_column) values (?+?)', async () => {
 		const sql = 'insert into mytable1 (value) values ($1::int4+$2)';
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Insert',
 			multipleRowsResult: false,
@@ -281,12 +281,12 @@ describe('postgres-parse-insert', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				},
 				{
 					name: 'param2',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				}
 			]
@@ -300,7 +300,7 @@ describe('postgres-parse-insert', () => {
 	it('insert into all_types (int_column) values (?+coalesce(?, 10))', async () => {
 		const sql = 'insert into mytable1 (value) values ($1::int4+coalesce($2, 10))';
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Insert',
 			multipleRowsResult: false,
@@ -308,12 +308,12 @@ describe('postgres-parse-insert', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				},
 				{
 					name: 'param2',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: false
 				}
 			]
@@ -327,7 +327,7 @@ describe('postgres-parse-insert', () => {
 	it('INSERT INTO mytable1 (value) RETURNING *', async () => {
 		const sql = 'INSERT INTO mytable1 (value) VALUES ($1) RETURNING *';
 		const actual = await describeQuery(postres, sql, ['value']);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Insert',
 			multipleRowsResult: false,
@@ -349,7 +349,7 @@ describe('postgres-parse-insert', () => {
 			parameters: [
 				{
 					name: 'value',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: false
 				}
 			]
@@ -363,7 +363,7 @@ describe('postgres-parse-insert', () => {
 	it('INSERT INTO mytable1 (value) RETURNING id, id+id, value', async () => {
 		const sql = 'INSERT INTO mytable1 (value) VALUES ($1) RETURNING id, id+id, value';
 		const actual = await describeQuery(postres, sql, ['value']);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Insert',
 			multipleRowsResult: false,
@@ -391,7 +391,7 @@ describe('postgres-parse-insert', () => {
 			parameters: [
 				{
 					name: 'value',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: false
 				}
 			]
@@ -409,7 +409,7 @@ describe('postgres-parse-insert', () => {
 			ON CONFLICT(id) DO
 			UPDATE SET name = $3`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql: sql,
 			queryType: 'Insert',
 			multipleRowsResult: false,
@@ -417,17 +417,17 @@ describe('postgres-parse-insert', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				},
 				{
 					name: 'param2',
-					columnType: 'text',
+					type: 'text',
 					notNull: false
 				},
 				{
 					name: 'param3',
-					columnType: 'text',
+					type: 'text',
 					notNull: false
 				}
 			]
@@ -445,7 +445,7 @@ describe('postgres-parse-insert', () => {
 			ON CONFLICT(id) DO
 			UPDATE SET name = excluded.name`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql: sql,
 			queryType: 'Insert',
 			multipleRowsResult: false,
@@ -453,12 +453,12 @@ describe('postgres-parse-insert', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true //primary key
 				},
 				{
 					name: 'param2',
-					columnType: 'text',
+					type: 'text',
 					notNull: false
 				}
 			]
@@ -476,7 +476,7 @@ describe('postgres-parse-insert', () => {
 			ON CONFLICT(id) DO UPDATE 
 			SET name = concat($3::text, $4::text)`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql: sql,
 			queryType: 'Insert',
 			multipleRowsResult: false,
@@ -484,22 +484,22 @@ describe('postgres-parse-insert', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true //primary key
 				},
 				{
 					name: 'param2',
-					columnType: 'text',
+					type: 'text',
 					notNull: false
 				},
 				{
 					name: 'param3',
-					columnType: 'text',
+					type: 'text',
 					notNull: true //different from mysql and sqlite
 				},
 				{
 					name: 'param4',
-					columnType: 'text',
+					type: 'text',
 					notNull: true //different from mysql and sqlite
 				}
 			]
@@ -517,7 +517,7 @@ describe('postgres-parse-insert', () => {
 			ON CONFLICT (id) DO UPDATE 
 				SET name = concat($3::text, 'a', $4::text)`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql: sql,
 			queryType: 'Insert',
 			multipleRowsResult: false,
@@ -525,22 +525,22 @@ describe('postgres-parse-insert', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true //primary key
 				},
 				{
 					name: 'param2',
-					columnType: 'text',
+					type: 'text',
 					notNull: true
 				},
 				{
 					name: 'param3',
-					columnType: 'text',
+					type: 'text',
 					notNull: true
 				},
 				{
 					name: 'param4',
-					columnType: 'text',
+					type: 'text',
 					notNull: true
 				}
 			]
@@ -561,7 +561,7 @@ describe('postgres-parse-insert', () => {
 				ELSE mytable5.name -- mytable5.name: different from mysql and sqlite
 			END`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql: sql,
 			queryType: 'Insert',
 			multipleRowsResult: false,
@@ -569,22 +569,22 @@ describe('postgres-parse-insert', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true //primary key
 				},
 				{
 					name: 'param2',
-					columnType: 'text',
+					type: 'text',
 					notNull: false
 				},
 				{
 					name: 'param3',
-					columnType: 'text',
+					type: 'text',
 					notNull: true //diff from mysql
 				},
 				{
 					name: 'param4',
-					columnType: 'text',
+					type: 'text',
 					notNull: true ////diff from mysql and sqlite
 				}
 			]
@@ -600,7 +600,7 @@ describe('postgres-parse-insert', () => {
 			INSERT INTO mytable5 (id, name)
 			SELECT $1, $2`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql: sql,
 			queryType: 'Insert',
 			multipleRowsResult: false,
@@ -608,12 +608,12 @@ describe('postgres-parse-insert', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				},
 				{
 					name: 'param2',
-					columnType: 'text',
+					type: 'text',
 					notNull: false
 				}
 			]
@@ -630,7 +630,7 @@ describe('postgres-parse-insert', () => {
 			SELECT id, descr
 			FROM mytable2 WHERE name = $1 AND id > $2`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql: sql,
 			queryType: 'Insert',
 			multipleRowsResult: false,
@@ -638,12 +638,12 @@ describe('postgres-parse-insert', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'text',
+					type: 'text',
 					notNull: true
 				},
 				{
 					name: 'param2',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				}
 			]
@@ -664,7 +664,7 @@ describe('postgres-parse-insert', () => {
 			SELECT id, descr
 			FROM mytable2 WHERE id in (\${generatePlaceholders('$1', params.param1)})`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql: expectedSql,
 			queryType: 'Insert',
 			multipleRowsResult: false,
@@ -672,7 +672,7 @@ describe('postgres-parse-insert', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'int4[]',
+					type: 'int4[]',
 					notNull: true
 				}
 			]
@@ -688,7 +688,7 @@ describe('postgres-parse-insert', () => {
 			INSERT INTO all_types (integer_column_default)
 			VALUES ($1)`;
 		const actual = await describeQuery(postres, sql, ['value']);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Insert',
 			multipleRowsResult: false,
@@ -696,7 +696,7 @@ describe('postgres-parse-insert', () => {
 			parameters: [
 				{
 					name: 'value',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: false
 				}
 			]

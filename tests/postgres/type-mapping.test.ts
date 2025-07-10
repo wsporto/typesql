@@ -1,7 +1,7 @@
 import assert from 'node:assert';
-import type { SchemaDef } from '../../src/types';
 import postgres from 'postgres';
 import { describeQuery } from '../../src/postgres-query-analyzer/describe';
+import { PostgresSchemaDef } from '../../src/postgres-query-analyzer/types';
 
 describe('postgres-type-mapping', () => {
 	const postres = postgres({
@@ -15,7 +15,7 @@ describe('postgres-type-mapping', () => {
 	it('select table with all types', async () => {
 		const sql = 'select * from all_types';
 		const actual = await describeQuery(postres, sql, ['id']);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			multipleRowsResult: true,
 			queryType: 'Select',
 			sql,

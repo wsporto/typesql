@@ -79,6 +79,7 @@ export type PostgresType =
 	| 'timestamptz'
 	| '_timestamptz'
 	| 'timestamptz[]'
+	| `enum(${string})`
 	| 'tsvector'
 	| 'tsvector[]'
 	| 'tsquery'

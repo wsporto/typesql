@@ -1,7 +1,7 @@
 import assert from 'node:assert';
-import type { SchemaDef } from '../../src/types';
 import postgres from 'postgres';
 import { describeQuery } from '../../src/postgres-query-analyzer/describe';
+import { PostgresSchemaDef } from '../../src/postgres-query-analyzer/types';
 
 describe('postgres-parse-update', () => {
 	const postres = postgres({
@@ -15,7 +15,7 @@ describe('postgres-parse-update', () => {
 	it('update mytable1 set value = ? where id = ?', async () => {
 		const sql = 'update mytable1 set value = $1 where id = $2';
 		const actual = await describeQuery(postres, sql, ['value', 'id']);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			multipleRowsResult: false,
 			queryType: 'Update',
 			sql: 'update mytable1 set value = $1 where id = $2',
@@ -23,14 +23,14 @@ describe('postgres-parse-update', () => {
 			data: [
 				{
 					name: 'value',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: false
 				}
 			],
 			parameters: [
 				{
 					name: 'id',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				}
 			]
@@ -45,7 +45,7 @@ describe('postgres-parse-update', () => {
 	it('CASE INSENSITIVE - UPDATE MYTABLE1 SET VALUE = ? WHERE ID = ?', async () => {
 		const sql = 'UPDATE MYTABLE1 SET VALUE = $1 WHERE ID = $2';
 		const actual = await describeQuery(postres, sql, ['value', 'id']);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			multipleRowsResult: false,
 			queryType: 'Update',
 			sql,
@@ -53,14 +53,14 @@ describe('postgres-parse-update', () => {
 			data: [
 				{
 					name: 'value',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: false
 				}
 			],
 			parameters: [
 				{
 					name: 'id',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				}
 			]
@@ -75,7 +75,7 @@ describe('postgres-parse-update', () => {
 	it('update mytable3 set name = ? where id = ?', async () => {
 		const sql = 'update mytable3 set name = $1 where id = $2';
 		const actual = await describeQuery(postres, sql, ['name', 'id']);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			multipleRowsResult: false,
 			queryType: 'Update',
 			sql: 'update mytable3 set name = $1 where id = $2',
@@ -83,14 +83,14 @@ describe('postgres-parse-update', () => {
 			data: [
 				{
 					name: 'name',
-					columnType: 'text',
+					type: 'text',
 					notNull: true
 				}
 			],
 			parameters: [
 				{
 					name: 'id',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				}
 			]
@@ -107,7 +107,7 @@ describe('postgres-parse-update', () => {
 			UPDATE mytable2 SET name = $1, descr= $2 WHERE id = $3
 				`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Update',
 			multipleRowsResult: false,
@@ -115,19 +115,19 @@ describe('postgres-parse-update', () => {
 			data: [
 				{
 					name: 'param1',
-					columnType: 'text',
+					type: 'text',
 					notNull: false
 				},
 				{
 					name: 'param2',
-					columnType: 'text',
+					type: 'text',
 					notNull: false
 				}
 			],
 			parameters: [
 				{
 					name: 'param3', //different from mysql and sqlite
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				}
 			]
@@ -144,7 +144,7 @@ describe('postgres-parse-update', () => {
 			SET name = 'a'
 				`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Update',
 			multipleRowsResult: false,
@@ -165,7 +165,7 @@ describe('postgres-parse-update', () => {
 			WHERE t2.id = $1
 			`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Update',
 			multipleRowsResult: false,
@@ -174,7 +174,7 @@ describe('postgres-parse-update', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				}
 			]
@@ -192,7 +192,7 @@ describe('postgres-parse-update', () => {
 			WHERE mytable2.id = $1
 			`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Update',
 			multipleRowsResult: false,
@@ -201,7 +201,7 @@ describe('postgres-parse-update', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				}
 			]
@@ -228,7 +228,7 @@ describe('postgres-parse-update', () => {
 			AND t2.id IN (\${generatePlaceholders('$1', params.param1)})
 			`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql: expectedSql,
 			queryType: 'Update',
 			multipleRowsResult: false,
@@ -237,7 +237,7 @@ describe('postgres-parse-update', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'int4[]',
+					type: 'int4[]',
 					notNull: true
 				}
 			]
@@ -253,7 +253,7 @@ describe('postgres-parse-update', () => {
 			update mytable1 set value = $1 where id > $2 and id < $3
 				`;
 		const actual = await describeQuery(postres, sql, ['value', 'min', 'max']);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Update',
 			multipleRowsResult: false,
@@ -261,19 +261,19 @@ describe('postgres-parse-update', () => {
 			data: [
 				{
 					name: 'value',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: false
 				}
 			],
 			parameters: [
 				{
 					name: 'min',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				},
 				{
 					name: 'max',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				}
 			]
@@ -290,7 +290,7 @@ describe('postgres-parse-update', () => {
 				`;
 
 		const actual = await describeQuery(postres, sql, ['value', 'value', 'value']);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Update',
 			multipleRowsResult: false,
@@ -298,19 +298,19 @@ describe('postgres-parse-update', () => {
 			data: [
 				{
 					name: 'value',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: false
 				}
 			],
 			parameters: [
 				{
 					name: 'value',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				},
 				{
 					name: 'value',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				}
 			]
@@ -327,7 +327,7 @@ describe('postgres-parse-update', () => {
 				`;
 
 		const actual = await describeQuery(postres, sql, ['id']);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Update',
 			multipleRowsResult: false,
@@ -335,7 +335,7 @@ describe('postgres-parse-update', () => {
 			data: [
 				{
 					name: 'id',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: false
 				}
 			],
@@ -353,7 +353,7 @@ describe('postgres-parse-update', () => {
 				`;
 
 		const actual = await describeQuery(postres, sql, ['valueSet', 'value', 'id']);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Update',
 			multipleRowsResult: false,
@@ -361,19 +361,19 @@ describe('postgres-parse-update', () => {
 			data: [
 				{
 					name: 'valueSet',
-					columnType: 'bool',
+					type: 'bool',
 					notNull: true //different from mysql and sqlite
 				},
 				{
 					name: 'value',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true //different from mysql and sqlite
 				}
 			],
 			parameters: [
 				{
 					name: 'id',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				}
 			]
@@ -390,7 +390,7 @@ describe('postgres-parse-update', () => {
 				`;
 
 		const actual = await describeQuery(postres, sql, ['nameSet', 'name', 'id']);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Update',
 			multipleRowsResult: false,
@@ -398,19 +398,19 @@ describe('postgres-parse-update', () => {
 			data: [
 				{
 					name: 'nameSet',
-					columnType: 'bool',
+					type: 'bool',
 					notNull: true //different from mysql and sqlite
 				},
 				{
 					name: 'name',
-					columnType: 'text',
+					type: 'text',
 					notNull: true //different from mysql and sqlite
 				}
 			],
 			parameters: [
 				{
 					name: 'id',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				}
 			]
@@ -424,7 +424,7 @@ describe('postgres-parse-update', () => {
 	it('UPDATE mytable1 SET value = $1 RETURNING *', async () => {
 		const sql = 'UPDATE mytable1 SET value = $1 RETURNING *';
 		const actual = await describeQuery(postres, sql, ['value']);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Update',
 			multipleRowsResult: false,
@@ -446,7 +446,7 @@ describe('postgres-parse-update', () => {
 			data: [
 				{
 					name: 'value',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: false
 				}
 			],
@@ -461,7 +461,7 @@ describe('postgres-parse-update', () => {
 	it('UPDATE mytable1 SET value = $1 RETURNING id, id+id, value', async () => {
 		const sql = 'UPDATE mytable1 SET value = $1 RETURNING id, id+id, value';
 		const actual = await describeQuery(postres, sql, ['value']);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Update',
 			multipleRowsResult: false,
@@ -489,7 +489,7 @@ describe('postgres-parse-update', () => {
 			data: [
 				{
 					name: 'value',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: false
 				}
 			],
@@ -504,7 +504,7 @@ describe('postgres-parse-update', () => {
 	it('UPDATE all_types SET enum_column = :enum1, enum_column_constraint = :enum2 WHERE int4_column = :id', async () => {
 		const sql = 'UPDATE all_types SET enum_column = $1, enum_constraint = $2 WHERE enum_constraint = $3';
 		const actual = await describeQuery(postres, sql, ['enum1', 'enum2', 'enum3']);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Update',
 			multipleRowsResult: false,
@@ -512,19 +512,19 @@ describe('postgres-parse-update', () => {
 			data: [
 				{
 					name: 'enum1',
-					columnType: `enum('x-small','small','medium','large','x-large')`,
+					type: `enum('x-small','small','medium','large','x-large')`,
 					notNull: false
 				},
 				{
 					name: 'enum2',
-					columnType: `enum('x-small','small','medium','large','x-large')`,
+					type: `enum('x-small','small','medium','large','x-large')`,
 					notNull: false
 				}
 			],
 			parameters: [
 				{
 					name: 'enum3',
-					columnType: `enum('x-small','small','medium','large','x-large')`,
+					type: `enum('x-small','small','medium','large','x-large')`,
 					notNull: true
 				}
 			]

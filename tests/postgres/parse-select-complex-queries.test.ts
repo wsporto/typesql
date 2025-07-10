@@ -1,7 +1,7 @@
 import assert from 'node:assert';
-import type { SchemaDef } from '../../src/types';
 import postgres from 'postgres';
 import { describeQuery } from '../../src/postgres-query-analyzer/describe';
+import { PostgresSchemaDef } from '../../src/postgres-query-analyzer/types';
 
 describe('parse-select-complex-queries', () => {
 	const postres = postgres({
@@ -23,7 +23,7 @@ describe('parse-select-complex-queries', () => {
         HAVING count(*) > 1
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
@@ -73,7 +73,7 @@ describe('parse-select-complex-queries', () => {
             SUM(double_value) > $1
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
@@ -94,7 +94,7 @@ describe('parse-select-complex-queries', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'float4',
+					type: 'float4',
 					notNull: true
 				}
 			]
@@ -122,7 +122,7 @@ describe('parse-select-complex-queries', () => {
 
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
@@ -149,22 +149,22 @@ describe('parse-select-complex-queries', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				},
 				{
 					name: 'param2',
-					columnType: 'float4',
+					type: 'float4',
 					notNull: true
 				},
 				{
 					name: 'param3',
-					columnType: 'float8',
+					type: 'float8',
 					notNull: true
 				},
 				{
 					name: 'param4',
-					columnType: 'float4',
+					type: 'float4',
 					notNull: true
 				}
 			]
@@ -184,7 +184,7 @@ describe('parse-select-complex-queries', () => {
         SELECT id FROM mytable3
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
@@ -211,7 +211,7 @@ describe('parse-select-complex-queries', () => {
 			SELECT int8_column as col FROM all_types
             `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
@@ -237,7 +237,7 @@ describe('parse-select-complex-queries', () => {
         FROM mytable1 t1
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
@@ -263,7 +263,7 @@ describe('parse-select-complex-queries', () => {
         FROM mytable1 t1
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
@@ -278,7 +278,7 @@ describe('parse-select-complex-queries', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				}
 			]
@@ -297,7 +297,7 @@ describe('parse-select-complex-queries', () => {
         SELECT name from names
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
@@ -327,7 +327,7 @@ describe('parse-select-complex-queries', () => {
         INNER JOIN allvalues v ON n.id = v.id
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
@@ -367,7 +367,7 @@ describe('parse-select-complex-queries', () => {
         SELECT * from allvalues;
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
@@ -401,7 +401,7 @@ describe('parse-select-complex-queries', () => {
         FROM names
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
@@ -438,7 +438,7 @@ describe('parse-select-complex-queries', () => {
         FROM result
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
@@ -473,7 +473,7 @@ describe('parse-select-complex-queries', () => {
 		LIMIT 100
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
@@ -500,12 +500,12 @@ describe('parse-select-complex-queries', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				},
 				{
 					name: 'param2',
-					columnType: 'text',
+					type: 'text',
 					notNull: true
 				}
 			]
