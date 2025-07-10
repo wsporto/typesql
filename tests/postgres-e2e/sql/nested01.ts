@@ -21,8 +21,8 @@ export type Nested01NestedPosts = {
 export async function nested01(client: pg.Client | pg.Pool): Promise<Nested01Result[]> {
 	const sql = `
 	-- @nested
-	SELECT 
-		u.id as user_id, 
+	SELECT
+		u.id as user_id,
 		u.name as user_name,
 		p.id as post_id,
 		p.title as post_title

@@ -82,4 +82,11 @@ export type PostgresType =
 	| 'tsvector'
 	| 'tsvector[]'
 	| 'tsquery'
-	| 'tsquery[]';
+	| 'tsquery[]'
+	| 'json'
+	| '_json'
+	| 'json[]'
+	| 'jsonb'
+	| '_jsonb'
+	| 'jsonb[]'
+

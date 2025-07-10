@@ -39,8 +39,8 @@ export type Nested02NestedComments = {
 export async function nested02(client: pg.Client | pg.Pool): Promise<Nested02Result[]> {
 	const sql = `
 	-- @nested
-	SELECT 
-		u.id as user_id, 
+	SELECT
+		u.id as user_id,
 		u.name as user_name,
 		p.id as post_id,
 		p.title as post_title,
@@ -48,7 +48,7 @@ export async function nested02(client: pg.Client | pg.Pool): Promise<Nested02Res
 		r.id as role_id,
 		r.role,
 		c.id as comment_id,
-		c.comment 
+		c.comment
 	FROM users u
 	INNER JOIN posts p on p.fk_user = u.id
 	INNER JOIN roles r on r.fk_user = u.id
