@@ -917,7 +917,7 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
 		return {
 			name: type.name,
 			type: type,
-			notNull: subQueryType.columns[0].notNull,
+			notNull: expr.EXISTS_() ? true : false,
 			table: type.table || ''
 		};
 	}
