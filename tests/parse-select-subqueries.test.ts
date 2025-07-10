@@ -539,4 +539,68 @@ describe('Test parse select with subqueries', () => {
 		}
 		assert.deepStrictEqual(actual.right, expected);
 	});
+
+	it('SELECT id, (select max(id) from mytable2 m2 where m2.id =1) as subQuery FROM mytable1', async () => {
+		const sql = `
+			SELECT
+				id, (select max(id) from mytable2 m2 where m2.id =1) as subQuery
+			FROM mytable1
+			`;
+		const actual = await parseSql(client, sql);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'int',
+					notNull: true,
+					table: 'mytable1'
+				},
+				{
+					columnName: 'subQuery',
+					type: 'int',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('SELECT id, exists(SELECT min(id) FROM mytable2 t2 where t2.id = t1.id) as has from mytable1 t1', async () => {
+		const sql = `
+			SELECT id, exists(SELECT min(id) FROM mytable2 t2 where t2.id = t1.id) as has from mytable1 t1
+			`;
+		const actual = await parseSql(client, sql);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					columnName: 'id',
+					type: 'int',
+					notNull: true,
+					table: 't1'
+				},
+				{
+					columnName: 'has',
+					type: 'int',
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	})
 });
