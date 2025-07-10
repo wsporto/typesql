@@ -125,7 +125,7 @@ export function traverseSmt(stmt: StmtContext, dbSchema: PostgresColumnSchema[],
 	throw Error('Stmt not supported: ' + stmt.getText());
 }
 
-function collectContextsOfType(ctx: ParserRuleContext, targetType: any): ParserRuleContext[] {
+function collectContextsOfType(ctx: ParserRuleContext, targetType: any, includeSubQuery = true): ParserRuleContext[] {
 	const results: ParserRuleContext[] = [];
 
 	if (ctx instanceof targetType) {
@@ -134,7 +134,9 @@ function collectContextsOfType(ctx: ParserRuleContext, targetType: any): ParserR
 
 	ctx.children?.forEach(child => {
 		if (child instanceof ParserRuleContext) {
-			results.push(...collectContextsOfType(child, targetType));
+			if (includeSubQuery || !(child instanceof Select_with_parensContext)) {
+				results.push(...collectContextsOfType(child, targetType, includeSubQuery));
+			}
 		}
 	});
 
@@ -1756,7 +1758,7 @@ function getTableName(table_ref: Table_refContext): TableName {
 
 function isAggregateFunction_target_el(target_el: Target_elContext): boolean {
 	if (target_el instanceof Target_labelContext) {
-		const c_expr_list = collectContextsOfType(target_el, Func_exprContext);
+		const c_expr_list = collectContextsOfType(target_el, Func_exprContext, false);
 		const aggrFunction = c_expr_list.some(func_expr => isAggregateFunction_c_expr(<Func_exprContext>func_expr));
 		return aggrFunction;
 	}
