@@ -6,7 +6,7 @@ import { DynamicSqlInfo2, FieldName } from '../mysql-query-analyzer/types';
 import { QueryType } from '../types';
 import { Relation2 } from '../sqlite-query-analyzer/sqlite-describe-nested-query';
 import { CheckConstraintResult } from '../drivers/postgres';
-import { JsonPropertyDef, JsonType, PostgresSimpleType } from '../sqlite-query-analyzer/types';
+import { JsonPropertyDef, JsonType, JsonTypeArray, PostgresSimpleType } from '../sqlite-query-analyzer/types';
 import { postgresTypes } from '../dialects/postgres';
 
 export type NotNullInfo = {
@@ -17,7 +17,7 @@ export type NotNullInfo = {
 	column_default?: true;
 	type_id?: number;
 	type?: PostgresSimpleType;
-	jsonType?: JsonType;
+	jsonType?: JsonType | JsonTypeArray;
 }
 
 export type PostgresTraverseResult = {
@@ -877,6 +877,9 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 			if (is_json_build_object_func(func_application)) {
 				return traverse_json_build_obj_func(func_application, context, traverseResult);
 			}
+			if (is_json_agg(func_application)) {
+				return traverse_json_agg(func_application, context, traverseResult);
+			}
 
 			const isNotNull = traversefunc_application(func_application, context, traverseResult);
 			const columnName = func_application.func_name()?.getText() || func_application.getText();
@@ -1018,8 +1021,11 @@ function getFunctionName(func_application: Func_applicationContext) {
 }
 
 function is_json_build_object_func(func_application: Func_applicationContext) {
-	const functionName = func_application.func_name().getText().toLowerCase();
-	return functionName === 'json_build_object';
+	return getFunctionName(func_application) === 'json_build_object';
+}
+
+function is_json_agg(func_application: Func_applicationContext) {
+	return getFunctionName(func_application) === 'json_agg';
 }
 
 function transformToJsonProperty(args: NotNullInfo[]): JsonPropertyDef[] {
@@ -1047,6 +1053,22 @@ function traverse_json_build_obj_func(func_application: Func_applicationContext,
 		jsonType: {
 			name: 'json',
 			properties: transformToJsonProperty(argsResult)
+		}
+	}
+}
+
+function traverse_json_agg(func_application: Func_applicationContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
+	const columnName = func_application.func_name()?.getText() || func_application.getText();
+	const func_arg_expr_list = func_application.func_arg_list()?.func_arg_expr_list() || [];
+	const argsResult = func_arg_expr_list.map(func_arg_expr => traversefunc_arg_expr(func_arg_expr, context, traverseResult))
+	return {
+		column_name: columnName,
+		is_nullable: false,
+		table_name: '',
+		table_schema: '',
+		jsonType: {
+			name: 'json[]',
+			properties: argsResult[0].jsonType?.properties || []
 		}
 	}
 }

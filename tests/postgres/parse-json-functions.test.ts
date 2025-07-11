@@ -350,9 +350,17 @@ describe('postgres-json-functions', () => {
 			columns: [
 				{
 					name: 'col1',
-					type: 'json',
+					type: {
+						name: 'json[]',
+						properties: [
+							{
+								key: 'key',
+								type: 'int4'
+							}
+						]
+					},
 					notNull: true,
-					table: ''
+					table: '',
 				},
 				{
 					name: 'col2',
@@ -362,13 +370,47 @@ describe('postgres-json-functions', () => {
 				},
 				{
 					name: 'col3',
-					type: 'json',
+					type: {
+						name: 'json[]',
+						properties: []
+					},
 					notNull: true,
 					table: ''
 				},
 				{
 					name: 'col4',
 					type: 'jsonb',
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
+	it(`SELECT json_agg(json_build_object('key', 'value'))`, async () => {
+		const sql = `SELECT json_agg(json_build_object('key', 'value')) as result`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					name: 'result',
+					type: {
+						name: 'json[]',
+						properties: [
+							{
+								key: 'key',
+								type: 'text'
+							}
+						],
+					},
 					notNull: true,
 					table: ''
 				}

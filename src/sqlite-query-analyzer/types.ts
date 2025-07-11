@@ -31,9 +31,12 @@ export type JsonPropertyDef = {
 
 export type JsonType = { name: 'json', properties: JsonPropertyDef[] };
 
+export type JsonTypeArray = { name: 'json[]', properties: JsonPropertyDef[] }
+
 export type PostgresType =
 	| PostgresSimpleType
 	| JsonType
+	| JsonTypeArray
 
 export type PostgresSimpleType =
 	| 'bool'
