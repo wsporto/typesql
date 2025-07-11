@@ -49,7 +49,7 @@ export type Constraint = {
 	coercionType?: CoercionType;
 };
 
-export type ColumnSchema = GenericColumnSchema<MySqlType> | GenericColumnSchema<SQLiteType> | GenericColumnSchema<PostgresType>;
+export type ColumnSchema = GenericColumnSchema<MySqlType> | GenericColumnSchema<SQLiteType>;
 
 export type GenericColumnSchema<DbType> = {
 	schema: string;

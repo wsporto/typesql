@@ -1,5 +1,5 @@
 import { TsType } from '../mysql-mapping';
-import { PostgresType } from '../sqlite-query-analyzer/types';
+import { PostgresSimpleType, PostgresType } from '../sqlite-query-analyzer/types';
 
 export const postgresTypes = {
 	16: 'bool',
@@ -50,11 +50,14 @@ export const postgresTypes = {
 	4073: '_jsonpath'
 } as any;
 
-function isEnumType(type: PostgresType): type is `enum(${string})` {
+function isEnumType(type: PostgresSimpleType): type is `enum(${string})` {
 	return type.startsWith('enum(');
 }
 
 export function mapColumnType(postgresType: PostgresType): TsType {
+	if (typeof postgresType === 'object') {
+		return 'any';
+	}
 	if (isEnumType(postgresType)) {
 		const enumValues = postgresType.substring(postgresType.indexOf('(') + 1, postgresType.indexOf(')'));
 		return enumValues.split(',').join(' | ') as TsType;

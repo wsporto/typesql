@@ -1,4 +1,4 @@
-import type { MySqlType } from './mysql-mapping';
+import type { DbType, MySqlType } from './mysql-mapping';
 import type { Brand } from './utility-types';
 import type { ColumnInfo, ColumnSchema, DynamicSqlInfoResult, DynamicSqlInfoResult2 } from './mysql-query-analyzer/types';
 import type { QueryContext } from '@wsporto/typesql-parser/mysql/MySQLParser';
@@ -54,7 +54,7 @@ export type ColumnDef2 = {
 
 export type ParameterDef = {
 	name: string;
-	columnType: MySqlType | SQLiteType | PostgresType | 'any';
+	columnType: DbType;
 	notNull: boolean;
 	list?: boolean; //id in (?)
 };

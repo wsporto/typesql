@@ -8,9 +8,9 @@ export enum FlagEnum {
 	SET_FLAG = 2048
 }
 
-export type InferType = MySqlType | SQLiteType | PostgresType | '?' | 'number' | 'any';
+export type InferType = MySqlType | SQLiteType | '?' | 'number' | 'any';
 
-export type DbType = MySqlType | SQLiteType | PostgresType;
+export type DbType = MySqlType | SQLiteType;
 
 export type MySqlType =
 	| 'decimal'

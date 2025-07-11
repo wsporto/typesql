@@ -1,7 +1,7 @@
 import { ParameterDef } from '../types';
 import { DynamicSqlInfoResult2 } from '../mysql-query-analyzer/types';
 import { RelationInfo2 } from '../sqlite-query-analyzer/sqlite-describe-nested-query';
-import { PostgresType } from '../sqlite-query-analyzer/types';
+import { PostgresSimpleType, PostgresType } from '../sqlite-query-analyzer/types';
 
 export type PostgresQueryType = 'Select' | 'Insert' | 'Update' | 'Delete' | 'Copy';
 
@@ -14,7 +14,7 @@ export type PostgresColumnInfo = {
 
 export type PostgresParameterDef = {
 	name: string;
-	type: PostgresType;
+	type: PostgresSimpleType;
 	notNull: boolean;
 	list?: boolean; //id in (?)
 }
