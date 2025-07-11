@@ -24,12 +24,12 @@ export type SQLiteType =
 	| EnumType
 	| 'any';
 
-type JsonPropertyDef = {
+export type JsonPropertyDef = {
 	key: string;
 	type: PostgresType;
 };
 
-type JsonType = { name: 'json', properties: JsonPropertyDef[] };
+export type JsonType = { name: 'json', properties: JsonPropertyDef[] };
 
 export type PostgresType =
 	| PostgresSimpleType

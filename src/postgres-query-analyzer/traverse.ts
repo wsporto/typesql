@@ -1,4 +1,4 @@
-import { A_expr_addContext, A_expr_andContext, A_expr_at_time_zoneContext, A_expr_betweenContext, A_expr_caretContext, A_expr_collateContext, A_expr_compareContext, A_expr_inContext, A_expr_is_notContext, A_expr_isnullContext, A_expr_lesslessContext, A_expr_likeContext, A_expr_mulContext, A_expr_orContext, A_expr_qual_opContext, A_expr_qualContext, A_expr_typecastContext, A_expr_unary_notContext, A_expr_unary_qualopContext, A_expr_unary_signContext, A_exprContext, Array_expr_listContext, Array_exprContext, C_expr_caseContext, C_expr_existsContext, C_expr_exprContext, C_exprContext, ColidContext, ColumnElemContext, ColumnrefContext, Common_table_exprContext, CopystmtContext, DeletestmtContext, Expr_listContext, From_clauseContext, From_listContext, Func_applicationContext, Func_arg_exprContext, Func_expr_common_subexprContext, Func_exprContext, IdentifierContext, In_expr_listContext, In_expr_selectContext, In_exprContext, Insert_column_itemContext, InsertstmtContext, Join_qualContext, Join_typeContext, Qualified_nameContext, Relation_exprContext, Select_clauseContext, Select_no_parensContext, Select_with_parensContext, SelectstmtContext, Set_clauseContext, Simple_select_intersectContext, Simple_select_pramaryContext, StmtContext, Table_refContext, Target_elContext, Target_labelContext, Target_listContext, Unreserved_keywordContext, UpdatestmtContext, Values_clauseContext, When_clauseContext, Where_clauseContext } from '@wsporto/typesql-parser/postgres/PostgreSQLParser';
+import { A_expr_addContext, A_expr_andContext, A_expr_at_time_zoneContext, A_expr_betweenContext, A_expr_caretContext, A_expr_collateContext, A_expr_compareContext, A_expr_inContext, A_expr_is_notContext, A_expr_isnullContext, A_expr_lesslessContext, A_expr_likeContext, A_expr_mulContext, A_expr_orContext, A_expr_qual_opContext, A_expr_qualContext, A_expr_typecastContext, A_expr_unary_notContext, A_expr_unary_qualopContext, A_expr_unary_signContext, A_exprContext, AexprconstContext, Array_expr_listContext, Array_exprContext, C_expr_caseContext, C_expr_existsContext, C_expr_exprContext, C_exprContext, ColidContext, ColumnElemContext, ColumnrefContext, Common_table_exprContext, CopystmtContext, DeletestmtContext, Expr_listContext, From_clauseContext, From_listContext, Func_applicationContext, Func_arg_exprContext, Func_expr_common_subexprContext, Func_exprContext, IdentifierContext, In_expr_listContext, In_expr_selectContext, In_exprContext, Insert_column_itemContext, InsertstmtContext, Join_qualContext, Join_typeContext, Qualified_nameContext, Relation_exprContext, Select_clauseContext, Select_no_parensContext, Select_with_parensContext, SelectstmtContext, Set_clauseContext, Simple_select_intersectContext, Simple_select_pramaryContext, StmtContext, Table_refContext, Target_elContext, Target_labelContext, Target_listContext, Unreserved_keywordContext, UpdatestmtContext, Values_clauseContext, When_clauseContext, Where_clauseContext } from '@wsporto/typesql-parser/postgres/PostgreSQLParser';
 import { ParserRuleContext } from '@wsporto/typesql-parser';
 import { PostgresColumnSchema } from '../drivers/types';
 import { extractOriginalSql, splitName } from '../mysql-query-analyzer/select-columns';
@@ -6,6 +6,8 @@ import { DynamicSqlInfo2, FieldName } from '../mysql-query-analyzer/types';
 import { QueryType } from '../types';
 import { Relation2 } from '../sqlite-query-analyzer/sqlite-describe-nested-query';
 import { CheckConstraintResult } from '../drivers/postgres';
+import { JsonPropertyDef, JsonType, PostgresSimpleType } from '../sqlite-query-analyzer/types';
+import { postgresTypes } from '../dialects/postgres';
 
 export type NotNullInfo = {
 	table_schema: string;
@@ -14,6 +16,8 @@ export type NotNullInfo = {
 	is_nullable: boolean;
 	column_default?: true;
 	type_id?: number;
+	type?: PostgresSimpleType;
+	jsonType?: JsonType;
 }
 
 export type PostgresTraverseResult = {
@@ -425,7 +429,8 @@ function traverse_target_el(target_el: Target_elContext, context: TraverseContex
 			column_name: alias || exprResult.column_name,
 			is_nullable: exprResult.is_nullable,
 			table_name: exprResult.table_name,
-			table_schema: exprResult.table_schema
+			table_schema: exprResult.table_schema,
+			...(exprResult.jsonType != null && { jsonType: exprResult.jsonType })
 		};
 	}
 	throw Error('Column not found');
@@ -759,6 +764,60 @@ function traverseColumnRef(columnref: ColumnrefContext, fromColumns: NotNullInfo
 	}
 }
 
+type NameAndTypeId = {
+	name: string;
+	typeId: number;
+}
+function getNameAndTypeIdFromAExprConst(a_expr_const: AexprconstContext): NameAndTypeId {
+	if (a_expr_const.iconst()) {
+		return {
+			name: a_expr_const.getText(),
+			typeId: 23 //int4
+		}
+	}
+	if (a_expr_const.fconst()) {
+		return {
+			name: a_expr_const.getText(),
+			typeId: 700 //float4
+		}
+	}
+	if (a_expr_const.sconst()) {
+		return {
+			name: a_expr_const.getText().slice(1, -1),
+			typeId: 25 //text
+		}
+	}
+	//binary
+	if (a_expr_const.bconst()) {
+		return {
+			name: a_expr_const.getText(),
+			typeId: 1560 //bit
+		}
+	}
+	if (a_expr_const.xconst()) {
+		return {
+			name: a_expr_const.getText(),
+			typeId: 17 //bytea
+		}
+	}
+	if (a_expr_const.TRUE_P() || a_expr_const.FALSE_P()) {
+		return {
+			name: a_expr_const.getText(),
+			typeId: 16 //bool
+		}
+	}
+	if (a_expr_const.NULL_P()) {
+		return {
+			name: a_expr_const.getText(),
+			typeId: 705 //unknow
+		}
+	}
+	return {
+		name: a_expr_const.getText(),
+		typeId: 705 //unknow
+	}
+}
+
 function traversec_expr(c_expr: C_exprContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
 	if (c_expr instanceof C_expr_exprContext) {
 		if (c_expr.ARRAY()) {
@@ -791,12 +850,14 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 		}
 		const aexprconst = c_expr.aexprconst();
 		if (aexprconst) {
+			const { name, typeId } = getNameAndTypeIdFromAExprConst(aexprconst);
 			const is_nullable = aexprconst.NULL_P() != null;
 			return {
-				column_name: aexprconst.getText(),
+				column_name: name,
 				is_nullable,
 				table_name: '',
-				table_schema: ''
+				table_schema: '',
+				type_id: typeId
 			}
 		}
 		if (c_expr.PARAM()) {
@@ -813,9 +874,14 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 		}
 		const func_application = c_expr.func_expr()?.func_application();
 		if (func_application) {
+			if (is_json_build_object_func(func_application)) {
+				return traverse_json_build_obj_func(func_application, context, traverseResult);
+			}
+
 			const isNotNull = traversefunc_application(func_application, context, traverseResult);
+			const columnName = func_application.func_name()?.getText() || func_application.getText();
 			return {
-				column_name: func_application.func_name()?.getText() || func_application.getText(),
+				column_name: columnName,
 				is_nullable: !isNotNull,
 				table_name: '',
 				table_schema: ''
@@ -946,10 +1012,49 @@ function partition<T>(array: T[], predicate: (index: number) => boolean): [T[], 
 	);
 }
 
-function traversefunc_application(func_application: Func_applicationContext, context: TraverseContext, traverseResult: TraverseResult): boolean {
+function getFunctionName(func_application: Func_applicationContext) {
 	const functionName = func_application.func_name().getText().toLowerCase();
+	return functionName;
+}
+
+function is_json_build_object_func(func_application: Func_applicationContext) {
+	const functionName = func_application.func_name().getText().toLowerCase();
+	return functionName === 'json_build_object';
+}
+
+function transformToJsonProperty(args: NotNullInfo[]): JsonPropertyDef[] {
+	const pairs: JsonPropertyDef[] = [];
+	for (let i = 0; i < args.length; i += 2) {
+		const key = args[i];
+		const value = args[i + 1];
+		if (value !== undefined) {
+			const type = value.jsonType ? value.jsonType : postgresTypes[value.type_id!];
+			pairs.push({ key: key.column_name, type });
+		}
+	}
+	return pairs;
+}
+
+function traverse_json_build_obj_func(func_application: Func_applicationContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
+	const columnName = func_application.func_name()?.getText() || func_application.getText();
 	const func_arg_expr_list = func_application.func_arg_list()?.func_arg_expr_list() || [];
 	const argsResult = func_arg_expr_list.map(func_arg_expr => traversefunc_arg_expr(func_arg_expr, context, traverseResult))
+	return {
+		column_name: columnName,
+		is_nullable: false,
+		table_name: '',
+		table_schema: '',
+		jsonType: {
+			name: 'json',
+			properties: transformToJsonProperty(argsResult)
+		}
+	}
+}
+
+function traversefunc_application(func_application: Func_applicationContext, context: TraverseContext, traverseResult: TraverseResult): boolean {
+	const functionName = getFunctionName(func_application);
+	const func_arg_expr_list = func_application.func_arg_list()?.func_arg_expr_list() || [];
+	const argsResult = func_arg_expr_list.map(func_arg_expr => !traversefunc_arg_expr(func_arg_expr, context, traverseResult).is_nullable)
 	if (functionName === 'count') {
 		return true;
 	}
@@ -1021,9 +1126,9 @@ function traversefunc_expr_common_subexpr(func_expr_common_subexpr: Func_expr_co
 	return false;
 }
 
-function traversefunc_arg_expr(func_arg_expr: Func_arg_exprContext, context: TraverseContext, traverseResult: TraverseResult): boolean {
+function traversefunc_arg_expr(func_arg_expr: Func_arg_exprContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
 	const a_expr = func_arg_expr.a_expr();
-	return !traverse_a_expr(a_expr, context, traverseResult).is_nullable;
+	return traverse_a_expr(a_expr, context, traverseResult);
 }
 
 function traverse_array_expr(array_expr: Array_exprContext, context: TraverseContext, traverseResult: TraverseResult) {
@@ -1940,3 +2045,4 @@ function traverse_columnElem(columnElem: ColumnElemContext, fromColumns: Postgre
 	const colid = columnElem.colid();
 	return traverse_colid(colid, fromColumns);
 }
+

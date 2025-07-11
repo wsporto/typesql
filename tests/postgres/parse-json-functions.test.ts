@@ -22,13 +22,183 @@ describe('postgres-json-functions', () => {
 			columns: [
 				{
 					name: 'json_build_object',
-					type: 'json',
+					type: {
+						name: 'json',
+						properties: [
+							{
+								key: 'key',
+								type: 'text'
+							}
+						]
+					},
 					notNull: true,
 					table: ''
 				},
 				{
 					name: 'jsonb_build_object',
 					type: 'jsonb',
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
+	it(`SELECT json_build_object('key', id) FROM mytable1`, async () => {
+		const sql = `SELECT json_build_object('key', id), jsonb_build_object('key', id) FROM mytable1`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'json_build_object',
+					type: {
+						name: 'json',
+						properties: [
+							{
+								key: 'key',
+								type: 'int4'
+							}
+						]
+					},
+					notNull: true,
+					table: ''
+				},
+				{
+					name: 'jsonb_build_object',
+					type: 'jsonb',
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
+	it(`SELECT json_build_object('key', id) FROM mytable1`, async () => {
+		const sql = `SELECT json_build_object('key1', name, 'key2', id ) as value FROM mytable2`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'value',
+					type: {
+						name: 'json',
+						properties: [
+							{
+								key: 'key1',
+								type: 'text'
+							},
+							{
+								key: 'key2',
+								type: 'int4'
+							}
+						]
+					},
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
+	it(`SELECT json_build_object('key', id) FROM mytable1`, async () => {
+		const sql = `SELECT json_build_object('key1', m2.name, 'key2', m2.descr, 'key3', m1.id ) as value 
+			FROM mytable1 m1
+			LEFT JOIN mytable2 m2 ON m1.id = m2.id`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'value',
+					type: {
+						name: 'json',
+						properties: [
+							{
+								key: 'key1',
+								type: 'text'
+							},
+							{
+								key: 'key2',
+								type: 'text'
+							},
+							{
+								key: 'key3',
+								type: 'int4'
+							}
+						]
+					},
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
+	it(`SELECT json_build_object('key', id) FROM mytable1`, async () => {
+		const sql = `SELECT json_build_object('key1', m2.name, 'key2', json_build_object('nested', m1.id), 'key3', m2.id ) as value 
+			FROM mytable1 m1
+			LEFT JOIN mytable2 m2 ON m1.id = m2.id`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'value',
+					type: {
+						name: 'json',
+						properties: [
+							{
+								key: 'key1',
+								type: 'text'
+							},
+							{
+								key: 'key2',
+								type: {
+									name: 'json',
+									properties: [
+										{
+											key: 'nested',
+											type: 'int4'
+										}
+									]
+								}
+							},
+							{
+								key: 'key3',
+								type: 'int4'
+							}
+						]
+					},
 					notNull: true,
 					table: ''
 				}

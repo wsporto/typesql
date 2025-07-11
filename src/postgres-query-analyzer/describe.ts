@@ -13,6 +13,7 @@ import { isLeft } from 'fp-ts/lib/Either';
 import { hasAnnotation } from '../describe-query';
 import { describeDynamicQuery2 } from '../describe-dynamic-query';
 import { PostgresColumnInfo, PostgresParameterDef, PostgresSchemaDef } from './types';
+import { JsonType } from '../sqlite-query-analyzer/types';
 
 function describeQueryRefine(describeParameters: DescribeParameters): Result<PostgresSchemaDef, TypeSqlError> {
 	const { sql, dbSchema, postgresDescribeResult, enumsTypes, checkConstraints, namedParameters } = describeParameters;
@@ -98,17 +99,20 @@ function mapToColumnInfo(col: DescribeQueryColumn, posgresTypes: PostgresType, e
 	return {
 		name: col.name,
 		notNull: !colInfo.is_nullable,
-		type: createType(col.typeId, posgresTypes, enumTypes.get(col.typeId), checkConstraints[constraintKey]) as any ?? '?',
+		type: createType(col.typeId, posgresTypes, enumTypes.get(col.typeId), checkConstraints[constraintKey], colInfo.jsonType) as any ?? '?',
 		table: colInfo.table_name
 	}
 }
 
-function createType(typeId: number, postgresTypes: PostgresType, enumType: EnumResult[] | undefined, checkConstraint: string | undefined) {
+function createType(typeId: number, postgresTypes: PostgresType, enumType: EnumResult[] | undefined, checkConstraint: string | undefined, jsonType: JsonType | undefined) {
 	if (enumType) {
 		return createEnumType(enumType!);
 	}
 	if (checkConstraint) {
 		return checkConstraint;
+	}
+	if (jsonType) {
+		return jsonType;
 	}
 	return postgresTypes[typeId];
 }
@@ -123,7 +127,7 @@ function mapToParamDef(postgresTypes: PostgresType, enumTypes: EnumMap, paramNam
 	return {
 		name: paramName,
 		notNull,
-		type: `${createType(paramType, postgresTypes, enumTypes.get(paramType), checkConstraint)}${arrayType}` as any
+		type: `${createType(paramType, postgresTypes, enumTypes.get(paramType), checkConstraint, undefined)}${arrayType}` as any
 	}
 }
 
