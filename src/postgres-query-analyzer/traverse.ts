@@ -1034,11 +1034,15 @@ function getFunctionName(func_application: Func_applicationContext) {
 }
 
 function is_json_build_object_func(func_application: Func_applicationContext) {
-	return getFunctionName(func_application) === 'json_build_object';
+	const functionName = getFunctionName(func_application);
+	return functionName === 'json_build_object'
+		|| functionName === 'jsonb_build_object';
 }
 
 function is_json_agg(func_application: Func_applicationContext) {
-	return getFunctionName(func_application) === 'json_agg';
+	const functionName = getFunctionName(func_application);
+	return functionName === 'json_agg'
+		|| functionName === 'jsonb_agg';
 }
 
 function transformToJsonProperty(args: NotNullInfo[]): JsonPropertyDef[] {
@@ -1125,10 +1129,8 @@ function traversefunc_application(func_application: Func_applicationContext, con
 		const firstArg = argsResult[0];
 		return firstArg;
 	}
-	if (functionName === 'jsonb_build_object'
-		|| functionName === 'json_build_array'
+	if (functionName === 'json_build_array'
 		|| functionName === 'jsonb_build_array'
-		|| functionName === 'jsonb_agg'
 	) {
 		return false;
 	}

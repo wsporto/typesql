@@ -37,7 +37,16 @@ describe('postgres-json-functions', () => {
 				},
 				{
 					name: 'jsonb_build_object',
-					type: 'jsonb',
+					type: {
+						name: 'json',
+						properties: [
+							{
+								key: 'key',
+								type: 'text',
+								notNull: true
+							}
+						]
+					},
 					notNull: false,
 					table: ''
 				}
@@ -75,7 +84,16 @@ describe('postgres-json-functions', () => {
 				},
 				{
 					name: 'jsonb_build_object',
-					type: 'jsonb',
+					type: {
+						name: 'json',
+						properties: [
+							{
+								key: 'key',
+								type: 'int4',
+								notNull: true
+							}
+						]
+					},
 					notNull: false,
 					table: ''
 				}
@@ -381,7 +399,16 @@ describe('postgres-json-functions', () => {
 				},
 				{
 					name: 'col2',
-					type: 'jsonb',
+					type: {
+						name: 'json[]',
+						properties: [
+							{
+								key: 'key',
+								type: 'int4',
+								notNull: true
+							}
+						]
+					},
 					notNull: false,
 					table: ''
 				},
@@ -396,7 +423,10 @@ describe('postgres-json-functions', () => {
 				},
 				{
 					name: 'col4',
-					type: 'jsonb',
+					type: {
+						name: 'json[]',
+						properties: []
+					},
 					notNull: false,
 					table: ''
 				}
