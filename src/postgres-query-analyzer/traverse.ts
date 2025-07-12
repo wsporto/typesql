@@ -905,10 +905,8 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 		if (func_expr_common_subexpr) {
 			const isNotNull = traversefunc_expr_common_subexpr(func_expr_common_subexpr, context, traverseResult);
 			return {
-				column_name: func_expr_common_subexpr.getText().split('(')?.[0]?.trim() || func_expr_common_subexpr.getText(),
-				is_nullable: !isNotNull,
-				table_name: '',
-				table_schema: ''
+				...isNotNull,
+				column_name: func_expr_common_subexpr.getText().split('(')?.[0]?.trim() || func_expr_common_subexpr.getText()
 			}
 		}
 		const select_with_parens = c_expr.select_with_parens();
@@ -1097,7 +1095,8 @@ function traversefunc_application(func_application: Func_applicationContext, con
 			column_name: functionName,
 			is_nullable: false,
 			table_name: '',
-			table_schema: ''
+			table_schema: '',
+			type_id: 20
 		};
 	}
 	if (functionName === 'concat'
@@ -1170,6 +1169,7 @@ function traversefunc_application(func_application: Func_applicationContext, con
 			...argsResult[0],
 			column_name: functionName,
 			is_nullable: true,
+			type_id: 20
 		};
 	}
 
@@ -1181,24 +1181,37 @@ function traversefunc_application(func_application: Func_applicationContext, con
 	};
 }
 
-function traversefunc_expr_common_subexpr(func_expr_common_subexpr: Func_expr_common_subexprContext, context: TraverseContext, traverseResult: TraverseResult): boolean {
+function traversefunc_expr_common_subexpr(func_expr_common_subexpr: Func_expr_common_subexprContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
 	if (func_expr_common_subexpr.COALESCE() || func_expr_common_subexpr.GREATEST() || func_expr_common_subexpr.LEAST()) {
 		const func_arg_list = func_expr_common_subexpr.expr_list().a_expr_list();
 		const result = func_arg_list.map(func_arg_expr => {
 			const paramResult = traverse_a_expr(func_arg_expr, { ...context, propagatesNull: true }, traverseResult);
 			return paramResult;
 		});
-		return result.some(col => !col.is_nullable);
+		return {
+			...result[0],
+			is_nullable: result.every(col => col.is_nullable),
+			table_name: '',
+			table_schema: ''
+		}
 	}
 	if (func_expr_common_subexpr.EXTRACT()) {
 		const a_expr = func_expr_common_subexpr.extract_list().a_expr();
 		const result = traverse_a_expr(a_expr, context, traverseResult)
-		return !result.is_nullable;
+		return {
+			...result,
+			is_nullable: result.is_nullable
+		}
 	}
 	func_expr_common_subexpr.a_expr_list().forEach(a_expr => {
 		traverse_a_expr(a_expr, context, traverseResult);
 	})
-	return false;
+	return {
+		column_name: func_expr_common_subexpr.getText(),
+		is_nullable: true,
+		table_name: '',
+		table_schema: ''
+	};
 }
 
 function traversefunc_arg_expr(func_arg_expr: Func_arg_exprContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {

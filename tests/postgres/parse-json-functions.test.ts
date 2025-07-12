@@ -516,18 +516,25 @@ describe('postgres-json-functions', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	})
 
-	it(`SELECT	json_build_object('total', SUM(m.id)) AS sum FROM mytable1 m`, async () => {
+	it(`SELECT json_build_object('total', SUM(m.id)) AS sum FROM mytable1 m`, async () => {
 		const sql = `
 		SELECT
 			json_build_object(
-				'total', SUM(m.id)
+				'total', SUM(m.id),
+				'count', COUNT(m.id),
+				'coalesce', COALESCE(m.id, 0),
+				'nested', COALESCE(json_agg(jsonb_build_object(
+					'key1', 'value',
+					'key2', 10
+				)))
 			) AS sum
-		FROM mytable1 m`;
+		FROM mytable1 m
+		GROUP BY id`;
 		const actual = await describeQuery(postres, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
-			multipleRowsResult: false,
+			multipleRowsResult: true,
 			columns: [
 				{
 					name: 'sum',
@@ -536,8 +543,38 @@ describe('postgres-json-functions', () => {
 						properties: [
 							{
 								key: 'total',
-								type: 'int4',
+								type: 'int8',
 								notNull: false,
+							},
+							{
+								key: 'count',
+								type: 'int8',
+								notNull: true,
+							},
+							{
+								key: 'coalesce',
+								type: 'int4',
+								notNull: true,
+							},
+							{
+								key: 'nested',
+								type: {
+									name: 'json[]',
+									properties: [
+										{
+											key: 'key1',
+											type: 'text',
+											notNull: true
+										},
+										{
+											key: 'key2',
+											type: 'int4',
+											notNull: true
+										}
+									]
+								},
+								notNull: false
+
 							}
 						],
 					},
