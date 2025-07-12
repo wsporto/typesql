@@ -1200,7 +1200,9 @@ function traversefunc_expr_common_subexpr(func_expr_common_subexpr: Func_expr_co
 		const result = traverse_a_expr(a_expr, context, traverseResult)
 		return {
 			...result,
-			is_nullable: result.is_nullable
+			is_nullable: result.is_nullable,
+			table_name: '',
+			table_schema: ''
 		}
 	}
 	func_expr_common_subexpr.a_expr_list().forEach(a_expr => {

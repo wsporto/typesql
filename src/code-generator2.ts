@@ -84,14 +84,11 @@ function generateTsCode(
 		writeParamsType(writer, paramsTypeName, uniqueParams, generateOrderBy, orderByTypeName)
 	}
 	if (schemaDef.queryType !== 'Copy') {
-		schemaDef.columns.forEach(jsonColumn => {
-			const type = jsonColumn.type;
-			if (typeof type === 'object') {
-				writer.blankLine();
-				const jsonTypeName = createJsonType(capitalizedName, jsonColumn.name);
-				writeJsonTypes(writer, jsonTypeName, type);
-			}
-		})
+		const flatten = schemaDef.columns.flatMap(col => flattenJsonTypes(createJsonType(capitalizedName, col.name), col.type));
+		flatten.forEach(type => {
+			writer.blankLine();
+			writeJsonTypes(writer, type.typeName, type.type);
+		});
 		writer.blankLine();
 		writeResultType(writer, resultTypeName, tsDescriptor.columns);
 	}
@@ -408,6 +405,20 @@ function generateTsCode(
 	return writer.toString();
 }
 
+type FlattenType = {
+	typeName: string;
+	type: JsonType | JsonTypeArray;
+}
+
+function flattenJsonTypes(parentName: string, type: PostgresType): FlattenType[] {
+	if (typeof type === 'object') {
+		const jsonType = [{ typeName: parentName, type: type }];
+		const children = type.properties.flatMap(prop => flattenJsonTypes(createJsonType(parentName, prop.key), prop.type))
+		return jsonType.concat(children);
+	}
+	return [];
+}
+
 function writeDataType(writer: CodeBlockWriter, dataTypeName: string, params: TsFieldDescriptor[]) {
 	writer.write(`export type ${dataTypeName} =`).block(() => {
 		params.forEach((field) => {
@@ -442,16 +453,25 @@ function writeResultType(writer: CodeBlockWriter, resultTypeName: string, column
 
 function createJsonType(capitalizedName: string, columnName: string) {
 	const jsonType = capitalize(convertToCamelCaseName(columnName));
-	const fullName = `${capitalizedName}${jsonType}Type`;
+	const fullName = `${capitalizedName}${jsonType}`;
 	return fullName;
 }
 
 function writeJsonTypes(writer: CodeBlockWriter, typeName: string, type: JsonType | JsonTypeArray) {
-	writer.write(`export type ${typeName} =`).block(() => {
+	writer.write(`export type ${typeName}Type =`).block(() => {
 		type.properties.forEach((field) => {
-			const optionalOp = field.notNull ? '' : '?';
 			if (typeof field.type !== 'object') {
+				const optionalOp = field.notNull ? '' : '?';
 				writer.writeLine(`${field.key}${optionalOp}: ${mapColumnType(field.type)};`);
+			}
+			else {
+				const nestedTypeName = createJsonType(typeName, field.key);
+				if (field.type.name === 'json') {
+					writer.writeLine(`${field.key}?: ${nestedTypeName}Type;`);
+				}
+				else {
+					writer.writeLine(`${field.key}: ${nestedTypeName}Type[];`);
+				}
 			}
 		});
 	});
@@ -486,7 +506,7 @@ function createTsDescriptor(capitalizedName: string, schemaDef: PostgresSchemaDe
 }
 
 function mapColumnInfoToTsFieldDescriptor(capitalizedName: string, col: PostgresColumnInfo, dynamicQuery: boolean): TsFieldDescriptor {
-	const tsType = typeof col.type === 'object' ? `${createJsonType(capitalizedName, col.name)}${col.type.name === 'json[]' ? '[]' : ''}` : mapColumnType(col.type);
+	const tsType = typeof col.type === 'object' ? `${createJsonType(capitalizedName, col.name)}Type${col.type.name === 'json[]' ? '[]' : ''}` : mapColumnType(col.type);
 	const tsField: TsFieldDescriptor = {
 		name: col.name,
 		tsType,
