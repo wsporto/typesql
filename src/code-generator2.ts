@@ -4,7 +4,7 @@ import { CrudQueryType, PgDielect, QueryType, TsFieldDescriptor, TsParameterDesc
 import { describeQuery } from './postgres-query-analyzer/describe';
 import { ColumnSchema } from './mysql-query-analyzer/types';
 import { mapColumnType } from './dialects/postgres';
-import { PostgresType } from './sqlite-query-analyzer/types';
+import { JsonType, JsonTypeArray, PostgresType } from './sqlite-query-analyzer/types';
 import { preprocessSql } from './describe-query';
 import { okAsync, ResultAsync } from 'neverthrow';
 import { getQueryName, mapPostgrsFieldToTsField, writeCollectFunction } from './sqlite-query-analyzer/code-generator';
@@ -65,7 +65,7 @@ function generateTsCode(
 	const selectColumnsTypeName = `${capitalizedName}Select`;
 	const whereTypeName = `${capitalizedName}Where`;
 
-	const tsDescriptor = createTsDescriptor(schemaDef);
+	const tsDescriptor = createTsDescriptor(capitalizedName, schemaDef);
 	const uniqueParams = removeDuplicatedParameters2(tsDescriptor.parameters);
 	const generateOrderBy = tsDescriptor.orderByColumns != null && tsDescriptor.orderByColumns.length > 0;
 
@@ -84,6 +84,14 @@ function generateTsCode(
 		writeParamsType(writer, paramsTypeName, uniqueParams, generateOrderBy, orderByTypeName)
 	}
 	if (schemaDef.queryType !== 'Copy') {
+		schemaDef.columns.forEach(jsonColumn => {
+			const type = jsonColumn.type;
+			if (typeof type === 'object') {
+				writer.blankLine();
+				const jsonTypeName = createJsonType(capitalizedName, jsonColumn.name);
+				writeJsonTypes(writer, jsonTypeName, type);
+			}
+		})
 		writer.blankLine();
 		writeResultType(writer, resultTypeName, tsDescriptor.columns);
 	}
@@ -432,9 +440,26 @@ function writeResultType(writer: CodeBlockWriter, resultTypeName: string, column
 	});
 }
 
-function createTsDescriptor(schemaDef: PostgresSchemaDef) {
+function createJsonType(capitalizedName: string, columnName: string) {
+	const jsonType = capitalize(convertToCamelCaseName(columnName));
+	const fullName = `${capitalizedName}${jsonType}Type`;
+	return fullName;
+}
+
+function writeJsonTypes(writer: CodeBlockWriter, typeName: string, type: JsonType | JsonTypeArray) {
+	writer.write(`export type ${typeName} =`).block(() => {
+		type.properties.forEach((field) => {
+			const optionalOp = field.notNull ? '' : '?';
+			if (typeof field.type !== 'object') {
+				writer.writeLine(`${field.key}${optionalOp}: ${mapColumnType(field.type)};`);
+			}
+		});
+	});
+}
+
+function createTsDescriptor(capitalizedName: string, schemaDef: PostgresSchemaDef) {
 	const tsDescriptor: TsDescriptor = {
-		columns: getColumnsForQuery(schemaDef),
+		columns: getColumnsForQuery(capitalizedName, schemaDef),
 		parameters: schemaDef.parameters.map((param) => mapParameterToTsFieldDescriptor(param)),
 		sql: '',
 		queryType: schemaDef.queryType,
@@ -460,10 +485,11 @@ function createTsDescriptor(schemaDef: PostgresSchemaDef) {
 	return tsDescriptor;
 }
 
-function mapColumnInfoToTsFieldDescriptor(col: PostgresColumnInfo, dynamicQuery: boolean): TsFieldDescriptor {
+function mapColumnInfoToTsFieldDescriptor(capitalizedName: string, col: PostgresColumnInfo, dynamicQuery: boolean): TsFieldDescriptor {
+	const tsType = typeof col.type === 'object' ? `${createJsonType(capitalizedName, col.name)}${col.type.name === 'json[]' ? '[]' : ''}` : mapColumnType(col.type);
 	const tsField: TsFieldDescriptor = {
 		name: col.name,
-		tsType: mapColumnType(col.type),
+		tsType,
 		notNull: dynamicQuery ? false : col.notNull
 	}
 	return tsField;
@@ -658,9 +684,9 @@ function getFunctionReturnType(queryType: QueryType, multipleRowsResult: boolean
 	return `${returnType}${orNull}`;
 }
 
-function getColumnsForQuery(schemaDef: PostgresSchemaDef): TsFieldDescriptor[] {
+function getColumnsForQuery(capitalizedName: string, schemaDef: PostgresSchemaDef): TsFieldDescriptor[] {
 	if (schemaDef.queryType === 'Select' || schemaDef.returning) {
-		const columns = schemaDef.columns.map(col => mapColumnInfoToTsFieldDescriptor(col, schemaDef.dynamicSqlQuery2 != null))
+		const columns = schemaDef.columns.map(col => mapColumnInfoToTsFieldDescriptor(capitalizedName, col, schemaDef.dynamicSqlQuery2 != null))
 		const escapedColumnsNames = renameInvalidNames(schemaDef.columns.map((col) => col.name));
 		return columns.map((col, index) => ({ ...col, name: escapedColumnsNames[index] }));
 	}

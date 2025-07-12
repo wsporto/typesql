@@ -446,5 +446,24 @@ WHERE EXTRACT(YEAR FROM timestamp_not_null_column) = :param1 AND EXTRACT(MONTH F
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('select-json01', async () => {
+		const sql = `SELECT json_agg(
+	json_build_object('key', name, 'key2', id)
+) AS result
+FROM (
+	VALUES
+		(1, 'a'),
+		(2, 'b')
+) AS t(id, name)`;
+
+		const actual = await generateCode(dialect, sql, 'selectJson01');
+		const expected = readFileSync('tests/postgres/expected-code/select-json01.ts.txt', 'utf-8');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });
 
