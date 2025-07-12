@@ -911,12 +911,13 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 		}
 		const select_with_parens = c_expr.select_with_parens();
 		if (select_with_parens) {
-			traverse_select_with_parens(select_with_parens, context, traverseResult);
+			const result = traverse_select_with_parens(select_with_parens, context, traverseResult);
 			return {
 				column_name: '?column?',
 				is_nullable: true,
 				table_name: '',
-				table_schema: ''
+				table_schema: '',
+				jsonType: result[0].jsonType
 			}
 		}
 		const a_expr_in_parens = c_expr._a_expr_in_parens;
