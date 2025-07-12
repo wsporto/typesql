@@ -515,4 +515,41 @@ describe('postgres-json-functions', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	})
+
+	it(`SELECT	json_build_object('total', SUM(m.id)) AS sum FROM mytable1 m`, async () => {
+		const sql = `
+		SELECT
+			json_build_object(
+				'total', SUM(m.id)
+			) AS sum
+		FROM mytable1 m`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					name: 'sum',
+					type: {
+						name: 'json',
+						properties: [
+							{
+								key: 'total',
+								type: 'int4',
+								notNull: false,
+							}
+						],
+					},
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
 })

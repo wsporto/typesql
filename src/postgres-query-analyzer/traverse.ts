@@ -895,10 +895,8 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 			}
 
 			const isNotNull = traversefunc_application(func_application, context, traverseResult);
-			const columnName = func_application.func_name()?.getText() || func_application.getText();
 			return {
-				column_name: columnName,
-				is_nullable: !isNotNull,
+				...isNotNull,
 				table_name: '',
 				table_schema: ''
 			}
@@ -1090,12 +1088,17 @@ function traverse_json_agg(func_application: Func_applicationContext, context: T
 	}
 }
 
-function traversefunc_application(func_application: Func_applicationContext, context: TraverseContext, traverseResult: TraverseResult): boolean {
+function traversefunc_application(func_application: Func_applicationContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
 	const functionName = getFunctionName(func_application);
 	const func_arg_expr_list = func_application.func_arg_list()?.func_arg_expr_list() || [];
-	const argsResult = func_arg_expr_list.map(func_arg_expr => !traversefunc_arg_expr(func_arg_expr, context, traverseResult).is_nullable)
+	const argsResult = func_arg_expr_list.map(func_arg_expr => traversefunc_arg_expr(func_arg_expr, context, traverseResult))
 	if (functionName === 'count') {
-		return true;
+		return {
+			column_name: functionName,
+			is_nullable: false,
+			table_name: '',
+			table_schema: ''
+		};
 	}
 	if (functionName === 'concat'
 		|| functionName === 'concat_ws'
@@ -1105,14 +1108,24 @@ function traversefunc_application(func_application: Func_applicationContext, con
 		|| functionName === 'plainto_tsquery'
 		|| functionName === 'phraseto_tsquery'
 		|| functionName === 'websearch_to_tsquery') {
-		return argsResult.every(col => col);
+		return {
+			column_name: functionName,
+			is_nullable: argsResult.some(col => col.is_nullable),
+			table_name: '',
+			table_schema: ''
+		};
 	}
 	if (functionName === 'to_date') {
 		const firstArg = argsResult[0];
 		return firstArg;
 	}
 	if (functionName === 'generate_series') {
-		return true;
+		return {
+			column_name: functionName,
+			is_nullable: false,
+			table_name: '',
+			table_schema: ''
+		};
 	}
 	if (functionName === 'row_number'
 		|| functionName === 'rank'
@@ -1120,7 +1133,12 @@ function traversefunc_application(func_application: Func_applicationContext, con
 		|| functionName === 'percent_rank'
 		|| functionName === 'cume_dist'
 	) {
-		return true;
+		return {
+			column_name: functionName,
+			is_nullable: false,
+			table_name: '',
+			table_schema: ''
+		};
 	}
 	if (functionName === 'first_value'
 		|| functionName === 'last_value'
@@ -1132,13 +1150,35 @@ function traversefunc_application(func_application: Func_applicationContext, con
 	if (functionName === 'json_build_array'
 		|| functionName === 'jsonb_build_array'
 	) {
-		return false;
+		return {
+			column_name: functionName,
+			is_nullable: true,
+			table_name: '',
+			table_schema: ''
+		};
 	}
 	if (functionName === 'to_json' || functionName === 'to_jsonb') {
-		return false;
+		return {
+			column_name: functionName,
+			is_nullable: true,
+			table_name: '',
+			table_schema: ''
+		};
+	}
+	if (functionName === 'sum') {
+		return {
+			...argsResult[0],
+			column_name: functionName,
+			is_nullable: true,
+		};
 	}
 
-	return false;
+	return {
+		column_name: functionName,
+		is_nullable: true,
+		table_name: '',
+		table_schema: ''
+	};
 }
 
 function traversefunc_expr_common_subexpr(func_expr_common_subexpr: Func_expr_common_subexprContext, context: TraverseContext, traverseResult: TraverseResult): boolean {
