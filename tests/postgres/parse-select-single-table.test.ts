@@ -1265,4 +1265,34 @@ describe('postgres-select-single-table', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it(`SELECT id FROM (VALUES (1, 'a'), (2, 'b')) AS t(id, name)`, async () => {
+		const sql = `SELECT id, name FROM (VALUES (1, 'a'), (2, 'b')) AS t(id, name)`;
+
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 't'
+				},
+				{
+					name: 'name',
+					type: 'text',
+					notNull: true,
+					table: 't'
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });

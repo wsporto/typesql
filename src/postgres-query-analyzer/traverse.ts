@@ -344,7 +344,19 @@ function extractRelations(a_expr: A_exprContext): string[] {
 
 function traverse_values_clause(values_clause: Values_clauseContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo[] {
 	const expr_list_list = values_clause.expr_list_list();
-	return expr_list_list.flatMap(expr_list => traverse_expr_list(expr_list, context, traverseResult));
+	const values_result = expr_list_list.map(expr_list => traverse_expr_list(expr_list, context, traverseResult));
+	return computeNullability(values_result);
+}
+
+function computeNullability(values_result: NotNullInfo[][]) {
+	const result = values_result[0].map((_, i) => (
+		{
+			column_name: `column${i + 1}`,
+			is_nullable: values_result.some(row => row[i].is_nullable),
+			table_name: '',
+			table_schema: ''
+		} satisfies NotNullInfo));
+	return result;
 }
 
 function traverse_expr_list(expr_list: Expr_listContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo[] {
@@ -1209,6 +1221,7 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 	const allColumns: NotNullInfo[] = [];
 	const relation_expr = table_ref.relation_expr();
 	const aliasClause = table_ref.alias_clause();
+	const aliasNameList = aliasClause?.name_list()?.name_list()?.map(name => name.getText());
 	const alias = aliasClause ? aliasClause.colid().getText() : '';
 	if (relation_expr) {
 		const tableName = traverse_relation_expr(relation_expr, dbSchema);
@@ -1267,7 +1280,13 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 	const select_with_parens = table_ref.select_with_parens();
 	if (select_with_parens) {
 		const columns = traverse_select_with_parens(select_with_parens, { ...context, collectDynamicQueryInfo: false }, traverseResult);
-		const withAlias = columns.map(col => ({ ...col, table_name: alias || col.table_name }));
+		const withAlias = columns.map((col, i) => (
+			{
+				column_name: aliasNameList?.[i] || col.column_name,
+				is_nullable: col.is_nullable,
+				table_name: alias || col.table_name,
+				table_schema: col.table_schema
+			}) satisfies NotNullInfo);
 		return withAlias;
 	}
 	return allColumns;
