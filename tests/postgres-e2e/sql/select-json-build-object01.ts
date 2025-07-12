@@ -1,10 +1,10 @@
 import pg from 'pg';
 
 export type SelectJsonBuildObject01Result = {
-	value1: any;
-	value2: any;
-	value3: any;
-	value4: any;
+	value1?: any;
+	value2?: any;
+	value3?: any;
+	value4?: any;
 }
 
 export async function selectJsonBuildObject01(client: pg.Client | pg.Pool): Promise<SelectJsonBuildObject01Result | null> {

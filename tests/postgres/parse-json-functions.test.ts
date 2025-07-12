@@ -27,17 +27,18 @@ describe('postgres-json-functions', () => {
 						properties: [
 							{
 								key: 'key',
-								type: 'text'
+								type: 'text',
+								notNull: true
 							}
 						]
 					},
-					notNull: true,
+					notNull: false,
 					table: ''
 				},
 				{
 					name: 'jsonb_build_object',
 					type: 'jsonb',
-					notNull: true,
+					notNull: false,
 					table: ''
 				}
 			],
@@ -64,17 +65,18 @@ describe('postgres-json-functions', () => {
 						properties: [
 							{
 								key: 'key',
-								type: 'int4'
+								type: 'int4',
+								notNull: true
 							}
 						]
 					},
-					notNull: true,
+					notNull: false,
 					table: ''
 				},
 				{
 					name: 'jsonb_build_object',
 					type: 'jsonb',
-					notNull: true,
+					notNull: false,
 					table: ''
 				}
 			],
@@ -101,15 +103,17 @@ describe('postgres-json-functions', () => {
 						properties: [
 							{
 								key: 'key1',
-								type: 'text'
+								type: 'text',
+								notNull: false
 							},
 							{
 								key: 'key2',
-								type: 'int4'
+								type: 'int4',
+								notNull: true
 							}
 						]
 					},
-					notNull: true,
+					notNull: false,
 					table: ''
 				}
 			],
@@ -122,7 +126,7 @@ describe('postgres-json-functions', () => {
 	})
 
 	it(`SELECT json_build_object('key', id) FROM mytable1`, async () => {
-		const sql = `SELECT json_build_object('key1', m2.name, 'key2', m2.descr, 'key3', m1.id ) as value 
+		const sql = `SELECT json_build_object('key1', m2.name, 'key2', m2.descr, 'key3', m1.id, 'key4', m2.id ) as value 
 			FROM mytable1 m1
 			LEFT JOIN mytable2 m2 ON m1.id = m2.id`;
 		const actual = await describeQuery(postres, sql, []);
@@ -138,19 +142,27 @@ describe('postgres-json-functions', () => {
 						properties: [
 							{
 								key: 'key1',
-								type: 'text'
+								type: 'text',
+								notNull: false
 							},
 							{
 								key: 'key2',
-								type: 'text'
+								type: 'text',
+								notNull: false
 							},
 							{
 								key: 'key3',
-								type: 'int4'
+								type: 'int4',
+								notNull: true
+							},
+							{
+								key: 'key4',
+								type: 'int4',
+								notNull: false
 							}
 						]
 					},
-					notNull: true,
+					notNull: false,
 					table: ''
 				}
 			],
@@ -179,7 +191,8 @@ describe('postgres-json-functions', () => {
 						properties: [
 							{
 								key: 'key1',
-								type: 'text'
+								type: 'text',
+								notNull: false
 							},
 							{
 								key: 'key2',
@@ -188,18 +201,21 @@ describe('postgres-json-functions', () => {
 									properties: [
 										{
 											key: 'nested',
-											type: 'int4'
+											type: 'int4',
+											notNull: true
 										}
 									]
-								}
+								},
+								notNull: false
 							},
 							{
 								key: 'key3',
-								type: 'int4'
+								type: 'int4',
+								notNull: false
 							}
 						]
 					},
-					notNull: true,
+					notNull: false,
 					table: ''
 				}
 			],
@@ -222,7 +238,7 @@ describe('postgres-json-functions', () => {
 				{
 					name: 'json_build_array',
 					type: 'json',
-					notNull: true,
+					notNull: false, //in this example is never null
 					table: ''
 				}
 			],
@@ -257,49 +273,49 @@ describe('postgres-json-functions', () => {
 				{
 					name: 'col1', //to_json(10::int) as col1
 					type: 'json',
-					notNull: true,
+					notNull: false,
 					table: ''
 				},
 				{
 					name: 'col2', //to_jsonb(10::int) as col2
 					type: 'jsonb',
-					notNull: true,
+					notNull: false,
 					table: ''
 				},
 				{
 					name: 'col3', //to_json('a'::text) as col3
 					type: 'json',
-					notNull: true,
+					notNull: false,
 					table: ''
 				},
 				{
 					name: 'col4', //to_jsonb('a'::text) as col4
 					type: 'jsonb',
-					notNull: true,
+					notNull: false,
 					table: ''
 				},
 				{
 					name: 'col5', //to_json(array[1, 2, 3]) as col5
 					type: 'json',
-					notNull: true,
+					notNull: false,
 					table: ''
 				},
 				{
 					name: 'col6', //to_jsonb(array[1, 2, 3]) as col6
 					type: 'jsonb',
-					notNull: true,
+					notNull: false,
 					table: ''
 				},
 				{
 					name: 'col7', //to_json(array['a', 'b', 'c']) as col7
 					type: 'json',
-					notNull: true,
+					notNull: false,
 					table: ''
 				},
 				{
 					name: 'col8', //to_jsonb(array['a', 'b', 'c']) as col8
 					type: 'jsonb',
-					notNull: true,
+					notNull: false,
 					table: ''
 				},
 				{
@@ -317,13 +333,13 @@ describe('postgres-json-functions', () => {
 				{
 					name: 'col11', //to_json(array[null]) as col11
 					type: 'json',
-					notNull: true,
+					notNull: false,
 					table: ''
 				},
 				{
 					name: 'col12', //to_jsonb(array[null]) as col11
 					type: 'jsonb',
-					notNull: true,
+					notNull: false,
 					table: ''
 				}
 			],
@@ -355,17 +371,18 @@ describe('postgres-json-functions', () => {
 						properties: [
 							{
 								key: 'key',
-								type: 'int4'
+								type: 'int4',
+								notNull: true
 							}
 						]
 					},
-					notNull: true,
+					notNull: false,
 					table: '',
 				},
 				{
 					name: 'col2',
 					type: 'jsonb',
-					notNull: true,
+					notNull: false,
 					table: ''
 				},
 				{
@@ -374,13 +391,13 @@ describe('postgres-json-functions', () => {
 						name: 'json[]',
 						properties: []
 					},
-					notNull: true,
+					notNull: false,
 					table: ''
 				},
 				{
 					name: 'col4',
 					type: 'jsonb',
-					notNull: true,
+					notNull: false,
 					table: ''
 				}
 			],
@@ -407,11 +424,12 @@ describe('postgres-json-functions', () => {
 						properties: [
 							{
 								key: 'key',
-								type: 'text'
+								type: 'text',
+								notNull: true
 							}
 						],
 					},
-					notNull: true,
+					notNull: false,
 					table: ''
 				}
 			],
@@ -446,15 +464,17 @@ describe('postgres-json-functions', () => {
 						properties: [
 							{
 								key: 'key',
-								type: 'text'
+								type: 'text',
+								notNull: true,
 							},
 							{
 								key: 'key2',
-								type: 'int4'
+								type: 'int4',
+								notNull: true
 							}
 						],
 					},
-					notNull: true,
+					notNull: false,
 					table: ''
 				}
 			],

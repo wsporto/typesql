@@ -1048,7 +1048,7 @@ function transformToJsonProperty(args: NotNullInfo[]): JsonPropertyDef[] {
 		const value = args[i + 1];
 		if (value !== undefined) {
 			const type = value.jsonType ? value.jsonType : postgresTypes[value.type_id!];
-			pairs.push({ key: key.column_name, type });
+			pairs.push({ key: key.column_name, type, notNull: !value.is_nullable });
 		}
 	}
 	return pairs;
@@ -1060,12 +1060,12 @@ function traverse_json_build_obj_func(func_application: Func_applicationContext,
 	const argsResult = func_arg_expr_list.map(func_arg_expr => traversefunc_arg_expr(func_arg_expr, context, traverseResult))
 	return {
 		column_name: columnName,
-		is_nullable: false,
+		is_nullable: true,
 		table_name: '',
 		table_schema: '',
 		jsonType: {
 			name: 'json',
-			properties: transformToJsonProperty(argsResult)
+			properties: transformToJsonProperty(argsResult),
 		}
 	}
 }
@@ -1076,7 +1076,7 @@ function traverse_json_agg(func_application: Func_applicationContext, context: T
 	const argsResult = func_arg_expr_list.map(func_arg_expr => traversefunc_arg_expr(func_arg_expr, context, traverseResult))
 	return {
 		column_name: columnName,
-		is_nullable: false,
+		is_nullable: true,
 		table_name: '',
 		table_schema: '',
 		jsonType: {
@@ -1125,17 +1125,15 @@ function traversefunc_application(func_application: Func_applicationContext, con
 		const firstArg = argsResult[0];
 		return firstArg;
 	}
-	if (functionName === 'json_build_object'
-		|| functionName === 'jsonb_build_object'
+	if (functionName === 'jsonb_build_object'
 		|| functionName === 'json_build_array'
 		|| functionName === 'jsonb_build_array'
-		|| functionName === 'json_agg'
 		|| functionName === 'jsonb_agg'
 	) {
-		return true;
+		return false;
 	}
 	if (functionName === 'to_json' || functionName === 'to_jsonb') {
-		return argsResult.every(col => col);
+		return false;
 	}
 
 	return false;

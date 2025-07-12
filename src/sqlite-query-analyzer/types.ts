@@ -27,6 +27,7 @@ export type SQLiteType =
 export type JsonPropertyDef = {
 	key: string;
 	type: PostgresType;
+	notNull: boolean;
 };
 
 export type JsonType = { name: 'json', properties: JsonPropertyDef[] };
