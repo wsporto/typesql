@@ -354,7 +354,8 @@ function computeNullability(values_result: NotNullInfo[][]) {
 			column_name: `column${i + 1}`,
 			is_nullable: values_result.some(row => row[i].is_nullable),
 			table_name: '',
-			table_schema: ''
+			table_schema: '',
+			type_id: values_result[0][i].type_id
 		} satisfies NotNullInfo));
 	return result;
 }
@@ -1285,7 +1286,8 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 				column_name: aliasNameList?.[i] || col.column_name,
 				is_nullable: col.is_nullable,
 				table_name: alias || col.table_name,
-				table_schema: col.table_schema
+				table_schema: col.table_schema,
+				type_id: col.type_id
 			}) satisfies NotNullInfo);
 		return withAlias;
 	}
