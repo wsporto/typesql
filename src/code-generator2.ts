@@ -84,13 +84,13 @@ function generateTsCode(
 		writeParamsType(writer, paramsTypeName, uniqueParams, generateOrderBy, orderByTypeName)
 	}
 	if (schemaDef.queryType !== 'Copy') {
+		writer.blankLine();
+		writeResultType(writer, resultTypeName, tsDescriptor.columns);
 		const flatten = schemaDef.columns.flatMap(col => flattenJsonTypes(createJsonType(capitalizedName, col.name), col.type));
 		flatten.forEach(type => {
 			writer.blankLine();
 			writeJsonTypes(writer, type.typeName, type.type);
 		});
-		writer.blankLine();
-		writeResultType(writer, resultTypeName, tsDescriptor.columns);
 	}
 	const dynamicQueryInfo = tsDescriptor.dynamicQuery2;
 	if (dynamicQueryInfo) {

@@ -1,5 +1,9 @@
 import pg from 'pg';
 
+export type SelectJson02Result = {
+	sum?: SelectJson02SumType;
+}
+
 export type SelectJson02SumType = {
 	total?: string;
 	count: string;
@@ -10,10 +14,6 @@ export type SelectJson02SumType = {
 export type SelectJson02SumNestedType = {
 	key1: string;
 	key2: number;
-}
-
-export type SelectJson02Result = {
-	sum?: SelectJson02SumType;
 }
 
 export async function selectJson02(client: pg.Client | pg.Pool): Promise<SelectJson02Result[]> {
