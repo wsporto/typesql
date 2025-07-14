@@ -594,6 +594,73 @@ describe('postgres-json-functions', () => {
 		const sql = `
 		SELECT
 			json_build_object(
+				'sum_int2', SUM(t.int2_column),
+				'sum_int4', SUM(t.int4_column),
+				'sum_int8', SUM(t.int8_column),
+				'sum_numeric', SUM(t.numeric_column),
+				'sum_float4', SUM(t.float4_column),
+				'sum_float8', SUM(t.float8_column)
+			) AS result
+		FROM all_types t`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					name: 'result',
+					type: {
+						name: 'json',
+						properties: [
+							{
+								key: 'sum_int2',
+								type: 'int8',
+								notNull: false
+							},
+							{
+								key: 'sum_int4',
+								type: 'int8',
+								notNull: false
+							},
+							{
+								key: 'sum_int8',
+								type: 'numeric',
+								notNull: false
+							},
+							{
+								key: 'sum_numeric',
+								type: 'numeric',
+								notNull: false
+							},
+							{
+								key: 'sum_float4',
+								type: 'float4',
+								notNull: false
+							},
+							{
+								key: 'sum_float8',
+								type: 'float8',
+								notNull: false
+							}
+						],
+					},
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
+	it(`SELECT json_build_object('total', SUM(m.id)) AS sum FROM mytable1 m`, async () => {
+		const sql = `
+		SELECT
+			json_build_object(
 				'extract_year', EXTRACT(YEAR FROM DATE '2025-07-14')
 			) AS result
 		FROM mytable1 m

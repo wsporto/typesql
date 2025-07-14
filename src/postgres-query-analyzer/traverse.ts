@@ -1177,7 +1177,7 @@ function traversefunc_application(func_application: Func_applicationContext, con
 			...argsResult[0],
 			column_name: functionName,
 			is_nullable: true,
-			type: 'int8'
+			type: argsResult[0].type ? mapSumType(argsResult[0].type) : 'unknow'
 		};
 	}
 
@@ -1187,6 +1187,20 @@ function traversefunc_application(func_application: Func_applicationContext, con
 		table_name: '',
 		table_schema: ''
 	};
+}
+
+function mapSumType(type: PostgresSimpleType): PostgresSimpleType {
+	switch (type) {
+		case 'int2':
+		case 'int4':
+			return 'int8';
+		case 'int8':
+		case 'numeric':
+			return 'numeric';
+		default:
+			return type;
+
+	}
 }
 
 function traversefunc_expr_common_subexpr(func_expr_common_subexpr: Func_expr_common_subexprContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
