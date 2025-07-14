@@ -7,7 +7,6 @@ import { QueryType } from '../types';
 import { Relation2 } from '../sqlite-query-analyzer/sqlite-describe-nested-query';
 import { CheckConstraintResult } from '../drivers/postgres';
 import { JsonPropertyDef, JsonType, JsonTypeArray, PostgresSimpleType } from '../sqlite-query-analyzer/types';
-import { postgresTypes } from '../dialects/postgres';
 
 export type NotNullInfo = {
 	table_schema: string;
@@ -15,7 +14,6 @@ export type NotNullInfo = {
 	column_name: string;
 	is_nullable: boolean;
 	column_default?: true;
-	type_id?: number;
 	type?: PostgresSimpleType;
 	jsonType?: JsonType | JsonTypeArray;
 }
@@ -355,7 +353,7 @@ function computeNullability(values_result: NotNullInfo[][]) {
 			is_nullable: values_result.some(row => row[i].is_nullable),
 			table_name: '',
 			table_schema: '',
-			type_id: values_result[0][i].type_id
+			type: values_result[0][i].type
 		} satisfies NotNullInfo));
 	return result;
 }
@@ -779,55 +777,55 @@ function traverseColumnRef(columnref: ColumnrefContext, fromColumns: NotNullInfo
 
 type NameAndTypeId = {
 	name: string;
-	typeId: number;
+	type: PostgresSimpleType;
 }
 function getNameAndTypeIdFromAExprConst(a_expr_const: AexprconstContext): NameAndTypeId {
 	if (a_expr_const.iconst()) {
 		return {
 			name: a_expr_const.getText(),
-			typeId: 23 //int4
+			type: 'int4'
 		}
 	}
 	if (a_expr_const.fconst()) {
 		return {
 			name: a_expr_const.getText(),
-			typeId: 700 //float4
+			type: 'float4'
 		}
 	}
 	if (a_expr_const.sconst()) {
 		return {
 			name: a_expr_const.getText().slice(1, -1),
-			typeId: 25 //text
+			type: 'text'
 		}
 	}
 	//binary
 	if (a_expr_const.bconst()) {
 		return {
 			name: a_expr_const.getText(),
-			typeId: 1560 //bit
+			type: 'bit'
 		}
 	}
 	if (a_expr_const.xconst()) {
 		return {
 			name: a_expr_const.getText(),
-			typeId: 17 //bytea
+			type: 'bytea'
 		}
 	}
 	if (a_expr_const.TRUE_P() || a_expr_const.FALSE_P()) {
 		return {
 			name: a_expr_const.getText(),
-			typeId: 16 //bool
+			type: 'bool'
 		}
 	}
 	if (a_expr_const.NULL_P()) {
 		return {
 			name: a_expr_const.getText(),
-			typeId: 705 //unknow
+			type: 'unknow'
 		}
 	}
 	return {
 		name: a_expr_const.getText(),
-		typeId: 705 //unknow
+		type: 'unknow'
 	}
 }
 
@@ -863,14 +861,14 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 		}
 		const aexprconst = c_expr.aexprconst();
 		if (aexprconst) {
-			const { name, typeId } = getNameAndTypeIdFromAExprConst(aexprconst);
+			const { name, type } = getNameAndTypeIdFromAExprConst(aexprconst);
 			const is_nullable = aexprconst.NULL_P() != null;
 			return {
 				column_name: name,
 				is_nullable,
 				table_name: '',
 				table_schema: '',
-				type_id: typeId
+				type
 			}
 		}
 		if (c_expr.PARAM()) {
@@ -997,7 +995,7 @@ function traversec_expr_case(c_expr_case: C_expr_caseContext, context: TraverseC
 		is_nullable: !notNull,
 		table_name: '',
 		table_schema: '',
-		type_id: whenResult[0].type_id ?? 705
+		type: whenResult[0].type ?? 'unknow'
 	}
 }
 
@@ -1016,7 +1014,7 @@ function traversewhen_clause(when_clause: When_clauseContext, context: TraverseC
 		is_nullable: !notNull,
 		table_name: '',
 		table_schema: '',
-		type_id: whenExprResult[0].type_id
+		type: whenExprResult[0].type
 	}
 }
 
@@ -1057,7 +1055,7 @@ function transformToJsonProperty(args: NotNullInfo[]): JsonPropertyDef[] {
 		const key = args[i];
 		const value = args[i + 1];
 		if (value !== undefined) {
-			const type = value.jsonType ? value.jsonType : postgresTypes[value.type_id!];
+			const type = value.jsonType ? value.jsonType : value.type!;
 			pairs.push({ key: key.column_name, type, notNull: !value.is_nullable });
 		}
 	}
@@ -1106,7 +1104,7 @@ function traversefunc_application(func_application: Func_applicationContext, con
 			is_nullable: false,
 			table_name: '',
 			table_schema: '',
-			type_id: 20
+			type: 'int8'
 		};
 	}
 	if (functionName === 'concat'
@@ -1179,7 +1177,7 @@ function traversefunc_application(func_application: Func_applicationContext, con
 			...argsResult[0],
 			column_name: functionName,
 			is_nullable: true,
-			type_id: 20
+			type: 'int8'
 		};
 	}
 
@@ -1213,7 +1211,7 @@ function traversefunc_expr_common_subexpr(func_expr_common_subexpr: Func_expr_co
 			is_nullable: result.is_nullable,
 			table_name: '',
 			table_schema: '',
-			type_id: 701
+			type: 'float8'
 		}
 	}
 	func_expr_common_subexpr.a_expr_list().forEach(a_expr => {
@@ -1353,7 +1351,7 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 				is_nullable: col.is_nullable,
 				table_name: alias || col.table_name,
 				table_schema: col.table_schema,
-				type_id: col.type_id
+				type: col.type
 			}) satisfies NotNullInfo);
 		return withAlias;
 	}

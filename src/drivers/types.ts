@@ -1,12 +1,13 @@
 import { TaskEither } from 'fp-ts/lib/TaskEither';
 import { CheckConstraintResult, EnumMap } from './postgres';
+import { PostgresSimpleType } from '../sqlite-query-analyzer/types';
 
 export type PostgresColumnSchema = {
 	oid: number;
 	table_schema: string;
 	table_name: string;
 	column_name: string;
-	type_id: number;
+	type: PostgresSimpleType;
 	is_nullable: boolean;
 	column_key: 'PRI' | 'UNI' | '';
 	autoincrement?: boolean;

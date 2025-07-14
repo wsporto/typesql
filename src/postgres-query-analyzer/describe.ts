@@ -174,7 +174,7 @@ function getColumnsForCopyStmt(traverseResult: PostgresTraverseResult): Postgres
 	return traverseResult.columns.map(col => {
 		const result: PostgresParameterDef = {
 			name: col.column_name,
-			type: col.type_id ? postgresTypes[col.type_id] as any ?? '?' : '?',
+			type: col.type ?? 'unknow',
 			notNull: !col.is_nullable
 		}
 		return result;

@@ -17,7 +17,7 @@ export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], Type
 				t.table_schema,
 				t.table_name,
 				col.column_name,
-				ty.oid as type_id,
+				CASE WHEN ty.typtype = 'e' then 'enum()' ELSE ty.typname END as type,
 				col.is_nullable,
 				CASE 
 					WHEN con.contype = 'p' THEN 'PRI'  -- Primary key
@@ -54,20 +54,21 @@ export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], Type
 			ORDER BY 
 				t.table_schema, t.table_name, col.ordinal_position`;
 
-			return result.map((row: any) => ({
-				oid: row.oid,
-				table_schema: row.table_schema,
-				table_name: row.table_name,
-				column_name: row.column_name,
-				type_id: row.type_id,
-				is_nullable: row.is_nullable === 'YES',
-				column_key: row.column_key,
-				autoincrement: row.autoincrement,
-				...(row.column_default && { column_default: true })
-			} satisfies PostgresColumnSchema));
-		},
-		err => convertPostgresErrorToTypeSQLError(err)
-	)();
+			return result.map((row: any) => {
+				const result: PostgresColumnSchema = {
+					oid: row.oid,
+					table_schema: row.table_schema,
+					table_name: row.table_name,
+					column_name: row.column_name,
+					type: row.type,
+					is_nullable: row.is_nullable === 'YES',
+					column_key: row.column_key,
+					autoincrement: row.autoincrement,
+					...(row.column_default && { column_default: true })
+				};
+				return result;
+			});
+		}, err => convertPostgresErrorToTypeSQLError(err))();
 }
 
 export type EnumMap = Map<number, EnumResult[]>
@@ -149,7 +150,7 @@ async function _loadCheckConstraints(sql: Sql): Promise<CheckConstraintType[]> {
 export function mapToColumnSchema(col: PostgresColumnSchema): ColumnSchema {
 	const columnSchema: ColumnSchema = {
 		column: col.column_name,
-		column_type: postgresTypes[col.type_id],
+		column_type: col.type,
 		columnKey: col.column_key,
 		notNull: !col.is_nullable,
 		schema: col.table_schema,

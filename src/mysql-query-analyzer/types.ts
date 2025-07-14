@@ -1,7 +1,7 @@
 import type { NestedResultInfo } from '../describe-nested-query';
 import type { MySqlType, InferType, DbType } from '../mysql-mapping';
 import type { Relation2 } from '../sqlite-query-analyzer/sqlite-describe-nested-query';
-import type { PostgresType, SQLiteType } from '../sqlite-query-analyzer/types';
+import type { PostgresSimpleType, SQLiteType } from '../sqlite-query-analyzer/types';
 import type { ParameterDef } from '../types';
 
 export type TypeVar = {
@@ -49,7 +49,7 @@ export type Constraint = {
 	coercionType?: CoercionType;
 };
 
-export type ColumnSchema = GenericColumnSchema<MySqlType> | GenericColumnSchema<SQLiteType>;
+export type ColumnSchema = GenericColumnSchema<MySqlType> | GenericColumnSchema<SQLiteType> | GenericColumnSchema<PostgresSimpleType>;
 
 export type GenericColumnSchema<DbType> = {
 	schema: string;
