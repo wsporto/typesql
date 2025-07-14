@@ -528,6 +528,7 @@ describe('postgres-json-functions', () => {
 				'div', id/id, -- result type is the same 5/2 is 2: int4
 				'concat', CONCAT('a', 'b'),
 				'coalesce', COALESCE(m.id, 0),
+				'days',  DATE '2020-01-02' - DATE '2020-01-01',
 				'nested', COALESCE(json_agg(jsonb_build_object(
 					'key1', 'value',
 					'key2', 10
@@ -583,6 +584,11 @@ describe('postgres-json-functions', () => {
 							},
 							{
 								key: 'coalesce',
+								type: 'int4',
+								notNull: true,
+							},
+							{
+								key: 'days',
 								type: 'int4',
 								notNull: true,
 							},

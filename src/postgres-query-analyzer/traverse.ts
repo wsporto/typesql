@@ -705,7 +705,7 @@ function traverse_expr_unary_qualop(a_expr_unary_qualop: A_expr_unary_qualopCont
 			is_nullable: exprResult.some(col => col.is_nullable),
 			table_name: '',
 			table_schema: '',
-			type: mapAddExprType(exprResult.map(exprResult => exprResult.type as NumericType))
+			type: mapAddExprType(exprResult.map(exprResult => exprResult.type as ArithmeticType))
 		}
 		return result;
 	}
@@ -725,7 +725,7 @@ function traverse_expr_mul(a_expr_mul: A_expr_mulContext, context: TraverseConte
 			is_nullable: exprResult.some(exprRes => exprRes.is_nullable),
 			table_name: '',
 			table_schema: '',
-			type: mapAddExprType(exprResult.map(exprResult => exprResult.type as NumericType))
+			type: mapAddExprType(exprResult.map(exprResult => exprResult.type as ArithmeticType))
 		}
 		return result;
 	}
@@ -807,6 +807,13 @@ function getNameAndTypeIdFromAExprConst(a_expr_const: AexprconstContext): NameAn
 		return {
 			name: a_expr_const.getText(),
 			type: 'float4'
+		}
+	}
+	const type_function_name = a_expr_const.func_name()?.type_function_name()?.getText().toLowerCase();
+	if (type_function_name === 'date') {
+		return {
+			name: 'date',
+			type: 'date'
 		}
 	}
 	if (a_expr_const.sconst()) {
@@ -1892,23 +1899,26 @@ function isNotNul_a_expr_unary_qualop(a_expr_unary_qualop: A_expr_unary_qualopCo
 	return false;
 }
 
-type NumericType = 'int2' | 'int4' | 'int8' | 'float4' | 'float8' | 'numeric';
-function mapAddExprType(types: (NumericType | 'unknow')[]): NumericType | 'unknow' {
+type ArithmeticType = 'int2' | 'int4' | 'int8' | 'float4' | 'float8' | 'numeric' | 'date' | 'timestamp'; //'interval'
+function mapAddExprType(types: (ArithmeticType | 'unknow')[]): ArithmeticType | 'unknow' {
 
-	const arithmeticMappingMatrix: Record<NumericType, Record<NumericType, NumericType>> = {
-		int2: { int2: 'int2', int4: 'int4', int8: 'int8', float4: 'float4', float8: 'float8', numeric: 'numeric' },
-		int4: { int2: 'int4', int4: 'int4', int8: 'int8', float4: 'float4', float8: 'float8', numeric: 'numeric' },
-		int8: { int2: 'int8', int4: 'int8', int8: 'int8', float4: 'float8', float8: 'float8', numeric: 'numeric' },
+	const arithmeticMatrix: Record<ArithmeticType, Partial<Record<ArithmeticType, ArithmeticType>>> = {
+		int2: { int2: 'int2', int4: 'int4', int8: 'int8', float4: 'float4', float8: 'float8', numeric: 'numeric', date: 'date' },
+		int4: { int2: 'int4', int4: 'int4', int8: 'int8', float4: 'float4', float8: 'float8', numeric: 'numeric', date: 'date' },
+		int8: { int2: 'int8', int4: 'int8', int8: 'int8', float4: 'float8', float8: 'float8', numeric: 'numeric', date: 'date' },
 		float4: { int2: 'float4', int4: 'float4', int8: 'float8', float4: 'float4', float8: 'float8', numeric: 'numeric' },
 		float8: { int2: 'float8', int4: 'float8', int8: 'float8', float4: 'float8', float8: 'float8', numeric: 'numeric' },
 		numeric: { int2: 'numeric', int4: 'numeric', int8: 'numeric', float4: 'numeric', float8: 'numeric', numeric: 'numeric' },
+		date: { int2: 'date', int4: 'date', int8: 'date', date: 'int4', /*interval: 'timestamp'*/ }, // date - date = integer
+		timestamp: { /*interval: 'timestamp', timestamp: 'interval'*/ },
+		// interval: { date: 'timestamp', interval: 'interval' }
 	};
-	let currentType: NumericType = 'int2';
+	let currentType: ArithmeticType | undefined = 'int2';
 	for (const type of types) {
 		if (type === 'unknow') {
 			return 'unknow';
 		}
-		currentType = arithmeticMappingMatrix[currentType][type];
+		currentType = arithmeticMatrix[currentType][type];
 		if (!currentType) {
 			return 'unknow'
 		}
