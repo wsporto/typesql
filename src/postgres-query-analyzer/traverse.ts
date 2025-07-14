@@ -695,6 +695,7 @@ function traverse_expr_qual_op(a_expr_qual_op: A_expr_qual_opContext, context: T
 function traverse_expr_unary_qualop(a_expr_unary_qualop: A_expr_unary_qualopContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
 	const a_expr_add = a_expr_unary_qualop.a_expr_add();
 	if (a_expr_add) {
+		//a_expr_mul ((MINUS | PLUS) a_expr_mul)*
 		const exprResult = a_expr_add.a_expr_mul_list().map(a_expr_mul => traverse_expr_mul(a_expr_mul, context, traverseResult));
 		if (exprResult.length === 1) {
 			return exprResult[0];
@@ -704,7 +705,7 @@ function traverse_expr_unary_qualop(a_expr_unary_qualop: A_expr_unary_qualopCont
 			is_nullable: exprResult.some(col => col.is_nullable),
 			table_name: '',
 			table_schema: '',
-			type: 'unknow'
+			type: mapAddExprType(exprResult.map(exprResult => exprResult.type as NumericType))
 		}
 		return result;
 	}
@@ -714,6 +715,7 @@ function traverse_expr_unary_qualop(a_expr_unary_qualop: A_expr_unary_qualopCont
 function traverse_expr_mul(a_expr_mul: A_expr_mulContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
 	const a_expr_mul_list = a_expr_mul.a_expr_caret_list();
 	if (a_expr_mul_list) {
+		// a_expr_caret ((STAR | SLASH | PERCENT) a_expr_caret)*
 		const notNullInfo = a_expr_mul.a_expr_caret_list().map(a_expr_caret => traverse_expr_caret(a_expr_caret, context, traverseResult));
 		if (notNullInfo.length === 1) {
 			return notNullInfo[0];
@@ -1883,6 +1885,30 @@ function isNotNul_a_expr_unary_qualop(a_expr_unary_qualop: A_expr_unary_qualopCo
 		return isNotNull_a_expr_add(a_expr_add, field);
 	}
 	return false;
+}
+
+type NumericType = 'int2' | 'int4' | 'int8' | 'float4' | 'float8' | 'numeric';
+function mapAddExprType(types: (NumericType | 'unknow')[]): NumericType | 'unknow' {
+
+	const arithmeticMappingMatrix: Record<NumericType, Record<NumericType, NumericType>> = {
+		int2: { int2: 'int2', int4: 'int4', int8: 'int8', float4: 'float4', float8: 'float8', numeric: 'numeric' },
+		int4: { int2: 'int4', int4: 'int4', int8: 'int8', float4: 'float4', float8: 'float8', numeric: 'numeric' },
+		int8: { int2: 'int8', int4: 'int8', int8: 'int8', float4: 'float8', float8: 'float8', numeric: 'numeric' },
+		float4: { int2: 'float4', int4: 'float4', int8: 'float8', float4: 'float4', float8: 'float8', numeric: 'numeric' },
+		float8: { int2: 'float8', int4: 'float8', int8: 'float8', float4: 'float8', float8: 'float8', numeric: 'numeric' },
+		numeric: { int2: 'numeric', int4: 'numeric', int8: 'numeric', float4: 'numeric', float8: 'numeric', numeric: 'numeric' },
+	};
+	let currentType: NumericType = 'int2';
+	for (const type of types) {
+		if (type === 'unknow') {
+			return 'unknow';
+		}
+		currentType = arithmeticMappingMatrix[currentType][type];
+		if (!currentType) {
+			return 'unknow'
+		}
+	}
+	return currentType;
 }
 
 function isNotNull_a_expr_add(a_expr_add: A_expr_addContext, field: NotNullInfo): boolean {
