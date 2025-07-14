@@ -3,7 +3,6 @@ import { PostgresColumnSchema, DescribeQueryColumn, PostgresDescribe } from './t
 import { DatabaseClient, TypeSqlError } from '../types';
 import { ok, Result, ResultAsync } from 'neverthrow';
 import { ColumnSchema } from '../mysql-query-analyzer/types';
-import { postgresTypes } from '../dialects/postgres';
 import { ForeignKeyInfo } from '../sqlite-query-analyzer/query-executor';
 import { groupBy } from '../util';
 import { transformCheckToEnum } from '../postgres-query-analyzer/enum-parser';
@@ -13,7 +12,6 @@ export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], Type
 		async () => {
 			const result = await sql`
 			SELECT 
-				c.oid,
 				t.table_schema,
 				t.table_name,
 				col.column_name,
@@ -56,7 +54,6 @@ export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], Type
 
 			return result.map((row: any) => {
 				const result: PostgresColumnSchema = {
-					oid: row.oid,
 					table_schema: row.table_schema,
 					table_name: row.table_name,
 					column_name: row.column_name,

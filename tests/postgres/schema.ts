@@ -2,7 +2,6 @@ import { PostgresColumnSchema } from '../../src/drivers/types';
 
 export const schema: PostgresColumnSchema[] = [
 	{
-		oid: 16613,
 		table_schema: "public",
 		table_name: "addresses",
 		column_name: "id",
@@ -13,7 +12,6 @@ export const schema: PostgresColumnSchema[] = [
 		column_default: true
 	},
 	{
-		oid: 16613,
 		table_schema: "public",
 		table_name: "addresses",
 		column_name: "address",
@@ -23,7 +21,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16437,
 		table_schema: "public",
 		table_name: "all_types",
 		column_name: "bool_column",
@@ -33,7 +30,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16437,
 		table_schema: "public",
 		table_name: "all_types",
 		column_name: "bytea_column",
@@ -43,7 +39,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16437,
 		table_schema: "public",
 		table_name: "all_types",
 		column_name: "char_column",
@@ -53,7 +48,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16437,
 		table_schema: "public",
 		table_name: "all_types",
 		column_name: "name_column",
@@ -63,7 +57,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16437,
 		table_schema: "public",
 		table_name: "all_types",
 		column_name: "int8_column",
@@ -73,7 +66,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16437,
 		table_schema: "public",
 		table_name: "all_types",
 		column_name: "int2_column",
@@ -83,7 +75,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16437,
 		table_schema: "public",
 		table_name: "all_types",
 		column_name: "int4_column",
@@ -93,7 +84,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16437,
 		table_schema: "public",
 		table_name: "all_types",
 		column_name: "text_column",
@@ -103,7 +93,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16437,
 		table_schema: "public",
 		table_name: "all_types",
 		column_name: "varchar_column",
@@ -113,7 +102,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16437,
 		table_schema: "public",
 		table_name: "all_types",
 		column_name: "date_column",
@@ -123,7 +111,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16437,
 		table_schema: "public",
 		table_name: "all_types",
 		column_name: "bit_column",
@@ -133,7 +120,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16437,
 		table_schema: "public",
 		table_name: "all_types",
 		column_name: "numeric_column",
@@ -143,7 +129,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16437,
 		table_schema: "public",
 		table_name: "all_types",
 		column_name: "uuid_column",
@@ -153,7 +138,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16437,
 		table_schema: "public",
 		table_name: "all_types",
 		column_name: "float4_column",
@@ -163,7 +147,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16437,
 		table_schema: "public",
 		table_name: "all_types",
 		column_name: "float8_column",
@@ -173,7 +156,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16437,
 		table_schema: "public",
 		table_name: "all_types",
 		column_name: "timestamp_column",
@@ -183,7 +165,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16437,
 		table_schema: "public",
 		table_name: "all_types",
 		column_name: "timestamp_not_null_column",
@@ -193,7 +174,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16437,
 		table_schema: "public",
 		table_name: "all_types",
 		column_name: "timestamptz_column",
@@ -203,7 +183,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16437,
 		table_schema: "public",
 		table_name: "all_types",
 		column_name: "timestamptz_not_null_column",
@@ -213,7 +192,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16437,
 		table_schema: 'public',
 		table_name: 'all_types',
 		column_name: 'enum_column',
@@ -223,7 +201,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16437,
 		table_schema: 'public',
 		table_name: 'all_types',
 		column_name: 'enum_constraint',
@@ -233,7 +210,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16437,
 		table_schema: 'public',
 		table_name: 'all_types',
 		column_name: 'integer_column_default',
@@ -244,7 +220,6 @@ export const schema: PostgresColumnSchema[] = [
 		column_default: true
 	},
 	{
-		oid: 16437,
 		table_schema: 'public',
 		table_name: 'all_types',
 		column_name: 'enum_column_default',
@@ -255,7 +230,6 @@ export const schema: PostgresColumnSchema[] = [
 		column_default: true
 	},
 	{
-		oid: 16437,
 		table_schema: 'public',
 		table_name: 'all_types',
 		column_name: 'enum_constraint_default',
@@ -266,7 +240,6 @@ export const schema: PostgresColumnSchema[] = [
 		column_default: true
 	},
 	{
-		oid: 16555,
 		table_schema: "public",
 		table_name: "answers",
 		column_name: "id",
@@ -277,7 +250,6 @@ export const schema: PostgresColumnSchema[] = [
 		column_default: true
 	},
 	{
-		oid: 16555,
 		table_schema: "public",
 		table_name: "answers",
 		column_name: "answer",
@@ -287,7 +259,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16555,
 		table_schema: "public",
 		table_name: "answers",
 		column_name: "fk_user",
@@ -297,7 +268,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16555,
 		table_schema: "public",
 		table_name: "answers",
 		column_name: "fk_question",
@@ -307,7 +277,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16584,
 		table_schema: "public",
 		table_name: "authors",
 		column_name: "id",
@@ -318,7 +287,6 @@ export const schema: PostgresColumnSchema[] = [
 		column_default: true
 	},
 	{
-		oid: 16584,
 		table_schema: "public",
 		table_name: "authors",
 		column_name: "fullname",
@@ -328,7 +296,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16584,
 		table_schema: "public",
 		table_name: "authors",
 		column_name: "shortname",
@@ -338,7 +305,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16573,
 		table_schema: "public",
 		table_name: "books",
 		column_name: "id",
@@ -349,7 +315,6 @@ export const schema: PostgresColumnSchema[] = [
 		column_default: true
 	},
 	{
-		oid: 16573,
 		table_schema: "public",
 		table_name: "books",
 		column_name: "title",
@@ -359,7 +324,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16573,
 		table_schema: "public",
 		table_name: "books",
 		column_name: "isbn",
@@ -369,7 +333,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16595,
 		table_schema: "public",
 		table_name: "books_authors",
 		column_name: "id",
@@ -380,7 +343,6 @@ export const schema: PostgresColumnSchema[] = [
 		column_default: true
 	},
 	{
-		oid: 16595,
 		table_schema: "public",
 		table_name: "books_authors",
 		column_name: "book_id",
@@ -390,7 +352,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16595,
 		table_schema: "public",
 		table_name: "books_authors",
 		column_name: "author_id",
@@ -400,7 +361,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16595,
 		table_schema: "public",
 		table_name: "books_authors",
 		column_name: "author_ordinal",
@@ -410,7 +370,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16624,
 		table_schema: "public",
 		table_name: "clients",
 		column_name: "id",
@@ -421,7 +380,6 @@ export const schema: PostgresColumnSchema[] = [
 		column_default: true
 	},
 	{
-		oid: 16624,
 		table_schema: "public",
 		table_name: "clients",
 		column_name: "primaryaddress",
@@ -431,7 +389,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16624,
 		table_schema: "public",
 		table_name: "clients",
 		column_name: "secondaryaddress",
@@ -441,7 +398,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16472,
 		table_schema: "public",
 		table_name: "comments",
 		column_name: "id",
@@ -452,7 +408,6 @@ export const schema: PostgresColumnSchema[] = [
 		column_default: true
 	},
 	{
-		oid: 16472,
 		table_schema: "public",
 		table_name: "comments",
 		column_name: "comment",
@@ -462,7 +417,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16472,
 		table_schema: "public",
 		table_name: "comments",
 		column_name: "fk_user",
@@ -472,7 +426,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16472,
 		table_schema: "public",
 		table_name: "comments",
 		column_name: "fk_post",
@@ -482,7 +435,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16640,
 		table_schema: 'public',
 		table_name: 'composite_key',
 		column_name: 'key1',
@@ -492,7 +444,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16640,
 		table_schema: 'public',
 		table_name: 'composite_key',
 		column_name: 'key2',
@@ -502,7 +453,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16640,
 		table_schema: 'public',
 		table_name: 'composite_key',
 		column_name: 'value',
@@ -512,7 +462,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16645,
 		table_schema: 'public',
 		table_name: 'composite_unique_constraint',
 		column_name: 'key1',
@@ -522,7 +471,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16645,
 		table_schema: 'public',
 		table_name: 'composite_unique_constraint',
 		column_name: 'key2',
@@ -532,7 +480,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16645,
 		table_schema: 'public',
 		table_name: 'composite_unique_constraint',
 		column_name: 'value',
@@ -542,7 +489,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16666,
 		table_schema: 'public',
 		table_name: 'enum_types',
 		column_name: 'id',
@@ -552,7 +498,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16666,
 		table_schema: 'public',
 		table_name: 'enum_types',
 		column_name: 'column1',
@@ -562,7 +507,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16666,
 		table_schema: 'public',
 		table_name: 'enum_types',
 		column_name: 'column2',
@@ -572,7 +516,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16666,
 		table_schema: 'public',
 		table_name: 'enum_types',
 		column_name: 'column3',
@@ -582,7 +525,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16666,
 		table_schema: 'public',
 		table_name: 'enum_types',
 		column_name: 'column4',
@@ -592,7 +534,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16666,
 		table_schema: 'public',
 		table_name: 'enum_types',
 		column_name: 'column5',
@@ -602,7 +543,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16666,
 		table_schema: 'public',
 		table_name: 'enum_types',
 		column_name: 'column6',
@@ -612,7 +552,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16680,
 		table_schema: 'public',
 		table_name: 'enum_types2',
 		column_name: 'id',
@@ -622,7 +561,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16680,
 		table_schema: 'public',
 		table_name: 'enum_types2',
 		column_name: 'column1',
@@ -632,7 +570,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16396,
 		table_schema: "public",
 		table_name: "mytable1",
 		column_name: "id",
@@ -642,7 +579,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: true
 	},
 	{
-		oid: 16396,
 		table_schema: "public",
 		table_name: "mytable1",
 		column_name: "value",
@@ -652,7 +588,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16403,
 		table_schema: "public",
 		table_name: "mytable2",
 		column_name: "id",
@@ -662,7 +597,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: true
 	},
 	{
-		oid: 16403,
 		table_schema: "public",
 		table_name: "mytable2",
 		column_name: "name",
@@ -672,7 +606,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16403,
 		table_schema: "public",
 		table_name: "mytable2",
 		column_name: "descr",
@@ -682,7 +615,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16413,
 		table_schema: "public",
 		table_name: "mytable3",
 		column_name: "id",
@@ -692,7 +624,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: true
 	},
 	{
-		oid: 16413,
 		table_schema: "public",
 		table_name: "mytable3",
 		column_name: "double_value",
@@ -702,7 +633,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16413,
 		table_schema: "public",
 		table_name: "mytable3",
 		column_name: "name",
@@ -712,7 +642,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16421,
 		table_schema: "public",
 		table_name: "mytable4",
 		column_name: "id",
@@ -722,7 +651,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16421,
 		table_schema: "public",
 		table_name: "mytable4",
 		column_name: "name",
@@ -732,7 +660,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16421,
 		table_schema: "public",
 		table_name: "mytable4",
 		column_name: "year",
@@ -742,7 +669,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16429,
 		table_schema: "public",
 		table_name: "mytable5",
 		column_name: "id",
@@ -752,7 +678,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16429,
 		table_schema: "public",
 		table_name: "mytable5",
 		column_name: "name",
@@ -762,7 +687,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16429,
 		table_schema: "public",
 		table_name: "mytable5",
 		column_name: "year",
@@ -772,7 +696,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16521,
 		table_schema: "public",
 		table_name: "participants",
 		column_name: "id",
@@ -783,7 +706,6 @@ export const schema: PostgresColumnSchema[] = [
 		column_default: true
 	},
 	{
-		oid: 16521,
 		table_schema: "public",
 		table_name: "participants",
 		column_name: "fk_user",
@@ -793,7 +715,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16521,
 		table_schema: "public",
 		table_name: "participants",
 		column_name: "fk_survey",
@@ -803,7 +724,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16456,
 		table_schema: "public",
 		table_name: "posts",
 		column_name: "id",
@@ -814,7 +734,6 @@ export const schema: PostgresColumnSchema[] = [
 		column_default: true
 	},
 	{
-		oid: 16456,
 		table_schema: "public",
 		table_name: "posts",
 		column_name: "title",
@@ -824,7 +743,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16456,
 		table_schema: "public",
 		table_name: "posts",
 		column_name: "body",
@@ -834,7 +752,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16456,
 		table_schema: "public",
 		table_name: "posts",
 		column_name: "fk_user",
@@ -844,7 +761,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16539,
 		table_schema: "public",
 		table_name: "questions",
 		column_name: "id",
@@ -855,7 +771,6 @@ export const schema: PostgresColumnSchema[] = [
 		column_default: true
 	},
 	{
-		oid: 16539,
 		table_schema: "public",
 		table_name: "questions",
 		column_name: "questions",
@@ -865,7 +780,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16539,
 		table_schema: "public",
 		table_name: "questions",
 		column_name: "fk_survey",
@@ -875,7 +789,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16493,
 		table_schema: "public",
 		table_name: "roles",
 		column_name: "id",
@@ -886,7 +799,6 @@ export const schema: PostgresColumnSchema[] = [
 		column_default: true
 	},
 	{
-		oid: 16493,
 		table_schema: "public",
 		table_name: "roles",
 		column_name: "role",
@@ -897,7 +809,6 @@ export const schema: PostgresColumnSchema[] = [
 		column_default: true
 	},
 	{
-		oid: 16493,
 		table_schema: "public",
 		table_name: "roles",
 		column_name: "fk_user",
@@ -907,7 +818,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16510,
 		table_schema: "public",
 		table_name: "surveys",
 		column_name: "id",
@@ -918,7 +828,6 @@ export const schema: PostgresColumnSchema[] = [
 		column_default: true
 	},
 	{
-		oid: 16510,
 		table_schema: "public",
 		table_name: "surveys",
 		column_name: "name",
@@ -928,7 +837,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16445,
 		table_schema: "public",
 		table_name: "users",
 		column_name: "id",
@@ -939,7 +847,6 @@ export const schema: PostgresColumnSchema[] = [
 		column_default: true
 	},
 	{
-		oid: 16445,
 		table_schema: "public",
 		table_name: "users",
 		column_name: "name",
@@ -949,7 +856,6 @@ export const schema: PostgresColumnSchema[] = [
 		autoincrement: false
 	},
 	{
-		oid: 16445,
 		table_schema: "public",
 		table_name: "users",
 		column_name: "email",

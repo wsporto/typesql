@@ -81,19 +81,6 @@ function createIndexToNameMap(names: string[]): Map<number, string> {
 	return indexToName;
 }
 
-type TableNameHash = { [oid: number]: string }
-function transformToMap(dbSchema: PostgresColumnSchema[]): TableNameHash {
-	const hash = dbSchema.reduce((acc, { oid, table_name }) => {
-		acc[oid] = table_name;
-		return acc;
-	}, {} as TableNameHash);
-	return hash;
-}
-
-export type NullabilityMapping = {
-	[key: string]: boolean;  // key is "oid-column_name" and value is the is_nullable boolean
-};
-
 function mapToColumnInfo(col: DescribeQueryColumn, posgresTypes: PostgresType, enumTypes: EnumMap, checkConstraints: CheckConstraintResult, colInfo: NotNullInfo): PostgresColumnInfo {
 	const constraintKey = `[${colInfo.table_schema}][${colInfo.table_name}][${colInfo.column_name}]`;
 	return {
