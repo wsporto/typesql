@@ -949,12 +949,7 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 	}
 	if (c_expr instanceof C_expr_caseContext) {
 		const isNotNull = traversec_expr_case(c_expr, context, traverseResult);
-		return {
-			column_name: '?column?',
-			is_nullable: !isNotNull,
-			table_name: '',
-			table_schema: ''
-		}
+		return isNotNull;
 	}
 	if (c_expr instanceof C_expr_existsContext) {
 		const select_with_parens = c_expr.select_with_parens();
@@ -990,16 +985,23 @@ function excludeColumns(fromColumns: NotNullInfo[], excludeList: FieldName[]) {
 	});
 }
 
-function traversec_expr_case(c_expr_case: C_expr_caseContext, context: TraverseContext, traverseResult: TraverseResult): boolean {
+function traversec_expr_case(c_expr_case: C_expr_caseContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
 	const case_expr = c_expr_case.case_expr();
 	const whenResult = case_expr.when_clause_list().when_clause_list().map(when_clause => traversewhen_clause(when_clause, context, traverseResult));
 	const whenIsNotNull = whenResult.every(when => when);
 	const elseExpr = case_expr.case_default()?.a_expr();
 	const elseIsNotNull = elseExpr ? !traverse_a_expr(elseExpr, context, traverseResult).is_nullable : false;
-	return elseIsNotNull && whenIsNotNull;
+	const notNull = elseIsNotNull && whenIsNotNull;
+	return {
+		column_name: '?column?',
+		is_nullable: !notNull,
+		table_name: '',
+		table_schema: '',
+		type_id: whenResult[0].type_id
+	}
 }
 
-function traversewhen_clause(when_clause: When_clauseContext, context: TraverseContext, traverseResult: TraverseResult): boolean {
+function traversewhen_clause(when_clause: When_clauseContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
 	const a_expr_list = when_clause.a_expr_list();
 	const [whenExprList, thenExprList] = partition(a_expr_list, (index) => index % 2 === 0);
 
@@ -1008,7 +1010,14 @@ function traversewhen_clause(when_clause: When_clauseContext, context: TraverseC
 		const thenExprResult = traverse_a_expr(thenExpr, context, traverseResult);
 		return thenExprResult;
 	});
-	return whenExprResult.every(res => res);
+	const notNull = whenExprResult.every(res => res);
+	return {
+		column_name: '?column?',
+		is_nullable: !notNull,
+		table_name: '',
+		table_schema: '',
+		type_id: whenExprResult[0].type_id
+	}
 }
 
 function partition<T>(array: T[], predicate: (index: number) => boolean): [T[], T[]] {
