@@ -1176,8 +1176,13 @@ function traversefunc_application(func_application: Func_applicationContext, con
 		};
 	}
 	if (functionName === 'to_date') {
-		const firstArg = argsResult[0];
-		return firstArg;
+		return {
+			column_name: functionName,
+			is_nullable: argsResult.some(col => col.is_nullable),
+			table_name: '',
+			table_schema: '',
+			type: 'date'
+		};
 	}
 	if (functionName === 'generate_series') {
 		return {
