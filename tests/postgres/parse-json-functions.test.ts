@@ -522,6 +522,10 @@ describe('postgres-json-functions', () => {
 			json_build_object(
 				'total', SUM(m.id),
 				'count', COUNT(m.id),
+				'plus', id+id,
+				'minus', id-id,
+				'mult', id*id,
+				'div', id/id, -- result type is the same 5/2 is 2: int4
 				'concat', CONCAT('a', 'b'),
 				'coalesce', COALESCE(m.id, 0),
 				'nested', COALESCE(json_agg(jsonb_build_object(
@@ -550,6 +554,26 @@ describe('postgres-json-functions', () => {
 							{
 								key: 'count',
 								type: 'int8',
+								notNull: true,
+							},
+							{
+								key: 'plus',
+								type: 'int4',
+								notNull: true,
+							},
+							{
+								key: 'minus',
+								type: 'int4',
+								notNull: true,
+							},
+							{
+								key: 'mult',
+								type: 'int4',
+								notNull: true,
+							},
+							{
+								key: 'div',
+								type: 'int4',
 								notNull: true,
 							},
 							{

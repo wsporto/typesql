@@ -716,16 +716,16 @@ function traverse_expr_mul(a_expr_mul: A_expr_mulContext, context: TraverseConte
 	const a_expr_mul_list = a_expr_mul.a_expr_caret_list();
 	if (a_expr_mul_list) {
 		// a_expr_caret ((STAR | SLASH | PERCENT) a_expr_caret)*
-		const notNullInfo = a_expr_mul.a_expr_caret_list().map(a_expr_caret => traverse_expr_caret(a_expr_caret, context, traverseResult));
-		if (notNullInfo.length === 1) {
-			return notNullInfo[0];
+		const exprResult = a_expr_mul.a_expr_caret_list().map(a_expr_caret => traverse_expr_caret(a_expr_caret, context, traverseResult));
+		if (exprResult.length === 1) {
+			return exprResult[0];
 		}
 		const result: NotNullInfo = {
 			column_name: '?column?',
-			is_nullable: notNullInfo.some(notNullInfo => notNullInfo.is_nullable),
+			is_nullable: exprResult.some(exprRes => exprRes.is_nullable),
 			table_name: '',
 			table_schema: '',
-			type: 'unknow'
+			type: mapAddExprType(exprResult.map(exprResult => exprResult.type as NumericType))
 		}
 		return result;
 	}
