@@ -522,6 +522,7 @@ describe('postgres-json-functions', () => {
 			json_build_object(
 				'total', SUM(m.id),
 				'count', COUNT(m.id),
+				'concat', CONCAT('a', 'b'),
 				'coalesce', COALESCE(m.id, 0),
 				'nested', COALESCE(json_agg(jsonb_build_object(
 					'key1', 'value',
@@ -549,6 +550,11 @@ describe('postgres-json-functions', () => {
 							{
 								key: 'count',
 								type: 'int8',
+								notNull: true,
+							},
+							{
+								key: 'concat',
+								type: 'text',
 								notNull: true,
 							},
 							{
@@ -812,7 +818,7 @@ describe('postgres-json-functions', () => {
 						properties: [
 							{
 								key: 'case',
-								type: 'unknow',
+								type: 'json',
 								notNull: false
 							}
 						],
