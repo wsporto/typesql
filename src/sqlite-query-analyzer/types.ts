@@ -24,7 +24,22 @@ export type SQLiteType =
 	| EnumType
 	| 'any';
 
+export type JsonPropertyDef = {
+	key: string;
+	type: PostgresType;
+	notNull: boolean;
+};
+
+export type JsonType = { name: 'json', properties: JsonPropertyDef[] };
+
+export type JsonTypeArray = { name: 'json[]', properties: JsonPropertyDef[] }
+
 export type PostgresType =
+	| PostgresSimpleType
+	| JsonType
+	| JsonTypeArray
+
+export type PostgresSimpleType =
 	| 'bool'
 	| '_bool'
 	| 'bool[]'
@@ -79,6 +94,7 @@ export type PostgresType =
 	| 'timestamptz'
 	| '_timestamptz'
 	| 'timestamptz[]'
+	| `enum(${string})`
 	| 'tsvector'
 	| 'tsvector[]'
 	| 'tsquery'
@@ -89,4 +105,5 @@ export type PostgresType =
 	| 'jsonb'
 	| '_jsonb'
 	| 'jsonb[]'
+	| 'unknow'
 

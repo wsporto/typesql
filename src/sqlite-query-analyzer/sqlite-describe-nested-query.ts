@@ -40,7 +40,13 @@ export type NestedRelation = {
 	relations?: NestedRelation[];
 };
 
-export function describeNestedQuery(columns: ColumnInfo[], relations: Relation2[]): Either<TypeSqlError, RelationInfo2[]> {
+export type ColumnDescription = {
+	name: string;
+	notNull: boolean;
+	table?: string;
+}
+
+export function describeNestedQuery(columns: ColumnDescription[], relations: Relation2[]): Either<TypeSqlError, RelationInfo2[]> {
 	const isJunctionTableMap = new Map<string, boolean>();
 	const parentRef = new Map<string, Relation2>();
 	for (const relation of relations) {
@@ -55,7 +61,7 @@ export function describeNestedQuery(columns: ColumnInfo[], relations: Relation2[
 	for (const [index, relation] of filterJunctionTables.entries()) {
 		const parent = isJunctionTableMap.get(relation.parentRelation) ? parentRef.get(relation.parentRelation) : undefined;
 		const groupIndex = columns.findIndex(
-			(col) => col.columnName.toLowerCase() === relation.joinColumn.toLowerCase() && (col.table === relation.name || col.table === relation.alias)
+			(col) => col.name.toLowerCase() === relation.joinColumn.toLowerCase() && (col.table === relation.name || col.table === relation.alias)
 		);
 		if (groupIndex === -1) {
 			const error: TypeSqlError = {
@@ -78,7 +84,7 @@ export function describeNestedQuery(columns: ColumnInfo[], relations: Relation2[
 						col.item.table === relation.alias ||
 						(relation.parentRelation === '' && col.item.table === '')
 				)
-				.map((col) => ({ name: col.item.columnName, index: col.index })),
+				.map((col) => ({ name: col.item.name, index: col.index })),
 			relations: filterJunctionTables
 				.slice(index + 1)
 				.filter((child) => {
@@ -101,7 +107,7 @@ export function describeNestedQuery(columns: ColumnInfo[], relations: Relation2[
 	return right(result);
 }
 
-function isJunctionTable(relation: Relation2, relations: Relation2[], columns: ColumnInfo[]): boolean {
+function isJunctionTable(relation: Relation2, relations: Relation2[], columns: ColumnDescription[]): boolean {
 	const childRelation = relations.find(
 		(r) => r.parentRelation === relation.name || (r.alias !== '' && r.parentRelation === relation.alias)
 	);
@@ -109,7 +115,7 @@ function isJunctionTable(relation: Relation2, relations: Relation2[], columns: C
 	return isJunctionTable && notIncludeRelationColumns(columns, relation);
 }
 
-function notIncludeRelationColumns(columns: ColumnInfo[], relation: Relation2): boolean {
+function notIncludeRelationColumns(columns: ColumnDescription[], relation: Relation2): boolean {
 	const relationColumns = columns.filter(col => col.table === relation.name || col.table === relation.alias);
 	return relationColumns.length === 0;
 }

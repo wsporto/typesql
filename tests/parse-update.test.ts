@@ -13,7 +13,7 @@ describe('parse update statements', () => {
 
 	const columns: ColumnInfo[] = [
 		{
-			columnName: 'affectedRows',
+			name: 'affectedRows',
 			type: 'int',
 			notNull: true
 		}

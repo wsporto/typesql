@@ -1,7 +1,8 @@
 import assert from 'node:assert';
-import type { SchemaDef, TypeSqlError } from '../../src/types';
+import type { TypeSqlError } from '../../src/types';
 import postgres from 'postgres';
 import { describeQuery } from '../../src/postgres-query-analyzer/describe';
+import { PostgresSchemaDef } from '../../src/postgres-query-analyzer/types';
 
 describe('postgres-parse-select-multiples-tables', () => {
 	const postres = postgres({
@@ -20,37 +21,37 @@ describe('postgres-parse-select-multiples-tables', () => {
         INNER JOIN mytable2 t2 on t2.id = t1.id
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int4',
 					notNull: false,
 					table: 't1'
 				},
 				{
-					columnName: 'id', //TODO - rename fields
+					name: 'id', //TODO - rename fields
 					type: 'int4',
 					notNull: true,
 					table: 't2'
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: false,
 					table: 't2'
 				},
 				{
-					columnName: 'descr',
+					name: 'descr',
 					type: 'text',
 					notNull: false,
 					table: 't2'
@@ -71,37 +72,37 @@ describe('postgres-parse-select-multiples-tables', () => {
         INNER JOIN mytable2 as t2 on t2.id = t1.id
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int4',
 					notNull: false,
 					table: 't1'
 				},
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't2'
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: false,
 					table: 't2'
 				},
 				{
-					columnName: 'descr',
+					name: 'descr',
 					type: 'text',
 					notNull: false,
 					table: 't2'
@@ -122,19 +123,19 @@ describe('postgres-parse-select-multiples-tables', () => {
         INNER JOIN mytable2 t2 on t2.id = t1.id
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int4',
 					notNull: false,
 					table: 't1'
@@ -155,25 +156,25 @@ describe('postgres-parse-select-multiples-tables', () => {
         INNER JOIN mytable2 t2 on t2.id = t1.id
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't2'
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: false,
 					table: 't2'
 				},
 				{
-					columnName: 'descr',
+					name: 'descr',
 					type: 'text',
 					notNull: false,
 					table: 't2'
@@ -194,37 +195,37 @@ describe('postgres-parse-select-multiples-tables', () => {
         INNER JOIN mytable2 t2 on t2.id = t1.id
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't2'
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: false,
 					table: 't2'
 				},
 				{
-					columnName: 'descr',
+					name: 'descr',
 					type: 'text',
 					notNull: false,
 					table: 't2'
 				},
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int4',
 					notNull: false,
 					table: 't1'
@@ -246,13 +247,13 @@ describe('postgres-parse-select-multiples-tables', () => {
         WHERE t2.id = $1
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true, //could be false (one to one relation)
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't1'
@@ -261,7 +262,7 @@ describe('postgres-parse-select-multiples-tables', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				}
 			]
@@ -280,37 +281,37 @@ describe('postgres-parse-select-multiples-tables', () => {
         WHERE t1.id = $2 and t2.name = $3 and t1.value > $4
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: false, //different from mysql and sqlite
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'table'
 				},
 				{
-					columnName: 'name', //where t1.name = ?; cannot be null
+					name: 'name', //where t1.name = ?; cannot be null
 					type: 'text',
 					notNull: true,
 					table: 'table'
 				},
 				{
-					columnName: 'value', //where t1.value = ?; cannot be null
+					name: 'value', //where t1.value = ?; cannot be null
 					type: 'int4',
 					notNull: true,
 					table: 'table'
 				},
 				{
-					columnName: 'description',
+					name: 'description',
 					type: 'text',
 					notNull: false,
 					table: 'table'
 				},
 				{
-					columnName: 'param1',
+					name: 'param1',
 					type: 'text',
 					notNull: true,
 					table: ''
@@ -319,22 +320,22 @@ describe('postgres-parse-select-multiples-tables', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'text', //different from mysql and sqlite
+					type: 'text', //different from mysql and sqlite
 					notNull: true //changed at v0.0.2
 				},
 				{
 					name: 'param2',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				},
 				{
 					name: 'param3',
-					columnType: 'text',
+					type: 'text',
 					notNull: true
 				},
 				{
 					name: 'param4',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				}
 			]
@@ -352,31 +353,31 @@ describe('postgres-parse-select-multiples-tables', () => {
         WHERE t3.id > $2 and t1.value = $3 and t2.name = $4
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'table'
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: true, //where t2.name = ?; cannot be null
 					table: 'table'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int4',
 					notNull: true, //where t1.value = ?; cannot be null
 					table: 'table'
 				},
 				{
-					columnName: 'param1',
+					name: 'param1',
 					notNull: true,
 					type: 'text',
 					table: ''
@@ -385,22 +386,22 @@ describe('postgres-parse-select-multiples-tables', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'text',
+					type: 'text',
 					notNull: true //changed at v0.0.2
 				},
 				{
 					name: 'param2',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				},
 				{
 					name: 'param3',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				},
 				{
 					name: 'param4',
-					columnType: 'text',
+					type: 'text',
 					notNull: true
 				}
 			]
@@ -417,19 +418,19 @@ describe('postgres-parse-select-multiples-tables', () => {
         FROM mytable1 t1, mytable2 t2
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't1'
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: false,
 					table: 't2'
@@ -449,13 +450,13 @@ describe('postgres-parse-select-multiples-tables', () => {
         SELECT name FROM mytable1, mytable2
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: false,
 					table: 'mytable2'
@@ -492,13 +493,13 @@ describe('postgres-parse-select-multiples-tables', () => {
         SELECT name as fullname FROM mytable1 t1, mytable2 t2
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'fullname',
+					name: 'fullname',
 					type: 'text',
 					notNull: false,
 					table: 't2'
@@ -518,13 +519,13 @@ describe('postgres-parse-select-multiples-tables', () => {
         SELECT name FROM (select t1.*, t2.name from mytable1 t1, mytable2 t2) t
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: false,
 					table: 't'
@@ -544,13 +545,13 @@ describe('postgres-parse-select-multiples-tables', () => {
         select name from ((( mytable1, (select * from mytable2) t )))
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'varchar',
 					notNull: false,
 					table: 't'
@@ -571,43 +572,43 @@ describe('postgres-parse-select-multiples-tables', () => {
         inner join mytable2 t2 on t1.id = t2.id
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't1'
 				},
 				{
-					columnName: 'id', //TODO - rename field
+					name: 'id', //TODO - rename field
 					type: 'int4',
 					notNull: true,
 					table: 't2'
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'int4',
 					notNull: false,
 					table: 't1'
 				},
 				{
-					columnName: 'name', //TODO - rename field
+					name: 'name', //TODO - rename field
 					type: 'text',
 					notNull: false,
 					table: 't2'
 				},
 				{
-					columnName: 'id', //TODO - rename field
+					name: 'id', //TODO - rename field
 					type: 'int4',
 					notNull: true,
 					table: 't1'
 				},
 				{
-					columnName: 'descr',
+					name: 'descr',
 					type: 'text',
 					notNull: false,
 					table: 't2'
@@ -629,31 +630,31 @@ describe('postgres-parse-select-multiples-tables', () => {
         WHERE name is not null and value > 0
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int4',
 					notNull: true,
 					table: 't1'
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: true,
 					table: 't2'
 				},
 				{
-					columnName: 'descr',
+					name: 'descr',
 					type: 'text',
 					notNull: false,
 					table: 't2'
@@ -674,31 +675,31 @@ describe('postgres-parse-select-multiples-tables', () => {
         INNER JOIN mytable2 t2 using (id, name)
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't1'
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: false, //TODO - using(id, name) makes the name notNull
 					table: 't1'
 				},
 				{
-					columnName: 'descr',
+					name: 'descr',
 					type: 'text',
 					notNull: false,
 					table: 't1'
 				},
 				{
-					columnName: 'descr',
+					name: 'descr',
 					type: 'text',
 					notNull: false,
 					table: 't2'
@@ -720,19 +721,19 @@ describe('postgres-parse-select-multiples-tables', () => {
         WHERE t1.id = 1
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'table'
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: false,
 					table: 'table'
@@ -755,19 +756,19 @@ describe('postgres-parse-select-multiples-tables', () => {
         LEFT JOIN mytable2 ON mytable1.id = mytable2.id
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'table'
 				},
 				{
-					columnName: 'hasOwner',
+					name: 'hasOwner',
 					type: 'bool',
 					notNull: true,
 					table: ''
@@ -791,37 +792,37 @@ describe('postgres-parse-select-multiples-tables', () => {
         LIMIT 1
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int4',
 					notNull: false,
 					table: 't1'
 				},
 				{
-					columnName: 'id', //TODO - rename fields
+					name: 'id', //TODO - rename fields
 					type: 'int4',
 					notNull: true,
 					table: 't2'
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: false,
 					table: 't2'
 				},
 				{
-					columnName: 'descr',
+					name: 'descr',
 					type: 'text',
 					notNull: false,
 					table: 't2'
@@ -843,37 +844,37 @@ describe('postgres-parse-select-multiples-tables', () => {
         CROSS JOIN mytable2 t2
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int4',
 					notNull: false,
 					table: 't1'
 				},
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't2'
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: false,
 					table: 't2'
 				},
 				{
-					columnName: 'descr',
+					name: 'descr',
 					type: 'text',
 					notNull: false,
 					table: 't2'

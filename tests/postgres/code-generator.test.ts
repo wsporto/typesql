@@ -446,5 +446,47 @@ WHERE EXTRACT(YEAR FROM timestamp_not_null_column) = :param1 AND EXTRACT(MONTH F
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('select-json01', async () => {
+		const sql = `SELECT json_agg(
+	json_build_object('key', name, 'key2', id)
+) AS result
+FROM (
+	VALUES
+		(1, 'a'),
+		(2, 'b')
+) AS t(id, name)`;
+
+		const actual = await generateCode(dialect, sql, 'selectJson01');
+		const expected = readFileSync('tests/postgres/expected-code/select-json01.ts.txt', 'utf-8');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('select-json02', async () => {
+		const sql = `SELECT
+	json_build_object(
+		'total', SUM(m.id),
+		'count', COUNT(m.id),
+		'coalesce', COALESCE(m.id, 0),
+		'nested', COALESCE(json_agg(jsonb_build_object(
+			'key1', 'value',
+			'key2', 10
+		)))
+	) AS sum
+FROM mytable1 m
+GROUP BY id`;
+
+		const actual = await generateCode(dialect, sql, 'selectJson02');
+		const expected = readFileSync('tests/postgres/expected-code/select-json02.ts.txt', 'utf-8');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });
 

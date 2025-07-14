@@ -23,7 +23,7 @@ describe('Parse window functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'num',
+					name: 'num',
 					type: 'bigint',
 					notNull: true,
 					table: '' //TODO - not implemented
@@ -51,19 +51,19 @@ describe('Parse window functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int',
 					notNull: false,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'num',
+					name: 'num',
 					type: 'bigint',
 					notNull: true,
 					table: ''
@@ -93,25 +93,25 @@ describe('Parse window functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'firstId',
+					name: 'firstId',
 					type: 'int',
 					notNull: true,
 					table: 'mytable2'
 				},
 				{
-					columnName: 'lastName',
+					name: 'lastName',
 					type: 'varchar',
 					notNull: false,
 					table: 'mytable2'
 				},
 				{
-					columnName: 'rankValue',
+					name: 'rankValue',
 					type: 'bigint',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'denseRankValue',
+					name: 'denseRankValue',
 					type: 'bigint',
 					notNull: true,
 					table: ''
@@ -138,7 +138,7 @@ describe('Parse window functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'total',
+					name: 'total',
 					type: 'decimal',
 					notNull: false,
 					table: 'mytable1'
@@ -163,7 +163,7 @@ describe('Parse window functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'avgResult',
+					name: 'avgResult',
 					type: 'decimal',
 					notNull: false,
 					table: 'mytable1'
@@ -191,13 +191,13 @@ describe('Parse window functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'leadValue',
+					name: 'leadValue',
 					type: 'int',
 					notNull: false,
 					table: 'mytable2'
 				},
 				{
-					columnName: 'lagValue',
+					name: 'lagValue',
 					type: 'varchar',
 					notNull: false,
 					table: 'mytable2'

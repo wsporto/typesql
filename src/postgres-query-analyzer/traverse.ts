@@ -1,4 +1,4 @@
-import { A_expr_addContext, A_expr_andContext, A_expr_at_time_zoneContext, A_expr_betweenContext, A_expr_caretContext, A_expr_collateContext, A_expr_compareContext, A_expr_inContext, A_expr_is_notContext, A_expr_isnullContext, A_expr_lesslessContext, A_expr_likeContext, A_expr_mulContext, A_expr_orContext, A_expr_qual_opContext, A_expr_qualContext, A_expr_typecastContext, A_expr_unary_notContext, A_expr_unary_qualopContext, A_expr_unary_signContext, A_exprContext, Array_expr_listContext, Array_exprContext, C_expr_caseContext, C_expr_existsContext, C_expr_exprContext, C_exprContext, ColidContext, ColumnElemContext, ColumnrefContext, Common_table_exprContext, CopystmtContext, DeletestmtContext, Expr_listContext, From_clauseContext, From_listContext, Func_applicationContext, Func_arg_exprContext, Func_expr_common_subexprContext, Func_exprContext, IdentifierContext, In_expr_listContext, In_expr_selectContext, In_exprContext, Insert_column_itemContext, InsertstmtContext, Join_qualContext, Join_typeContext, Qualified_nameContext, Relation_exprContext, Select_clauseContext, Select_no_parensContext, Select_with_parensContext, SelectstmtContext, Set_clauseContext, Simple_select_intersectContext, Simple_select_pramaryContext, StmtContext, Table_refContext, Target_elContext, Target_labelContext, Target_listContext, Unreserved_keywordContext, UpdatestmtContext, Values_clauseContext, When_clauseContext, Where_clauseContext } from '@wsporto/typesql-parser/postgres/PostgreSQLParser';
+import { A_expr_addContext, A_expr_andContext, A_expr_at_time_zoneContext, A_expr_betweenContext, A_expr_caretContext, A_expr_collateContext, A_expr_compareContext, A_expr_inContext, A_expr_is_notContext, A_expr_isnullContext, A_expr_lesslessContext, A_expr_likeContext, A_expr_mulContext, A_expr_orContext, A_expr_qual_opContext, A_expr_qualContext, A_expr_typecastContext, A_expr_unary_notContext, A_expr_unary_qualopContext, A_expr_unary_signContext, A_exprContext, AexprconstContext, Array_expr_listContext, Array_exprContext, C_expr_caseContext, C_expr_existsContext, C_expr_exprContext, C_exprContext, ColidContext, ColumnElemContext, ColumnrefContext, Common_table_exprContext, CopystmtContext, DeletestmtContext, Expr_listContext, From_clauseContext, From_listContext, Func_applicationContext, Func_arg_exprContext, Func_expr_common_subexprContext, Func_exprContext, IdentifierContext, In_expr_listContext, In_expr_selectContext, In_exprContext, Insert_column_itemContext, InsertstmtContext, Join_qualContext, Join_typeContext, Qualified_nameContext, Relation_exprContext, Select_clauseContext, Select_no_parensContext, Select_with_parensContext, SelectstmtContext, Set_clauseContext, Simple_select_intersectContext, Simple_select_pramaryContext, StmtContext, Table_refContext, Target_elContext, Target_labelContext, Target_listContext, Unreserved_keywordContext, UpdatestmtContext, Values_clauseContext, When_clauseContext, Where_clauseContext } from '@wsporto/typesql-parser/postgres/PostgreSQLParser';
 import { ParserRuleContext } from '@wsporto/typesql-parser';
 import { PostgresColumnSchema } from '../drivers/types';
 import { extractOriginalSql, splitName } from '../mysql-query-analyzer/select-columns';
@@ -6,6 +6,7 @@ import { DynamicSqlInfo2, FieldName } from '../mysql-query-analyzer/types';
 import { QueryType } from '../types';
 import { Relation2 } from '../sqlite-query-analyzer/sqlite-describe-nested-query';
 import { CheckConstraintResult } from '../drivers/postgres';
+import { JsonPropertyDef, JsonType, JsonTypeArray, PostgresSimpleType } from '../sqlite-query-analyzer/types';
 
 export type NotNullInfo = {
 	table_schema: string;
@@ -13,7 +14,8 @@ export type NotNullInfo = {
 	column_name: string;
 	is_nullable: boolean;
 	column_default?: true;
-	type_id?: number;
+	type: PostgresSimpleType;
+	jsonType?: JsonType | JsonTypeArray;
 }
 
 export type PostgresTraverseResult = {
@@ -263,6 +265,7 @@ function traverse_select_clause(select_clause: Select_clauseContext, context: Tr
 				is_nullable: value.is_nullable || unionNotNull[columnIndex].is_nullable,
 				table_name: '',
 				table_schema: '',
+				type: value.type,
 				...(value.column_default && { column_default: value.column_default }),
 			}
 			return col;
@@ -340,7 +343,20 @@ function extractRelations(a_expr: A_exprContext): string[] {
 
 function traverse_values_clause(values_clause: Values_clauseContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo[] {
 	const expr_list_list = values_clause.expr_list_list();
-	return expr_list_list.flatMap(expr_list => traverse_expr_list(expr_list, context, traverseResult));
+	const values_result = expr_list_list.map(expr_list => traverse_expr_list(expr_list, context, traverseResult));
+	return computeNullability(values_result);
+}
+
+function computeNullability(values_result: NotNullInfo[][]) {
+	const result = values_result[0].map((_, i) => (
+		{
+			column_name: `column${i + 1}`,
+			is_nullable: values_result.some(row => row[i].is_nullable),
+			table_name: '',
+			table_schema: '',
+			type: values_result[0][i].type
+		} satisfies NotNullInfo));
+	return result;
 }
 
 function traverse_expr_list(expr_list: Expr_listContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo[] {
@@ -425,7 +441,9 @@ function traverse_target_el(target_el: Target_elContext, context: TraverseContex
 			column_name: alias || exprResult.column_name,
 			is_nullable: exprResult.is_nullable,
 			table_name: exprResult.table_name,
-			table_schema: exprResult.table_schema
+			table_schema: exprResult.table_schema,
+			type: exprResult.type,
+			...(exprResult.jsonType != null && { jsonType: exprResult.jsonType })
 		};
 	}
 	throw Error('Column not found');
@@ -441,7 +459,8 @@ function traverse_a_expr(a_expr: A_exprContext, context: TraverseContext, traver
 		column_name: '',
 		is_nullable: true,
 		table_name: '',
-		table_schema: ''
+		table_schema: '',
+		type: 'unknow'
 	};
 }
 
@@ -471,7 +490,8 @@ function traverse_expr_or(a_expr_or: A_expr_orContext, context: TraverseContext,
 		column_name: '?column?',
 		is_nullable: result.some(col => col.is_nullable),
 		table_name: '',
-		table_schema: ''
+		table_schema: '',
+		type: 'bool'
 	} satisfies NotNullInfo;
 }
 
@@ -484,7 +504,8 @@ function traverse_expr_and(a_expr_and: A_expr_andContext, context: TraverseConte
 		column_name: '?column?',
 		is_nullable: result.some(col => col.is_nullable),
 		table_name: '',
-		table_schema: ''
+		table_schema: '',
+		type: 'bool'
 	} satisfies NotNullInfo;
 }
 
@@ -501,7 +522,8 @@ function traverse_expr_between(a_expr_between: A_expr_betweenContext, context: T
 		column_name: a_expr_between.getText(),
 		is_nullable: false,
 		table_name: '',
-		table_schema: ''
+		table_schema: '',
+		type: 'bool'
 	}
 }
 
@@ -524,7 +546,8 @@ function traverse_expr_in(a_expr_in: A_expr_inContext, context: TraverseContext,
 		// value -> is_nullable = leftExprResult.is_nullable
 		is_nullable: in_expr != null ? false : leftExprResult!.is_nullable,
 		table_name: '',
-		table_schema: ''
+		table_schema: '',
+		type: 'bool'
 	} satisfies NotNullInfo
 }
 
@@ -604,7 +627,8 @@ function traverse_expr_compare(a_expr_compare: A_expr_compareContext, context: T
 			column_name: '?column?',
 			is_nullable: result.some(col => col.is_nullable),
 			table_name: '',
-			table_schema: ''
+			table_schema: '',
+			type: 'bool'
 		}
 	}
 	const select_with_parens = a_expr_compare.select_with_parens();
@@ -614,7 +638,8 @@ function traverse_expr_compare(a_expr_compare: A_expr_compareContext, context: T
 			column_name: '?column?',
 			is_nullable: result.some(col => col.is_nullable),
 			table_name: '',
-			table_schema: ''
+			table_schema: '',
+			type: result[0].type
 		}
 	}
 	const a_expr = a_expr_compare.a_expr();
@@ -624,7 +649,8 @@ function traverse_expr_compare(a_expr_compare: A_expr_compareContext, context: T
 			column_name: '?column?',
 			is_nullable: result.is_nullable,
 			table_name: '',
-			table_schema: ''
+			table_schema: '',
+			type: result.type
 		}
 	}
 	throw Error('traverse_expr_compare -  Not expected:' + a_expr_compare.getText());
@@ -641,7 +667,8 @@ function traverse_expr_like(a_expr_like: A_expr_likeContext, context: TraverseCo
 			column_name: '?column?',
 			is_nullable: result.some(col => col.is_nullable),
 			table_name: '',
-			table_schema: ''
+			table_schema: '',
+			type: 'unknow'
 		} satisfies NotNullInfo
 	}
 	throw Error('traverse_expr_like -  Not expected:' + a_expr_like.getText());
@@ -658,7 +685,8 @@ function traverse_expr_qual_op(a_expr_qual_op: A_expr_qual_opContext, context: T
 			column_name: '?column?',
 			is_nullable: result.some(col => col.is_nullable),
 			table_name: '',
-			table_schema: ''
+			table_schema: '',
+			type: 'unknow'
 		} satisfies NotNullInfo
 	}
 	throw Error('traverse_expr_qual_op -  Not expected:' + a_expr_qual_op.getText());
@@ -667,6 +695,7 @@ function traverse_expr_qual_op(a_expr_qual_op: A_expr_qual_opContext, context: T
 function traverse_expr_unary_qualop(a_expr_unary_qualop: A_expr_unary_qualopContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
 	const a_expr_add = a_expr_unary_qualop.a_expr_add();
 	if (a_expr_add) {
+		//a_expr_mul ((MINUS | PLUS) a_expr_mul)*
 		const exprResult = a_expr_add.a_expr_mul_list().map(a_expr_mul => traverse_expr_mul(a_expr_mul, context, traverseResult));
 		if (exprResult.length === 1) {
 			return exprResult[0];
@@ -675,7 +704,8 @@ function traverse_expr_unary_qualop(a_expr_unary_qualop: A_expr_unary_qualopCont
 			column_name: '?column?',
 			is_nullable: exprResult.some(col => col.is_nullable),
 			table_name: '',
-			table_schema: ''
+			table_schema: '',
+			type: mapAddExprType(exprResult.map(exprResult => exprResult.type as ArithmeticType))
 		}
 		return result;
 	}
@@ -685,15 +715,17 @@ function traverse_expr_unary_qualop(a_expr_unary_qualop: A_expr_unary_qualopCont
 function traverse_expr_mul(a_expr_mul: A_expr_mulContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
 	const a_expr_mul_list = a_expr_mul.a_expr_caret_list();
 	if (a_expr_mul_list) {
-		const notNullInfo = a_expr_mul.a_expr_caret_list().map(a_expr_caret => traverse_expr_caret(a_expr_caret, context, traverseResult));
-		if (notNullInfo.length === 1) {
-			return notNullInfo[0];
+		// a_expr_caret ((STAR | SLASH | PERCENT) a_expr_caret)*
+		const exprResult = a_expr_mul.a_expr_caret_list().map(a_expr_caret => traverse_expr_caret(a_expr_caret, context, traverseResult));
+		if (exprResult.length === 1) {
+			return exprResult[0];
 		}
 		const result: NotNullInfo = {
 			column_name: '?column?',
-			is_nullable: notNullInfo.some(notNullInfo => notNullInfo.is_nullable),
+			is_nullable: exprResult.some(exprRes => exprRes.is_nullable),
 			table_name: '',
-			table_schema: ''
+			table_schema: '',
+			type: mapAddExprType(exprResult.map(exprResult => exprResult.type as ArithmeticType))
 		}
 		return result;
 	}
@@ -712,7 +744,8 @@ function traverse_expr_caret(a_expr_caret: A_expr_caretContext, context: Travers
 			column_name: '?column?',
 			is_nullable: notNullInfo.some(notNullInfo => notNullInfo.is_nullable),
 			table_name: '',
-			table_schema: ''
+			table_schema: '',
+			type: 'unknow'
 		}
 		return result;
 	}
@@ -759,6 +792,67 @@ function traverseColumnRef(columnref: ColumnrefContext, fromColumns: NotNullInfo
 	}
 }
 
+type NameAndTypeId = {
+	name: string;
+	type: PostgresSimpleType;
+}
+function getNameAndTypeIdFromAExprConst(a_expr_const: AexprconstContext): NameAndTypeId {
+	if (a_expr_const.iconst()) {
+		return {
+			name: a_expr_const.getText(),
+			type: 'int4'
+		}
+	}
+	if (a_expr_const.fconst()) {
+		return {
+			name: a_expr_const.getText(),
+			type: 'float4'
+		}
+	}
+	const type_function_name = a_expr_const.func_name()?.type_function_name()?.getText().toLowerCase();
+	if (type_function_name === 'date') {
+		return {
+			name: 'date',
+			type: 'date'
+		}
+	}
+	if (a_expr_const.sconst()) {
+		return {
+			name: a_expr_const.getText().slice(1, -1),
+			type: 'text'
+		}
+	}
+	//binary
+	if (a_expr_const.bconst()) {
+		return {
+			name: a_expr_const.getText(),
+			type: 'bit'
+		}
+	}
+	if (a_expr_const.xconst()) {
+		return {
+			name: a_expr_const.getText(),
+			type: 'bytea'
+		}
+	}
+	if (a_expr_const.TRUE_P() || a_expr_const.FALSE_P()) {
+		return {
+			name: a_expr_const.getText(),
+			type: 'bool'
+		}
+	}
+	if (a_expr_const.NULL_P()) {
+		return {
+			name: a_expr_const.getText(),
+			type: 'unknow'
+		}
+	}
+	return {
+		name: a_expr_const.getText(),
+		type: 'unknow'
+	}
+}
+
 function traversec_expr(c_expr: C_exprContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
 	if (c_expr instanceof C_expr_exprContext) {
 		if (c_expr.ARRAY()) {
@@ -769,7 +863,8 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 					column_name: '?column?',
 					is_nullable: true,
 					table_schema: '',
-					table_name: ''
+					table_name: '',
+					type: 'unknow'
 				}
 			}
 			const array_expr = c_expr.array_expr();
@@ -779,7 +874,8 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 					column_name: '?column?',
 					is_nullable: false,
 					table_schema: '',
-					table_name: ''
+					table_name: '',
+					type: 'unknow'
 				}
 
 			}
@@ -791,12 +887,14 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 		}
 		const aexprconst = c_expr.aexprconst();
 		if (aexprconst) {
+			const { name, type } = getNameAndTypeIdFromAExprConst(aexprconst);
 			const is_nullable = aexprconst.NULL_P() != null;
 			return {
-				column_name: aexprconst.getText(),
+				column_name: name,
 				is_nullable,
 				table_name: '',
-				table_schema: ''
+				table_schema: '',
+				type
 			}
 		}
 		if (c_expr.PARAM()) {
@@ -808,15 +906,22 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 				column_name: c_expr.PARAM().getText(),
 				is_nullable: !!context.propagatesNull,
 				table_name: '',
-				table_schema: ''
+				table_schema: '',
+				type: 'unknow'
 			}
 		}
 		const func_application = c_expr.func_expr()?.func_application();
 		if (func_application) {
+			if (is_json_build_object_func(func_application)) {
+				return traverse_json_build_obj_func(func_application, context, traverseResult);
+			}
+			if (is_json_agg(func_application)) {
+				return traverse_json_agg(func_application, context, traverseResult);
+			}
+
 			const isNotNull = traversefunc_application(func_application, context, traverseResult);
 			return {
-				column_name: func_application.func_name()?.getText() || func_application.getText(),
-				is_nullable: !isNotNull,
+				...isNotNull,
 				table_name: '',
 				table_schema: ''
 			}
@@ -825,20 +930,20 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 		if (func_expr_common_subexpr) {
 			const isNotNull = traversefunc_expr_common_subexpr(func_expr_common_subexpr, context, traverseResult);
 			return {
-				column_name: func_expr_common_subexpr.getText().split('(')?.[0]?.trim() || func_expr_common_subexpr.getText(),
-				is_nullable: !isNotNull,
-				table_name: '',
-				table_schema: ''
+				...isNotNull,
+				column_name: func_expr_common_subexpr.getText().split('(')?.[0]?.trim() || func_expr_common_subexpr.getText()
 			}
 		}
 		const select_with_parens = c_expr.select_with_parens();
 		if (select_with_parens) {
-			traverse_select_with_parens(select_with_parens, context, traverseResult);
+			const result = traverse_select_with_parens(select_with_parens, context, traverseResult);
 			return {
 				column_name: '?column?',
 				is_nullable: true,
 				table_name: '',
-				table_schema: ''
+				table_schema: '',
+				type: result[0].type,
+				jsonType: result[0].jsonType
 			}
 		}
 		const a_expr_in_parens = c_expr._a_expr_in_parens;
@@ -853,7 +958,8 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 				column_name: '?column?',
 				is_nullable: expr_list.some(col => col.is_nullable),
 				table_name: '',
-				table_schema: ''
+				table_schema: '',
+				type: 'unknow'
 			}
 		}
 		const implicit_row = c_expr.implicit_row();
@@ -864,18 +970,14 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 				column_name: '?column?',
 				is_nullable: expr_list.some(col => col.is_nullable),
 				table_name: '',
-				table_schema: ''
+				table_schema: '',
+				type: 'unknow'
 			}
 		}
 	}
 	if (c_expr instanceof C_expr_caseContext) {
 		const isNotNull = traversec_expr_case(c_expr, context, traverseResult);
-		return {
-			column_name: '?column?',
-			is_nullable: !isNotNull,
-			table_name: '',
-			table_schema: ''
-		}
+		return isNotNull;
 	}
 	if (c_expr instanceof C_expr_existsContext) {
 		const select_with_parens = c_expr.select_with_parens();
@@ -884,7 +986,8 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 			column_name: '?column?',
 			is_nullable: false,
 			table_name: '',
-			table_schema: ''
+			table_schema: '',
+			type: 'bool'
 		}
 	}
 	throw Error('traversec_expr -  Not expected:' + c_expr.getText());
@@ -897,7 +1000,8 @@ function filterColumns(fromColumns: NotNullInfo[], fieldName: FieldName) {
 				column_name: col.column_name,
 				is_nullable: col.is_nullable,
 				table_name: col.table_name,
-				table_schema: col.table_schema
+				table_schema: col.table_schema,
+				type: col.type
 			}
 			return result;
 		});
@@ -911,16 +1015,23 @@ function excludeColumns(fromColumns: NotNullInfo[], excludeList: FieldName[]) {
 	});
 }
 
-function traversec_expr_case(c_expr_case: C_expr_caseContext, context: TraverseContext, traverseResult: TraverseResult): boolean {
+function traversec_expr_case(c_expr_case: C_expr_caseContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
 	const case_expr = c_expr_case.case_expr();
 	const whenResult = case_expr.when_clause_list().when_clause_list().map(when_clause => traversewhen_clause(when_clause, context, traverseResult));
 	const whenIsNotNull = whenResult.every(when => when);
 	const elseExpr = case_expr.case_default()?.a_expr();
 	const elseIsNotNull = elseExpr ? !traverse_a_expr(elseExpr, context, traverseResult).is_nullable : false;
-	return elseIsNotNull && whenIsNotNull;
+	const notNull = elseIsNotNull && whenIsNotNull;
+	return {
+		column_name: '?column?',
+		is_nullable: !notNull,
+		table_name: '',
+		table_schema: '',
+		type: whenResult[0].type ?? 'unknow'
+	}
 }
 
-function traversewhen_clause(when_clause: When_clauseContext, context: TraverseContext, traverseResult: TraverseResult): boolean {
+function traversewhen_clause(when_clause: When_clauseContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
 	const a_expr_list = when_clause.a_expr_list();
 	const [whenExprList, thenExprList] = partition(a_expr_list, (index) => index % 2 === 0);
 
@@ -929,7 +1040,14 @@ function traversewhen_clause(when_clause: When_clauseContext, context: TraverseC
 		const thenExprResult = traverse_a_expr(thenExpr, context, traverseResult);
 		return thenExprResult;
 	});
-	return whenExprResult.every(res => res);
+	const notNull = whenExprResult.every(res => res);
+	return {
+		column_name: '?column?',
+		is_nullable: !notNull,
+		table_name: '',
+		table_schema: '',
+		type: whenExprResult[0].type
+	}
 }
 
 function partition<T>(array: T[], predicate: (index: number) => boolean): [T[], T[]] {
@@ -946,37 +1064,162 @@ function partition<T>(array: T[], predicate: (index: number) => boolean): [T[], 
 	);
 }
 
-function traversefunc_application(func_application: Func_applicationContext, context: TraverseContext, traverseResult: TraverseResult): boolean {
+function getFunctionName(func_application: Func_applicationContext) {
 	const functionName = func_application.func_name().getText().toLowerCase();
+	return functionName;
+}
+
+function is_json_build_object_func(func_application: Func_applicationContext) {
+	const functionName = getFunctionName(func_application);
+	return functionName === 'json_build_object'
+		|| functionName === 'jsonb_build_object';
+}
+
+function is_json_agg(func_application: Func_applicationContext) {
+	const functionName = getFunctionName(func_application);
+	return functionName === 'json_agg'
+		|| functionName === 'jsonb_agg';
+}
+
+function transformToJsonProperty(args: NotNullInfo[]): JsonPropertyDef[] {
+	const pairs: JsonPropertyDef[] = [];
+	for (let i = 0; i < args.length; i += 2) {
+		const key = args[i];
+		const value = args[i + 1];
+		if (value !== undefined) {
+			const type = value.jsonType ? value.jsonType : value.type!;
+			pairs.push({ key: key.column_name, type, notNull: !value.is_nullable });
+		}
+	}
+	return pairs;
+}
+
+function traverse_json_build_obj_func(func_application: Func_applicationContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
+	const columnName = func_application.func_name()?.getText() || func_application.getText();
+	const func_arg_expr_list = func_application.func_arg_list()?.func_arg_expr_list() || [];
+	const argsResult = func_arg_expr_list.map(func_arg_expr => traversefunc_arg_expr(func_arg_expr, context, traverseResult))
+	return {
+		column_name: columnName,
+		is_nullable: true,
+		table_name: '',
+		table_schema: '',
+		type: 'json',
+		jsonType: {
+			name: 'json',
+			properties: transformToJsonProperty(argsResult),
+		}
+	}
+}
+
+function traverse_json_agg(func_application: Func_applicationContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
+	const columnName = func_application.func_name()?.getText() || func_application.getText();
+	const func_arg_expr_list = func_application.func_arg_list()?.func_arg_expr_list() || [];
+	const argsResult = func_arg_expr_list.map(func_arg_expr => traversefunc_arg_expr(func_arg_expr, context, traverseResult))
+	return {
+		column_name: columnName,
+		is_nullable: true,
+		table_name: '',
+		table_schema: '',
+		type: 'json[]',
+		jsonType: {
+			name: 'json[]',
+			properties: argsResult[0].jsonType?.properties || []
+		}
+	}
+}
+
+function traversefunc_application(func_application: Func_applicationContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
+	const functionName = getFunctionName(func_application);
 	const func_arg_expr_list = func_application.func_arg_list()?.func_arg_expr_list() || [];
 	const argsResult = func_arg_expr_list.map(func_arg_expr => traversefunc_arg_expr(func_arg_expr, context, traverseResult))
 	if (functionName === 'count') {
-		return true;
+		return {
+			column_name: functionName,
+			is_nullable: false,
+			table_name: '',
+			table_schema: '',
+			type: 'int8'
+		};
 	}
 	if (functionName === 'concat'
-		|| functionName === 'concat_ws'
-		|| functionName === 'to_tsvector'
-		|| functionName === 'to_tsquery'
-		|| functionName === 'ts_rank'
+		|| functionName === 'concat_ws') {
+		return {
+			column_name: functionName,
+			is_nullable: argsResult.some(col => col.is_nullable),
+			table_name: '',
+			table_schema: '',
+			type: 'text'
+		};
+	}
+	if (functionName === 'to_tsvector') {
+		return {
+			column_name: functionName,
+			is_nullable: argsResult.some(col => col.is_nullable),
+			table_name: '',
+			table_schema: '',
+			type: 'tsvector'
+		};
+	}
+	if (functionName === 'ts_rank') {
+		return {
+			column_name: functionName,
+			is_nullable: argsResult.some(col => col.is_nullable),
+			table_name: '',
+			table_schema: '',
+			type: 'float4'
+
+		};
+	}
+	if (functionName === 'to_tsquery'
 		|| functionName === 'plainto_tsquery'
 		|| functionName === 'phraseto_tsquery'
 		|| functionName === 'websearch_to_tsquery') {
-		return argsResult.every(col => col);
+		return {
+			column_name: functionName,
+			is_nullable: argsResult.some(col => col.is_nullable),
+			table_name: '',
+			table_schema: '',
+			type: 'tsquery'
+		};
 	}
 	if (functionName === 'to_date') {
-		const firstArg = argsResult[0];
-		return firstArg;
+		return {
+			column_name: functionName,
+			is_nullable: argsResult.some(col => col.is_nullable),
+			table_name: '',
+			table_schema: '',
+			type: 'date'
+		};
 	}
 	if (functionName === 'generate_series') {
-		return true;
+		return {
+			column_name: functionName,
+			is_nullable: false,
+			table_name: '',
+			table_schema: '',
+			type: 'unknow'
+		};
 	}
 	if (functionName === 'row_number'
 		|| functionName === 'rank'
-		|| functionName === 'dense_rank'
-		|| functionName === 'percent_rank'
-		|| functionName === 'cume_dist'
-	) {
-		return true;
+		|| functionName === 'dense_rank') {
+		return {
+			column_name: functionName,
+			is_nullable: false,
+			table_name: '',
+			table_schema: '',
+			type: 'int4'
+		};
+	}
+	if (functionName === 'percent_rank'
+		|| functionName === 'cume_dist') {
+		return {
+			column_name: functionName,
+			is_nullable: false,
+			table_name: '',
+			table_schema: '',
+			type: 'float8'
+		};
 	}
 	if (functionName === 'first_value'
 		|| functionName === 'last_value'
@@ -985,45 +1228,98 @@ function traversefunc_application(func_application: Func_applicationContext, con
 		const firstArg = argsResult[0];
 		return firstArg;
 	}
-	if (functionName === 'json_build_object'
-		|| functionName === 'jsonb_build_object'
-		|| functionName === 'json_build_array'
+	if (functionName === 'json_build_array'
 		|| functionName === 'jsonb_build_array'
-		|| functionName === 'json_agg'
-		|| functionName === 'jsonb_agg'
 	) {
-		return true;
+		return {
+			column_name: functionName,
+			is_nullable: true,
+			table_name: '',
+			table_schema: '',
+			type: 'json'
+		};
 	}
 	if (functionName === 'to_json' || functionName === 'to_jsonb') {
-		return argsResult.every(col => col);
+		return {
+			column_name: functionName,
+			is_nullable: true,
+			table_name: '',
+			table_schema: '',
+			type: 'json'
+		};
+	}
+	if (functionName === 'sum') {
+		return {
+			...argsResult[0],
+			column_name: functionName,
+			is_nullable: true,
+			type: argsResult[0].type ? mapSumType(argsResult[0].type) : 'unknow'
+		};
 	}
 
-	return false;
+	return {
+		column_name: functionName,
+		is_nullable: true,
+		table_name: '',
+		table_schema: '',
+		type: 'unknow'
+	};
 }
 
-function traversefunc_expr_common_subexpr(func_expr_common_subexpr: Func_expr_common_subexprContext, context: TraverseContext, traverseResult: TraverseResult): boolean {
+function mapSumType(type: PostgresSimpleType): PostgresSimpleType {
+	switch (type) {
+		case 'int2':
+		case 'int4':
+			return 'int8';
+		case 'int8':
+		case 'numeric':
+			return 'numeric';
+		default:
+			return type;
+
+	}
+}
+
+function traversefunc_expr_common_subexpr(func_expr_common_subexpr: Func_expr_common_subexprContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
 	if (func_expr_common_subexpr.COALESCE() || func_expr_common_subexpr.GREATEST() || func_expr_common_subexpr.LEAST()) {
 		const func_arg_list = func_expr_common_subexpr.expr_list().a_expr_list();
 		const result = func_arg_list.map(func_arg_expr => {
 			const paramResult = traverse_a_expr(func_arg_expr, { ...context, propagatesNull: true }, traverseResult);
 			return paramResult;
 		});
-		return result.some(col => !col.is_nullable);
+		return {
+			...result[0],
+			is_nullable: result.every(col => col.is_nullable),
+			table_name: '',
+			table_schema: ''
+		}
 	}
 	if (func_expr_common_subexpr.EXTRACT()) {
 		const a_expr = func_expr_common_subexpr.extract_list().a_expr();
 		const result = traverse_a_expr(a_expr, context, traverseResult)
-		return !result.is_nullable;
+		return {
+			column_name: 'extract',
+			is_nullable: result.is_nullable,
+			table_name: '',
+			table_schema: '',
+			type: 'float8'
+		}
 	}
 	func_expr_common_subexpr.a_expr_list().forEach(a_expr => {
 		traverse_a_expr(a_expr, context, traverseResult);
 	})
-	return false;
+	return {
+		column_name: func_expr_common_subexpr.getText(),
+		is_nullable: true,
+		table_name: '',
+		table_schema: '',
+		type: 'unknow'
+	};
 }
 
-function traversefunc_arg_expr(func_arg_expr: Func_arg_exprContext, context: TraverseContext, traverseResult: TraverseResult): boolean {
+function traversefunc_arg_expr(func_arg_expr: Func_arg_exprContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
 	const a_expr = func_arg_expr.a_expr();
-	return !traverse_a_expr(a_expr, context, traverseResult).is_nullable;
+	return traverse_a_expr(a_expr, context, traverseResult);
 }
 
 function traverse_array_expr(array_expr: Array_exprContext, context: TraverseContext, traverseResult: TraverseResult) {
@@ -1082,6 +1378,7 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 	const allColumns: NotNullInfo[] = [];
 	const relation_expr = table_ref.relation_expr();
 	const aliasClause = table_ref.alias_clause();
+	const aliasNameList = aliasClause?.name_list()?.name_list()?.map(name => name.getText());
 	const alias = aliasClause ? aliasClause.colid().getText() : '';
 	if (relation_expr) {
 		const tableName = traverse_relation_expr(relation_expr, dbSchema);
@@ -1140,7 +1437,14 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 	const select_with_parens = table_ref.select_with_parens();
 	if (select_with_parens) {
 		const columns = traverse_select_with_parens(select_with_parens, { ...context, collectDynamicQueryInfo: false }, traverseResult);
-		const withAlias = columns.map(col => ({ ...col, table_name: alias || col.table_name }));
+		const withAlias = columns.map((col, i) => (
+			{
+				column_name: aliasNameList?.[i] || col.column_name,
+				is_nullable: col.is_nullable,
+				table_name: alias || col.table_name,
+				table_schema: col.table_schema,
+				type: col.type
+			}) satisfies NotNullInfo);
 		return withAlias;
 	}
 	return allColumns;
@@ -1595,6 +1899,33 @@ function isNotNul_a_expr_unary_qualop(a_expr_unary_qualop: A_expr_unary_qualopCo
 	return false;
 }
 
+type ArithmeticType = 'int2' | 'int4' | 'int8' | 'float4' | 'float8' | 'numeric' | 'date' | 'timestamp'; //'interval'
+function mapAddExprType(types: (ArithmeticType | 'unknow')[]): ArithmeticType | 'unknow' {
+
+	const arithmeticMatrix: Record<ArithmeticType, Partial<Record<ArithmeticType, ArithmeticType>>> = {
+		int2: { int2: 'int2', int4: 'int4', int8: 'int8', float4: 'float4', float8: 'float8', numeric: 'numeric', date: 'date' },
+		int4: { int2: 'int4', int4: 'int4', int8: 'int8', float4: 'float4', float8: 'float8', numeric: 'numeric', date: 'date' },
+		int8: { int2: 'int8', int4: 'int8', int8: 'int8', float4: 'float8', float8: 'float8', numeric: 'numeric', date: 'date' },
+		float4: { int2: 'float4', int4: 'float4', int8: 'float8', float4: 'float4', float8: 'float8', numeric: 'numeric' },
+		float8: { int2: 'float8', int4: 'float8', int8: 'float8', float4: 'float8', float8: 'float8', numeric: 'numeric' },
+		numeric: { int2: 'numeric', int4: 'numeric', int8: 'numeric', float4: 'numeric', float8: 'numeric', numeric: 'numeric' },
+		date: { int2: 'date', int4: 'date', int8: 'date', date: 'int4', /*interval: 'timestamp'*/ }, // date - date = integer
+		timestamp: { /*interval: 'timestamp', timestamp: 'interval'*/ },
+		// interval: { date: 'timestamp', interval: 'interval' }
+	};
+	let currentType: ArithmeticType | undefined = 'int2';
+	for (const type of types) {
+		if (type === 'unknow') {
+			return 'unknow';
+		}
+		currentType = arithmeticMatrix[currentType][type];
+		if (!currentType) {
+			return 'unknow'
+		}
+	}
+	return currentType;
+}
+
 function isNotNull_a_expr_add(a_expr_add: A_expr_addContext, field: NotNullInfo): boolean {
 	const a_expr_mul_list = a_expr_add.a_expr_mul_list();
 	if (a_expr_mul_list) {
@@ -1940,3 +2271,4 @@ function traverse_columnElem(columnElem: ColumnElemContext, fromColumns: Postgre
 	const colid = columnElem.colid();
 	return traverse_colid(colid, fromColumns);
 }
+

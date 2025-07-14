@@ -1,7 +1,7 @@
 import assert from 'node:assert';
-import type { ParameterDef, SchemaDef } from '../../src/types';
 import postgres from 'postgres';
 import { describeQuery } from '../../src/postgres-query-analyzer/describe';
+import { PostgresSchemaDef } from '../../src/postgres-query-analyzer/types';
 
 describe('postgres-json-functions', () => {
 	const postres = postgres({
@@ -15,21 +15,225 @@ describe('postgres-json-functions', () => {
 	it(`SELECT json_build_object('key', 'value')`, async () => {
 		const sql = `SELECT json_build_object('key', 'value'), jsonb_build_object('key', 'value')`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'json_build_object',
-					type: 'json',
-					notNull: true,
+					name: 'json_build_object',
+					type: {
+						name: 'json',
+						properties: [
+							{
+								key: 'key',
+								type: 'text',
+								notNull: true
+							}
+						]
+					},
+					notNull: false,
 					table: ''
 				},
 				{
-					columnName: 'jsonb_build_object',
-					type: 'jsonb',
-					notNull: true,
+					name: 'jsonb_build_object',
+					type: {
+						name: 'json',
+						properties: [
+							{
+								key: 'key',
+								type: 'text',
+								notNull: true
+							}
+						]
+					},
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
+	it(`SELECT json_build_object('key', id) FROM mytable1`, async () => {
+		const sql = `SELECT json_build_object('key', id), jsonb_build_object('key', id) FROM mytable1`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'json_build_object',
+					type: {
+						name: 'json',
+						properties: [
+							{
+								key: 'key',
+								type: 'int4',
+								notNull: true
+							}
+						]
+					},
+					notNull: false,
+					table: ''
+				},
+				{
+					name: 'jsonb_build_object',
+					type: {
+						name: 'json',
+						properties: [
+							{
+								key: 'key',
+								type: 'int4',
+								notNull: true
+							}
+						]
+					},
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
+	it(`SELECT json_build_object('key1', name, 'key2', id ) as value FROM mytable1`, async () => {
+		const sql = `SELECT json_build_object('key1', name, 'key2', id ) as value FROM mytable2`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'value',
+					type: {
+						name: 'json',
+						properties: [
+							{
+								key: 'key1',
+								type: 'text',
+								notNull: false
+							},
+							{
+								key: 'key2',
+								type: 'int4',
+								notNull: true
+							}
+						]
+					},
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
+	it(`SELECT json_build_object('key1', m2.name, 'key2', m2.descr, 'key3', m1.id, 'key4', m2.id ) as value`, async () => {
+		const sql = `SELECT json_build_object('key1', m2.name, 'key2', m2.descr, 'key3', m1.id, 'key4', m2.id ) as value 
+			FROM mytable1 m1
+			LEFT JOIN mytable2 m2 ON m1.id = m2.id`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'value',
+					type: {
+						name: 'json',
+						properties: [
+							{
+								key: 'key1',
+								type: 'text',
+								notNull: false
+							},
+							{
+								key: 'key2',
+								type: 'text',
+								notNull: false
+							},
+							{
+								key: 'key3',
+								type: 'int4',
+								notNull: true
+							},
+							{
+								key: 'key4',
+								type: 'int4',
+								notNull: false
+							}
+						]
+					},
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
+	it(`SELECT json_build_object('key1', m2.name, 'key2', json_build_object('nested', m1.id), 'key3', m2.id ) as value`, async () => {
+		const sql = `SELECT json_build_object('key1', m2.name, 'key2', json_build_object('nested', m1.id), 'key3', m2.id ) as value 
+			FROM mytable1 m1
+			LEFT JOIN mytable2 m2 ON m1.id = m2.id`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'value',
+					type: {
+						name: 'json',
+						properties: [
+							{
+								key: 'key1',
+								type: 'text',
+								notNull: false
+							},
+							{
+								key: 'key2',
+								type: {
+									name: 'json',
+									properties: [
+										{
+											key: 'nested',
+											type: 'int4',
+											notNull: true
+										}
+									]
+								},
+								notNull: false
+							},
+							{
+								key: 'key3',
+								type: 'int4',
+								notNull: false
+							}
+						]
+					},
+					notNull: false,
 					table: ''
 				}
 			],
@@ -44,15 +248,15 @@ describe('postgres-json-functions', () => {
 	it(`select json_build_array(1,2,'foo',4,5)`, async () => {
 		const sql = `select json_build_array(1,2,'foo',4,5)`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'json_build_array',
+					name: 'json_build_array',
 					type: 'json',
-					notNull: true,
+					notNull: false, //in this example is never null
 					table: ''
 				}
 			],
@@ -79,81 +283,81 @@ describe('postgres-json-functions', () => {
 			to_json(array[null]) as col11,
 			to_jsonb(array[null]) as col12`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'col1', //to_json(10::int) as col1
-					type: 'json',
-					notNull: true,
-					table: ''
-				},
-				{
-					columnName: 'col2', //to_jsonb(10::int) as col2
-					type: 'jsonb',
-					notNull: true,
-					table: ''
-				},
-				{
-					columnName: 'col3', //to_json('a'::text) as col3
-					type: 'json',
-					notNull: true,
-					table: ''
-				},
-				{
-					columnName: 'col4', //to_jsonb('a'::text) as col4
-					type: 'jsonb',
-					notNull: true,
-					table: ''
-				},
-				{
-					columnName: 'col5', //to_json(array[1, 2, 3]) as col5
-					type: 'json',
-					notNull: true,
-					table: ''
-				},
-				{
-					columnName: 'col6', //to_jsonb(array[1, 2, 3]) as col6
-					type: 'jsonb',
-					notNull: true,
-					table: ''
-				},
-				{
-					columnName: 'col7', //to_json(array['a', 'b', 'c']) as col7
-					type: 'json',
-					notNull: true,
-					table: ''
-				},
-				{
-					columnName: 'col8', //to_jsonb(array['a', 'b', 'c']) as col8
-					type: 'jsonb',
-					notNull: true,
-					table: ''
-				},
-				{
-					columnName: 'col9', //to_json(null) as col9
+					name: 'col1', //to_json(10::int) as col1
 					type: 'json',
 					notNull: false,
 					table: ''
 				},
 				{
-					columnName: 'col10', //to_jsonb(null) as col9
+					name: 'col2', //to_jsonb(10::int) as col2
 					type: 'jsonb',
 					notNull: false,
 					table: ''
 				},
 				{
-					columnName: 'col11', //to_json(array[null]) as col11
+					name: 'col3', //to_json('a'::text) as col3
 					type: 'json',
-					notNull: true,
+					notNull: false,
 					table: ''
 				},
 				{
-					columnName: 'col12', //to_jsonb(array[null]) as col11
+					name: 'col4', //to_jsonb('a'::text) as col4
 					type: 'jsonb',
-					notNull: true,
+					notNull: false,
+					table: ''
+				},
+				{
+					name: 'col5', //to_json(array[1, 2, 3]) as col5
+					type: 'json',
+					notNull: false,
+					table: ''
+				},
+				{
+					name: 'col6', //to_jsonb(array[1, 2, 3]) as col6
+					type: 'jsonb',
+					notNull: false,
+					table: ''
+				},
+				{
+					name: 'col7', //to_json(array['a', 'b', 'c']) as col7
+					type: 'json',
+					notNull: false,
+					table: ''
+				},
+				{
+					name: 'col8', //to_jsonb(array['a', 'b', 'c']) as col8
+					type: 'jsonb',
+					notNull: false,
+					table: ''
+				},
+				{
+					name: 'col9', //to_json(null) as col9
+					type: 'json',
+					notNull: false,
+					table: ''
+				},
+				{
+					name: 'col10', //to_jsonb(null) as col9
+					type: 'jsonb',
+					notNull: false,
+					table: ''
+				},
+				{
+					name: 'col11', //to_json(array[null]) as col11
+					type: 'json',
+					notNull: false,
+					table: ''
+				},
+				{
+					name: 'col12', //to_jsonb(array[null]) as col11
+					type: 'jsonb',
+					notNull: false,
 					table: ''
 				}
 			],
@@ -173,33 +377,483 @@ describe('postgres-json-functions', () => {
 			jsonb_agg(null::text) as col4
 			`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'col1',
-					type: 'json',
-					notNull: true,
+					name: 'col1',
+					type: {
+						name: 'json[]',
+						properties: [
+							{
+								key: 'key',
+								type: 'int4',
+								notNull: true
+							}
+						]
+					},
+					notNull: false,
+					table: '',
+				},
+				{
+					name: 'col2',
+					type: {
+						name: 'json[]',
+						properties: [
+							{
+								key: 'key',
+								type: 'int4',
+								notNull: true
+							}
+						]
+					},
+					notNull: false,
 					table: ''
 				},
 				{
-					columnName: 'col2',
-					type: 'jsonb',
-					notNull: true,
+					name: 'col3',
+					type: {
+						name: 'json[]',
+						properties: []
+					},
+					notNull: false,
 					table: ''
 				},
 				{
-					columnName: 'col3',
-					type: 'json',
-					notNull: true,
+					name: 'col4',
+					type: {
+						name: 'json[]',
+						properties: []
+					},
+					notNull: false,
 					table: ''
-				},
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
+	it(`SELECT json_agg(json_build_object('key', 'value'))`, async () => {
+		const sql = `SELECT json_agg(json_build_object('key', 'value')) as result`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
 				{
-					columnName: 'col4',
-					type: 'jsonb',
-					notNull: true,
+					name: 'result',
+					type: {
+						name: 'json[]',
+						properties: [
+							{
+								key: 'key',
+								type: 'text',
+								notNull: true
+							}
+						],
+					},
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
+	it(`SELECT json_agg(...) FROM VALUES (1, 'a'),(2, 'b')) AS t(id, name) `, async () => {
+		const sql = `
+		SELECT json_agg(
+			json_build_object('key', name, 'key2', id)
+		) AS result
+		FROM (
+			VALUES
+				(1, 'a'),
+				(2, 'b')
+		) AS t(id, name)`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					name: 'result',
+					type: {
+						name: 'json[]',
+						properties: [
+							{
+								key: 'key',
+								type: 'text',
+								notNull: true,
+							},
+							{
+								key: 'key2',
+								type: 'int4',
+								notNull: true
+							}
+						],
+					},
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
+	it(`SELECT json_build_object('total', SUM(m.id), 'count', ...) AS sum FROM mytable1 m`, async () => {
+		const sql = `
+		SELECT
+			json_build_object(
+				'total', SUM(m.id),
+				'count', COUNT(m.id),
+				'plus', id+id,
+				'minus', id-id,
+				'mult', id*id,
+				'div', id/id, -- result type is the same 5/2 is 2: int4
+				'concat', CONCAT('a', 'b'),
+				'coalesce', COALESCE(m.id, 0),
+				'days',  DATE '2020-01-02' - DATE '2020-01-01',
+				'nested', COALESCE(json_agg(jsonb_build_object(
+					'key1', 'value',
+					'key2', 10
+				)))
+			) AS sum
+		FROM mytable1 m
+		GROUP BY id`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'sum',
+					type: {
+						name: 'json',
+						properties: [
+							{
+								key: 'total',
+								type: 'int8',
+								notNull: false,
+							},
+							{
+								key: 'count',
+								type: 'int8',
+								notNull: true,
+							},
+							{
+								key: 'plus',
+								type: 'int4',
+								notNull: true,
+							},
+							{
+								key: 'minus',
+								type: 'int4',
+								notNull: true,
+							},
+							{
+								key: 'mult',
+								type: 'int4',
+								notNull: true,
+							},
+							{
+								key: 'div',
+								type: 'int4',
+								notNull: true,
+							},
+							{
+								key: 'concat',
+								type: 'text',
+								notNull: true,
+							},
+							{
+								key: 'coalesce',
+								type: 'int4',
+								notNull: true,
+							},
+							{
+								key: 'days',
+								type: 'int4',
+								notNull: true,
+							},
+							{
+								key: 'nested',
+								type: {
+									name: 'json[]',
+									properties: [
+										{
+											key: 'key1',
+											type: 'text',
+											notNull: true
+										},
+										{
+											key: 'key2',
+											type: 'int4',
+											notNull: true
+										}
+									]
+								},
+								notNull: false
+
+							}
+						],
+					},
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
+	it(`SELECT json_build_object('total', SUM(m.id), ....) AS sum FROM mytable1 m`, async () => {
+		const sql = `
+		SELECT
+			json_build_object(
+				'sum_int2', SUM(t.int2_column),
+				'sum_int4', SUM(t.int4_column),
+				'sum_int8', SUM(t.int8_column),
+				'sum_numeric', SUM(t.numeric_column),
+				'sum_float4', SUM(t.float4_column),
+				'sum_float8', SUM(t.float8_column)
+			) AS result
+		FROM all_types t`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					name: 'result',
+					type: {
+						name: 'json',
+						properties: [
+							{
+								key: 'sum_int2',
+								type: 'int8',
+								notNull: false
+							},
+							{
+								key: 'sum_int4',
+								type: 'int8',
+								notNull: false
+							},
+							{
+								key: 'sum_int8',
+								type: 'numeric',
+								notNull: false
+							},
+							{
+								key: 'sum_numeric',
+								type: 'numeric',
+								notNull: false
+							},
+							{
+								key: 'sum_float4',
+								type: 'float4',
+								notNull: false
+							},
+							{
+								key: 'sum_float8',
+								type: 'float8',
+								notNull: false
+							}
+						],
+					},
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
+	it(`SELECT json_build_object('total', EXTRACT(YEAR FROM DATE '2025-07-14')) AS sum FROM mytable1 m`, async () => {
+		const sql = `
+		SELECT
+			json_build_object(
+				'extract_year', EXTRACT(YEAR FROM DATE '2025-07-14')
+			) AS result
+		FROM mytable1 m
+		GROUP BY id`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'result',
+					type: {
+						name: 'json',
+						properties: [
+							{
+								key: 'extract_year',
+								type: 'float8',
+								notNull: true
+							}
+						],
+					},
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
+	it(`SELECT json_build_object('nested', (SELECT COALESCE(json_agg())) AS sum FROM mytable1 m`, async () => {
+		const sql = `
+		SELECT
+			json_build_object(
+				'nested', (SELECT COALESCE(json_agg(jsonb_build_object(
+					'key1', 'value',
+					'key2', 10
+				)))) 
+			) AS sum
+		FROM mytable1 m
+		GROUP BY id`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'sum',
+					type: {
+						name: 'json',
+						properties: [
+							{
+								key: 'nested',
+								type: {
+									name: 'json[]',
+									properties: [
+										{
+											key: 'key1',
+											type: 'text',
+											notNull: true
+										},
+										{
+											key: 'key2',
+											type: 'int4',
+											notNull: true
+										}
+									]
+								},
+								notNull: false
+
+							}
+						],
+					},
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
+	it(`SELECT json_build_object('case', CASE WHEN id = 0 THEN 'a' ELSE 'b' END ) AS sum AS sum FROM mytable1 m`, async () => {
+		const sql = `
+		SELECT
+			json_build_object(
+				'case', CASE WHEN id = 0 THEN 'a' ELSE 'b' END 
+			) AS sum
+		FROM mytable1 m
+		GROUP BY id`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'sum',
+					type: {
+						name: 'json',
+						properties: [
+							{
+								key: 'case',
+								type: 'text',
+								notNull: true
+							}
+						],
+					},
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
+	it(`json_build_object - dynamic json`, async () => {
+		const sql = `
+		SELECT
+			json_build_object(
+				'case', CASE 
+					WHEN id = 1 THEN json_build_object('a', 1) 
+					WHEN id = 2 THEN json_build_object('b', 2)
+					ELSE json_build_object('c', 3) END 
+		) AS result
+		FROM mytable1 m`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'result',
+					type: {
+						name: 'json',
+						properties: [
+							{
+								key: 'case',
+								type: 'json',
+								notNull: false
+							}
+						],
+					},
+					notNull: false,
 					table: ''
 				}
 			],

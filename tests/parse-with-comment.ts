@@ -23,7 +23,7 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
@@ -50,7 +50,7 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
@@ -77,7 +77,7 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
@@ -113,7 +113,7 @@ describe('Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'

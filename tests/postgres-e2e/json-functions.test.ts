@@ -1,6 +1,6 @@
 import assert from 'node:assert';
 import pg from 'pg'
-import { selectJsonBuildArray01, SelectJsonBuildArray01Result, selectJsonBuildObject01, SelectJsonBuildObject01Result } from './sql';
+import { selectJsonBuildArray01, SelectJsonBuildArray01Result, selectJsonBuildObject01, SelectJsonBuildObject01Result, selectJsonBuildObject02, SelectJsonBuildObject02Result } from './sql';
 
 describe('e2e-postgres-dynamic-query', () => {
 	const pool = new pg.Pool({
@@ -25,6 +25,25 @@ describe('e2e-postgres-dynamic-query', () => {
 			}
 		}
 
+
+		assert.deepStrictEqual(result, expectedResult);
+	});
+
+	it('selectJsonBuildObject02', async () => {
+		const result = await selectJsonBuildObject02(pool);
+
+		const expectedResult: SelectJsonBuildObject02Result = {
+			result: [
+				{
+					key: 'a',
+					key2: 1
+				},
+				{
+					key: 'b',
+					key2: 2
+				}
+			]
+		}
 
 		assert.deepStrictEqual(result, expectedResult);
 	});

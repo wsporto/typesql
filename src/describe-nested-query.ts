@@ -166,7 +166,7 @@ function getRelations(tableRef: TableReferenceContext, dbSchema: ColumnSchema[],
 				.map(({ col, index }) => {
 					const f: ModelColumn = {
 						type: 'field',
-						name: col.columnName,
+						name: col.name,
 						index: index
 					};
 					return f;

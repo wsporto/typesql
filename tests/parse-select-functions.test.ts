@@ -22,7 +22,7 @@ describe('Test parse select with functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'sum(value)',
+					name: 'sum(value)',
 					type: 'decimal',
 					notNull: false,
 					table: 'mytable1'
@@ -47,7 +47,7 @@ describe('Test parse select with functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'total',
+					name: 'total',
 					type: 'decimal',
 					notNull: false,
 					table: 'mytable1'
@@ -72,7 +72,7 @@ describe('Test parse select with functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'total',
+					name: 'total',
 					type: 'decimal',
 					notNull: false,
 					table: 't1'
@@ -97,7 +97,7 @@ describe('Test parse select with functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'count(id)',
+					name: 'count(id)',
 					type: 'bigint',
 					notNull: true,
 					table: ''
@@ -122,7 +122,7 @@ describe('Test parse select with functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'count(*)',
+					name: 'count(*)',
 					type: 'bigint',
 					notNull: true,
 					table: ''
@@ -148,7 +148,7 @@ describe('Test parse select with functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'sum(2*value)',
+					name: 'sum(2*value)',
 					type: 'decimal',
 					notNull: false,
 					table: ''
@@ -173,7 +173,7 @@ describe('Test parse select with functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'avg(value)',
+					name: 'avg(value)',
 					type: 'decimal',
 					notNull: false,
 					table: ''
@@ -198,7 +198,7 @@ describe('Test parse select with functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'avg(value + (value + 2))',
+					name: 'avg(value + (value + 2))',
 					type: 'decimal',
 					notNull: false,
 					table: ''
@@ -223,7 +223,7 @@ describe('Test parse select with functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'avgResult',
+					name: 'avgResult',
 					type: 'decimal',
 					notNull: false,
 					table: ''
@@ -248,7 +248,7 @@ describe('Test parse select with functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'sum(t2.id + (t1.value + 2))',
+					name: 'sum(t2.id + (t1.value + 2))',
 					type: 'decimal',
 					notNull: false,
 					table: ''
@@ -273,7 +273,7 @@ describe('Test parse select with functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'MIN(value)',
+					name: 'MIN(value)',
 					type: 'int',
 					notNull: false,
 					table: ''
@@ -299,7 +299,7 @@ describe('Test parse select with functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'MIN(name)',
+					name: 'MIN(name)',
 					type: 'varchar',
 					notNull: false,
 					table: ''
@@ -324,7 +324,7 @@ describe('Test parse select with functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: `STR_TO_DATE('21/5/2013','%d/%m/%Y')`,
+					name: `STR_TO_DATE('21/5/2013','%d/%m/%Y')`,
 					type: 'date',
 					notNull: false, //invalid date
 					table: ''
@@ -349,19 +349,19 @@ describe('Test parse select with functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: '10',
+					name: '10',
 					type: 'int',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: `CONCAT_WS('a', 'b')`, //If the separator is NULL, the result is NULL.
+					name: `CONCAT_WS('a', 'b')`, //If the separator is NULL, the result is NULL.
 					type: 'varchar',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'varchar',
 					notNull: true,
 					table: ''
@@ -387,7 +387,7 @@ describe('Test parse select with functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: `STR_TO_DATE(CONCAT_WS('/', ?, ?, ?),'%d/%m/%Y')`,
+					name: `STR_TO_DATE(CONCAT_WS('/', ?, ?, ?),'%d/%m/%Y')`,
 					type: 'date',
 					notNull: false,
 					table: ''
@@ -426,7 +426,7 @@ describe('Test parse select with functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'days_stayed',
+					name: 'days_stayed',
 					type: 'bigint',
 					notNull: true,
 					table: ''
@@ -462,7 +462,7 @@ describe('Test parse select with functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'days_stayed',
+					name: 'days_stayed',
 					type: 'bigint',
 					notNull: false, //STR_TO_DATE will return null if pass an invalid date
 					table: ''
@@ -502,13 +502,13 @@ describe('Test parse select with functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'add_result',
+					name: 'add_result',
 					type: 'bigint',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'diff_result',
+					name: 'diff_result',
 					type: 'bigint',
 					notNull: true,
 					table: ''
@@ -554,13 +554,13 @@ describe('Test parse select with functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'result1',
+					name: 'result1',
 					type: 'varchar',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'result2',
+					name: 'result2',
 					type: 'varchar',
 					notNull: true,
 					table: ''
@@ -586,7 +586,7 @@ describe('Test parse select with functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'result',
+					name: 'result',
 					type: 'int',
 					notNull: true,
 					table: ''
@@ -612,7 +612,7 @@ describe('Test parse select with functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'GROUP_CONCAT(name)',
+					name: 'GROUP_CONCAT(name)',
 					type: 'varchar',
 					notNull: false,
 					table: ''
@@ -638,7 +638,7 @@ describe('Test parse select with functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'GROUP_CONCAT(id)',
+					name: 'GROUP_CONCAT(id)',
 					type: 'varchar',
 					notNull: true,
 					table: ''
@@ -665,7 +665,7 @@ describe('Test parse select with functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'result',
+					name: 'result',
 					type: 'varchar',
 					notNull: false,
 					table: ''
@@ -691,7 +691,7 @@ describe('Test parse select with functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'result',
+					name: 'result',
 					type: 'int',
 					notNull: true,
 					table: ''
@@ -717,7 +717,7 @@ describe('Test parse select with functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'result',
+					name: 'result',
 					type: 'varchar',
 					notNull: true,
 					table: ''
@@ -743,7 +743,7 @@ describe('Test parse select with functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'result',
+					name: 'result',
 					type: 'varchar',
 					notNull: false,
 					table: ''
@@ -769,7 +769,7 @@ describe('Test parse select with functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'result',
+					name: 'result',
 					type: 'varchar',
 					notNull: false,
 					table: ''
@@ -795,7 +795,7 @@ describe('Test parse select with functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'result',
+					name: 'result',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1' //correct?
@@ -827,7 +827,7 @@ describe('Test parse select with functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: `NULLIF(?, 'a')`,
+					name: `NULLIF(?, 'a')`,
 					type: 'varchar',
 					notNull: false,
 					table: ''
@@ -859,7 +859,7 @@ describe('Test parse select with functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'result',
+					name: 'result',
 					type: 'char',
 					notNull: true,
 					table: ''
@@ -885,7 +885,7 @@ describe('Test parse select with functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'md5',
+					name: 'md5',
 					type: 'char',
 					notNull: true,
 					table: ''
@@ -911,7 +911,7 @@ describe('Test parse select with functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'md5',
+					name: 'md5',
 					type: 'char',
 					notNull: true,
 					table: ''
@@ -943,31 +943,31 @@ describe('Test parse select with functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'r1',
+					name: 'r1',
 					type: 'char',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'r2',
+					name: 'r2',
 					type: 'char',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'r3',
+					name: 'r3',
 					type: 'char',
 					notNull: false,
 					table: ''
 				},
 				{
-					columnName: 'r4',
+					name: 'r4',
 					type: 'char',
 					notNull: false,
 					table: ''
 				},
 				{
-					columnName: 'r5',
+					name: 'r5',
 					type: 'char',
 					notNull: true,
 					table: ''

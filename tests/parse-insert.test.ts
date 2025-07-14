@@ -19,12 +19,12 @@ describe('parse insert statements', () => {
 			sql: 'insert into mytable1 (value) values (?)',
 			columns: [
 				{
-					columnName: 'affectedRows',
+					name: 'affectedRows',
 					type: 'int',
 					notNull: true
 				},
 				{
-					columnName: 'insertId',
+					name: 'insertId',
 					type: 'int',
 					notNull: true
 				}
@@ -224,12 +224,12 @@ describe('parse insert statements', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'affectedRows',
+					name: 'affectedRows',
 					type: 'int',
 					notNull: true
 				},
 				{
-					columnName: 'insertId',
+					name: 'insertId',
 					type: 'int',
 					notNull: true
 				}
@@ -267,12 +267,12 @@ describe('parse insert statements', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'affectedRows',
+					name: 'affectedRows',
 					type: 'int',
 					notNull: true
 				},
 				{
-					columnName: 'insertId',
+					name: 'insertId',
 					type: 'int',
 					notNull: true
 				}
@@ -315,12 +315,12 @@ describe('parse insert statements', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'affectedRows',
+					name: 'affectedRows',
 					type: 'int',
 					notNull: true
 				},
 				{
-					columnName: 'insertId',
+					name: 'insertId',
 					type: 'int',
 					notNull: true
 				}
@@ -368,12 +368,12 @@ describe('parse insert statements', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'affectedRows',
+					name: 'affectedRows',
 					type: 'int',
 					notNull: true
 				},
 				{
-					columnName: 'insertId',
+					name: 'insertId',
 					type: 'int',
 					notNull: true
 				}
@@ -421,12 +421,12 @@ describe('parse insert statements', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'affectedRows',
+					name: 'affectedRows',
 					type: 'int',
 					notNull: true
 				},
 				{
-					columnName: 'insertId',
+					name: 'insertId',
 					type: 'int',
 					notNull: true
 				}
@@ -472,12 +472,12 @@ describe('parse insert statements', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'affectedRows',
+					name: 'affectedRows',
 					type: 'int',
 					notNull: true
 				},
 				{
-					columnName: 'insertId',
+					name: 'insertId',
 					type: 'int',
 					notNull: true
 				}
@@ -514,12 +514,12 @@ describe('parse insert statements', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'affectedRows',
+					name: 'affectedRows',
 					type: 'int',
 					notNull: true
 				},
 				{
-					columnName: 'insertId',
+					name: 'insertId',
 					type: 'int',
 					notNull: true
 				}
@@ -553,12 +553,12 @@ describe('parse insert statements', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'affectedRows',
+					name: 'affectedRows',
 					type: 'int',
 					notNull: true
 				},
 				{
-					columnName: 'insertId',
+					name: 'insertId',
 					type: 'int',
 					notNull: true
 				}
@@ -604,12 +604,12 @@ describe('parse insert statements', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'affectedRows',
+					name: 'affectedRows',
 					type: 'int',
 					notNull: true
 				},
 				{
-					columnName: 'insertId',
+					name: 'insertId',
 					type: 'int',
 					notNull: true
 				}
@@ -669,12 +669,12 @@ describe('parse insert statements', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'affectedRows',
+					name: 'affectedRows',
 					type: 'int',
 					notNull: true
 				},
 				{
-					columnName: 'insertId',
+					name: 'insertId',
 					type: 'int',
 					notNull: true
 				}

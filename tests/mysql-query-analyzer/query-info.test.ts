@@ -13,7 +13,7 @@ describe('QueryInfoResult test', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
@@ -34,7 +34,7 @@ describe('QueryInfoResult test', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
@@ -55,13 +55,13 @@ describe('QueryInfoResult test', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 'mytable2'
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'varchar',
 					notNull: false,
 					table: 'mytable2'
@@ -82,7 +82,7 @@ describe('QueryInfoResult test', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id+id',
+					name: 'id+id',
 					type: 'bigint',
 					notNull: true,
 					table: 'mytable1'
@@ -103,7 +103,7 @@ describe('QueryInfoResult test', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id+double_value',
+					name: 'id+double_value',
 					type: 'double',
 					notNull: false,
 					table: 'mytable3'
@@ -124,7 +124,7 @@ describe('QueryInfoResult test', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'datetime_column',
+					name: 'datetime_column',
 					type: 'datetime',
 					notNull: true,
 					table: 'e'
@@ -150,7 +150,7 @@ describe('QueryInfoResult test', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: '?',
+					name: '?',
 					type: 'any',
 					notNull: true,
 					table: ''
@@ -176,7 +176,7 @@ describe('QueryInfoResult test', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'CASE WHEN id = 1 then ? else id END',
+					name: 'CASE WHEN id = 1 then ? else id END',
 					type: 'int',
 					notNull: true,
 					table: ''
@@ -202,7 +202,7 @@ describe('QueryInfoResult test', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'CASE WHEN id = 1 then ? else id END',
+					name: 'CASE WHEN id = 1 then ? else id END',
 					type: 'int',
 					notNull: true,
 					table: ''
@@ -228,7 +228,7 @@ describe('QueryInfoResult test', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: '?+id',
+					name: '?+id',
 					type: 'double',
 					notNull: true,
 					table: ''
@@ -254,7 +254,7 @@ describe('QueryInfoResult test', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'case when id=1 then ? else (select id from mytable1 where id = 1) end',
+					name: 'case when id=1 then ? else (select id from mytable1 where id = 1) end',
 					type: 'int',
 					notNull: false,
 					table: ''
@@ -280,7 +280,7 @@ describe('QueryInfoResult test', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: `concat_ws('/', ?, ?, ?)`,
+					name: `concat_ws('/', ?, ?, ?)`,
 					type: 'varchar',
 					notNull: true,
 					table: ''
@@ -314,13 +314,13 @@ describe('QueryInfoResult test', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int',
 					notNull: false,
 					table: 'mytable1'
@@ -341,7 +341,7 @@ describe('QueryInfoResult test', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: '(SELECT id FROM mytable2)',
+					name: '(SELECT id FROM mytable2)',
 					type: 'int',
 					notNull: false,
 					table: ''
@@ -363,13 +363,13 @@ describe('QueryInfoResult test', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: '?=id',
+					name: '?=id',
 					type: 'tinyint',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: '?=name',
+					name: '?=name',
 					type: 'tinyint',
 					notNull: false,
 					table: ''
@@ -404,7 +404,7 @@ describe('QueryInfoResult test', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'varchar',
 					notNull: false,
 					table: 't2'
@@ -429,19 +429,19 @@ describe('QueryInfoResult test', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'varchar',
 					notNull: false,
 					table: 't2'
 				},
 				{
-					columnName: 'descr',
+					name: 'descr',
 					type: 'varchar',
 					notNull: false,
 					table: 't2'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int',
 					notNull: true,
 					table: 't2'
@@ -473,13 +473,13 @@ describe('QueryInfoResult test', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'varchar',
 					notNull: true,
 					table: ''
@@ -513,7 +513,7 @@ describe('QueryInfoResult test', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
@@ -535,7 +535,7 @@ describe('QueryInfoResult test', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
@@ -561,7 +561,7 @@ describe('QueryInfoResult test', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
@@ -685,13 +685,13 @@ describe('QueryInfoResult test', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: '?', //TODO: Should be dateName?
+					name: '?', //TODO: Should be dateName?
 					type: 'datetime',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'deadline',
+					name: 'deadline',
 					type: 'datetime',
 					notNull: true,
 					table: ''

@@ -27,49 +27,49 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'key',
+					name: 'key',
 					type: 'any',
 					notNull: true,
 					table: 'json_each'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'any', //{"hello": 10} number; {"hello": 1.0} real; "{hello": [1, 2, 3]
 					notNull: false, //ex. {"hello": null}
 					table: 'json_each'
 				},
 				{
-					columnName: 'type',
+					name: 'type',
 					type: 'TEXT',
 					notNull: false, //ex. {"hello": null}
 					table: 'json_each'
 				},
 				{
-					columnName: 'atom',
+					name: 'atom',
 					type: 'TEXT',
 					notNull: false, //ex. {"hello": null}
 					table: 'json_each'
 				},
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'TEXT',
 					notNull: true,
 					table: 'json_each'
 				},
 				{
-					columnName: 'parent',
+					name: 'parent',
 					type: 'INTEGER',
 					notNull: false,
 					table: 'json_each'
 				},
 				{
-					columnName: 'fullkey',
+					name: 'fullkey',
 					type: 'TEXT',
 					notNull: true,
 					table: 'json_each'
 				},
 				{
-					columnName: 'path',
+					name: 'path',
 					type: 'TEXT',
 					notNull: true,
 					table: 'json_each'
@@ -94,49 +94,49 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'key',
+					name: 'key',
 					type: 'any',
 					notNull: false,
 					table: 'json_tree'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'TEXT',
 					notNull: false, //ex. {"hello": null}
 					table: 'json_tree'
 				},
 				{
-					columnName: 'type',
+					name: 'type',
 					type: 'TEXT',
 					notNull: false, //ex. {"hello": null}
 					table: 'json_tree'
 				},
 				{
-					columnName: 'atom',
+					name: 'atom',
 					type: 'TEXT',
 					notNull: false, //ex. {"hello": null}
 					table: 'json_tree'
 				},
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'TEXT',
 					notNull: true,
 					table: 'json_tree'
 				},
 				{
-					columnName: 'parent',
+					name: 'parent',
 					type: 'INTEGER',
 					notNull: false,
 					table: 'json_tree'
 				},
 				{
-					columnName: 'fullkey',
+					name: 'fullkey',
 					type: 'TEXT',
 					notNull: true,
 					table: 'json_tree'
 				},
 				{
-					columnName: 'path',
+					name: 'path',
 					type: 'TEXT',
 					notNull: true,
 					table: 'json_tree'
@@ -161,19 +161,19 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'jt'
 				},
 				{
-					columnName: 'json_value',
+					name: 'json_value',
 					type: 'TEXT',
 					notNull: true,
 					table: 'jt'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'any',
 					notNull: false, //ex. {"hello": null}
 					table: 'j'
@@ -198,13 +198,13 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'result',
+					name: 'result',
 					type: 'TEXT',
 					notNull: false, //SELECT json(null)
 					table: ''
 				},
 				{
-					columnName: 'result2',
+					name: 'result2',
 					type: 'BLOB',
 					notNull: false, //SELECT json(null)
 					table: ''
@@ -245,25 +245,25 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'result1',
+					name: 'result1',
 					type: 'TEXT',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'result2',
+					name: 'result2',
 					type: 'TEXT',
 					notNull: false,
 					table: ''
 				},
 				{
-					columnName: 'result3',
+					name: 'result3',
 					type: 'BLOB',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'result4',
+					name: 'result4',
 					type: 'BLOB',
 					notNull: false,
 					table: ''
@@ -292,25 +292,25 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'result1',
+					name: 'result1',
 					type: 'TEXT',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'result2',
+					name: 'result2',
 					type: 'TEXT',
 					notNull: false,
 					table: ''
 				},
 				{
-					columnName: 'result3',
+					name: 'result3',
 					type: 'BLOB',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'result4',
+					name: 'result4',
 					type: 'BLOB',
 					notNull: false,
 					table: ''
@@ -335,13 +335,13 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'result',
+					name: 'result',
 					type: 'TEXT',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'result2',
+					name: 'result2',
 					type: 'BLOB',
 					notNull: true,
 					table: ''
@@ -366,13 +366,13 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'result',
+					name: 'result',
 					type: 'TEXT',
 					notNull: false,
 					table: ''
 				},
 				{
-					columnName: 'result2',
+					name: 'result2',
 					type: 'BLOB',
 					notNull: false,
 					table: ''
@@ -408,19 +408,19 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'result',
+					name: 'result',
 					type: 'INTEGER',
 					notNull: false,
 					table: ''
 				},
 				{
-					columnName: 'result2',
+					name: 'result2',
 					type: 'INTEGER',
 					notNull: false,
 					table: ''
 				},
 				{
-					columnName: 'result3',
+					name: 'result3',
 					type: 'INTEGER',
 					notNull: false,
 					table: ''
@@ -461,13 +461,13 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'result',
+					name: 'result',
 					type: 'INTEGER',
 					notNull: false,
 					table: ''
 				},
 				{
-					columnName: 'result2',
+					name: 'result2',
 					type: 'INTEGER',
 					notNull: true,
 					table: ''
@@ -502,25 +502,25 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'result',
+					name: 'result',
 					type: 'any',
 					notNull: false, //json_extract('{"a":null}', '$.a') → NULL
 					table: ''
 				},
 				{
-					columnName: 'result2',
+					name: 'result2',
 					type: 'any',
 					notNull: false,
 					table: ''
 				},
 				{
-					columnName: 'result3',
+					name: 'result3',
 					type: 'BLOB',
 					notNull: false,
 					table: ''
 				},
 				{
-					columnName: 'result4',
+					name: 'result4',
 					type: 'BLOB',
 					notNull: false,
 					table: ''
@@ -586,7 +586,7 @@ describe('sqlite-Test simple select statements', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'min_value',
+					name: 'min_value',
 					type: 'any',
 					notNull: false,
 					table: ''

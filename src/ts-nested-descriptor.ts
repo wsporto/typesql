@@ -84,7 +84,7 @@ function mapToField(columns: ColumnInfo[], field: Field | RelationField): FieldT
 }
 
 function mapModelColumnToTsField(columns: ColumnInfo[], modelColumn: Field): TsField {
-	const column = columns.find((col) => col.columnName === modelColumn.name)!;
+	const column = columns.find((col) => col.name === modelColumn.name)!;
 	const tsType = converToTsType(column.type as MySqlType);
 
 	const field: TsField = {

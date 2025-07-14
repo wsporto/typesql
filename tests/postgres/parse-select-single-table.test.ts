@@ -1,9 +1,9 @@
 import assert from 'node:assert';
-import { SchemaDef } from '../../src/types';
 import { describeQuery } from '../../src/postgres-query-analyzer/describe';
 import postgres from 'postgres';
+import { PostgresSchemaDef } from '../../src/postgres-query-analyzer/types';
 
-describe('select-single-table', () => {
+describe('postgres-select-single-table', () => {
 
 	const postres = postgres({
 		host: 'localhost',
@@ -17,13 +17,13 @@ describe('select-single-table', () => {
 
 		const sql = 'SELECT id FROM mytable1';
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
@@ -40,13 +40,13 @@ describe('select-single-table', () => {
 	it('SELECT id as name FROM mytable1', async () => {
 		const sql = 'SELECT id as name FROM mytable1';
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
@@ -64,19 +64,19 @@ describe('select-single-table', () => {
 		const sql = 'SELECT * FROM mytable1';
 
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int4',
 					notNull: false,
 					table: 'mytable1'
@@ -94,19 +94,19 @@ describe('select-single-table', () => {
 		const sql = 'SELECT mytable1.* FROM mytable1';
 
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int4',
 					notNull: false,
 					table: 'mytable1'
@@ -124,19 +124,19 @@ describe('select-single-table', () => {
 		const sql = 'SELECT t.* FROM mytable1 t';
 
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int4',
 					notNull: false,
 					table: 't'
@@ -154,19 +154,19 @@ describe('select-single-table', () => {
 		const sql = 'SELECT mytable1.id, mytable1.value FROM mytable1';
 
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int4',
 					notNull: false,
 					table: 'mytable1'
@@ -184,25 +184,25 @@ describe('select-single-table', () => {
 		const sql = 'SELECT id, name, descr as description FROM mytable2';
 
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable2'
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: false,
 					table: 'mytable2'
 				},
 				{
-					columnName: 'description',
+					name: 'description',
 					type: 'text',
 					notNull: false,
 					table: 'mytable2'
@@ -219,19 +219,19 @@ describe('select-single-table', () => {
 	it('SELECT distinct id, value FROM mytable1', async () => {
 		const sql = 'SELECT distinct id, value FROM mytable1';
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int4',
 					notNull: false,
 					table: 'mytable1'
@@ -248,19 +248,19 @@ describe('select-single-table', () => {
 	it('parse select distinct *', async () => {
 		const sql = 'SELECT distinct * FROM mytable1';
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int4',
 					notNull: false,
 					table: 'mytable1'
@@ -277,13 +277,13 @@ describe('select-single-table', () => {
 	it('SELECT id FROM mydb.mytable1', async () => {
 		const sql = 'SELECT id FROM public.mytable1';
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
@@ -301,19 +301,19 @@ describe('select-single-table', () => {
 		const sql = 'SELECT * FROM mytable1 WHERE id = $1';
 
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int4',
 					notNull: false,
 					table: 'mytable1'
@@ -322,7 +322,7 @@ describe('select-single-table', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				}
 			]
@@ -337,13 +337,13 @@ describe('select-single-table', () => {
 		const sql = 'SELECT ID FROM MYTABLE1 WHERE ID = $1';
 
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
@@ -352,7 +352,7 @@ describe('select-single-table', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				}
 			]
@@ -367,13 +367,13 @@ describe('select-single-table', () => {
 		const sql = 'SELECT id FROM mytable1 WHERE id = $1 and value = 10';
 
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
@@ -382,7 +382,7 @@ describe('select-single-table', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				}
 			]
@@ -397,13 +397,13 @@ describe('select-single-table', () => {
 		const sql = 'SELECT value FROM mytable1 WHERE id = $1 or value > $2';
 
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int4',
 					notNull: false,
 					table: 'mytable1'
@@ -412,12 +412,12 @@ describe('select-single-table', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				},
 				{
 					name: 'param2',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				}
 			]
@@ -432,13 +432,13 @@ describe('select-single-table', () => {
 		const sql = 'SELECT name FROM mytable2 m WHERE ($1::text is null or m.name = $1) AND m.descr = $2';
 
 		const actual = await describeQuery(postres, sql, ['name', 'descr']);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: false,
 					table: 'm'
@@ -447,12 +447,12 @@ describe('select-single-table', () => {
 			parameters: [
 				{
 					name: 'name',
-					columnType: 'text',
+					type: 'text',
 					notNull: false
 				},
 				{
 					name: 'descr',
-					columnType: 'text',
+					type: 'text',
 					notNull: true
 				}
 			]
@@ -467,13 +467,13 @@ describe('select-single-table', () => {
 		const sql = 'SELECT id FROM mytable1 where value between $1 and $2';
 
 		const actual = await describeQuery(postres, sql, ['start', 'end']);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
@@ -482,12 +482,12 @@ describe('select-single-table', () => {
 			parameters: [
 				{
 					name: 'start',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				},
 				{
 					name: 'end',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				}
 			]
@@ -505,25 +505,25 @@ describe('select-single-table', () => {
         WHERE (name = $2 or descr = $3) and id > $4
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text', //different from sqlite
 					notNull: false, //todo - differente from mysql
 					table: ''
 				},
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'table'
 				},
 				{
-					columnName: 'description',
+					name: 'description',
 					type: 'text',
 					notNull: false,
 					table: 'table'
@@ -532,22 +532,22 @@ describe('select-single-table', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'text', //differente from sqlite
+					type: 'text', //differente from sqlite
 					notNull: false //todo - differente from mysql
 				},
 				{
 					name: 'param2',
-					columnType: 'text',
+					type: 'text',
 					notNull: true
 				},
 				{
 					name: 'param3',
-					columnType: 'text',
+					type: 'text',
 					notNull: true
 				},
 				{
 					name: 'param4',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				}
 			]
@@ -564,19 +564,19 @@ describe('select-single-table', () => {
 		const expectedSql = `SELECT * FROM mytable1 t WHERE id in (\${generatePlaceholders('$1', params.param1)})`;
 		const actual = await describeQuery(postres, sql, []);
 
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql: expectedSql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int4',
 					notNull: false,
 					table: 't'
@@ -585,7 +585,7 @@ describe('select-single-table', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'int4[]',
+					type: 'int4[]',
 					notNull: true
 				}
 			]
@@ -601,13 +601,13 @@ describe('select-single-table', () => {
 
 		const actual = await describeQuery(postres, sql, []);
 
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int2',
 					notNull: true,
 					table: 'mytable1'
@@ -627,19 +627,19 @@ describe('select-single-table', () => {
 		const expectedSql = `SELECT * FROM mytable1 t WHERE id in (1, 2, 3, \${generatePlaceholders('$1', params.param1)})`;
 		const actual = await describeQuery(postres, sql, []);
 
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql: expectedSql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int4',
 					notNull: false,
 					table: 't'
@@ -648,7 +648,7 @@ describe('select-single-table', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'int4[]',
+					type: 'int4[]',
 					notNull: true
 				}
 			]
@@ -666,13 +666,13 @@ describe('select-single-table', () => {
         GROUP BY id
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'sumById',
+					name: 'sumById',
 					type: 'int8',
 					notNull: false,
 					table: ''
@@ -692,13 +692,13 @@ describe('select-single-table', () => {
         select id from mytable1 where value > any(select id from mytable2 where name like $1)
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
@@ -707,7 +707,7 @@ describe('select-single-table', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'text',
+					type: 'text',
 					notNull: true
 				}
 			]
@@ -723,13 +723,13 @@ describe('select-single-table', () => {
         select id from mytable1 where $1 > any(select id from mytable2 where name like $2)
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
@@ -738,12 +738,12 @@ describe('select-single-table', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				},
 				{
 					name: 'param2',
-					columnType: 'text',
+					type: 'text',
 					notNull: true
 				}
 			]
@@ -759,13 +759,13 @@ describe('select-single-table', () => {
         select id from mytable1 where id > any($1)
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
@@ -774,7 +774,7 @@ describe('select-single-table', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: '_int4',
+					type: '_int4',
 					notNull: true
 				}
 			]
@@ -790,13 +790,13 @@ describe('select-single-table', () => {
         select value from mytable1 where value is not null or (id > 0 and value is not null)
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
@@ -815,13 +815,13 @@ describe('select-single-table', () => {
         select id from mytable1 where 1 = 1
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
@@ -840,13 +840,13 @@ describe('select-single-table', () => {
 			select enum_column from all_types where enum_column = 'medium' or 'small' = enum_column
 			`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'enum_column',
+					name: 'enum_column',
 					type: `enum('x-small','small','medium','large','x-large')`,
 					notNull: true,
 					table: 'all_types'
@@ -865,13 +865,13 @@ describe('select-single-table', () => {
 			select enum_constraint from all_types where enum_constraint = 'medium' or 'short' = enum_constraint
 			`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'enum_constraint',
+					name: 'enum_constraint',
 					type: `enum('x-small','small','medium','large','x-large')`,
 					notNull: true,
 					table: 'all_types'
@@ -890,13 +890,13 @@ describe('select-single-table', () => {
 			select enum_constraint from all_types where enum_constraint = $1
 			`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'enum_constraint',
+					name: 'enum_constraint',
 					type: `enum('x-small','small','medium','large','x-large')`,
 					notNull: true,
 					table: 'all_types'
@@ -905,7 +905,7 @@ describe('select-single-table', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: `enum('x-small','small','medium','large','x-large')`,
+					type: `enum('x-small','small','medium','large','x-large')`,
 					notNull: true
 				}
 			]
@@ -921,37 +921,37 @@ describe('select-single-table', () => {
 			select integer_column_default, enum_column, enum_column_default, enum_constraint, enum_constraint_default from all_types
 			`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'integer_column_default',
+					name: 'integer_column_default',
 					type: 'int4',
 					notNull: true,
 					table: 'all_types'
 				},
 				{
-					columnName: 'enum_column',
+					name: 'enum_column',
 					type: `enum('x-small','small','medium','large','x-large')`,
 					notNull: false,
 					table: 'all_types'
 				},
 				{
-					columnName: 'enum_column_default',
+					name: 'enum_column_default',
 					type: `enum('x-small','small','medium','large','x-large')`,
 					notNull: true,
 					table: 'all_types'
 				},
 				{
-					columnName: 'enum_constraint',
+					name: 'enum_constraint',
 					type: `enum('x-small','small','medium','large','x-large')`,
 					notNull: false,
 					table: 'all_types'
 				},
 				{
-					columnName: 'enum_constraint_default',
+					name: 'enum_constraint_default',
 					type: `enum('x-small','small','medium','large','x-large')`,
 					notNull: true,
 					table: 'all_types'
@@ -970,14 +970,14 @@ describe('select-single-table', () => {
 	    select value from mytable1 order by $1
 	    `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value',
-					type: 'int',
+					name: 'value',
+					type: 'int4',
 					notNull: false,
 					table: 'mytable1'
 				}
@@ -995,13 +995,13 @@ describe('select-single-table', () => {
 		const sql = 'SELECT id FROM mytable1 LIMIT $1 OFFSET $2';
 
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
@@ -1010,12 +1010,12 @@ describe('select-single-table', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'int8',
+					type: 'int8',
 					notNull: true
 				},
 				{
 					name: 'param2',
-					columnType: 'int8',
+					type: 'int8',
 					notNull: true
 				}
 			]
@@ -1031,19 +1031,19 @@ describe('select-single-table', () => {
 		const sql = 'select key1, key2 from composite_key where key1 = 1';
 
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'key1',
+					name: 'key1',
 					type: 'int4',
 					notNull: true,
 					table: 'composite_key'
 				},
 				{
-					columnName: 'key2',
+					name: 'key2',
 					type: 'int4',
 					notNull: true,
 					table: 'composite_key'
@@ -1063,19 +1063,19 @@ describe('select-single-table', () => {
 		const sql = 'select key1, key2 from composite_key where key1 = 1 and key2 = 2';
 
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'key1',
+					name: 'key1',
 					type: 'int4',
 					notNull: true,
 					table: 'composite_key'
 				},
 				{
-					columnName: 'key2',
+					name: 'key2',
 					type: 'int4',
 					notNull: true,
 					table: 'composite_key'
@@ -1095,19 +1095,19 @@ describe('select-single-table', () => {
 		const sql = 'select key1, key2 from composite_key where 1 = key2 and 2 = key1';
 
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'key1',
+					name: 'key1',
 					type: 'int4',
 					notNull: true,
 					table: 'composite_key'
 				},
 				{
-					columnName: 'key2',
+					name: 'key2',
 					type: 'int4',
 					notNull: true,
 					table: 'composite_key'
@@ -1127,19 +1127,19 @@ describe('select-single-table', () => {
 		const sql = 'select key1, key2 from composite_key where key1 = 1 and key2 > 2';
 
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'key1',
+					name: 'key1',
 					type: 'int4',
 					notNull: true,
 					table: 'composite_key'
 				},
 				{
-					columnName: 'key2',
+					name: 'key2',
 					type: 'int4',
 					notNull: true,
 					table: 'composite_key'
@@ -1159,19 +1159,19 @@ describe('select-single-table', () => {
 		const sql = 'select key1, key2 from composite_key where key1 = 1 and key2 = 2 or key2 = 3';
 
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'key1',
+					name: 'key1',
 					type: 'int4',
 					notNull: true,
 					table: 'composite_key'
 				},
 				{
-					columnName: 'key2',
+					name: 'key2',
 					type: 'int4',
 					notNull: true,
 					table: 'composite_key'
@@ -1190,13 +1190,13 @@ describe('select-single-table', () => {
 		const sql = 'SELECT id FROM mytable2 WHERE (id, name, descr) = ($1, $2, $3)';
 
 		const actual = await describeQuery(postres, sql, ['id', 'name', 'descr']);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable2'
@@ -1205,17 +1205,17 @@ describe('select-single-table', () => {
 			parameters: [
 				{
 					name: 'id',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				},
 				{
 					name: 'name',
-					columnType: 'text',
+					type: 'text',
 					notNull: true
 				},
 				{
 					name: 'descr',
-					columnType: 'text',
+					type: 'text',
 					notNull: true
 				}
 			]
@@ -1230,13 +1230,13 @@ describe('select-single-table', () => {
 		const sql = 'SELECT id FROM mytable2 WHERE row(id, name, descr) = row($1, $2, $3)';
 
 		const actual = await describeQuery(postres, sql, ['id', 'name', 'descr']);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable2'
@@ -1245,20 +1245,50 @@ describe('select-single-table', () => {
 			parameters: [
 				{
 					name: 'id',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				},
 				{
 					name: 'name',
-					columnType: 'text',
+					type: 'text',
 					notNull: true
 				},
 				{
 					name: 'descr',
-					columnType: 'text',
+					type: 'text',
 					notNull: true
 				}
 			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it(`SELECT id FROM (VALUES (1, 'a'), (2, 'b')) AS t(id, name)`, async () => {
+		const sql = `SELECT id, name FROM (VALUES (1, 'a'), (2, 'b')) AS t(id, name)`;
+
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 't'
+				},
+				{
+					name: 'name',
+					type: 'text',
+					notNull: true,
+					table: 't'
+				}
+			],
+			parameters: []
 		};
 		if (actual.isErr()) {
 			assert.fail(`Shouldn't return an error: ${actual.error.description}`);

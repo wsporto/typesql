@@ -18,7 +18,7 @@ describe('sqlite-parse-select-subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 't'
@@ -46,13 +46,13 @@ describe('sqlite-parse-select-subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 't'
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'TEXT',
 					notNull: false,
 					table: 't'
@@ -79,7 +79,7 @@ describe('sqlite-parse-select-subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: false,
 					table: 't1'
@@ -106,7 +106,7 @@ describe('sqlite-parse-select-subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'code',
+					name: 'code',
 					type: 'INTEGER',
 					notNull: false,
 					table: 't1'
@@ -133,13 +133,13 @@ describe('sqlite-parse-select-subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'TEXT',
 					notNull: false,
 					table: 't2'
 				},
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'TEXT',
 					notNull: false,
 					table: 't2'
@@ -167,13 +167,13 @@ describe('sqlite-parse-select-subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'TEXT',
 					notNull: true,
 					table: 't2'
 				},
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'TEXT',
 					notNull: true,
 					table: 't2'
@@ -213,7 +213,7 @@ describe('sqlite-parse-select-subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 't2'
@@ -240,13 +240,13 @@ describe('sqlite-parse-select-subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'subQuery',
+					name: 'subQuery',
 					type: 'INTEGER',
 					notNull: false,
 					table: ''
@@ -271,13 +271,13 @@ describe('sqlite-parse-select-subqueries', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'INTEGER',
 					notNull: true,
 					table: 't1'
 				},
 				{
-					columnName: 'has',
+					name: 'has',
 					type: 'INTEGER',
 					notNull: true,
 					table: ''

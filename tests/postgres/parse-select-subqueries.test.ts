@@ -1,7 +1,7 @@
 import assert from 'node:assert';
-import type { SchemaDef } from '../../src/types';
 import postgres from 'postgres';
 import { describeQuery } from '../../src/postgres-query-analyzer/describe';
+import { PostgresSchemaDef } from '../../src/postgres-query-analyzer/types';
 
 describe('postgres-parse-select-subqueries', () => {
 	const postres = postgres({
@@ -19,13 +19,13 @@ describe('postgres-parse-select-subqueries', () => {
         ) t
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't'
@@ -47,19 +47,19 @@ describe('postgres-parse-select-subqueries', () => {
         ) t
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't'
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: false,
 					table: 't'
@@ -80,13 +80,13 @@ describe('postgres-parse-select-subqueries', () => {
         ) t1
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: false,
 					table: 't1'
@@ -107,13 +107,13 @@ describe('postgres-parse-select-subqueries', () => {
         ) t1
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'code',
+					name: 'code',
 					type: 'int4',
 					notNull: false,
 					table: 't1'
@@ -134,19 +134,19 @@ describe('postgres-parse-select-subqueries', () => {
         ) t2
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: false,
 					table: 't2'
 				},
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'text',
 					notNull: false,
 					table: 't2'
@@ -169,19 +169,19 @@ describe('postgres-parse-select-subqueries', () => {
         WHERE t2.id = $1 and t2.name = $2
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: true,
 					table: 't2'
 				},
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'text',
 					notNull: true,
 					table: 't2'
@@ -190,12 +190,12 @@ describe('postgres-parse-select-subqueries', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'text',
+					type: 'text',
 					notNull: true
 				},
 				{
 					name: 'param2',
-					columnType: 'text',
+					type: 'text',
 					notNull: true
 				}
 			]
@@ -215,13 +215,13 @@ describe('postgres-parse-select-subqueries', () => {
         ) t2
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't2'
@@ -244,13 +244,13 @@ describe('postgres-parse-select-subqueries', () => {
         ) t2
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't2'
@@ -269,19 +269,19 @@ describe('postgres-parse-select-subqueries', () => {
         SELECT * from (select * from (select id, name from mytable2) t1) t2
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't2'
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: false,
 					table: 't2'
@@ -304,13 +304,13 @@ describe('postgres-parse-select-subqueries', () => {
         ) t2
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'text',
 					notNull: false,
 					table: 't2'
@@ -337,13 +337,13 @@ describe('postgres-parse-select-subqueries', () => {
         ) t3
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'text',
 					notNull: false,
 					table: 't3'
@@ -370,13 +370,13 @@ describe('postgres-parse-select-subqueries', () => {
         ) t3
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't3'
@@ -395,13 +395,13 @@ describe('postgres-parse-select-subqueries', () => {
         select name from mytable1, (select count(*) as name from mytable2) t2
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'int8',
 					notNull: true,
 					table: 't2'
@@ -420,13 +420,13 @@ describe('postgres-parse-select-subqueries', () => {
         select name from mytable2 where exists ( select id from mytable1 where value = $1)
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: false,
 					table: 'mytable2'
@@ -435,7 +435,7 @@ describe('postgres-parse-select-subqueries', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				}
 			]
@@ -449,13 +449,13 @@ describe('postgres-parse-select-subqueries', () => {
 	it('select name from mytable2 where not exists ( select id from mytable1 where id = :a and value = :b)', async () => {
 		const sql = 'select name from mytable2 where not exists ( select id from mytable1 where id = $1 and value = $2)';
 		const actual = await describeQuery(postres, sql, ['a', 'b']);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'text',
 					notNull: false,
 					table: 'mytable2'
@@ -464,12 +464,12 @@ describe('postgres-parse-select-subqueries', () => {
 			parameters: [
 				{
 					name: 'a',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				},
 				{
 					name: 'b',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				}
 			]
@@ -485,13 +485,13 @@ describe('postgres-parse-select-subqueries', () => {
         SELECT id from (SELECT * FROM mytable1) as t1 WHERE t1.id > $1
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't1'
@@ -500,7 +500,7 @@ describe('postgres-parse-select-subqueries', () => {
 			parameters: [
 				{
 					name: 'param1',
-					columnType: 'int4',
+					type: 'int4',
 					notNull: true
 				}
 			]
@@ -516,19 +516,19 @@ describe('postgres-parse-select-subqueries', () => {
         SELECT id, exists(SELECT 1 FROM mytable2 t2 where t2.id = t1.id) as has from mytable1 t1
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't1'
 				},
 				{
-					columnName: 'has',
+					name: 'has',
 					type: 'bool',
 					notNull: true,
 					table: ''
@@ -549,19 +549,19 @@ describe('postgres-parse-select-subqueries', () => {
 		FROM mytable1
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'subquery',
+					name: 'subquery',
 					type: 'int4',
 					notNull: false,
 					table: ''
@@ -580,19 +580,19 @@ describe('postgres-parse-select-subqueries', () => {
         SELECT id, exists(SELECT min(id) FROM mytable2 t2 where t2.id = t1.id) as has from mytable1 t1
         `;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 't1'
 				},
 				{
-					columnName: 'has',
+					name: 'has',
 					type: 'bool',
 					notNull: true,
 					table: ''

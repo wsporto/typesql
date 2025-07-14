@@ -119,7 +119,7 @@ function createSchemaDefinition(
 			const columnType = getVarType(substitutions, col.type);
 			const columnNotNull = paramsById.get(col.type.id) != null ? paramsById.get(col.type.id)?.notNull === true : col.notNull === true;
 			const colInfo: ColumnInfo = {
-				columnName: col.name,
+				name: col.name,
 				type: verifyNotInferred(columnType),
 				notNull: columnNotNull,
 				table: col.table
@@ -190,7 +190,7 @@ function createSchemaDefinition(
 		const columns = queryResult.columns.map((col) => {
 			const columnType = getVarType(substitutions, col.type);
 			const colInfo: ColumnInfo = {
-				columnName: col.name,
+				name: col.name,
 				type: verifyNotInferred(columnType),
 				notNull: col.notNull === true
 			};

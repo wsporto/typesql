@@ -1,7 +1,7 @@
 import assert from 'node:assert';
-import type { SchemaDef } from '../../src/types';
 import postgres from 'postgres';
 import { describeQuery } from '../../src/postgres-query-analyzer/describe';
+import { PostgresSchemaDef } from '../../src/postgres-query-analyzer/types';
 
 //https://www.postgresql.org/docs/current/functions-window.html
 describe('postgres-parse-window-functions', () => {
@@ -20,13 +20,13 @@ describe('postgres-parse-window-functions', () => {
         FROM mytable1
         `;
 		const actual = await describeQuery(postres, sql, ['id']);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'num',
+					name: 'num',
 					type: 'int8',
 					notNull: true,
 					table: ''
@@ -48,25 +48,25 @@ describe('postgres-parse-window-functions', () => {
 			FROM mytable1
 			`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int4',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int4',
 					notNull: false,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'num',
+					name: 'num',
 					type: 'int8',
 					notNull: true,
 					table: ''
@@ -92,43 +92,43 @@ describe('postgres-parse-window-functions', () => {
 			FROM mytable2
 			`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'firstid',
+					name: 'firstid',
 					type: 'int4',
 					notNull: true,
 					table: '' //diff from sqlite
 				},
 				{
-					columnName: 'lastname',
+					name: 'lastname',
 					type: 'text',
 					notNull: false,
 					table: '' //diff from sqlite
 				},
 				{
-					columnName: 'rankvalue',
+					name: 'rankvalue',
 					type: 'int8',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'denserankvalue',
+					name: 'denserankvalue',
 					type: 'int8',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'percentrankvalue',
+					name: 'percentrankvalue',
 					type: 'float8',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'cumedistvalue',
+					name: 'cumedistvalue',
 					type: 'float8',
 					notNull: true,
 					table: ''
@@ -149,13 +149,13 @@ describe('postgres-parse-window-functions', () => {
 			FROM mytable1
 			`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'total',
+					name: 'total',
 					type: 'int8',
 					notNull: false,
 					table: '' //diff from sqlite
@@ -174,13 +174,13 @@ describe('postgres-parse-window-functions', () => {
 			SELECT AVG(value) OVER() as avgResult FROM mytable1
 			`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'avgresult',
+					name: 'avgresult',
 					type: 'numeric',
 					notNull: false,
 					table: '' //diff from sqlite
@@ -202,19 +202,19 @@ describe('postgres-parse-window-functions', () => {
 			FROM mytable2
 			`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'leadvalue',
+					name: 'leadvalue',
 					type: 'int4',
 					notNull: false,
 					table: '' //diff from sqlite
 				},
 				{
-					columnName: 'lagvalue',
+					name: 'lagvalue',
 					type: 'text',
 					notNull: false,
 					table: '' //diff from sqlite
@@ -239,37 +239,37 @@ describe('postgres-parse-window-functions', () => {
 			FROM mytable1
 			`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value1',
+					name: 'value1',
 					type: 'int4',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'value2',
+					name: 'value2',
 					type: 'int4',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'value3',
+					name: 'value3',
 					type: 'int4',
 					notNull: false,
 					table: ''
 				},
 				{
-					columnName: 'value4',
+					name: 'value4',
 					type: 'int4',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'value5',
+					name: 'value5',
 					type: 'int4',
 					notNull: true,
 					table: ''
@@ -277,12 +277,12 @@ describe('postgres-parse-window-functions', () => {
 			],
 			parameters: [
 				{
-					columnType: 'int4',
+					type: 'int4',
 					name: 'param1',
 					notNull: true
 				},
 				{
-					columnType: 'int4',
+					type: 'int4',
 					name: 'param2',
 					notNull: false
 				}
@@ -305,37 +305,37 @@ describe('postgres-parse-window-functions', () => {
 			FROM mytable1
 			`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value1',
+					name: 'value1',
 					type: 'int4',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'value2',
+					name: 'value2',
 					type: 'int4',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'value3',
+					name: 'value3',
 					type: 'int4',
 					notNull: false,
 					table: ''
 				},
 				{
-					columnName: 'value4',
+					name: 'value4',
 					type: 'int4',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'value5',
+					name: 'value5',
 					type: 'int4',
 					notNull: true,
 					table: ''
@@ -343,12 +343,12 @@ describe('postgres-parse-window-functions', () => {
 			],
 			parameters: [
 				{
-					columnType: 'int4',
+					type: 'int4',
 					name: 'param1',
 					notNull: true
 				},
 				{
-					columnType: 'int4',
+					type: 'int4',
 					name: 'param2',
 					notNull: false
 				}
@@ -367,13 +367,13 @@ describe('postgres-parse-window-functions', () => {
 			FROM mytable1
 			`;
 		const actual = await describeQuery(postres, sql, []);
-		const expected: SchemaDef = {
+		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'nthvalue',
+					name: 'nthvalue',
 					type: 'int4',
 					notNull: false,
 					table: ''
@@ -381,7 +381,7 @@ describe('postgres-parse-window-functions', () => {
 			],
 			parameters: [
 				{
-					columnType: 'int4',
+					type: 'int4',
 					name: 'param1',
 					notNull: true
 				}

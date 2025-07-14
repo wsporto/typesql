@@ -22,7 +22,7 @@ describe('infer-not-null', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
@@ -48,13 +48,13 @@ describe('infer-not-null', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
@@ -80,7 +80,7 @@ describe('infer-not-null', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value+10',
+					name: 'value+10',
 					type: 'bigint',
 					notNull: true,
 					table: ''
@@ -106,7 +106,7 @@ describe('infer-not-null', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value+?',
+					name: 'value+?',
 					type: 'double',
 					notNull: true, //changed at v0.0.2
 					table: ''
@@ -138,7 +138,7 @@ describe('infer-not-null', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int',
 					notNull: true,
 					table: 't1'
@@ -164,7 +164,7 @@ describe('infer-not-null', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int',
 					notNull: true,
 					table: 't1'
@@ -190,7 +190,7 @@ describe('infer-not-null', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int',
 					notNull: true,
 					table: 't1'
@@ -216,7 +216,7 @@ describe('infer-not-null', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 't1.value + value',
+					name: 't1.value + value',
 					type: 'bigint',
 					notNull: true,
 					table: 't1'
@@ -242,7 +242,7 @@ describe('infer-not-null', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'alias',
+					name: 'alias',
 					type: 'int',
 					notNull: true,
 					table: 't1'
@@ -268,7 +268,7 @@ describe('infer-not-null', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int',
 					notNull: false,
 					table: 't1'
@@ -294,7 +294,7 @@ describe('infer-not-null', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int',
 					notNull: false,
 					table: 'mytable1'
@@ -320,7 +320,7 @@ describe('infer-not-null', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
@@ -346,7 +346,7 @@ describe('infer-not-null', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
@@ -372,7 +372,7 @@ describe('infer-not-null', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
@@ -398,7 +398,7 @@ describe('infer-not-null', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
@@ -424,7 +424,7 @@ describe('infer-not-null', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
@@ -450,7 +450,7 @@ describe('infer-not-null', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
@@ -476,7 +476,7 @@ describe('infer-not-null', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value + value',
+					name: 'value + value',
 					type: 'bigint',
 					notNull: true,
 					table: 'mytable1'
@@ -502,7 +502,7 @@ describe('infer-not-null', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value + value',
+					name: 'value + value',
 					type: 'bigint',
 					notNull: false,
 					table: 'mytable1'
@@ -528,7 +528,7 @@ describe('infer-not-null', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value + id',
+					name: 'value + id',
 					type: 'bigint',
 					notNull: true,
 					table: 'mytable1'
@@ -554,7 +554,7 @@ describe('infer-not-null', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'value+id',
+					name: 'value+id',
 					type: 'bigint',
 					notNull: false,
 					table: 'mytable1'
@@ -580,7 +580,7 @@ describe('infer-not-null', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id+id',
+					name: 'id+id',
 					type: 'bigint',
 					notNull: true,
 					table: 'mytable1'
@@ -606,7 +606,7 @@ describe('infer-not-null', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'sum(value)',
+					name: 'sum(value)',
 					type: 'decimal',
 					notNull: false,
 					table: 'mytable1'
@@ -632,7 +632,7 @@ describe('infer-not-null', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					columnName: 'sum(value)',
+					name: 'sum(value)',
 					type: 'decimal',
 					notNull: false,
 					table: 'mytable1'
@@ -662,7 +662,7 @@ describe('infer-not-null', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'varchar',
 					notNull: true,
 					table: ''
@@ -692,7 +692,7 @@ describe('infer-not-null', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'varchar',
 					notNull: false,
 					table: ''
@@ -722,7 +722,7 @@ describe('infer-not-null', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'varchar',
 					notNull: false,
 					table: ''
@@ -752,7 +752,7 @@ describe('infer-not-null', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'varchar',
 					notNull: false,
 					table: ''
@@ -782,19 +782,19 @@ describe('infer-not-null', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: 'value',
+					name: 'value',
 					type: 'varchar',
 					notNull: true,
 					table: ''
 				},
 				{
-					columnName: '(select descr from mytable2 where id = 1)',
+					name: '(select descr from mytable2 where id = 1)',
 					type: 'varchar',
 					notNull: false,
 					table: ''
@@ -823,7 +823,7 @@ describe('infer-not-null', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'varchar',
 					notNull: false,
 					table: ''
@@ -853,7 +853,7 @@ describe('infer-not-null', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'varchar',
 					notNull: true,
 					table: ''
@@ -880,18 +880,18 @@ describe('infer-not-null', () => {
 			columns: [
 				{
 					type: 'int',
-					columnName: '(select id from mytable1 where id = 10)',
+					name: '(select id from mytable1 where id = 10)',
 					notNull: false,
 					table: ''
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'varchar',
 					notNull: true,
 					table: 'mytable2'
 				},
 				{
-					columnName: 'name2',
+					name: 'name2',
 					type: 'varchar',
 					notNull: true,
 					table: 'mytable2'
@@ -917,13 +917,13 @@ describe('infer-not-null', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'varchar',
 					notNull: false,
 					table: 'mytable2'
 				},
 				{
-					columnName: '(select id from mytable1 where id = 10)',
+					name: '(select id from mytable1 where id = 10)',
 					type: 'int',
 					notNull: false,
 					table: ''
@@ -949,7 +949,7 @@ describe('infer-not-null', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id + (select id from mytable2 where id = 10 and id is not null)',
+					name: 'id + (select id from mytable2 where id = 10 and id is not null)',
 					type: 'bigint',
 					notNull: false,
 					table: ''
@@ -975,7 +975,7 @@ describe('infer-not-null', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'varchar',
 					notNull: true,
 					table: 't1'
@@ -1001,7 +1001,7 @@ describe('infer-not-null', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'int',
 					notNull: true,
 					table: 't1'
@@ -1027,7 +1027,7 @@ describe('infer-not-null', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 't1'
@@ -1053,19 +1053,19 @@ describe('infer-not-null', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 't1'
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'varchar',
 					notNull: true,
 					table: 't1'
 				},
 				{
-					columnName: 'descr',
+					name: 'descr',
 					type: 'varchar',
 					notNull: true,
 					table: 't1'
@@ -1091,19 +1091,19 @@ describe('infer-not-null', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 't1' //TODO - Fix
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'varchar',
 					notNull: false,
 					table: 't1'
 				},
 				{
-					columnName: 'descr',
+					name: 'descr',
 					type: 'varchar',
 					notNull: false,
 					table: 't1'
@@ -1129,19 +1129,19 @@ describe('infer-not-null', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					columnName: 'id',
+					name: 'id',
 					type: 'int',
 					notNull: true,
 					table: 't2'
 				},
 				{
-					columnName: 'name',
+					name: 'name',
 					type: 'varchar',
 					notNull: true,
 					table: 't2'
 				},
 				{
-					columnName: 'descr',
+					name: 'descr',
 					type: 'varchar',
 					notNull: true,
 					table: 't2'
