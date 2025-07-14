@@ -106,7 +106,7 @@ describe('postgres-json-functions', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	})
 
-	it(`SELECT json_build_object('key', id) FROM mytable1`, async () => {
+	it(`SELECT json_build_object('key1', name, 'key2', id ) as value FROM mytable1`, async () => {
 		const sql = `SELECT json_build_object('key1', name, 'key2', id ) as value FROM mytable2`;
 		const actual = await describeQuery(postres, sql, []);
 		const expected: PostgresSchemaDef = {
@@ -143,7 +143,7 @@ describe('postgres-json-functions', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	})
 
-	it(`SELECT json_build_object('key', id) FROM mytable1`, async () => {
+	it(`SELECT json_build_object('key1', m2.name, 'key2', m2.descr, 'key3', m1.id, 'key4', m2.id ) as value`, async () => {
 		const sql = `SELECT json_build_object('key1', m2.name, 'key2', m2.descr, 'key3', m1.id, 'key4', m2.id ) as value 
 			FROM mytable1 m1
 			LEFT JOIN mytable2 m2 ON m1.id = m2.id`;
@@ -192,7 +192,7 @@ describe('postgres-json-functions', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	})
 
-	it(`SELECT json_build_object('key', id) FROM mytable1`, async () => {
+	it(`SELECT json_build_object('key1', m2.name, 'key2', json_build_object('nested', m1.id), 'key3', m2.id ) as value`, async () => {
 		const sql = `SELECT json_build_object('key1', m2.name, 'key2', json_build_object('nested', m1.id), 'key3', m2.id ) as value 
 			FROM mytable1 m1
 			LEFT JOIN mytable2 m2 ON m1.id = m2.id`;
@@ -516,7 +516,7 @@ describe('postgres-json-functions', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	})
 
-	it(`SELECT json_build_object('total', SUM(m.id)) AS sum FROM mytable1 m`, async () => {
+	it(`SELECT json_build_object('total', SUM(m.id), 'count', ...) AS sum FROM mytable1 m`, async () => {
 		const sql = `
 		SELECT
 			json_build_object(
@@ -626,7 +626,7 @@ describe('postgres-json-functions', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	})
 
-	it(`SELECT json_build_object('total', SUM(m.id)) AS sum FROM mytable1 m`, async () => {
+	it(`SELECT json_build_object('total', SUM(m.id), ....) AS sum FROM mytable1 m`, async () => {
 		const sql = `
 		SELECT
 			json_build_object(
@@ -693,7 +693,7 @@ describe('postgres-json-functions', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	})
 
-	it(`SELECT json_build_object('total', SUM(m.id)) AS sum FROM mytable1 m`, async () => {
+	it(`SELECT json_build_object('total', EXTRACT(YEAR FROM DATE '2025-07-14')) AS sum FROM mytable1 m`, async () => {
 		const sql = `
 		SELECT
 			json_build_object(
@@ -731,7 +731,7 @@ describe('postgres-json-functions', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	})
 
-	it(`SELECT json_build_object('total', SUM(m.id)) AS sum FROM mytable1 m`, async () => {
+	it(`SELECT json_build_object('nested', (SELECT COALESCE(json_agg())) AS sum FROM mytable1 m`, async () => {
 		const sql = `
 		SELECT
 			json_build_object(
