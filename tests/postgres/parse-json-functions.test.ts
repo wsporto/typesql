@@ -594,6 +594,44 @@ describe('postgres-json-functions', () => {
 		const sql = `
 		SELECT
 			json_build_object(
+				'extract_year', EXTRACT(YEAR FROM DATE '2025-07-14')
+			) AS result
+		FROM mytable1 m
+		GROUP BY id`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'result',
+					type: {
+						name: 'json',
+						properties: [
+							{
+								key: 'extract_year',
+								type: 'float8',
+								notNull: true
+							}
+						],
+					},
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
+	it(`SELECT json_build_object('total', SUM(m.id)) AS sum FROM mytable1 m`, async () => {
+		const sql = `
+		SELECT
+			json_build_object(
 				'nested', (SELECT COALESCE(json_agg(jsonb_build_object(
 					'key1', 'value',
 					'key2', 10

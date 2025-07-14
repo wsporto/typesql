@@ -1209,10 +1209,11 @@ function traversefunc_expr_common_subexpr(func_expr_common_subexpr: Func_expr_co
 		const a_expr = func_expr_common_subexpr.extract_list().a_expr();
 		const result = traverse_a_expr(a_expr, context, traverseResult)
 		return {
-			...result,
+			column_name: 'extract',
 			is_nullable: result.is_nullable,
 			table_name: '',
-			table_schema: ''
+			table_schema: '',
+			type_id: 701
 		}
 	}
 	func_expr_common_subexpr.a_expr_list().forEach(a_expr => {
