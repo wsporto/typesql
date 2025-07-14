@@ -997,7 +997,7 @@ function traversec_expr_case(c_expr_case: C_expr_caseContext, context: TraverseC
 		is_nullable: !notNull,
 		table_name: '',
 		table_schema: '',
-		type_id: whenResult[0].type_id
+		type_id: whenResult[0].type_id ?? 705
 	}
 }
 

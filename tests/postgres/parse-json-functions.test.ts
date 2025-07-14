@@ -683,4 +683,44 @@ describe('postgres-json-functions', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	})
+
+	it(`json_build_object - dynamic json`, async () => {
+		const sql = `
+		SELECT
+			json_build_object(
+				'case', CASE 
+					WHEN id = 1 THEN json_build_object('a', 1) 
+					WHEN id = 2 THEN json_build_object('b', 2)
+					ELSE json_build_object('c', 3) END 
+		) AS result
+		FROM mytable1 m`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'result',
+					type: {
+						name: 'json',
+						properties: [
+							{
+								key: 'case',
+								type: 'unknow',
+								notNull: false
+							}
+						],
+					},
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
 })

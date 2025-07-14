@@ -105,4 +105,5 @@ export type PostgresSimpleType =
 	| 'jsonb'
 	| '_jsonb'
 	| 'jsonb[]'
+	| 'unknow'
 
