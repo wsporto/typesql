@@ -665,7 +665,7 @@ describe('Infer column nullability', () => {
 				is_nullable: true,
 				table_name: '',
 				table_schema: '',
-				type: 'unknow'
+				type: 'text'
 			}
 		];
 
@@ -730,7 +730,7 @@ describe('Infer column nullability', () => {
 				is_nullable: true,
 				table_name: '',
 				table_schema: '',
-				type: 'unknow'
+				type: 'int4'
 			},
 			{
 				column_name: 'name',
@@ -768,7 +768,7 @@ describe('Infer column nullability', () => {
 				is_nullable: true,
 				table_name: '',
 				table_schema: '',
-				type: 'unknow'
+				type: 'int4'
 			}
 		];
 

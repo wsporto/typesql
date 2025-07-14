@@ -933,7 +933,7 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 				is_nullable: true,
 				table_name: '',
 				table_schema: '',
-				type: 'unknow',
+				type: result[0].type,
 				jsonType: result[0].jsonType
 			}
 		}
