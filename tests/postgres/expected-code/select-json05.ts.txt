@@ -1,0 +1,42 @@
+import pg from 'pg';
+
+export type SelectJson05Result = {
+	result?: SelectJson05ResultType;
+}
+
+export type SelectJson05ResultType = {
+	nested: SelectJson05ResultNestedType;
+}
+
+export type SelectJson05ResultNestedType = {
+	nested2: SelectJson05ResultNestedNested2Type;
+}
+
+export type SelectJson05ResultNestedNested2Type = {
+	nested3: SelectJson05ResultNestedNested2Nested3Type;
+}
+
+export type SelectJson05ResultNestedNested2Nested3Type = {
+	key: string;
+}
+
+export async function selectJson05(client: pg.Client | pg.Pool): Promise<SelectJson05Result | null> {
+	const sql = `
+	SELECT json_build_object(
+		'nested', json_build_object (
+			'nested2', json_build_object(
+				'nested3', json_build_object('key', 'value')
+			)
+		)
+	) as result
+	`
+	return client.query({ text: sql, rowMode: 'array' })
+		.then(res => res.rows.length > 0 ? mapArrayToSelectJson05Result(res.rows[0]) : null);
+}
+
+function mapArrayToSelectJson05Result(data: any) {
+	const result: SelectJson05Result = {
+		result: data[0]
+	}
+	return result;
+}

@@ -13,7 +13,7 @@ import { isLeft } from 'fp-ts/lib/Either';
 import { hasAnnotation } from '../describe-query';
 import { describeDynamicQuery2 } from '../describe-dynamic-query';
 import { PostgresColumnInfo, PostgresParameterDef, PostgresSchemaDef } from './types';
-import { JsonType, JsonTypeArray } from '../sqlite-query-analyzer/types';
+import { JsonType } from '../sqlite-query-analyzer/types';
 
 function describeQueryRefine(describeParameters: DescribeParameters): Result<PostgresSchemaDef, TypeSqlError> {
 	const { sql, dbSchema, postgresDescribeResult, enumsTypes, checkConstraints, namedParameters } = describeParameters;
@@ -91,7 +91,7 @@ function mapToColumnInfo(col: DescribeQueryColumn, posgresTypes: PostgresType, e
 	}
 }
 
-function createType(typeId: number, postgresTypes: PostgresType, enumType: EnumResult[] | undefined, checkConstraint: string | undefined, jsonType: JsonType | JsonTypeArray | undefined) {
+function createType(typeId: number, postgresTypes: PostgresType, enumType: EnumResult[] | undefined, checkConstraint: string | undefined, jsonType: JsonType | undefined) {
 	if (enumType) {
 		return createEnumType(enumType!);
 	}
