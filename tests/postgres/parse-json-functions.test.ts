@@ -532,7 +532,8 @@ describe('postgres-json-functions', () => {
 				'nested', COALESCE(json_agg(jsonb_build_object(
 					'key1', 'value',
 					'key2', 10
-				)))
+				))),
+				'array', array[1, 2]
 			) AS sum
 		FROM mytable1 m
 		GROUP BY id`;
@@ -611,6 +612,11 @@ describe('postgres-json-functions', () => {
 								},
 								notNull: false
 
+							},
+							{
+								key: 'array',
+								notNull: true,
+								type: 'int4[]'
 							}
 						],
 					},

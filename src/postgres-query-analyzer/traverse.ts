@@ -869,15 +869,11 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 			}
 			const array_expr = c_expr.array_expr();
 			if (array_expr) {
-				traverse_array_expr(array_expr, context, traverseResult);
+				const result = traverse_array_expr(array_expr, context, traverseResult);
 				return {
-					column_name: '?column?',
-					is_nullable: false,
-					table_schema: '',
-					table_name: '',
-					type: 'unknow'
-				}
-
+					...result,
+					type: `${result.type}[]` as PostgresSimpleType
+				};
 			}
 		}
 		const columnref = c_expr.columnref();
@@ -1322,21 +1318,41 @@ function traversefunc_arg_expr(func_arg_expr: Func_arg_exprContext, context: Tra
 	return traverse_a_expr(a_expr, context, traverseResult);
 }
 
-function traverse_array_expr(array_expr: Array_exprContext, context: TraverseContext, traverseResult: TraverseResult) {
+function traverse_array_expr(array_expr: Array_exprContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
 	const expr_list = array_expr.expr_list();
 	if (expr_list) {
-		traverse_expr_list(expr_list, context, traverseResult);
+		const traverse_expr_list_result = traverse_expr_list(expr_list, context, traverseResult);
+		return {
+			...traverse_expr_list_result[0],
+			column_name: '?column?',
+			table_name: '',
+			table_schema: ''
+		}
 	}
 	const array_expr_list = array_expr.array_expr_list();
 	if (array_expr_list) {
-		traverse_array_expr_list(array_expr_list, context, traverseResult);
+		const traverse_array_expr_list_result = traverse_array_expr_list(array_expr_list, context, traverseResult);
+		return {
+			...traverse_array_expr_list_result[0],
+			column_name: '?column?',
+			table_name: '',
+			table_schema: ''
+		}
 	}
+	return {
+		column_name: array_expr.getText(),
+		is_nullable: true,
+		table_name: '',
+		table_schema: '',
+		type: 'unknow'
+	};
 }
 
-function traverse_array_expr_list(array_expr_list: Array_expr_listContext, context: TraverseContext, traverseResult: TraverseResult) {
-	array_expr_list.array_expr_list().forEach(array_expr => {
-		traverse_array_expr(array_expr, context, traverseResult);
+function traverse_array_expr_list(array_expr_list: Array_expr_listContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo[] {
+	const result = array_expr_list.array_expr_list().map(array_expr => {
+		return traverse_array_expr(array_expr, context, traverseResult);
 	})
+	return result;
 }
 
 function findColumn(fieldName: FieldName, fromColumns: NotNullInfo[]) {
