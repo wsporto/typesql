@@ -488,5 +488,52 @@ GROUP BY id`;
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('select-json03', async () => {
+		const sql = `SELECT 
+	json_build_array('a', 'b') as value1, 
+	jsonb_build_array(null, 'c', 10) as value2`;
+
+		const actual = await generateCode(dialect, sql, 'selectJson03');
+		const expected = readFileSync('tests/postgres/expected-code/select-json03.ts.txt', 'utf-8');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('select-json04', async () => {
+		const sql = `SELECT json_build_object(
+	'id', 10,
+	'list', json_build_array(1, 'a')
+) as result`;
+
+		const actual = await generateCode(dialect, sql, 'selectJson04');
+		const expected = readFileSync('tests/postgres/expected-code/select-json04.ts.txt', 'utf-8');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('select-json05', async () => {
+		const sql = `SELECT json_build_object(
+	'nested', json_build_object (
+		'nested2', json_build_object(
+			'nested3', json_build_object('key', 'value')
+		)
+	)
+) as result`;
+
+		const actual = await generateCode(dialect, sql, 'selectJson05');
+		const expected = readFileSync('tests/postgres/expected-code/select-json05.ts.txt', 'utf-8');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });
 

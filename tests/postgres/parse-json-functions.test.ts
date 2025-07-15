@@ -255,7 +255,10 @@ describe('postgres-json-functions', () => {
 			columns: [
 				{
 					name: 'json_build_array',
-					type: 'json',
+					type: {
+						name: 'json[]',
+						properties: ['int4', 'int4', 'text', 'int4', 'int4']
+					},
 					notNull: false, //in this example is never null
 					table: ''
 				}
@@ -388,9 +391,14 @@ describe('postgres-json-functions', () => {
 						name: 'json[]',
 						properties: [
 							{
-								key: 'key',
-								type: 'int4',
-								notNull: true
+								name: 'json',
+								properties: [
+									{
+										key: 'key',
+										type: 'int4',
+										notNull: true
+									}
+								]
 							}
 						]
 					},
@@ -403,9 +411,14 @@ describe('postgres-json-functions', () => {
 						name: 'json[]',
 						properties: [
 							{
-								key: 'key',
-								type: 'int4',
-								notNull: true
+								name: 'json',
+								properties: [
+									{
+										key: 'key',
+										type: 'int4',
+										notNull: true
+									}
+								]
 							}
 						]
 					},
@@ -416,7 +429,7 @@ describe('postgres-json-functions', () => {
 					name: 'col3',
 					type: {
 						name: 'json[]',
-						properties: []
+						properties: ['unknow']
 					},
 					notNull: false,
 					table: ''
@@ -425,7 +438,7 @@ describe('postgres-json-functions', () => {
 					name: 'col4',
 					type: {
 						name: 'json[]',
-						properties: []
+						properties: ['unknow']
 					},
 					notNull: false,
 					table: ''
@@ -453,9 +466,14 @@ describe('postgres-json-functions', () => {
 						name: 'json[]',
 						properties: [
 							{
-								key: 'key',
-								type: 'text',
-								notNull: true
+								name: 'json',
+								properties: [
+									{
+										key: 'key',
+										type: 'text',
+										notNull: true
+									}
+								]
 							}
 						],
 					},
@@ -493,14 +511,19 @@ describe('postgres-json-functions', () => {
 						name: 'json[]',
 						properties: [
 							{
-								key: 'key',
-								type: 'text',
-								notNull: true,
-							},
-							{
-								key: 'key2',
-								type: 'int4',
-								notNull: true
+								name: 'json',
+								properties: [
+									{
+										key: 'key',
+										type: 'text',
+										notNull: true,
+									},
+									{
+										key: 'key2',
+										type: 'int4',
+										notNull: true
+									}
+								]
 							}
 						],
 					},
@@ -599,15 +622,21 @@ describe('postgres-json-functions', () => {
 									name: 'json[]',
 									properties: [
 										{
-											key: 'key1',
-											type: 'text',
-											notNull: true
-										},
-										{
-											key: 'key2',
-											type: 'int4',
-											notNull: true
+											name: 'json',
+											properties: [
+												{
+													key: 'key1',
+													type: 'text',
+													notNull: true
+												},
+												{
+													key: 'key2',
+													type: 'int4',
+													notNull: true
+												}
+											]
 										}
+
 									]
 								},
 								notNull: false
@@ -765,14 +794,19 @@ describe('postgres-json-functions', () => {
 									name: 'json[]',
 									properties: [
 										{
-											key: 'key1',
-											type: 'text',
-											notNull: true
-										},
-										{
-											key: 'key2',
-											type: 'int4',
-											notNull: true
+											name: 'json',
+											properties: [
+												{
+													key: 'key1',
+													type: 'text',
+													notNull: true
+												},
+												{
+													key: 'key2',
+													type: 'int4',
+													notNull: true
+												}
+											]
 										}
 									]
 								},
@@ -858,6 +892,77 @@ describe('postgres-json-functions', () => {
 								notNull: false
 							}
 						],
+					},
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
+	it(`SELECT json_build_array('a', 1, 2, 3, 'b') as result`, async () => {
+
+		const arry: (number)[] = [1, 1, 1];
+		arry.map(a => a + 1)
+
+		const sql = `
+		SELECT json_build_array('a', 1, 2, 3, 'b') as result`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					name: 'result',
+					type: {
+						name: 'json[]',
+						properties: ['text', 'int4', 'int4', 'int4', 'text']
+					},
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
+	it(`SELECT json_build_array('a', 1, 2, 3, 'b') as result`, async () => {
+
+		const arry: (number)[] = [1, 1, 1];
+		arry.map(a => a + 1)
+
+		const sql = `
+		SELECT json_build_array(json_build_array('a', 1), json_build_array('b', 2)) as result`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					name: 'result',
+					type: {
+						name: 'json[]',
+						properties: [
+							{
+								name: 'json[]',
+								properties: ['text', 'int4']
+							},
+							{
+								name: 'json[]',
+								properties: ['text', 'int4']
+							}
+						]
 					},
 					notNull: false,
 					table: ''

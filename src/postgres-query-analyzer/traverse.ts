@@ -6,7 +6,7 @@ import { DynamicSqlInfo2, FieldName } from '../mysql-query-analyzer/types';
 import { QueryType } from '../types';
 import { Relation2 } from '../sqlite-query-analyzer/sqlite-describe-nested-query';
 import { CheckConstraintResult } from '../drivers/postgres';
-import { JsonPropertyDef, JsonType, JsonTypeArray, PostgresSimpleType } from '../sqlite-query-analyzer/types';
+import { JsonPropertyDef, JsonType, PostgresSimpleType } from '../sqlite-query-analyzer/types';
 
 export type NotNullInfo = {
 	table_schema: string;
@@ -15,7 +15,7 @@ export type NotNullInfo = {
 	is_nullable: boolean;
 	column_default?: true;
 	type: PostgresSimpleType;
-	jsonType?: JsonType | JsonTypeArray;
+	jsonType?: JsonType;
 }
 
 export type PostgresTraverseResult = {
@@ -1119,7 +1119,7 @@ function traverse_json_agg(func_application: Func_applicationContext, context: T
 		type: 'json[]',
 		jsonType: {
 			name: 'json[]',
-			properties: argsResult[0].jsonType?.properties || []
+			properties: argsResult.map(arg => arg.jsonType || arg.type)
 		}
 	}
 }
@@ -1232,7 +1232,11 @@ function traversefunc_application(func_application: Func_applicationContext, con
 			is_nullable: true,
 			table_name: '',
 			table_schema: '',
-			type: 'json'
+			type: 'json[]',
+			jsonType: {
+				name: 'json[]',
+				properties: argsResult.map(arg => arg.jsonType || arg.type)
+			}
 		};
 	}
 	if (functionName === 'to_json' || functionName === 'to_jsonb') {

@@ -1,0 +1,24 @@
+import pg from 'pg';
+
+export type SelectJson03Result = {
+	value1?: string[];
+	value2?: (any | string | number)[];
+}
+
+export async function selectJson03(client: pg.Client | pg.Pool): Promise<SelectJson03Result | null> {
+	const sql = `
+	SELECT
+		json_build_array('a', 'b') as value1,
+		jsonb_build_array(null, 'c', 10) as value2
+	`
+	return client.query({ text: sql, rowMode: 'array' })
+		.then(res => res.rows.length > 0 ? mapArrayToSelectJson03Result(res.rows[0]) : null);
+}
+
+function mapArrayToSelectJson03Result(data: any) {
+	const result: SelectJson03Result = {
+		value1: data[0],
+		value2: data[1]
+	}
+	return result;
+}

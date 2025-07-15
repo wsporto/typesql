@@ -30,14 +30,13 @@ export type JsonPropertyDef = {
 	notNull: boolean;
 };
 
-export type JsonType = { name: 'json', properties: JsonPropertyDef[] };
-
-export type JsonTypeArray = { name: 'json[]', properties: JsonPropertyDef[] }
+export type JsonObjType = { name: 'json', properties: JsonPropertyDef[] };
+export type JsonArrayType = { name: 'json[]', properties: JsonType[] }
+export type JsonType = JsonObjType | JsonArrayType | PostgresSimpleType;
 
 export type PostgresType =
 	| PostgresSimpleType
 	| JsonType
-	| JsonTypeArray
 
 export type PostgresSimpleType =
 	| 'bool'

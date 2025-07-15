@@ -1,0 +1,28 @@
+import pg from 'pg';
+
+export type SelectJson04Result = {
+	result?: SelectJson04ResultType;
+}
+
+export type SelectJson04ResultType = {
+	id: number;
+	list: (number | string)[];
+}
+
+export async function selectJson04(client: pg.Client | pg.Pool): Promise<SelectJson04Result | null> {
+	const sql = `
+	SELECT json_build_object(
+		'id', 10,
+		'list', json_build_array(1, 'a')
+	) as result
+	`
+	return client.query({ text: sql, rowMode: 'array' })
+		.then(res => res.rows.length > 0 ? mapArrayToSelectJson04Result(res.rows[0]) : null);
+}
+
+function mapArrayToSelectJson04Result(data: any) {
+	const result: SelectJson04Result = {
+		result: data[0]
+	}
+	return result;
+}
