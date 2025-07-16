@@ -1,0 +1,40 @@
+import pg from 'pg';
+
+export type SelectJson07Result = {
+	user_id: number;
+	user_name: string;
+	jsonb_agg?: SelectJson07JsonbAggType[];
+}
+
+export type SelectJson07JsonbAggType = {
+	id: number;
+	title?: string;
+}
+
+export async function selectJson07(client: pg.Client | pg.Pool): Promise<SelectJson07Result[]> {
+	const sql = `
+	SELECT
+		u.id as user_id,
+		u.name as user_name,
+		jsonb_agg(
+			json_build_object(
+				'id', p.id,
+				'title', p.title
+			)
+		) FILTER (WHERE p.id IS NOT NULL)
+	FROM users u
+	LEFT JOIN posts p on p.fk_user = u.id
+	group by u.id, u.name
+	`
+	return client.query({ text: sql, rowMode: 'array' })
+		.then(res => res.rows.map(row => mapArrayToSelectJson07Result(row)));
+}
+
+function mapArrayToSelectJson07Result(data: any) {
+	const result: SelectJson07Result = {
+		user_id: data[0],
+		user_name: data[1],
+		jsonb_agg: data[2]
+	}
+	return result;
+}

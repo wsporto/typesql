@@ -479,7 +479,7 @@ function writeJsonTypes(writer: CodeBlockWriter, typeName: string, type: JsonObj
 				writer.writeLine(`${field.key}: ${jsonTypeName}Type;`);
 			} else if (isJsonArrayType(field.type)) {
 				const jsonParentName = createJsonType(typeName, field.key);
-				const jsonTypeName = createJsonArrayType(jsonParentName, field.type);
+				const jsonTypeName = createJsonArrayType(jsonParentName, field.type, field.notNull);
 				writer.writeLine(`${field.key}: ${jsonTypeName};`);
 			} else {
 				const optionalOp = field.notNull ? '' : '?';
@@ -517,19 +517,19 @@ function createTsDescriptor(capitalizedName: string, schemaDef: PostgresSchemaDe
 	return tsDescriptor;
 }
 
-function createJsonArrayType(name: string, type: JsonArrayType) {
-	const typeNames = type.properties.flatMap(p => !isObject(p) ? [mapColumnType(p)] : createTsType(name, p));
+function createJsonArrayType(name: string, type: JsonArrayType, notNull: boolean) {
+	const typeNames = type.properties.flatMap(p => !isObject(p) ? [mapColumnType(p)] : createTsType(name, p, notNull));
 	const uniqTypeNames = [...new Set(typeNames)];
 	const unionTypes = uniqTypeNames.join(' | ');
 	return uniqTypeNames.length === 1 ? `${unionTypes}[]` : `(${unionTypes})[]`;
 }
 
-function createTsType(name: string, type: PostgresType): string {
+function createTsType(name: string, type: PostgresType, notNull: boolean): string {
 	if (isJsonObjType(type)) {
 		return `${name}Type`;
 	}
 	else if (isJsonArrayType(type)) {
-		return createJsonArrayType(name, type);
+		return createJsonArrayType(name, type, notNull);
 	}
 	else {
 		return mapColumnType(type);
@@ -540,7 +540,7 @@ function mapColumnInfoToTsFieldDescriptor(capitalizedName: string, col: Postgres
 	const typeName = createJsonType(capitalizedName, col.name);
 	const tsField: TsFieldDescriptor = {
 		name: col.name,
-		tsType: createTsType(typeName, col.type),
+		tsType: createTsType(typeName, col.type, col.notNull),
 		notNull: dynamicQuery ? false : col.notNull
 	}
 	return tsField;

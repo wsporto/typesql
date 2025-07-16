@@ -55,6 +55,7 @@ type TraverseContext = {
 	propagatesNull?: boolean;
 	collectNestedInfo: boolean;
 	collectDynamicQueryInfo: boolean;
+	filter_expr?: A_exprContext;
 }
 
 export type Relation3 = {
@@ -439,7 +440,7 @@ function traverse_target_el(target_el: Target_elContext, context: TraverseContex
 		}
 		return {
 			column_name: alias || exprResult.column_name,
-			is_nullable: exprResult.is_nullable,
+			is_nullable: exprResult.is_nullable && exprResult.column_default !== true,
 			table_name: exprResult.table_name,
 			table_schema: exprResult.table_schema,
 			type: exprResult.type,
@@ -788,7 +789,7 @@ function traverseColumnRef(columnref: ColumnrefContext, fromColumns: NotNullInfo
 	const fieldName = splitName(columnref.getText());
 	const col = findColumn(fieldName, fromColumns);
 	return {
-		...col, is_nullable: col.is_nullable && col.column_default !== true
+		...col, is_nullable: col.is_nullable
 	}
 }
 
@@ -906,30 +907,42 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 				type: 'unknow'
 			}
 		}
-		const func_application = c_expr.func_expr()?.func_application();
-		if (func_application) {
-			if (is_json_build_object_func(func_application)) {
-				return traverse_json_build_obj_func(func_application, context, traverseResult);
-			}
-			if (is_json_agg(func_application)) {
-				return traverse_json_agg(func_application, context, traverseResult);
-			}
+		const fun_expr = c_expr.func_expr();
+		if (fun_expr) {
+			const func_application = fun_expr.func_application();
+			if (func_application) {
+				if (is_json_build_object_func(func_application)) {
+					return traverse_json_build_obj_func(func_application, context, traverseResult);
+				}
+				if (is_json_agg(func_application)) {
+					const filter_expr = fun_expr.filter_clause()?.a_expr();
+					return traverse_json_agg(func_application, { ...context, filter_expr }, traverseResult);
+				}
 
-			const isNotNull = traversefunc_application(func_application, context, traverseResult);
-			return {
-				...isNotNull,
-				table_name: '',
-				table_schema: ''
+				const isNotNull = traversefunc_application(func_application, context, traverseResult);
+
+				const filter_clause = fun_expr.filter_clause();
+				if (filter_clause) {
+					const a_expr = filter_clause.a_expr();
+					traverse_a_expr(a_expr, context, traverseResult);
+				}
+
+				return {
+					...isNotNull,
+					table_name: '',
+					table_schema: ''
+				}
+			}
+			const func_expr_common_subexpr = c_expr.func_expr()?.func_expr_common_subexpr();
+			if (func_expr_common_subexpr) {
+				const isNotNull = traversefunc_expr_common_subexpr(func_expr_common_subexpr, context, traverseResult);
+				return {
+					...isNotNull,
+					column_name: func_expr_common_subexpr.getText().split('(')?.[0]?.trim() || func_expr_common_subexpr.getText()
+				}
 			}
 		}
-		const func_expr_common_subexpr = c_expr.func_expr()?.func_expr_common_subexpr();
-		if (func_expr_common_subexpr) {
-			const isNotNull = traversefunc_expr_common_subexpr(func_expr_common_subexpr, context, traverseResult);
-			return {
-				...isNotNull,
-				column_name: func_expr_common_subexpr.getText().split('(')?.[0]?.trim() || func_expr_common_subexpr.getText()
-			}
-		}
+
 		const select_with_parens = c_expr.select_with_parens();
 		if (select_with_parens) {
 			const result = traverse_select_with_parens(select_with_parens, context, traverseResult);
@@ -1077,14 +1090,15 @@ function is_json_agg(func_application: Func_applicationContext) {
 		|| functionName === 'jsonb_agg';
 }
 
-function transformToJsonProperty(args: NotNullInfo[]): JsonPropertyDef[] {
+function transformToJsonProperty(args: NotNullInfo[], filterExpr?: A_exprContext): JsonPropertyDef[] {
 	const pairs: JsonPropertyDef[] = [];
 	for (let i = 0; i < args.length; i += 2) {
 		const key = args[i];
 		const value = args[i + 1];
 		if (value !== undefined) {
 			const type = value.jsonType ? value.jsonType : value.type!;
-			pairs.push({ key: key.column_name, type, notNull: !value.is_nullable });
+			const isNotNull = !value.is_nullable || Boolean(filterExpr && isNotNull_a_expr(value, filterExpr));
+			pairs.push({ key: key.column_name, type, notNull: isNotNull });
 		}
 	}
 	return pairs;
@@ -1102,9 +1116,20 @@ function traverse_json_build_obj_func(func_application: Func_applicationContext,
 		type: 'json',
 		jsonType: {
 			name: 'json',
-			properties: transformToJsonProperty(argsResult),
+			properties: transformToJsonProperty(argsResult, context.filter_expr),
 		}
 	}
+}
+
+function isNotNull_json_agg(col: NotNullInfo): boolean {
+	if (typeof col.jsonType !== 'object') {
+		return !col.is_nullable
+	}
+	if (col.jsonType.name === 'json') {
+		return col.jsonType.properties.every(prop => !prop.notNull);
+	}
+	return false;
+
 }
 
 function traverse_json_agg(func_application: Func_applicationContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
@@ -1113,7 +1138,7 @@ function traverse_json_agg(func_application: Func_applicationContext, context: T
 	const argsResult = func_arg_expr_list.map(func_arg_expr => traversefunc_arg_expr(func_arg_expr, context, traverseResult))
 	return {
 		column_name: columnName,
-		is_nullable: true,
+		is_nullable: !isNotNull_json_agg(argsResult[0]),
 		table_name: '',
 		table_schema: '',
 		type: 'json[]',

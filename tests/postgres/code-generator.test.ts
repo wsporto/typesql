@@ -535,5 +535,74 @@ GROUP BY id`;
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('select-json06', async () => {
+		const sql = `SELECT
+	u.id as user_id,
+	u.name as user_name,
+	jsonb_agg(
+		json_build_object(
+			'id', p.id,
+			'title', p.title
+		)
+	)
+FROM users u
+LEFT JOIN posts p on p.fk_user = u.id
+group by u.id, u.name`;
+
+		const actual = await generateCode(dialect, sql, 'selectJson06');
+		const expected = readFileSync('tests/postgres/expected-code/select-json06.ts.txt', 'utf-8');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('select-json07', async () => {
+		const sql = `SELECT
+	u.id as user_id,
+	u.name as user_name,
+	jsonb_agg(
+		json_build_object(
+			'id', p.id,
+			'title', p.title
+		)
+	) FILTER (WHERE p.id IS NOT NULL)
+FROM users u
+LEFT JOIN posts p on p.fk_user = u.id
+group by u.id, u.name`;
+
+		const actual = await generateCode(dialect, sql, 'selectJson07');
+		const expected = readFileSync('tests/postgres/expected-code/select-json07.ts.txt', 'utf-8');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('select-json08', async () => {
+		const sql = `SELECT
+	u.id as user_id,
+	u.name as user_name,
+	coalesce(jsonb_agg(
+		json_build_object(
+			'id', p.id,
+			'title', p.title
+		)
+	) FILTER (WHERE p.id IS NOT NULL), '[]')
+FROM users u
+LEFT JOIN posts p on p.fk_user = u.id
+group by u.id, u.name`;
+
+		const actual = await generateCode(dialect, sql, 'selectJson08');
+		const expected = readFileSync('tests/postgres/expected-code/select-json08.ts.txt', 'utf-8');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });
 

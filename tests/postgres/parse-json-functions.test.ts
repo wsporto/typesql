@@ -245,6 +245,201 @@ describe('postgres-json-functions', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	})
 
+	it(`SELECT json_agg() FROM users u LEFT JOIN posts p`, async () => {
+		const sql = `SELECT 
+	u.id as user_id, 
+	u.name as user_name,
+	json_agg(
+		json_build_object(
+			'id', p.id,
+			'title', p.title
+		) 
+	)
+FROM users u
+LEFT JOIN posts p on p.fk_user = u.id
+group by u.id, u.name`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'user_id',
+					type: 'int4',
+					notNull: true,
+					table: 'u'
+				},
+				{
+					name: 'user_name',
+					type: 'text',
+					notNull: true,
+					table: 'u'
+				},
+				{
+					name: 'json_agg',
+					type: {
+						name: 'json[]',
+						properties: [
+							{
+								name: 'json',
+								properties: [
+									{
+										key: 'id',
+										type: 'int4',
+										notNull: false //left join
+									},
+									{
+										key: 'title',
+										type: 'text',
+										notNull: false //left join
+									}
+								]
+							}
+						]
+					},
+					notNull: true, //[{id: null, title: null}]
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it(`SELECT json_agg() FILTER(WHERE p.id is not null) FROM users u LEFT JOIN posts p`, async () => {
+		const sql = `SELECT 
+	u.id as user_id, 
+	u.name as user_name,
+	json_agg(
+		json_build_object(
+			'id', p.id,
+			'title', p.title
+		) 
+	) FILTER(WHERE p.id is not null)
+FROM users u
+LEFT JOIN posts p on p.fk_user = u.id
+group by u.id, u.name`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'user_id',
+					type: 'int4',
+					notNull: true,
+					table: 'u'
+				},
+				{
+					name: 'user_name',
+					type: 'text',
+					notNull: true,
+					table: 'u'
+				},
+				{
+					name: 'json_agg',
+					type: {
+						name: 'json[]',
+						properties: [
+							{
+								name: 'json',
+								properties: [
+									{
+										key: 'id',
+										type: 'int4',
+										notNull: true //FILTER(WHERE p.id is not null)
+									},
+									{
+										key: 'title',
+										type: 'text',
+										notNull: false //left join
+									}
+								]
+							}
+						]
+					},
+					notNull: false, //null
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
+	it(`SELECT COALESCE(json_agg() FILTER(WHERE p.id is not null), '[]') FROM users u LEFT JOIN posts p`, async () => {
+		const sql = `SELECT 
+	u.id as user_id, 
+	u.name as user_name,
+	COALESCE(json_agg(
+		json_build_object(
+			'id', p.id,
+			'title', p.title
+		) 
+	) FILTER(WHERE p.id is not null), '[]')
+FROM users u
+LEFT JOIN posts p on p.fk_user = u.id
+group by u.id, u.name`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'user_id',
+					type: 'int4',
+					notNull: true,
+					table: 'u'
+				},
+				{
+					name: 'user_name',
+					type: 'text',
+					notNull: true,
+					table: 'u'
+				},
+				{
+					name: 'coalesce',
+					type: {
+						name: 'json[]',
+						properties: [
+							{
+								name: 'json',
+								properties: [
+									{
+										key: 'id',
+										type: 'int4',
+										notNull: true //FILTER(WHERE p.id is not null)
+									},
+									{
+										key: 'title',
+										type: 'text',
+										notNull: false //left join
+									}
+								]
+							}
+						]
+					},
+					notNull: true, //[]
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
 	it(`select json_build_array(1,2,'foo',4,5)`, async () => {
 		const sql = `select json_build_array(1,2,'foo',4,5)`;
 		const actual = await describeQuery(postres, sql, []);
