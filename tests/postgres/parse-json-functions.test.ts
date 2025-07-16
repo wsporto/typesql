@@ -440,32 +440,6 @@ group by u.id, u.name`;
 		assert.deepStrictEqual(actual.value, expected);
 	})
 
-	it(`select json_build_array(1,2,'foo',4,5)`, async () => {
-		const sql = `select json_build_array(1,2,'foo',4,5)`;
-		const actual = await describeQuery(postres, sql, []);
-		const expected: PostgresSchemaDef = {
-			sql,
-			queryType: 'Select',
-			multipleRowsResult: false,
-			columns: [
-				{
-					name: 'json_build_array',
-					type: {
-						name: 'json[]',
-						properties: ['int4', 'int4', 'text', 'int4', 'int4']
-					},
-					notNull: false, //in this example is never null
-					table: ''
-				}
-			],
-			parameters: []
-		};
-		if (actual.isErr()) {
-			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
-		}
-		assert.deepStrictEqual(actual.value, expected);
-	})
-
 	it(`select to_json()`, async () => {
 		const sql = `select 
 		 	to_json(10::int) as col1, 
@@ -1102,9 +1076,6 @@ group by u.id, u.name`;
 
 	it(`SELECT json_build_array('a', 1, 2, 3, 'b') as result`, async () => {
 
-		const arry: (number)[] = [1, 1, 1];
-		arry.map(a => a + 1)
-
 		const sql = `
 		SELECT json_build_array('a', 1, 2, 3, 'b') as result`;
 		const actual = await describeQuery(postres, sql, []);
@@ -1131,10 +1102,7 @@ group by u.id, u.name`;
 		assert.deepStrictEqual(actual.value, expected);
 	})
 
-	it(`SELECT json_build_array('a', 1, 2, 3, 'b') as result`, async () => {
-
-		const arry: (number)[] = [1, 1, 1];
-		arry.map(a => a + 1)
+	it(`SELECT json_build_array(json_build_array('a', 1), json_build_array('b', 2)) as result`, async () => {
 
 		const sql = `
 		SELECT json_build_array(json_build_array('a', 1), json_build_array('b', 2)) as result`;
