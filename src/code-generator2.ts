@@ -4,7 +4,7 @@ import { CrudQueryType, PgDielect, QueryType, TsFieldDescriptor, TsParameterDesc
 import { describeQuery } from './postgres-query-analyzer/describe';
 import { ColumnSchema } from './mysql-query-analyzer/types';
 import { mapColumnType } from './dialects/postgres';
-import { JsonArrayType, JsonObjType, JsonType, PostgresType } from './sqlite-query-analyzer/types';
+import { JsonArrayType, JsonFieldType, JsonObjType, JsonType, PostgresType } from './sqlite-query-analyzer/types';
 import { preprocessSql } from './describe-query';
 import { okAsync, ResultAsync } from 'neverthrow';
 import { getQueryName, mapPostgrsFieldToTsField, writeCollectFunction } from './sqlite-query-analyzer/code-generator';
@@ -410,14 +410,19 @@ type FlattenType = {
 	type: JsonObjType;
 }
 
-const isObject = (val: unknown): val is { name: string } =>
-	typeof val === 'object' && val !== null && 'name' in val;
-const isJsonObjType = (t: JsonType): t is JsonObjType => isObject(t) && t.name === 'json';
-const isJsonArrayType = (t: JsonType): t is JsonArrayType => isObject(t) && t.name === 'json[]';
+const isJsonType = (t: PostgresType): t is JsonType => {
+	return typeof t === 'object' && t !== null && 'name' in t;
+};
+const isJsonObjType = (t: JsonType): t is JsonObjType => t.name === 'json';
+const isJsonArrayType = (t: JsonType): t is JsonArrayType => t.name === 'json[]';
+const isJsonFieldType = (t: JsonType): t is JsonFieldType => t.name === 'json_field';
 
 function flattenJsonTypes(parentName: string, type: PostgresType): FlattenType[] {
 	const result: FlattenType[] = [];
 	const visit = (typeName: string, t: PostgresType) => {
+		if (!isJsonType(t)) {
+			return;
+		}
 		if (isJsonObjType(t)) {
 			result.push({ typeName, type: t });
 			for (const prop of t.properties) {
@@ -479,11 +484,11 @@ function writeJsonTypes(writer: CodeBlockWriter, typeName: string, type: JsonObj
 				writer.writeLine(`${field.key}: ${jsonTypeName}Type;`);
 			} else if (isJsonArrayType(field.type)) {
 				const jsonParentName = createJsonType(typeName, field.key);
-				const jsonTypeName = createJsonArrayType(jsonParentName, field.type, field.notNull);
+				const jsonTypeName = createJsonArrayType(jsonParentName, field.type);
 				writer.writeLine(`${field.key}: ${jsonTypeName};`);
 			} else {
-				const optionalOp = field.notNull ? '' : '?';
-				writer.writeLine(`${field.key}${optionalOp}: ${mapColumnType(field.type)};`);
+				const optionalOp = field.type.notNull ? '' : '?';
+				writer.writeLine(`${field.key}${optionalOp}: ${mapColumnType(field.type.type)};`);
 			}
 		});
 	});
@@ -517,30 +522,39 @@ function createTsDescriptor(capitalizedName: string, schemaDef: PostgresSchemaDe
 	return tsDescriptor;
 }
 
-function createJsonArrayType(name: string, type: JsonArrayType, notNull: boolean) {
-	const typeNames = type.properties.flatMap(p => !isObject(p) ? [mapColumnType(p)] : createTsType(name, p, notNull));
+function createJsonArrayType(name: string, type: JsonArrayType) {
+	const typeNames = type.properties.flatMap(p => {
+		if (isJsonFieldType(p)) {
+			const baseType = mapColumnType(p.type)
+			if (!p.notNull) {
+				return [baseType, 'null'];
+			}
+			return [baseType];
+		}
+		return createTsType(name, p);
+	});
 	const uniqTypeNames = [...new Set(typeNames)];
 	const unionTypes = uniqTypeNames.join(' | ');
 	return uniqTypeNames.length === 1 ? `${unionTypes}[]` : `(${unionTypes})[]`;
 }
 
-function createTsType(name: string, type: PostgresType, notNull: boolean): string {
-	if (isJsonObjType(type)) {
-		return `${name}Type`;
+function createTsType(name: string, type: PostgresType): string {
+	if (isJsonType(type)) {
+		if (isJsonObjType(type)) {
+			return `${name}Type`;
+		}
+		else if (isJsonArrayType(type)) {
+			return createJsonArrayType(name, type);
+		}
 	}
-	else if (isJsonArrayType(type)) {
-		return createJsonArrayType(name, type, notNull);
-	}
-	else {
-		return mapColumnType(type);
-	}
+	return mapColumnType(type);
 }
 
 function mapColumnInfoToTsFieldDescriptor(capitalizedName: string, col: PostgresColumnInfo, dynamicQuery: boolean): TsFieldDescriptor {
 	const typeName = createJsonType(capitalizedName, col.name);
 	const tsField: TsFieldDescriptor = {
 		name: col.name,
-		tsType: createTsType(typeName, col.type, col.notNull),
+		tsType: createTsType(typeName, col.type),
 		notNull: dynamicQuery ? false : col.notNull
 	}
 	return tsField;

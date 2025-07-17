@@ -604,5 +604,22 @@ group by u.id, u.name`;
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('select-json09', async () => {
+		const sql = `SELECT json_build_array(
+		json_build_array('a', null), 
+		json_build_array(1, 2),
+		json_build_array(id, name, descr)
+	) as result
+FROM mytable2`;
+
+		const actual = await generateCode(dialect, sql, 'selectJson09');
+		const expected = readFileSync('tests/postgres/expected-code/select-json09.ts.txt', 'utf-8');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });
 

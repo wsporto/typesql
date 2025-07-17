@@ -6,7 +6,7 @@ import { DynamicSqlInfo2, FieldName } from '../mysql-query-analyzer/types';
 import { QueryType } from '../types';
 import { Relation2 } from '../sqlite-query-analyzer/sqlite-describe-nested-query';
 import { CheckConstraintResult } from '../drivers/postgres';
-import { JsonPropertyDef, JsonType, PostgresSimpleType } from '../sqlite-query-analyzer/types';
+import { JsonFieldType, JsonPropertyDef, JsonType, PostgresSimpleType } from '../sqlite-query-analyzer/types';
 
 export type NotNullInfo = {
 	table_schema: string;
@@ -1096,9 +1096,9 @@ function transformToJsonProperty(args: NotNullInfo[], filterExpr?: A_exprContext
 		const key = args[i];
 		const value = args[i + 1];
 		if (value !== undefined) {
-			const type = value.jsonType ? value.jsonType : value.type!;
 			const isNotNull = !value.is_nullable || Boolean(filterExpr && isNotNull_a_expr(value, filterExpr));
-			pairs.push({ key: key.column_name, type, notNull: isNotNull });
+			const type = value.jsonType ? value.jsonType : { name: 'json_field', type: value.type, notNull: isNotNull } satisfies JsonFieldType;
+			pairs.push({ key: key.column_name, type });
 		}
 	}
 	return pairs;
@@ -1122,21 +1122,22 @@ function traverse_json_build_obj_func(func_application: Func_applicationContext,
 }
 
 function isNotNull_json_agg(col: NotNullInfo): boolean {
-	if (typeof col.jsonType !== 'object') {
-		return !col.is_nullable
-	}
-	if (col.jsonType.name === 'json') {
-		return col.jsonType.properties.every(prop => !prop.notNull);
+	if (col.jsonType != null && col.jsonType.name == 'json') {
+		return col.jsonType.properties.every(prop => {
+			if (prop.type.name == 'json_field') {
+				return !prop.type.notNull;
+			}
+			return false;
+		})
 	}
 	return false;
-
 }
 
 function traverse_json_agg(func_application: Func_applicationContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
 	const columnName = func_application.func_name()?.getText() || func_application.getText();
 	const func_arg_expr_list = func_application.func_arg_list()?.func_arg_expr_list() || [];
 	const argsResult = func_arg_expr_list.map(func_arg_expr => traversefunc_arg_expr(func_arg_expr, context, traverseResult))
-	return {
+	const result: NotNullInfo = {
 		column_name: columnName,
 		is_nullable: !isNotNull_json_agg(argsResult[0]),
 		table_name: '',
@@ -1144,9 +1145,10 @@ function traverse_json_agg(func_application: Func_applicationContext, context: T
 		type: 'json[]',
 		jsonType: {
 			name: 'json[]',
-			properties: argsResult.map(arg => arg.jsonType || arg.type)
+			properties: argsResult.map(arg => arg.jsonType || { name: 'json_field', type: arg.type, notNull: !arg.is_nullable })
 		}
 	}
+	return result;
 }
 
 function traversefunc_application(func_application: Func_applicationContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
@@ -1254,13 +1256,13 @@ function traversefunc_application(func_application: Func_applicationContext, con
 	) {
 		return {
 			column_name: functionName,
-			is_nullable: true,
+			is_nullable: false,
 			table_name: '',
 			table_schema: '',
 			type: 'json[]',
 			jsonType: {
 				name: 'json[]',
-				properties: argsResult.map(arg => arg.jsonType || arg.type)
+				properties: argsResult.map(arg => arg.jsonType || { name: 'json_field', type: arg.type, notNull: !arg.is_nullable } satisfies JsonFieldType)
 			}
 		};
 	}

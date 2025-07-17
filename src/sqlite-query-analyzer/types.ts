@@ -26,13 +26,14 @@ export type SQLiteType =
 
 export type JsonPropertyDef = {
 	key: string;
-	type: PostgresType;
-	notNull: boolean;
+	type: JsonType;
 };
 
+
 export type JsonObjType = { name: 'json', properties: JsonPropertyDef[] };
-export type JsonArrayType = { name: 'json[]', properties: JsonType[] }
-export type JsonType = JsonObjType | JsonArrayType | PostgresSimpleType;
+export type JsonArrayType = { name: 'json[]', properties: JsonType[] };
+export type JsonFieldType = { name: 'json_field', type: PostgresSimpleType, notNull: boolean };
+export type JsonType = JsonObjType | JsonArrayType | JsonFieldType;
 
 export type PostgresType =
 	| PostgresSimpleType

@@ -1,0 +1,25 @@
+import pg from 'pg';
+
+export type SelectJson09Result = {
+	result: ((string | any | null)[] | number[] | (number | string | null)[])[];
+}
+
+export async function selectJson09(client: pg.Client | pg.Pool): Promise<SelectJson09Result[]> {
+	const sql = `
+	SELECT json_build_array(
+			json_build_array('a', null),
+			json_build_array(1, 2),
+			json_build_array(id, name, descr)
+		) as result
+	FROM mytable2
+	`
+	return client.query({ text: sql, rowMode: 'array' })
+		.then(res => res.rows.map(row => mapArrayToSelectJson09Result(row)));
+}
+
+function mapArrayToSelectJson09Result(data: any) {
+	const result: SelectJson09Result = {
+		result: data[0]
+	}
+	return result;
+}
