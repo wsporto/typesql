@@ -1,8 +1,8 @@
 import pg from 'pg';
 
 export type SelectJsonBuildArray01Result = {
-	value1?: string[];
-	value2?: (any | string | number)[];
+	value1: string[];
+	value2: (any | null | string | number)[];
 }
 
 export async function selectJsonBuildArray01(client: pg.Client | pg.Pool): Promise<SelectJsonBuildArray01Result | null> {
