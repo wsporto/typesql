@@ -420,6 +420,132 @@ describe('postgres-json-functions', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	})
 
+	it(`SELECT json_agg() FROM users u INNER JOIN posts p`, async () => {
+		const sql = `SELECT
+		u.id as user_id,
+		u.name as user_name,
+		json_agg(
+			json_build_object(
+				'id', p.id,
+				'title', p.title
+			)
+		)
+	FROM users u
+	INNER JOIN posts p on p.fk_user = u.id
+	group by u.id, u.name`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'user_id',
+					type: 'int4',
+					notNull: true,
+					table: 'u'
+				},
+				{
+					name: 'user_name',
+					type: 'text',
+					notNull: true,
+					table: 'u'
+				},
+				{
+					name: 'json_agg',
+					notNull: true, // INNER JOIN without FILTER
+					type: {
+						name: 'json[]',
+						properties: [
+							{
+								name: 'json',
+								properties: [
+									{
+										key: 'id',
+										type: { name: 'json_field', type: 'int4', notNull: true }
+									},
+									{
+										key: 'title',
+										type: { name: 'json_field', type: 'text', notNull: true } //INNER JOIN (title TEXT NOT NULL)
+									}
+								]
+							}
+						]
+					},
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
+	it(`SELECT json_agg() FILTER(WHERE p.id is not null) FROM users u INNER JOIN posts p`, async () => {
+		const sql = `SELECT
+		u.id as user_id,
+		u.name as user_name,
+		json_agg(
+			json_build_object(
+				'id', p.id,
+				'title', p.title
+			)
+		) FILTER(WHERE p.title = 'abc')
+	FROM users u
+	INNER JOIN posts p on p.fk_user = u.id
+	group by u.id, u.name`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'user_id',
+					type: 'int4',
+					notNull: true,
+					table: 'u'
+				},
+				{
+					name: 'user_name',
+					type: 'text',
+					notNull: true,
+					table: 'u'
+				},
+				{
+					name: 'json_agg',
+					notNull: false, // FILTER
+					type: {
+						name: 'json[]',
+						properties: [
+							{
+								name: 'json',
+								properties: [
+									{
+										key: 'id',
+										type: { name: 'json_field', type: 'int4', notNull: true }
+									},
+									{
+										key: 'title',
+										type: { name: 'json_field', type: 'text', notNull: true } //INNER JOIN (title TEXT NOT NULL)
+									}
+								]
+							}
+						]
+					},
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
 	it(`select to_json()`, async () => {
 		const sql = `select
 			 	to_json(10::int) as col1,
@@ -550,7 +676,7 @@ describe('postgres-json-functions', () => {
 							}
 						]
 					},
-					notNull: false,
+					notNull: true,
 					table: '',
 				},
 				{
@@ -569,25 +695,25 @@ describe('postgres-json-functions', () => {
 							}
 						]
 					},
-					notNull: false,
+					notNull: true,
 					table: ''
 				},
 				{
-					name: 'col3',
+					name: 'col3', //[null]
 					type: {
 						name: 'json[]',
 						properties: [{ name: 'json_field', type: 'unknow', notNull: false }]
 					},
-					notNull: false,
+					notNull: true,
 					table: ''
 				},
 				{
-					name: 'col4',
+					name: 'col4', //[null]
 					type: {
 						name: 'json[]',
 						properties: [{ name: 'json_field', type: 'unknow', notNull: false }]
 					},
-					notNull: false,
+					notNull: true,
 					table: ''
 				}
 			],
@@ -623,7 +749,7 @@ describe('postgres-json-functions', () => {
 							}
 						],
 					},
-					notNull: false,
+					notNull: true,
 					table: ''
 				}
 			],
@@ -671,7 +797,7 @@ describe('postgres-json-functions', () => {
 							}
 						],
 					},
-					notNull: false,
+					notNull: true,
 					table: ''
 				}
 			],

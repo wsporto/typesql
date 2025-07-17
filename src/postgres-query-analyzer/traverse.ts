@@ -1121,25 +1121,13 @@ function traverse_json_build_obj_func(func_application: Func_applicationContext,
 	}
 }
 
-function isNotNull_json_agg(col: NotNullInfo): boolean {
-	if (col.jsonType != null && col.jsonType.name == 'json') {
-		return col.jsonType.properties.every(prop => {
-			if (prop.type.name == 'json_field') {
-				return !prop.type.notNull;
-			}
-			return false;
-		})
-	}
-	return false;
-}
-
 function traverse_json_agg(func_application: Func_applicationContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
 	const columnName = func_application.func_name()?.getText() || func_application.getText();
 	const func_arg_expr_list = func_application.func_arg_list()?.func_arg_expr_list() || [];
 	const argsResult = func_arg_expr_list.map(func_arg_expr => traversefunc_arg_expr(func_arg_expr, context, traverseResult))
 	const result: NotNullInfo = {
 		column_name: columnName,
-		is_nullable: !isNotNull_json_agg(argsResult[0]),
+		is_nullable: context.filter_expr != null,
 		table_name: '',
 		table_schema: '',
 		type: 'json[]',
