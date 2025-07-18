@@ -16,6 +16,12 @@ export type NotNullInfo = {
 	column_default?: true;
 	type: PostgresSimpleType;
 	jsonType?: JsonType;
+	recordTypes?: RecordType[];
+}
+
+export type RecordType = {
+	type: PostgresSimpleType;
+	notNull: boolean;
 }
 
 export type PostgresTraverseResult = {
@@ -56,6 +62,7 @@ type TraverseContext = {
 	collectNestedInfo: boolean;
 	collectDynamicQueryInfo: boolean;
 	filter_expr?: A_exprContext;
+	columnRefIsRecord?: true;
 }
 
 export type Relation3 = {
@@ -879,8 +886,20 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 		}
 		const columnref = c_expr.columnref();
 		if (columnref) {
-			const col = traverseColumnRef(columnref, context.fromColumns);
-			return col;
+			if (context.columnRefIsRecord) {
+				return {
+					column_name: columnref.getText(),
+					is_nullable: false,
+					table_name: '',
+					table_schema: '',
+					type: 'unknow',
+				}
+			}
+			else {
+				const col = traverseColumnRef(columnref, context.fromColumns);
+				return col;
+			}
+
 		}
 		const aexprconst = c_expr.aexprconst();
 		if (aexprconst) {
@@ -968,7 +987,8 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 				is_nullable: expr_list.some(col => col.is_nullable),
 				table_name: '',
 				table_schema: '',
-				type: 'unknow'
+				type: 'unknow',
+				recordTypes: expr_list.map(rec => ({ type: rec.type, notNull: !rec.is_nullable } satisfies RecordType))
 			}
 		}
 		const implicit_row = c_expr.implicit_row();
@@ -1104,23 +1124,29 @@ function transformToJsonProperty(args: NotNullInfo[], filterExpr?: A_exprContext
 	return pairs;
 }
 
-function transformColumnsToJsonObjType(columns: NotNullInfo[]) {
+type FieldInfo = {
+	name: string;
+	type: PostgresSimpleType;
+	notNull: boolean;
+}
+
+function transformFieldsToJsonObjType(fields: FieldInfo[]) {
 	const jsonObject: JsonObjType = {
 		name: 'json',
-		properties: columns.map(col => mapColumnToPropertyDef(col))
+		properties: fields.map(col => mapFieldToPropertyDef(col))
 	}
 	return jsonObject;
 }
-function mapColumnToPropertyDef(col: NotNullInfo) {
+function mapFieldToPropertyDef(field: FieldInfo) {
 	const prop: JsonPropertyDef = {
-		key: col.column_name,
-		type: transformColumnToJsonField(col)
+		key: field.name,
+		type: transformFieldToJsonField(field)
 	}
 	return prop;
 }
 
-function transformColumnToJsonField(col: NotNullInfo) {
-	const jsonField: JsonFieldType = { name: 'json_field', type: col.type, notNull: !col.is_nullable };
+function transformFieldToJsonField(field: FieldInfo) {
+	const jsonField: JsonFieldType = { name: 'json_field', type: field.type, notNull: field.notNull };
 	return jsonField;
 }
 
@@ -1163,17 +1189,33 @@ function traversefunc_application(func_application: Func_applicationContext, con
 	const functionName = getFunctionName(func_application);
 	const func_arg_expr_list = func_application.func_arg_list()?.func_arg_expr_list() || [];
 	if (functionName === 'row_to_json') {
-		const tableName = func_arg_expr_list[0].getText().toLowerCase();
-		const columns = filterColumns(context.fromColumns, { name: '*', prefix: tableName });
-		const jsonType = transformColumnsToJsonObjType(columns);
-		return {
-			column_name: functionName,
-			is_nullable: false,
-			table_name: '',
-			table_schema: '',
-			type: 'json',
-			jsonType
-		};
+		const argResult = traversefunc_arg_expr(func_arg_expr_list[0], { ...context, columnRefIsRecord: true }, traverseResult);
+		if (argResult.recordTypes) {
+			const fields = argResult.recordTypes.map((record, index) => ({ name: `f${index + 1}`, type: record.type, notNull: record.notNull } satisfies FieldInfo))
+			const jsonType = transformFieldsToJsonObjType(fields)
+			return {
+				column_name: functionName,
+				is_nullable: false,
+				table_name: '',
+				table_schema: '',
+				type: 'json',
+				jsonType
+			};
+		}
+		else {
+			const columns = filterColumns(context.fromColumns, { name: '*', prefix: argResult.column_name });
+			const fields = columns.map(col => ({ name: col.column_name, type: col.type, notNull: !col.is_nullable } satisfies FieldInfo));
+			const jsonType = transformFieldsToJsonObjType(fields);
+			return {
+				column_name: functionName,
+				is_nullable: false,
+				table_name: '',
+				table_schema: '',
+				type: 'json',
+				jsonType
+			};
+		}
+
 	}
 
 	const argsResult = func_arg_expr_list.map(func_arg_expr => traversefunc_arg_expr(func_arg_expr, context, traverseResult))
