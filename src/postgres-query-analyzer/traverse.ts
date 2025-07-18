@@ -468,7 +468,7 @@ function traverse_a_expr(a_expr: A_exprContext, context: TraverseContext, traver
 		is_nullable: true,
 		table_name: '',
 		table_schema: '',
-		type: 'unknow'
+		type: 'unknown'
 	};
 }
 
@@ -676,7 +676,7 @@ function traverse_expr_like(a_expr_like: A_expr_likeContext, context: TraverseCo
 			is_nullable: result.some(col => col.is_nullable),
 			table_name: '',
 			table_schema: '',
-			type: 'unknow'
+			type: 'unknown'
 		} satisfies NotNullInfo
 	}
 	throw Error('traverse_expr_like -  Not expected:' + a_expr_like.getText());
@@ -694,7 +694,7 @@ function traverse_expr_qual_op(a_expr_qual_op: A_expr_qual_opContext, context: T
 			is_nullable: result.some(col => col.is_nullable),
 			table_name: '',
 			table_schema: '',
-			type: 'unknow'
+			type: 'unknown'
 		} satisfies NotNullInfo
 	}
 	throw Error('traverse_expr_qual_op -  Not expected:' + a_expr_qual_op.getText());
@@ -753,7 +753,7 @@ function traverse_expr_caret(a_expr_caret: A_expr_caretContext, context: Travers
 			is_nullable: notNullInfo.some(notNullInfo => notNullInfo.is_nullable),
 			table_name: '',
 			table_schema: '',
-			type: 'unknow'
+			type: 'unknown'
 		}
 		return result;
 	}
@@ -852,12 +852,12 @@ function getNameAndTypeIdFromAExprConst(a_expr_const: AexprconstContext): NameAn
 	if (a_expr_const.NULL_P()) {
 		return {
 			name: a_expr_const.getText(),
-			type: 'unknow'
+			type: 'unknown'
 		}
 	}
 	return {
 		name: a_expr_const.getText(),
-		type: 'unknow'
+		type: 'unknown'
 	}
 }
 
@@ -872,7 +872,7 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 					is_nullable: true,
 					table_schema: '',
 					table_name: '',
-					type: 'unknow'
+					type: 'unknown'
 				}
 			}
 			const array_expr = c_expr.array_expr();
@@ -892,7 +892,7 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 					is_nullable: false,
 					table_name: '',
 					table_schema: '',
-					type: 'unknow',
+					type: 'unknown',
 				}
 			}
 			else {
@@ -923,7 +923,7 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 				is_nullable: !!context.propagatesNull,
 				table_name: '',
 				table_schema: '',
-				type: 'unknow'
+				type: 'unknown'
 			}
 		}
 		const fun_expr = c_expr.func_expr();
@@ -987,7 +987,7 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 				is_nullable: expr_list.some(col => col.is_nullable),
 				table_name: '',
 				table_schema: '',
-				type: 'unknow',
+				type: 'unknown',
 				recordTypes: expr_list.map(rec => ({ type: rec.type, notNull: !rec.is_nullable } satisfies RecordType))
 			}
 		}
@@ -1000,7 +1000,7 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 				is_nullable: expr_list.some(col => col.is_nullable),
 				table_name: '',
 				table_schema: '',
-				type: 'unknow'
+				type: 'unknown'
 			}
 		}
 	}
@@ -1056,7 +1056,7 @@ function traversec_expr_case(c_expr_case: C_expr_caseContext, context: TraverseC
 		is_nullable: !notNull,
 		table_name: '',
 		table_schema: '',
-		type: whenResult[0].type ?? 'unknow'
+		type: whenResult[0].type ?? 'unknown'
 	}
 }
 
@@ -1284,7 +1284,7 @@ function traversefunc_application(func_application: Func_applicationContext, con
 			is_nullable: false,
 			table_name: '',
 			table_schema: '',
-			type: 'unknow'
+			type: 'unknown'
 		};
 	}
 	if (functionName === 'row_number'
@@ -1344,7 +1344,7 @@ function traversefunc_application(func_application: Func_applicationContext, con
 			...argsResult[0],
 			column_name: functionName,
 			is_nullable: true,
-			type: argsResult[0].type ? mapSumType(argsResult[0].type) : 'unknow'
+			type: argsResult[0].type ? mapSumType(argsResult[0].type) : 'unknown'
 		};
 	}
 
@@ -1353,7 +1353,7 @@ function traversefunc_application(func_application: Func_applicationContext, con
 		is_nullable: true,
 		table_name: '',
 		table_schema: '',
-		type: 'unknow'
+		type: 'unknown'
 	};
 }
 
@@ -1404,7 +1404,7 @@ function traversefunc_expr_common_subexpr(func_expr_common_subexpr: Func_expr_co
 		is_nullable: true,
 		table_name: '',
 		table_schema: '',
-		type: 'unknow'
+		type: 'unknown'
 	};
 }
 
@@ -1439,7 +1439,7 @@ function traverse_array_expr(array_expr: Array_exprContext, context: TraverseCon
 		is_nullable: true,
 		table_name: '',
 		table_schema: '',
-		type: 'unknow'
+		type: 'unknown'
 	};
 }
 
@@ -2011,7 +2011,7 @@ function isNotNul_a_expr_unary_qualop(a_expr_unary_qualop: A_expr_unary_qualopCo
 }
 
 type ArithmeticType = 'int2' | 'int4' | 'int8' | 'float4' | 'float8' | 'numeric' | 'date' | 'timestamp'; //'interval'
-function mapAddExprType(types: (ArithmeticType | 'unknow')[]): ArithmeticType | 'unknow' {
+function mapAddExprType(types: (ArithmeticType | 'unknown')[]): ArithmeticType | 'unknown' {
 
 	const arithmeticMatrix: Record<ArithmeticType, Partial<Record<ArithmeticType, ArithmeticType>>> = {
 		int2: { int2: 'int2', int4: 'int4', int8: 'int8', float4: 'float4', float8: 'float8', numeric: 'numeric', date: 'date' },
@@ -2026,12 +2026,12 @@ function mapAddExprType(types: (ArithmeticType | 'unknow')[]): ArithmeticType | 
 	};
 	let currentType: ArithmeticType | undefined = 'int2';
 	for (const type of types) {
-		if (type === 'unknow') {
-			return 'unknow';
+		if (type === 'unknown') {
+			return 'unknown';
 		}
 		currentType = arithmeticMatrix[currentType][type];
 		if (!currentType) {
-			return 'unknow'
+			return 'unknown'
 		}
 	}
 	return currentType;

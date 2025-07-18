@@ -702,7 +702,7 @@ describe('postgres-json-functions', () => {
 					name: 'col3', //[null]
 					type: {
 						name: 'json[]',
-						properties: [{ name: 'json_field', type: 'unknow', notNull: false }]
+						properties: [{ name: 'json_field', type: 'unknown', notNull: false }]
 					},
 					notNull: true,
 					table: ''
@@ -711,7 +711,7 @@ describe('postgres-json-functions', () => {
 					name: 'col4', //[null]
 					type: {
 						name: 'json[]',
-						properties: [{ name: 'json_field', type: 'unknow', notNull: false }]
+						properties: [{ name: 'json_field', type: 'unknown', notNull: false }]
 					},
 					notNull: true,
 					table: ''
@@ -1277,14 +1277,14 @@ describe('postgres-json-functions', () => {
 								name: 'json[]',
 								properties: [
 									{ name: 'json_field', type: 'text', notNull: true },
-									{ name: 'json_field', type: 'unknow', notNull: false }
+									{ name: 'json_field', type: 'unknown', notNull: false }
 								]
 							},
 							{
 								name: 'json[]',
 								properties: [
 									{ name: 'json_field', type: 'text', notNull: true },
-									{ name: 'json_field', type: 'unknow', notNull: false }
+									{ name: 'json_field', type: 'unknown', notNull: false }
 								]
 							}
 						]
