@@ -1,4 +1,4 @@
-import { A_expr_addContext, A_expr_andContext, A_expr_at_time_zoneContext, A_expr_betweenContext, A_expr_caretContext, A_expr_collateContext, A_expr_compareContext, A_expr_inContext, A_expr_is_notContext, A_expr_isnullContext, A_expr_lesslessContext, A_expr_likeContext, A_expr_mulContext, A_expr_orContext, A_expr_qual_opContext, A_expr_qualContext, A_expr_typecastContext, A_expr_unary_notContext, A_expr_unary_qualopContext, A_expr_unary_signContext, A_exprContext, AexprconstContext, Array_expr_listContext, Array_exprContext, C_expr_caseContext, C_expr_existsContext, C_expr_exprContext, C_exprContext, ColidContext, ColumnElemContext, ColumnrefContext, Common_table_exprContext, CopystmtContext, DeletestmtContext, Expr_listContext, From_clauseContext, From_listContext, Func_applicationContext, Func_arg_exprContext, Func_expr_common_subexprContext, Func_exprContext, IdentifierContext, In_expr_listContext, In_expr_selectContext, In_exprContext, Insert_column_itemContext, InsertstmtContext, Join_qualContext, Join_typeContext, Qualified_nameContext, Relation_exprContext, Select_clauseContext, Select_no_parensContext, Select_with_parensContext, SelectstmtContext, Set_clauseContext, Simple_select_intersectContext, Simple_select_pramaryContext, StmtContext, Table_refContext, Target_elContext, Target_labelContext, Target_listContext, Unreserved_keywordContext, UpdatestmtContext, Values_clauseContext, When_clauseContext, Where_clauseContext } from '@wsporto/typesql-parser/postgres/PostgreSQLParser';
+import { A_expr_addContext, A_expr_andContext, A_expr_at_time_zoneContext, A_expr_betweenContext, A_expr_caretContext, A_expr_collateContext, A_expr_compareContext, A_expr_inContext, A_expr_is_notContext, A_expr_isnullContext, A_expr_lesslessContext, A_expr_likeContext, A_expr_mulContext, A_expr_orContext, A_expr_qual_opContext, A_expr_qualContext, A_expr_typecastContext, A_expr_unary_notContext, A_expr_unary_qualopContext, A_expr_unary_signContext, A_exprContext, AexprconstContext, Array_expr_listContext, Array_exprContext, C_expr_caseContext, C_expr_existsContext, C_expr_exprContext, C_exprContext, ColidContext, ColumnElemContext, ColumnrefContext, Common_table_exprContext, CopystmtContext, DeletestmtContext, Expr_listContext, From_clauseContext, From_listContext, Func_applicationContext, Func_arg_exprContext, Func_expr_common_subexprContext, Func_expr_windowlessContext, Func_exprContext, Func_tableContext, IdentifierContext, In_expr_listContext, In_expr_selectContext, In_exprContext, Insert_column_itemContext, InsertstmtContext, Join_qualContext, Join_typeContext, Qualified_nameContext, Relation_exprContext, Select_clauseContext, Select_no_parensContext, Select_with_parensContext, SelectstmtContext, Set_clauseContext, Simple_select_intersectContext, Simple_select_pramaryContext, StmtContext, Table_refContext, Target_elContext, Target_labelContext, Target_listContext, Unreserved_keywordContext, UpdatestmtContext, Values_clauseContext, When_clauseContext, Where_clauseContext } from '@wsporto/typesql-parser/postgres/PostgreSQLParser';
 import { ParserRuleContext } from '@wsporto/typesql-parser';
 import { PostgresColumnSchema } from '../drivers/types';
 import { extractOriginalSql, splitName } from '../mysql-query-analyzer/select-columns';
@@ -7,6 +7,8 @@ import { QueryType } from '../types';
 import { Relation2 } from '../sqlite-query-analyzer/sqlite-describe-nested-query';
 import { CheckConstraintResult } from '../drivers/postgres';
 import { JsonFieldType, JsonObjType, JsonPropertyDef, JsonType, PostgresSimpleType } from '../sqlite-query-analyzer/types';
+import { parseSql } from '@wsporto/typesql-parser/postgres';
+import { UserFunctionSchema } from './types';
 
 export type NotNullInfo = {
 	table_schema: string;
@@ -59,6 +61,7 @@ type TraverseContext = {
 	dbSchema: PostgresColumnSchema[];
 	fromColumns: NotNullInfo[];
 	checkConstraints: CheckConstraintResult;
+	userFunctions: UserFunctionSchema[],
 	propagatesNull?: boolean;
 	collectNestedInfo: boolean;
 	collectDynamicQueryInfo: boolean;
@@ -85,7 +88,7 @@ export function defaultOptions(): TraverseOptions {
 	};
 }
 
-export function traverseSmt(stmt: StmtContext, dbSchema: PostgresColumnSchema[], checkConstraints: CheckConstraintResult, options: TraverseOptions): PostgresTraverseResult {
+export function traverseSmt(stmt: StmtContext, dbSchema: PostgresColumnSchema[], checkConstraints: CheckConstraintResult, userFunctions: UserFunctionSchema[], options: TraverseOptions): PostgresTraverseResult {
 	const { collectNestedInfo = false, collectDynamicQueryInfo = false } = options;
 
 	const traverseResult: TraverseResult = {
@@ -110,7 +113,8 @@ export function traverseSmt(stmt: StmtContext, dbSchema: PostgresColumnSchema[],
 		collectNestedInfo,
 		collectDynamicQueryInfo,
 		fromColumns: [],
-		checkConstraints
+		checkConstraints,
+		userFunctions
 	}
 	const selectstmt = stmt.selectstmt();
 	if (selectstmt) {
@@ -969,7 +973,7 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 			const result = traverse_select_with_parens(select_with_parens, context, traverseResult);
 			return {
 				column_name: '?column?',
-				is_nullable: true,
+				is_nullable: result[0].jsonType ? result[0].is_nullable : true,
 				table_name: '',
 				table_schema: '',
 				type: result[0].type,
@@ -1033,6 +1037,7 @@ function filterColumns(fromColumns: NotNullInfo[], fieldName: FieldName): NotNul
 				table_name: col.table_name,
 				table_schema: col.table_schema,
 				type: col.type,
+				...(col.jsonType !== undefined) && { jsonType: col.jsonType },
 				...(col.original_is_nullable !== undefined && { original_is_nullable: col.original_is_nullable }),
 			}
 			return result;
@@ -1504,7 +1509,7 @@ function traverse_from_list(from_list: From_listContext, context: TraverseContex
 }
 
 function traverse_table_ref(table_ref: Table_refContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo[] {
-	const { fromColumns, dbSchema } = context;
+	const { fromColumns, dbSchema, userFunctions } = context;
 	const allColumns: NotNullInfo[] = [];
 	const relation_expr = table_ref.relation_expr();
 	const aliasClause = table_ref.alias_clause();
@@ -1558,6 +1563,13 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 			return resultColumns;
 		});
 		allColumns.push(...joinColumns);
+	}
+	const func_table = table_ref.func_table();
+	if (func_table) {
+		const funcAlias = table_ref.func_alias_clause()?.alias_clause()?.colid()?.getText() || '';
+		const result = traverse_func_table(func_table, context, traverseResult);
+		const resultWithAlias = result.columns.map(col => ({ ...col, table_name: funcAlias } satisfies NotNullInfo));
+		return resultWithAlias;
 	}
 	const select_with_parens = table_ref.select_with_parens();
 	if (select_with_parens) {
@@ -1679,6 +1691,31 @@ function traverse_select_with_parens(select_with_parens: Select_with_parensConte
 	return [];
 }
 
+function traverse_func_table(func_table: Func_tableContext, context: TraverseContext, traverseResult: TraverseResult): PostgresTraverseResult {
+	const func_expr_windowless = func_table.func_expr_windowless();
+	if (func_expr_windowless) {
+		const result = traverse_func_expr_windowless(func_expr_windowless, context, traverseResult);
+		return result;
+	}
+	throw Error('Stmt not supported: ' + func_table.getText());
+}
+
+function traverse_func_expr_windowless(func_expr_windowless: Func_expr_windowlessContext, context: TraverseContext, traverseResult: TraverseResult): PostgresTraverseResult {
+	const func_application = func_expr_windowless.func_application();
+	if (func_application) {
+		const func_name = func_application.func_name().getText().toLowerCase();
+		const funcSchema = context.userFunctions.find(func => func.function_name.toLowerCase() === func_name);
+		if (funcSchema) {
+			const definition = funcSchema.definition;
+			const parser = parseSql(definition);
+			const selectstmt = parser.stmt().selectstmt();
+			const select_stmt_result = traverseSelectstmt(selectstmt, context, traverseResult);
+			return select_stmt_result;
+		}
+	}
+	throw Error('Stmt not supported: ' + func_expr_windowless.getText());
+}
+
 function traverse_relation_expr(relation_expr: Relation_exprContext, dbSchema: NotNullInfo[]): TableName {
 	const qualified_name = relation_expr.qualified_name();
 	const name = traverse_qualified_name(qualified_name, dbSchema);
@@ -1772,6 +1809,7 @@ function traverseInsertstmt(insertstmt: InsertstmtContext, dbSchema: PostgresCol
 		dbSchema,
 		fromColumns: insertColumns,
 		checkConstraints: {},
+		userFunctions: [],
 		collectNestedInfo: false,
 		collectDynamicQueryInfo: false
 	}
@@ -1815,6 +1853,7 @@ function traverseDeletestmt(deleteStmt: DeletestmtContext, dbSchema: PostgresCol
 		dbSchema,
 		fromColumns: deleteColumns,
 		checkConstraints: {},
+		userFunctions: [],
 		collectNestedInfo: false,
 		collectDynamicQueryInfo: false
 	}
