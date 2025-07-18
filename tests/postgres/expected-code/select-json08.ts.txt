@@ -8,7 +8,7 @@ export type SelectJson08Result = {
 
 export type SelectJson08CoalesceType = {
 	id: number;
-	title?: string;
+	title: string;
 }
 
 export async function selectJson08(client: pg.Client | pg.Pool): Promise<SelectJson08Result[]> {

@@ -13,6 +13,7 @@ export type NotNullInfo = {
 	table_name: string;
 	column_name: string;
 	is_nullable: boolean;
+	original_is_nullable?: boolean;
 	column_default?: true;
 	type: PostgresSimpleType;
 	jsonType?: JsonType;
@@ -1030,7 +1031,8 @@ function filterColumns(fromColumns: NotNullInfo[], fieldName: FieldName): NotNul
 				is_nullable: col.is_nullable,
 				table_name: col.table_name,
 				table_schema: col.table_schema,
-				type: col.type
+				type: col.type,
+				...(col.original_is_nullable !== undefined && { original_is_nullable: col.original_is_nullable }),
 			}
 			return result;
 		});
@@ -1110,24 +1112,39 @@ function is_json_agg(func_application: Func_applicationContext) {
 		|| functionName === 'jsonb_agg';
 }
 
-function transformToJsonProperty(args: NotNullInfo[], filterExpr?: A_exprContext): JsonPropertyDef[] {
-	const pairs: JsonPropertyDef[] = [];
-	for (let i = 0; i < args.length; i += 2) {
-		const key = args[i];
-		const value = args[i + 1];
+function mapJsonBuildArgsToJsonProperty(args: NotNullInfo[], filterExpr: A_exprContext | undefined): JsonPropertyDef[] {
+	const keys = args.filter((_, index) => index % 2 === 0);
+	const values = args.filter((_, index) => index % 2 === 1);
+	const nullability = inferJsonNullability(values, filterExpr);
+	const properties: JsonPropertyDef[] = [];
+	for (let i = 0; i < values.length; i++) {
+		const key = keys[i];
+		const value = values[i];
 		if (value !== undefined) {
-			const isNotNull = !value.is_nullable || Boolean(filterExpr && isNotNull_a_expr(value, filterExpr));
-			const type = value.jsonType ? value.jsonType : { name: 'json_field', type: value.type, notNull: isNotNull } satisfies JsonFieldType;
-			pairs.push({ key: key.column_name, type });
+			const type = value.jsonType ? value.jsonType : { name: 'json_field', type: value.type, notNull: nullability[i] } satisfies JsonFieldType;
+			properties.push({ key: key.column_name, type });
 		}
 	}
-	return pairs;
+	return properties;
 }
 
 type FieldInfo = {
 	name: string;
 	type: PostgresSimpleType;
 	notNull: boolean;
+}
+
+function inferJsonNullability(columns: NotNullInfo[], filterExpr: A_exprContext | undefined): boolean[] {
+	const someIsNotNull = columns.some(col => filterExpr && col.original_is_nullable === false && isNotNull_a_expr(col, filterExpr));
+	const fields = columns.map(col => {
+		if (someIsNotNull) {
+			return col.original_is_nullable != null ? !col.original_is_nullable : Boolean(filterExpr && isNotNull_a_expr(col, filterExpr));
+		}
+		else {
+			return !col.is_nullable || Boolean(filterExpr && isNotNull_a_expr(col, filterExpr));
+		}
+	});
+	return fields;
 }
 
 function transformFieldsToJsonObjType(fields: FieldInfo[]) {
@@ -1162,7 +1179,7 @@ function traverse_json_build_obj_func(func_application: Func_applicationContext,
 		type: 'json',
 		jsonType: {
 			name: 'json',
-			properties: transformToJsonProperty(argsResult, context.filter_expr),
+			properties: mapJsonBuildArgsToJsonProperty(argsResult, context.filter_expr),
 		}
 	}
 }
@@ -1204,11 +1221,8 @@ function traversefunc_application(func_application: Func_applicationContext, con
 		}
 		else {
 			const columns = filterColumns(context.fromColumns, { name: '*', prefix: argResult.column_name });
-			const fields = columns.map(col => {
-				const notNull = !col.is_nullable || Boolean(context.filter_expr && isNotNull_a_expr(col, context.filter_expr));
-				const field: FieldInfo = { name: col.column_name, type: col.type, notNull };
-				return field;
-			});
+			const jsonNullability = inferJsonNullability(columns, context.filter_expr);
+			const fields = columns.map((col, index) => ({ name: col.column_name, type: col.type, notNull: jsonNullability[index] } satisfies FieldInfo))
 			const jsonType = transformFieldsToJsonObjType(fields);
 			return {
 				column_name: functionName,
@@ -1534,7 +1548,7 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 				const isUsing = joinQual?.USING() ? true : false;
 				const isLeftJoin = joinType?.LEFT();
 				const filteredColumns = isUsing ? filterUsingColumns(joinColumns, joinQual) : joinColumns;
-				const resultColumns = isLeftJoin ? filteredColumns.map(col => ({ ...col, is_nullable: true })) : filteredColumns;
+				const resultColumns = isLeftJoin ? filteredColumns.map(col => ({ ...col, is_nullable: true, original_is_nullable: col.is_nullable } satisfies NotNullInfo)) : filteredColumns;
 
 				if (context.collectNestedInfo) {
 					collectNestedInfo(joinQual, resultColumns, traverseResult);

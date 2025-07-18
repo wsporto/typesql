@@ -8,7 +8,7 @@ export type SelectJson07Result = {
 
 export type SelectJson07JsonbAggType = {
 	id: number;
-	title?: string;
+	title: string;
 }
 
 export async function selectJson07(client: pg.Client | pg.Pool): Promise<SelectJson07Result[]> {

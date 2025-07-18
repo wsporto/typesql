@@ -339,7 +339,7 @@ describe('postgres-json-functions', () => {
 									},
 									{
 										key: 'title',
-										type: { name: 'json_field', type: 'text', notNull: false }//left join
+										type: { name: 'json_field', type: 'text', notNull: true }//FILTER(WHERE p.id is not null)
 									}
 								]
 							}
@@ -402,7 +402,7 @@ describe('postgres-json-functions', () => {
 									},
 									{
 										key: 'title',
-										type: { name: 'json_field', type: 'text', notNull: false } //left join
+										type: { name: 'json_field', type: 'text', notNull: true } //FILTER(WHERE p.id is not null)
 									}
 								]
 							}
@@ -1482,7 +1482,7 @@ GROUP BY u.id`;
 										type: {
 											name: 'json_field',
 											type: 'text',
-											notNull: false //should be not null - FILTER (WHERE...)
+											notNull: true //FILTER (WHERE...)
 										}
 									},
 									{
@@ -1490,7 +1490,7 @@ GROUP BY u.id`;
 										type: {
 											name: 'json_field',
 											type: 'text',
-											notNull: false //should be not null - FILTER (WHERE...)
+											notNull: true //FILTER (WHERE...)
 										}
 									},
 									{
@@ -1498,7 +1498,7 @@ GROUP BY u.id`;
 										type: {
 											name: 'json_field',
 											type: 'int4',
-											notNull: false
+											notNull: false //should be non-null, guaranteed by join condition (ON u.id = p.fk_user)
 										}
 									}
 								]
