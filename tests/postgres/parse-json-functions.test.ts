@@ -702,7 +702,7 @@ describe('postgres-json-functions', () => {
 					name: 'col3', //[null]
 					type: {
 						name: 'json[]',
-						properties: [{ name: 'json_field', type: 'unknow', notNull: false }]
+						properties: [{ name: 'json_field', type: 'unknown', notNull: false }]
 					},
 					notNull: true,
 					table: ''
@@ -711,7 +711,7 @@ describe('postgres-json-functions', () => {
 					name: 'col4', //[null]
 					type: {
 						name: 'json[]',
-						properties: [{ name: 'json_field', type: 'unknow', notNull: false }]
+						properties: [{ name: 'json_field', type: 'unknown', notNull: false }]
 					},
 					notNull: true,
 					table: ''
@@ -1277,15 +1277,155 @@ describe('postgres-json-functions', () => {
 								name: 'json[]',
 								properties: [
 									{ name: 'json_field', type: 'text', notNull: true },
-									{ name: 'json_field', type: 'unknow', notNull: false }
+									{ name: 'json_field', type: 'unknown', notNull: false }
 								]
 							},
 							{
 								name: 'json[]',
 								properties: [
 									{ name: 'json_field', type: 'text', notNull: true },
-									{ name: 'json_field', type: 'unknow', notNull: false }
+									{ name: 'json_field', type: 'unknown', notNull: false }
 								]
+							}
+						]
+					},
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
+	it(`SELECT row_to_json(mytable1) from mytable1`, async () => {
+
+		const sql = 'SELECT row_to_json(mytable1) as result from mytable1';
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'result',
+					type: {
+						name: 'json',
+						properties: [
+							{
+								key: 'id',
+								type: {
+									name: 'json_field',
+									type: 'int4',
+									notNull: true
+								}
+							},
+							{
+								key: 'value',
+								type: {
+									name: 'json_field',
+									type: 'int4',
+									notNull: false
+								}
+							}
+						]
+					},
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
+	it('SELECT row_to_json(t) as result from mytable1 t', async () => {
+
+		const sql = 'SELECT row_to_json(t) as result from mytable1 t';
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'result',
+					type: {
+						name: 'json',
+						properties: [
+							{
+								key: 'id',
+								type: {
+									name: 'json_field',
+									type: 'int4',
+									notNull: true
+								}
+							},
+							{
+								key: 'value',
+								type: {
+									name: 'json_field',
+									type: 'int4',
+									notNull: false
+								}
+							}
+						]
+					},
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
+	it(`select row_to_json(row(1, 2, 'b')) as result`, async () => {
+
+		const sql = `select row_to_json(row(1, 2, 'b')) as result`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					name: 'result',
+					type: {
+						name: 'json',
+						properties: [
+							{
+								key: 'f1',
+								type: {
+									name: 'json_field',
+									type: 'int4',
+									notNull: true
+								}
+							},
+							{
+								key: 'f2',
+								type: {
+									name: 'json_field',
+									type: 'int4',
+									notNull: true
+								}
+							},
+							{
+								key: 'f3',
+								type: {
+									name: 'json_field',
+									type: 'text',
+									notNull: true
+								}
 							}
 						]
 					},

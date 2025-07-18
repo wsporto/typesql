@@ -16,7 +16,7 @@ export const postgresTypes = {
 	199: '_json',
 	700: 'float4',
 	701: 'float8',
-	705: 'unknow',
+	705: 'unknown',
 	1001: '_bytea',
 	1082: 'date',
 	1560: 'bit',
@@ -168,7 +168,7 @@ export function mapColumnType(postgresType: PostgresType): TsType {
 		case '_jsonb':
 		case 'jsonb[]':
 			return 'any[]';
-		case 'unknow':
+		case 'unknown':
 			return 'any';
 	}
 }

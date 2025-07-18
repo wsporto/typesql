@@ -1683,7 +1683,7 @@ describe('Infer column nullability', () => {
 					is_nullable: true,
 					table_name: '',
 					table_schema: '',
-					type: 'unknow'
+					type: 'unknown'
 				}
 			],
 			parameterList: [false],

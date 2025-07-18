@@ -6,7 +6,7 @@ import { DynamicSqlInfo2, FieldName } from '../mysql-query-analyzer/types';
 import { QueryType } from '../types';
 import { Relation2 } from '../sqlite-query-analyzer/sqlite-describe-nested-query';
 import { CheckConstraintResult } from '../drivers/postgres';
-import { JsonFieldType, JsonPropertyDef, JsonType, PostgresSimpleType } from '../sqlite-query-analyzer/types';
+import { JsonFieldType, JsonObjType, JsonPropertyDef, JsonType, PostgresSimpleType } from '../sqlite-query-analyzer/types';
 
 export type NotNullInfo = {
 	table_schema: string;
@@ -16,6 +16,12 @@ export type NotNullInfo = {
 	column_default?: true;
 	type: PostgresSimpleType;
 	jsonType?: JsonType;
+	recordTypes?: RecordType[];
+}
+
+export type RecordType = {
+	type: PostgresSimpleType;
+	notNull: boolean;
 }
 
 export type PostgresTraverseResult = {
@@ -56,6 +62,7 @@ type TraverseContext = {
 	collectNestedInfo: boolean;
 	collectDynamicQueryInfo: boolean;
 	filter_expr?: A_exprContext;
+	columnRefIsRecord?: true;
 }
 
 export type Relation3 = {
@@ -461,7 +468,7 @@ function traverse_a_expr(a_expr: A_exprContext, context: TraverseContext, traver
 		is_nullable: true,
 		table_name: '',
 		table_schema: '',
-		type: 'unknow'
+		type: 'unknown'
 	};
 }
 
@@ -669,7 +676,7 @@ function traverse_expr_like(a_expr_like: A_expr_likeContext, context: TraverseCo
 			is_nullable: result.some(col => col.is_nullable),
 			table_name: '',
 			table_schema: '',
-			type: 'unknow'
+			type: 'unknown'
 		} satisfies NotNullInfo
 	}
 	throw Error('traverse_expr_like -  Not expected:' + a_expr_like.getText());
@@ -687,7 +694,7 @@ function traverse_expr_qual_op(a_expr_qual_op: A_expr_qual_opContext, context: T
 			is_nullable: result.some(col => col.is_nullable),
 			table_name: '',
 			table_schema: '',
-			type: 'unknow'
+			type: 'unknown'
 		} satisfies NotNullInfo
 	}
 	throw Error('traverse_expr_qual_op -  Not expected:' + a_expr_qual_op.getText());
@@ -746,7 +753,7 @@ function traverse_expr_caret(a_expr_caret: A_expr_caretContext, context: Travers
 			is_nullable: notNullInfo.some(notNullInfo => notNullInfo.is_nullable),
 			table_name: '',
 			table_schema: '',
-			type: 'unknow'
+			type: 'unknown'
 		}
 		return result;
 	}
@@ -845,12 +852,12 @@ function getNameAndTypeIdFromAExprConst(a_expr_const: AexprconstContext): NameAn
 	if (a_expr_const.NULL_P()) {
 		return {
 			name: a_expr_const.getText(),
-			type: 'unknow'
+			type: 'unknown'
 		}
 	}
 	return {
 		name: a_expr_const.getText(),
-		type: 'unknow'
+		type: 'unknown'
 	}
 }
 
@@ -865,7 +872,7 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 					is_nullable: true,
 					table_schema: '',
 					table_name: '',
-					type: 'unknow'
+					type: 'unknown'
 				}
 			}
 			const array_expr = c_expr.array_expr();
@@ -879,8 +886,20 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 		}
 		const columnref = c_expr.columnref();
 		if (columnref) {
-			const col = traverseColumnRef(columnref, context.fromColumns);
-			return col;
+			if (context.columnRefIsRecord) {
+				return {
+					column_name: columnref.getText(),
+					is_nullable: false,
+					table_name: '',
+					table_schema: '',
+					type: 'unknown',
+				}
+			}
+			else {
+				const col = traverseColumnRef(columnref, context.fromColumns);
+				return col;
+			}
+
 		}
 		const aexprconst = c_expr.aexprconst();
 		if (aexprconst) {
@@ -904,7 +923,7 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 				is_nullable: !!context.propagatesNull,
 				table_name: '',
 				table_schema: '',
-				type: 'unknow'
+				type: 'unknown'
 			}
 		}
 		const fun_expr = c_expr.func_expr();
@@ -968,7 +987,8 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 				is_nullable: expr_list.some(col => col.is_nullable),
 				table_name: '',
 				table_schema: '',
-				type: 'unknow'
+				type: 'unknown',
+				recordTypes: expr_list.map(rec => ({ type: rec.type, notNull: !rec.is_nullable } satisfies RecordType))
 			}
 		}
 		const implicit_row = c_expr.implicit_row();
@@ -980,7 +1000,7 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 				is_nullable: expr_list.some(col => col.is_nullable),
 				table_name: '',
 				table_schema: '',
-				type: 'unknow'
+				type: 'unknown'
 			}
 		}
 	}
@@ -1002,7 +1022,7 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 	throw Error('traversec_expr -  Not expected:' + c_expr.getText());
 }
 
-function filterColumns(fromColumns: NotNullInfo[], fieldName: FieldName) {
+function filterColumns(fromColumns: NotNullInfo[], fieldName: FieldName): NotNullInfo[] {
 	return fromColumns.filter(col => (fieldName.prefix === '' || col.table_name === fieldName.prefix)
 		&& (fieldName.name === '*' || col.column_name === fieldName.name)).map(col => {
 			const result: NotNullInfo = {
@@ -1036,7 +1056,7 @@ function traversec_expr_case(c_expr_case: C_expr_caseContext, context: TraverseC
 		is_nullable: !notNull,
 		table_name: '',
 		table_schema: '',
-		type: whenResult[0].type ?? 'unknow'
+		type: whenResult[0].type ?? 'unknown'
 	}
 }
 
@@ -1104,6 +1124,32 @@ function transformToJsonProperty(args: NotNullInfo[], filterExpr?: A_exprContext
 	return pairs;
 }
 
+type FieldInfo = {
+	name: string;
+	type: PostgresSimpleType;
+	notNull: boolean;
+}
+
+function transformFieldsToJsonObjType(fields: FieldInfo[]) {
+	const jsonObject: JsonObjType = {
+		name: 'json',
+		properties: fields.map(col => mapFieldToPropertyDef(col))
+	}
+	return jsonObject;
+}
+function mapFieldToPropertyDef(field: FieldInfo) {
+	const prop: JsonPropertyDef = {
+		key: field.name,
+		type: transformFieldToJsonField(field)
+	}
+	return prop;
+}
+
+function transformFieldToJsonField(field: FieldInfo) {
+	const jsonField: JsonFieldType = { name: 'json_field', type: field.type, notNull: field.notNull };
+	return jsonField;
+}
+
 function traverse_json_build_obj_func(func_application: Func_applicationContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
 	const columnName = func_application.func_name()?.getText() || func_application.getText();
 	const func_arg_expr_list = func_application.func_arg_list()?.func_arg_expr_list() || [];
@@ -1142,6 +1188,36 @@ function traverse_json_agg(func_application: Func_applicationContext, context: T
 function traversefunc_application(func_application: Func_applicationContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
 	const functionName = getFunctionName(func_application);
 	const func_arg_expr_list = func_application.func_arg_list()?.func_arg_expr_list() || [];
+	if (functionName === 'row_to_json') {
+		const argResult = traversefunc_arg_expr(func_arg_expr_list[0], { ...context, columnRefIsRecord: true }, traverseResult);
+		if (argResult.recordTypes) {
+			const fields = argResult.recordTypes.map((record, index) => ({ name: `f${index + 1}`, type: record.type, notNull: record.notNull } satisfies FieldInfo))
+			const jsonType = transformFieldsToJsonObjType(fields)
+			return {
+				column_name: functionName,
+				is_nullable: false,
+				table_name: '',
+				table_schema: '',
+				type: 'json',
+				jsonType
+			};
+		}
+		else {
+			const columns = filterColumns(context.fromColumns, { name: '*', prefix: argResult.column_name });
+			const fields = columns.map(col => ({ name: col.column_name, type: col.type, notNull: !col.is_nullable } satisfies FieldInfo));
+			const jsonType = transformFieldsToJsonObjType(fields);
+			return {
+				column_name: functionName,
+				is_nullable: false,
+				table_name: '',
+				table_schema: '',
+				type: 'json',
+				jsonType
+			};
+		}
+
+	}
+
 	const argsResult = func_arg_expr_list.map(func_arg_expr => traversefunc_arg_expr(func_arg_expr, context, traverseResult))
 	if (functionName === 'count') {
 		return {
@@ -1208,7 +1284,7 @@ function traversefunc_application(func_application: Func_applicationContext, con
 			is_nullable: false,
 			table_name: '',
 			table_schema: '',
-			type: 'unknow'
+			type: 'unknown'
 		};
 	}
 	if (functionName === 'row_number'
@@ -1268,7 +1344,7 @@ function traversefunc_application(func_application: Func_applicationContext, con
 			...argsResult[0],
 			column_name: functionName,
 			is_nullable: true,
-			type: argsResult[0].type ? mapSumType(argsResult[0].type) : 'unknow'
+			type: argsResult[0].type ? mapSumType(argsResult[0].type) : 'unknown'
 		};
 	}
 
@@ -1277,7 +1353,7 @@ function traversefunc_application(func_application: Func_applicationContext, con
 		is_nullable: true,
 		table_name: '',
 		table_schema: '',
-		type: 'unknow'
+		type: 'unknown'
 	};
 }
 
@@ -1328,7 +1404,7 @@ function traversefunc_expr_common_subexpr(func_expr_common_subexpr: Func_expr_co
 		is_nullable: true,
 		table_name: '',
 		table_schema: '',
-		type: 'unknow'
+		type: 'unknown'
 	};
 }
 
@@ -1363,7 +1439,7 @@ function traverse_array_expr(array_expr: Array_exprContext, context: TraverseCon
 		is_nullable: true,
 		table_name: '',
 		table_schema: '',
-		type: 'unknow'
+		type: 'unknown'
 	};
 }
 
@@ -1935,7 +2011,7 @@ function isNotNul_a_expr_unary_qualop(a_expr_unary_qualop: A_expr_unary_qualopCo
 }
 
 type ArithmeticType = 'int2' | 'int4' | 'int8' | 'float4' | 'float8' | 'numeric' | 'date' | 'timestamp'; //'interval'
-function mapAddExprType(types: (ArithmeticType | 'unknow')[]): ArithmeticType | 'unknow' {
+function mapAddExprType(types: (ArithmeticType | 'unknown')[]): ArithmeticType | 'unknown' {
 
 	const arithmeticMatrix: Record<ArithmeticType, Partial<Record<ArithmeticType, ArithmeticType>>> = {
 		int2: { int2: 'int2', int4: 'int4', int8: 'int8', float4: 'float4', float8: 'float8', numeric: 'numeric', date: 'date' },
@@ -1950,12 +2026,12 @@ function mapAddExprType(types: (ArithmeticType | 'unknow')[]): ArithmeticType | 
 	};
 	let currentType: ArithmeticType | undefined = 'int2';
 	for (const type of types) {
-		if (type === 'unknow') {
-			return 'unknow';
+		if (type === 'unknown') {
+			return 'unknown';
 		}
 		currentType = arithmeticMatrix[currentType][type];
 		if (!currentType) {
-			return 'unknow'
+			return 'unknown'
 		}
 	}
 	return currentType;
