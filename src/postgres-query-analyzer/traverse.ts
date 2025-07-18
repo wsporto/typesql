@@ -6,7 +6,7 @@ import { DynamicSqlInfo2, FieldName } from '../mysql-query-analyzer/types';
 import { QueryType } from '../types';
 import { Relation2 } from '../sqlite-query-analyzer/sqlite-describe-nested-query';
 import { CheckConstraintResult } from '../drivers/postgres';
-import { JsonFieldType, JsonPropertyDef, JsonType, PostgresSimpleType } from '../sqlite-query-analyzer/types';
+import { JsonFieldType, JsonObjType, JsonPropertyDef, JsonType, PostgresSimpleType } from '../sqlite-query-analyzer/types';
 
 export type NotNullInfo = {
 	table_schema: string;
@@ -1002,7 +1002,7 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 	throw Error('traversec_expr -  Not expected:' + c_expr.getText());
 }
 
-function filterColumns(fromColumns: NotNullInfo[], fieldName: FieldName) {
+function filterColumns(fromColumns: NotNullInfo[], fieldName: FieldName): NotNullInfo[] {
 	return fromColumns.filter(col => (fieldName.prefix === '' || col.table_name === fieldName.prefix)
 		&& (fieldName.name === '*' || col.column_name === fieldName.name)).map(col => {
 			const result: NotNullInfo = {
@@ -1104,6 +1104,26 @@ function transformToJsonProperty(args: NotNullInfo[], filterExpr?: A_exprContext
 	return pairs;
 }
 
+function transformColumnsToJsonObjType(columns: NotNullInfo[]) {
+	const jsonObject: JsonObjType = {
+		name: 'json',
+		properties: columns.map(col => mapColumnToPropertyDef(col))
+	}
+	return jsonObject;
+}
+function mapColumnToPropertyDef(col: NotNullInfo) {
+	const prop: JsonPropertyDef = {
+		key: col.column_name,
+		type: transformColumnToJsonField(col)
+	}
+	return prop;
+}
+
+function transformColumnToJsonField(col: NotNullInfo) {
+	const jsonField: JsonFieldType = { name: 'json_field', type: col.type, notNull: !col.is_nullable };
+	return jsonField;
+}
+
 function traverse_json_build_obj_func(func_application: Func_applicationContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
 	const columnName = func_application.func_name()?.getText() || func_application.getText();
 	const func_arg_expr_list = func_application.func_arg_list()?.func_arg_expr_list() || [];
@@ -1142,6 +1162,20 @@ function traverse_json_agg(func_application: Func_applicationContext, context: T
 function traversefunc_application(func_application: Func_applicationContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
 	const functionName = getFunctionName(func_application);
 	const func_arg_expr_list = func_application.func_arg_list()?.func_arg_expr_list() || [];
+	if (functionName === 'row_to_json') {
+		const tableName = func_arg_expr_list[0].getText().toLowerCase();
+		const columns = filterColumns(context.fromColumns, { name: '*', prefix: tableName });
+		const jsonType = transformColumnsToJsonObjType(columns);
+		return {
+			column_name: functionName,
+			is_nullable: false,
+			table_name: '',
+			table_schema: '',
+			type: 'json',
+			jsonType
+		};
+	}
+
 	const argsResult = func_arg_expr_list.map(func_arg_expr => traversefunc_arg_expr(func_arg_expr, context, traverseResult))
 	if (functionName === 'count') {
 		return {

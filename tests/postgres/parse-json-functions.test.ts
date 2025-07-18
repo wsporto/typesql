@@ -1300,4 +1300,92 @@ describe('postgres-json-functions', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	})
+
+	it(`SELECT row_to_json(mytable1) from mytable1`, async () => {
+
+		const sql = 'SELECT row_to_json(mytable1) as result from mytable1';
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'result',
+					type: {
+						name: 'json',
+						properties: [
+							{
+								key: 'id',
+								type: {
+									name: 'json_field',
+									type: 'int4',
+									notNull: true
+								}
+							},
+							{
+								key: 'value',
+								type: {
+									name: 'json_field',
+									type: 'int4',
+									notNull: false
+								}
+							}
+						]
+					},
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
+	it('SELECT row_to_json(t) as result from mytable1 t', async () => {
+
+		const sql = 'SELECT row_to_json(t) as result from mytable1 t';
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'result',
+					type: {
+						name: 'json',
+						properties: [
+							{
+								key: 'id',
+								type: {
+									name: 'json_field',
+									type: 'int4',
+									notNull: true
+								}
+							},
+							{
+								key: 'value',
+								type: {
+									name: 'json_field',
+									type: 'int4',
+									notNull: false
+								}
+							}
+						]
+					},
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
 })
