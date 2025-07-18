@@ -31,3 +31,11 @@ export type PostgresSchemaDef = {
 	dynamicSqlQuery2?: DynamicSqlInfoResult2;
 	nestedInfo?: RelationInfo2[];
 };
+
+export type UserFunctionSchema = {
+	schema: string;
+	function_name: string;
+	arguments: string;
+	return_type: string;
+	definition: string;
+}

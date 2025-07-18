@@ -31,7 +31,7 @@ describe('postgres-generate-dynamic-info', () => {
 		FROM mytable1 m1
 		INNER JOIN mytable2 m2 on m1.id = m2.id`;
 
-		const actual = parseSql(sql, dbSchema, {}, { collectDynamicQueryInfo: true });
+		const actual = parseSql(sql, dbSchema, {}, [], { collectDynamicQueryInfo: true });
 		const expected: DynamicSqlInfo2 = {
 			with: [],
 			select: [
@@ -149,7 +149,7 @@ describe('postgres-generate-dynamic-info', () => {
 		) m2 on m2.id = m1.id
 		WHERE ($2 is NULL or m2.name = $3)`;
 
-		const actual = parseSql(sql, dbSchema, {}, { collectDynamicQueryInfo: true });
+		const actual = parseSql(sql, dbSchema, {}, [], { collectDynamicQueryInfo: true });
 		const expected: DynamicSqlInfo2 = {
 			with: [],
 			select: [
@@ -319,7 +319,7 @@ describe('postgres-generate-dynamic-info', () => {
 		INNER JOIN cte m2 on m2.id = m1.id
 		WHERE m2.name LIKE concat('%', $1, '%')`;
 
-		const actual = parseSql(sql, dbSchema, {}, { collectDynamicQueryInfo: true });
+		const actual = parseSql(sql, dbSchema, {}, [], { collectDynamicQueryInfo: true });
 		const expected: DynamicSqlInfo2 = {
 			with: [
 				{
@@ -508,7 +508,7 @@ describe('postgres-generate-dynamic-info', () => {
 		INNER JOIN mytable2 m2 on m2.id = m1.id
 		INNER JOIN mytable3 m3 on m3.id = m2.id`;
 
-		const actual = parseSql(sql, dbSchema, {}, { collectDynamicQueryInfo: true });
+		const actual = parseSql(sql, dbSchema, {}, [], { collectDynamicQueryInfo: true });
 		const expected: DynamicSqlInfo2 = {
 			with: [],
 			select: [
@@ -649,7 +649,7 @@ describe('postgres-generate-dynamic-info', () => {
 		inner join mytable3 t3 on t3.id = t2.id
 		where (concat('%', t2.name, '%') = $1 OR concat('%', t3.name, '%') = $1)`;
 
-		const actual = parseSql(sql, dbSchema, {}, { collectDynamicQueryInfo: true });
+		const actual = parseSql(sql, dbSchema, {}, [], { collectDynamicQueryInfo: true });
 		const expected: DynamicSqlInfo2 = {
 			with: [],
 			select: [
@@ -798,7 +798,7 @@ describe('postgres-generate-dynamic-info', () => {
 		inner join mytable3 t3 on t3.id = t2.id
 		where t3.id > 1`;
 
-		const actual = parseSql(sql, dbSchema, {}, { collectDynamicQueryInfo: true });
+		const actual = parseSql(sql, dbSchema, {}, [], { collectDynamicQueryInfo: true });
 		const expected: DynamicSqlInfo2 = {
 			with: [],
 			select: [
@@ -904,7 +904,7 @@ describe('postgres-generate-dynamic-info', () => {
 		FROM mytable2 t2
 		INNER JOIN mytable3 t3 on t3.id = t2.id`;
 
-		const actual = parseSql(sql, dbSchema, {}, { collectDynamicQueryInfo: true });
+		const actual = parseSql(sql, dbSchema, {}, [], { collectDynamicQueryInfo: true });
 		const expected: DynamicSqlInfo2 = {
 			with: [],
 			select: [
@@ -1011,7 +1011,7 @@ describe('postgres-generate-dynamic-info', () => {
 		WHERE m2.name = $1
 		LIMIT $2 OFFSET $3`;
 
-		const actual = parseSql(sql, dbSchema, {}, { collectDynamicQueryInfo: true });
+		const actual = parseSql(sql, dbSchema, {}, [], { collectDynamicQueryInfo: true });
 		const expected: DynamicSqlInfo2 = {
 			with: [],
 			select: [
@@ -1078,7 +1078,7 @@ describe('postgres-generate-dynamic-info', () => {
 		FROM cte1 c1
 		INNER JOIN cte2 c2 on c1.id = c2.id`;
 
-		const actual = parseSql(sql, dbSchema, {}, { collectDynamicQueryInfo: true });
+		const actual = parseSql(sql, dbSchema, {}, [], { collectDynamicQueryInfo: true });
 		const expected: DynamicSqlInfo2 = {
 			with: [
 				{
@@ -1230,7 +1230,7 @@ describe('postgres-generate-dynamic-info', () => {
 		INNER JOIN cte2 c2 on c1.id = c2.id
 		WHERE greatest(c1.id, $3) = least(c2.id, $3)`;
 
-		const actual = parseSql(sql, dbSchema, {}, { collectDynamicQueryInfo: true });
+		const actual = parseSql(sql, dbSchema, {}, [], { collectDynamicQueryInfo: true });
 		const expected: DynamicSqlInfo2 = {
 			with: [
 				{
