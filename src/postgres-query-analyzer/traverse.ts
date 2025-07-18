@@ -1204,7 +1204,11 @@ function traversefunc_application(func_application: Func_applicationContext, con
 		}
 		else {
 			const columns = filterColumns(context.fromColumns, { name: '*', prefix: argResult.column_name });
-			const fields = columns.map(col => ({ name: col.column_name, type: col.type, notNull: !col.is_nullable } satisfies FieldInfo));
+			const fields = columns.map(col => {
+				const notNull = !col.is_nullable || Boolean(context.filter_expr && isNotNull_a_expr(col, context.filter_expr));
+				const field: FieldInfo = { name: col.column_name, type: col.type, notNull };
+				return field;
+			});
 			const jsonType = transformFieldsToJsonObjType(fields);
 			return {
 				column_name: functionName,

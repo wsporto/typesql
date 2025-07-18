@@ -1440,4 +1440,80 @@ describe('postgres-json-functions', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	})
+
+	it(`select row_to_json(row(1, 2, 'b')) as result`, async () => {
+
+		const sql = `SELECT
+	u.id,
+	json_agg(row_to_json(p)) filter (where p.id is not null) as posts
+FROM users u
+LEFT JOIN posts p ON u.id = p.fk_user
+GROUP BY u.id`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'u'
+				},
+				{
+					name: 'posts',
+					type: {
+						name: 'json[]',
+						properties: [
+							{
+								name: 'json',
+								properties: [
+									{
+										key: 'id',
+										type: {
+											name: 'json_field',
+											type: 'int4',
+											notNull: true
+										}
+									},
+									{
+										key: 'title',
+										type: {
+											name: 'json_field',
+											type: 'text',
+											notNull: false //should be not null - FILTER (WHERE...)
+										}
+									},
+									{
+										key: 'body',
+										type: {
+											name: 'json_field',
+											type: 'text',
+											notNull: false //should be not null - FILTER (WHERE...)
+										}
+									},
+									{
+										key: 'fk_user',
+										type: {
+											name: 'json_field',
+											type: 'int4',
+											notNull: false
+										}
+									}
+								]
+							}
+						]
+					},
+					notNull: false, //filter
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
 })
