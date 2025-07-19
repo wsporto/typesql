@@ -594,6 +594,7 @@ function traverse_expr_is_not(a_expr_is_not: A_expr_is_notContext, context: Trav
 		const result = traverse_expr_compare(a_expr_compare, context, traverseResult);
 		if (a_expr_is_not.IS() && a_expr_is_not.NULL_P()) {
 			checkParamterNullability(result, traverseResult);
+			return { ...result, is_nullable: false };
 		}
 		return result;
 	}

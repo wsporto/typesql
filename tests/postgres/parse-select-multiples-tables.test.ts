@@ -871,7 +871,7 @@ describe('postgres-parse-select-multiples-tables', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
-	it.skip('SELECT mytable1.id, mytable2.id is not null as hasOwner', async () => {
+	it('SELECT mytable1.id, mytable2.id is not null as hasOwner', async () => {
 		const sql = `
         SELECT
             mytable1.id,
@@ -889,13 +889,13 @@ describe('postgres-parse-select-multiples-tables', () => {
 					name: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 'mytable1'
 				},
 				{
-					name: 'hasOwner',
+					name: 'hasowner',
 					type: 'bool',
 					notNull: true,
-					table: ''
+					table: 'mytable2'
 				}
 			],
 			parameters: []
