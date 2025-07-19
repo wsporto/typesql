@@ -38,4 +38,5 @@ export type UserFunctionSchema = {
 	arguments: string;
 	return_type: string;
 	definition: string;
+	language: string;
 }

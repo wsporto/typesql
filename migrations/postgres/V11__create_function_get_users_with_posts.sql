@@ -1,3 +1,23 @@
+CREATE FUNCTION get_mytable1()
+RETURNS SETOF mytable1
+LANGUAGE sql
+AS $$
+  SELECT * FROM mytable1;
+$$;
+
+CREATE OR REPLACE FUNCTION get_mytable_plpgsql()
+RETURNS TABLE (
+    id INTEGER,
+    value INTEGER
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT * FROM mytable1;
+END;
+$$;
+
 CREATE FUNCTION get_users_with_posts()
 RETURNS TABLE (
     id INTEGER,
@@ -20,7 +40,7 @@ AS $$
     FROM users u;
 $$;
 
-CREATE OR REPLACE FUNCTION get_users_with_posts_plsql()
+CREATE OR REPLACE FUNCTION get_users_with_posts_plpgsql()
 RETURNS TABLE (
     id INTEGER,
     posts JSON

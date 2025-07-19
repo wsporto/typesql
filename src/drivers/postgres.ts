@@ -242,12 +242,13 @@ function _loadUserFunctions(sql: Sql): Promise<UserFunctionSchema[]> {
 			pg_get_function_identity_arguments(p.oid) AS arguments,
 			pg_get_function_result(p.oid) AS return_type,
 			-- pg_get_functiondef(p.oid) AS definition
-			p.prosrc AS definition
+			p.prosrc AS definition,
+			l.lanname as language
 		FROM pg_proc p
 		JOIN pg_namespace n ON n.oid = p.pronamespace
 		JOIN pg_language l ON l.oid = p.prolang
 		WHERE n.nspname NOT IN ('pg_catalog', 'information_schema')  -- exclude system functions
 		AND p.prokind = 'f'  -- 'f' = function, 'p' = procedure, 'a' = aggregate
-		and l.lanname = 'sql'
+		-- and l.lanname = 'sql'
 		ORDER BY n.nspname, p.proname`;
 }

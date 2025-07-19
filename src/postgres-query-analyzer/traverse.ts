@@ -9,7 +9,6 @@ import { CheckConstraintResult } from '../drivers/postgres';
 import { JsonFieldType, JsonObjType, JsonPropertyDef, JsonType, PostgresSimpleType } from '../sqlite-query-analyzer/types';
 import { parseSql } from '@wsporto/typesql-parser/postgres';
 import { UserFunctionSchema } from './types';
-import { TableRefContext } from '@wsporto/typesql-parser/mysql/MySQLParser';
 
 export type NotNullInfo = {
 	table_schema: string;
@@ -18,6 +17,7 @@ export type NotNullInfo = {
 	is_nullable: boolean;
 	original_is_nullable?: boolean;
 	column_default?: true;
+	column_key?: 'PRI' | 'UNI' | '',
 	type: PostgresSimpleType;
 	jsonType?: JsonType;
 	recordTypes?: RecordType[];
@@ -173,7 +173,7 @@ function traverseSelectstmt(selectstmt: SelectstmtContext, context: TraverseCont
 	//select parameters are collected after from paramters
 	traverseResult.parameters.sort((param1, param2) => param1.paramIndex - param2.paramIndex);
 
-	const multipleRowsResult = !isSingleRowResult(selectstmt, context.dbSchema);
+	const multipleRowsResult = !isSingleRowResult(selectstmt, columns);
 
 	const limit = checkLimit(selectstmt);
 	const postgresTraverseResult: PostgresTraverseResult = {
@@ -457,6 +457,7 @@ function traverse_target_el(target_el: Target_elContext, context: TraverseContex
 			table_name: exprResult.table_name,
 			table_schema: exprResult.table_schema,
 			type: exprResult.type,
+			...(exprResult.column_key != null && { column_key: exprResult.column_key }),
 			...(exprResult.jsonType != null && { jsonType: exprResult.jsonType })
 		};
 	}
@@ -1038,6 +1039,7 @@ function filterColumns(fromColumns: NotNullInfo[], fieldName: FieldName): NotNul
 				table_name: col.table_name,
 				table_schema: col.table_schema,
 				type: col.type,
+				...(col.column_key !== undefined) && { column_key: col.column_key },
 				...(col.jsonType !== undefined) && { jsonType: col.jsonType },
 				...(col.original_is_nullable !== undefined && { original_is_nullable: col.original_is_nullable }),
 			}
@@ -1525,7 +1527,7 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 	const aliasNameList = aliasClause?.name_list()?.name_list()?.map(name => name.getText());
 	const alias = aliasClause ? aliasClause.colid().getText() : '';
 	if (relation_expr) {
-		const tableName = traverse_relation_expr(relation_expr, dbSchema);
+		const tableName = traverse_relation_expr(relation_expr);
 		const tableNameWithAlias = alias ? alias : tableName.name;
 		const fromColumnsResult = fromColumns.concat(dbSchema).filter(col => col.table_name.toLowerCase() === tableName.name.toLowerCase())
 			.map(col => ({ ...col, table_name: tableNameWithAlias.toLowerCase() }));
@@ -1576,8 +1578,8 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 	const func_table = table_ref.func_table();
 	if (func_table) {
 		const funcAlias = table_ref.func_alias_clause()?.alias_clause()?.colid()?.getText() || '';
-		const result = traverse_func_table(func_table, context, traverseResult);
-		const resultWithAlias = result.columns.map(col => ({ ...col, table_name: funcAlias } satisfies NotNullInfo));
+		const columns = traverse_func_table(func_table, context, traverseResult);
+		const resultWithAlias = columns.map(col => ({ ...col, table_name: funcAlias } satisfies NotNullInfo));
 		return resultWithAlias;
 	}
 	const select_with_parens = table_ref.select_with_parens();
@@ -1700,7 +1702,17 @@ function traverse_select_with_parens(select_with_parens: Select_with_parensConte
 	return [];
 }
 
-function traverse_func_table(func_table: Func_tableContext, context: TraverseContext, traverseResult: TraverseResult): PostgresTraverseResult {
+export type TableReturnType = {
+	kind: 'table';
+	columns: { name: string; type: string }[];
+};
+
+export type SetofReturnType = {
+	kind: 'setof';
+	table: string;
+};
+
+function traverse_func_table(func_table: Func_tableContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo[] {
 	const func_expr_windowless = func_table.func_expr_windowless();
 	if (func_expr_windowless) {
 		const result = traverse_func_expr_windowless(func_expr_windowless, context, traverseResult);
@@ -1709,30 +1721,80 @@ function traverse_func_table(func_table: Func_tableContext, context: TraverseCon
 	throw Error('Stmt not supported: ' + func_table.getText());
 }
 
-function traverse_func_expr_windowless(func_expr_windowless: Func_expr_windowlessContext, context: TraverseContext, traverseResult: TraverseResult): PostgresTraverseResult {
+export type FunctionReturnType = TableReturnType | SetofReturnType;
+
+export function parseReturnType(returnType: string): FunctionReturnType {
+	const trimmed = returnType.trim();
+
+	// Handle TABLE(...)
+	if (trimmed.toLowerCase().startsWith('table(') && trimmed.endsWith(')')) {
+		const inside = trimmed.slice(6, -1); // remove "TABLE(" and final ")"
+		const columns: { name: string; type: string }[] = [];
+
+		const parts = inside.split(',').map(part => part.trim());
+
+		for (const part of parts) {
+			const match = part.match(/^(\w+)\s+(.+)$/);
+			if (!match) {
+				throw new Error(`Invalid column definition: ${part}`);
+			}
+			const [, name, type] = match;
+			columns.push({ name, type });
+		}
+
+		return { kind: 'table', columns };
+	}
+
+	// Handle SETOF typename
+	const setofMatch = trimmed.match(/^SETOF\s+(\w+)$/i);
+	if (setofMatch) {
+		return { kind: 'setof', table: setofMatch[1] };
+	}
+
+	throw new Error(`Unsupported return type format: ${returnType}`);
+}
+
+function traverse_func_expr_windowless(func_expr_windowless: Func_expr_windowlessContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo[] {
 	const func_application = func_expr_windowless.func_application();
 	if (func_application) {
 		const func_name = func_application.func_name().getText().toLowerCase();
 		const funcSchema = context.userFunctions.find(func => func.function_name.toLowerCase() === func_name);
 		if (funcSchema) {
 			const definition = funcSchema.definition;
-			const parser = parseSql(definition);
-			const selectstmt = parser.stmt().selectstmt();
-			const select_stmt_result = traverseSelectstmt(selectstmt, context, traverseResult);
-			return select_stmt_result;
+			const returnType = parseReturnType(funcSchema.return_type);
+			const columns = returnType.kind === 'table' ? returnType.columns.map(col => {
+				const columnInfo: NotNullInfo = {
+					column_name: col.name,
+					type: col.type as PostgresSimpleType,
+					is_nullable: true,
+					table_name: '',
+					table_schema: ''
+				}
+				return columnInfo;
+			}) : context.dbSchema.filter(col => col.table_name.toLowerCase() === returnType.table);;
+			if (funcSchema.language.toLowerCase() === 'sql') {
+				const parser = parseSql(definition);
+				const selectstmt = parser.stmt().selectstmt();
+				const select_stmt_result = traverseSelectstmt(selectstmt, { ...context, fromColumns: columns }, traverseResult);
+				return select_stmt_result.columns;
+			}
+			else {
+				return columns;
+			}
+
 		}
 	}
 	throw Error('Stmt not supported: ' + func_expr_windowless.getText());
 }
 
-function traverse_relation_expr(relation_expr: Relation_exprContext, dbSchema: NotNullInfo[]): TableName {
+function traverse_relation_expr(relation_expr: Relation_exprContext): TableName {
 	const qualified_name = relation_expr.qualified_name();
-	const name = traverse_qualified_name(qualified_name, dbSchema);
+	const name = traverse_qualified_name(qualified_name);
 	return name;
 }
 
-function traverse_qualified_name(qualified_name: Qualified_nameContext, dbSchema: NotNullInfo[]): TableName {
-	const colid_name = qualified_name.colid() ? get_colid_text(qualified_name.colid(), dbSchema) : '';
+function traverse_qualified_name(qualified_name: Qualified_nameContext): TableName {
+	const colid_name = qualified_name.colid() ? get_colid_text(qualified_name.colid()) : '';
 
 	const indirection_el_list = qualified_name.indirection()?.indirection_el_list();
 	if (indirection_el_list && indirection_el_list.length === 1) {
@@ -1747,24 +1809,24 @@ function traverse_qualified_name(qualified_name: Qualified_nameContext, dbSchema
 	}
 }
 
-function get_colid_text(colid: ColidContext, dbSchema: NotNullInfo[]): string {
+function get_colid_text(colid: ColidContext): string {
 	const identifier = colid.identifier();
 	if (identifier) {
-		return traverse_identifier(identifier, dbSchema);
+		return traverse_identifier(identifier);
 	}
 	const unreserved_keyword = colid.unreserved_keyword();
 	if (unreserved_keyword) {
-		return traverse_unreserved_keyword(unreserved_keyword, dbSchema);
+		return traverse_unreserved_keyword(unreserved_keyword);
 	}
 	return '';
 }
 
-function traverse_identifier(identifier: IdentifierContext, dbSchema: NotNullInfo[]): string {
+function traverse_identifier(identifier: IdentifierContext): string {
 	const tableName = identifier.Identifier().getText();
 	return tableName;
 }
 
-function traverse_unreserved_keyword(unreserved_keyword: Unreserved_keywordContext, dbSchema: NotNullInfo[]) {
+function traverse_unreserved_keyword(unreserved_keyword: Unreserved_keywordContext) {
 	return unreserved_keyword.getText();
 }
 
@@ -2216,7 +2278,7 @@ function isParameter(str: string): boolean {
 	return paramPattern.test(str);
 }
 
-function isSingleRowResult(selectstmt: SelectstmtContext, dbSchema: PostgresColumnSchema[]): boolean {
+function isSingleRowResult(selectstmt: SelectstmtContext, fromColumns: NotNullInfo[]): boolean {
 
 	const limit = checkLimit(selectstmt);
 	if (limit === 1) {
@@ -2253,9 +2315,7 @@ function isSingleRowResult(selectstmt: SelectstmtContext, dbSchema: PostgresColu
 
 	const where_clause = simple_select_pramary.where_clause();
 	if (where_clause) {
-		const tableName = getTableName(table_ref_list[0]);
-		const uniqueKeys = dbSchema.filter(col => col.table_name.toLowerCase() === tableName.name.toLowerCase()
-			&& (col.column_key === 'PRI' || col.column_key === 'UNI'))
+		const uniqueKeys = fromColumns.filter(col => col.column_key === 'PRI' || col.column_key === 'UNI')
 			.map(col => col.column_name);
 		return isSingleRowResult_where(where_clause.a_expr(), uniqueKeys)
 	}

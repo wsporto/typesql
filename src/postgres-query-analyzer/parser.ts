@@ -10,7 +10,10 @@ export function parseSql(sql: string, dbSchema: PostgresColumnSchema[], checkCon
 
 	const traverseResult = traverseSmt(parser.stmt(), dbSchema, checkConstraints, userFunctions, options);
 
-	return traverseResult;
+	return {
+		...traverseResult,
+		columns: traverseResult.columns.map(({ column_key: _, ...rest }) => rest)
+	};
 }
 
 export function safeParseSql(sql: string, dbSchema: PostgresColumnSchema[], checkConstraints: CheckConstraintResult, userFunctions: UserFunctionSchema[], options = defaultOptions()): Result<PostgresTraverseResult, string> {

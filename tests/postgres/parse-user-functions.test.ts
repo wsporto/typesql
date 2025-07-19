@@ -162,4 +162,143 @@ describe('postgres-user-functions', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	})
+
+	it('SELECT * FROM get_users_with_posts_plpgsql()', async () => {
+		const sql = 'SELECT * FROM get_users_with_posts_plpgsql()';
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: false, //LOOSE nullability information
+					table: ''
+				},
+				{
+					name: 'posts',
+					type: 'json',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
+	it('SELECT * FROM get_mytable1()', async () => {
+		const sql = 'SELECT * FROM get_mytable1()';
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: ''
+				},
+				{
+					name: 'value',
+					type: 'int4',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
+	it('SELECT * FROM get_mytable1() WHERE id = 1', async () => {
+		const sql = 'SELECT * FROM get_mytable1() WHERE id = 1';
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: ''
+				},
+				{
+					name: 'value',
+					type: 'int4',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
+	it('SELECT * FROM get_mytable_plpgsql()', async () => {
+		const sql = 'SELECT * FROM get_mytable_plpgsql()';
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: false, //loose nullability information
+					table: ''
+				},
+				{
+					name: 'value',
+					type: 'int4',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
+	it('SELECT * FROM get_mytable_plpgsql()', async () => {
+		const sql = 'SELECT m.id FROM get_mytable_plpgsql() m';
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: false, //loose nullability information
+					table: 'm'
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
 })
