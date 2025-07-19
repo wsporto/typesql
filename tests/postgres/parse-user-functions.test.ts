@@ -103,4 +103,63 @@ describe('postgres-user-functions', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	})
+
+	it('SELECT * FROM get_clients_with_addresses()', async () => {
+		const sql = 'SELECT * FROM get_clients_with_addresses()';
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: ''
+				},
+				{
+					name: 'primaryaddress',
+					type: {
+						name: 'json',
+						properties: [
+							{
+								key: 'id',
+								type: { name: 'json_field', type: 'int4', notNull: true }
+							},
+							{
+								key: 'address',
+								type: { name: 'json_field', type: 'text', notNull: true }
+							}
+						]
+					},
+					notNull: true,
+					table: ''
+				},
+				{
+					name: 'secondaryaddress',
+					type: {
+						name: 'json',
+						properties: [
+							{
+								key: 'id',
+								type: { name: 'json_field', type: 'int4', notNull: true }
+							},
+							{
+								key: 'address',
+								type: { name: 'json_field', type: 'text', notNull: true }
+							}
+						]
+					},
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
 })
