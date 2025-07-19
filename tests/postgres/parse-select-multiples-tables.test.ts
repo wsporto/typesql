@@ -747,6 +747,130 @@ describe('postgres-parse-select-multiples-tables', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('SELECT m1.id, m2.id, m3.id FROM mytable1 m1 LEFT JOIN mytable2', async () => {
+		const sql = `
+        SELECT
+            m1.id,
+            m2.id
+        FROM mytable1 m1
+        LEFT JOIN mytable2 m2 ON m1.id = m2.id
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'm1'
+				},
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: false, //LEFT JOIN
+					table: 'm2'
+				}
+			],
+			parameters: []
+		};
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('SELECT m1.id, m2.id, m3.id FROM mytable1 m1 INNER JOIN mytable2 LEFT JOIN mytable3', async () => {
+		const sql = `
+        SELECT
+            m1.id,
+            m2.id,
+			m3.id
+        FROM mytable1 m1
+		INNER JOIN mytable2 m2 ON m1.id = m2.id
+		LEFT JOIN mytable3 m3 ON m3.id = m2.id
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'm1'
+				},
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'm2'
+				},
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: false, //LEFT JOIN
+					table: 'm3'
+				}
+			],
+			parameters: []
+		};
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('SELECT m1.id, m2.id, m3.id FROM mytable1 m1 JOIN mytable2 LEFT JOIN mytable3', async () => {
+		const sql = `
+        SELECT
+            m1.id,
+            m2.id,
+			m3.id
+        FROM mytable1 m1
+		JOIN mytable2 m2 ON m1.id = m2.id
+		LEFT JOIN mytable3 m3 ON m3.id = m2.id
+        `;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'm1'
+				},
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'm2'
+				},
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: false, //LEFT JOIN
+					table: 'm3'
+				}
+			],
+			parameters: []
+		};
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it.skip('SELECT mytable1.id, mytable2.id is not null as hasOwner', async () => {
 		const sql = `
         SELECT

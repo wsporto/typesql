@@ -1531,37 +1531,32 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 			}
 			traverseResult.relations?.push(relation);
 		}
-		const table_ref_list = table_ref.table_ref_list();
-		const join_type_list = table_ref.join_type_list();
-		const join_qual_list = table_ref.join_qual_list();
 
 		if (context.collectDynamicQueryInfo && traverseResult.dynamicQueryInfo!.from.length == 0) {
 			collectDynamicQueryInfoTableRef(table_ref, null, null, fromColumnsResult, [], traverseResult);
 		}
 
-		if (table_ref_list) {
-			const joinColumns = table_ref_list.flatMap((table_ref, joinIndex) => {
-				const joinType = join_type_list[joinIndex]; //INNER, LEFT
-				const joinQual = join_qual_list[joinIndex];
-				const numParamsBefore = traverseResult.parameters.length;
-				const joinColumns = traverse_table_ref(table_ref, context, traverseResult);
-				const isUsing = joinQual?.USING() ? true : false;
-				const isLeftJoin = joinType?.LEFT();
-				const filteredColumns = isUsing ? filterUsingColumns(joinColumns, joinQual) : joinColumns;
-				const resultColumns = isLeftJoin ? filteredColumns.map(col => ({ ...col, is_nullable: true, original_is_nullable: col.is_nullable } satisfies NotNullInfo)) : filteredColumns;
+		const joinList = extractJoins(table_ref);
+		const joinColumns = joinList.flatMap((join) => {
+			const joinType = join.joinType; //INNER, LEFT
+			const joinQual = join.joinQual;
+			const numParamsBefore = traverseResult.parameters.length;
+			const joinColumns = traverse_table_ref(join.tableRef, context, traverseResult);
+			const isLeftJoin = joinType?.LEFT();
+			const filteredColumns = joinQual && joinQual?.USING() ? filterUsingColumns(joinColumns, joinQual) : joinColumns;
+			const resultColumns = isLeftJoin ? filteredColumns.map(col => ({ ...col, is_nullable: true, original_is_nullable: col.is_nullable } satisfies NotNullInfo)) : filteredColumns;
 
-				if (context.collectNestedInfo) {
-					collectNestedInfo(joinQual, resultColumns, traverseResult);
-				}
-				if (context.collectDynamicQueryInfo) {
-					const parameters = traverseResult.parameters.slice(numParamsBefore).map((_, index) => index + numParamsBefore);
-					collectDynamicQueryInfoTableRef(table_ref, joinType, joinQual, resultColumns, parameters, traverseResult);
-				}
+			if (context.collectNestedInfo && joinQual) {
+				collectNestedInfo(joinQual, resultColumns, traverseResult);
+			}
+			if (context.collectDynamicQueryInfo) {
+				const parameters = traverseResult.parameters.slice(numParamsBefore).map((_, index) => index + numParamsBefore);
+				collectDynamicQueryInfoTableRef(join.tableRef, joinType, joinQual, resultColumns, parameters, traverseResult);
+			}
 
-				return resultColumns;
-			});
-			allColumns.push(...joinColumns);
-		}
+			return resultColumns;
+		});
+		allColumns.push(...joinColumns);
 	}
 	const select_with_parens = table_ref.select_with_parens();
 	if (select_with_parens) {
@@ -1577,6 +1572,33 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 		return withAlias;
 	}
 	return allColumns;
+}
+
+type Join = {
+	tableRef: Table_refContext;
+	joinType: Join_typeContext | null;
+	joinQual: Join_qualContext | null;
+}
+
+function extractJoins(table_ref: Table_refContext): Join[] {
+	const joinList: Join[] = [];
+	let currentJoinType: Join['joinType'] | null = null;
+	for (const child of table_ref.children || []) {
+		if (child instanceof Join_typeContext) {
+			currentJoinType = child;
+		}
+		if (child instanceof Table_refContext) {
+			joinList.push({ joinQual: null, joinType: currentJoinType, tableRef: child });
+			currentJoinType = null;
+		}
+		if (child instanceof Join_qualContext) {
+			const lastJoin = joinList.at(-1);
+			if (lastJoin) {
+				lastJoin.joinQual = child;
+			}
+		}
+	}
+	return joinList;
 }
 
 function collectDynamicQueryInfoTableRef(table_ref: Table_refContext, joinType: Join_typeContext | null,
