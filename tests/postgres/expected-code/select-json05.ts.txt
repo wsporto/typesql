@@ -1,7 +1,7 @@
 import pg from 'pg';
 
 export type SelectJson05Result = {
-	result?: SelectJson05ResultType;
+	result: SelectJson05ResultType;
 }
 
 export type SelectJson05ResultType = {

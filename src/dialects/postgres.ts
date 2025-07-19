@@ -169,6 +169,7 @@ export function mapColumnType(postgresType: PostgresType): TsType {
 		case 'jsonb[]':
 			return 'any[]';
 		case 'unknown':
+		case 'null': //pseudo type
 			return 'any';
 	}
 }

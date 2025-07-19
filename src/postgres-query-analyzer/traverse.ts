@@ -9,6 +9,7 @@ import { CheckConstraintResult } from '../drivers/postgres';
 import { JsonFieldType, JsonObjType, JsonPropertyDef, JsonType, PostgresSimpleType } from '../sqlite-query-analyzer/types';
 import { parseSql } from '@wsporto/typesql-parser/postgres';
 import { UserFunctionSchema } from './types';
+import { TableRefContext } from '@wsporto/typesql-parser/mysql/MySQLParser';
 
 export type NotNullInfo = {
 	table_schema: string;
@@ -858,7 +859,7 @@ function getNameAndTypeIdFromAExprConst(a_expr_const: AexprconstContext): NameAn
 	if (a_expr_const.NULL_P()) {
 		return {
 			name: a_expr_const.getText(),
-			type: 'unknown'
+			type: 'null'
 		}
 	}
 	return {
@@ -1057,15 +1058,26 @@ function traversec_expr_case(c_expr_case: C_expr_caseContext, context: TraverseC
 	const whenResult = case_expr.when_clause_list().when_clause_list().map(when_clause => traversewhen_clause(when_clause, context, traverseResult));
 	const whenIsNotNull = whenResult.every(when => when);
 	const elseExpr = case_expr.case_default()?.a_expr();
-	const elseIsNotNull = elseExpr ? !traverse_a_expr(elseExpr, context, traverseResult).is_nullable : false;
+	const elseResult = elseExpr ? traverse_a_expr(elseExpr, { ...context }, traverseResult) : null;
+	const elseIsNotNull = elseResult?.is_nullable === false || false;
 	const notNull = elseIsNotNull && whenIsNotNull;
 	return {
 		column_name: '?column?',
 		is_nullable: !notNull,
 		table_name: '',
 		table_schema: '',
-		type: whenResult[0].type ?? 'unknown'
+		type: whenResult[0].type ?? 'unknown',
+		jsonType: allJsonTypesMatch(whenResult, elseResult) ? whenResult[0].jsonType : undefined
 	}
+}
+
+function allJsonTypesMatch(whenResultList: NotNullInfo[], elseResult: NotNullInfo | null): boolean {
+	const firstType = whenResultList[0]?.jsonType;
+	const allMatch = whenResultList.every(res => {
+		const match = res.jsonType == firstType;
+		return match;
+	}) && (elseResult?.type === 'null' || elseResult?.jsonType == firstType);
+	return allMatch;
 }
 
 function traversewhen_clause(when_clause: When_clauseContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
@@ -1074,7 +1086,7 @@ function traversewhen_clause(when_clause: When_clauseContext, context: TraverseC
 
 	const whenExprResult = thenExprList.map((thenExpr, index) => {
 		traverse_a_expr(whenExprList[index], context, traverseResult);
-		const thenExprResult = traverse_a_expr(thenExpr, context, traverseResult);
+		const thenExprResult = traverse_a_expr(thenExpr, { ...context, filter_expr: whenExprList[index] }, traverseResult);
 		return thenExprResult;
 	});
 	const notNull = whenExprResult.every(res => res);
@@ -1083,7 +1095,8 @@ function traversewhen_clause(when_clause: When_clauseContext, context: TraverseC
 		is_nullable: !notNull,
 		table_name: '',
 		table_schema: '',
-		type: whenExprResult[0].type
+		type: whenExprResult[0].type,
+		jsonType: whenExprResult[0].jsonType
 	}
 }
 
@@ -1141,14 +1154,9 @@ type FieldInfo = {
 }
 
 function inferJsonNullability(columns: NotNullInfo[], filterExpr: A_exprContext | undefined): boolean[] {
-	const someIsNotNull = columns.some(col => filterExpr && col.original_is_nullable === false && isNotNull_a_expr(col, filterExpr));
+	const tables = columns.filter(col => filterExpr && col.original_is_nullable === false && isNotNull_a_expr(col, filterExpr)).map(col => col.table_name);
 	const fields = columns.map(col => {
-		if (someIsNotNull) {
-			return col.original_is_nullable != null ? !col.original_is_nullable : Boolean(filterExpr && isNotNull_a_expr(col, filterExpr));
-		}
-		else {
-			return !col.is_nullable || Boolean(filterExpr && isNotNull_a_expr(col, filterExpr));
-		}
+		return col.original_is_nullable != null && tables.includes(col.table_name) ? !col.original_is_nullable : !col.is_nullable;
 	});
 	return fields;
 }
@@ -1177,9 +1185,9 @@ function traverse_json_build_obj_func(func_application: Func_applicationContext,
 	const columnName = func_application.func_name()?.getText() || func_application.getText();
 	const func_arg_expr_list = func_application.func_arg_list()?.func_arg_expr_list() || [];
 	const argsResult = func_arg_expr_list.map(func_arg_expr => traversefunc_arg_expr(func_arg_expr, context, traverseResult))
-	return {
+	const result: NotNullInfo = {
 		column_name: columnName,
-		is_nullable: true,
+		is_nullable: false,
 		table_name: '',
 		table_schema: '',
 		type: 'json',
@@ -1188,6 +1196,7 @@ function traverse_json_build_obj_func(func_application: Func_applicationContext,
 			properties: mapJsonBuildArgsToJsonProperty(argsResult, context.filter_expr),
 		}
 	}
+	return result;
 }
 
 function traverse_json_agg(func_application: Func_applicationContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {

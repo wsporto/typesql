@@ -21,7 +21,7 @@ describe('postgres-json-functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					name: 'json_build_object', //not null false
+					name: 'json_build_object', //not null true
 					type: {
 						name: 'json',
 						properties: [
@@ -31,11 +31,11 @@ describe('postgres-json-functions', () => {
 							}
 						]
 					},
-					notNull: false,
+					notNull: true,
 					table: ''
 				},
 				{
-					name: 'jsonb_build_object', //not null false
+					name: 'jsonb_build_object', //not null true
 					type: {
 						name: 'json',
 						properties: [
@@ -45,7 +45,7 @@ describe('postgres-json-functions', () => {
 							}
 						]
 					},
-					notNull: false,
+					notNull: true,
 					table: ''
 				}
 			],
@@ -67,7 +67,7 @@ describe('postgres-json-functions', () => {
 			columns: [
 				{
 					name: 'json_build_object',
-					notNull: false, //notNull: false,
+					notNull: true, //json_build_object notNull: true,
 					type: {
 						name: 'json',
 						properties: [
@@ -81,7 +81,7 @@ describe('postgres-json-functions', () => {
 				},
 				{
 					name: 'jsonb_build_object',
-					notNull: false, //notNull: false,
+					notNull: true, //json_build_object notNull: true,
 					type: {
 						name: 'json',
 						properties: [
@@ -125,7 +125,7 @@ describe('postgres-json-functions', () => {
 							}
 						]
 					},
-					notNull: false,
+					notNull: true,
 					table: ''
 				}
 			],
@@ -170,7 +170,7 @@ describe('postgres-json-functions', () => {
 							}
 						]
 					},
-					notNull: false,
+					notNull: true, //json_build_object
 					table: ''
 				}
 			],
@@ -219,7 +219,7 @@ describe('postgres-json-functions', () => {
 							}
 						]
 					},
-					notNull: false,
+					notNull: true, //json_build_object
 					table: ''
 				}
 			],
@@ -702,7 +702,7 @@ describe('postgres-json-functions', () => {
 					name: 'col3', //[null]
 					type: {
 						name: 'json[]',
-						properties: [{ name: 'json_field', type: 'unknown', notNull: false }]
+						properties: [{ name: 'json_field', type: 'null', notNull: false }]
 					},
 					notNull: true,
 					table: ''
@@ -711,7 +711,7 @@ describe('postgres-json-functions', () => {
 					name: 'col4', //[null]
 					type: {
 						name: 'json[]',
-						properties: [{ name: 'json_field', type: 'unknown', notNull: false }]
+						properties: [{ name: 'json_field', type: 'null', notNull: false }]
 					},
 					notNull: true,
 					table: ''
@@ -906,7 +906,7 @@ describe('postgres-json-functions', () => {
 							}
 						],
 					},
-					notNull: false,
+					notNull: true,
 					table: ''
 				}
 			],
@@ -967,7 +967,7 @@ describe('postgres-json-functions', () => {
 							}
 						],
 					},
-					notNull: false,
+					notNull: true,
 					table: ''
 				}
 			],
@@ -1004,7 +1004,7 @@ describe('postgres-json-functions', () => {
 							}
 						],
 					},
-					notNull: false,
+					notNull: true,
 					table: ''
 				}
 			],
@@ -1061,7 +1061,7 @@ describe('postgres-json-functions', () => {
 							}
 						],
 					},
-					notNull: false,
+					notNull: true,
 					table: ''
 				}
 			],
@@ -1098,7 +1098,7 @@ describe('postgres-json-functions', () => {
 							}
 						],
 					},
-					notNull: false,
+					notNull: true,
 					table: ''
 				}
 			],
@@ -1133,11 +1133,11 @@ describe('postgres-json-functions', () => {
 						properties: [
 							{
 								key: 'case',
-								type: { name: 'json_field', type: 'json', notNull: false }
+								type: { name: 'json_field', type: 'json', notNull: true }
 							}
 						],
 					},
-					notNull: false,
+					notNull: true,
 					table: ''
 				}
 			],
@@ -1277,14 +1277,14 @@ describe('postgres-json-functions', () => {
 								name: 'json[]',
 								properties: [
 									{ name: 'json_field', type: 'text', notNull: true },
-									{ name: 'json_field', type: 'unknown', notNull: false }
+									{ name: 'json_field', type: 'null', notNull: false }
 								]
 							},
 							{
 								name: 'json[]',
 								properties: [
 									{ name: 'json_field', type: 'text', notNull: true },
-									{ name: 'json_field', type: 'unknown', notNull: false }
+									{ name: 'json_field', type: 'null', notNull: false }
 								]
 							}
 						]
@@ -1506,6 +1506,88 @@ GROUP BY u.id`;
 						]
 					},
 					notNull: false, //filter
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
+	it('SELECT * FROM clients JOIN addresses primaryAddress LEFT JOIN addresses secondaryAddress', async () => {
+		const sql = `
+		  SELECT
+    c.id,
+    json_build_object(
+      'id', a1.id,
+      'address', a1.address
+    ) AS primaryAddress,
+    CASE
+      WHEN a2.id IS NOT NULL THEN json_build_object(
+        'id', a2.id,
+        'address', a2.address,
+        'value', t1.id
+      )
+      ELSE NULL
+    END AS secondaryAddress
+  FROM clients c
+  JOIN addresses a1 ON c.primaryAddress = a1.id
+  LEFT JOIN addresses a2 ON c.secondaryAddress = a2.id
+  LEFT JOIN mytable1 t1 ON c.secondaryAddress = t1.id
+		`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'c'
+				},
+				{
+					name: 'primaryaddress',
+					type: {
+						name: 'json',
+						properties: [
+							{
+								key: 'id',
+								type: { name: 'json_field', type: 'int4', notNull: true }
+							},
+							{
+								key: 'address',
+								type: { name: 'json_field', type: 'text', notNull: true }
+							}
+						]
+					},
+					notNull: true,
+					table: ''
+				},
+				{
+					name: 'secondaryaddress',
+					type: {
+						name: 'json',
+						properties: [
+							{
+								key: 'id',
+								type: { name: 'json_field', type: 'int4', notNull: true }
+							},
+							{
+								key: 'address',
+								type: { name: 'json_field', type: 'text', notNull: true }
+							},
+							{
+								key: 'value',
+								type: { name: 'json_field', type: 'int4', notNull: false } //LEFT JOIN
+							}
+						]
+					},
+					notNull: false,
 					table: ''
 				}
 			],
