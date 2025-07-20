@@ -60,6 +60,8 @@ type TraverseResult = {
 type TraverseContext = {
 	dbSchema: PostgresColumnSchema[];
 	fromColumns: NotNullInfo[];
+	parentColumns: NotNullInfo[];
+	withColumns: NotNullInfo[];
 	checkConstraints: CheckConstraintResult;
 	userFunctions: UserFunctionSchema[],
 	propagatesNull?: boolean;
@@ -112,6 +114,8 @@ export function traverseSmt(stmt: StmtContext, dbSchema: PostgresColumnSchema[],
 		collectNestedInfo,
 		collectDynamicQueryInfo,
 		fromColumns: [],
+		parentColumns: [],
+		withColumns: [],
 		checkConstraints,
 		userFunctions
 	}
@@ -204,19 +208,16 @@ function traverse_selectstmt(selectstmt: SelectstmtContext, context: TraverseCon
 }
 
 function traverse_select_no_parens(select_no_parens: Select_no_parensContext, context: TraverseContext, traverseResult: TraverseResult): FromResult {
-	let withColumns: NotNullInfo[] = [];
 	const with_clause = select_no_parens.with_clause()
 	if (with_clause) {
 		with_clause.cte_list().common_table_expr_list()
 			.forEach(common_table_expr => {
-				const newContext: TraverseContext = { ...context, fromColumns: withColumns.concat(context.fromColumns) };
-				const withResult = traverse_common_table_expr(common_table_expr, newContext, traverseResult);
-				withColumns.push(...withResult);
+				const withResult = traverse_common_table_expr(common_table_expr, context, traverseResult);
+				context.withColumns.push(...withResult);
 			});
 	}
 	const select_clause = select_no_parens.select_clause();
-	const newContext = { ...context, fromColumns: withColumns.concat(context.fromColumns) };
-	const selectResult = traverse_select_clause(select_clause, newContext, traverseResult);
+	const selectResult = traverse_select_clause(select_clause, context, traverseResult);
 	const select_limit = select_no_parens.select_limit();
 	if (select_limit) {
 		const numParamsBefore = traverseResult.parameters.length;
@@ -327,7 +328,8 @@ function traverse_simple_select_pramary(simple_select_pramary: Simple_select_pra
 	}
 	const where_a_expr = simple_select_pramary.where_clause()?.a_expr();
 	//fromColumns has precedence
-	const newContext = { ...context, fromColumns: fromResult.columns.concat(context.fromColumns) };
+	//context.fromColumns only becase of insert. update
+	const newContext = { ...context, fromColumns: [...context.fromColumns, ...fromResult.columns, ...context.parentColumns] };
 	if (where_a_expr) {
 		const numParamsBefore = traverseResult.parameters.length;
 		traverse_a_expr(where_a_expr, newContext, traverseResult);
@@ -988,7 +990,7 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 
 		const select_with_parens = c_expr.select_with_parens();
 		if (select_with_parens) {
-			const result = traverse_select_with_parens(select_with_parens, context, traverseResult);
+			const result = traverse_select_with_parens(select_with_parens, { ...context, parentColumns: context.fromColumns, fromColumns: [] }, traverseResult);
 			return {
 				column_name: '?column?',
 				is_nullable: result.columns[0].jsonType ? result.columns[0].is_nullable : true,
@@ -1548,8 +1550,13 @@ type FromResult = {
 	columns: NotNullInfo[]
 }
 
+function getFromColumns(tableName: TableName, withColumns: NotNullInfo[], dbSchema: PostgresColumnSchema[]) {
+	const filteredWithColumns = withColumns.filter(col => col.table_name.toLowerCase() === tableName.name.toLowerCase());
+	const filteredSchema = filteredWithColumns.length > 0 ? filteredWithColumns : dbSchema.filter(col => col.table_name.toLowerCase() === tableName.name.toLowerCase());
+	return filteredSchema;
+}
+
 function traverse_table_ref(table_ref: Table_refContext, context: TraverseContext, traverseResult: TraverseResult): FromResult {
-	const { fromColumns, dbSchema, userFunctions } = context;
 	const allColumns: NotNullInfo[] = [];
 	const relation_expr = table_ref.relation_expr();
 	const aliasClause = table_ref.alias_clause();
@@ -1557,9 +1564,10 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 	const alias = aliasClause ? aliasClause.colid().getText() : '';
 	if (relation_expr) {
 		const tableName = traverse_relation_expr(relation_expr);
+		const fromColumns = getFromColumns(tableName, context.withColumns, context.dbSchema);
 		const tableNameWithAlias = alias ? alias : tableName.name;
-		const fromColumnsResult = fromColumns.concat(dbSchema).filter(col => col.table_name.toLowerCase() === tableName.name.toLowerCase())
-			.map(col => ({ ...col, table_name: tableNameWithAlias.toLowerCase() }));
+		const columnsWithAlias = fromColumns.map(col => ({ ...col, table_name: tableNameWithAlias.toLowerCase() }));
+		const fromColumnsResult = columnsWithAlias.concat(context.parentColumns);
 		allColumns.push(...fromColumnsResult);
 		if (context.collectNestedInfo) {
 
@@ -1812,13 +1820,13 @@ function traverse_func_expr_windowless(func_expr_windowless: Func_expr_windowles
 					table_schema: ''
 				}
 				return columnInfo;
-			}) : context.dbSchema.filter(col => col.table_name.toLowerCase() === returnType.table);;
+			}) : context.dbSchema.filter(col => col.table_name.toLowerCase() === returnType.table);
 			if (funcSchema.language.toLowerCase() === 'sql') {
 				const parser = parseSql(definition);
 				const selectstmt = parser.stmt().selectstmt();
-				const { columns, multipleRowsResult } = traverseSelectstmt(selectstmt, { ...context, fromColumns: functionColumns }, traverseResult);
+				const { columns, multipleRowsResult } = traverseSelectstmt(selectstmt, context, traverseResult);
 				return {
-					columns,
+					columns: columns.map((c) => ({ ...c, table_name: `${funcSchema.function_name}()` })),
 					singleRow: !multipleRowsResult
 				};
 			}
@@ -1925,6 +1933,8 @@ function traverseInsertstmt(insertstmt: InsertstmtContext, dbSchema: PostgresCol
 	const context: TraverseContext = {
 		dbSchema,
 		fromColumns: insertColumns,
+		parentColumns: [],
+		withColumns: [],
 		checkConstraints: {},
 		userFunctions: [],
 		collectNestedInfo: false,
@@ -1969,6 +1979,8 @@ function traverseDeletestmt(deleteStmt: DeletestmtContext, dbSchema: PostgresCol
 	const context: TraverseContext = {
 		dbSchema,
 		fromColumns: deleteColumns,
+		parentColumns: [],
+		withColumns: [],
 		checkConstraints: {},
 		userFunctions: [],
 		collectNestedInfo: false,

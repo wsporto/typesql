@@ -4,6 +4,7 @@ import { loadDbSchema } from '../../src/drivers/postgres';
 import { PostgresColumnSchema } from '../../src/drivers/types';
 import { parseSql } from '../../src/postgres-query-analyzer/parser';
 import { NotNullInfo, PostgresTraverseResult } from '../../src/postgres-query-analyzer/traverse';
+import { userDefinedFunctions } from './schema';
 
 let dbSchema: PostgresColumnSchema[] = [];
 describe('Infer column nullability', () => {
@@ -1714,6 +1715,35 @@ describe('Infer column nullability', () => {
 		const actual = parseSql(sql, dbSchema, {}, []);
 		const expected = [true, true, true, true]
 		assert.deepStrictEqual(actual.parametersNullability.map(param => param.isNotNull), expected);
+	});
+
+	it('SELECT * FROM get_mytable1_by_id($1)', async () => {
+		const sql = 'SELECT * FROM get_mytable1_by_id($1)';
+		const actual = parseSql(sql, dbSchema, {}, userDefinedFunctions);
+		const expected: PostgresTraverseResult = {
+			queryType: 'Select',
+			columns: [
+				{
+					column_name: 'id',
+					is_nullable: false,
+					table_name: '',
+					table_schema: 'public',
+					type: 'int4'
+				},
+				{
+					column_name: 'value',
+					is_nullable: true,
+					table_name: '',
+					table_schema: 'public',
+					type: 'int4'
+				}
+			],
+			multipleRowsResult: false,
+			parameterList: [false],
+			parametersNullability: [{ isNotNull: true }],
+			limit: undefined
+		}
+		assert.deepStrictEqual(actual, expected);
 	});
 
 	it('INSERT INTO mytable5 (id, name) SELECT id, descr FROM mytable2 WHERE name = $1 AND id > $2', async () => {
