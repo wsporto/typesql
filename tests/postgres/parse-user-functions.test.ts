@@ -24,7 +24,7 @@ describe('postgres-user-functions', () => {
 					name: 'id',
 					type: 'int4',
 					notNull: true,
-					table: ''
+					table: 'get_users_with_posts'
 				},
 				{
 					name: 'posts',
@@ -47,7 +47,7 @@ describe('postgres-user-functions', () => {
 						]
 					},
 					notNull: true, //[]
-					table: ''
+					table: 'get_users_with_posts'
 				}
 			],
 			parameters: []
@@ -116,7 +116,7 @@ describe('postgres-user-functions', () => {
 					name: 'id',
 					type: 'int4',
 					notNull: true,
-					table: ''
+					table: 'get_clients_with_addresses'
 				},
 				{
 					name: 'primaryaddress',
@@ -134,7 +134,7 @@ describe('postgres-user-functions', () => {
 						]
 					},
 					notNull: true,
-					table: ''
+					table: 'get_clients_with_addresses'
 				},
 				{
 					name: 'secondaryaddress',
@@ -152,7 +152,7 @@ describe('postgres-user-functions', () => {
 						]
 					},
 					notNull: false,
-					table: ''
+					table: 'get_clients_with_addresses'
 				}
 			],
 			parameters: []
@@ -204,13 +204,13 @@ describe('postgres-user-functions', () => {
 					name: 'id',
 					type: 'int4',
 					notNull: true,
-					table: ''
+					table: 'get_mytable1'
 				},
 				{
 					name: 'value',
 					type: 'int4',
 					notNull: false,
-					table: ''
+					table: 'get_mytable1'
 				}
 			],
 			parameters: []
@@ -233,13 +233,13 @@ describe('postgres-user-functions', () => {
 					name: 'id',
 					type: 'int4',
 					notNull: true,
-					table: ''
+					table: 'get_mytable1'
 				},
 				{
 					name: 'value',
 					type: 'int4',
 					notNull: false,
-					table: ''
+					table: 'get_mytable1'
 				}
 			],
 			parameters: []
@@ -262,13 +262,13 @@ describe('postgres-user-functions', () => {
 					name: 'id',
 					type: 'int4',
 					notNull: true,
-					table: ''
+					table: 'get_mytable1_by_id'
 				},
 				{
 					name: 'value',
 					type: 'int4',
 					notNull: false,
-					table: ''
+					table: 'get_mytable1_by_id'
 				}
 			],
 			parameters: [
@@ -327,6 +327,63 @@ describe('postgres-user-functions', () => {
 					type: 'int4',
 					notNull: false, //loose nullability information
 					table: 'm'
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
+	it('SELECT mytable1.*, get_users_with_posts.posts FROM mytable1 INNER JOIN get_users_with_posts()', async () => {
+		const sql = `
+		SELECT 
+			mytable1.*, 
+		get_users_with_posts.posts 
+		FROM mytable1
+		INNER JOIN get_users_with_posts() ON get_users_with_posts.id = mytable1.id`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'mytable1'
+				},
+				{
+					name: 'value',
+					type: 'int4',
+					notNull: false,
+					table: 'mytable1'
+				},
+				{
+					name: 'posts',
+					type: {
+						name: 'json[]',
+						properties: [
+							{
+								name: 'json',
+								properties: [
+									{
+										key: 'id',
+										type: { name: 'json_field', type: 'int4', notNull: true } //FILTER(WHERE p.id is not null)
+									},
+									{
+										key: 'title',
+										type: { name: 'json_field', type: 'text', notNull: true } //FILTER(WHERE p.id is not null)
+									}
+								]
+							}
+						]
+					},
+					notNull: true, //[]
+					table: 'get_users_with_posts'
 				}
 			],
 			parameters: []

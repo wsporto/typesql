@@ -1616,7 +1616,7 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 	if (func_table) {
 		const funcAlias = table_ref.func_alias_clause()?.alias_clause()?.colid()?.getText() || '';
 		const result = traverse_func_table(func_table, context, traverseResult);
-		const resultWithAlias = result.columns.map(col => ({ ...col, table_name: funcAlias } satisfies NotNullInfo));
+		const resultWithAlias = result.columns.map(col => ({ ...col, table_name: funcAlias || col.table_name } satisfies NotNullInfo));
 		return {
 			columns: resultWithAlias,
 			singleRow: result.singleRow
@@ -1826,7 +1826,7 @@ function traverse_func_expr_windowless(func_expr_windowless: Func_expr_windowles
 				const selectstmt = parser.stmt().selectstmt();
 				const { columns, multipleRowsResult } = traverseSelectstmt(selectstmt, context, traverseResult);
 				return {
-					columns: columns.map((c) => ({ ...c, table_name: `${funcSchema.function_name}()` })),
+					columns: columns.map((c) => ({ ...c, table_name: funcSchema.function_name })),
 					singleRow: !multipleRowsResult
 				};
 			}

@@ -1726,14 +1726,14 @@ describe('Infer column nullability', () => {
 				{
 					column_name: 'id',
 					is_nullable: false,
-					table_name: '',
+					table_name: 'get_mytable1_by_id',
 					table_schema: 'public',
 					type: 'int4'
 				},
 				{
 					column_name: 'value',
 					is_nullable: true,
-					table_name: '',
+					table_name: 'get_mytable1_by_id',
 					table_schema: 'public',
 					type: 'int4'
 				}
