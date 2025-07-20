@@ -47,6 +47,21 @@ AS $$
     FROM users u;
 $$;
 
+CREATE FUNCTION get_mytable1_with_nested_function()
+RETURNS TABLE (
+    id INTEGER,
+    value INTEGER,
+    posts JSON
+)
+LANGUAGE sql
+AS $$
+    SELECT 
+      mytable1.*, 
+      get_users_with_posts.posts 
+    FROM mytable1
+    INNER JOIN get_users_with_posts() ON get_users_with_posts.id = mytable1.id
+$$;
+
 CREATE OR REPLACE FUNCTION get_users_with_posts_plpgsql()
 RETURNS TABLE (
     id INTEGER,

@@ -1,7 +1,8 @@
 import assert from 'node:assert';
 import postgres from 'postgres';
 import { describeQuery } from '../../src/postgres-query-analyzer/describe';
-import { PostgresSchemaDef } from '../../src/postgres-query-analyzer/types';
+import { PostgresColumnInfo, PostgresSchemaDef } from '../../src/postgres-query-analyzer/types';
+import { NotNullInfo } from '../../src/postgres-query-analyzer/traverse';
 
 describe('postgres-user-functions', () => {
 	const postres = postgres({
@@ -387,7 +388,59 @@ describe('postgres-user-functions', () => {
 				}
 			],
 			parameters: []
-		};
+		}
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
+	it('SELECT * FROM get_mytable1_with_nested_function()', async () => {
+		const sql = 'SELECT * FROM get_mytable1_with_nested_function() get_users_with_posts';
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'get_users_with_posts'
+				},
+				{
+					name: 'value',
+					type: 'int4',
+					notNull: false,
+					table: 'get_users_with_posts'
+				},
+				{
+					name: 'posts',
+					type: {
+						name: 'json[]',
+						properties: [
+							{
+								name: 'json',
+								properties: [
+									{
+										key: 'id',
+										type: { name: 'json_field', type: 'int4', notNull: true } //FILTER(WHERE p.id is not null)
+									},
+									{
+										key: 'title',
+										type: { name: 'json_field', type: 'text', notNull: true } //FILTER(WHERE p.id is not null)
+									}
+								]
+							}
+						]
+					},
+					notNull: true, //[]
+					table: 'get_users_with_posts'
+				}
+			],
+			parameters: []
+		}
 		if (actual.isErr()) {
 			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
 		}
