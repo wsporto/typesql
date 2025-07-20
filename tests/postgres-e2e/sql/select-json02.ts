@@ -1,7 +1,7 @@
 import pg from 'pg';
 
 export type SelectJson02Result = {
-	sum?: SelectJson02SumType;
+	sum: SelectJson02SumType;
 }
 
 export type SelectJson02SumType = {

@@ -1,0 +1,1 @@
+SELECT * FROM get_mytable1_by_id(:id)

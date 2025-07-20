@@ -6,6 +6,7 @@ import { ColumnSchema } from '../mysql-query-analyzer/types';
 import { ForeignKeyInfo } from '../sqlite-query-analyzer/query-executor';
 import { groupBy } from '../util';
 import { transformCheckToEnum } from '../postgres-query-analyzer/enum-parser';
+import { UserFunctionSchema } from '../postgres-query-analyzer/types';
 
 export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], TypeSqlError> {
 	return ResultAsync.fromThrowable(
@@ -225,4 +226,29 @@ export function loadForeignKeys(sql: Sql): ResultAsync<ForeignKeyInfo[], TypeSql
 		},
 		err => convertPostgresErrorToTypeSQLError(err)
 	)();
+}
+
+export function loadUserFunctions(sql: Sql): ResultAsync<UserFunctionSchema[], TypeSqlError> {
+	return ResultAsync.fromThrowable(() =>
+		_loadUserFunctions(sql),
+		err => convertPostgresErrorToTypeSQLError(err)
+	)();
+}
+
+function _loadUserFunctions(sql: Sql): Promise<UserFunctionSchema[]> {
+	return sql<UserFunctionSchema[]>`SELECT 
+			n.nspname AS schema,
+			p.proname AS function_name,
+			pg_get_function_identity_arguments(p.oid) AS arguments,
+			pg_get_function_result(p.oid) AS return_type,
+			-- pg_get_functiondef(p.oid) AS definition
+			p.prosrc AS definition,
+			l.lanname as language
+		FROM pg_proc p
+		JOIN pg_namespace n ON n.oid = p.pronamespace
+		JOIN pg_language l ON l.oid = p.prolang
+		WHERE n.nspname NOT IN ('pg_catalog', 'information_schema')  -- exclude system functions
+		AND p.prokind = 'f'  -- 'f' = function, 'p' = procedure, 'a' = aggregate
+		-- and l.lanname = 'sql'
+		ORDER BY n.nspname, p.proname`;
 }

@@ -1,0 +1,114 @@
+CREATE FUNCTION get_mytable1()
+RETURNS SETOF mytable1
+LANGUAGE sql
+AS $$
+  SELECT * FROM mytable1;
+$$;
+
+CREATE OR REPLACE FUNCTION get_mytable1_by_id(id integer)
+RETURNS SETOF mytable1
+LANGUAGE sql
+AS $$
+  SELECT * FROM mytable1 WHERE id = $1;
+$$;
+
+CREATE OR REPLACE FUNCTION get_mytable_plpgsql()
+RETURNS TABLE (
+    id INTEGER,
+    value INTEGER
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT * FROM mytable1;
+END;
+$$;
+
+CREATE FUNCTION get_users_with_posts()
+RETURNS TABLE (
+    id INTEGER,
+    posts JSON
+)
+LANGUAGE sql
+AS $$
+    SELECT
+        u.id,
+        (
+            SELECT json_agg(
+                json_build_object(
+                    'id', p.id,
+                    'title', p.title
+                )
+            )
+            FROM posts p
+            WHERE p.fk_user = u.id
+        ) AS posts
+    FROM users u;
+$$;
+
+CREATE FUNCTION get_mytable1_with_nested_function()
+RETURNS TABLE (
+    id INTEGER,
+    value INTEGER,
+    posts JSON
+)
+LANGUAGE sql
+AS $$
+    SELECT 
+      mytable1.*, 
+      get_users_with_posts.posts 
+    FROM mytable1
+    INNER JOIN get_users_with_posts() ON get_users_with_posts.id = mytable1.id
+$$;
+
+CREATE OR REPLACE FUNCTION get_users_with_posts_plpgsql()
+RETURNS TABLE (
+    id INTEGER,
+    posts JSON
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        u.id,
+        (
+            SELECT json_agg(
+                json_build_object(
+                    'id', p.id,
+                    'title', p.title
+                )
+            )
+            FROM posts p
+            WHERE p.fk_user = u.id
+        ) AS posts
+    FROM users u;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION get_clients_with_addresses()
+RETURNS TABLE (
+  id INTEGER,
+  primaryAddress JSON,
+  secondaryAddress JSON
+)
+LANGUAGE sql
+AS $$
+  SELECT 
+    c.id, 
+    json_build_object(
+      'id', a1.id,
+      'address', a1.address
+    ),
+    CASE
+      WHEN a2.id IS NOT NULL THEN json_build_object(
+        'id', a2.id,
+        'address', a2.address
+      )
+      ELSE NULL
+    END AS secondaryAddress
+  FROM clients c
+  JOIN addresses a1 ON c.primaryAddress = a1.id
+  LEFT JOIN addresses a2 ON c.secondaryAddress = a2.id;
+$$;

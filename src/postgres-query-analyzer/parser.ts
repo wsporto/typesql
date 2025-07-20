@@ -3,18 +3,22 @@ import { defaultOptions, PostgresTraverseResult, traverseSmt } from './traverse'
 import { PostgresColumnSchema } from '../drivers/types';
 import { Result, err, ok } from 'neverthrow';
 import { CheckConstraintResult } from '../drivers/postgres';
+import { UserFunctionSchema } from './types';
 
-export function parseSql(sql: string, dbSchema: PostgresColumnSchema[], checkConstraints: CheckConstraintResult, options = defaultOptions()): PostgresTraverseResult {
+export function parseSql(sql: string, dbSchema: PostgresColumnSchema[], checkConstraints: CheckConstraintResult, userFunctions: UserFunctionSchema[], options = defaultOptions()): PostgresTraverseResult {
 	const parser = _parseSql(sql);
 
-	const traverseResult = traverseSmt(parser.stmt(), dbSchema, checkConstraints, options);
+	const traverseResult = traverseSmt(parser.stmt(), dbSchema, checkConstraints, userFunctions, options);
 
-	return traverseResult;
+	return {
+		...traverseResult,
+		columns: traverseResult.columns.map(({ column_key: _, ...rest }) => rest)
+	};
 }
 
-export function safeParseSql(sql: string, dbSchema: PostgresColumnSchema[], checkConstraints: CheckConstraintResult, options = defaultOptions()): Result<PostgresTraverseResult, string> {
+export function safeParseSql(sql: string, dbSchema: PostgresColumnSchema[], checkConstraints: CheckConstraintResult, userFunctions: UserFunctionSchema[], options = defaultOptions()): Result<PostgresTraverseResult, string> {
 	try {
-		const result = parseSql(sql, dbSchema, checkConstraints, options);
+		const result = parseSql(sql, dbSchema, checkConstraints, userFunctions, options);
 		return ok(result);
 	}
 	catch (e) {

@@ -1,6 +1,6 @@
 import { ParameterDef, TypeSqlError } from '../types';
 import { DescribeParameters, DescribeQueryColumn, PostgresColumnSchema, PostgresDescribe, PostgresType } from '../drivers/types';
-import { postgresDescribe, loadDbSchema, loadEnumsMap, EnumMap, EnumResult, loadCheckConstraints, CheckConstraintResult } from '../drivers/postgres';
+import { postgresDescribe, loadDbSchema, loadEnumsMap, EnumMap, EnumResult, loadCheckConstraints, CheckConstraintResult, loadUserFunctions } from '../drivers/postgres';
 import { Sql } from 'postgres';
 import { ColumnInfo } from '../mysql-query-analyzer/types';
 import { safeParseSql } from './parser';
@@ -16,11 +16,11 @@ import { PostgresColumnInfo, PostgresParameterDef, PostgresSchemaDef } from './t
 import { JsonType } from '../sqlite-query-analyzer/types';
 
 function describeQueryRefine(describeParameters: DescribeParameters): Result<PostgresSchemaDef, TypeSqlError> {
-	const { sql, dbSchema, postgresDescribeResult, enumsTypes, checkConstraints, namedParameters } = describeParameters;
+	const { sql, dbSchema, postgresDescribeResult, enumsTypes, checkConstraints, namedParameters, userFunctions } = describeParameters;
 	const generateNestedInfo = hasAnnotation(sql, '@nested');
 	const generateDynamicQueryInfo = hasAnnotation(sql, '@dynamicQuery');
 
-	const parseResult = safeParseSql(sql, dbSchema, checkConstraints, { collectNestedInfo: generateNestedInfo, collectDynamicQueryInfo: generateDynamicQueryInfo });
+	const parseResult = safeParseSql(sql, dbSchema, checkConstraints, userFunctions, { collectNestedInfo: generateNestedInfo, collectDynamicQueryInfo: generateDynamicQueryInfo });
 	if (parseResult.isErr()) {
 		return err({
 			name: 'ParserError',
@@ -119,8 +119,8 @@ function mapToParamDef(postgresTypes: PostgresType, enumTypes: EnumMap, paramNam
 }
 
 export function describeQuery(postgres: Sql, sql: string, namedParameters: string[]): ResultAsync<PostgresSchemaDef, TypeSqlError> {
-	return ResultAsync.combine([loadDbSchema(postgres), loadEnumsMap(postgres), loadCheckConstraints(postgres)])
-		.andThen(([dbSchema, enumsTypes, checkConstraints]) => {
+	return ResultAsync.combine([loadDbSchema(postgres), loadEnumsMap(postgres), loadCheckConstraints(postgres), loadUserFunctions(postgres)])
+		.andThen(([dbSchema, enumsTypes, checkConstraints, userFunctions]) => {
 			return postgresDescribe(postgres, sql)
 				.andThen(analyzeResult => {
 					const describeParameters: DescribeParameters = {
@@ -129,6 +129,7 @@ export function describeQuery(postgres: Sql, sql: string, namedParameters: strin
 						dbSchema,
 						enumsTypes,
 						checkConstraints,
+						userFunctions,
 						namedParameters
 					}
 					return describeQueryRefine(describeParameters);

@@ -1,4 +1,5 @@
 import { PostgresColumnSchema } from '../../src/drivers/types';
+import { UserFunctionSchema } from '../../src/postgres-query-analyzer/types';
 
 export const schema: PostgresColumnSchema[] = [
 	{
@@ -863,5 +864,56 @@ export const schema: PostgresColumnSchema[] = [
 		is_nullable: true,
 		column_key: "",
 		autoincrement: false
+	}
+]
+
+export const userDefinedFunctions: UserFunctionSchema[] = [
+	{
+		schema: 'public',
+		function_name: 'get_clients_with_addresses',
+		arguments: '',
+		return_type: 'TABLE(id integer, primaryaddress json, secondaryaddress json)',
+		definition: '\r\n  SELECT \r\n    c.id, \r\n    json_build_object(\r\n      \'id\', a1.id,\r\n      \'address\', a1.address\r\n    ),\r\n    CASE\r\n      WHEN a2.id IS NOT NULL THEN json_build_object(\r\n        \'id\', a2.id,\r\n        \'address\', a2.address\r\n      )\r\n      ELSE NULL\r\n    END AS secondaryAddress\r\n  FROM clients c\r\n  JOIN addresses a1 ON c.primaryAddress = a1.id\r\n  LEFT JOIN addresses a2 ON c.secondaryAddress = a2.id;\r\n',
+		language: 'sql'
+	},
+	{
+		schema: 'public',
+		function_name: 'get_mytable1',
+		arguments: '',
+		return_type: 'SETOF mytable1',
+		definition: '\r\n  SELECT * FROM mytable1;\r\n',
+		language: 'sql'
+	},
+	{
+		schema: 'public',
+		function_name: 'get_mytable1_by_id',
+		arguments: 'id integer',
+		return_type: 'SETOF mytable1',
+		definition: '\r\n  SELECT * FROM mytable1 WHERE id = $1;\r\n',
+		language: 'sql'
+	},
+	{
+		schema: 'public',
+		function_name: 'get_mytable_plpgsql',
+		arguments: '',
+		return_type: 'TABLE(id integer, value integer)',
+		definition: '\r\nBEGIN\r\n    RETURN QUERY\r\n    SELECT * FROM mytable1;\r\nEND;\r\n',
+		language: 'plpgsql'
+	},
+	{
+		schema: 'public',
+		function_name: 'get_users_with_posts',
+		arguments: '',
+		return_type: 'TABLE(id integer, posts json)',
+		definition: '\r\n    SELECT\r\n        u.id,\r\n        (\r\n            SELECT json_agg(\r\n                json_build_object(\r\n                    \'id\', p.id,\r\n                    \'title\', p.title\r\n                )\r\n            )\r\n            FROM posts p\r\n            WHERE p.fk_user = u.id\r\n        ) AS posts\r\n    FROM users u;\r\n',
+		language: 'sql'
+	},
+	{
+		schema: 'public',
+		function_name: 'get_users_with_posts_plpgsql',
+		arguments: '',
+		return_type: 'TABLE(id integer, posts json)',
+		definition: '\r\nBEGIN\r\n    RETURN QUERY\r\n    SELECT\r\n        u.id,\r\n        (\r\n            SELECT json_agg(\r\n                json_build_object(\r\n                    \'id\', p.id,\r\n                    \'title\', p.title\r\n                )\r\n            )\r\n            FROM posts p\r\n            WHERE p.fk_user = u.id\r\n        ) AS posts\r\n    FROM users u;\r\nEND;\r\n',
+		language: 'plpgsql'
 	}
 ]

@@ -4,6 +4,7 @@ import { loadDbSchema } from '../../src/drivers/postgres';
 import { PostgresColumnSchema } from '../../src/drivers/types';
 import { parseSql } from '../../src/postgres-query-analyzer/parser';
 import { NotNullInfo, PostgresTraverseResult } from '../../src/postgres-query-analyzer/traverse';
+import { userDefinedFunctions } from './schema';
 
 let dbSchema: PostgresColumnSchema[] = [];
 describe('Infer column nullability', () => {
@@ -26,7 +27,7 @@ describe('Infer column nullability', () => {
 
 	it('SELECT id FROM mytable1', async () => {
 		const sql = 'SELECT id FROM mytable1';
-		const actual = await parseSql(sql, dbSchema, {});
+		const actual = await parseSql(sql, dbSchema, {}, []);
 		const expected: NotNullInfo[] = [
 			{
 				column_name: 'id',
@@ -41,7 +42,7 @@ describe('Infer column nullability', () => {
 
 	it('select value from mytable1 where value is not null', () => {
 		const sql = 'select value from mytable1 where value is not null';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -58,7 +59,7 @@ describe('Infer column nullability', () => {
 
 	it('select value from mytable1 where value = 10', () => {
 		const sql = 'select value from mytable1 where value = 10';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -75,7 +76,7 @@ describe('Infer column nullability', () => {
 
 	it('select value from mytable1 where value = $1', () => {
 		const sql = 'select value from mytable1 where value = $1';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -92,7 +93,7 @@ describe('Infer column nullability', () => {
 
 	it('select value from mytable1 t1 where t1.value is not null', () => {
 		const sql = 'select value from mytable1 t1 where t1.value is not null';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -109,7 +110,7 @@ describe('Infer column nullability', () => {
 
 	it('select * from mytable1 where value is not null', () => {
 		const sql = 'select * from mytable1 where value is not null';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -133,7 +134,7 @@ describe('Infer column nullability', () => {
 
 	it('select value+10 from mytable1 where value is not null', () => {
 		const sql = 'select value+10 from mytable1 where value is not null';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -150,7 +151,7 @@ describe('Infer column nullability', () => {
 
 	it('select t1.value from mytable1 t1 where t1.value is not null', () => {
 		const sql = 'select t1.value from mytable1 t1 where t1.value is not null';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -167,7 +168,7 @@ describe('Infer column nullability', () => {
 
 	it('select t1.value from mytable1 t1 where value is not null', () => {
 		const sql = 'select t1.value from mytable1 t1 where value is not null';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -184,7 +185,7 @@ describe('Infer column nullability', () => {
 
 	it('select value from mytable1 t1 where t1.value is not null', () => {
 		const sql = 'select value from mytable1 t1 where t1.value is not null';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -201,7 +202,7 @@ describe('Infer column nullability', () => {
 
 	it('select t1.value + value from mytable1 t1 where t1.value is not null', () => {
 		const sql = 'select t1.value + value from mytable1 t1 where t1.value is not null';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -218,7 +219,7 @@ describe('Infer column nullability', () => {
 
 	it('select value as alias from mytable1 t1 where t1.value is not null', () => {
 		const sql = 'select value as alias from mytable1 t1 where t1.value is not null';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -235,7 +236,7 @@ describe('Infer column nullability', () => {
 
 	it('select t1.value from mytable1 t1 where id is not null', () => {
 		const sql = 'select t1.value from mytable1 t1 where id is not null';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -252,7 +253,7 @@ describe('Infer column nullability', () => {
 
 	it('select value from mytable1 where value is not null or (id > 0 or value is not null)', () => {
 		const sql = 'select value from mytable1 where value is not null or (id > 0 or value is not null)';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -269,7 +270,7 @@ describe('Infer column nullability', () => {
 
 	it('select value from mytable1 where value is not null and (id > 0 or value is not null)', () => {
 		const sql = 'select value from mytable1 where value is not null and (id > 0 or value is not null)';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -286,7 +287,7 @@ describe('Infer column nullability', () => {
 
 	it('select value from mytable1 where value is not null or (id > 0 and (id < 10 and value is not null))', () => {
 		const sql = 'select value from mytable1 where value is not null or (id > 0 and (id < 10 and value is not null))';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -303,7 +304,7 @@ describe('Infer column nullability', () => {
 
 	it('select value from mytable1 where id > 0 and id < 10 and value > 1', () => {
 		const sql = 'select value from mytable1 where id > 0 and id < 10 and value > 1';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -320,7 +321,7 @@ describe('Infer column nullability', () => {
 
 	it('select value from mytable1 where value is not null and (value > 1 or value is null)', () => {
 		const sql = 'select value from mytable1 where value is not null and (value > 1 or value is null)';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -337,7 +338,7 @@ describe('Infer column nullability', () => {
 
 	it(' select value from mytable1 where value is not null or (value > 1 and value is null)', () => {
 		const sql = ' select value from mytable1 where value is not null or (value > 1 and value is null)';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -354,7 +355,7 @@ describe('Infer column nullability', () => {
 
 	it('select value from mytable1 where value > 1 and value is null', () => {
 		const sql = 'select value from mytable1 where value > 1 and value is null';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -371,7 +372,7 @@ describe('Infer column nullability', () => {
 
 	it('select value + value from mytable1 where value > 1', () => {
 		const sql = 'select value + value from mytable1 where value > 1';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -388,7 +389,7 @@ describe('Infer column nullability', () => {
 
 	it('select value + value from mytable1 where id > 1', () => {
 		const sql = 'select value + value from mytable1 where id > 1';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -405,7 +406,7 @@ describe('Infer column nullability', () => {
 
 	it('select value + id from mytable1 where value > 1', () => {
 		const sql = 'select value + id from mytable1 where value > 1';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -422,7 +423,7 @@ describe('Infer column nullability', () => {
 
 	it('select value+id from mytable1 where id > 10', () => {
 		const sql = 'select value+id from mytable1 where id > 10';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -439,7 +440,7 @@ describe('Infer column nullability', () => {
 
 	it('select id+id from mytable1 where value > 10', () => {
 		const sql = 'select id+id from mytable1 where value > 10';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -456,7 +457,7 @@ describe('Infer column nullability', () => {
 
 	it('select sum(value) from mytable1 where value > 10', () => {
 		const sql = 'select sum(value) from mytable1 where value > 10';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -473,7 +474,7 @@ describe('Infer column nullability', () => {
 
 	it('select sum(value) from mytable1 where value is not null', () => {
 		const sql = 'select sum(value) from mytable1 where value is not null';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -490,7 +491,7 @@ describe('Infer column nullability', () => {
 
 	it('select t2.name from mytable2 t2 inner join mytable3 t3 on t3.id = t2.id where t2.name is not null', () => {
 		const sql = 'select t2.name from mytable2 t2 inner join mytable3 t3 on t3.id = t2.id where t2.name is not null';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -507,7 +508,7 @@ describe('Infer column nullability', () => {
 
 	it('select t2.name from mytable2 t2 inner join mytable3 t3 on t3.id = t2.id where t3.name is not null', () => {
 		const sql = 'select t2.name from mytable2 t2 inner join mytable3 t3 on t3.id = t2.id where t3.name is not null';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -528,7 +529,7 @@ describe('Infer column nullability', () => {
         UNION
         select value from mytable1
 		`;
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -551,7 +552,7 @@ describe('Infer column nullability', () => {
 	    UNION
 	    select value from mytable1 where value is not null
 		`;
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -574,7 +575,7 @@ describe('Infer column nullability', () => {
         UNION
         select value from mytable1
 		`;
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -591,13 +592,13 @@ describe('Infer column nullability', () => {
 
 	it('UNION 3', () => {
 		const sql = `
-		select name from mytable2 where name is not null
+		select name from mytable2 where name is not null -- is_nullable = false
         UNION
-        select name from mytable2
+        select name from mytable2 -- is_nullable = true
         UNION
-        select value from mytable1 where value is not null
+        select value from mytable1 where value is not null -- is_nullable = false
 		`;
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -620,7 +621,7 @@ describe('Infer column nullability', () => {
         UNION
         select value from mytable1
 		`;
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -643,7 +644,7 @@ describe('Infer column nullability', () => {
         -- id, name, descr
         select * from mytable2 where name is not null
 		`;
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -680,7 +681,7 @@ describe('Infer column nullability', () => {
         UNION
         select value + id from mytable1
 		`;
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -703,7 +704,7 @@ describe('Infer column nullability', () => {
         UNION
         select value+id from mytable1 where value is not null
 		`;
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -722,7 +723,7 @@ describe('Infer column nullability', () => {
 		const sql = `
 		select (select id from mytable1 where id = 10), name, name as name2 from mytable2 where name = 'abc'
 		`;
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -753,7 +754,7 @@ describe('Infer column nullability', () => {
 
 	it('select with subquery', () => {
 		const sql = 'select name, (select id from mytable1 where id = 10) from mytable2 where id is not null';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -777,7 +778,7 @@ describe('Infer column nullability', () => {
 
 	it('select value + subquery', () => {
 		const sql = 'select id + (select id from mytable2 where id = 10 and id is not null) from mytable1 m1 where id is not null';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -794,7 +795,7 @@ describe('Infer column nullability', () => {
 
 	it('select name from (select name from mytable2 where name is not null) t1', () => {
 		const sql = 'select name from (select name from mytable2 where name is not null) t1';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -811,7 +812,7 @@ describe('Infer column nullability', () => {
 
 	it('select name from (select id as name from mytable2) t1', () => {
 		const sql = 'select name from (select id as name from mytable2) t1';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -828,7 +829,7 @@ describe('Infer column nullability', () => {
 
 	it('select id from (select * from mytable2) t1', () => {
 		const sql = 'select id from (select * from mytable2) t1';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -845,7 +846,7 @@ describe('Infer column nullability', () => {
 
 	it('select * from (select * from mytable2 where name is not null and descr is not null) t1', () => {
 		const sql = 'select * from (select * from mytable2 where name is not null and descr is not null) t1';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -876,7 +877,7 @@ describe('Infer column nullability', () => {
 
 	it('select * from (select * from mytable2 where name is not null or descr is not null) t1', () => {
 		const sql = 'select * from (select * from mytable2 where name is not null or descr is not null) t1';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -907,7 +908,7 @@ describe('Infer column nullability', () => {
 
 	it('select * from (select * from (select * from mytable2 where name is not null and descr is not null) t1) t2', () => {
 		const sql = 'select * from (select * from (select * from mytable2 where name is not null and descr is not null) t1) t2';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -938,7 +939,7 @@ describe('Infer column nullability', () => {
 
 	it('SELECT count(*) FROM mytable1', () => {
 		const sql = 'SELECT count(*) FROM mytable1';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -955,7 +956,7 @@ describe('Infer column nullability', () => {
 
 	it('SELECT count(value) FROM mytable1', () => {
 		const sql = 'SELECT count(value) FROM mytable1';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -972,7 +973,7 @@ describe('Infer column nullability', () => {
 
 	it('SELECT concat(id, id, id) FROM mytable1', () => {
 		const sql = 'SELECT concat(id, id, id) FROM mytable1';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -989,7 +990,7 @@ describe('Infer column nullability', () => {
 
 	it(`SELECT concat(id, '-- - ', id) FROM mytable1`, () => {
 		const sql = `SELECT concat(id, '-- - ', id) FROM mytable1`;
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -1006,7 +1007,7 @@ describe('Infer column nullability', () => {
 
 	it('SELECT concat(id, null, id) FROM mytable1', () => {
 		const sql = 'SELECT concat(id, null, id) FROM mytable1';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -1023,7 +1024,7 @@ describe('Infer column nullability', () => {
 
 	it('SELECT concat(id, id, value) FROM mytable1', () => {
 		const sql = 'SELECT concat(id, id, value) FROM mytable1';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -1040,7 +1041,7 @@ describe('Infer column nullability', () => {
 
 	it('SELECT concat(id, id, value) FROM mytable1 where value is not null', () => {
 		const sql = 'SELECT concat(id, id, value) FROM mytable1 where value is not null';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -1057,7 +1058,7 @@ describe('Infer column nullability', () => {
 
 	it('SELECT case when id = 1 then id end FROM mytable1', () => {
 		const sql = 'SELECT case when id = 1 then id end FROM mytable1';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -1074,7 +1075,7 @@ describe('Infer column nullability', () => {
 
 	it('SELECT case when id = 1 then id else id end FROM mytable1', () => {
 		const sql = 'SELECT case when id = 1 then id else id end FROM mytable1';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -1091,7 +1092,7 @@ describe('Infer column nullability', () => {
 
 	it('SELECT case when id = 1 then id else value end FROM mytable1', () => {
 		const sql = 'SELECT case when id = 1 then id else value end FROM mytable1';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -1108,7 +1109,7 @@ describe('Infer column nullability', () => {
 
 	it('SELECT case when id = 1 then id else value end FROM mytable1 WHERE value is not null', () => {
 		const sql = 'SELECT case when id = 1 then id else value end FROM mytable1 WHERE value is not null';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -1125,7 +1126,7 @@ describe('Infer column nullability', () => {
 
 	it('SELECT * FROM mytable1 t1 INNER JOIN mytable2 t2 on t2.id = t1.id', () => {
 		const sql = 'SELECT * FROM mytable1 t1 INNER JOIN mytable2 t2 on t2.id = t1.id';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		//id, value, id, name, description
 		const expected: NotNullInfo[] = [
@@ -1171,7 +1172,7 @@ describe('Infer column nullability', () => {
 
 	it('select quantity from mytable1, (select count(*) as quantity from mytable2) t2', () => {
 		const sql = 'select quantity from mytable1, (select count(*) as quantity from mytable2) t2';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -1188,7 +1189,7 @@ describe('Infer column nullability', () => {
 
 	it('SELECT name from mytable1, (SELECT name from mytable2 where name is not null) t', () => {
 		const sql = 'SELECT name from mytable1, (SELECT name from mytable2 where name is not null) t';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -1205,7 +1206,7 @@ describe('Infer column nullability', () => {
 
 	it('SELECT name from (SELECT name from mytable2 where name is not null) t', () => {
 		const sql = 'SELECT name from (SELECT name from mytable2 where name is not null) t';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -1222,7 +1223,7 @@ describe('Infer column nullability', () => {
 
 	it('SELECT name from (SELECT name from mytable2) t WHERE name is not null', () => {
 		const sql = 'SELECT name from (SELECT name from mytable2) t WHERE name is not null';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -1239,7 +1240,7 @@ describe('Infer column nullability', () => {
 
 	it('SELECT COALESCE(id, id, id+id), COALESCE(value, id+value), COALESCE(value, id+value, id+id) from mytable1', () => {
 		const sql = 'SELECT COALESCE(id, id, id+id), COALESCE(value, id+value), COALESCE(value, id+value, id+id) from mytable1';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -1270,7 +1271,7 @@ describe('Infer column nullability', () => {
 
 	it('SELECT COALESCE(SUM(value), 0) as total from mytable1', () => {
 		const sql = 'SELECT COALESCE(SUM(value), 0) as total from mytable1';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 		const expected: NotNullInfo[] = [
 			{
 				column_name: 'total',
@@ -1290,7 +1291,7 @@ describe('Infer column nullability', () => {
         from mytable1 t1
         left join mytable2 t2 on t1.id = t2.id;
         `;
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -1333,7 +1334,7 @@ describe('Infer column nullability', () => {
         left join mytable2 t2 on t1.id = t2.id
         inner join mytable3 t3 on t2.id = t3.id
         `;
-		const actualInnerJoin = parseSql(sqlInnerJoin, dbSchema, {});
+		const actualInnerJoin = parseSql(sqlInnerJoin, dbSchema, {}, []);
 
 		const expected = [true, true, true, false, false, false];
 
@@ -1346,7 +1347,7 @@ describe('Infer column nullability', () => {
 		left join mytable2 t2 on t1.id = t2.id
 		join mytable3 t3 on t2.id = t3.id
 		`;
-		const actualJoin = parseSql(sqlJoin, dbSchema, {});
+		const actualJoin = parseSql(sqlJoin, dbSchema, {}, []);
 
 		assert.deepStrictEqual(actualJoin.columns, expected);
 	});
@@ -1358,7 +1359,7 @@ describe('Infer column nullability', () => {
         inner join mytable2 t2 on t1.id = t2.id
         left join mytable3 t3 on t2.id = t3.id
         `;
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 
 		const expected: NotNullInfo[] = [
 			{
@@ -1417,7 +1418,7 @@ describe('Infer column nullability', () => {
 		) t
 		WHERE id = $3
 	    `;
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 		const expected: PostgresTraverseResult = {
 			queryType: 'Select',
 			multipleRowsResult: true, //could be false
@@ -1454,7 +1455,7 @@ describe('Infer column nullability', () => {
 			SELECT id FROM mytable1 WHERE id = coalesce($2, 10)
 		) t
 	    `;
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 		const expected: PostgresTraverseResult = {
 			queryType: 'Select',
 			multipleRowsResult: true, //could be false
@@ -1493,7 +1494,7 @@ describe('Infer column nullability', () => {
 	    SELECT id from mytable1
 		WHERE $1 is null OR $1 > id
 	    `;
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 		const expected: PostgresTraverseResult = {
 			queryType: 'Select',
 			multipleRowsResult: true,
@@ -1526,7 +1527,7 @@ describe('Infer column nullability', () => {
 		WHERE ($1 is null OR $1 > id)
 		AND ($2::int4 is null OR $2 > value)
 	    `;
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 		const expected: PostgresTraverseResult = {
 			queryType: 'Select',
 			multipleRowsResult: true,
@@ -1563,7 +1564,7 @@ describe('Infer column nullability', () => {
 		const sql = `
 	    DELETE FROM mytable1 WHERE id=$1
 	    `;
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 		const expected: PostgresTraverseResult = {
 			queryType: 'Delete',
 			multipleRowsResult: false,
@@ -1586,7 +1587,7 @@ describe('Infer column nullability', () => {
 		AND name = SOME ($1)
 		AND name <> $3
 	    `;
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 		const expected: PostgresTraverseResult = {
 			queryType: 'Select',
 			multipleRowsResult: true,
@@ -1618,7 +1619,7 @@ describe('Infer column nullability', () => {
 
 	it('select id from mytable2 where exists ( select id from mytable1 where value = $1)', async () => {
 		const sql = 'select id from mytable2 where exists ( select id from mytable1 where value = $1)';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 		const expected: PostgresTraverseResult = {
 			queryType: 'Select',
 			multipleRowsResult: true,
@@ -1644,7 +1645,7 @@ describe('Infer column nullability', () => {
 
 	it('SELECT id FROM mytable1 where value between $1 and $2', async () => {
 		const sql = 'SELECT id FROM mytable1 where value between $1 and $2';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 		const expected: PostgresTraverseResult = {
 			queryType: 'Select',
 			multipleRowsResult: true,
@@ -1672,7 +1673,7 @@ describe('Infer column nullability', () => {
 
 	it(`SELECT NULLIF(?, 'a') FROM mytable1`, async () => {
 		const sql = `SELECT NULLIF($1::text, 'a') FROM mytable1`;
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 		const expected: PostgresTraverseResult = {
 			queryType: 'Select',
 			multipleRowsResult: true,
@@ -1711,21 +1712,50 @@ describe('Infer column nullability', () => {
             and SUM(double_value * 0.01) < $3 -- this id is from the SELECT alias
             AND SUM(double_value) = $4
         `;
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 		const expected = [true, true, true, true]
 		assert.deepStrictEqual(actual.parametersNullability.map(param => param.isNotNull), expected);
 	});
 
+	it('SELECT * FROM get_mytable1_by_id($1)', async () => {
+		const sql = 'SELECT * FROM get_mytable1_by_id($1)';
+		const actual = parseSql(sql, dbSchema, {}, userDefinedFunctions);
+		const expected: PostgresTraverseResult = {
+			queryType: 'Select',
+			columns: [
+				{
+					column_name: 'id',
+					is_nullable: false,
+					table_name: 'get_mytable1_by_id',
+					table_schema: 'public',
+					type: 'int4'
+				},
+				{
+					column_name: 'value',
+					is_nullable: true,
+					table_name: 'get_mytable1_by_id',
+					table_schema: 'public',
+					type: 'int4'
+				}
+			],
+			multipleRowsResult: false,
+			parameterList: [false],
+			parametersNullability: [{ isNotNull: true }],
+			limit: undefined
+		}
+		assert.deepStrictEqual(actual, expected);
+	});
+
 	it('INSERT INTO mytable5 (id, name) SELECT id, descr FROM mytable2 WHERE name = $1 AND id > $2', async () => {
 		const sql = 'INSERT INTO mytable5 (id, name) SELECT id, descr FROM mytable2 WHERE name = $1 AND id > $2';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 		const expected = [true, true]
 		assert.deepStrictEqual(actual.parametersNullability.map(param => param.isNotNull), expected);
 	});
 
 	it('SELECT name FROM mytable2 WHERE to_tsvector(name) @@ to_tsquery($1)', async () => {
 		const sql = 'SELECT name FROM mytable2 WHERE to_tsvector(name) @@ to_tsquery($1)';
-		const actual = parseSql(sql, dbSchema, {});
+		const actual = parseSql(sql, dbSchema, {}, []);
 		const expected = [true];
 		assert.deepStrictEqual(actual.parametersNullability.map(param => param.isNotNull), expected);
 	});
