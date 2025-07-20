@@ -1,10 +1,10 @@
 import pg from 'pg';
 
 export type SelectJsonBuildObject01Result = {
-	value1?: SelectJsonBuildObject01Value1Type;
-	value2?: SelectJsonBuildObject01Value2Type;
-	value3?: SelectJsonBuildObject01Value3Type;
-	value4?: SelectJsonBuildObject01Value4Type;
+	value1: SelectJsonBuildObject01Value1Type;
+	value2: SelectJsonBuildObject01Value2Type;
+	value3: SelectJsonBuildObject01Value3Type;
+	value4: SelectJsonBuildObject01Value4Type;
 }
 
 export type SelectJsonBuildObject01Value1Type = {
