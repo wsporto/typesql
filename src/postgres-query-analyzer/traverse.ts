@@ -53,7 +53,6 @@ type ParamWithIndex = ParamInfo & {
 type TraverseResult = {
 	columnsNullability: boolean[],
 	parameters: ParamWithIndex[],
-	singleRow: boolean;
 	relations?: Relation2[];
 	dynamicQueryInfo?: DynamicSqlInfo2;
 }
@@ -94,8 +93,7 @@ export function traverseSmt(stmt: StmtContext, dbSchema: PostgresColumnSchema[],
 
 	const traverseResult: TraverseResult = {
 		columnsNullability: [],
-		parameters: [],
-		singleRow: false
+		parameters: []
 	}
 	if (collectNestedInfo) {
 		traverseResult.relations = [];
@@ -169,17 +167,17 @@ function traverseSelectstmt(selectstmt: SelectstmtContext, context: TraverseCont
 
 	const paramIsListResult = getInParameterList(selectstmt);
 
-	const columns = traverse_selectstmt(selectstmt, context, traverseResult);
+	const selectResult = traverse_selectstmt(selectstmt, context, traverseResult);
 	//select parameters are collected after from paramters
 	traverseResult.parameters.sort((param1, param2) => param1.paramIndex - param2.paramIndex);
 
-	const multipleRowsResult = !isSingleRowResult(selectstmt, columns);
+	const multipleRowsResult = !(selectResult.singleRow || isSingleRowResult(selectstmt, selectResult.columns));
 
 	const limit = checkLimit(selectstmt);
 	const postgresTraverseResult: PostgresTraverseResult = {
 		queryType: 'Select',
 		multipleRowsResult,
-		columns,
+		columns: selectResult.columns,
 		parametersNullability: traverseResult.parameters.map(param => ({ isNotNull: param.isNotNull, ...addConstraintIfNotNull(param.checkConstraint) })),
 		parameterList: paramIsListResult,
 		limit
@@ -193,15 +191,19 @@ function traverseSelectstmt(selectstmt: SelectstmtContext, context: TraverseCont
 	return postgresTraverseResult;
 }
 
-function traverse_selectstmt(selectstmt: SelectstmtContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo[] {
+function traverse_selectstmt(selectstmt: SelectstmtContext, context: TraverseContext, traverseResult: TraverseResult): FromResult {
 	const select_no_parens = selectstmt.select_no_parens();
 	if (select_no_parens) {
 		return traverse_select_no_parens(select_no_parens, context, traverseResult);
 	}
-	return [];
+	//select_with_parens
+	return {
+		columns: [],
+		singleRow: true
+	};
 }
 
-function traverse_select_no_parens(select_no_parens: Select_no_parensContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo[] {
+function traverse_select_no_parens(select_no_parens: Select_no_parensContext, context: TraverseContext, traverseResult: TraverseResult): FromResult {
 	let withColumns: NotNullInfo[] = [];
 	const with_clause = select_no_parens.with_clause()
 	if (with_clause) {
@@ -247,12 +249,12 @@ function traverse_select_no_parens(select_no_parens: Select_no_parensContext, co
 	return selectResult;
 }
 
-function traverse_common_table_expr(common_table_expr: Common_table_exprContext, context: TraverseContext, traverseResult: TraverseResult) {
+function traverse_common_table_expr(common_table_expr: Common_table_exprContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo[] {
 	const tableName = common_table_expr.name().getText();
 	const select_stmt = common_table_expr.preparablestmt().selectstmt();
 	const numParamsBefore = traverseResult.parameters.length;
-	const columns = traverse_selectstmt(select_stmt, { ...context, collectDynamicQueryInfo: false }, traverseResult);
-	const columnsWithTalbeName = columns.map(col => ({ ...col, table_name: tableName }));
+	const selectResult = traverse_selectstmt(select_stmt, { ...context, collectDynamicQueryInfo: false }, traverseResult);
+	const columnsWithTalbeName = selectResult.columns.map(col => ({ ...col, table_name: tableName }));
 	if (context.collectDynamicQueryInfo) {
 		const parameters = traverseResult.parameters.slice(numParamsBefore).map((_, index) => index + numParamsBefore);
 		traverseResult.dynamicQueryInfo?.with.push({
@@ -264,19 +266,18 @@ function traverse_common_table_expr(common_table_expr: Common_table_exprContext,
 	return columnsWithTalbeName;
 }
 
-function traverse_select_clause(select_clause: Select_clauseContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo[] {
+function traverse_select_clause(select_clause: Select_clauseContext, context: TraverseContext, traverseResult: TraverseResult): FromResult {
 	const simple_select_intersect_list = select_clause.simple_select_intersect_list();
-	let selectColumns: NotNullInfo[] = [];
-	if (simple_select_intersect_list) {
-		selectColumns = traverse_simple_select_intersect(simple_select_intersect_list[0], context, traverseResult);
-	}
+	const mainSelectResult = traverse_simple_select_intersect(simple_select_intersect_list[0], context, traverseResult);
+	let columns = mainSelectResult.columns;
+
 	//union
 	for (let index = 1; index < simple_select_intersect_list.length; index++) {
-		const unionNotNull = traverse_simple_select_intersect(simple_select_intersect_list[index], context, traverseResult);
-		selectColumns = selectColumns.map((value, columnIndex) => {
+		const unionResult = traverse_simple_select_intersect(simple_select_intersect_list[index], context, traverseResult);
+		columns = columns.map((value, columnIndex) => {
 			const col: NotNullInfo = {
 				column_name: value.column_name,
-				is_nullable: value.is_nullable || unionNotNull[columnIndex].is_nullable,
+				is_nullable: value.is_nullable || unionResult.columns[columnIndex].is_nullable,
 				table_name: '',
 				table_schema: '',
 				type: value.type,
@@ -286,35 +287,47 @@ function traverse_select_clause(select_clause: Select_clauseContext, context: Tr
 		});
 	}
 
-	return selectColumns;
+	return {
+		columns,
+		singleRow: simple_select_intersect_list.length == 1 ? mainSelectResult.singleRow : false
+	}
+
 }
 
-function traverse_simple_select_intersect(simple_select_intersect: Simple_select_intersectContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo[] {
+function traverse_simple_select_intersect(simple_select_intersect: Simple_select_intersectContext, context: TraverseContext, traverseResult: TraverseResult): FromResult {
 	const simple_select_pramary = simple_select_intersect.simple_select_pramary_list()[0];
 	if (simple_select_pramary) {
 		return traverse_simple_select_pramary(simple_select_pramary, context, traverseResult);
 	}
-	return [];
+	return {
+		columns: [],
+		singleRow: true
+	};
 }
 
-function traverse_simple_select_pramary(simple_select_pramary: Simple_select_pramaryContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo[] {
-	const fromColumns: NotNullInfo[] = [];
+function traverse_simple_select_pramary(simple_select_pramary: Simple_select_pramaryContext, context: TraverseContext, traverseResult: TraverseResult): FromResult {
+	let fromResult: FromResult = {
+		columns: [],
+		singleRow: false
+	};
 
 	const from_clause = simple_select_pramary.from_clause();
 	if (from_clause) {
 		const where_clause = simple_select_pramary.where_clause();
-		const fields = traverse_from_clause(from_clause, context, traverseResult);
-		const fieldsNotNull = where_clause != null ? fields.map(field => checkIsNullable(where_clause, field)) : fields;
-		fromColumns.push(...fieldsNotNull);
+		fromResult = traverse_from_clause(from_clause, context, traverseResult);
+		fromResult.columns = where_clause != null ? fromResult.columns.map(field => checkIsNullable(where_clause, field)) : fromResult.columns;
 	}
 	const values_clause = simple_select_pramary.values_clause();
 	if (values_clause) {
 		const valuesColumns = traverse_values_clause(values_clause, context, traverseResult);
-		return valuesColumns;
+		return {
+			columns: valuesColumns,
+			singleRow: false
+		}
 	}
 	const where_a_expr = simple_select_pramary.where_clause()?.a_expr();
 	//fromColumns has precedence
-	const newContext = { ...context, fromColumns: fromColumns.concat(context.fromColumns) };
+	const newContext = { ...context, fromColumns: fromResult.columns.concat(context.fromColumns) };
 	if (where_a_expr) {
 		const numParamsBefore = traverseResult.parameters.length;
 		traverse_a_expr(where_a_expr, newContext, traverseResult);
@@ -340,7 +353,10 @@ function traverse_simple_select_pramary(simple_select_pramary: Simple_select_pra
 	}
 
 	const filteredColumns = filterColumns_simple_select_pramary(simple_select_pramary, newContext, traverseResult);
-	return filteredColumns;
+	return {
+		columns: filteredColumns,
+		singleRow: fromResult.singleRow
+	};
 }
 
 function extractRelations(a_expr: A_exprContext): string[] {
@@ -652,10 +668,10 @@ function traverse_expr_compare(a_expr_compare: A_expr_compareContext, context: T
 		const result = traverse_select_with_parens(select_with_parens, context, traverseResult);
 		return {
 			column_name: '?column?',
-			is_nullable: result.some(col => col.is_nullable),
+			is_nullable: result.columns.some(col => col.is_nullable),
 			table_name: '',
 			table_schema: '',
-			type: result[0].type
+			type: result.columns[0].type
 		}
 	}
 	const a_expr = a_expr_compare.a_expr();
@@ -975,11 +991,11 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 			const result = traverse_select_with_parens(select_with_parens, context, traverseResult);
 			return {
 				column_name: '?column?',
-				is_nullable: result[0].jsonType ? result[0].is_nullable : true,
+				is_nullable: result.columns[0].jsonType ? result.columns[0].is_nullable : true,
 				table_name: '',
 				table_schema: '',
-				type: result[0].type,
-				jsonType: result[0].jsonType
+				type: result.columns[0].type,
+				jsonType: result.columns[0].jsonType
 			}
 		}
 		const a_expr_in_parens = c_expr._a_expr_in_parens;
@@ -1506,20 +1522,33 @@ function checkIsNullable(where_clause: Where_clauseContext, field: NotNullInfo):
 	return col;
 }
 
-function traverse_from_clause(from_clause: From_clauseContext, context: TraverseContext, traverseResult: TraverseResult) {
+function traverse_from_clause(from_clause: From_clauseContext, context: TraverseContext, traverseResult: TraverseResult): FromResult {
 	const from_list = from_clause.from_list();
 	if (from_list) {
-		return traverse_from_list(from_list, context, traverseResult);
+		const fromListResult = traverse_from_list(from_list, context, traverseResult);
+		return fromListResult
 	}
-	return [];
+	return {
+		columns: [],
+		singleRow: false
+	};
 }
 
-function traverse_from_list(from_list: From_listContext, context: TraverseContext, traverseResult: TraverseResult) {
-	const newColumns = from_list.table_ref_list().flatMap(table_ref => traverse_table_ref(table_ref, context, traverseResult));
-	return newColumns;
+function traverse_from_list(from_list: From_listContext, context: TraverseContext, traverseResult: TraverseResult): FromResult {
+	const fromListResult = from_list.table_ref_list().map(table_ref => traverse_table_ref(table_ref, context, traverseResult));
+	const columns = fromListResult.flatMap(tableRes => tableRes.columns);
+	return {
+		columns: columns,
+		singleRow: fromListResult.length === 1 ? fromListResult[0].singleRow : false
+	};
 }
 
-function traverse_table_ref(table_ref: Table_refContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo[] {
+type FromResult = {
+	singleRow: boolean;
+	columns: NotNullInfo[]
+}
+
+function traverse_table_ref(table_ref: Table_refContext, context: TraverseContext, traverseResult: TraverseResult): FromResult {
 	const { fromColumns, dbSchema, userFunctions } = context;
 	const allColumns: NotNullInfo[] = [];
 	const relation_expr = table_ref.relation_expr();
@@ -1558,9 +1587,9 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 			const joinType = join.joinType; //INNER, LEFT
 			const joinQual = join.joinQual;
 			const numParamsBefore = traverseResult.parameters.length;
-			const joinColumns = traverse_table_ref(join.tableRef, context, traverseResult);
+			const joinTableRefResult = traverse_table_ref(join.tableRef, context, traverseResult);
 			const isLeftJoin = joinType?.LEFT();
-			const filteredColumns = joinQual && joinQual?.USING() ? filterUsingColumns(joinColumns, joinQual) : joinColumns;
+			const filteredColumns = joinQual && joinQual?.USING() ? filterUsingColumns(joinTableRefResult.columns, joinQual) : joinTableRefResult.columns;
 			const resultColumns = isLeftJoin ? filteredColumns.map(col => ({ ...col, is_nullable: true, original_is_nullable: col.is_nullable } satisfies NotNullInfo)) : filteredColumns;
 
 			if (context.collectNestedInfo && joinQual) {
@@ -1578,14 +1607,17 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 	const func_table = table_ref.func_table();
 	if (func_table) {
 		const funcAlias = table_ref.func_alias_clause()?.alias_clause()?.colid()?.getText() || '';
-		const columns = traverse_func_table(func_table, context, traverseResult);
-		const resultWithAlias = columns.map(col => ({ ...col, table_name: funcAlias } satisfies NotNullInfo));
-		return resultWithAlias;
+		const result = traverse_func_table(func_table, context, traverseResult);
+		const resultWithAlias = result.columns.map(col => ({ ...col, table_name: funcAlias } satisfies NotNullInfo));
+		return {
+			columns: resultWithAlias,
+			singleRow: result.singleRow
+		};
 	}
 	const select_with_parens = table_ref.select_with_parens();
 	if (select_with_parens) {
 		const columns = traverse_select_with_parens(select_with_parens, { ...context, collectDynamicQueryInfo: false }, traverseResult);
-		const withAlias = columns.map((col, i) => (
+		const withAlias = columns.columns.map((col, i) => (
 			{
 				column_name: aliasNameList?.[i] || col.column_name,
 				is_nullable: col.is_nullable,
@@ -1593,9 +1625,15 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 				table_schema: col.table_schema,
 				type: col.type
 			}) satisfies NotNullInfo);
-		return withAlias;
+		return {
+			columns: withAlias,
+			singleRow: false
+		};
 	}
-	return allColumns;
+	return {
+		columns: allColumns,
+		singleRow: false
+	};
 }
 
 type Join = {
@@ -1690,7 +1728,7 @@ function filterUsingColumns(fromColumns: NotNullInfo[], joinQual: Join_qualConte
 	return filteredColumns;
 }
 
-function traverse_select_with_parens(select_with_parens: Select_with_parensContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo[] {
+function traverse_select_with_parens(select_with_parens: Select_with_parensContext, context: TraverseContext, traverseResult: TraverseResult): FromResult {
 	const select_with_parens2 = select_with_parens.select_with_parens();
 	if (select_with_parens2) {
 		return traverse_select_with_parens(select_with_parens2, context, traverseResult);
@@ -1699,7 +1737,10 @@ function traverse_select_with_parens(select_with_parens: Select_with_parensConte
 	if (select_no_parens) {
 		return traverse_select_no_parens(select_no_parens, context, traverseResult);
 	}
-	return [];
+	return {
+		columns: [],
+		singleRow: false
+	};
 }
 
 export type TableReturnType = {
@@ -1712,7 +1753,7 @@ export type SetofReturnType = {
 	table: string;
 };
 
-function traverse_func_table(func_table: Func_tableContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo[] {
+function traverse_func_table(func_table: Func_tableContext, context: TraverseContext, traverseResult: TraverseResult): FromResult {
 	const func_expr_windowless = func_table.func_expr_windowless();
 	if (func_expr_windowless) {
 		const result = traverse_func_expr_windowless(func_expr_windowless, context, traverseResult);
@@ -1754,7 +1795,7 @@ export function parseReturnType(returnType: string): FunctionReturnType {
 	throw new Error(`Unsupported return type format: ${returnType}`);
 }
 
-function traverse_func_expr_windowless(func_expr_windowless: Func_expr_windowlessContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo[] {
+function traverse_func_expr_windowless(func_expr_windowless: Func_expr_windowlessContext, context: TraverseContext, traverseResult: TraverseResult): FromResult {
 	const func_application = func_expr_windowless.func_application();
 	if (func_application) {
 		const func_name = func_application.func_name().getText().toLowerCase();
@@ -1762,7 +1803,7 @@ function traverse_func_expr_windowless(func_expr_windowless: Func_expr_windowles
 		if (funcSchema) {
 			const definition = funcSchema.definition;
 			const returnType = parseReturnType(funcSchema.return_type);
-			const columns = returnType.kind === 'table' ? returnType.columns.map(col => {
+			const functionColumns = returnType.kind === 'table' ? returnType.columns.map(col => {
 				const columnInfo: NotNullInfo = {
 					column_name: col.name,
 					type: col.type as PostgresSimpleType,
@@ -1775,11 +1816,17 @@ function traverse_func_expr_windowless(func_expr_windowless: Func_expr_windowles
 			if (funcSchema.language.toLowerCase() === 'sql') {
 				const parser = parseSql(definition);
 				const selectstmt = parser.stmt().selectstmt();
-				const select_stmt_result = traverseSelectstmt(selectstmt, { ...context, fromColumns: columns }, traverseResult);
-				return select_stmt_result.columns;
+				const { columns, multipleRowsResult } = traverseSelectstmt(selectstmt, { ...context, fromColumns: functionColumns }, traverseResult);
+				return {
+					columns,
+					singleRow: !multipleRowsResult
+				};
 			}
 			else {
-				return columns;
+				return {
+					columns: functionColumns,
+					singleRow: false
+				};
 			}
 
 		}
@@ -1864,8 +1911,7 @@ function paramIsList(c_expr: ParserRuleContext) {
 function traverseInsertstmt(insertstmt: InsertstmtContext, dbSchema: PostgresColumnSchema[]): PostgresTraverseResult {
 	const traverseResult: TraverseResult = {
 		columnsNullability: [],
-		parameters: [],
-		singleRow: false
+		parameters: []
 	}
 	const insert_target = insertstmt.insert_target();
 	const tableName = insert_target.getText();
@@ -1970,13 +2016,13 @@ function traverseUpdatestmt(updatestmt: UpdatestmtContext, traverseContext: Trav
 		.forEach(set_clause => traverse_set_clause(set_clause, context, traverseResult));
 
 	const from_clause = updatestmt.from_clause();
-	const fromColumns = from_clause ? traverse_from_clause(from_clause, context, traverseResult) : [];
+	const fromResult: FromResult = from_clause ? traverse_from_clause(from_clause, context, traverseResult) : { columns: [], singleRow: true };
 
 	const parametersBefore = traverseResult.parameters.length;
 	const where_clause = updatestmt.where_or_current_clause();
 	if (where_clause) {
 		const a_expr = where_clause.a_expr();
-		traverse_a_expr(a_expr, { ...context, fromColumns: updateColumns.concat(fromColumns) }, traverseResult);
+		traverse_a_expr(a_expr, { ...context, fromColumns: updateColumns.concat(fromResult.columns) }, traverseResult);
 	}
 
 	const whereParameters = traverseResult.parameters.slice(parametersBefore);

@@ -591,11 +591,11 @@ describe('Infer column nullability', () => {
 
 	it('UNION 3', () => {
 		const sql = `
-		select name from mytable2 where name is not null
+		select name from mytable2 where name is not null -- is_nullable = false
         UNION
-        select name from mytable2
+        select name from mytable2 -- is_nullable = true
         UNION
-        select value from mytable1 where value is not null
+        select value from mytable1 where value is not null -- is_nullable = false
 		`;
 		const actual = parseSql(sql, dbSchema, {}, []);
 

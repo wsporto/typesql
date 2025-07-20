@@ -5,6 +5,13 @@ AS $$
   SELECT * FROM mytable1;
 $$;
 
+CREATE OR REPLACE FUNCTION get_mytable1_by_id(id integer)
+RETURNS SETOF mytable1
+LANGUAGE sql
+AS $$
+  SELECT * FROM mytable1 WHERE id = $1;
+$$;
+
 CREATE OR REPLACE FUNCTION get_mytable_plpgsql()
 RETURNS TABLE (
     id INTEGER,

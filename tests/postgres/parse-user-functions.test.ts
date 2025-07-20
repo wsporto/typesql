@@ -250,6 +250,41 @@ describe('postgres-user-functions', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	})
 
+	it('SELECT * FROM get_mytable1_by_id(:id)', async () => {
+		const sql = 'SELECT * FROM get_mytable1_by_id($1)';
+		const actual = await describeQuery(postres, sql, ['id']);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: ''
+				},
+				{
+					name: 'value',
+					type: 'int4',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: [
+				{
+					name: 'id',
+					notNull: true,
+					type: 'int4'
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
 	it('SELECT * FROM get_mytable_plpgsql()', async () => {
 		const sql = 'SELECT * FROM get_mytable_plpgsql()';
 		const actual = await describeQuery(postres, sql, []);
