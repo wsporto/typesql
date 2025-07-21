@@ -4,7 +4,7 @@ import { CrudQueryType, PgDielect, QueryType, TsFieldDescriptor, TsParameterDesc
 import { describeQuery } from './postgres-query-analyzer/describe';
 import { ColumnSchema } from './mysql-query-analyzer/types';
 import { mapColumnType } from './dialects/postgres';
-import { JsonArrayType, JsonFieldType, JsonObjType, JsonType, PostgresType } from './sqlite-query-analyzer/types';
+import { JsonArrayType, JsonFieldType, JsonMapType, JsonObjType, JsonType, PostgresType } from './sqlite-query-analyzer/types';
 import { preprocessSql } from './describe-query';
 import { okAsync, ResultAsync } from 'neverthrow';
 import { getQueryName, mapPostgrsFieldToTsField, writeCollectFunction } from './sqlite-query-analyzer/code-generator';
@@ -414,6 +414,7 @@ const isJsonType = (t: PostgresType): t is JsonType => {
 	return typeof t === 'object' && t !== null && 'name' in t;
 };
 const isJsonObjType = (t: JsonType): t is JsonObjType => t.name === 'json';
+const isJsonMapType = (t: JsonType): t is JsonMapType => t.name === 'json_map';
 const isJsonArrayType = (t: JsonType): t is JsonArrayType => t.name === 'json[]';
 const isJsonFieldType = (t: JsonType): t is JsonFieldType => t.name === 'json_field';
 
@@ -428,6 +429,8 @@ function flattenJsonTypes(parentName: string, type: PostgresType): FlattenType[]
 			for (const prop of t.properties) {
 				visit(createJsonType(typeName, prop.key), prop.type);
 			}
+		} else if (isJsonMapType(t)) {
+			visit(typeName, t.type);
 		} else if (isJsonArrayType(t)) {
 			for (const itemType of t.properties) {
 				visit(typeName, itemType);
@@ -486,7 +489,7 @@ function writeJsonTypes(writer: CodeBlockWriter, typeName: string, type: JsonObj
 				const jsonParentName = createJsonType(typeName, field.key);
 				const jsonTypeName = createJsonArrayType(jsonParentName, field.type);
 				writer.writeLine(`${field.key}: ${jsonTypeName};`);
-			} else {
+			} else if (isJsonFieldType(field.type)) {
 				const optionalOp = field.type.notNull ? '' : '?';
 				writer.writeLine(`${field.key}${optionalOp}: ${mapColumnType(field.type.type)};`);
 			}
@@ -538,6 +541,11 @@ function createJsonArrayType(name: string, type: JsonArrayType) {
 	return uniqTypeNames.length === 1 ? `${unionTypes}[]` : `(${unionTypes})[]`;
 }
 
+function createJsonMapType(name: string, type: JsonMapType) {
+	const valueType = isJsonFieldType(type.type) ? mapColumnType(type.type.type) : `${name}Type`;
+	return `Record<string, ${valueType} | undefined>`;
+}
+
 function createTsType(name: string, type: PostgresType): string {
 	if (isJsonType(type)) {
 		if (isJsonObjType(type)) {
@@ -545,6 +553,9 @@ function createTsType(name: string, type: PostgresType): string {
 		}
 		else if (isJsonArrayType(type)) {
 			return createJsonArrayType(name, type);
+		}
+		else if (isJsonMapType(type)) {
+			return createJsonMapType(name, type);
 		}
 	}
 	return mapColumnType(type);

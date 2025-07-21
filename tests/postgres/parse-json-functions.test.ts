@@ -1598,4 +1598,35 @@ GROUP BY u.id`;
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	})
+
+	it(`SELECT json_object_agg(id, value) as result from mytable1`, async () => {
+
+		const sql = 'SELECT json_object_agg(id, value) as result from mytable1';
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					name: 'result',
+					type: {
+						name: 'json_map',
+						type: {
+							name: 'json_field',
+							type: 'int4',
+							notNull: false
+						}
+					},
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
 })
