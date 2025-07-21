@@ -678,6 +678,83 @@ describe('postgres-json-functions', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	})
 
+	it(`SELECT json_agg(t) FROM (SELECT, u.id, u.name, json_agg(json_build_object()))`, async () => {
+		const sql = `SELECT 
+		  json_agg(t)
+		FROM (
+		  SELECT 
+		    u.id,
+		    u.name,
+		  json_agg(
+		    json_build_object(
+		      'id', p.id,
+		      'title', p.title
+		    )
+		  ) FILTER(WHERE p.id is not null) as posts
+		  FROM users u
+		  LEFT JOIN posts p ON u.id = p.fk_user
+		  GROUP BY u.id, u.name
+		) t`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					name: 'json_agg',
+					type: {
+						name: 'json[]',
+						properties: [
+							{
+								name: 'json',
+								properties: [
+									{
+										key: 'id',
+										type: { name: 'json_field', type: 'int4', notNull: true }
+									},
+									{
+										key: 'name',
+										type: { name: 'json_field', type: 'text', notNull: true }
+									},
+									{
+										key: 'posts',
+										type: {
+											name: 'json[]',
+											properties: [
+												{
+													name: 'json',
+													properties: [
+														{
+															key: 'id',
+															type: { name: 'json_field', type: 'int4', notNull: true }//FILTER(WHERE p.id is not null)
+														},
+														{
+															key: 'title',
+															type: { name: 'json_field', type: 'text', notNull: true }//FILTER(WHERE p.id is not null)
+														},
+													]
+												}
+											]
+										}
+									}
+								]
+							}
+						]
+
+					},
+					notNull: true, //json_agg
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
 	it(`select to_json()`, async () => {
 		const sql = `select
 			 	to_json(10::int) as col1,

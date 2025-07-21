@@ -6,7 +6,7 @@ import { DynamicSqlInfo2, FieldName } from '../mysql-query-analyzer/types';
 import { QueryType } from '../types';
 import { Relation2 } from '../sqlite-query-analyzer/sqlite-describe-nested-query';
 import { CheckConstraintResult } from '../drivers/postgres';
-import { JsonFieldType, JsonObjType, JsonPropertyDef, JsonType, PostgresSimpleType } from '../sqlite-query-analyzer/types';
+import { JsonArrayType, JsonFieldType, JsonObjType, JsonPropertyDef, JsonType, PostgresSimpleType } from '../sqlite-query-analyzer/types';
 import { parseSql } from '@wsporto/typesql-parser/postgres';
 import { UserFunctionSchema } from './types';
 
@@ -1181,23 +1181,23 @@ function inferJsonNullability(columns: NotNullInfo[], filterExpr: A_exprContext 
 	return fields;
 }
 
-function transformFieldsToJsonObjType(fields: FieldInfo[]) {
+function transformFieldsToJsonObjType(fields: NotNullInfo[]): JsonObjType {
 	const jsonObject: JsonObjType = {
 		name: 'json',
 		properties: fields.map(col => mapFieldToPropertyDef(col))
 	}
 	return jsonObject;
 }
-function mapFieldToPropertyDef(field: FieldInfo) {
+function mapFieldToPropertyDef(field: NotNullInfo) {
 	const prop: JsonPropertyDef = {
-		key: field.name,
+		key: field.column_name,
 		type: transformFieldToJsonField(field)
 	}
 	return prop;
 }
 
-function transformFieldToJsonField(field: FieldInfo) {
-	const jsonField: JsonFieldType = { name: 'json_field', type: field.type, notNull: field.notNull };
+function transformFieldToJsonField(field: NotNullInfo) {
+	const jsonField: JsonType = field.jsonType ? field.jsonType : { name: 'json_field', type: field.type, notNull: !field.is_nullable };
 	return jsonField;
 }
 
@@ -1229,26 +1229,29 @@ function traverse_json_agg(func_application: Func_applicationContext, context: T
 		table_name: '',
 		table_schema: '',
 		type: 'json[]',
-		jsonType: {
-			name: 'json[]',
-			properties: createJsonTypeForJsonAgg(argsResult[0], context.filter_expr)
-		}
+		jsonType: createJsonTypeForJsonAgg(argsResult[0], context.filter_expr)
 	}
 	return result;
 }
 
-function createJsonTypeForJsonAgg(arg: NotNullInfo, filter_expr: A_exprContext | undefined): JsonType[] {
+function createJsonTypeForJsonAgg(arg: NotNullInfo, filter_expr: A_exprContext | undefined): JsonType {
 	if (arg.recordTypes) {
 		const jsonType = mapRecordsToJsonType(arg.recordTypes, filter_expr);
-		return [jsonType];
+		return {
+			name: 'json[]',
+			properties: [jsonType]
+		};
 	}
-	return [arg.jsonType || { name: 'json_field', type: arg.type, notNull: !arg.is_nullable }]
+	const jsonType: JsonArrayType | undefined = arg.jsonType ? { name: 'json[]', properties: [arg.jsonType] } : undefined;
+	const fieldType: JsonArrayType = { name: 'json[]', properties: [{ name: 'json_field', type: arg.type, notNull: !arg.is_nullable }] }
+	const result = jsonType || fieldType
+	return result;
 }
 
-function mapRecordsToJsonType(recordTypes: NotNullInfo[], filterExpr: A_exprContext | undefined) {
+function mapRecordsToJsonType(recordTypes: NotNullInfo[], filterExpr: A_exprContext | undefined): JsonObjType {
 	const jsonNullability = inferJsonNullability(recordTypes, filterExpr);
-	const fields = recordTypes.map((col, index) => ({ name: col.column_name ? col.column_name : `f${index + 1}`, type: col.type, notNull: jsonNullability[index] } satisfies FieldInfo))
-	const jsonType = transformFieldsToJsonObjType(fields)
+	const fields: NotNullInfo[] = recordTypes.map((col, index) => ({ ...col, column_name: col.column_name ? col.column_name : `f${index + 1}`, is_nullable: !jsonNullability[index] }))
+	const jsonType = transformFieldsToJsonObjType(fields);
 	return jsonType;
 }
 
@@ -1640,11 +1643,9 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 		const columns = traverse_select_with_parens(select_with_parens, { ...context, collectDynamicQueryInfo: false }, traverseResult);
 		const withAlias = columns.columns.map((col, i) => (
 			{
+				...col,
 				column_name: aliasNameList?.[i] || col.column_name,
-				is_nullable: col.is_nullable,
-				table_name: alias || col.table_name,
-				table_schema: col.table_schema,
-				type: col.type
+				table_name: alias || col.table_name
 			}) satisfies NotNullInfo);
 		return {
 			columns: withAlias,
