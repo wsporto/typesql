@@ -997,7 +997,8 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 				table_name: '',
 				table_schema: '',
 				type: result.columns[0].type,
-				jsonType: result.columns[0].jsonType
+				jsonType: result.columns[0].jsonType != null && result.columns[0].jsonType.name === 'json' ?
+					{ ...result.columns[0].jsonType, notNull: false } : result.columns[0].jsonType
 			}
 		}
 		const a_expr_in_parens = c_expr._a_expr_in_parens;
@@ -1184,6 +1185,7 @@ function inferJsonNullability(columns: NotNullInfo[], filterExpr: A_exprContext 
 function transformFieldsToJsonObjType(fields: NotNullInfo[]): JsonObjType {
 	const jsonObject: JsonObjType = {
 		name: 'json',
+		notNull: true,
 		properties: fields.map(col => mapFieldToPropertyDef(col))
 	}
 	return jsonObject;
@@ -1213,6 +1215,7 @@ function traverse_json_build_obj_func(func_application: Func_applicationContext,
 		type: 'json',
 		jsonType: {
 			name: 'json',
+			notNull: true,
 			properties: mapJsonBuildArgsToJsonProperty(argsResult, context.filter_expr),
 		}
 	}

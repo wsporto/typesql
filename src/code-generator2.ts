@@ -483,8 +483,9 @@ function writeJsonTypes(writer: CodeBlockWriter, typeName: string, type: JsonObj
 	writer.write(`export type ${typeName}Type =`).block(() => {
 		type.properties.forEach((field) => {
 			if (isJsonObjType(field.type)) {
+				const optionalOp = field.type.notNull ? '' : '?';
 				const jsonTypeName = createJsonType(typeName, field.key);
-				writer.writeLine(`${field.key}: ${jsonTypeName}Type;`);
+				writer.writeLine(`${field.key}${optionalOp}: ${jsonTypeName}Type;`);
 			} else if (isJsonArrayType(field.type)) {
 				const jsonParentName = createJsonType(typeName, field.key);
 				const jsonTypeName = createJsonArrayType(jsonParentName, field.type);

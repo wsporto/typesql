@@ -1,8 +1,7 @@
 import assert from 'node:assert';
 import postgres from 'postgres';
 import { describeQuery } from '../../src/postgres-query-analyzer/describe';
-import { PostgresColumnInfo, PostgresSchemaDef } from '../../src/postgres-query-analyzer/types';
-import { NotNullInfo } from '../../src/postgres-query-analyzer/traverse';
+import { PostgresSchemaDef } from '../../src/postgres-query-analyzer/types';
 
 describe('postgres-user-functions', () => {
 	const postres = postgres({
@@ -34,6 +33,7 @@ describe('postgres-user-functions', () => {
 						properties: [
 							{
 								name: 'json',
+								notNull: true,
 								properties: [
 									{
 										key: 'id',
@@ -80,6 +80,7 @@ describe('postgres-user-functions', () => {
 						properties: [
 							{
 								name: 'json',
+								notNull: true,
 								properties: [
 									{
 										key: 'id',
@@ -123,6 +124,7 @@ describe('postgres-user-functions', () => {
 					name: 'primaryaddress',
 					type: {
 						name: 'json',
+						notNull: true,
 						properties: [
 							{
 								key: 'id',
@@ -141,6 +143,7 @@ describe('postgres-user-functions', () => {
 					name: 'secondaryaddress',
 					type: {
 						name: 'json',
+						notNull: true,
 						properties: [
 							{
 								key: 'id',
@@ -370,6 +373,7 @@ describe('postgres-user-functions', () => {
 						properties: [
 							{
 								name: 'json',
+								notNull: true,
 								properties: [
 									{
 										key: 'id',
@@ -422,6 +426,7 @@ describe('postgres-user-functions', () => {
 						properties: [
 							{
 								name: 'json',
+								notNull: true,
 								properties: [
 									{
 										key: 'id',

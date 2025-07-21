@@ -1,0 +1,38 @@
+import pg from 'pg';
+
+export type SelectJson11Result = {
+	json_agg: SelectJson11JsonAggType[];
+}
+
+export type SelectJson11JsonAggType = {
+	id: number;
+	value?: number;
+	subquery?: SelectJson11JsonAggSubqueryType;
+}
+
+export type SelectJson11JsonAggSubqueryType = {
+	key: number;
+}
+
+export async function selectJson11(client: pg.Client | pg.Pool): Promise<SelectJson11Result | null> {
+	const sql = `
+	SELECT
+	  json_agg(
+	    json_build_object(
+	      'id', t.id,
+	      'value', t.value,
+	      'subquery', (select json_build_object('key', 10))
+	    )
+	  )
+	FROM mytable1 t
+	`
+	return client.query({ text: sql, rowMode: 'array' })
+		.then(res => res.rows.length > 0 ? mapArrayToSelectJson11Result(res.rows[0]) : null);
+}
+
+function mapArrayToSelectJson11Result(data: any) {
+	const result: SelectJson11Result = {
+		json_agg: data[0]
+	}
+	return result;
+}

@@ -636,5 +636,25 @@ FROM mytable1`;
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('select-json11', async () => {
+		const sql = `SELECT 
+  json_agg(
+    json_build_object(
+      'id', t.id,
+      'value', t.value,
+      'subquery', (select json_build_object('key', 10))
+    )
+  ) 
+FROM mytable1 t`;
+
+		const actual = await generateCode(dialect, sql, 'selectJson11');
+		const expected = readFileSync('tests/postgres/expected-code/select-json11.ts.txt', 'utf-8');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });
 

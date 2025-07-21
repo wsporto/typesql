@@ -30,7 +30,7 @@ export type JsonPropertyDef = {
 };
 
 
-export type JsonObjType = { name: 'json', properties: JsonPropertyDef[] };
+export type JsonObjType = { name: 'json', properties: JsonPropertyDef[], notNull: boolean };
 export type JsonArrayType = { name: 'json[]', properties: JsonType[] };
 export type JsonMapType = { name: 'json_map', type: JsonType };
 export type JsonFieldType = { name: 'json_field', type: PostgresSimpleType, notNull: boolean };

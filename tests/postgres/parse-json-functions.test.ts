@@ -24,6 +24,7 @@ describe('postgres-json-functions', () => {
 					name: 'json_build_object', //not null true
 					type: {
 						name: 'json',
+						notNull: true,
 						properties: [
 							{
 								key: 'key',
@@ -38,6 +39,7 @@ describe('postgres-json-functions', () => {
 					name: 'jsonb_build_object', //not null true
 					type: {
 						name: 'json',
+						notNull: true,
 						properties: [
 							{
 								key: 'key',
@@ -70,6 +72,7 @@ describe('postgres-json-functions', () => {
 					notNull: true, //json_build_object notNull: true,
 					type: {
 						name: 'json',
+						notNull: true,
 						properties: [
 							{
 								key: 'key',
@@ -84,6 +87,7 @@ describe('postgres-json-functions', () => {
 					notNull: true, //json_build_object notNull: true,
 					type: {
 						name: 'json',
+						notNull: true,
 						properties: [
 							{
 								key: 'key',
@@ -114,6 +118,7 @@ describe('postgres-json-functions', () => {
 					name: 'value',
 					type: {
 						name: 'json',
+						notNull: true,
 						properties: [
 							{
 								key: 'key1',
@@ -151,6 +156,7 @@ describe('postgres-json-functions', () => {
 					name: 'value',
 					type: {
 						name: 'json',
+						notNull: true,
 						properties: [
 							{
 								key: 'key1',
@@ -196,6 +202,7 @@ describe('postgres-json-functions', () => {
 					name: 'value',
 					type: {
 						name: 'json',
+						notNull: true,
 						properties: [
 							{
 								key: 'key1',
@@ -205,6 +212,7 @@ describe('postgres-json-functions', () => {
 								key: 'key2',
 								type: {
 									name: 'json',
+									notNull: true,
 									properties: [
 										{
 											key: 'nested',
@@ -269,6 +277,7 @@ describe('postgres-json-functions', () => {
 						properties: [
 							{
 								name: 'json',
+								notNull: true,
 								properties: [
 									{
 										key: 'id',
@@ -332,6 +341,7 @@ describe('postgres-json-functions', () => {
 						properties: [
 							{
 								name: 'json',
+								notNull: true,
 								properties: [
 									{
 										key: 'id',
@@ -395,6 +405,7 @@ describe('postgres-json-functions', () => {
 						properties: [
 							{
 								name: 'json',
+								notNull: true,
 								properties: [
 									{
 										key: 'id',
@@ -459,6 +470,7 @@ describe('postgres-json-functions', () => {
 						properties: [
 							{
 								name: 'json',
+								notNull: true,
 								properties: [
 									{
 										key: 'id',
@@ -522,6 +534,7 @@ describe('postgres-json-functions', () => {
 						properties: [
 							{
 								name: 'json',
+								notNull: true,
 								properties: [
 									{
 										key: 'id',
@@ -579,6 +592,7 @@ describe('postgres-json-functions', () => {
 						properties: [
 							{
 								name: 'json',
+								notNull: true,
 								properties: [
 									{
 										key: 'id',
@@ -645,6 +659,7 @@ describe('postgres-json-functions', () => {
 						properties: [
 							{
 								name: 'json',
+								notNull: true,
 								properties: [
 									{
 										key: 'id',
@@ -678,23 +693,97 @@ describe('postgres-json-functions', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	})
 
+	it(`SELECT json_agg(json_build_object('key', (subquery)))`, async () => {
+		const sql = `SELECT 
+		json_agg(
+			json_build_object(
+			'id', t.id,
+			'value', t.value,
+			'subquery', (select json_build_object('key', 10))
+			)
+		) 
+		FROM mytable1 t`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					name: "json_agg",
+					notNull: true,
+					type: {
+						name: "json[]",
+						properties: [
+							{
+								name: "json",
+								notNull: true,
+								properties: [
+									{
+										key: "id",
+										type: {
+											name: "json_field",
+											type: "int4",
+											notNull: true,
+										},
+									},
+									{
+										key: "value",
+										type: {
+											name: "json_field",
+											type: "int4",
+											notNull: false,
+										},
+									},
+									{
+										key: "subquery",
+										type: {
+											name: "json",
+											notNull: false,
+											properties: [
+												{
+													key: "key",
+													type: {
+														name: "json_field",
+														type: "int4",
+														notNull: true,
+													},
+												},
+											],
+										},
+									},
+								],
+							},
+						],
+					},
+					table: "",
+				},
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
 	it(`SELECT json_agg(t) FROM (SELECT, u.id, u.name, json_agg(json_build_object()))`, async () => {
 		const sql = `SELECT 
-		  json_agg(t)
-		FROM (
-		  SELECT 
-		    u.id,
-		    u.name,
-		  json_agg(
-		    json_build_object(
-		      'id', p.id,
-		      'title', p.title
-		    )
-		  ) FILTER(WHERE p.id is not null) as posts
-		  FROM users u
-		  LEFT JOIN posts p ON u.id = p.fk_user
-		  GROUP BY u.id, u.name
-		) t`;
+			  json_agg(t)
+			FROM (
+			  SELECT 
+			    u.id,
+			    u.name,
+			  json_agg(
+			    json_build_object(
+			      'id', p.id,
+			      'title', p.title
+			    )
+			  ) FILTER(WHERE p.id is not null) as posts
+			  FROM users u
+			  LEFT JOIN posts p ON u.id = p.fk_user
+			  GROUP BY u.id, u.name
+			) t`;
 		const actual = await describeQuery(postres, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
@@ -708,6 +797,7 @@ describe('postgres-json-functions', () => {
 						properties: [
 							{
 								name: 'json',
+								notNull: true,
 								properties: [
 									{
 										key: 'id',
@@ -724,6 +814,7 @@ describe('postgres-json-functions', () => {
 											properties: [
 												{
 													name: 'json',
+													notNull: true,
 													properties: [
 														{
 															key: 'id',
@@ -757,18 +848,18 @@ describe('postgres-json-functions', () => {
 
 	it(`select to_json()`, async () => {
 		const sql = `select
-			 	to_json(10::int) as col1,
-			 	to_jsonb(10::int) as col2,
-			 	to_json('a'::text) as col3,
-			 	to_jsonb('a'::text) as col4,
-				to_json(array[1, 2, 3]) as col5,
-				to_jsonb(array[1, 2, 3]) as col6,
-				to_json(array['a', 'b', 'c']) as col7,
-				to_jsonb(array['a', 'b', 'c']) as col8,
-				to_json(null::text) as col9,
-				to_jsonb(null::text) as col10,
-				to_json(array[null]) as col11,
-				to_jsonb(array[null]) as col12`;
+				 	to_json(10::int) as col1,
+				 	to_jsonb(10::int) as col2,
+				 	to_json('a'::text) as col3,
+				 	to_jsonb('a'::text) as col4,
+					to_json(array[1, 2, 3]) as col5,
+					to_jsonb(array[1, 2, 3]) as col6,
+					to_json(array['a', 'b', 'c']) as col7,
+					to_jsonb(array['a', 'b', 'c']) as col8,
+					to_json(null::text) as col9,
+					to_jsonb(null::text) as col10,
+					to_json(array[null]) as col11,
+					to_jsonb(array[null]) as col12`;
 		const actual = await describeQuery(postres, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
@@ -858,11 +949,11 @@ describe('postgres-json-functions', () => {
 
 	it(`select json_agg()`, async () => {
 		const sql = `select
-				json_agg(json_build_object('key', 10)) as col1,
-				jsonb_agg(json_build_object('key', 10)) as col2,
-				json_agg(null::text) as col3,
-				jsonb_agg(null::text) as col4
-				`;
+					json_agg(json_build_object('key', 10)) as col1,
+					jsonb_agg(json_build_object('key', 10)) as col2,
+					json_agg(null::text) as col3,
+					jsonb_agg(null::text) as col4
+					`;
 		const actual = await describeQuery(postres, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
@@ -876,6 +967,7 @@ describe('postgres-json-functions', () => {
 						properties: [
 							{
 								name: 'json',
+								notNull: true,
 								properties: [
 									{
 										key: 'key',
@@ -895,6 +987,7 @@ describe('postgres-json-functions', () => {
 						properties: [
 							{
 								name: 'json',
+								notNull: true,
 								properties: [
 									{
 										key: 'key',
@@ -949,6 +1042,7 @@ describe('postgres-json-functions', () => {
 						properties: [
 							{
 								name: 'json',
+								notNull: true,
 								properties: [
 									{
 										key: 'key',
@@ -972,14 +1066,14 @@ describe('postgres-json-functions', () => {
 
 	it(`SELECT json_agg(...) FROM VALUES (1, 'a'),(2, 'b')) AS t(id, name) `, async () => {
 		const sql = `
-			SELECT json_agg(
-				json_build_object('key', name, 'key2', id)
-			) AS result
-			FROM (
-				VALUES
-					(1, 'a'),
-					(2, 'b')
-			) AS t(id, name)`;
+				SELECT json_agg(
+					json_build_object('key', name, 'key2', id)
+				) AS result
+				FROM (
+					VALUES
+						(1, 'a'),
+						(2, 'b')
+				) AS t(id, name)`;
 		const actual = await describeQuery(postres, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
@@ -993,6 +1087,7 @@ describe('postgres-json-functions', () => {
 						properties: [
 							{
 								name: 'json',
+								notNull: true,
 								properties: [
 									{
 										key: 'key',
@@ -1020,25 +1115,25 @@ describe('postgres-json-functions', () => {
 
 	it(`SELECT json_build_object('total', SUM(m.id), 'count', ...) AS sum FROM mytable1 m`, async () => {
 		const sql = `
-			SELECT
-				json_build_object(
-					'total', SUM(m.id),
-					'count', COUNT(m.id),
-					'plus', id+id,
-					'minus', id-id,
-					'mult', id*id,
-					'div', id/id, -- result type is the same 5/2 is 2: int4
-					'concat', CONCAT('a', 'b'),
-					'coalesce', COALESCE(m.id, 0),
-					'days',  DATE '2020-01-02' - DATE '2020-01-01',
-					'nested', COALESCE(json_agg(jsonb_build_object(
-						'key1', 'value',
-						'key2', 10
-					))),
-					'array', array[1, 2]
-				) AS sum
-			FROM mytable1 m
-			GROUP BY id`;
+				SELECT
+					json_build_object(
+						'total', SUM(m.id),
+						'count', COUNT(m.id),
+						'plus', id+id,
+						'minus', id-id,
+						'mult', id*id,
+						'div', id/id, -- result type is the same 5/2 is 2: int4
+						'concat', CONCAT('a', 'b'),
+						'coalesce', COALESCE(m.id, 0),
+						'days',  DATE '2020-01-02' - DATE '2020-01-01',
+						'nested', COALESCE(json_agg(jsonb_build_object(
+							'key1', 'value',
+							'key2', 10
+						))),
+						'array', array[1, 2]
+					) AS sum
+				FROM mytable1 m
+				GROUP BY id`;
 		const actual = await describeQuery(postres, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
@@ -1049,6 +1144,7 @@ describe('postgres-json-functions', () => {
 					name: 'sum',
 					type: {
 						name: 'json',
+						notNull: true,
 						properties: [
 							{
 								key: 'total',
@@ -1093,6 +1189,7 @@ describe('postgres-json-functions', () => {
 									properties: [
 										{
 											name: 'json',
+											notNull: true,
 											properties: [
 												{
 													key: 'key1',
@@ -1129,16 +1226,16 @@ describe('postgres-json-functions', () => {
 
 	it(`SELECT json_build_object('total', SUM(m.id), ....) AS sum FROM mytable1 m`, async () => {
 		const sql = `
-			SELECT
-				json_build_object(
-					'sum_int2', SUM(t.int2_column),
-					'sum_int4', SUM(t.int4_column),
-					'sum_int8', SUM(t.int8_column),
-					'sum_numeric', SUM(t.numeric_column),
-					'sum_float4', SUM(t.float4_column),
-					'sum_float8', SUM(t.float8_column)
-				) AS result
-			FROM all_types t`;
+				SELECT
+					json_build_object(
+						'sum_int2', SUM(t.int2_column),
+						'sum_int4', SUM(t.int4_column),
+						'sum_int8', SUM(t.int8_column),
+						'sum_numeric', SUM(t.numeric_column),
+						'sum_float4', SUM(t.float4_column),
+						'sum_float8', SUM(t.float8_column)
+					) AS result
+				FROM all_types t`;
 		const actual = await describeQuery(postres, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
@@ -1149,6 +1246,7 @@ describe('postgres-json-functions', () => {
 					name: 'result',
 					type: {
 						name: 'json',
+						notNull: true,
 						properties: [
 							{
 								key: 'sum_int2',
@@ -1190,12 +1288,12 @@ describe('postgres-json-functions', () => {
 
 	it(`SELECT json_build_object('total', EXTRACT(YEAR FROM DATE '2025-07-14')) AS sum FROM mytable1 m`, async () => {
 		const sql = `
-			SELECT
-				json_build_object(
-					'extract_year', EXTRACT(YEAR FROM DATE '2025-07-14')
-				) AS result
-			FROM mytable1 m
-			GROUP BY id`;
+				SELECT
+					json_build_object(
+						'extract_year', EXTRACT(YEAR FROM DATE '2025-07-14')
+					) AS result
+				FROM mytable1 m
+				GROUP BY id`;
 		const actual = await describeQuery(postres, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
@@ -1206,6 +1304,7 @@ describe('postgres-json-functions', () => {
 					name: 'result',
 					type: {
 						name: 'json',
+						notNull: true,
 						properties: [
 							{
 								key: 'extract_year',
@@ -1227,15 +1326,15 @@ describe('postgres-json-functions', () => {
 
 	it(`SELECT json_build_object('nested', (SELECT COALESCE(json_agg())) AS sum FROM mytable1 m`, async () => {
 		const sql = `
-			SELECT
-				json_build_object(
-					'nested', (SELECT COALESCE(json_agg(jsonb_build_object(
-						'key1', 'value',
-						'key2', 10
-					))))
-				) AS sum
-			FROM mytable1 m
-			GROUP BY id`;
+				SELECT
+					json_build_object(
+						'nested', (SELECT COALESCE(json_agg(jsonb_build_object(
+							'key1', 'value',
+							'key2', 10
+						))))
+					) AS sum
+				FROM mytable1 m
+				GROUP BY id`;
 		const actual = await describeQuery(postres, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
@@ -1246,6 +1345,7 @@ describe('postgres-json-functions', () => {
 					name: 'sum',
 					type: {
 						name: 'json',
+						notNull: true,
 						properties: [
 							{
 								key: 'nested',
@@ -1254,6 +1354,7 @@ describe('postgres-json-functions', () => {
 									properties: [
 										{
 											name: 'json',
+											notNull: true,
 											properties: [
 												{
 													key: 'key1',
@@ -1284,12 +1385,12 @@ describe('postgres-json-functions', () => {
 
 	it(`SELECT json_build_object('case', CASE WHEN id = 0 THEN 'a' ELSE 'b' END ) AS sum AS sum FROM mytable1 m`, async () => {
 		const sql = `
-			SELECT
-				json_build_object(
-					'case', CASE WHEN id = 0 THEN 'a' ELSE 'b' END
-				) AS sum
-			FROM mytable1 m
-			GROUP BY id`;
+				SELECT
+					json_build_object(
+						'case', CASE WHEN id = 0 THEN 'a' ELSE 'b' END
+					) AS sum
+				FROM mytable1 m
+				GROUP BY id`;
 		const actual = await describeQuery(postres, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
@@ -1300,6 +1401,7 @@ describe('postgres-json-functions', () => {
 					name: 'sum',
 					type: {
 						name: 'json',
+						notNull: true,
 						properties: [
 							{
 								key: 'case',
@@ -1321,14 +1423,14 @@ describe('postgres-json-functions', () => {
 
 	it(`json_build_object - dynamic json`, async () => {
 		const sql = `
-			SELECT
-				json_build_object(
-					'case', CASE
-						WHEN id = 1 THEN json_build_object('a', 1)
-						WHEN id = 2 THEN json_build_object('b', 2)
-						ELSE json_build_object('c', 3) END
-			) AS result
-			FROM mytable1 m`;
+				SELECT
+					json_build_object(
+						'case', CASE
+							WHEN id = 1 THEN json_build_object('a', 1)
+							WHEN id = 2 THEN json_build_object('b', 2)
+							ELSE json_build_object('c', 3) END
+				) AS result
+				FROM mytable1 m`;
 		const actual = await describeQuery(postres, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
@@ -1339,6 +1441,7 @@ describe('postgres-json-functions', () => {
 					name: 'result',
 					type: {
 						name: 'json',
+						notNull: true,
 						properties: [
 							{
 								key: 'case',
@@ -1361,7 +1464,7 @@ describe('postgres-json-functions', () => {
 	it(`SELECT json_build_array('a', 1, 2, 3, 'b') as result`, async () => {
 
 		const sql = `
-			SELECT json_build_array('a', 1, 2, 3, 'b') as result`;
+				SELECT json_build_array('a', 1, 2, 3, 'b') as result`;
 		const actual = await describeQuery(postres, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
@@ -1395,7 +1498,7 @@ describe('postgres-json-functions', () => {
 	it(`SELECT json_build_array(id, name, descr) as result FROM mytable2`, async () => {
 
 		const sql = `
-			SELECT json_build_array(id, name, descr) as result FROM mytable2`;
+				SELECT json_build_array(id, name, descr) as result FROM mytable2`;
 		const actual = await describeQuery(postres, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
@@ -1427,7 +1530,7 @@ describe('postgres-json-functions', () => {
 	it(`SELECT json_build_array(json_build_array('a', 1), json_build_array('b', 2)) as result`, async () => {
 
 		const sql = `
-			SELECT json_build_array(json_build_array('a', 1), json_build_array('b', 2)) as result`;
+				SELECT json_build_array(json_build_array('a', 1), json_build_array('b', 2)) as result`;
 		const actual = await describeQuery(postres, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
@@ -1470,7 +1573,7 @@ describe('postgres-json-functions', () => {
 	it(`SELECT json_build_array(json_build_array('a', null), json_build_array('b', null)) as result`, async () => {
 
 		const sql = `
-			SELECT json_build_array(json_build_array('a', null), json_build_array('b', null)) as result`;
+				SELECT json_build_array(json_build_array('a', null), json_build_array('b', null)) as result`;
 		const actual = await describeQuery(postres, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
@@ -1523,6 +1626,7 @@ describe('postgres-json-functions', () => {
 					name: 'result',
 					type: {
 						name: 'json',
+						notNull: true,
 						properties: [
 							{
 								key: 'id',
@@ -1567,6 +1671,7 @@ describe('postgres-json-functions', () => {
 					name: 'result',
 					type: {
 						name: 'json',
+						notNull: true,
 						properties: [
 							{
 								key: 'id',
@@ -1611,6 +1716,7 @@ describe('postgres-json-functions', () => {
 					name: 'result',
 					type: {
 						name: 'json',
+						notNull: true,
 						properties: [
 							{
 								key: 'f1',
@@ -1653,11 +1759,11 @@ describe('postgres-json-functions', () => {
 	it('SELECT u.id, json_agg(row_to_json(p)) filter (where p.id is not null) as posts', async () => {
 
 		const sql = `SELECT
-	u.id,
-	json_agg(row_to_json(p)) filter (where p.id is not null) as posts
-FROM users u
-LEFT JOIN posts p ON u.id = p.fk_user
-GROUP BY u.id`;
+		u.id,
+		json_agg(row_to_json(p)) filter (where p.id is not null) as posts
+	FROM users u
+	LEFT JOIN posts p ON u.id = p.fk_user
+	GROUP BY u.id`;
 		const actual = await describeQuery(postres, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
@@ -1677,6 +1783,7 @@ GROUP BY u.id`;
 						properties: [
 							{
 								name: 'json',
+								notNull: true,
 								properties: [
 									{
 										key: 'id',
@@ -1728,25 +1835,25 @@ GROUP BY u.id`;
 
 	it('SELECT * FROM clients JOIN addresses primaryAddress LEFT JOIN addresses secondaryAddress', async () => {
 		const sql = `
-		  SELECT
-    c.id,
-    json_build_object(
-      'id', a1.id,
-      'address', a1.address
-    ) AS primaryAddress,
-    CASE
-      WHEN a2.id IS NOT NULL THEN json_build_object(
-        'id', a2.id,
-        'address', a2.address,
-        'value', t1.id
-      )
-      ELSE NULL
-    END AS secondaryAddress
-  FROM clients c
-  JOIN addresses a1 ON c.primaryAddress = a1.id
-  LEFT JOIN addresses a2 ON c.secondaryAddress = a2.id
-  LEFT JOIN mytable1 t1 ON c.secondaryAddress = t1.id
-		`;
+			  SELECT
+	    c.id,
+	    json_build_object(
+	      'id', a1.id,
+	      'address', a1.address
+	    ) AS primaryAddress,
+	    CASE
+	      WHEN a2.id IS NOT NULL THEN json_build_object(
+	        'id', a2.id,
+	        'address', a2.address,
+	        'value', t1.id
+	      )
+	      ELSE NULL
+	    END AS secondaryAddress
+	  FROM clients c
+	  JOIN addresses a1 ON c.primaryAddress = a1.id
+	  LEFT JOIN addresses a2 ON c.secondaryAddress = a2.id
+	  LEFT JOIN mytable1 t1 ON c.secondaryAddress = t1.id
+			`;
 		const actual = await describeQuery(postres, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
@@ -1763,6 +1870,7 @@ GROUP BY u.id`;
 					name: 'primaryaddress',
 					type: {
 						name: 'json',
+						notNull: true,
 						properties: [
 							{
 								key: 'id',
@@ -1781,6 +1889,7 @@ GROUP BY u.id`;
 					name: 'secondaryaddress',
 					type: {
 						name: 'json',
+						notNull: true,
 						properties: [
 							{
 								key: 'id',
