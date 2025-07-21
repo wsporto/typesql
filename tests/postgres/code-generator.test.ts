@@ -621,5 +621,20 @@ FROM mytable2`;
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('select-json10', async () => {
+		const sql = `SELECT 
+	json_object_agg(id, value) as result1,
+	json_object_agg(id, row_to_json(mytable1)) as result2
+FROM mytable1`;
+
+		const actual = await generateCode(dialect, sql, 'selectJson10');
+		const expected = readFileSync('tests/postgres/expected-code/select-json10.ts.txt', 'utf-8');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });
 

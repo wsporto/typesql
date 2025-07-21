@@ -1401,6 +1401,20 @@ function traversefunc_application(func_application: Func_applicationContext, con
 		};
 	}
 
+	if (functionName === 'json_object_agg') {
+		return {
+			column_name: functionName,
+			is_nullable: false,
+			table_name: '',
+			table_schema: '',
+			type: 'json',
+			jsonType: {
+				name: 'json_map',
+				type: argsResult[1].jsonType || { name: 'json_field', type: argsResult[1].type, notNull: !argsResult[1].is_nullable } satisfies JsonFieldType
+			}
+		};
+	}
+
 	return {
 		column_name: functionName,
 		is_nullable: true,
