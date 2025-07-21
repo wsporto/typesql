@@ -953,6 +953,7 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 		}
 		const fun_expr = c_expr.func_expr();
 		if (fun_expr) {
+			context.columnRefIsRecord = undefined;
 			const func_application = fun_expr.func_application();
 			if (func_application) {
 				if (is_json_build_object_func(func_application)) {
@@ -1203,7 +1204,7 @@ function transformFieldToJsonField(field: FieldInfo) {
 function traverse_json_build_obj_func(func_application: Func_applicationContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
 	const columnName = func_application.func_name()?.getText() || func_application.getText();
 	const func_arg_expr_list = func_application.func_arg_list()?.func_arg_expr_list() || [];
-	const argsResult = func_arg_expr_list.map(func_arg_expr => traversefunc_arg_expr(func_arg_expr, { ...context, columnRefIsRecord: undefined }, traverseResult))
+	const argsResult = func_arg_expr_list.map(func_arg_expr => traversefunc_arg_expr(func_arg_expr, context, traverseResult))
 	const result: NotNullInfo = {
 		column_name: columnName,
 		is_nullable: false,
