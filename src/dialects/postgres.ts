@@ -23,6 +23,8 @@ export const postgresTypes = {
 	1700: 'numeric',
 	1042: 'bpchar',
 	1043: 'varchar',
+	2287: '_record',
+	2249: 'record',
 	2950: 'uuid',
 	1114: 'timestamp',
 	1184: 'timestamptz',
@@ -168,6 +170,8 @@ export function mapColumnType(postgresType: PostgresType): TsType {
 		case '_jsonb':
 		case 'jsonb[]':
 			return 'any[]';
+		case 'record':
+		case '_record':
 		case 'unknown':
 		case 'null': //pseudo type
 			return 'any';

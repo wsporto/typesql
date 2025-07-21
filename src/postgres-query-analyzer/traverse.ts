@@ -1,7 +1,7 @@
 import { A_expr_addContext, A_expr_andContext, A_expr_at_time_zoneContext, A_expr_betweenContext, A_expr_caretContext, A_expr_collateContext, A_expr_compareContext, A_expr_inContext, A_expr_is_notContext, A_expr_isnullContext, A_expr_lesslessContext, A_expr_likeContext, A_expr_mulContext, A_expr_orContext, A_expr_qual_opContext, A_expr_qualContext, A_expr_typecastContext, A_expr_unary_notContext, A_expr_unary_qualopContext, A_expr_unary_signContext, A_exprContext, AexprconstContext, Array_expr_listContext, Array_exprContext, C_expr_caseContext, C_expr_existsContext, C_expr_exprContext, C_exprContext, ColidContext, ColumnElemContext, ColumnrefContext, Common_table_exprContext, CopystmtContext, DeletestmtContext, Expr_listContext, From_clauseContext, From_listContext, Func_applicationContext, Func_arg_exprContext, Func_expr_common_subexprContext, Func_expr_windowlessContext, Func_exprContext, Func_tableContext, IdentifierContext, In_expr_listContext, In_expr_selectContext, In_exprContext, Insert_column_itemContext, InsertstmtContext, Join_qualContext, Join_typeContext, Qualified_nameContext, Relation_exprContext, Select_clauseContext, Select_no_parensContext, Select_with_parensContext, SelectstmtContext, Set_clauseContext, Simple_select_intersectContext, Simple_select_pramaryContext, StmtContext, Table_refContext, Target_elContext, Target_labelContext, Target_listContext, Unreserved_keywordContext, UpdatestmtContext, Values_clauseContext, When_clauseContext, Where_clauseContext } from '@wsporto/typesql-parser/postgres/PostgreSQLParser';
 import { ParserRuleContext } from '@wsporto/typesql-parser';
 import { PostgresColumnSchema } from '../drivers/types';
-import { extractOriginalSql, splitName } from '../mysql-query-analyzer/select-columns';
+import { extractOriginalSql, splitName, splitTableName } from '../mysql-query-analyzer/select-columns';
 import { DynamicSqlInfo2, FieldName } from '../mysql-query-analyzer/types';
 import { QueryType } from '../types';
 import { Relation2 } from '../sqlite-query-analyzer/sqlite-describe-nested-query';
@@ -20,13 +20,9 @@ export type NotNullInfo = {
 	column_key?: 'PRI' | 'UNI' | '',
 	type: PostgresSimpleType;
 	jsonType?: JsonType;
-	recordTypes?: RecordType[];
+	recordTypes?: NotNullInfo[];
 }
 
-export type RecordType = {
-	type: PostgresSimpleType;
-	notNull: boolean;
-}
 
 export type PostgresTraverseResult = {
 	queryType: QueryType;
@@ -913,12 +909,15 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 		const columnref = c_expr.columnref();
 		if (columnref) {
 			if (context.columnRefIsRecord) {
+				const table = splitTableName(columnref.getText());
+				const columns = filterColumns(context.fromColumns, table);
 				return {
 					column_name: columnref.getText(),
 					is_nullable: false,
 					table_name: '',
 					table_schema: '',
-					type: 'unknown',
+					type: 'record',
+					recordTypes: columns
 				}
 			}
 			else {
@@ -1013,8 +1012,8 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 				is_nullable: expr_list.some(col => col.is_nullable),
 				table_name: '',
 				table_schema: '',
-				type: 'unknown',
-				recordTypes: expr_list.map(rec => ({ type: rec.type, notNull: !rec.is_nullable } satisfies RecordType))
+				type: 'record',
+				recordTypes: expr_list.map(expr => ({ ...expr, column_name: '' }))
 			}
 		}
 		const implicit_row = c_expr.implicit_row();
@@ -1204,7 +1203,7 @@ function transformFieldToJsonField(field: FieldInfo) {
 function traverse_json_build_obj_func(func_application: Func_applicationContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
 	const columnName = func_application.func_name()?.getText() || func_application.getText();
 	const func_arg_expr_list = func_application.func_arg_list()?.func_arg_expr_list() || [];
-	const argsResult = func_arg_expr_list.map(func_arg_expr => traversefunc_arg_expr(func_arg_expr, context, traverseResult))
+	const argsResult = func_arg_expr_list.map(func_arg_expr => traversefunc_arg_expr(func_arg_expr, { ...context, columnRefIsRecord: undefined }, traverseResult))
 	const result: NotNullInfo = {
 		column_name: columnName,
 		is_nullable: false,
@@ -1222,7 +1221,7 @@ function traverse_json_build_obj_func(func_application: Func_applicationContext,
 function traverse_json_agg(func_application: Func_applicationContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
 	const columnName = func_application.func_name()?.getText() || func_application.getText();
 	const func_arg_expr_list = func_application.func_arg_list()?.func_arg_expr_list() || [];
-	const argsResult = func_arg_expr_list.map(func_arg_expr => traversefunc_arg_expr(func_arg_expr, context, traverseResult))
+	const argsResult = func_arg_expr_list.map(func_arg_expr => traversefunc_arg_expr(func_arg_expr, { ...context, columnRefIsRecord: true }, traverseResult))
 	const result: NotNullInfo = {
 		column_name: columnName,
 		is_nullable: context.filter_expr != null,
@@ -1231,10 +1230,25 @@ function traverse_json_agg(func_application: Func_applicationContext, context: T
 		type: 'json[]',
 		jsonType: {
 			name: 'json[]',
-			properties: argsResult.map(arg => arg.jsonType || { name: 'json_field', type: arg.type, notNull: !arg.is_nullable })
+			properties: createJsonTypeForJsonAgg(argsResult[0], context.filter_expr)
 		}
 	}
 	return result;
+}
+
+function createJsonTypeForJsonAgg(arg: NotNullInfo, filter_expr: A_exprContext | undefined): JsonType[] {
+	if (arg.recordTypes) {
+		const jsonType = mapRecordsToJsonType(arg.recordTypes, filter_expr);
+		return [jsonType];
+	}
+	return [arg.jsonType || { name: 'json_field', type: arg.type, notNull: !arg.is_nullable }]
+}
+
+function mapRecordsToJsonType(recordTypes: NotNullInfo[], filterExpr: A_exprContext | undefined) {
+	const jsonNullability = inferJsonNullability(recordTypes, filterExpr);
+	const fields = recordTypes.map((col, index) => ({ name: col.column_name ? col.column_name : `f${index + 1}`, type: col.type, notNull: jsonNullability[index] } satisfies FieldInfo))
+	const jsonType = transformFieldsToJsonObjType(fields)
+	return jsonType;
 }
 
 function traversefunc_application(func_application: Func_applicationContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
@@ -1243,8 +1257,7 @@ function traversefunc_application(func_application: Func_applicationContext, con
 	if (functionName === 'row_to_json') {
 		const argResult = traversefunc_arg_expr(func_arg_expr_list[0], { ...context, columnRefIsRecord: true }, traverseResult);
 		if (argResult.recordTypes) {
-			const fields = argResult.recordTypes.map((record, index) => ({ name: `f${index + 1}`, type: record.type, notNull: record.notNull } satisfies FieldInfo))
-			const jsonType = transformFieldsToJsonObjType(fields)
+			const jsonType = mapRecordsToJsonType(argResult.recordTypes, context.filter_expr);
 			return {
 				column_name: functionName,
 				is_nullable: false,
@@ -1254,21 +1267,6 @@ function traversefunc_application(func_application: Func_applicationContext, con
 				jsonType
 			};
 		}
-		else {
-			const columns = filterColumns(context.fromColumns, { name: '*', prefix: argResult.column_name });
-			const jsonNullability = inferJsonNullability(columns, context.filter_expr);
-			const fields = columns.map((col, index) => ({ name: col.column_name, type: col.type, notNull: jsonNullability[index] } satisfies FieldInfo))
-			const jsonType = transformFieldsToJsonObjType(fields);
-			return {
-				column_name: functionName,
-				is_nullable: false,
-				table_name: '',
-				table_schema: '',
-				type: 'json',
-				jsonType
-			};
-		}
-
 	}
 
 	const argsResult = func_arg_expr_list.map(func_arg_expr => traversefunc_arg_expr(func_arg_expr, context, traverseResult))

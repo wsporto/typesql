@@ -123,6 +123,19 @@ export function splitName(fieldName: string): FieldName {
 	return withoutStick;
 }
 
+export function splitTableName(fieldName: string): FieldName {
+	const tableNameSplit = fieldName.split('.');
+	const result: FieldName = {
+		name: tableNameSplit.length === 2 ? tableNameSplit[1] : '*',  //p.*
+		prefix: tableNameSplit[0]
+	};
+	const withoutStick: FieldName = {
+		name: removeBackStick(result.name),
+		prefix: result.prefix
+	};
+	return withoutStick;
+}
+
 function removeBackStick(name: string) {
 	const withoutBackStick = name.startsWith('`') && name.endsWith('`') ? name.slice(1, -1) : name;
 	return withoutBackStick;
