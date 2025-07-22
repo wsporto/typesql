@@ -6,7 +6,7 @@ import { DynamicSqlInfo2, FieldName } from '../mysql-query-analyzer/types';
 import { QueryType } from '../types';
 import { Relation2 } from '../sqlite-query-analyzer/sqlite-describe-nested-query';
 import { CheckConstraintResult } from '../drivers/postgres';
-import { JsonArrayType, JsonFieldType, JsonObjType, JsonPropertyDef, JsonType, PostgresSimpleType } from '../sqlite-query-analyzer/types';
+import { JsonArrayType, JsonFieldType, JsonObjType, JsonPropertyDef, JsonType, PostgresEnumType, PostgresSimpleType } from '../sqlite-query-analyzer/types';
 import { parseSql } from '@wsporto/typesql-parser/postgres';
 import { UserFunctionSchema } from './types';
 
@@ -39,7 +39,7 @@ export type PostgresTraverseResult = {
 
 export type ParamInfo = {
 	isNotNull: boolean;
-	checkConstraint?: string;
+	checkConstraint?: PostgresEnumType;
 }
 
 type ParamWithIndex = ParamInfo & {
@@ -2023,8 +2023,8 @@ function traverseDeletestmt(deleteStmt: DeletestmtContext, dbSchema: PostgresCol
 	return result;
 }
 
-function addConstraintIfNotNull(checkConstraint: string | undefined) {
-	return checkConstraint !== undefined ? { checkConstraint } : {};
+function addConstraintIfNotNull(checkConstraint: PostgresEnumType | undefined): { checkConstraint: PostgresEnumType } | undefined {
+	return checkConstraint !== undefined ? { checkConstraint } : undefined;
 }
 
 function traverseUpdatestmt(updatestmt: UpdatestmtContext, traverseContext: TraverseContext, traverseResult: TraverseResult): PostgresTraverseResult {

@@ -7,6 +7,7 @@ import { ForeignKeyInfo } from '../sqlite-query-analyzer/query-executor';
 import { groupBy } from '../util';
 import { transformCheckToEnum } from '../postgres-query-analyzer/enum-parser';
 import { UserFunctionSchema } from '../postgres-query-analyzer/types';
+import { PostgresEnumType } from '../sqlite-query-analyzer/types';
 
 export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], TypeSqlError> {
 	return ResultAsync.fromThrowable(
@@ -100,7 +101,7 @@ async function _loadEnums(sql: Sql): Promise<EnumResult[]> {
 	return result;
 }
 
-export type CheckConstraintResult = Record<string, string>
+export type CheckConstraintResult = Record<string, PostgresEnumType>
 export function loadCheckConstraints(sql: Sql): ResultAsync<CheckConstraintResult, TypeSqlError> {
 	return (ResultAsync.fromThrowable(() => _loadCheckConstraints(sql), err => convertPostgresErrorToTypeSQLError(err))()).map(enumResult => {
 		const checkConstraintResult: CheckConstraintResult = {}

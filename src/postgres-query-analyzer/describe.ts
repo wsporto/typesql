@@ -1,8 +1,7 @@
-import { ParameterDef, TypeSqlError } from '../types';
-import { DescribeParameters, DescribeQueryColumn, PostgresColumnSchema, PostgresDescribe, PostgresType } from '../drivers/types';
+import { TypeSqlError } from '../types';
+import { DescribeParameters, DescribeQueryColumn, PostgresDescribe, PostgresTypeHash } from '../drivers/types';
 import { postgresDescribe, loadDbSchema, loadEnumsMap, EnumMap, EnumResult, loadCheckConstraints, CheckConstraintResult, loadUserFunctions } from '../drivers/postgres';
 import { Sql } from 'postgres';
-import { ColumnInfo } from '../mysql-query-analyzer/types';
 import { safeParseSql } from './parser';
 import { replacePostgresParams } from '../sqlite-query-analyzer/replace-list-params';
 import { ok, Result, ResultAsync, err } from 'neverthrow';
@@ -13,7 +12,7 @@ import { isLeft } from 'fp-ts/lib/Either';
 import { hasAnnotation } from '../describe-query';
 import { describeDynamicQuery2 } from '../describe-dynamic-query';
 import { PostgresColumnInfo, PostgresParameterDef, PostgresSchemaDef } from './types';
-import { JsonType } from '../sqlite-query-analyzer/types';
+import { JsonType, PostgresEnumType, PostgresType } from '../sqlite-query-analyzer/types';
 
 function describeQueryRefine(describeParameters: DescribeParameters): Result<PostgresSchemaDef, TypeSqlError> {
 	const { sql, dbSchema, postgresDescribeResult, enumsTypes, checkConstraints, namedParameters, userFunctions } = describeParameters;
@@ -81,17 +80,17 @@ function createIndexToNameMap(names: string[]): Map<number, string> {
 	return indexToName;
 }
 
-function mapToColumnInfo(col: DescribeQueryColumn, posgresTypes: PostgresType, enumTypes: EnumMap, checkConstraints: CheckConstraintResult, colInfo: NotNullInfo): PostgresColumnInfo {
+function mapToColumnInfo(col: DescribeQueryColumn, posgresTypes: PostgresTypeHash, enumTypes: EnumMap, checkConstraints: CheckConstraintResult, colInfo: NotNullInfo): PostgresColumnInfo {
 	const constraintKey = `[${colInfo.table_schema}][${colInfo.table_name}][${colInfo.column_name}]`;
 	return {
 		name: col.name,
 		notNull: !colInfo.is_nullable,
-		type: createType(col.typeId, posgresTypes, enumTypes.get(col.typeId), checkConstraints[constraintKey], colInfo.jsonType) as any ?? '?',
+		type: createType(col.typeId, posgresTypes, enumTypes.get(col.typeId), checkConstraints[constraintKey], colInfo.jsonType),
 		table: colInfo.table_name
 	}
 }
 
-function createType(typeId: number, postgresTypes: PostgresType, enumType: EnumResult[] | undefined, checkConstraint: string | undefined, jsonType: JsonType | undefined) {
+function createType(typeId: number, postgresTypes: PostgresTypeHash, enumType: EnumResult[] | undefined, checkConstraint: PostgresEnumType | undefined, jsonType: JsonType | undefined): PostgresType {
 	if (enumType) {
 		return createEnumType(enumType!);
 	}
@@ -101,15 +100,15 @@ function createType(typeId: number, postgresTypes: PostgresType, enumType: EnumR
 	if (jsonType) {
 		return jsonType;
 	}
-	return postgresTypes[typeId];
+	return postgresTypes[typeId] ?? 'unknown';
 }
 
-function createEnumType(enumList: EnumResult[]) {
+function createEnumType(enumList: EnumResult[]): PostgresEnumType {
 	const enumListStr = enumList.map(col => `'${col.enumlabel}'`).join(',');
 	return `enum(${enumListStr})`;
 }
 
-function mapToParamDef(postgresTypes: PostgresType, enumTypes: EnumMap, paramName: string, paramType: number, checkConstraint: string | undefined, notNull: boolean, isList: boolean): PostgresParameterDef {
+function mapToParamDef(postgresTypes: PostgresTypeHash, enumTypes: EnumMap, paramName: string, paramType: number, checkConstraint: PostgresEnumType | undefined, notNull: boolean, isList: boolean): PostgresParameterDef {
 	const arrayType = isList ? '[]' : ''
 	return {
 		name: paramName,

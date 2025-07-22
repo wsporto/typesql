@@ -1,4 +1,6 @@
-export function transformCheckToEnum(checkStr: string): string | null {
+import { PostgresEnumType } from '../sqlite-query-analyzer/types';
+
+export function transformCheckToEnum(checkStr: string): PostgresEnumType | null {
 	// Match only = ANY (ARRAY[...]) pattern
 	const anyArrayRegex = /=\s*ANY\s*\(\s*ARRAY\[(.*?)\]\s*\)/i;
 	const match = checkStr.match(anyArrayRegex);

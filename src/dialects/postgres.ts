@@ -1,7 +1,8 @@
+import { PostgresTypeHash } from '../drivers/types';
 import { TsType } from '../mysql-mapping';
 import { PostgresSimpleType, PostgresType } from '../sqlite-query-analyzer/types';
 
-export const postgresTypes = {
+export const postgresTypes: PostgresTypeHash = {
 	16: 'bool',
 	17: 'bytea',
 	18: 'char',
@@ -49,9 +50,9 @@ export const postgresTypes = {
 	3615: 'tsquery',
 	3802: 'jsonb',
 	3807: '_jsonb',
-	4072: 'jsonpath',
-	4073: '_jsonpath'
-} as any;
+	// 4072: 'jsonpath',
+	// 4073: '_jsonpath'
+};
 
 function isEnumType(type: PostgresSimpleType): type is `enum(${string})` {
 	return type.startsWith('enum(');

@@ -40,6 +40,8 @@ export type PostgresType =
 	| PostgresSimpleType
 	| JsonType
 
+export type PostgresEnumType = `enum(${string})`;
+
 export type PostgresSimpleType =
 	| 'bool'
 	| '_bool'
@@ -95,7 +97,7 @@ export type PostgresSimpleType =
 	| 'timestamptz'
 	| '_timestamptz'
 	| 'timestamptz[]'
-	| `enum(${string})`
+	| PostgresEnumType
 	| 'tsvector'
 	| 'tsvector[]'
 	| 'tsquery'

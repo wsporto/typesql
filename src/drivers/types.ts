@@ -39,7 +39,7 @@ export type DescribeQueryResult = PostgresDescribe & {
 	multipleRowsResult: boolean;
 }
 
-export type PostgresType = { [key: number]: string }
+export type PostgresTypeHash = { [key: number]: PostgresSimpleType | undefined }
 
 export type Driver<Connection> = {
 	loadDbSchema: (conn: Connection) => TaskEither<string, PostgresColumnSchema[]>;
