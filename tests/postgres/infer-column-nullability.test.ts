@@ -1327,7 +1327,7 @@ describe('Infer column nullability', () => {
 		assert.deepStrictEqual(actual.columns, expected);
 	});
 
-	it.skip('select with inner join after left join', () => {
+	it('select with inner join after left join', () => {
 		const sqlInnerJoin = `
         select t1.id, t2.id, t3.id, t1.value, t2.name, t3.double_value
         from mytable1 t1
@@ -1338,7 +1338,7 @@ describe('Infer column nullability', () => {
 
 		const expected = [true, true, true, false, false, false];
 
-		assert.deepStrictEqual(actualInnerJoin.columns, expected);
+		assert.deepStrictEqual(actualInnerJoin.columns.map(col => !col.is_nullable), expected);
 
 		// USE JOIN instead of INNER JOIN. The same result is expected
 		const sqlJoin = `
@@ -1349,7 +1349,63 @@ describe('Infer column nullability', () => {
 		`;
 		const actualJoin = parseSql(sqlJoin, dbSchema, {}, []);
 
-		assert.deepStrictEqual(actualJoin.columns, expected);
+		assert.deepStrictEqual(actualJoin.columns.map(col => !col.is_nullable), expected);
+	});
+
+	it('select with inner join after left join', () => {
+		const sqlInnerJoin = `
+        select t1.id, t2.id, t3.id, t1.value, t2.name, t3.double_value
+        from mytable1 t1
+        left join mytable2 t2 on t1.id = t2.id
+        inner join mytable3 t3 on t2.id = t3.id and t3.id = 1
+        `;
+		const actualInnerJoin = parseSql(sqlInnerJoin, dbSchema, {}, []);
+
+		const expected = [true, true, true, false, false, false];
+
+		assert.deepStrictEqual(actualInnerJoin.columns.map(col => !col.is_nullable), expected);
+	});
+
+	it('select with inner join after left join', () => {
+		const sqlInnerJoin = `
+        select t1.id, t2.id, t3.id, t1.value, t2.name, t3.double_value
+        from mytable1 t1
+        left join mytable2 t2 on t1.id = t2.id
+        inner join mytable3 t3 on t2.id = t3.id or t3.id = 1 -- will not prevent t2.id = null
+        `;
+		const actualInnerJoin = parseSql(sqlInnerJoin, dbSchema, {}, []);
+
+		const expected = [true, false, true, false, false, false];
+
+		assert.deepStrictEqual(actualInnerJoin.columns.map(col => !col.is_nullable), expected);
+	});
+
+	it('select with inner join after left join', () => {
+		const sqlInnerJoin = `
+        select t1.id, t2.id, t3.id, t1.value, t2.name, t3.double_value
+        from mytable1 t1
+        left join mytable2 t2 on t1.id = t2.id
+        inner join mytable3 t3 on t2.id = t3.id or t2.id is null -- will not prevent t2.id = null
+        `;
+		const actualInnerJoin = parseSql(sqlInnerJoin, dbSchema, {}, []);
+
+		const expected = [true, false, true, false, false, false];
+
+		assert.deepStrictEqual(actualInnerJoin.columns.map(col => !col.is_nullable), expected);
+	});
+
+	it('select with inner join after left join', () => {
+		const sqlInnerJoin = `
+        select t1.id, t2.id, t3.id, t1.value, t2.name, t3.double_value
+        from mytable1 t1
+        left join mytable2 t2 on t1.id = t2.id
+        inner join mytable3 t3 on t2.id = t3.id or t2.id is not null -- will prevent t2.id = null
+        `;
+		const actualInnerJoin = parseSql(sqlInnerJoin, dbSchema, {}, []);
+
+		const expected = [true, true, true, false, false, false];
+
+		assert.deepStrictEqual(actualInnerJoin.columns.map(col => !col.is_nullable), expected);
 	});
 
 	it('select with left join after inner join', () => {

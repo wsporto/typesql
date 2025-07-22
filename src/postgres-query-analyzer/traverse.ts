@@ -1175,7 +1175,9 @@ type FieldInfo = {
 }
 
 function inferJsonNullability(columns: NotNullInfo[], filterExpr: A_exprContext | undefined): boolean[] {
-	const tables = columns.filter(col => filterExpr && col.original_is_nullable === false && isNotNull_a_expr(col, filterExpr)).map(col => col.table_name);
+	const tables = columns.filter(col => filterExpr && col.original_is_nullable === false
+		&& isNotNull_a_expr({ name: col.column_name, prefix: col.table_name }, filterExpr))
+		.map(col => col.table_name);
 	const fields = columns.map(col => {
 		return col.original_is_nullable != null && tables.includes(col.table_name) ? !col.original_is_nullable : !col.is_nullable;
 	});
@@ -1535,7 +1537,7 @@ function fieldNameToString(fieldName: FieldName): string {
 }
 
 function checkIsNullable(where_clause: Where_clauseContext, field: NotNullInfo): NotNullInfo {
-	const isNotNullResult = !field.is_nullable || isNotNull(field, where_clause);
+	const isNotNullResult = !field.is_nullable || isNotNull({ name: field.column_name, prefix: field.table_name }, where_clause);
 	const col: NotNullInfo = {
 		...field,
 		is_nullable: !isNotNullResult
@@ -1575,6 +1577,38 @@ function getFromColumns(tableName: TableName, withColumns: NotNullInfo[], dbSche
 	return filteredSchema;
 }
 
+
+function checkLeftJoinIsNullable(leftJoin: Join, subsequentJoins: Join[]): boolean {
+	if (!leftJoin.joinQual) {
+		return true; // No condition = always nullable
+	}
+
+	const leftTable = getTableName(leftJoin.tableRef);
+	const leftJoinColumns = getJoinColumns(leftJoin.joinQual)
+		.filter(col => col.prefix === leftTable.name || col.prefix === leftTable.alias);
+
+	for (const join of subsequentJoins) {
+		// Only INNER JOINs can cancel nullability
+		if (!(join.joinType === null || join.joinType.INNER_P())) {
+			continue;
+		}
+		const joinTable = getTableName(leftJoin.tableRef);
+		const joinConditionColumns = getJoinColumns(join.joinQual!)
+			.filter(col => col.prefix === joinTable.name || col.prefix === joinTable.alias);;
+
+		// Check if this join references columns from the left join
+		const referencesLeftJoin = joinConditionColumns.some(col =>
+			leftJoinColumns.some(lc => lc.prefix === col.prefix && isNotNull_a_expr(col, join.joinQual?.a_expr()!))
+		);
+
+		if (referencesLeftJoin) {
+			return false; // LEFT JOIN is effectively filtered by INNER JOIN — not nullable
+		}
+	}
+
+	return true; // No INNER JOIN filtered it — remains nullable
+}
+
 function traverse_table_ref(table_ref: Table_refContext, context: TraverseContext, traverseResult: TraverseResult): FromResult {
 	const allColumns: NotNullInfo[] = [];
 	const relation_expr = table_ref.relation_expr();
@@ -1610,14 +1644,25 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 		}
 
 		const joinList = extractJoins(table_ref);
-		const joinColumns = joinList.flatMap((join) => {
+		const joinColumns = joinList.flatMap((join, index) => {
 			const joinType = join.joinType; //INNER, LEFT
 			const joinQual = join.joinQual;
 			const numParamsBefore = traverseResult.parameters.length;
 			const joinTableRefResult = traverse_table_ref(join.tableRef, context, traverseResult);
 			const isLeftJoin = joinType?.LEFT();
 			const filteredColumns = joinQual && joinQual?.USING() ? filterUsingColumns(joinTableRefResult.columns, joinQual) : joinTableRefResult.columns;
-			const resultColumns = isLeftJoin ? filteredColumns.map(col => ({ ...col, is_nullable: true, original_is_nullable: col.is_nullable } satisfies NotNullInfo)) : filteredColumns;
+			const subsequentJoints = joinList.slice(index + 1);
+			const resultColumns = isLeftJoin ? filteredColumns.map(col => {
+				const checkIsNullable = checkLeftJoinIsNullable(join, subsequentJoints);
+				const colResult: NotNullInfo =
+				{
+					...col,
+					is_nullable: checkIsNullable ? true : col.is_nullable,
+					original_is_nullable:
+						col.is_nullable
+				};
+				return colResult;
+			}) : filteredColumns;
 
 			if (context.collectNestedInfo && joinQual) {
 				collectNestedInfo(joinQual, resultColumns, traverseResult);
@@ -2102,7 +2147,7 @@ function traverse_colid(colid: ColidContext, dbSchema: PostgresColumnSchema[]): 
 	return column;
 }
 
-function isNotNull(field: NotNullInfo, where_clause: Where_clauseContext): boolean {
+function isNotNull(field: FieldName, where_clause: Where_clauseContext): boolean {
 
 	const a_expr = where_clause.a_expr();
 	if (a_expr) {
@@ -2111,7 +2156,7 @@ function isNotNull(field: NotNullInfo, where_clause: Where_clauseContext): boole
 	return false;
 }
 
-function isNotNull_a_expr(field: NotNullInfo, a_expr: A_exprContext): boolean {
+function isNotNull_a_expr(field: FieldName, a_expr: A_exprContext): boolean {
 	const a_expr_qual = a_expr.a_expr_qual();
 	if (a_expr_qual) {
 		return isNotNull_a_expr_qual(a_expr_qual, field);
@@ -2119,7 +2164,7 @@ function isNotNull_a_expr(field: NotNullInfo, a_expr: A_exprContext): boolean {
 	return false;
 }
 
-function isNotNull_a_expr_qual(a_expr_qual: A_expr_qualContext, field: NotNullInfo): boolean {
+function isNotNull_a_expr_qual(a_expr_qual: A_expr_qualContext, field: FieldName): boolean {
 	const a_expr_lessless = a_expr_qual.a_expr_lessless();
 	if (a_expr_lessless) {
 		return isNotNull_a_expr_lessless(a_expr_lessless, field);
@@ -2127,7 +2172,7 @@ function isNotNull_a_expr_qual(a_expr_qual: A_expr_qualContext, field: NotNullIn
 	return false;
 }
 
-function isNotNull_a_expr_lessless(a_expr_lessless: A_expr_lesslessContext, field: NotNullInfo): boolean {
+function isNotNull_a_expr_lessless(a_expr_lessless: A_expr_lesslessContext, field: FieldName): boolean {
 	const a_expr_or = a_expr_lessless.a_expr_or_list()[0];
 	if (a_expr_or) {
 		return isNotNull_a_expr_or(a_expr_or, field);
@@ -2137,7 +2182,7 @@ function isNotNull_a_expr_lessless(a_expr_lessless: A_expr_lesslessContext, fiel
 
 //a_expr_or: "valueisnotnulland(id>0orvalueisnotnull)"
 //a_expr_or: "valueisnotnullor(id>0orvalueisnotnull)"
-function isNotNull_a_expr_or(a_expr_or: A_expr_orContext, field: NotNullInfo): boolean {
+function isNotNull_a_expr_or(a_expr_or: A_expr_orContext, field: FieldName): boolean {
 	const a_expr_and = a_expr_or.a_expr_and_list();
 	if (a_expr_and) {
 		//1. valueisnotnull
@@ -2148,7 +2193,7 @@ function isNotNull_a_expr_or(a_expr_or: A_expr_orContext, field: NotNullInfo): b
 	return false;
 }
 
-function isNotNull_a_expr_and(a_expr_and: A_expr_andContext, field: NotNullInfo): boolean {
+function isNotNull_a_expr_and(a_expr_and: A_expr_andContext, field: FieldName): boolean {
 	const a_expr_between_list = a_expr_and.a_expr_between_list();
 	if (a_expr_between_list) {
 		return a_expr_between_list.some(a_expr_between => isNotNull_a_expr_between(a_expr_between, field));
@@ -2156,7 +2201,7 @@ function isNotNull_a_expr_and(a_expr_and: A_expr_andContext, field: NotNullInfo)
 	return false;
 }
 
-function isNotNull_a_expr_between(a_expr_between: A_expr_betweenContext, field: NotNullInfo): boolean {
+function isNotNull_a_expr_between(a_expr_between: A_expr_betweenContext, field: FieldName): boolean {
 	const a_expr_in = a_expr_between.a_expr_in_list()[0];
 	if (a_expr_in) {
 		return isNotNull_a_expr_in(a_expr_in, field);
@@ -2164,7 +2209,7 @@ function isNotNull_a_expr_between(a_expr_between: A_expr_betweenContext, field: 
 	return false;
 }
 
-function isNotNull_a_expr_in(a_expr_in: A_expr_inContext, field: NotNullInfo): boolean {
+function isNotNull_a_expr_in(a_expr_in: A_expr_inContext, field: FieldName): boolean {
 	const a_expr_unary_not = a_expr_in.a_expr_unary_not();
 	if (a_expr_unary_not) {
 		return isNotNull_a_expr_unary_not(a_expr_unary_not, field);
@@ -2172,7 +2217,7 @@ function isNotNull_a_expr_in(a_expr_in: A_expr_inContext, field: NotNullInfo): b
 	return false;
 }
 
-function isNotNull_a_expr_unary_not(a_expr_unary_not: A_expr_unary_notContext, field: NotNullInfo): boolean {
+function isNotNull_a_expr_unary_not(a_expr_unary_not: A_expr_unary_notContext, field: FieldName): boolean {
 	const a_expr_isnull = a_expr_unary_not.a_expr_isnull();
 	if (a_expr_isnull) {
 		return isNotNull_a_expr_isnull(a_expr_isnull, field);
@@ -2180,15 +2225,22 @@ function isNotNull_a_expr_unary_not(a_expr_unary_not: A_expr_unary_notContext, f
 	return false;
 }
 
-function isNotNull_a_expr_isnull(a_expr_isnull: A_expr_isnullContext, field: NotNullInfo): boolean {
+function isNotNull_a_expr_isnull(a_expr_isnull: A_expr_isnullContext, field: FieldName): boolean {
 	const a_expr_is_not = a_expr_isnull.a_expr_is_not();
 	if (a_expr_is_not) {
-		return isNotNull_a_expr_is_not(a_expr_is_not, field);
+		const isNotNull = isNotNull_a_expr_is_not(a_expr_is_not, field);
+		if (isNotNull && a_expr_is_not.IS() && a_expr_is_not.NOT() && a_expr_is_not.NULL_P()) {
+			return true;
+		}
+		if (a_expr_is_not.IS() && a_expr_is_not.NULL_P()) {
+			return false;
+		}
+		return isNotNull;
 	}
 	return false;
 }
 
-function isNotNull_a_expr_is_not(a_expr_is_not: A_expr_is_notContext, field: NotNullInfo): boolean {
+function isNotNull_a_expr_is_not(a_expr_is_not: A_expr_is_notContext, field: FieldName): boolean {
 	const a_expr_compare = a_expr_is_not.a_expr_compare();
 	if (a_expr_compare) {
 		if (a_expr_is_not.IS() !== null && a_expr_is_not.NOT() !== null && a_expr_is_not.NULL_P() !== null) {
@@ -2203,7 +2255,7 @@ function isNotNull_a_expr_is_not(a_expr_is_not: A_expr_is_notContext, field: Not
 	return false;
 }
 
-function isNotNull_a_expr_compare(a_expr_compare: A_expr_compareContext, field: NotNullInfo): boolean {
+function isNotNull_a_expr_compare(a_expr_compare: A_expr_compareContext, field: FieldName): boolean {
 	const a_expr_like_list = a_expr_compare.a_expr_like_list()
 	if (a_expr_like_list) {
 		//a = b, b = a, id > 10, id = $1
@@ -2212,7 +2264,7 @@ function isNotNull_a_expr_compare(a_expr_compare: A_expr_compareContext, field: 
 	return false;
 }
 
-function isNotNull_a_expr_like(a_expr_like: A_expr_likeContext, field: NotNullInfo): boolean {
+function isNotNull_a_expr_like(a_expr_like: A_expr_likeContext, field: FieldName): boolean {
 	const a_expr_qual_op_list = a_expr_like.a_expr_qual_op_list();
 	if (a_expr_qual_op_list) {
 		return a_expr_qual_op_list.every(a_expr_qual_op => isNotNull_a_expr_qual_op(a_expr_qual_op, field))
@@ -2220,7 +2272,7 @@ function isNotNull_a_expr_like(a_expr_like: A_expr_likeContext, field: NotNullIn
 	return false;
 }
 
-function isNotNull_a_expr_qual_op(a_expr_qual_op: A_expr_qual_opContext, field: NotNullInfo): boolean {
+function isNotNull_a_expr_qual_op(a_expr_qual_op: A_expr_qual_opContext, field: FieldName): boolean {
 	const a_expr_unary_qualop_list = a_expr_qual_op.a_expr_unary_qualop_list();
 	if (a_expr_unary_qualop_list) {
 		return a_expr_unary_qualop_list.every(a_expr_unary_qualop => isNotNul_a_expr_unary_qualop(a_expr_unary_qualop, field))
@@ -2228,7 +2280,7 @@ function isNotNull_a_expr_qual_op(a_expr_qual_op: A_expr_qual_opContext, field: 
 	return false;
 }
 
-function isNotNul_a_expr_unary_qualop(a_expr_unary_qualop: A_expr_unary_qualopContext, field: NotNullInfo): boolean {
+function isNotNul_a_expr_unary_qualop(a_expr_unary_qualop: A_expr_unary_qualopContext, field: FieldName): boolean {
 	const a_expr_add = a_expr_unary_qualop.a_expr_add();
 	if (a_expr_add) {
 		return isNotNull_a_expr_add(a_expr_add, field);
@@ -2263,7 +2315,7 @@ function mapAddExprType(types: (ArithmeticType | 'unknown')[]): ArithmeticType |
 	return currentType;
 }
 
-function isNotNull_a_expr_add(a_expr_add: A_expr_addContext, field: NotNullInfo): boolean {
+function isNotNull_a_expr_add(a_expr_add: A_expr_addContext, field: FieldName): boolean {
 	const a_expr_mul_list = a_expr_add.a_expr_mul_list();
 	if (a_expr_mul_list) {
 		return a_expr_mul_list.every(a_expr_mul => isNotNull_a_expr_mul(a_expr_mul, field))
@@ -2271,7 +2323,7 @@ function isNotNull_a_expr_add(a_expr_add: A_expr_addContext, field: NotNullInfo)
 	return false;
 }
 
-function isNotNull_a_expr_mul(a_expr_mul: A_expr_mulContext, field: NotNullInfo): boolean {
+function isNotNull_a_expr_mul(a_expr_mul: A_expr_mulContext, field: FieldName): boolean {
 	const a_expr_caret_list = a_expr_mul.a_expr_caret_list();
 	if (a_expr_caret_list) {
 		return a_expr_caret_list.every(a_expr_caret => isNotNull_a_expr_caret(a_expr_caret, field));
@@ -2279,7 +2331,7 @@ function isNotNull_a_expr_mul(a_expr_mul: A_expr_mulContext, field: NotNullInfo)
 	return false;
 }
 
-function isNotNull_a_expr_caret(a_expr_caret: A_expr_caretContext, field: NotNullInfo): boolean {
+function isNotNull_a_expr_caret(a_expr_caret: A_expr_caretContext, field: FieldName): boolean {
 	const a_expr_unary_sign_list = a_expr_caret.a_expr_unary_sign_list();
 	if (a_expr_unary_sign_list) {
 		return a_expr_unary_sign_list.every(a_expr_unary_sign => isNotNull_a_expr_unary_sign(a_expr_unary_sign, field))
@@ -2287,7 +2339,7 @@ function isNotNull_a_expr_caret(a_expr_caret: A_expr_caretContext, field: NotNul
 	return false;
 }
 
-function isNotNull_a_expr_unary_sign(a_expr_unary_sign: A_expr_unary_signContext, field: NotNullInfo): boolean {
+function isNotNull_a_expr_unary_sign(a_expr_unary_sign: A_expr_unary_signContext, field: FieldName): boolean {
 	const a_expr_at_time_zone = a_expr_unary_sign.a_expr_at_time_zone();
 	if (a_expr_at_time_zone) {
 		return isNotNull_a_expr_at_time_zone(a_expr_at_time_zone, field);
@@ -2295,7 +2347,7 @@ function isNotNull_a_expr_unary_sign(a_expr_unary_sign: A_expr_unary_signContext
 	return false;
 }
 
-function isNotNull_a_expr_at_time_zone(a_expr_at_time_zone: A_expr_at_time_zoneContext, field: NotNullInfo): boolean {
+function isNotNull_a_expr_at_time_zone(a_expr_at_time_zone: A_expr_at_time_zoneContext, field: FieldName): boolean {
 	const a_expr_collate = a_expr_at_time_zone.a_expr_collate();
 	if (a_expr_collate) {
 		return isNotNull_a_expr_collate(a_expr_collate, field);
@@ -2303,7 +2355,7 @@ function isNotNull_a_expr_at_time_zone(a_expr_at_time_zone: A_expr_at_time_zoneC
 	return false;
 }
 
-function isNotNull_a_expr_collate(a_expr_collate: A_expr_collateContext, field: NotNullInfo): boolean {
+function isNotNull_a_expr_collate(a_expr_collate: A_expr_collateContext, field: FieldName): boolean {
 	const a_expr_typecast = a_expr_collate.a_expr_typecast();
 	if (a_expr_typecast) {
 		return isNotNull_a_expr_typecast(a_expr_typecast, field);
@@ -2311,7 +2363,7 @@ function isNotNull_a_expr_collate(a_expr_collate: A_expr_collateContext, field: 
 	return false;
 }
 
-function isNotNull_a_expr_typecast(a_expr_typecast: A_expr_typecastContext, field: NotNullInfo): boolean {
+function isNotNull_a_expr_typecast(a_expr_typecast: A_expr_typecastContext, field: FieldName): boolean {
 	const c_expr = a_expr_typecast.c_expr();
 	if (c_expr) {
 		return isNotNull_c_expr(c_expr, field);
@@ -2319,12 +2371,12 @@ function isNotNull_a_expr_typecast(a_expr_typecast: A_expr_typecastContext, fiel
 	return false;
 }
 
-function isNotNull_c_expr(c_expr: C_exprContext, field: NotNullInfo): boolean {
+function isNotNull_c_expr(c_expr: C_exprContext, field: FieldName): boolean {
 	if (c_expr instanceof C_expr_exprContext) {
 		const columnref = c_expr.columnref();
 		if (columnref) {
 			const fieldName = splitName(columnref.getText());
-			return (fieldName.name === field.column_name && (fieldName.prefix === '' || field.table_name === fieldName.prefix));
+			return (fieldName.name === field.name && (fieldName.prefix === '' || field.prefix === fieldName.prefix));
 		}
 		const aexprconst = c_expr.aexprconst();
 		if (aexprconst) {
