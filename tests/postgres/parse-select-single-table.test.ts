@@ -498,7 +498,7 @@ describe('postgres-select-single-table', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
-	it.skip('parse a select with multiples params', async () => {
+	it('parse a select with multiples params', async () => {
 		const sql = `
         SELECT $1 as name, id, descr as description
         FROM mytable2 
@@ -513,27 +513,27 @@ describe('postgres-select-single-table', () => {
 				{
 					name: 'name',
 					type: 'text', //different from sqlite
-					notNull: false, //todo - differente from mysql
+					notNull: true,
 					table: ''
 				},
 				{
 					name: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 'mytable2'
 				},
 				{
 					name: 'description',
 					type: 'text',
 					notNull: false,
-					table: 'table'
+					table: 'mytable2'
 				}
 			],
 			parameters: [
 				{
 					name: 'param1',
 					type: 'text', //differente from sqlite
-					notNull: false //todo - differente from mysql
+					notNull: true
 				},
 				{
 					name: 'param2',

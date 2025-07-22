@@ -273,7 +273,7 @@ describe('postgres-parse-select-multiples-tables', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
-	it.skip('parse select with param 2', async () => {
+	it('parse select with param 2', async () => {
 		const sql = `
         SELECT t1.id, t2.name, t1.value, t2.descr as description, $1 as param1
         FROM mytable1 t1
@@ -284,31 +284,31 @@ describe('postgres-parse-select-multiples-tables', () => {
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
-			multipleRowsResult: false, //different from mysql and sqlite
+			multipleRowsResult: true,
 			columns: [
 				{
 					name: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 't1'
 				},
 				{
 					name: 'name', //where t1.name = ?; cannot be null
 					type: 'text',
 					notNull: true,
-					table: 'table'
+					table: 't2'
 				},
 				{
 					name: 'value', //where t1.value = ?; cannot be null
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 't1'
 				},
 				{
 					name: 'description',
 					type: 'text',
 					notNull: false,
-					table: 'table'
+					table: 't2'
 				},
 				{
 					name: 'param1',
@@ -346,7 +346,7 @@ describe('postgres-parse-select-multiples-tables', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
-	it.skip('parse select with param (tablelist)', async () => {
+	it('parse select with param (tablelist)', async () => {
 		const sql = `
         SELECT t3.id, t2.name, t1.value, $1 as param1
         FROM mytable1 t1, mytable2 t2, mytable3 t3
@@ -362,19 +362,19 @@ describe('postgres-parse-select-multiples-tables', () => {
 					name: 'id',
 					type: 'int4',
 					notNull: true,
-					table: 'table'
+					table: 't3'
 				},
 				{
 					name: 'name',
 					type: 'text',
 					notNull: true, //where t2.name = ?; cannot be null
-					table: 'table'
+					table: 't2'
 				},
 				{
 					name: 'value',
 					type: 'int4',
 					notNull: true, //where t1.value = ?; cannot be null
-					table: 'table'
+					table: 't1'
 				},
 				{
 					name: 'param1',
