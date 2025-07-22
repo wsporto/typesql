@@ -48,10 +48,14 @@ export const postgresTypes: PostgresTypeHash = {
 	2951: '_uuid',
 	3614: 'tsvector',
 	3615: 'tsquery',
+	3643: '_tsvector',
+	3645: '_tsquery',
 	3802: 'jsonb',
 	3807: '_jsonb',
-	// 4072: 'jsonpath',
-	// 4073: '_jsonpath'
+	4072: 'jsonpath',
+	4073: '_jsonpath',
+	16670: 'vector',
+	16676: '_vector'
 };
 
 function isEnumType(type: PostgresSimpleType): type is `enum(${string})` {
@@ -159,9 +163,17 @@ export function mapColumnType(postgresType: PostgresType): TsType {
 			return 'Date[]';
 		case 'tsvector':
 		case 'tsquery':
+		case 'jsonpath':
+		case 'vector':
 			return 'string';
+		case '_tsvector':
 		case 'tsvector[]':
+		case '_tsquery':
 		case 'tsquery[]':
+		case '_jsonpath':
+		case 'jsonpath[]':
+		case '_vector':
+		case 'vector[]':
 			return 'string[]';
 		case 'json':
 		case 'jsonb':
