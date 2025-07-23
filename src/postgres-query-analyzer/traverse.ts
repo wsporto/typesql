@@ -1078,7 +1078,7 @@ function excludeColumns(fromColumns: NotNullInfo[], excludeList: FieldName[]) {
 function traversec_expr_case(c_expr_case: C_expr_caseContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
 	const case_expr = c_expr_case.case_expr();
 	const whenResult = case_expr.when_clause_list().when_clause_list().map(when_clause => traversewhen_clause(when_clause, context, traverseResult));
-	const whenIsNotNull = whenResult.every(when => when);
+	const whenIsNotNull = whenResult.every(when => !when.is_nullable);
 	const elseExpr = case_expr.case_default()?.a_expr();
 	const elseResult = elseExpr ? traverse_a_expr(elseExpr, { ...context }, traverseResult) : null;
 	const elseIsNotNull = elseResult?.is_nullable === false || false;
@@ -1111,7 +1111,7 @@ function traversewhen_clause(when_clause: When_clauseContext, context: TraverseC
 		const thenExprResult = traverse_a_expr(thenExpr, { ...context, filter_expr: whenExprList[index] }, traverseResult);
 		return thenExprResult;
 	});
-	const notNull = whenExprResult.every(res => res);
+	const notNull = whenExprResult.every(res => !res.is_nullable);
 	return {
 		column_name: '?column?',
 		is_nullable: !notNull,

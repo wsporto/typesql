@@ -659,6 +659,140 @@ describe('postgres-select-single-table', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('parse select with CASE WHEN', async () => {
+		const sql = `
+			SELECT
+				CASE
+					WHEN id = 1 THEN 'one'
+					WHEN id = 2 THEN 'two'
+				END as id
+			FROM mytable1
+			`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'text',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('parse select with CASE WHEN ... ELSE', async () => {
+		const sql = `
+			SELECT
+				CASE
+					WHEN id = 1 THEN 'one'
+					WHEN id = 2 THEN 'two'
+					ELSE 'other'
+				END as id
+			FROM mytable1
+			`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'text',
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('parse select with CASE WHEN ... ELSE', async () => {
+		const sql = `
+			SELECT
+				CASE
+					WHEN id = 1 THEN 'one'
+					WHEN id = 2 THEN  null
+					ELSE 'other'
+				END as id
+			FROM mytable1
+			`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'text',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('parse select with CASE WHEN using IN operator', async () => {
+		const sql = `
+			select id from mytable2 where $1 in (
+				SELECT
+					CASE
+						WHEN id = 1 THEN 'one'
+						WHEN id = 2 THEN 'two'
+					END
+				FROM mytable1
+			)
+			`;
+		const actual = await describeQuery(postres, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'mytable2'
+				}
+			],
+			parameters: [
+				{
+					name: 'param1',
+					type: 'text',
+					notNull: true
+				}
+			]
+		};
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('SELECT SUM(ID) as sumById FROM mytable1 t1 GROUP BY id', async () => {
 		const sql = `
         SELECT SUM(ID) as "sumById"
