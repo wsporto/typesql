@@ -4,7 +4,7 @@ import { describeQuery } from '../../src/postgres-query-analyzer/describe';
 import { PostgresSchemaDef } from '../../src/postgres-query-analyzer/types';
 
 describe('postgres-parse-delete', () => {
-	const postres = postgres({
+	const client = postgres({
 		host: 'localhost',
 		username: 'postgres',
 		password: 'password',
@@ -12,9 +12,13 @@ describe('postgres-parse-delete', () => {
 		port: 5432
 	});
 
+	after(async () => {
+		await client.end();
+	});
+
 	it('delete from mytable1 where id = ?', async () => {
 		const sql = 'delete from mytable1 where id = $1';
-		const actual = await describeQuery(postres, sql, ['id']);
+		const actual = await describeQuery(client, sql, ['id']);
 		const expected: PostgresSchemaDef = {
 			multipleRowsResult: false,
 			queryType: 'Delete',
@@ -37,7 +41,7 @@ describe('postgres-parse-delete', () => {
 
 	it('delete from mytable1 where id = ?', async () => {
 		const sql = 'delete from mytable1 where value = $1';
-		const actual = await describeQuery(postres, sql, ['value']);
+		const actual = await describeQuery(client, sql, ['value']);
 		const expected: PostgresSchemaDef = {
 			multipleRowsResult: false,
 			queryType: 'Delete',
@@ -60,7 +64,7 @@ describe('postgres-parse-delete', () => {
 
 	it('CASE INSENSITIVE - DELETE FROM MYTABLE1 WHERE ID = ?', async () => {
 		const sql = 'DELETE FROM MYTABLE1 WHERE ID = $1';
-		const actual = await describeQuery(postres, sql, ['id']);
+		const actual = await describeQuery(client, sql, ['id']);
 		const expected: PostgresSchemaDef = {
 			multipleRowsResult: false,
 			queryType: 'Delete',
@@ -84,7 +88,7 @@ describe('postgres-parse-delete', () => {
 	it('delete from mytable1 where id in (?)', async () => {
 		const sql = 'delete from mytable1 where id in ($1)';
 		const expectedSql = `delete from mytable1 where id in (\${generatePlaceholders('$1', params.id)})`;
-		const actual = await describeQuery(postres, sql, ['id']);
+		const actual = await describeQuery(client, sql, ['id']);
 		const expected: PostgresSchemaDef = {
 			multipleRowsResult: false,
 			queryType: 'Delete',
@@ -107,7 +111,7 @@ describe('postgres-parse-delete', () => {
 
 	it('DELETE FROM mytable1 WHERE id = :id RETURNING *', async () => {
 		const sql = 'DELETE FROM mytable1 WHERE id = $1 RETURNING *';
-		const actual = await describeQuery(postres, sql, ['id']);
+		const actual = await describeQuery(client, sql, ['id']);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Delete',
@@ -143,7 +147,7 @@ describe('postgres-parse-delete', () => {
 
 	it('DELETE FROM mytable1 WHERE id = :id RETURNING id, id+id, value', async () => {
 		const sql = 'DELETE FROM mytable1 WHERE id = $1 RETURNING id, id+id, value';
-		const actual = await describeQuery(postres, sql, ['id']);
+		const actual = await describeQuery(client, sql, ['id']);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Delete',

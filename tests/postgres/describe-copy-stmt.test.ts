@@ -4,7 +4,7 @@ import { describeQuery } from '../../src/postgres-query-analyzer/describe';
 import { PostgresSchemaDef } from '../../src/postgres-query-analyzer/types';
 
 describe('postgres-describe-copy-stmt', () => {
-	const postres = postgres({
+	const client = postgres({
 		host: 'localhost',
 		username: 'postgres',
 		password: 'password',
@@ -12,9 +12,13 @@ describe('postgres-describe-copy-stmt', () => {
 		port: 5432
 	});
 
+	after(async () => {
+		await client.end();
+	});
+
 	it('COPY mytable1 (value) FROM STDIN WITH CSV', async () => {
 		const sql = 'COPY mytable1 (value) FROM STDIN WITH CSV';
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			multipleRowsResult: false,
 			queryType: 'Copy',

@@ -5,12 +5,16 @@ import { describeQuery } from '../../src/postgres-query-analyzer/describe';
 import { PostgresSchemaDef } from '../../src/postgres-query-analyzer/types';
 
 describe('postgres-parse-select-multiples-tables', () => {
-	const postres = postgres({
+	const client = postgres({
 		host: 'localhost',
 		username: 'postgres',
 		password: 'password',
 		database: 'postgres',
 		port: 5432
+	});
+
+	after(async () => {
+		await client.end();
 	});
 
 	it('parse a basic with inner join', async () => {
@@ -20,7 +24,7 @@ describe('postgres-parse-select-multiples-tables', () => {
         FROM mytable1 t1 
         INNER JOIN mytable2 t2 on t2.id = t1.id
         `;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -71,7 +75,7 @@ describe('postgres-parse-select-multiples-tables', () => {
         FROM mytable1 as t1
         INNER JOIN mytable2 as t2 on t2.id = t1.id
         `;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -122,7 +126,7 @@ describe('postgres-parse-select-multiples-tables', () => {
         FROM mytable1 t1
         INNER JOIN mytable2 t2 on t2.id = t1.id
         `;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -155,7 +159,7 @@ describe('postgres-parse-select-multiples-tables', () => {
         FROM mytable1 t1
         INNER JOIN mytable2 t2 on t2.id = t1.id
         `;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -194,7 +198,7 @@ describe('postgres-parse-select-multiples-tables', () => {
         FROM mytable1 t1
         INNER JOIN mytable2 t2 on t2.id = t1.id
         `;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -246,7 +250,7 @@ describe('postgres-parse-select-multiples-tables', () => {
         INNER JOIN mytable2 t2 on t2.id = t1.id
         WHERE t2.id = $1
         `;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -280,7 +284,7 @@ describe('postgres-parse-select-multiples-tables', () => {
         INNER JOIN mytable2 t2 on t2.id = t1.id
         WHERE t1.id = $2 and t2.name = $3 and t1.value > $4
         `;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -352,7 +356,7 @@ describe('postgres-parse-select-multiples-tables', () => {
         FROM mytable1 t1, mytable2 t2, mytable3 t3
         WHERE t3.id > $2 and t1.value = $3 and t2.name = $4
         `;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -417,7 +421,7 @@ describe('postgres-parse-select-multiples-tables', () => {
         SELECT t1.id, t2.name
         FROM mytable1 t1, mytable2 t2
         `;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -449,7 +453,7 @@ describe('postgres-parse-select-multiples-tables', () => {
 		const sql = `
         SELECT name FROM mytable1, mytable2
         `;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -475,7 +479,7 @@ describe('postgres-parse-select-multiples-tables', () => {
 		const sql = `
         SELECT id FROM mytable1, mytable2
         `;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: TypeSqlError = {
 			name: 'PostgresError',
 			description: `column reference "id" is ambiguous`
@@ -492,7 +496,7 @@ describe('postgres-parse-select-multiples-tables', () => {
 		const sql = `
         SELECT name as fullname FROM mytable1 t1, mytable2 t2
         `;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -518,7 +522,7 @@ describe('postgres-parse-select-multiples-tables', () => {
 		const sql = `
         SELECT name FROM (select t1.*, t2.name from mytable1 t1, mytable2 t2) t
         `;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -544,7 +548,7 @@ describe('postgres-parse-select-multiples-tables', () => {
 		const sql = `
         select name from ((( mytable1, (select * from mytable2) t )))
         `;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -571,7 +575,7 @@ describe('postgres-parse-select-multiples-tables', () => {
         from mytable1 t1
         inner join mytable2 t2 on t1.id = t2.id
         `;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -629,7 +633,7 @@ describe('postgres-parse-select-multiples-tables', () => {
         INNER JOIN mytable2 t2 using(id)
         WHERE name is not null and value > 0
         `;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -674,7 +678,7 @@ describe('postgres-parse-select-multiples-tables', () => {
         FROM mytable2 t1
         INNER JOIN mytable2 t2 using (id, name)
         `;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -720,7 +724,7 @@ describe('postgres-parse-select-multiples-tables', () => {
         INNER JOIN mytable2 t2 ON t2.id = t1.id
         WHERE t1.id = 1
         `;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -755,7 +759,7 @@ describe('postgres-parse-select-multiples-tables', () => {
         FROM mytable1 m1
         LEFT JOIN mytable2 m2 ON m1.id = m2.id
         `;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -793,7 +797,7 @@ describe('postgres-parse-select-multiples-tables', () => {
 		INNER JOIN mytable2 m2 ON m1.id = m2.id
 		LEFT JOIN mytable3 m3 ON m3.id = m2.id
         `;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -837,7 +841,7 @@ describe('postgres-parse-select-multiples-tables', () => {
 		JOIN mytable2 m2 ON m1.id = m2.id
 		LEFT JOIN mytable3 m3 ON m3.id = m2.id
         `;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -879,7 +883,7 @@ describe('postgres-parse-select-multiples-tables', () => {
         FROM mytable1
         LEFT JOIN mytable2 ON mytable1.id = mytable2.id
         `;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -915,7 +919,7 @@ describe('postgres-parse-select-multiples-tables', () => {
         INNER JOIN mytable2 t2 on t2.id = t1.id
         LIMIT 1
         `;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -967,7 +971,7 @@ describe('postgres-parse-select-multiples-tables', () => {
         FROM mytable1 t1
         CROSS JOIN mytable2 t2
         `;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',

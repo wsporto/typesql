@@ -4,7 +4,7 @@ import { describeQuery } from '../../src/postgres-query-analyzer/describe';
 import { PostgresSchemaDef } from '../../src/postgres-query-analyzer/types';
 
 describe('postgres-type-mapping', () => {
-	const postres = postgres({
+	const client = postgres({
 		host: 'localhost',
 		username: 'postgres',
 		password: 'password',
@@ -12,9 +12,13 @@ describe('postgres-type-mapping', () => {
 		port: 5432
 	});
 
+	after(async () => {
+		await client.end();
+	});
+
 	it('select table with all types', async () => {
 		const sql = 'select * from all_types';
-		const actual = await describeQuery(postres, sql, ['id']);
+		const actual = await describeQuery(client, sql, ['id']);
 		const expected: PostgresSchemaDef = {
 			multipleRowsResult: true,
 			queryType: 'Select',

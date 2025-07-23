@@ -16,6 +16,10 @@ describe('postgres-query-executor', () => {
 		port: 5432
 	});
 
+	after(async () => {
+		await sql.end();
+	});
+
 	it('loadDbSchema-connection-error', async () => {
 		const client = postgres('postgres://postgres:password123@127.0.0.1:5432/postgres');
 		const result = await loadDbSchema(client);

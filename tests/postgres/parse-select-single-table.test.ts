@@ -5,7 +5,7 @@ import { PostgresSchemaDef } from '../../src/postgres-query-analyzer/types';
 
 describe('postgres-select-single-table', () => {
 
-	const postres = postgres({
+	const client = postgres({
 		host: 'localhost',
 		username: 'postgres',
 		password: 'password',
@@ -13,10 +13,14 @@ describe('postgres-select-single-table', () => {
 		port: 5432
 	});
 
+	after(async () => {
+		await client.end();
+	});
+
 	it('SELECT id FROM mytable1', async () => {
 
 		const sql = 'SELECT id FROM mytable1';
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -39,7 +43,7 @@ describe('postgres-select-single-table', () => {
 
 	it('SELECT id as name FROM mytable1', async () => {
 		const sql = 'SELECT id as name FROM mytable1';
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -63,7 +67,7 @@ describe('postgres-select-single-table', () => {
 	it('SELECT * FROM mytable1', async () => {
 		const sql = 'SELECT * FROM mytable1';
 
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -93,7 +97,7 @@ describe('postgres-select-single-table', () => {
 	it('SELECT mytable1.* FROM mytable1', async () => {
 		const sql = 'SELECT mytable1.* FROM mytable1';
 
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -123,7 +127,7 @@ describe('postgres-select-single-table', () => {
 	it('SELECT t.* FROM mytable1 t', async () => {
 		const sql = 'SELECT t.* FROM mytable1 t';
 
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -153,7 +157,7 @@ describe('postgres-select-single-table', () => {
 	it('SELECT mytable1.id, mytable1.value FROM mytable1', async () => {
 		const sql = 'SELECT mytable1.id, mytable1.value FROM mytable1';
 
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -183,7 +187,7 @@ describe('postgres-select-single-table', () => {
 	it('SELECT id, name, descr as description FROM mytable2', async () => {
 		const sql = 'SELECT id, name, descr as description FROM mytable2';
 
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -218,7 +222,7 @@ describe('postgres-select-single-table', () => {
 
 	it('SELECT distinct id, value FROM mytable1', async () => {
 		const sql = 'SELECT distinct id, value FROM mytable1';
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -247,7 +251,7 @@ describe('postgres-select-single-table', () => {
 
 	it('parse select distinct *', async () => {
 		const sql = 'SELECT distinct * FROM mytable1';
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -276,7 +280,7 @@ describe('postgres-select-single-table', () => {
 
 	it('SELECT id FROM mydb.mytable1', async () => {
 		const sql = 'SELECT id FROM public.mytable1';
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -300,7 +304,7 @@ describe('postgres-select-single-table', () => {
 	it('SELECT * FROM mytable1 WHERE id = ?', async () => {
 		const sql = 'SELECT * FROM mytable1 WHERE id = $1';
 
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -336,7 +340,7 @@ describe('postgres-select-single-table', () => {
 	it('CASE INSENSITIVE - SELECT * FROM MYTABLE1 WHERE ID = ?', async () => {
 		const sql = 'SELECT ID FROM MYTABLE1 WHERE ID = $1';
 
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -366,7 +370,7 @@ describe('postgres-select-single-table', () => {
 	it('parse a select with a single parameter (not using *)', async () => {
 		const sql = 'SELECT id FROM mytable1 WHERE id = $1 and value = 10';
 
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -396,7 +400,7 @@ describe('postgres-select-single-table', () => {
 	it('SELECT value FROM mytable1 WHERE id = ? or value > ?', async () => {
 		const sql = 'SELECT value FROM mytable1 WHERE id = $1 or value > $2';
 
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -431,7 +435,7 @@ describe('postgres-select-single-table', () => {
 	it('SELECT name FROM mytable2 m WHERE (:name::text is null or m.name = :name) AND m.descr = :descr', async () => {
 		const sql = 'SELECT name FROM mytable2 m WHERE ($1::text is null or m.name = $1) AND m.descr = $2';
 
-		const actual = await describeQuery(postres, sql, ['name', 'descr']);
+		const actual = await describeQuery(client, sql, ['name', 'descr']);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -466,7 +470,7 @@ describe('postgres-select-single-table', () => {
 	it('SELECT id FROM mytable1 where value between :start and :end', async () => {
 		const sql = 'SELECT id FROM mytable1 where value between $1 and $2';
 
-		const actual = await describeQuery(postres, sql, ['start', 'end']);
+		const actual = await describeQuery(client, sql, ['start', 'end']);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -504,7 +508,7 @@ describe('postgres-select-single-table', () => {
         FROM mytable2 
         WHERE (name = $2 or descr = $3) and id > $4
         `;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -562,7 +566,7 @@ describe('postgres-select-single-table', () => {
 		const sql = 'SELECT * FROM mytable1 t WHERE id in ($1)';
 
 		const expectedSql = `SELECT * FROM mytable1 t WHERE id in (\${generatePlaceholders('$1', params.param1)})`;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 
 		const expected: PostgresSchemaDef = {
 			sql: expectedSql,
@@ -599,7 +603,7 @@ describe('postgres-select-single-table', () => {
 	it('SELECT id::int4 FROM mytable1', async () => {
 		const sql = 'SELECT id::int2 FROM mytable1';
 
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 
 		const expected: PostgresSchemaDef = {
 			sql,
@@ -625,7 +629,7 @@ describe('postgres-select-single-table', () => {
 		const sql = 'SELECT * FROM mytable1 t WHERE id in (1, 2, 3, $1)';
 
 		const expectedSql = `SELECT * FROM mytable1 t WHERE id in (1, 2, 3, \${generatePlaceholders('$1', params.param1)})`;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 
 		const expected: PostgresSchemaDef = {
 			sql: expectedSql,
@@ -668,7 +672,7 @@ describe('postgres-select-single-table', () => {
 				END as id
 			FROM mytable1
 			`;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -700,7 +704,7 @@ describe('postgres-select-single-table', () => {
 				END as id
 			FROM mytable1
 			`;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -732,7 +736,7 @@ describe('postgres-select-single-table', () => {
 				END as id
 			FROM mytable1
 			`;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -765,7 +769,7 @@ describe('postgres-select-single-table', () => {
 				FROM mytable1
 			)
 			`;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -799,7 +803,7 @@ describe('postgres-select-single-table', () => {
         FROM mytable1 t1
         GROUP BY id
         `;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -825,7 +829,7 @@ describe('postgres-select-single-table', () => {
 		const sql = `
         select id from mytable1 where value > any(select id from mytable2 where name like $1)
         `;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -856,7 +860,7 @@ describe('postgres-select-single-table', () => {
 		const sql = `
         select id from mytable1 where $1 > any(select id from mytable2 where name like $2)
         `;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -892,7 +896,7 @@ describe('postgres-select-single-table', () => {
 		const sql = `
         select id from mytable1 where id > any($1)
         `;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -923,7 +927,7 @@ describe('postgres-select-single-table', () => {
 		const sql = `
         select value from mytable1 where value is not null or (id > 0 and value is not null)
         `;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -948,7 +952,7 @@ describe('postgres-select-single-table', () => {
 		const sql = `
         select id from mytable1 where 1 = 1
         `;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -973,7 +977,7 @@ describe('postgres-select-single-table', () => {
 		const sql = `
 			select enum_column from all_types where enum_column = 'medium' or 'small' = enum_column
 			`;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -998,7 +1002,7 @@ describe('postgres-select-single-table', () => {
 		const sql = `
 			select enum_constraint from all_types where enum_constraint = 'medium' or 'short' = enum_constraint
 			`;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -1023,7 +1027,7 @@ describe('postgres-select-single-table', () => {
 		const sql = `
 			select enum_constraint from all_types where enum_constraint = $1
 			`;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -1054,7 +1058,7 @@ describe('postgres-select-single-table', () => {
 		const sql = `
 			select integer_column_default, enum_column, enum_column_default, enum_constraint, enum_constraint_default from all_types
 			`;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -1103,7 +1107,7 @@ describe('postgres-select-single-table', () => {
 		const sql = `
 	    select value from mytable1 order by $1
 	    `;
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -1128,7 +1132,7 @@ describe('postgres-select-single-table', () => {
 	it('SELECT id FROM mytable1 LIMIT ?, ?', async () => {
 		const sql = 'SELECT id FROM mytable1 LIMIT $1 OFFSET $2';
 
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -1164,7 +1168,7 @@ describe('postgres-select-single-table', () => {
 
 		const sql = 'select key1, key2 from composite_key where key1 = 1';
 
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -1196,7 +1200,7 @@ describe('postgres-select-single-table', () => {
 
 		const sql = 'select key1, key2 from composite_key where key1 = 1 and key2 = 2';
 
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -1228,7 +1232,7 @@ describe('postgres-select-single-table', () => {
 
 		const sql = 'select key1, key2 from composite_key where 1 = key2 and 2 = key1';
 
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -1260,7 +1264,7 @@ describe('postgres-select-single-table', () => {
 
 		const sql = 'select key1, key2 from composite_key where key1 = 1 and key2 > 2';
 
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -1292,7 +1296,7 @@ describe('postgres-select-single-table', () => {
 
 		const sql = 'select key1, key2 from composite_key where key1 = 1 and key2 = 2 or key2 = 3';
 
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -1323,7 +1327,7 @@ describe('postgres-select-single-table', () => {
 	it('SELECT id FROM mytable2 (id, name, descr) = ($1, $2, $3)', async () => {
 		const sql = 'SELECT id FROM mytable2 WHERE (id, name, descr) = ($1, $2, $3)';
 
-		const actual = await describeQuery(postres, sql, ['id', 'name', 'descr']);
+		const actual = await describeQuery(client, sql, ['id', 'name', 'descr']);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -1363,7 +1367,7 @@ describe('postgres-select-single-table', () => {
 	it('SELECT id FROM mytable2 WHERE row(id, name, descr) = row($1, $2, $3)', async () => {
 		const sql = 'SELECT id FROM mytable2 WHERE row(id, name, descr) = row($1, $2, $3)';
 
-		const actual = await describeQuery(postres, sql, ['id', 'name', 'descr']);
+		const actual = await describeQuery(client, sql, ['id', 'name', 'descr']);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -1403,7 +1407,7 @@ describe('postgres-select-single-table', () => {
 	it(`SELECT id FROM (VALUES (1, 'a'), (2, 'b')) AS t(id, name)`, async () => {
 		const sql = `SELECT id, name FROM (VALUES (1, 'a'), (2, 'b')) AS t(id, name)`;
 
-		const actual = await describeQuery(postres, sql, []);
+		const actual = await describeQuery(client, sql, []);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',

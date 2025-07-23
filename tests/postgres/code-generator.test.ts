@@ -31,6 +31,10 @@ describe('postgres-code-generator', () => {
 		dbSchema = dbSchemaResult.value.map(col => mapToColumnSchema(col));
 	});
 
+	after(async () => {
+		await databaseClient.end();
+	});
+
 	it('select01 - select id, name from mytable2 where id = ?', async () => {
 		const sql = 'select id, name from mytable2 where id = $1';
 

@@ -9,7 +9,7 @@ import { userDefinedFunctions } from './schema';
 let dbSchema: PostgresColumnSchema[] = [];
 describe('Infer column nullability', () => {
 
-	const postres = postgres({
+	const client = postgres({
 		host: 'localhost',
 		username: 'postgres',
 		password: 'password',
@@ -17,8 +17,12 @@ describe('Infer column nullability', () => {
 		port: 5432
 	});
 
+	after(async () => {
+		await client.end();
+	});
+
 	before(async function () {
-		const dbSchemaResult = await await loadDbSchema(postres);
+		const dbSchemaResult = await await loadDbSchema(client);
 		if (dbSchemaResult.isErr()) {
 			assert.fail(`Shouldn't return an error: ${dbSchemaResult.error.description}`);
 		}

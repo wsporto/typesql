@@ -17,6 +17,10 @@ describe('postgres-generate-dynamic-info', () => {
 		database: 'postgres',
 	});
 
+	after(async () => {
+		await databaseClient.end();
+	});
+
 	before(async function () {
 		const dbSchemaResult = await await loadDbSchema(databaseClient);
 		if (dbSchemaResult.isErr()) {
