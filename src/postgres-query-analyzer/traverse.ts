@@ -467,10 +467,11 @@ function traverse_target_el(target_el: Target_elContext, context: TraverseContex
 		}
 		return {
 			column_name: alias || exprResult.column_name,
-			is_nullable: exprResult.is_nullable && exprResult.column_default !== true,
+			is_nullable: exprResult.is_nullable,
 			table_name: exprResult.table_name,
 			table_schema: exprResult.table_schema,
 			type: exprResult.type,
+			...(exprResult.column_default != null) && { column_default: exprResult.column_default },
 			...(exprResult.column_key != null && { column_key: exprResult.column_key }),
 			...(exprResult.jsonType != null && { jsonType: exprResult.jsonType })
 		};
@@ -1525,10 +1526,14 @@ function traverse_array_expr_list(array_expr_list: Array_expr_listContext, conte
 }
 
 function findColumn(fieldName: FieldName, fromColumns: NotNullInfo[]) {
-	const col = fromColumns.find(col => (fieldName.prefix === '' || col.table_name.toLowerCase() === fieldName.prefix.toLowerCase()) && col.column_name.toLowerCase() === fieldName.name.toLowerCase());
+	const col = findColumnOrNull(fieldName, fromColumns);
 	if (col == null) {
 		throw Error('Column not found: ' + fieldNameToString(fieldName));
 	}
+	return col;
+}
+function findColumnOrNull(fieldName: FieldName, fromColumns: NotNullInfo[]) {
+	const col = fromColumns.find(col => (fieldName.prefix === '' || col.table_name.toLowerCase() === fieldName.prefix.toLowerCase()) && col.column_name.toLowerCase() === fieldName.name.toLowerCase());
 	return col;
 }
 
@@ -1578,28 +1583,40 @@ function getFromColumns(tableName: TableName, withColumns: NotNullInfo[], dbSche
 }
 
 
-function checkLeftJoinIsNullable(leftJoin: Join, subsequentJoins: Join[]): boolean {
+function checkLeftJoinIsNullable(leftJoin: Join, subsequentJoins: Join[], fromColumns: NotNullInfo[]): boolean {
 	if (!leftJoin.joinQual) {
 		return true; // No condition = always nullable
 	}
 
 	const leftTable = getTableName(leftJoin.tableRef);
 	const leftJoinColumns = getJoinColumns(leftJoin.joinQual)
-		.filter(col => col.prefix === leftTable.name || col.prefix === leftTable.alias);
+		.filter(col => {
+			if (col.prefix === leftTable.name && col.prefix === leftTable.alias) {
+				return true;
+			}
+			if (findColumnOrNull(col, fromColumns)) { //column without table reference (ex: fk_user)
+				return true;
+			}
+			return false;
+		});
 
 	for (const join of subsequentJoins) {
 		// Only INNER JOINs can cancel nullability
 		if (!(join.joinType === null || join.joinType.INNER_P())) {
 			continue;
 		}
-		const joinTable = getTableName(leftJoin.tableRef);
 		const joinConditionColumns = getJoinColumns(join.joinQual!)
-			.filter(col => col.prefix === joinTable.name || col.prefix === joinTable.alias);;
 
-		// Check if this join references columns from the left join
-		const referencesLeftJoin = joinConditionColumns.some(col =>
-			leftJoinColumns.some(lc => lc.prefix === col.prefix && isNotNull_a_expr(col, join.joinQual?.a_expr()!))
+		const filteredJoinColumnsFromLeft = joinConditionColumns.filter(col =>
+			leftJoinColumns.some(lc => lc.prefix === col.prefix)
 		);
+
+		// Are *all* columns from the left join used in not-null filtering?
+		const referencesLeftJoin =
+			filteredJoinColumnsFromLeft.length > 0 &&
+			filteredJoinColumnsFromLeft.every(col =>
+				isNotNull_a_expr(col, join.joinQual?.a_expr()!)
+			);
 
 		if (referencesLeftJoin) {
 			return false; // LEFT JOIN is effectively filtered by INNER JOIN — not nullable
@@ -1652,8 +1669,8 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 			const isLeftJoin = joinType?.LEFT();
 			const filteredColumns = joinQual && joinQual?.USING() ? filterUsingColumns(joinTableRefResult.columns, joinQual) : joinTableRefResult.columns;
 			const subsequentJoints = joinList.slice(index + 1);
+			const checkIsNullable = isLeftJoin ? checkLeftJoinIsNullable(join, subsequentJoints, filteredColumns) : false;;
 			const resultColumns = isLeftJoin ? filteredColumns.map(col => {
-				const checkIsNullable = checkLeftJoinIsNullable(join, subsequentJoints);
 				const colResult: NotNullInfo =
 				{
 					...col,
