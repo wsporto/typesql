@@ -1,4 +1,4 @@
-import { A_expr_addContext, A_expr_andContext, A_expr_at_time_zoneContext, A_expr_betweenContext, A_expr_caretContext, A_expr_collateContext, A_expr_compareContext, A_expr_inContext, A_expr_is_notContext, A_expr_isnullContext, A_expr_lesslessContext, A_expr_likeContext, A_expr_mulContext, A_expr_orContext, A_expr_qual_opContext, A_expr_qualContext, A_expr_typecastContext, A_expr_unary_notContext, A_expr_unary_qualopContext, A_expr_unary_signContext, A_exprContext, AexprconstContext, Array_expr_listContext, Array_exprContext, C_expr_caseContext, C_expr_existsContext, C_expr_exprContext, C_exprContext, ColidContext, ColumnElemContext, ColumnrefContext, Common_table_exprContext, CopystmtContext, DeletestmtContext, Expr_listContext, From_clauseContext, From_listContext, Func_applicationContext, Func_arg_exprContext, Func_expr_common_subexprContext, Func_expr_windowlessContext, Func_exprContext, Func_tableContext, IdentifierContext, In_expr_listContext, In_expr_selectContext, In_exprContext, Insert_column_itemContext, InsertstmtContext, Join_qualContext, Join_typeContext, Qualified_nameContext, Relation_exprContext, Select_clauseContext, Select_no_parensContext, Select_with_parensContext, SelectstmtContext, Set_clauseContext, Simple_select_intersectContext, Simple_select_pramaryContext, StmtContext, Table_refContext, Target_elContext, Target_labelContext, Target_listContext, Unreserved_keywordContext, UpdatestmtContext, Values_clauseContext, When_clauseContext, Where_clauseContext } from '@wsporto/typesql-parser/postgres/PostgreSQLParser';
+import { A_expr_addContext, A_expr_andContext, A_expr_at_time_zoneContext, A_expr_betweenContext, A_expr_caretContext, A_expr_collateContext, A_expr_compareContext, A_expr_inContext, A_expr_is_notContext, A_expr_isnullContext, A_expr_lesslessContext, A_expr_likeContext, A_expr_mulContext, A_expr_orContext, A_expr_qual_opContext, A_expr_qualContext, A_expr_typecastContext, A_expr_unary_notContext, A_expr_unary_qualopContext, A_expr_unary_signContext, A_exprContext, AexprconstContext, Array_expr_listContext, Array_exprContext, C_expr_caseContext, C_expr_existsContext, C_expr_exprContext, C_exprContext, Case_defaultContext, ColidContext, ColumnElemContext, ColumnrefContext, Common_table_exprContext, CopystmtContext, DeletestmtContext, Expr_listContext, From_clauseContext, From_listContext, Func_applicationContext, Func_arg_exprContext, Func_expr_common_subexprContext, Func_expr_windowlessContext, Func_exprContext, Func_tableContext, IdentifierContext, In_expr_listContext, In_expr_selectContext, In_exprContext, Insert_column_itemContext, InsertstmtContext, Join_qualContext, Join_typeContext, Qualified_nameContext, Relation_exprContext, Select_clauseContext, Select_no_parensContext, Select_with_parensContext, SelectstmtContext, Set_clauseContext, Simple_select_intersectContext, Simple_select_pramaryContext, StmtContext, Table_refContext, Target_elContext, Target_labelContext, Target_listContext, Unreserved_keywordContext, UpdatestmtContext, Values_clauseContext, When_clauseContext, Where_clauseContext } from '@wsporto/typesql-parser/postgres/PostgreSQLParser';
 import { ParserRuleContext } from '@wsporto/typesql-parser';
 import { PostgresColumnSchema } from '../drivers/types';
 import { extractOriginalSql, splitName, splitTableName } from '../mysql-query-analyzer/select-columns';
@@ -9,6 +9,7 @@ import { CheckConstraintResult } from '../drivers/postgres';
 import { JsonArrayType, JsonFieldType, JsonObjType, JsonPropertyDef, JsonType, PostgresEnumType, PostgresSimpleType } from '../sqlite-query-analyzer/types';
 import { parseSql } from '@wsporto/typesql-parser/postgres';
 import { UserFunctionSchema } from './types';
+import { evaluatesTrueIfNull } from './case-nullability-checker';
 
 export type NotNullInfo = {
 	table_schema: string;
@@ -1077,11 +1078,13 @@ function excludeColumns(fromColumns: NotNullInfo[], excludeList: FieldName[]) {
 
 function traversec_expr_case(c_expr_case: C_expr_caseContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
 	const case_expr = c_expr_case.case_expr();
-	const whenResult = case_expr.when_clause_list().when_clause_list().map(when_clause => traversewhen_clause(when_clause, context, traverseResult));
+	const whenClauseList = case_expr.when_clause_list().when_clause_list();
+	const whenResult = whenClauseList.map(when_clause => traversewhen_clause(when_clause, context, traverseResult));
 	const whenIsNotNull = whenResult.every(when => !when.is_nullable);
-	const elseExpr = case_expr.case_default()?.a_expr();
-	const elseResult = elseExpr ? traverse_a_expr(elseExpr, { ...context }, traverseResult) : null;
-	const elseIsNotNull = elseResult?.is_nullable === false || false;
+	const elseExpr = case_expr.case_default();
+	const elseResult = elseExpr ? traverse_a_expr(elseExpr.a_expr(), { ...context }, traverseResult) : null;
+	const branchNotNull = elseResult ? evaluateBranches(whenClauseList, elseExpr, whenResult.map(col => !col.is_nullable)) : false;
+	const elseIsNotNull = elseResult?.is_nullable === false || branchNotNull;
 	const notNull = elseIsNotNull && whenIsNotNull;
 	return {
 		column_name: '?column?',
@@ -1091,6 +1094,19 @@ function traversec_expr_case(c_expr_case: C_expr_caseContext, context: TraverseC
 		type: whenResult[0].type ?? 'unknown',
 		jsonType: allJsonTypesMatch(whenResult, elseResult) ? whenResult[0].jsonType : undefined
 	}
+}
+
+function evaluateBranches(whenClauseList: When_clauseContext[], elseExpr: Case_defaultContext, whenIsNotNull: boolean[]): boolean {
+	const exprIndex = whenClauseList.findIndex(when => {
+		const whenExpr = when.a_expr(0);
+		const evaluatesIfNull = evaluatesTrueIfNull(elseExpr, whenExpr);
+		if (evaluatesIfNull) {
+			return true;
+		}
+		return false;
+	})
+	const result = exprIndex !== -1 ? whenIsNotNull[exprIndex] : false;
+	return result;
 }
 
 function allJsonTypesMatch(whenResultList: NotNullInfo[], elseResult: NotNullInfo | null): boolean {
