@@ -771,6 +771,75 @@ describe('postgres-json-functions', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	})
 
+	it(`SELECT id, name, (SELECT json_build_object(...))`, async () => {
+		const sql = `SELECT
+			u.id AS user_id,
+			u.name AS user_name,
+			(
+				SELECT json_build_object(
+				'id', p.id,
+				'title', p.title
+				)
+				FROM posts p
+				WHERE p.fk_user = u.id
+				ORDER BY p.id DESC
+				LIMIT 1
+			) AS latest_order
+			FROM users u`;
+		const actual = await describeQuery(client, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'user_id',
+					type: 'int4',
+					notNull: true,
+					table: 'u'
+				},
+				{
+					name: 'user_name',
+					type: 'text',
+					notNull: true,
+					table: 'u'
+				},
+				{
+					name: "latest_order",
+					notNull: false,
+					type: {
+						name: "json",
+						notNull: false,
+						properties: [
+							{
+								key: "id",
+								type: {
+									name: "json_field",
+									type: "int4",
+									notNull: true,
+								},
+							},
+							{
+								key: "title",
+								type: {
+									name: "json_field",
+									type: "text",
+									notNull: true,
+								}
+							}
+						],
+					},
+					table: "",
+				},
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
 	it(`SELECT json_agg(t) FROM (SELECT, u.id, u.name, json_agg(json_build_object()))`, async () => {
 		const sql = `SELECT 
 			  json_agg(t)

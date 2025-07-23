@@ -993,14 +993,17 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 		const select_with_parens = c_expr.select_with_parens();
 		if (select_with_parens) {
 			const result = traverse_select_with_parens(select_with_parens, { ...context, parentColumns: context.fromColumns, fromColumns: [] }, traverseResult);
+			const jsonType = result.columns[0].jsonType;
+			const is_nullable = jsonType == null ? true : jsonType.name !== 'json[]' && jsonType.name !== 'json_map'; //json[], json_map are not nullable
+
 			return {
 				column_name: '?column?',
-				is_nullable: result.columns[0].jsonType ? result.columns[0].is_nullable : true,
+				is_nullable,
 				table_name: '',
 				table_schema: '',
 				type: result.columns[0].type,
-				jsonType: result.columns[0].jsonType != null && result.columns[0].jsonType.name === 'json' ?
-					{ ...result.columns[0].jsonType, notNull: false } : result.columns[0].jsonType
+				jsonType: jsonType != null && jsonType.name === 'json' ?
+					{ ...jsonType, notNull: !is_nullable } : jsonType
 			}
 		}
 		const a_expr_in_parens = c_expr._a_expr_in_parens;
