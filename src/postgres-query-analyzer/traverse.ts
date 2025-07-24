@@ -1684,7 +1684,8 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 			const joinType = join.joinType; //INNER, LEFT
 			const joinQual = join.joinQual;
 			const numParamsBefore = traverseResult.parameters.length;
-			const joinTableRefResult = traverse_table_ref(join.tableRef, context, traverseResult);
+			const parentColumns = join.tableRef.LATERAL_P() ? fromColumnsResult : [];
+			const joinTableRefResult = traverse_table_ref(join.tableRef, { ...context, parentColumns }, traverseResult);
 			const isLeftJoin = joinType?.LEFT();
 			const filteredColumns = joinQual && joinQual?.USING() ? filterUsingColumns(joinTableRefResult.columns, joinQual) : joinTableRefResult.columns;
 			const subsequentJoints = joinList.slice(index + 1);
@@ -2501,12 +2502,13 @@ type TableName = {
 
 function getTableName(table_ref: Table_refContext): TableName {
 	const relation_expr = table_ref.relation_expr();
-	const tableName = relation_expr.qualified_name().getText();
-	const aliasClause = table_ref.alias_clause();
-	const tableAlias = aliasClause ? aliasClause.colid().getText() : '';
+	if (relation_expr) {
+		return traverse_relation_expr(relation_expr);
+	}
+	const aliasClause = table_ref.alias_clause()
 	return {
-		name: tableName,
-		alias: tableAlias
+		name: aliasClause.colid().getText(),
+		alias: ''
 	}
 }
 
