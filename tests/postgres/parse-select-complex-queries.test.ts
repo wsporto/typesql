@@ -784,4 +784,46 @@ describe('parse-select-complex-queries', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('WITH RECURSIVE cte ...SELECT ... INNER JOIN', async () => {
+		const sql = `
+			WITH RECURSIVE cte as (
+				SELECT     t1.id, 0 as level
+				FROM       mytable1 t1
+				WHERE      id is null
+				UNION ALL
+				SELECT     t1.id,
+							level+1 as level
+				FROM       cte c
+				INNER JOIN mytable1 t1
+						on c.id = t1.id
+			)
+			SELECT * from cte
+			`;
+		const actual = await describeQuery(client, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'cte'
+				},
+				{
+					name: 'level',
+					type: 'int4',
+					notNull: true,
+					table: 'cte'
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });
