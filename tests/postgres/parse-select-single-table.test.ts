@@ -825,6 +825,34 @@ describe('postgres-select-single-table', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('select id as alias from mytable1 group by alias', async () => {
+		const sql = `
+        select id as alias 
+		from mytable1
+		group by alias
+        `;
+		const actual = await describeQuery(client, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'alias',
+					type: 'int4',
+					notNull: true,
+					table: 'mytable1'
+				}
+			],
+			parameters: []
+		};
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('parse select using ANY operator', async () => {
 		const sql = `
         select id from mytable1 where value > any(select id from mytable2 where name like $1)

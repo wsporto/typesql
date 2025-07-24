@@ -66,6 +66,9 @@ type TraverseContext = {
 	collectDynamicQueryInfo: boolean;
 	filter_expr?: A_exprContext;
 	columnRefIsRecord?: true;
+	recursiveTableName?: string;
+	recursiveColumnNames?: string[];
+	groupBy?: boolean;
 }
 
 export type Relation3 = {
@@ -209,8 +212,11 @@ function traverse_select_no_parens(select_no_parens: Select_no_parensContext, co
 	if (with_clause) {
 		with_clause.cte_list().common_table_expr_list()
 			.forEach(common_table_expr => {
-				const withResult = traverse_common_table_expr(common_table_expr, context, traverseResult);
-				context.withColumns.push(...withResult);
+				const recursiveTableName = with_clause.RECURSIVE() ? common_table_expr.name().getText() : undefined;
+				const recursiveColumnNames = common_table_expr.name_list_()?.name_list()?.name_list()?.map(name => name.getText());
+				const withResult = traverse_common_table_expr(common_table_expr, { ...context, recursiveTableName, recursiveColumnNames }, traverseResult);
+				const columns = recursiveColumnNames ? withResult.map((col, index) => ({ ...col, column_name: recursiveColumnNames[index] ?? col.column_name })) : withResult;
+				context.withColumns.push(...columns);
 			});
 	}
 	const select_clause = select_no_parens.select_clause();
@@ -270,8 +276,11 @@ function traverse_select_clause(select_clause: Select_clauseContext, context: Tr
 	let columns = mainSelectResult.columns;
 
 	//union
+	const { recursiveTableName, recursiveColumnNames } = context;
+	const recursiveColumns = recursiveTableName ? mainSelectResult.columns
+		.map((col, index) => ({ ...col, table_name: recursiveTableName, column_name: recursiveColumnNames?.[index] ?? col.column_name })) : [];
 	for (let index = 1; index < simple_select_intersect_list.length; index++) {
-		const unionResult = traverse_simple_select_intersect(simple_select_intersect_list[index], context, traverseResult);
+		const unionResult = traverse_simple_select_intersect(simple_select_intersect_list[index], { ...context, fromColumns: context.fromColumns.concat(recursiveColumns) }, traverseResult);
 		columns = columns.map((value, columnIndex) => {
 			const col: NotNullInfo = {
 				column_name: value.column_name,
@@ -343,7 +352,11 @@ function traverse_simple_select_pramary(simple_select_pramary: Simple_select_pra
 	simple_select_pramary.group_clause()?.group_by_list()?.group_by_item_list().forEach(group_by => {
 		const a_expr = group_by.a_expr();
 		if (a_expr) {
+			newContext.groupBy = true;
+			/* The GROUP BY clause can reference column aliases defined in the SELECT list. 
+			There's no need to retrieve nullability or type information from the GROUP BY expressions (findColumn(col). */
 			traverse_a_expr(a_expr, newContext, traverseResult);
+			newContext.groupBy = false;
 		}
 	});
 	const having_expr = simple_select_pramary.having_clause()?.a_expr();
@@ -893,7 +906,7 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 				traverse_select_with_parens(select_with_parens, context, traverseResult);
 				return {
 					column_name: '?column?',
-					is_nullable: true,
+					is_nullable: false, //empty array
 					table_schema: '',
 					table_name: '',
 					type: 'unknown'
@@ -910,6 +923,15 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 		}
 		const columnref = c_expr.columnref();
 		if (columnref) {
+			if (context.groupBy) {
+				return {
+					column_name: columnref.getText(),
+					is_nullable: false,
+					table_name: '',
+					table_schema: '',
+					type: 'unknown'
+				}
+			}
 			if (context.columnRefIsRecord) {
 				const table = splitTableName(columnref.getText());
 				const columns = filterColumns(context.fromColumns, table);
@@ -1664,7 +1686,7 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 	const alias = aliasClause ? aliasClause.colid().getText() : '';
 	if (relation_expr) {
 		const tableName = traverse_relation_expr(relation_expr);
-		const fromColumns = getFromColumns(tableName, context.withColumns, context.dbSchema);
+		const fromColumns = getFromColumns(tableName, context.fromColumns.concat(context.withColumns), context.dbSchema);
 		const tableNameWithAlias = alias ? alias : tableName.name;
 		const columnsWithAlias = fromColumns.map(col => ({ ...col, table_name: tableNameWithAlias.toLowerCase() }));
 		const fromColumnsResult = columnsWithAlias.concat(context.parentColumns);

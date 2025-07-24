@@ -609,4 +609,41 @@ describe('postgres-parse-select-subqueries', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	})
+
+	it('SELECT id, ARRAY(SELECT ...) FROM mytable1', async () => {
+		const sql = `
+        SELECT 
+			id,
+			ARRAY(
+				SELECT DISTINCT t2.id
+				FROM mytable2 t2
+			) AS array
+		FROM mytable1
+        `;
+		const actual = await describeQuery(client, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'mytable1'
+				},
+				{
+					name: 'array',
+					type: '_int4',
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
 });
