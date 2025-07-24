@@ -898,7 +898,7 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 				traverse_select_with_parens(select_with_parens, context, traverseResult);
 				return {
 					column_name: '?column?',
-					is_nullable: true,
+					is_nullable: false, //empty array
 					table_schema: '',
 					table_name: '',
 					type: 'unknown'
