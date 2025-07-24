@@ -66,6 +66,7 @@ type TraverseContext = {
 	collectDynamicQueryInfo: boolean;
 	filter_expr?: A_exprContext;
 	columnRefIsRecord?: true;
+	groupBy?: boolean;
 }
 
 export type Relation3 = {
@@ -343,7 +344,11 @@ function traverse_simple_select_pramary(simple_select_pramary: Simple_select_pra
 	simple_select_pramary.group_clause()?.group_by_list()?.group_by_item_list().forEach(group_by => {
 		const a_expr = group_by.a_expr();
 		if (a_expr) {
+			newContext.groupBy = true;
+			/* The GROUP BY clause can reference column aliases defined in the SELECT list. 
+			There's no need to retrieve nullability or type information from the GROUP BY expressions (findColumn(col). */
 			traverse_a_expr(a_expr, newContext, traverseResult);
+			newContext.groupBy = false;
 		}
 	});
 	const having_expr = simple_select_pramary.having_clause()?.a_expr();
@@ -910,6 +915,15 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 		}
 		const columnref = c_expr.columnref();
 		if (columnref) {
+			if (context.groupBy) {
+				return {
+					column_name: columnref.getText(),
+					is_nullable: false,
+					table_name: '',
+					table_schema: '',
+					type: 'unknown'
+				}
+			}
 			if (context.columnRefIsRecord) {
 				const table = splitTableName(columnref.getText());
 				const columns = filterColumns(context.fromColumns, table);
