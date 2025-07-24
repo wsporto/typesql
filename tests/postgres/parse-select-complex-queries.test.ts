@@ -519,4 +519,217 @@ describe('parse-select-complex-queries', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('WITH RECURSIVE seq (n)', async () => {
+		const sql = `
+			WITH RECURSIVE seq (n) AS
+			(
+				SELECT 1
+				UNION ALL
+				SELECT n + 1 FROM seq WHERE n < 5
+			)
+			SELECT * FROM seq
+			`;
+		const actual = await describeQuery(client, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'n',
+					type: 'int4',
+					notNull: true,
+					table: 'seq'
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('WITH RECURSIVE conc (a)', async () => {
+		const sql = `
+			WITH RECURSIVE conc (a) AS
+			(
+				SELECT 'a'
+				UNION ALL
+				SELECT concat(a, 'a') FROM conc WHERE LENGTH(a) < 5
+			)
+			SELECT * FROM conc
+			`;
+		const actual = await describeQuery(client, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'a',
+					type: 'text',
+					notNull: true,
+					table: 'conc'
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('WITH RECURSIVE cte AS (SELECT 1 AS n ...)', async () => {
+		const sql = `
+			WITH RECURSIVE cte AS
+			(
+				SELECT 1 AS n
+				UNION ALL
+				SELECT n + 1 FROM cte WHERE n < 3
+			)
+			SELECT * FROM cte
+			`;
+		const actual = await describeQuery(client, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'n',
+					type: 'int4',
+					notNull: true,
+					table: 'cte'
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('WITH RECURSIVE conc (a)', async () => {
+		const sql = `
+			WITH RECURSIVE cte AS
+			(
+			SELECT 1 AS n, 'abc' AS str
+			UNION ALL
+			SELECT n + 1, CONCAT(str, str) FROM cte WHERE n < 3
+			)
+			SELECT * FROM cte
+			`;
+		const actual = await describeQuery(client, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'n',
+					type: 'int4',
+					notNull: true,
+					table: 'cte'
+				},
+				{
+					name: 'str',
+					type: 'text',
+					notNull: true,
+					table: 'cte'
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('WITH RECURSIVE dates (date) AS', async () => {
+		const sql = `
+			WITH RECURSIVE dates(date) AS (
+				SELECT MIN(date_column)::timestamp FROM all_types
+				UNION ALL
+				SELECT date + INTERVAL '1 day' FROM dates
+				WHERE date + INTERVAL '1 day' <= (SELECT MAX(date_column) FROM all_types)
+			)
+			SELECT * FROM dates
+			`;
+		const actual = await describeQuery(client, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'date',
+					type: 'timestamp',
+					notNull: false,
+					table: 'dates'
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('WITH RECURSIVE (with inner join and parameters)', async () => {
+		const sql = `
+			WITH RECURSIVE parent AS (
+				SELECT	id,	value FROM mytable1
+				WHERE id = $1
+				UNION ALL 
+				SELECT	t1.id + 1, t1.value	
+				FROM mytable1 t1
+				INNER JOIN parent t2 ON t1.id = t2.value
+				WHERE t2.value IS NOT null and t2.value < 10
+			)
+			SELECT id, value FROM parent
+			WHERE id <> $2`;
+
+		const actual = await describeQuery(client, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'parent'
+				},
+				{
+					name: 'value',
+					type: 'int4',
+					notNull: false,
+					table: 'parent'
+				}
+			],
+			parameters: [
+				{
+					name: 'param1',
+					type: 'int4',
+					notNull: true
+				},
+				{
+					name: 'param2',
+					type: 'int4',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });

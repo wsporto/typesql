@@ -66,6 +66,8 @@ type TraverseContext = {
 	collectDynamicQueryInfo: boolean;
 	filter_expr?: A_exprContext;
 	columnRefIsRecord?: true;
+	recursiveTableName?: string;
+	recursiveColumnNames?: string[];
 	groupBy?: boolean;
 }
 
@@ -210,7 +212,9 @@ function traverse_select_no_parens(select_no_parens: Select_no_parensContext, co
 	if (with_clause) {
 		with_clause.cte_list().common_table_expr_list()
 			.forEach(common_table_expr => {
-				const withResult = traverse_common_table_expr(common_table_expr, context, traverseResult);
+				const recursiveTableName = with_clause.RECURSIVE() ? common_table_expr.name().getText() : undefined;
+				const recursiveColumns = common_table_expr.name_list_()?.name_list()?.name_list()?.map(name => name.getText());
+				const withResult = traverse_common_table_expr(common_table_expr, { ...context, recursiveTableName, recursiveColumnNames: recursiveColumns }, traverseResult);
 				context.withColumns.push(...withResult);
 			});
 	}
@@ -271,8 +275,11 @@ function traverse_select_clause(select_clause: Select_clauseContext, context: Tr
 	let columns = mainSelectResult.columns;
 
 	//union
+	const { recursiveTableName, recursiveColumnNames } = context;
+	const recursiveColumns = recursiveTableName ? mainSelectResult.columns
+		.map((col, index) => ({ ...col, table_name: recursiveTableName, column_name: recursiveColumnNames?.[index] ?? col.column_name })) : [];
 	for (let index = 1; index < simple_select_intersect_list.length; index++) {
-		const unionResult = traverse_simple_select_intersect(simple_select_intersect_list[index], context, traverseResult);
+		const unionResult = traverse_simple_select_intersect(simple_select_intersect_list[index], { ...context, fromColumns: context.fromColumns.concat(recursiveColumns) }, traverseResult);
 		columns = columns.map((value, columnIndex) => {
 			const col: NotNullInfo = {
 				column_name: value.column_name,
@@ -1678,7 +1685,7 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 	const alias = aliasClause ? aliasClause.colid().getText() : '';
 	if (relation_expr) {
 		const tableName = traverse_relation_expr(relation_expr);
-		const fromColumns = getFromColumns(tableName, context.withColumns, context.dbSchema);
+		const fromColumns = getFromColumns(tableName, context.fromColumns.concat(context.withColumns), context.dbSchema);
 		const tableNameWithAlias = alias ? alias : tableName.name;
 		const columnsWithAlias = fromColumns.map(col => ({ ...col, table_name: tableNameWithAlias.toLowerCase() }));
 		const fromColumnsResult = columnsWithAlias.concat(context.parentColumns);
