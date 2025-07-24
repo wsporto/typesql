@@ -1442,6 +1442,16 @@ function traversefunc_application(func_application: Func_applicationContext, con
 		};
 	}
 
+	if (functionName === 'unnest') {
+		return {
+			column_name: functionName,
+			is_nullable: argsResult[0].is_nullable,
+			type: argsResult[0].type,
+			table_name: '',
+			table_schema: ''
+		};
+	}
+
 	return {
 		column_name: functionName,
 		is_nullable: true,
@@ -1513,6 +1523,7 @@ function traverse_array_expr(array_expr: Array_exprContext, context: TraverseCon
 		const traverse_expr_list_result = traverse_expr_list(expr_list, context, traverseResult);
 		return {
 			...traverse_expr_list_result[0],
+			is_nullable: traverse_expr_list_result.some(expr => expr.is_nullable),
 			column_name: '?column?',
 			table_name: '',
 			table_schema: ''
@@ -2460,11 +2471,11 @@ function isSingleRowResult(selectstmt: SelectstmtContext, fromColumns: NotNullIn
 	const simple_select_pramary = simple_select_pramary_list[0];
 	const from_clause = simple_select_pramary.from_clause();
 	if (!from_clause) {
-		const hasSetReturningFunction = simple_select_pramary.target_list_()?.target_list().target_el_list().some(target_el => isSetReturningFunction_target_el(target_el));
+		const hasSetReturningFunction = hasFunction(simple_select_pramary, fun => isSetReturningFunction(fun));
 		return !hasSetReturningFunction;
 	}
 	if (!simple_select_pramary.group_clause()) {
-		const agreegateFunction = hasAggregateFunction(simple_select_pramary);
+		const agreegateFunction = hasFunction(simple_select_pramary, fun => isAggregateFunction(fun));
 		if (agreegateFunction) {
 			return true;
 		}
@@ -2486,13 +2497,16 @@ function isSingleRowResult(selectstmt: SelectstmtContext, fromColumns: NotNullIn
 	return false;
 }
 
-function hasAggregateFunction(simple_select_pramary: Simple_select_pramaryContext): boolean {
+function hasFunction(simple_select_pramary: Simple_select_pramaryContext, checkFunction: CheckFunctionF): boolean {
 	const target_list_ = simple_select_pramary.target_list_();
 	if (target_list_) {
-		return target_list_.target_list().target_el_list().some(target_el => isAggregateFunction_target_el(target_el));
+		return target_list_.target_list().target_el_list().some(target_el => checkFunction_target_el(target_el, checkFunction));
 	}
 	const target_list = simple_select_pramary.target_list();
-	return target_list.target_el_list().some(target_el => isAggregateFunction_target_el(target_el));
+	if (target_list) {
+		return target_list.target_el_list().some(target_el => checkFunction_target_el(target_el, checkFunction));
+	}
+	return false;
 }
 
 type TableName = {
@@ -2511,11 +2525,12 @@ function getTableName(table_ref: Table_refContext): TableName {
 		alias: ''
 	}
 }
+type CheckFunctionF = (func_expr: Func_exprContext) => boolean;
 
-function isAggregateFunction_target_el(target_el: Target_elContext): boolean {
+function checkFunction_target_el(target_el: Target_elContext, checkFunction: CheckFunctionF): boolean {
 	if (target_el instanceof Target_labelContext) {
-		const c_expr_list = collectContextsOfType(target_el, Func_exprContext, false);
-		const aggrFunction = c_expr_list.some(func_expr => isAggregateFunction_c_expr(<Func_exprContext>func_expr));
+		const c_expr_list = collectContextsOfType(target_el, Func_exprContext, false) as Func_exprContext[];
+		const aggrFunction = c_expr_list.some(func_expr => checkFunction(func_expr));
 		return aggrFunction;
 	}
 	return false;
@@ -2570,25 +2585,97 @@ const aggregateFunctions = new Set([
 	'xmlagg'
 ]);
 
-function isAggregateFunction_c_expr(func_expr: Func_exprContext): boolean {
+function isAggregateFunction(func_expr: Func_exprContext): boolean {
 	const funcName = func_expr?.func_application()?.func_name()?.getText()?.toLowerCase();
 	// RANK(), DENSE_RANK(), PERCENT_RANK() - they are window functions, not aggregate functions, 
 	// even though your query is returning them from a join involving pg_aggregate.
 	return !func_expr.over_clause() && aggregateFunctions.has(funcName);
 }
 
-function isSetReturningFunction_target_el(target_el: Target_elContext): boolean {
-	if (target_el instanceof Target_labelContext) {
-		const c_expr_list = collectContextsOfType(target_el, Func_exprContext);
-		const setReturningFunction = c_expr_list.some(func_expr => isSetReturningFunction_c_expr(<Func_exprContext>func_expr));
-		return setReturningFunction;
-	}
-	return false;
-}
-
-function isSetReturningFunction_c_expr(func_expr: Func_exprContext) {
+// SELECT distinct '''' || p.proname || ''',' AS function_name
+// FROM pg_proc p
+// JOIN pg_namespace n ON p.pronamespace = n.oid
+// WHERE p.proretset = true
+// ORDER BY function_name;
+function isSetReturningFunction(func_expr: Func_exprContext): boolean {
 	const funcName = func_expr?.func_application()?.func_name()?.getText()?.toLowerCase();
-	return funcName === 'generate_series';
+	const setReturning = new Set([
+		'_pg_expandarray',
+		'aclexplode',
+		'generate_series',
+		'generate_subscripts',
+		'get_clients_with_addresses',
+		'get_mytable1',
+		'get_mytable1_by_id',
+		'get_mytable1_with_nested_function',
+		'get_mytable_plpgsql',
+		'get_users_with_posts',
+		'get_users_with_posts_plpgsql',
+		'json_array_elements',
+		'json_array_elements_text',
+		'json_each',
+		'json_each_text',
+		'json_object_keys',
+		'json_populate_recordset',
+		'json_to_recordset',
+		'jsonb_array_elements',
+		'jsonb_array_elements_text',
+		'jsonb_each',
+		'jsonb_each_text',
+		'jsonb_object_keys',
+		'jsonb_path_query',
+		'jsonb_populate_recordset',
+		'jsonb_to_recordset',
+		'pg_available_extension_versions',
+		'pg_available_extensions',
+		'pg_config',
+		'pg_cursor',
+		'pg_event_trigger_ddl_commands',
+		'pg_event_trigger_dropped_objects',
+		'pg_extension_update_paths',
+		'pg_get_keywords',
+		'pg_get_multixact_members',
+		'pg_get_publication_tables',
+		'pg_get_replication_slots',
+		'pg_hba_file_rules',
+		'pg_listening_channels',
+		'pg_lock_status',
+		'pg_logical_slot_get_binary_changes',
+		'pg_logical_slot_get_changes',
+		'pg_logical_slot_peek_binary_changes',
+		'pg_logical_slot_peek_changes',
+		'pg_ls_archive_statusdir',
+		'pg_ls_dir',
+		'pg_ls_logdir',
+		'pg_ls_tmpdir',
+		'pg_ls_waldir',
+		'pg_mcv_list_items',
+		'pg_options_to_table',
+		'pg_partition_ancestors',
+		'pg_partition_tree',
+		'pg_prepared_statement',
+		'pg_prepared_xact',
+		'pg_show_all_file_settings',
+		'pg_show_all_settings',
+		'pg_show_replication_origin_status',
+		'pg_stat_get_activity',
+		'pg_stat_get_backend_idset',
+		'pg_stat_get_progress_info',
+		'pg_stat_get_wal_senders',
+		'pg_stop_backup',
+		'pg_tablespace_databases',
+		'pg_timezone_abbrevs',
+		'pg_timezone_names',
+		'regexp_matches',
+		'regexp_split_to_table',
+		'ts_debug',
+		'ts_parse',
+		'ts_stat',
+		'ts_token_type',
+		'txid_snapshot_xip',
+		'unnest'
+	])
+	return setReturning.has(funcName);
 }
 
 function isSingleRowResult_where(a_expr: A_exprContext, uniqueKeys: string[]): boolean {

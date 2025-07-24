@@ -1433,4 +1433,34 @@ describe('postgres-select-single-table', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it(`SELECT id FROM (VALUES (1, 'a'), (2, 'b')) AS t(id, name)`, async () => {
+		const sql = `select unnest(array[1, 2, 3]) as val1, unnest(array['a', 'b', null]) as val2`;
+
+		const actual = await describeQuery(client, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'val1',
+					type: 'int4',
+					notNull: true,
+					table: ''
+				},
+				{
+					name: 'val2',
+					type: 'text',
+					notNull: false,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });
