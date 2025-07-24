@@ -732,4 +732,56 @@ describe('parse-select-complex-queries', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('WITH RECURSIVE parent (a, b) (with inner join and parameters)', async () => {
+		const sql = `
+			WITH RECURSIVE parent (a, b) AS (
+				SELECT	id,	value FROM	mytable1
+				WHERE id = $1
+				UNION ALL 
+				SELECT	t1.id + 1, t1.value	
+				FROM mytable1 t1
+				INNER JOIN parent t2 ON t1.id = t2.a
+				WHERE t2.b IS NOT null and t2.b < 10
+			)
+			SELECT a,b FROM parent
+			WHERE a <> $2`;
+
+		const actual = await describeQuery(client, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'a',
+					type: 'int4',
+					notNull: true,
+					table: 'parent'
+				},
+				{
+					name: 'b',
+					type: 'int4',
+					notNull: false,
+					table: 'parent'
+				}
+			],
+			parameters: [
+				{
+					name: 'param1',
+					type: 'int4',
+					notNull: true
+				},
+				{
+					name: 'param2',
+					type: 'int4',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });

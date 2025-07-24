@@ -213,9 +213,10 @@ function traverse_select_no_parens(select_no_parens: Select_no_parensContext, co
 		with_clause.cte_list().common_table_expr_list()
 			.forEach(common_table_expr => {
 				const recursiveTableName = with_clause.RECURSIVE() ? common_table_expr.name().getText() : undefined;
-				const recursiveColumns = common_table_expr.name_list_()?.name_list()?.name_list()?.map(name => name.getText());
-				const withResult = traverse_common_table_expr(common_table_expr, { ...context, recursiveTableName, recursiveColumnNames: recursiveColumns }, traverseResult);
-				context.withColumns.push(...withResult);
+				const recursiveColumnNames = common_table_expr.name_list_()?.name_list()?.name_list()?.map(name => name.getText());
+				const withResult = traverse_common_table_expr(common_table_expr, { ...context, recursiveTableName, recursiveColumnNames }, traverseResult);
+				const columns = recursiveColumnNames ? withResult.map((col, index) => ({ ...col, column_name: recursiveColumnNames[index] ?? col.column_name })) : withResult;
+				context.withColumns.push(...columns);
 			});
 	}
 	const select_clause = select_no_parens.select_clause();
