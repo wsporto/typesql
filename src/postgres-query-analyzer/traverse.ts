@@ -364,7 +364,7 @@ function traverse_simple_select_pramary(simple_select_pramary: Simple_select_pra
 		traverse_a_expr(having_expr, newContext, traverseResult);
 	}
 
-	const filteredColumns = filterColumns_simple_select_pramary(simple_select_pramary, newContext, traverseResult);
+	const filteredColumns = filterColumns_simple_select_pramary(simple_select_pramary, { ...context, fromColumns: context.fromColumns.concat(fromResult.columns) }, traverseResult);
 	return {
 		columns: filteredColumns,
 		singleRow: fromResult.singleRow
@@ -1688,8 +1688,7 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 		const tableName = traverse_relation_expr(relation_expr);
 		const fromColumns = getFromColumns(tableName, context.fromColumns.concat(context.withColumns), context.dbSchema);
 		const tableNameWithAlias = alias ? alias : tableName.name;
-		const columnsWithAlias = fromColumns.map(col => ({ ...col, table_name: tableNameWithAlias.toLowerCase() }));
-		const fromColumnsResult = columnsWithAlias.concat(context.parentColumns);
+		const fromColumnsResult = fromColumns.map(col => ({ ...col, table_name: tableNameWithAlias.toLowerCase() }));
 		allColumns.push(...fromColumnsResult);
 		if (context.collectNestedInfo) {
 
@@ -1713,38 +1712,48 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 		}
 
 		const joinList = extractJoins(table_ref);
-		const joinColumns = joinList.flatMap((join, index) => {
+		joinList.forEach((join, index) => {
 			const joinType = join.joinType; //INNER, LEFT
 			const joinQual = join.joinQual;
 			const numParamsBefore = traverseResult.parameters.length;
-			const parentColumns = join.tableRef.LATERAL_P() ? fromColumnsResult : [];
-			const joinTableRefResult = traverse_table_ref(join.tableRef, { ...context, parentColumns }, traverseResult);
-			const isLeftJoin = joinType?.LEFT();
-			const filteredColumns = joinQual && joinQual?.USING() ? filterUsingColumns(joinTableRefResult.columns, joinQual) : joinTableRefResult.columns;
 			const subsequentJoints = joinList.slice(index + 1);
-			const checkIsNullable = isLeftJoin ? checkLeftJoinIsNullable(join, subsequentJoints, filteredColumns) : false;;
-			const resultColumns = isLeftJoin ? filteredColumns.map(col => {
-				const colResult: NotNullInfo =
-				{
+
+			let joinColumns: NotNullInfo[] = [];
+			if (join.tableRef.LATERAL_P()) {
+				const lateralAlias = join.tableRef.alias_clause().colid().getText();
+				const select_with_parens = join.tableRef.select_with_parens();
+				const newContext: TraverseContext = { ...context, parentColumns: allColumns, collectDynamicQueryInfo: false };
+				const selectResult = traverse_select_with_parens(select_with_parens, newContext, traverseResult);
+
+				// Set alias
+				joinColumns = selectResult.columns.map(col => ({ ...col, table_name: lateralAlias, }) satisfies NotNullInfo);
+			}
+			else {
+				const joinTableRefResult = traverse_table_ref(join.tableRef, context, traverseResult);
+				joinColumns = joinQual?.USING() ? filterUsingColumns(joinTableRefResult.columns, joinQual) : joinTableRefResult.columns;
+			}
+			const nullableColumns = joinType?.LEFT()
+				? joinColumns.map(col => ({
 					...col,
-					is_nullable: checkIsNullable ? true : col.is_nullable,
-					original_is_nullable:
-						col.is_nullable
-				};
-				return colResult;
-			}) : filteredColumns;
+					original_is_nullable: col.is_nullable,
+					is_nullable: checkLeftJoinIsNullable(join, subsequentJoints, joinColumns) ? true : col.is_nullable,
+				}))
+				: joinColumns;
+			allColumns.push(...nullableColumns);
 
 			if (context.collectNestedInfo && joinQual) {
-				collectNestedInfo(joinQual, resultColumns, traverseResult);
+				collectNestedInfo(joinQual, joinColumns, traverseResult);
 			}
 			if (context.collectDynamicQueryInfo) {
 				const parameters = traverseResult.parameters.slice(numParamsBefore).map((_, index) => index + numParamsBefore);
-				collectDynamicQueryInfoTableRef(join.tableRef, joinType, joinQual, resultColumns, parameters, traverseResult);
+				collectDynamicQueryInfoTableRef(join.tableRef, joinType, joinQual, joinColumns, parameters, traverseResult);
 			}
-
-			return resultColumns;
 		});
-		allColumns.push(...joinColumns);
+		return {
+			columns: allColumns,
+			singleRow: false
+		}
+
 	}
 	const func_table = table_ref.func_table();
 	if (func_table) {

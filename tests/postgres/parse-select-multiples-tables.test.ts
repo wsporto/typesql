@@ -1125,4 +1125,82 @@ describe('postgres-parse-select-multiples-tables', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('SELECT * FROM mytable1 LEFT JOIN LATERAL(SELECT * FROM mytable2) t2', async () => {
+		const sql = `
+        SELECT *
+		FROM mytable1
+		JOIN LATERAL (
+			SELECT *
+			FROM mytable2
+			WHERE mytable2.id = mytable1.id
+		) AS t2 ON true
+		JOIN LATERAL (
+			SELECT *
+			FROM mytable3
+			WHERE mytable3.id = t2.id
+		) AS t3 ON t2.id = t3.id
+        `;
+		const actual = await describeQuery(client, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'mytable1'
+				},
+				{
+					name: 'value',
+					type: 'int4',
+					notNull: false,
+					table: 'mytable1'
+				},
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 't2'
+				},
+				{
+					name: 'name',
+					type: 'text',
+					notNull: false,
+					table: 't2'
+				},
+				{
+					name: 'descr',
+					type: 'text',
+					notNull: false,
+					table: 't2'
+				},
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 't3'
+				},
+				{
+					name: 'double_value',
+					type: 'float4',
+					notNull: false,
+					table: 't3'
+				},
+				{
+					name: 'name',
+					type: 'text',
+					notNull: true,
+					table: 't3'
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });
