@@ -1682,7 +1682,6 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 	const allColumns: NotNullInfo[] = [];
 	const relation_expr = table_ref.relation_expr();
 	const aliasClause = table_ref.alias_clause();
-	const aliasNameList = aliasClause?.name_list()?.name_list()?.map(name => name.getText());
 	const alias = aliasClause ? aliasClause.colid().getText() : '';
 	if (relation_expr) {
 		const tableName = traverse_relation_expr(relation_expr);
@@ -1720,13 +1719,9 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 
 			let joinColumns: NotNullInfo[] = [];
 			if (join.tableRef.LATERAL_P()) {
-				const lateralAlias = join.tableRef.alias_clause().colid().getText();
-				const select_with_parens = join.tableRef.select_with_parens();
 				const newContext: TraverseContext = { ...context, parentColumns: allColumns, collectDynamicQueryInfo: false };
-				const selectResult = traverse_select_with_parens(select_with_parens, newContext, traverseResult);
-
-				// Set alias
-				joinColumns = selectResult.columns.map(col => ({ ...col, table_name: lateralAlias, }) satisfies NotNullInfo);
+				const lateralJoinResult = traverse_select_with_parens_or_func_table(join.tableRef, newContext, traverseResult);
+				joinColumns = lateralJoinResult.columns;
 			}
 			else {
 				const joinTableRefResult = traverse_table_ref(join.tableRef, context, traverseResult);
@@ -1753,11 +1748,15 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 			columns: allColumns,
 			singleRow: false
 		}
-
 	}
-	const func_table = table_ref.func_table();
+	const select_with_parens_or_func_result = traverse_select_with_parens_or_func_table(table_ref, context, traverseResult);
+	return select_with_parens_or_func_result;
+}
+
+function traverse_select_with_parens_or_func_table(tableRef: Table_refContext, context: TraverseContext, traverseResult: TraverseResult) {
+	const func_table = tableRef.func_table();
 	if (func_table) {
-		const funcAlias = table_ref.func_alias_clause()?.alias_clause()?.colid()?.getText() || '';
+		const funcAlias = tableRef.func_alias_clause()?.alias_clause()?.colid()?.getText() || '';
 		const result = traverse_func_table(func_table, context, traverseResult);
 		const resultWithAlias = result.columns.map(col => ({ ...col, table_name: funcAlias || col.table_name } satisfies NotNullInfo));
 		return {
@@ -1765,9 +1764,11 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 			singleRow: result.singleRow
 		};
 	}
-	const select_with_parens = table_ref.select_with_parens();
+	const select_with_parens = tableRef.select_with_parens();
 	if (select_with_parens) {
 		const columns = traverse_select_with_parens(select_with_parens, { ...context, collectDynamicQueryInfo: false }, traverseResult);
+		const aliasNameList = tableRef.alias_clause()?.name_list()?.name_list()?.map(name => name.getText());
+		const alias = tableRef.alias_clause()?.colid().getText() ?? '';
 		const withAlias = columns.columns.map((col, i) => (
 			{
 				...col,
@@ -1779,10 +1780,7 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 			singleRow: false
 		};
 	}
-	return {
-		columns: allColumns,
-		singleRow: false
-	};
+	throw Error('Stmt not expected:' + tableRef.getText());
 }
 
 type Join = {

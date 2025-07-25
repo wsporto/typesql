@@ -1203,4 +1203,37 @@ describe('postgres-parse-select-multiples-tables', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('SELECT * FROM mytable1 LEFT JOIN LATERAL(SELECT * FROM mytable2) t2', async () => {
+		const sql = `
+        SELECT u.id, check_users.*
+		FROM users u
+		CROSS JOIN LATERAL check_users(u)
+        `;
+		const actual = await describeQuery(client, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'u'
+				},
+				{
+					name: 'user_ok',
+					type: 'bool',
+					notNull: true,
+					table: 'check_users'
+				},
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });
