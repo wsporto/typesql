@@ -1,0 +1,51 @@
+import pg from 'pg';
+
+export type SelectJson12Result = {
+	json_build_object: SelectJson12JsonBuildObjectType;
+	json_build_array: (string | null)[];
+}
+
+export type SelectJson12JsonBuildObjectType = {
+	date_column?: string;
+	timestamp_column?: string;
+	timestamptz_column?: string;
+	bytea_column?: string;
+	nested: SelectJson12JsonBuildObjectNestedType;
+}
+
+export type SelectJson12JsonBuildObjectNestedType = {
+	date_column?: string;
+	timestamp_column?: string;
+	timestamptz_column?: string;
+	bytea_column?: string;
+}
+
+export async function selectJson12(client: pg.Client | pg.Pool): Promise<SelectJson12Result[]> {
+	const sql = `
+	SELECT
+		json_build_object(
+			'date_column', t.date_column,
+			'timestamp_column', t.timestamp_column,
+			'timestamptz_column', t.timestamptz_column,
+			'bytea_column', t.bytea_column,
+			'nested', json_build_object(
+				'date_column', t.date_column,
+				'timestamp_column', t.timestamp_column,
+				'timestamptz_column', t.timestamptz_column,
+				'bytea_column', t.bytea_column
+			)
+		),
+		json_build_array(date_column)
+	FROM all_types t
+	`
+	return client.query({ text: sql, rowMode: 'array' })
+		.then(res => res.rows.map(row => mapArrayToSelectJson12Result(row)));
+}
+
+function mapArrayToSelectJson12Result(data: any) {
+	const result: SelectJson12Result = {
+		json_build_object: data[0],
+		json_build_array: data[1]
+	}
+	return result;
+}

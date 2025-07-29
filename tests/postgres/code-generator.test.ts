@@ -660,5 +660,46 @@ FROM mytable1 t`;
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('select-json12-serialization', async () => {
+		const sql = `SELECT 
+	json_build_object(
+		'date_column', t.date_column,
+		'timestamp_column', t.timestamp_column,
+		'timestamptz_column', t.timestamptz_column,
+		'bytea_column', t.bytea_column,
+		'nested', json_build_object(
+			'date_column', t.date_column,
+			'timestamp_column', t.timestamp_column,
+			'timestamptz_column', t.timestamptz_column,
+			'bytea_column', t.bytea_column
+		)
+	),
+	json_build_array(date_column)
+FROM all_types t`;
+
+		const actual = await generateCode(dialect, sql, 'selectJson12');
+		const expected = readFileSync('tests/postgres/expected-code/select-json12.ts.txt', 'utf-8');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('select-json13-serialization', async () => {
+		const sql = `SELECT 
+	json_object_agg(int4_column, date_column)
+FROM all_types t
+GROUP BY int4_column`;
+
+		const actual = await generateCode(dialect, sql, 'selectJson13');
+		const expected = readFileSync('tests/postgres/expected-code/select-json13.ts.txt', 'utf-8');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });
 

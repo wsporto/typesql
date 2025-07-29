@@ -62,7 +62,7 @@ function isEnumType(type: PostgresSimpleType): type is `enum(${string})` {
 	return type.startsWith('enum(');
 }
 
-export function mapColumnType(postgresType: PostgresType): TsType {
+export function mapColumnType(postgresType: PostgresType, json = false): TsType {
 	if (typeof postgresType === 'object') {
 		return 'any';
 	}
@@ -77,10 +77,10 @@ export function mapColumnType(postgresType: PostgresType): TsType {
 		case 'bool[]':
 			return 'boolean[]';
 		case 'bytea':
-			return 'ArrayBuffer';
+			return json ? 'string' : 'ArrayBuffer';
 		case '_bytea':
 		case 'bytea[]':
-			return 'ArrayBuffer[]';
+			return json ? 'string[]' : 'ArrayBuffer[]';
 		case 'char':
 			return 'string';
 		case '_char':
@@ -122,10 +122,10 @@ export function mapColumnType(postgresType: PostgresType): TsType {
 		case 'varchar[]':
 			return 'string[]';
 		case 'date':
-			return 'Date';
+			return json ? 'string' : 'Date';
 		case '_date':
 		case 'date[]':
-			return 'Date[]';
+			return json ? 'string[]' : 'Date';
 		case 'bit':
 			return 'boolean';
 		case '_bit':
@@ -152,15 +152,13 @@ export function mapColumnType(postgresType: PostgresType): TsType {
 		case 'float8[]':
 			return 'number[]'
 		case 'timestamp':
-			return 'Date'
+		case 'timestamptz':
+			return json ? 'string' : 'Date'
 		case '_timestamp':
 		case 'timestamp[]':
-			return 'Date[]';
-		case 'timestamptz':
-			return 'Date';
 		case '_timestamptz':
 		case 'timestamptz[]':
-			return 'Date[]';
+			return json ? 'string[]' : 'Date[]';
 		case 'tsvector':
 		case 'tsquery':
 		case 'jsonpath':

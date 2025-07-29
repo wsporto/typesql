@@ -492,7 +492,7 @@ function writeJsonTypes(writer: CodeBlockWriter, typeName: string, type: JsonObj
 				writer.writeLine(`${field.key}: ${jsonTypeName};`);
 			} else if (isJsonFieldType(field.type)) {
 				const optionalOp = field.type.notNull ? '' : '?';
-				writer.writeLine(`${field.key}${optionalOp}: ${mapColumnType(field.type.type)};`);
+				writer.writeLine(`${field.key}${optionalOp}: ${mapColumnType(field.type.type, true)};`);
 			}
 		});
 	});
@@ -529,7 +529,7 @@ function createTsDescriptor(capitalizedName: string, schemaDef: PostgresSchemaDe
 function createJsonArrayType(name: string, type: JsonArrayType) {
 	const typeNames = type.properties.flatMap(p => {
 		if (isJsonFieldType(p)) {
-			const baseType = mapColumnType(p.type)
+			const baseType = mapColumnType(p.type, true)
 			if (!p.notNull) {
 				return [baseType, 'null'];
 			}
@@ -543,7 +543,7 @@ function createJsonArrayType(name: string, type: JsonArrayType) {
 }
 
 function createJsonMapType(name: string, type: JsonMapType) {
-	const valueType = isJsonFieldType(type.type) ? mapColumnType(type.type.type) : `${name}Type`;
+	const valueType = isJsonFieldType(type.type) ? mapColumnType(type.type.type, true) : `${name}Type`;
 	return `Record<string, ${valueType} | undefined>`;
 }
 
