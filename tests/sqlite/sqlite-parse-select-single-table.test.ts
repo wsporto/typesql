@@ -2011,7 +2011,7 @@ describe('sqlite-Test simple select statements', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
-	it('SELECT "id" from mytable1 where "mytable1"."id" = 0', async () => {
+	it('SELECT "id", "mytable1"."value" from "mytable1" where "mytable1"."id" = 0', async () => {
 		const sql = 'SELECT "id", "mytable1"."value" from "mytable1" where "mytable1"."id" = 0;';
 
 		const actual = await parseSql(sql, sqliteDbSchema);
