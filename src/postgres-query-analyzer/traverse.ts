@@ -1,4 +1,4 @@
-import { A_expr_addContext, A_expr_andContext, A_expr_at_time_zoneContext, A_expr_betweenContext, A_expr_caretContext, A_expr_collateContext, A_expr_compareContext, A_expr_inContext, A_expr_is_notContext, A_expr_isnullContext, A_expr_lesslessContext, A_expr_likeContext, A_expr_mulContext, A_expr_orContext, A_expr_qual_opContext, A_expr_qualContext, A_expr_typecastContext, A_expr_unary_notContext, A_expr_unary_qualopContext, A_expr_unary_signContext, A_exprContext, AexprconstContext, Array_expr_listContext, Array_exprContext, C_expr_caseContext, C_expr_existsContext, C_expr_exprContext, C_exprContext, Case_defaultContext, ColidContext, ColumnElemContext, ColumnrefContext, Common_table_exprContext, CopystmtContext, DeletestmtContext, Expr_listContext, From_clauseContext, From_listContext, Func_applicationContext, Func_arg_exprContext, Func_expr_common_subexprContext, Func_expr_windowlessContext, Func_exprContext, Func_tableContext, IdentifierContext, In_expr_listContext, In_expr_selectContext, In_exprContext, Insert_column_itemContext, InsertstmtContext, Join_qualContext, Join_typeContext, Qualified_nameContext, Relation_exprContext, Select_clauseContext, Select_no_parensContext, Select_with_parensContext, SelectstmtContext, Set_clauseContext, Simple_select_intersectContext, Simple_select_pramaryContext, StmtContext, Table_refContext, Target_elContext, Target_labelContext, Target_listContext, Unreserved_keywordContext, UpdatestmtContext, Values_clauseContext, When_clauseContext, Where_clauseContext } from '@wsporto/typesql-parser/postgres/PostgreSQLParser';
+import { A_expr_addContext, A_expr_andContext, A_expr_at_time_zoneContext, A_expr_betweenContext, A_expr_caretContext, A_expr_collateContext, A_expr_compareContext, A_expr_inContext, A_expr_is_notContext, A_expr_isnullContext, A_expr_lesslessContext, A_expr_likeContext, A_expr_mulContext, A_expr_orContext, A_expr_qual_opContext, A_expr_qualContext, A_expr_typecastContext, A_expr_unary_notContext, A_expr_unary_qualopContext, A_expr_unary_signContext, A_exprContext, AexprconstContext, Array_expr_listContext, Array_exprContext, C_expr_caseContext, C_expr_existsContext, C_expr_exprContext, C_exprContext, Case_defaultContext, ColidContext, ColumnElemContext, ColumnrefContext, Common_table_exprContext, CopystmtContext, DeletestmtContext, Expr_listContext, From_clauseContext, From_listContext, Func_applicationContext, Func_arg_exprContext, Func_expr_common_subexprContext, Func_expr_windowlessContext, Func_exprContext, Func_tableContext, IdentifierContext, In_expr_listContext, In_expr_selectContext, In_exprContext, IndirectionContext, Insert_column_itemContext, InsertstmtContext, Join_qualContext, Join_typeContext, Qualified_nameContext, Relation_exprContext, Select_clauseContext, Select_no_parensContext, Select_with_parensContext, SelectstmtContext, Set_clauseContext, Simple_select_intersectContext, Simple_select_pramaryContext, StmtContext, Table_refContext, Target_elContext, Target_labelContext, Target_listContext, Unreserved_keywordContext, UpdatestmtContext, Values_clauseContext, When_clauseContext, Where_clauseContext } from '@wsporto/typesql-parser/postgres/PostgreSQLParser';
 import { ParserRuleContext } from '@wsporto/typesql-parser';
 import { PostgresColumnSchema } from '../drivers/types';
 import { extractOriginalSql, splitName, splitTableName } from '../mysql-query-analyzer/select-columns';
@@ -376,7 +376,7 @@ function extractRelations(a_expr: A_exprContext): string[] {
 	const relations = columnsRef
 		.map((colRefExpr) => {
 			const colRef = colRefExpr as ColumnrefContext;
-			const tableName = splitName(colRef.getText());
+			const tableName = getFieldName(colRef);
 			return tableName;
 		});
 	const uniqueRelations = [...new Set(relations.map(relation => relation.prefix))]
@@ -459,7 +459,7 @@ function traverse_target_el(target_el: Target_elContext, context: TraverseContex
 		const numParamsBefore = traverseResult.parameters.length;
 		const exprResult = traverse_a_expr(a_expr, context, traverseResult);
 		const colLabel = target_el.colLabel();
-		const alias = colLabel != null ? colLabel.getText() : '';
+		const alias = colLabel != null ? get_colid_text(colLabel) : '';
 
 		if (alias) {
 			traverseResult.relations?.forEach(relation => {
@@ -830,11 +830,20 @@ function traverse_expr_typecast(a_expr_typecast: A_expr_typecastContext, context
 }
 
 function traverseColumnRef(columnref: ColumnrefContext, fromColumns: NotNullInfo[]): NotNullInfo {
-	const fieldName = splitName(columnref.getText());
+
+	const fieldName = getFieldName(columnref);
 	const col = findColumn(fieldName, fromColumns);
 	return {
 		...col, is_nullable: col.is_nullable
 	}
+}
+
+function getFieldName(columnref: ColumnrefContext) {
+	const colid = get_colid_text(columnref.colid());
+
+	const indirection = columnref.indirection();
+	let fieldName: FieldName = indirection ? { name: get_indiretion_text(indirection), prefix: colid } : { name: colid, prefix: '' }
+	return fieldName;
 }
 
 type NameAndTypeId = {
@@ -1093,12 +1102,8 @@ function filterColumns(fromColumns: NotNullInfo[], fieldName: FieldName): NotNul
 		});
 }
 
-function excludeColumns(fromColumns: NotNullInfo[], excludeList: FieldName[]) {
-	return fromColumns.filter(col => {
-		const found = excludeList.find(excluded => (excluded.prefix === '' || col.table_name === excluded.prefix)
-			&& excluded.name == col.column_name);
-		return !found;
-	});
+function excludeColumns(fromColumns: NotNullInfo[], excludeList: string[]) {
+	return fromColumns.filter(col => !excludeList.find(excluded => excluded == col.column_name));
 }
 
 function traversec_expr_case(c_expr_case: C_expr_caseContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
@@ -1839,7 +1844,7 @@ function getJoinColumns(joinQual: Join_qualContext): FieldName[] {
 		const a_expr_or = a_expr_or_list[0] as A_expr_orContext;
 		const a_expr_and = a_expr_or.a_expr_and_list()[0];
 		const columnref = collectContextsOfType(a_expr_and, ColumnrefContext);
-		const joinColumns = columnref.map(colRef => splitName(colRef.getText()));
+		const joinColumns = columnref.map(colRef => getFieldName(colRef as ColumnrefContext));
 		return joinColumns;
 	}
 	return [];
@@ -1870,7 +1875,7 @@ function collectNestedInfo(joinQual: Join_qualContext, resultColumns: NotNullInf
 }
 
 function filterUsingColumns(fromColumns: NotNullInfo[], joinQual: Join_qualContext): NotNullInfo[] {
-	const excludeList = joinQual.name_list().name_list().map(name => splitName(name.getText()));
+	const excludeList = joinQual.name_list().name_list().map(name => get_colid_text(name.colid()));
 	const filteredColumns = excludeColumns(fromColumns, excludeList);
 	return filteredColumns;
 }
@@ -1990,10 +1995,11 @@ function traverse_relation_expr(relation_expr: Relation_exprContext): TableName 
 function traverse_qualified_name(qualified_name: Qualified_nameContext): TableName {
 	const colid_name = qualified_name.colid() ? get_colid_text(qualified_name.colid()) : '';
 
-	const indirection_el_list = qualified_name.indirection()?.indirection_el_list();
-	if (indirection_el_list && indirection_el_list.length === 1) {
+	const indirection = qualified_name.indirection();
+	if (indirection) {
+		const indirection_text = get_indiretion_text(indirection);
 		return {
-			name: indirection_el_list[0].attr_name()?.getText() || '',
+			name: indirection_text,
 			alias: colid_name
 		}
 	}
@@ -2006,7 +2012,7 @@ function traverse_qualified_name(qualified_name: Qualified_nameContext): TableNa
 function get_colid_text(colid: ColidContext): string {
 	const identifier = colid.identifier();
 	if (identifier) {
-		return traverse_identifier(identifier);
+		return get_identifier_text(identifier);
 	}
 	const unreserved_keyword = colid.unreserved_keyword();
 	if (unreserved_keyword) {
@@ -2015,8 +2021,24 @@ function get_colid_text(colid: ColidContext): string {
 	return '';
 }
 
-function traverse_identifier(identifier: IdentifierContext): string {
-	const tableName = identifier.Identifier().getText();
+function get_indiretion_text(indirection: IndirectionContext): string {
+	const indirection_el_list = indirection.indirection_el_list();
+	if (indirection_el_list && indirection_el_list.length === 1) {
+		const colLabel = indirection_el_list[0].attr_name()?.colLabel();
+		if (colLabel) {
+			return get_colid_text(colLabel);
+		}
+	}
+	return '';
+}
+
+function get_identifier_text(identifier: IdentifierContext): string {
+	const quoted_identifier = identifier.QuotedIdentifier();
+	if (quoted_identifier) {
+		const tableName = quoted_identifier.getText().slice(1, -1);
+		return tableName;
+	}
+	const tableName = identifier.getText();
 	return tableName;
 }
 
@@ -2452,7 +2474,7 @@ function isNotNull_c_expr(c_expr: C_exprContext, field: FieldName): boolean {
 	if (c_expr instanceof C_expr_exprContext) {
 		const columnref = c_expr.columnref();
 		if (columnref) {
-			const fieldName = splitName(columnref.getText());
+			const fieldName = getFieldName(columnref);
 			return (fieldName.name === field.name && (fieldName.prefix === '' || field.prefix === fieldName.prefix));
 		}
 		const aexprconst = c_expr.aexprconst();
@@ -2772,8 +2794,7 @@ function getCheckedUniqueColumn(a_expr_like: A_expr_likeContext): string | null 
 	if (c_expr instanceof C_expr_exprContext) {
 		const columnref = c_expr.columnref();
 		if (columnref) {
-			const fieldName = splitName(columnref.getText());
-			// const col = traverseColumnRef(columnref, dbSchema);
+			const fieldName = getFieldName(columnref);
 			return fieldName.name;
 		}
 	}

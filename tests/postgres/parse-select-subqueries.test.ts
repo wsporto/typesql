@@ -646,4 +646,32 @@ describe('postgres-parse-select-subqueries', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	})
+
+	it('SELECT idalias as id FROM (SELECT id as "idalias" FROM mytable1)', async () => {
+		const sql = `
+        SELECT idalias as id FROM (
+			SELECT id as "idalias" FROM mytable1
+		) t
+		
+        `;
+		const actual = await describeQuery(client, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 't'
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
 });

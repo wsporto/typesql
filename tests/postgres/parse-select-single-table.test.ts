@@ -1192,6 +1192,37 @@ describe('postgres-select-single-table', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('SELECT "id", "mytable1"."value" from "mytable1" where "mytable1"."id" = 0', async () => {
+		const sql = 'SELECT "id", "mytable1"."value" from "mytable1" where "mytable1"."id" = 0;';
+
+		const actual = await describeQuery(client, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'mytable1'
+				},
+				{
+					name: 'value',
+					type: 'int4',
+					notNull: false,
+					table: 'mytable1'
+				}
+			],
+			parameters: []
+		};
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('multipleRowsResult for table with composite key: where key1 = 1', async () => {
 
 		const sql = 'select key1, key2 from composite_key where key1 = 1';
