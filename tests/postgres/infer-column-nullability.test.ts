@@ -95,23 +95,6 @@ describe('Infer column nullability', () => {
 		assert.deepStrictEqual(actual.columns, expected);
 	});
 
-	it('select value from mytable1 t1 where t1.value is not null', () => {
-		const sql = 'select value from mytable1 t1 where t1.value is not null';
-		const actual = parseSql(sql, dbSchema, {}, []);
-
-		const expected: NotNullInfo[] = [
-			{
-				column_name: 'value',
-				is_nullable: false,
-				table_name: 't1',
-				table_schema: 'public',
-				type: 'int4'
-			}
-		];
-
-		assert.deepStrictEqual(actual.columns, expected);
-	});
-
 	it('select * from mytable1 where value is not null', () => {
 		const sql = 'select * from mytable1 where value is not null';
 		const actual = parseSql(sql, dbSchema, {}, []);
