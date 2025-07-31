@@ -241,6 +241,15 @@ export const schema: PostgresColumnSchema[] = [
 		column_default: true
 	},
 	{
+		table_schema: 'public',
+		table_name: 'all_types',
+		column_name: 'positive_number_column',
+		type: 'int4',
+		is_nullable: true,
+		autoincrement: false,
+		column_key: '',
+	},
+	{
 		table_schema: "public",
 		table_name: "answers",
 		column_name: "id",

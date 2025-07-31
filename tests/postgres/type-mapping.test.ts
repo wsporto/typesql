@@ -167,6 +167,12 @@ describe('postgres-type-mapping', () => {
 					notNull: false,
 					table: 'all_types',
 					type: 'enum(\'x-small\',\'small\',\'medium\',\'large\',\'x-large\')'
+				},
+				{
+					name: 'positive_number_column',
+					type: 'int4',
+					notNull: false,
+					table: 'all_types'
 				}
 			],
 			parameters: []

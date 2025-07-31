@@ -2020,4 +2020,41 @@ describe('postgres-json-functions', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	})
+
+	it(`SELECT json_build_object('positive_number_column', positive_number_column) as result FROM all_types`, async () => {
+
+		const sql = `SELECT json_build_object('positive_number_column', positive_number_column) as result FROM all_types`;
+		const actual = await describeQuery(client, sql, []);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'result',
+					type: {
+						name: 'json',
+						notNull: true,
+						properties: [
+							{
+								key: 'positive_number_column',
+								type: {
+									name: 'json_field',
+									type: 'int4',
+									notNull: false
+								}
+							}
+						]
+					},
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
 })
