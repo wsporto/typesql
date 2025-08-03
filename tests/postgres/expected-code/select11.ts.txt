@@ -1,0 +1,26 @@
+import pg from 'pg';
+
+export type Select11Result = {
+	id: number;
+	role?: string;
+}
+
+export async function select11(client: pg.Client | pg.Pool): Promise<Select11Result[]> {
+	const sql = `
+	SELECT
+		t1.id,
+		r.role
+	FROM mytable1 t1
+	LEFT JOIN roles r on t1.id = r.id
+	`
+	return client.query({ text: sql, rowMode: 'array' })
+		.then(res => res.rows.map(row => mapArrayToSelect11Result(row)));
+}
+
+function mapArrayToSelect11Result(data: any) {
+	const result: Select11Result = {
+		id: data[0],
+		role: data[1]
+	}
+	return result;
+}
