@@ -1,0 +1,46 @@
+import pg from 'pg';
+
+export type UpdateMytable3Data = {
+	double_value?: number | null;
+	name?: string;
+}
+
+export type UpdateMytable3Params = {
+	id: number;
+}
+
+export type UpdateMytable3Result = {
+	id: number;
+	double_value?: number;
+	name: string;
+}
+
+export async function updateMytable3(client: pg.Client | pg.Pool, data: UpdateMytable3Data, params: UpdateMytable3Params): Promise<UpdateMytable3Result | null> {
+	let sql = 'UPDATE mytable3 SET';
+	const values: any[] = [];
+	if (data.double_value !== undefined) {
+		sql += ' double_value = $1';
+		values.push(data.double_value);
+	}
+	if (data.name !== undefined) {
+		if (values.length > 0) sql += ',';
+		sql += ' name = $2';
+		values.push(data.name);
+	}
+	sql += ' WHERE id = $3 RETURNING *';
+	values.push(params.id);
+	if (values.length > 0) {
+		return client.query({ text: sql, values })
+			.then(res => res.rows.length > 0 ? mapArrayToUpdateMytable3Result(res) : null);
+	}
+	return null;
+}
+
+function mapArrayToUpdateMytable3Result(data: any) {
+	const result: UpdateMytable3Result = {
+		id: data[0],
+		double_value: data[1],
+		name: data[2]
+	}
+	return result;
+}

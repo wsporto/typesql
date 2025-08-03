@@ -307,6 +307,12 @@ LEFT JOIN roles r on t1.id = r.id`;
 		assert.deepStrictEqual(actual, expected);
 	});
 
+	it('crud-update03 - not null', () => {
+		const actual = generateCrud('pg', 'Update', 'mytable3', dbSchema);
+		const expected = readFileSync('tests/postgres/expected-code/crud-update03.ts.txt', 'utf-8');
+		assert.deepStrictEqual(actual, expected);
+	});
+
 	it('crud-delete01', () => {
 		const actual = generateCrud('pg', 'Delete', 'mytable1', dbSchema);
 		const expected = readFileSync('tests/postgres/expected-code/crud-delete01.ts.txt', 'utf-8');

@@ -826,7 +826,7 @@ export function generateCrud(client: 'pg', queryType: CrudQueryType, tableName: 
 
 	const codeWriter = getCodeWriter(client);
 	codeWriter.writeImports(writer, queryType);
-	const uniqueDataParams = queryType === 'Update' ? nonKeys : [];
+	const uniqueDataParams = queryType === 'Update' ? nonKeys.map(col => ({ ...col, optional: true })) : [];
 	if (uniqueDataParams.length > 0) {
 		writer.blankLine();
 		writeDataType(writer, dataTypeName, uniqueDataParams);
