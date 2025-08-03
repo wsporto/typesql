@@ -155,7 +155,8 @@ export function mapToColumnSchema(col: PostgresColumnSchema): ColumnSchema {
 		schema: col.table_schema,
 		table: col.table_name,
 		hidden: 0,
-		autoincrement: col.autoincrement
+		autoincrement: col.autoincrement,
+		defaultValue: col.column_default?.toString()
 	}
 	return columnSchema;
 }

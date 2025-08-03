@@ -1,0 +1,25 @@
+import pg from 'pg';
+
+export type Insert05Params = {
+	role: string;
+	fk_user: number;
+}
+
+export type Insert05Result = {
+	rowCount: number;
+}
+
+export async function insert05(client: pg.Client | pg.Pool, params: Insert05Params): Promise<Insert05Result> {
+	const sql = `
+	INSERT INTO roles(role, fk_user) VALUES ($1, $2)
+	`
+	return client.query({ text: sql, values: [params.role, params.fk_user] })
+		.then(res => mapArrayToInsert05Result(res));
+}
+
+function mapArrayToInsert05Result(data: any) {
+	const result: Insert05Result = {
+		rowCount: data.rowCount
+	}
+	return result;
+}
