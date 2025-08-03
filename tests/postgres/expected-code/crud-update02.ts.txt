@@ -1,8 +1,8 @@
 import pg from 'pg';
 
 export type UpdateMytable2Data = {
-	name: string | null;
-	descr: string | null;
+	name?: string | null;
+	descr?: string | null;
 }
 
 export type UpdateMytable2Params = {

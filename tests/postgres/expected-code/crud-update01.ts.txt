@@ -1,7 +1,7 @@
 import pg from 'pg';
 
 export type UpdateMytable1Data = {
-	value: number | null;
+	value?: number | null;
 }
 
 export type UpdateMytable1Params = {
