@@ -16,31 +16,22 @@ export type UpdateMytable2Result = {
 }
 
 export async function updateMytable2(client: pg.Client | pg.Pool, data: UpdateMytable2Data, params: UpdateMytable2Params): Promise<UpdateMytable2Result | null> {
-	let sql = 'UPDATE mytable2 SET';
-	const values: any[] = [];
-	if (data.name !== undefined) {
-		sql += ' name = $1';
-		values.push(data.name);
-	}
-	if (data.descr !== undefined) {
-		if (values.length > 0) sql += ',';
-		sql += ' descr = $2';
-		values.push(data.descr);
-	}
-	sql += ' WHERE id = $3 RETURNING *';
-	values.push(params.id);
-	if (values.length > 0) {
-		return client.query({ text: sql, values })
-			.then(res => res.rows.length > 0 ? mapArrayToUpdateMytable2Result(res) : null);
-	}
-	return null;
-}
+	const updateColumns = ['name', 'descr'] as const;
+	const updates: string[] = [];
+	const values: unknown[] = [];
+	let parameterNumber = 1;
 
-function mapArrayToUpdateMytable2Result(data: any) {
-	const result: UpdateMytable2Result = {
-		id: data[0],
-		name: data[1],
-		descr: data[2]
+	for (const column of updateColumns) {
+		const value = data[column];
+		if (value !== undefined) {
+			updates.push(`${column} = $${parameterNumber++}`);
+			values.push(value);
+		}
 	}
-	return result;
+	if (updates.length === 0) return null;
+	values.push(params.id);
+
+	const sql = `UPDATE mytable2 SET ${updates.join(', ')} WHERE id = $${parameterNumber} RETURNING *`;
+	return client.query({ text: sql, values })
+		.then(res => res.rows[0] ?? null);
 }
