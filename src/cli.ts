@@ -13,6 +13,7 @@ import { closeClient, createClient, loadSchema, loadTableSchema, selectTables } 
 import { generateCrud } from './sqlite-query-analyzer/code-generator';
 import { createCodeBlockWriter, generateCrud as generatePgCrud } from './code-generator2';
 import uniqBy from 'lodash.uniqby';
+import { loadConfig } from './load-config';
 
 const CRUD_FOLDER = 'crud';
 
@@ -20,10 +21,9 @@ function parseArgs() {
 	return yargs
 		.usage('Usage: $0 [options] DIRECTORY')
 		.option('config', {
-			describe: 'Database URI to connect to, e.g. -d mysql://user:password@localhost/mydb.',
-			demandOption: true,
+			describe: 'Path to the TypeSQL config file (e.g., ./src/sql/typesql.json)',
 			type: 'string',
-			default: 'typesql.json'
+			default: './typesql.json'
 		})
 		.command('init', 'generate config file', () => {
 			const config: TypeSqlConfig = {
@@ -83,12 +83,6 @@ function parseArgs() {
 		.demand(1, 'Please specify one of the commands!')
 		.wrap(null)
 		.strict().argv;
-}
-
-function loadConfig(configPath: string): TypeSqlConfig {
-	const rawdata = fs.readFileSync(configPath, 'utf-8');
-	const config = JSON.parse(rawdata);
-	return config;
 }
 
 function validateDirectories(dir: string) {
