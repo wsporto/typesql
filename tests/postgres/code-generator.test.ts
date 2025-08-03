@@ -177,6 +177,22 @@ where enum_constraint = :enum_value`;
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('select11 - left join with not null default', async () => {
+		const sql = `SELECT
+	t1.id,
+	r.role
+FROM mytable1 t1
+LEFT JOIN roles r on t1.id = r.id`;
+
+		const actual = await generateCode(dialect, sql, 'select11');
+		const expected = readFileSync('tests/postgres/expected-code/select11.ts.txt', 'utf-8');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('insert01 - INSERT INTO mytable1(value) values(10)', async () => {
 		const sql = 'INSERT INTO mytable1(value) values(10)';
 

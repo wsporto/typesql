@@ -1095,7 +1095,7 @@ describe('postgres-select-single-table', () => {
 				{
 					name: 'integer_column_default',
 					type: 'int4',
-					notNull: true,
+					notNull: false,
 					table: 'all_types'
 				},
 				{
@@ -1107,7 +1107,7 @@ describe('postgres-select-single-table', () => {
 				{
 					name: 'enum_column_default',
 					type: `enum('x-small','small','medium','large','x-large')`,
-					notNull: true,
+					notNull: false,
 					table: 'all_types'
 				},
 				{
@@ -1119,7 +1119,7 @@ describe('postgres-select-single-table', () => {
 				{
 					name: 'enum_constraint_default',
 					type: `enum('x-small','small','medium','large','x-large')`,
-					notNull: true,
+					notNull: false,
 					table: 'all_types'
 				}
 			],

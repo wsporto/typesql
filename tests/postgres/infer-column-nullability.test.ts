@@ -1314,6 +1314,37 @@ describe('Infer column nullability', () => {
 		assert.deepStrictEqual(actual.columns, expected);
 	});
 
+	it('left join with default value', () => {
+		const sql = `
+        SELECT
+			t1.id,
+			r.role
+		FROM mytable1 t1
+		LEFT JOIN roles r on t1.id = r.id
+        `;
+		const actual = parseSql(sql, dbSchema, {}, []);
+
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'id',
+				is_nullable: false,
+				table_name: 't1',
+				table_schema: 'public',
+				type: 'int4'
+			},
+			{
+				column_name: 'role',
+				is_nullable: true,
+				table_name: 'r',
+				table_schema: 'public',
+				type: 'text',
+				column_default: true
+			}
+		];
+
+		assert.deepStrictEqual(actual.columns, expected);
+	});
+
 	it('select with inner join after left join', () => {
 		const sqlInnerJoin = `
         select t1.id, t2.id, t3.id, t1.value, t2.name, t3.double_value
