@@ -816,20 +816,22 @@ export function generateCrud(client: 'pg', queryType: CrudQueryType, tableName: 
 	const writer = createCodeBlockWriter();
 
 	const allColumns = dbSchema.filter((col) => col.table === tableName);
-	const keys = allColumns.filter((col) => col.columnKey === 'PRI');
-	if (keys.length === 0) {
-		keys.push(...allColumns.filter((col) => col.columnKey === 'UNI'));
+	const keyColumns = allColumns.filter((col) => col.columnKey === 'PRI');
+	if (keyColumns.length === 0) {
+		keyColumns.push(...allColumns.filter((col) => col.columnKey === 'UNI'));
 	}
-	const nonKeys = allColumns.filter(col => col.columnKey !== 'PRI');
+	const keys = keyColumns.map(col => mapPostgresColumnSchemaToTsFieldDescriptor(col));
+	const nonKeys = allColumns.filter(col => col.columnKey !== 'PRI').map(col => mapPostgresColumnSchemaToTsFieldDescriptor(col));
+
 
 	const codeWriter = getCodeWriter(client);
 	codeWriter.writeImports(writer, queryType);
-	const uniqueDataParams = queryType === 'Update' ? nonKeys.map(col => mapPostgresColumnSchemaToTsFieldDescriptor(col)) : [];
+	const uniqueDataParams = queryType === 'Update' ? nonKeys : [];
 	if (uniqueDataParams.length > 0) {
 		writer.blankLine();
 		writeDataType(writer, dataTypeName, uniqueDataParams);
 	}
-	const uniqueParams = queryType === 'Insert' ? nonKeys.map(col => mapPostgresColumnSchemaToTsFieldDescriptor(col)) : keys.map(col => mapPostgresColumnSchemaToTsFieldDescriptor(col));
+	const uniqueParams = queryType === 'Insert' ? nonKeys : keys;
 	if (uniqueParams.length > 0) {
 		writer.blankLine();
 		writeParamsType(writer, paramsTypeName, uniqueParams, false, '');
@@ -847,8 +849,8 @@ export function generateCrud(client: 'pg', queryType: CrudQueryType, tableName: 
 		paramsTypeName,
 		resultTypeName,
 		columns,
-		nonKeys: nonKeys.map(col => col.column),
-		keys: keys.map(col => col.column)
+		nonKeys: nonKeys,
+		keys: keys.map(col => col.name)
 	}
 
 	const result = writeCrud(writer, crudParameters);
@@ -864,7 +866,7 @@ type CrudParameters = {
 	paramsTypeName: string;
 	resultTypeName: string;
 	columns: TsFieldDescriptor[];
-	nonKeys: string[];
+	nonKeys: TsFieldDescriptor[];
 	keys: string[]
 }
 
@@ -916,12 +918,40 @@ function writeCrudSelect(writer: CodeBlockWriter, crudParamters: CrudParameters)
 function writeCrudInsert(writer: CodeBlockWriter, crudParamters: CrudParameters): string {
 	const { tableName, queryName, dataTypeName, paramsTypeName, resultTypeName, columns, nonKeys, keys } = crudParamters;
 	writer.write(`export async function ${queryName}(client: pg.Client | pg.Pool, params: ${paramsTypeName}): Promise<${resultTypeName} | null>`).block(() => {
-		writer.writeLine('const sql = `');
-		writer.indent().write(`INSERT INTO ${tableName} (${nonKeys.join(',')})`).newLine();
-		writer.indent().write(`VALUES (${nonKeys.map((_, index) => `$${index + 1}`).join(',')})`).newLine();
-		writer.indent().write('RETURNING *').newLine();
-		writer.indent().write('`').newLine();
-		writer.writeLine(`return client.query({ text: sql, values: [${nonKeys.map(col => `params.${col}`)}] })`);
+		const hasOptional = nonKeys.some(field => field.optional);
+		if (hasOptional) {
+			writer.blankLine();
+			writer.writeLine('const columns: string[] = [];');
+			writer.writeLine('const placeholders: string[] = [];');
+			writer.writeLine('const values: unknown[] = [];');
+			writer.blankLine();
+			writer.writeLine('let parameterNumber = 1;');
+			writer.blankLine();
+			writer.write('for (const key of Object.keys(params))').block(() => {
+				writer.writeLine('const value = params[key as keyof InsertIntoRolesParams];');
+				writer.write('if (value !== undefined)').block(() => {
+					writer.writeLine('columns.push(key);');
+					writer.writeLine('placeholders.push(`$${parameterNumber++}`);');
+					writer.writeLine('values.push(value);');
+				})
+			})
+			writer.blankLine();
+			writer.writeLine('const sql = columns.length === 0');
+			writer.indent().write('? `INSERT INTO roles DEFAULT VALUES RETURNING *`').newLine();
+			writer.indent().write(': `INSERT INTO roles (${columns.join(\', \')})').newLine();
+			writer.indent().write(`VALUES(\${placeholders.join(', ')})`).newLine();
+			writer.indent().write('RETURNING *`').newLine();
+			writer.blankLine();
+			writer.writeLine(`return client.query({ text: sql, values })`);
+		}
+		else {
+			writer.writeLine('const sql = `');
+			writer.indent().write(`INSERT INTO ${tableName} (${nonKeys.map(field => field.name).join(',')})`).newLine();
+			writer.indent().write(`VALUES (${nonKeys.map((_, index) => `$${index + 1}`).join(',')})`).newLine();
+			writer.indent().write('RETURNING *').newLine();
+			writer.indent().write('`').newLine();
+			writer.writeLine(`return client.query({ text: sql, values: [${nonKeys.map(col => `params.${col.name}`)}] })`);
+		}
 		writer.indent().write(`.then(res => mapArrayTo${resultTypeName}(res));`);
 	})
 
@@ -944,10 +974,10 @@ function writeCrudUpdate(writer: CodeBlockWriter, crudParamters: CrudParameters)
 		writer.writeLine(`let sql = 'UPDATE ${tableName} SET';`);
 		writer.writeLine('const values: any[] = [];');
 		nonKeys.forEach((col, index) => {
-			writer.write(`if (data.${col} !== undefined)`).block(() => {
+			writer.write(`if (data.${col.name} !== undefined)`).block(() => {
 				writer.conditionalWriteLine(index > 0, `if (values.length > 0) sql += ',';`);
-				writer.writeLine(`sql += ' ${col} = $${index + 1}';`);
-				writer.writeLine(`values.push(data.${col});`);
+				writer.writeLine(`sql += ' ${col.name} = $${index + 1}';`);
+				writer.writeLine(`values.push(data.${col.name});`);
 			})
 		})
 		const keyName = keys[0];
@@ -1001,6 +1031,7 @@ export function mapPostgresColumnSchemaToTsFieldDescriptor(col: ColumnSchema): T
 	return {
 		name: col.column,
 		notNull: col.notNull,
+		optional: col.defaultValue != null,
 		tsType: mapColumnType(col.column_type as PostgresType),
 	}
 }

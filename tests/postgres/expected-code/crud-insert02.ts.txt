@@ -1,0 +1,48 @@
+import pg from 'pg';
+
+export type InsertIntoRolesParams = {
+	role?: string;
+	fk_user: number;
+}
+
+export type InsertIntoRolesResult = {
+	id: number;
+	role: string;
+	fk_user: number;
+}
+
+export async function insertIntoRoles(client: pg.Client | pg.Pool, params: InsertIntoRolesParams): Promise<InsertIntoRolesResult | null> {
+
+	const columns: string[] = [];
+	const placeholders: string[] = [];
+	const values: unknown[] = [];
+
+	let parameterNumber = 1;
+
+	for (const key of Object.keys(params)) {
+		const value = params[key as keyof InsertIntoRolesParams];
+		if (value !== undefined) {
+			columns.push(key);
+			placeholders.push(`$${parameterNumber++}`);
+			values.push(value);
+		}
+	}
+
+	const sql = columns.length === 0
+		? `INSERT INTO roles DEFAULT VALUES RETURNING *`
+		: `INSERT INTO roles (${columns.join(', ')})
+	VALUES(${placeholders.join(', ')})
+	RETURNING *`
+
+	return client.query({ text: sql, values })
+		.then(res => mapArrayToInsertIntoRolesResult(res));
+}
+
+function mapArrayToInsertIntoRolesResult(data: any) {
+	const result: InsertIntoRolesResult = {
+		id: data[0],
+		role: data[1],
+		fk_user: data[2]
+	}
+	return result;
+}
