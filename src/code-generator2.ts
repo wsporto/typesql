@@ -971,35 +971,27 @@ function writeCrudInsert(writer: CodeBlockWriter, crudParamters: CrudParameters)
 function writeCrudUpdate(writer: CodeBlockWriter, crudParamters: CrudParameters): string {
 	const { tableName, queryName, dataTypeName, paramsTypeName, resultTypeName, columns, nonKeys, keys } = crudParamters;
 	writer.write(`export async function ${queryName}(client: pg.Client | pg.Pool, data: ${dataTypeName}, params: ${paramsTypeName}): Promise<${resultTypeName} | null>`).block(() => {
-		writer.writeLine(`let sql = 'UPDATE ${tableName} SET';`);
-		writer.writeLine('const values: any[] = [];');
-		nonKeys.forEach((col, index) => {
-			writer.write(`if (data.${col.name} !== undefined)`).block(() => {
-				writer.conditionalWriteLine(index > 0, `if (values.length > 0) sql += ',';`);
-				writer.writeLine(`sql += ' ${col.name} = $${index + 1}';`);
-				writer.writeLine(`values.push(data.${col.name});`);
+		writer.writeLine(`const updateColumns = [${nonKeys.map(col => `'${col.name}'`).join(', ')}] as const;`);
+		writer.writeLine('const updates: string[] = [];');
+		writer.writeLine('const values: unknown[] = [];');
+		writer.writeLine('let parameterNumber = 1;');
+		writer.blankLine();
+		writer.write('for (const column of updateColumns)').block(() => {
+			writer.writeLine('const value = data[column];');
+			writer.write('if (value !== undefined)').block(() => {
+				writer.writeLine('updates.push(`${column} = $${parameterNumber++}`);');
+				writer.writeLine('values.push(value);');
 			})
 		})
+		writer.writeLine('if (updates.length === 0) return null;');
 		const keyName = keys[0];
-		writer.writeLine(`sql += ' WHERE ${keyName} = $${nonKeys.length + 1} RETURNING *';`);
 		writer.writeLine(`values.push(params.${keyName});`);
-		writer.write('if (values.length > 0)').block(() => {
-			writer.writeLine('return client.query({ text: sql, values })');
-			writer.indent().write(`.then(res => res.rows.length > 0 ? mapArrayTo${resultTypeName}(res) : null);`);
-		})
-		writer.writeLine('return null;');
-	})
+		writer.blankLine();
+		writer.writeLine(`const sql = \`UPDATE ${tableName} SET \${updates.join(', ')} WHERE ${keyName} = \$\${parameterNumber} RETURNING *\`;`);
 
-	writer.blankLine();
-	writer.write(`function mapArrayTo${resultTypeName}(data: any) `).block(() => {
-		writer.write(`const result: ${resultTypeName} = `).block(() => {
-			columns.forEach((col, index) => {
-				const separator = index < columns.length - 1 ? ',' : '';
-				writer.writeLine(`${col.name}: ${toDriver(`data[${index}]`, col)}${separator}`);
-			});
-		});
-		writer.writeLine('return result;');
-	});
+		writer.writeLine('return client.query({ text: sql, values })');
+		writer.indent().write('.then(res => res.rows[0] ?? null);');
+	})
 	return writer.toString();
 }
 
