@@ -12,17 +12,17 @@ export type InsertIntoRolesResult = {
 }
 
 export async function insertIntoRoles(client: pg.Client | pg.Pool, params: InsertIntoRolesParams): Promise<InsertIntoRolesResult | null> {
-
+	const insertColumns = ['role', 'fk_user'] as const;
 	const columns: string[] = [];
 	const placeholders: string[] = [];
 	const values: unknown[] = [];
 
 	let parameterNumber = 1;
 
-	for (const key of Object.keys(params)) {
-		const value = params[key as keyof InsertIntoRolesParams];
+	for (const column of insertColumns) {
+		const value = params[column];
 		if (value !== undefined) {
-			columns.push(key);
+			columns.push(column);
 			placeholders.push(`$${parameterNumber++}`);
 			values.push(value);
 		}
@@ -35,14 +35,5 @@ export async function insertIntoRoles(client: pg.Client | pg.Pool, params: Inser
 	RETURNING *`
 
 	return client.query({ text: sql, values })
-		.then(res => mapArrayToInsertIntoRolesResult(res));
-}
-
-function mapArrayToInsertIntoRolesResult(data: any) {
-	const result: InsertIntoRolesResult = {
-		id: data[0],
-		role: data[1],
-		fk_user: data[2]
-	}
-	return result;
+		.then(res => res.rows[0] ?? null);
 }

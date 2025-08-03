@@ -920,17 +920,17 @@ function writeCrudInsert(writer: CodeBlockWriter, crudParamters: CrudParameters)
 	writer.write(`export async function ${queryName}(client: pg.Client | pg.Pool, params: ${paramsTypeName}): Promise<${resultTypeName} | null>`).block(() => {
 		const hasOptional = nonKeys.some(field => field.optional);
 		if (hasOptional) {
-			writer.blankLine();
+			writer.writeLine(`const insertColumns = [${nonKeys.map(col => `'${col.name}'`).join(', ')}] as const;`)
 			writer.writeLine('const columns: string[] = [];');
 			writer.writeLine('const placeholders: string[] = [];');
 			writer.writeLine('const values: unknown[] = [];');
 			writer.blankLine();
 			writer.writeLine('let parameterNumber = 1;');
 			writer.blankLine();
-			writer.write('for (const key of Object.keys(params))').block(() => {
-				writer.writeLine('const value = params[key as keyof InsertIntoRolesParams];');
+			writer.write('for (const column of insertColumns)').block(() => {
+				writer.writeLine('const value = params[column];');
 				writer.write('if (value !== undefined)').block(() => {
-					writer.writeLine('columns.push(key);');
+					writer.writeLine('columns.push(column);');
 					writer.writeLine('placeholders.push(`$${parameterNumber++}`);');
 					writer.writeLine('values.push(value);');
 				})
@@ -952,19 +952,8 @@ function writeCrudInsert(writer: CodeBlockWriter, crudParamters: CrudParameters)
 			writer.indent().write('`').newLine();
 			writer.writeLine(`return client.query({ text: sql, values: [${nonKeys.map(col => `params.${col.name}`)}] })`);
 		}
-		writer.indent().write(`.then(res => mapArrayTo${resultTypeName}(res));`);
+		writer.indent().write(`.then(res => res.rows[0] ?? null);`);
 	})
-
-	writer.blankLine();
-	writer.write(`function mapArrayTo${resultTypeName}(data: any) `).block(() => {
-		writer.write(`const result: ${resultTypeName} = `).block(() => {
-			columns.forEach((col, index) => {
-				const separator = index < columns.length - 1 ? ',' : '';
-				writer.writeLine(`${col.name}: ${toDriver(`data[${index}]`, col)}${separator}`);
-			});
-		});
-		writer.writeLine('return result;');
-	});
 	return writer.toString();
 }
 
