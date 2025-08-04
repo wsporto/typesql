@@ -1,0 +1,17 @@
+import type { Database } from 'better-sqlite3';
+
+export type Update02Params = {
+	id: number;
+}
+
+export type Update02Result = {
+	changes: number;
+}
+
+export function update02(db: Database, params: Update02Params): Update02Result {
+	const sql = `
+	UPDATE mytable1 SET value = 42 WHERE id = ?
+	`
+	return db.prepare(sql)
+		.run([params.id]) as Update02Result;
+}

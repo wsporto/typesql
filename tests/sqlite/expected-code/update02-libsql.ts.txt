@@ -1,0 +1,24 @@
+import type { Client, Transaction } from '@libsql/client';
+
+export type Update02Params = {
+	id: number;
+}
+
+export type Update02Result = {
+	rowsAffected: number;
+}
+
+export async function update02(client: Client | Transaction, params: Update02Params): Promise<Update02Result> {
+	const sql = `
+	UPDATE mytable1 SET value = 42 WHERE id = ?
+	`
+	return client.execute({ sql, args: [params.id] })
+		.then(res => mapArrayToUpdate02Result(res));
+}
+
+function mapArrayToUpdate02Result(data: any) {
+	const result: Update02Result = {
+		rowsAffected: data.rowsAffected
+	}
+	return result;
+}

@@ -331,6 +331,19 @@ AND datetime(integer_column, 'auto') = :date_time`;
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('update02 - update-no-data - UPDATE with no SET parameters should not include data parameter', () => {
+		const sql = 'UPDATE mytable1 SET value = 42 WHERE id = :id';
+
+		const actual = generateTsCode(sql, 'update02', sqliteDbSchema, 'better-sqlite3');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+
+		const expected = readFileSync('tests/sqlite/expected-code/update02.ts.txt', 'utf-8').replace(/\r/gm, '');
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('update01-libsql - UPDATE mytable1 SET value=? WHERE id=?', () => {
 		const sql = 'UPDATE mytable1 SET value=? WHERE id=?';
 
@@ -340,6 +353,19 @@ AND datetime(integer_column, 'auto') = :date_time`;
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
 		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('update02-libsql - update-no-data - UPDATE with no SET parameters should not include data parameter', () => {
+		const sql = 'UPDATE mytable1 SET value = 42 WHERE id = :id';
+
+		const actual = generateTsCode(sql, 'update02', sqliteDbSchema, 'libsql');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+
+		const expected = readFileSync('tests/sqlite/expected-code/update02-libsql.ts.txt', 'utf-8').replace(/\r/gm, '');
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
@@ -355,6 +381,19 @@ AND datetime(integer_column, 'auto') = :date_time`;
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('update02-bun - update-no-data - UPDATE with no SET parameters should not include data parameter', () => {
+		const sql = 'UPDATE mytable1 SET value = 42 WHERE id = :id';
+
+		const actual = generateTsCode(sql, 'update02', sqliteDbSchema, 'bun:sqlite');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+
+		const expected = readFileSync('tests/sqlite/expected-code/update02-bun.ts.txt', 'utf-8').replace(/\r/gm, '');
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('update01-d1 - UPDATE mytable1 SET value=? WHERE id=?', () => {
 		const sql = 'UPDATE mytable1 SET value=? WHERE id=?';
 
@@ -364,6 +403,19 @@ AND datetime(integer_column, 'auto') = :date_time`;
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
 		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('update02-d1 - update-no-data - UPDATE with no SET parameters should not include data parameter', () => {
+		const sql = 'UPDATE mytable1 SET value = 42 WHERE id = :id';
+
+		const actual = generateTsCode(sql, 'update02', sqliteDbSchema, 'd1');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+
+		const expected = readFileSync('tests/sqlite/expected-code/update02-d1.ts.txt', 'utf-8').replace(/\r/gm, '');
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
@@ -1226,23 +1278,4 @@ WHERE max(c1.id, :param3) = min(c2.id, :param3)`;
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
-	it('update-no-data - UPDATE with no SET parameters should not include data parameter', () => {
-		const sql = 'UPDATE mytable1 SET value = 42 WHERE id = ?';
-
-		const actual = generateTsCode(sql, 'updateNoData', sqliteDbSchema, 'better-sqlite3');
-
-		if (isLeft(actual)) {
-			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
-		}
-
-		// The function should only have (db: Database, params: UpdateNoDataParams)
-		// NOT (db: Database, data: UpdateNoDataData, params: UpdateNoDataParams)
-		const expectedFunction = 'function updateNoData(db: Database, params: UpdateNoDataParams): UpdateNoDataResult';
-		assert.ok(actual.right.includes(expectedFunction), 
-			`Expected function signature '${expectedFunction}' not found in generated code:\n${actual.right}`);
-		
-		// Should not include data parameter type since there are no data parameters
-		assert.ok(!actual.right.includes('UpdateNoDataData'), 
-			`Should not include UpdateNoDataData type when there are no data parameters`);
-	});
 });
