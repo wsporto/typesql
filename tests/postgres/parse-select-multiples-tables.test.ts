@@ -1206,6 +1206,59 @@ describe('postgres-parse-select-multiples-tables', () => {
 
 	it('SELECT * FROM mytable1 LEFT JOIN LATERAL(SELECT * FROM mytable2) t2', async () => {
 		const sql = `
+        SELECT t1.id, t1.value, t2.name
+		FROM (
+			SELECT * FROM mytable1
+		) t1
+		JOIN LATERAL (
+			SELECT *
+			FROM mytable2
+			WHERE mytable2.id = t1.id
+		) AS t2 ON true
+		WHERE t2.name like $1
+		ORDER by t2.name
+        `;
+		const actual = await describeQuery(client, sql, ['name']);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 't1'
+				},
+				{
+					name: 'value',
+					type: 'int4',
+					notNull: false,
+					table: 't1'
+				},
+				{
+					name: 'name',
+					type: 'text',
+					notNull: false,
+					table: 't2'
+				}
+			],
+			parameters: [
+				{
+					name: 'name',
+					type: 'text',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('SELECT * FROM mytable1 LEFT JOIN LATERAL(SELECT * FROM mytable2) t2', async () => {
+		const sql = `
         SELECT u.id, check_users.*
 		FROM users u
 		CROSS JOIN LATERAL check_users(u)
