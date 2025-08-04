@@ -1225,4 +1225,24 @@ WHERE max(c1.id, :param3) = min(c2.id, :param3)`;
 		}
 		assert.deepStrictEqual(actual.right, expected);
 	});
+
+	it('update-no-data - UPDATE with no SET parameters should not include data parameter', () => {
+		const sql = 'UPDATE mytable1 SET value = 42 WHERE id = ?';
+
+		const actual = generateTsCode(sql, 'updateNoData', sqliteDbSchema, 'better-sqlite3');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+
+		// The function should only have (db: Database, params: UpdateNoDataParams)
+		// NOT (db: Database, data: UpdateNoDataData, params: UpdateNoDataParams)
+		const expectedFunction = 'function updateNoData(db: Database, params: UpdateNoDataParams): UpdateNoDataResult';
+		assert.ok(actual.right.includes(expectedFunction), 
+			`Expected function signature '${expectedFunction}' not found in generated code:\n${actual.right}`);
+		
+		// Should not include data parameter type since there are no data parameters
+		assert.ok(!actual.right.includes('UpdateNoDataData'), 
+			`Should not include UpdateNoDataData type when there are no data parameters`);
+	});
 });

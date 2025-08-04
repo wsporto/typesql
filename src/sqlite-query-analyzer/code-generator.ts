@@ -52,6 +52,7 @@ type ExecFunctionParams = {
 	queryType: QueryType;
 	returning: boolean;
 	orderBy: boolean;
+	uniqueUpdateParams: TsFieldDescriptor[];
 }
 
 type MapFunctionParams = {
@@ -347,7 +348,9 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 		: client === 'd1'
 			? 'db: D1Database'
 			: 'client: Client | Transaction';
-	functionArguments += queryType === 'Update' ? `, data: ${dataTypeName}` : '';
+	if (queryType === 'Update' && uniqueUpdateParams.length > 0) {
+		functionArguments += `, data: ${dataTypeName}`;
+	}
 	if (tsDescriptor.dynamicQuery2 == null) {
 		functionArguments += tsDescriptor.parameters.length > 0 || generateOrderBy ? `, params: ${paramsTypeName}` : '';
 	} else {
@@ -769,7 +772,8 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 		queryType,
 		paramsTypeName,
 		returning: tsDescriptor.returning || false,
-		orderBy: (tsDescriptor.orderByColumns?.length || 0) > 0
+		orderBy: (tsDescriptor.orderByColumns?.length || 0) > 0,
+		uniqueUpdateParams
 	}
 
 	if (tsDescriptor.dynamicQuery2 == null && !isCrud) {
@@ -1122,10 +1126,11 @@ function writeExecFunction(writer: CodeBlockWriter, client: SQLiteClient, params
 		paramsTypeName,
 		resultTypeName,
 		dataTypeName,
-		orderBy
+		orderBy,
+		uniqueUpdateParams
 	} = params;
 
-	let restParameters = queryType === 'Update' ? `, data: ${dataTypeName}` : '';
+	let restParameters = queryType === 'Update' && uniqueUpdateParams.length > 0 ? `, data: ${dataTypeName}` : '';
 	const dynamicQuery = false;
 	if (!dynamicQuery) {
 		restParameters += parameters.length > 0 || orderBy ? `, params: ${paramsTypeName}` : '';
