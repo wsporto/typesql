@@ -820,7 +820,7 @@ export function generateCrud(client: 'pg', queryType: CrudQueryType, tableName: 
 	if (keyColumns.length === 0) {
 		keyColumns.push(...allColumns.filter((col) => col.columnKey === 'UNI'));
 	}
-	const keys = keyColumns.map(col => mapPostgresColumnSchemaToTsFieldDescriptor(col));
+	const keys = keyColumns.map(col => ({ ...mapPostgresColumnSchemaToTsFieldDescriptor(col), optional: false }));
 	const nonKeys = allColumns.filter(col => col.columnKey !== 'PRI').map(col => mapPostgresColumnSchemaToTsFieldDescriptor(col));
 
 

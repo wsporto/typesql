@@ -283,6 +283,12 @@ LEFT JOIN roles r on t1.id = r.id`;
 		assert.deepStrictEqual(actual, expected);
 	});
 
+	it('crud-select02 - select-id-serial', () => {
+		const actual = generateCrud('pg', 'Select', 'roles', dbSchema);
+		const expected = readFileSync('tests/postgres/expected-code/crud-select02.ts.txt', 'utf-8');
+		assert.deepStrictEqual(actual, expected);
+	});
+
 	it('crud-insert01', () => {
 		const actual = generateCrud('pg', 'Insert', 'mytable1', dbSchema);
 		const expected = readFileSync('tests/postgres/expected-code/crud-insert01.ts.txt', 'utf-8');
