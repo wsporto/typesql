@@ -8,7 +8,7 @@ export type Delete01Result = {
 	rowCount: number;
 }
 
-export async function delete01(client: pg.Client | pg.Pool, params: Delete01Params): Promise<Delete01Result> {
+export async function delete01(client: pg.Client | pg.Pool | pg.PoolClient, params: Delete01Params): Promise<Delete01Result> {
 	const sql = `
 	DELETE FROM mytable1 WHERE id=$1
 	`

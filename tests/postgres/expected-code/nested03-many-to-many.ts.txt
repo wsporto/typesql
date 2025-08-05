@@ -18,7 +18,7 @@ export type Nested03NestedUsers = {
 	username: string;
 }
 
-export async function nested03(client: pg.Client | pg.Pool): Promise<Nested03Result[]> {
+export async function nested03(client: pg.Client | pg.Pool | pg.PoolClient): Promise<Nested03Result[]> {
 	const sql = `
 	-- @nested
 	SELECT
@@ -44,7 +44,7 @@ function mapArrayToNested03Result(data: any) {
 	return result;
 }
 
-export async function nested03Nested(client: pg.Client | pg.Pool): Promise<Nested03NestedSurveys[]> {
+export async function nested03Nested(client: pg.Client | pg.Pool | pg.PoolClient): Promise<Nested03NestedSurveys[]> {
 	const selectResult = await nested03(client);
 	if (selectResult.length == 0) {
 		return [];

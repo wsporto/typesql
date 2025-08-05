@@ -136,7 +136,7 @@ function generateTsCode(
 			}
 		});
 		writer.blankLine();
-		let functionArguments = 'client: pg.Client | pg.Pool';
+		let functionArguments = 'client: pg.Client | pg.Pool | pg.PoolClient';
 		// if (params.data.length > 0) {
 		// 	functionParams += `, data: ${dataType}`;
 		// }
@@ -656,7 +656,7 @@ function _writeCopyFunction(writer: CodeBlockWriter, params: ExecFunctionParamet
 
 function _writeExecFunction(writer: CodeBlockWriter, params: ExecFunctionParameters) {
 	const { functionName, paramsType, dataType, returnType, parameters, generateNested, nestedType } = params;
-	let functionParams = params.queryType === 'Copy' ? 'client: pg.Client | pg.PoolClient' : 'client: pg.Client | pg.Pool';
+	let functionParams = params.queryType === 'Copy' ? 'client: pg.Client | pg.PoolClient' : 'client: pg.Client | pg.Pool | pg.PoolClient'
 	if (params.data.length > 0) {
 		functionParams += `, data: ${dataType}`;
 	}
@@ -886,7 +886,7 @@ function writeCrud(writer: CodeBlockWriter, crudParamters: CrudParameters): stri
 
 function writeCrudSelect(writer: CodeBlockWriter, crudParamters: CrudParameters): string {
 	const { tableName, queryName, paramsTypeName, resultTypeName, columns, keys } = crudParamters;
-	writer.write(`export async function ${queryName}(client: pg.Client | pg.Pool, params: ${paramsTypeName}): Promise<${resultTypeName} | null>`).block(() => {
+	writer.write(`export async function ${queryName}(client: pg.Client | pg.Pool | pg.PoolClient, params: ${paramsTypeName}): Promise<${resultTypeName} | null>`).block(() => {
 		writer.writeLine('const sql = `');
 		writer.indent().write('SELECT').newLine();
 		columns.forEach((col, columnIndex) => {
@@ -917,7 +917,7 @@ function writeCrudSelect(writer: CodeBlockWriter, crudParamters: CrudParameters)
 
 function writeCrudInsert(writer: CodeBlockWriter, crudParamters: CrudParameters): string {
 	const { tableName, queryName, dataTypeName, paramsTypeName, resultTypeName, columns, nonKeys, keys } = crudParamters;
-	writer.write(`export async function ${queryName}(client: pg.Client | pg.Pool, params: ${paramsTypeName}): Promise<${resultTypeName} | null>`).block(() => {
+	writer.write(`export async function ${queryName}(client: pg.Client | pg.Pool | pg.PoolClient, params: ${paramsTypeName}): Promise<${resultTypeName} | null>`).block(() => {
 		const hasOptional = nonKeys.some(field => field.optional);
 		if (hasOptional) {
 			writer.writeLine(`const insertColumns = [${nonKeys.map(col => `'${col.name}'`).join(', ')}] as const;`)
@@ -959,7 +959,7 @@ function writeCrudInsert(writer: CodeBlockWriter, crudParamters: CrudParameters)
 
 function writeCrudUpdate(writer: CodeBlockWriter, crudParamters: CrudParameters): string {
 	const { tableName, queryName, dataTypeName, paramsTypeName, resultTypeName, columns, nonKeys, keys } = crudParamters;
-	writer.write(`export async function ${queryName}(client: pg.Client | pg.Pool, data: ${dataTypeName}, params: ${paramsTypeName}): Promise<${resultTypeName} | null>`).block(() => {
+	writer.write(`export async function ${queryName}(client: pg.Client | pg.Pool | pg.PoolClient, data: ${dataTypeName}, params: ${paramsTypeName}): Promise<${resultTypeName} | null>`).block(() => {
 		writer.writeLine(`const updateColumns = [${nonKeys.map(col => `'${col.name}'`).join(', ')}] as const;`);
 		writer.writeLine('const updates: string[] = [];');
 		writer.writeLine('const values: unknown[] = [];');
@@ -987,7 +987,7 @@ function writeCrudUpdate(writer: CodeBlockWriter, crudParamters: CrudParameters)
 function writeCrudDelete(writer: CodeBlockWriter, crudParamters: CrudParameters): string {
 	const { tableName, queryName, paramsTypeName, resultTypeName, columns, keys } = crudParamters;
 	const keyName = keys[0];
-	writer.write(`export async function ${queryName}(client: pg.Client | pg.Pool, params: ${paramsTypeName}): Promise<${resultTypeName} | null>`).block(() => {
+	writer.write(`export async function ${queryName}(client: pg.Client | pg.Pool | pg.PoolClient, params: ${paramsTypeName}): Promise<${resultTypeName} | null>`).block(() => {
 		writer.writeLine('const sql = `');
 		writer.indent().write(`DELETE FROM ${tableName} WHERE ${keyName} = $1`).newLine();
 		writer.indent().write('`').newLine();

@@ -11,7 +11,7 @@ export type SelectJson06JsonbAggType = {
 	title?: string;
 }
 
-export async function selectJson06(client: pg.Client | pg.Pool): Promise<SelectJson06Result[]> {
+export async function selectJson06(client: pg.Client | pg.Pool | pg.PoolClient): Promise<SelectJson06Result[]> {
 	const sql = `
 	SELECT
 		u.id as user_id,

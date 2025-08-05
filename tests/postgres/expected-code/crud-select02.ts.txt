@@ -10,7 +10,7 @@ export type SelectFromRolesResult = {
 	fk_user: number;
 }
 
-export async function selectFromRoles(client: pg.Client | pg.Pool, params: SelectFromRolesParams): Promise<SelectFromRolesResult | null> {
+export async function selectFromRoles(client: pg.Client | pg.Pool | pg.PoolClient, params: SelectFromRolesParams): Promise<SelectFromRolesResult | null> {
 	const sql = `
 	SELECT
 		id,

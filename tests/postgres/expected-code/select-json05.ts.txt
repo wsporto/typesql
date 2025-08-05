@@ -20,7 +20,7 @@ export type SelectJson05ResultNestedNested2Nested3Type = {
 	key: string;
 }
 
-export async function selectJson05(client: pg.Client | pg.Pool): Promise<SelectJson05Result | null> {
+export async function selectJson05(client: pg.Client | pg.Pool | pg.PoolClient): Promise<SelectJson05Result | null> {
 	const sql = `
 	SELECT json_build_object(
 		'nested', json_build_object (

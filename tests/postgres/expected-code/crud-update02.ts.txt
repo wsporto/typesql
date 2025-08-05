@@ -15,7 +15,7 @@ export type UpdateMytable2Result = {
 	descr?: string;
 }
 
-export async function updateMytable2(client: pg.Client | pg.Pool, data: UpdateMytable2Data, params: UpdateMytable2Params): Promise<UpdateMytable2Result | null> {
+export async function updateMytable2(client: pg.Client | pg.Pool | pg.PoolClient, data: UpdateMytable2Data, params: UpdateMytable2Params): Promise<UpdateMytable2Result | null> {
 	const updateColumns = ['name', 'descr'] as const;
 	const updates: string[] = [];
 	const values: unknown[] = [];

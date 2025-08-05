@@ -4,7 +4,7 @@ export type SelectTypeCastResult = {
 	id: number;
 }
 
-export async function selectTypeCast(client: pg.Client | pg.Pool): Promise<SelectTypeCastResult[]> {
+export async function selectTypeCast(client: pg.Client | pg.Pool | pg.PoolClient): Promise<SelectTypeCastResult[]> {
 	const sql = `
 	SELECT id::int2 FROM mytable1
 	`

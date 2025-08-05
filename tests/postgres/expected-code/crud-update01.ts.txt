@@ -13,7 +13,7 @@ export type UpdateMytable1Result = {
 	value?: number;
 }
 
-export async function updateMytable1(client: pg.Client | pg.Pool, data: UpdateMytable1Data, params: UpdateMytable1Params): Promise<UpdateMytable1Result | null> {
+export async function updateMytable1(client: pg.Client | pg.Pool | pg.PoolClient, data: UpdateMytable1Data, params: UpdateMytable1Params): Promise<UpdateMytable1Result | null> {
 	const updateColumns = ['value'] as const;
 	const updates: string[] = [];
 	const values: unknown[] = [];

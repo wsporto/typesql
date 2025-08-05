@@ -8,7 +8,7 @@ export type Select09Result = {
 	enum_column: 'x-small' | 'small' | 'medium' | 'large' | 'x-large';
 }
 
-export async function select09(client: pg.Client | pg.Pool, params: Select09Params): Promise<Select09Result[]> {
+export async function select09(client: pg.Client | pg.Pool | pg.PoolClient, params: Select09Params): Promise<Select09Result[]> {
 	const sql = `
 	SELECT
 		enum_column

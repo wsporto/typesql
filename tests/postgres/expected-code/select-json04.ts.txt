@@ -9,7 +9,7 @@ export type SelectJson04ResultType = {
 	list: (number | string)[];
 }
 
-export async function selectJson04(client: pg.Client | pg.Pool): Promise<SelectJson04Result | null> {
+export async function selectJson04(client: pg.Client | pg.Pool | pg.PoolClient): Promise<SelectJson04Result | null> {
 	const sql = `
 	SELECT json_build_object(
 		'id', 10,

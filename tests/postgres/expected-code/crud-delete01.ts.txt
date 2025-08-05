@@ -9,7 +9,7 @@ export type DeleteFromMytable1Result = {
 	value?: number;
 }
 
-export async function deleteFromMytable1(client: pg.Client | pg.Pool, params: DeleteFromMytable1Params): Promise<DeleteFromMytable1Result | null> {
+export async function deleteFromMytable1(client: pg.Client | pg.Pool | pg.PoolClient, params: DeleteFromMytable1Params): Promise<DeleteFromMytable1Result | null> {
 	const sql = `
 	DELETE FROM mytable1 WHERE id = $1
 	`

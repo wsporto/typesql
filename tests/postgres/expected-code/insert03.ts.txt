@@ -9,7 +9,7 @@ export type Insert03Result = {
 	value?: number;
 }
 
-export async function insert03(client: pg.Client | pg.Pool, params: Insert03Params): Promise<Insert03Result> {
+export async function insert03(client: pg.Client | pg.Pool | pg.PoolClient, params: Insert03Params): Promise<Insert03Result> {
 	const sql = `
 	INSERT INTO mytable1(value) VALUES($1) RETURNING *
 	`

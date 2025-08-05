@@ -11,7 +11,7 @@ export type InsertIntoRolesResult = {
 	fk_user: number;
 }
 
-export async function insertIntoRoles(client: pg.Client | pg.Pool, params: InsertIntoRolesParams): Promise<InsertIntoRolesResult | null> {
+export async function insertIntoRoles(client: pg.Client | pg.Pool | pg.PoolClient, params: InsertIntoRolesParams): Promise<InsertIntoRolesResult | null> {
 	const insertColumns = ['role', 'fk_user'] as const;
 	const columns: string[] = [];
 	const placeholders: string[] = [];
