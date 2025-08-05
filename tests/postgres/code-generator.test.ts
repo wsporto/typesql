@@ -265,6 +265,18 @@ LEFT JOIN roles r on t1.id = r.id`;
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('update02 - update-no-data - UPDATE with no SET parameters should not include data parameter', async () => {
+		const sql = 'UPDATE mytable1 SET value = 42 WHERE id = :id';
+
+		const actual = await generateCode(dialect, sql, 'update02');
+		const expected = readFileSync('tests/postgres/expected-code/update02.ts.txt', 'utf-8');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('delete01 - DELETE FROM mytable1 WHERE id=?', async () => {
 		const sql = 'DELETE FROM mytable1 WHERE id=$1';
 
