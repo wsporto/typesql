@@ -9,7 +9,7 @@ export type Select01Result = {
 	name?: string;
 }
 
-export async function select01(client: pg.Client | pg.Pool, params: Select01Params): Promise<Select01Result | null> {
+export async function select01(client: pg.Client | pg.Pool | pg.PoolClient, params: Select01Params): Promise<Select01Result | null> {
 	const sql = `
 	select id, name from mytable2 where id = $1
 	`

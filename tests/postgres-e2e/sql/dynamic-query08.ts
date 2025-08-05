@@ -35,7 +35,7 @@ export type DynamicQuery08Where =
 	| ['timestamp_not_null_column', BetweenOperator, Date | null, Date | null]
 
 let currentIndex: number;
-export async function dynamicQuery08(client: pg.Client | pg.Pool, params?: DynamicQuery08DynamicParams): Promise<DynamicQuery08Result[]> {
+export async function dynamicQuery08(client: pg.Client | pg.Pool | pg.PoolClient, params?: DynamicQuery08DynamicParams): Promise<DynamicQuery08Result[]> {
 	currentIndex = 2;
 	const where = whereConditionsToObject(params?.where);
 	const paramsValues: any = [];

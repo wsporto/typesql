@@ -11,7 +11,7 @@ export type SelectJson08CoalesceType = {
 	title: string;
 }
 
-export async function selectJson08(client: pg.Client | pg.Pool): Promise<SelectJson08Result[]> {
+export async function selectJson08(client: pg.Client | pg.Pool | pg.PoolClient): Promise<SelectJson08Result[]> {
 	const sql = `
 	SELECT
 		u.id as user_id,

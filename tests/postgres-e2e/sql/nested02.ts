@@ -36,7 +36,7 @@ export type Nested02NestedComments = {
 	comment: string;
 }
 
-export async function nested02(client: pg.Client | pg.Pool): Promise<Nested02Result[]> {
+export async function nested02(client: pg.Client | pg.Pool | pg.PoolClient): Promise<Nested02Result[]> {
 	const sql = `
 	-- @nested
 	SELECT
@@ -74,7 +74,7 @@ function mapArrayToNested02Result(data: any) {
 	return result;
 }
 
-export async function nested02Nested(client: pg.Client | pg.Pool): Promise<Nested02NestedUsers[]> {
+export async function nested02Nested(client: pg.Client | pg.Pool | pg.PoolClient): Promise<Nested02NestedUsers[]> {
 	const selectResult = await nested02(client);
 	if (selectResult.length == 0) {
 		return [];

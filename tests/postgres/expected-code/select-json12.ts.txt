@@ -20,7 +20,7 @@ export type SelectJson12JsonBuildObjectNestedType = {
 	bytea_column?: string;
 }
 
-export async function selectJson12(client: pg.Client | pg.Pool): Promise<SelectJson12Result[]> {
+export async function selectJson12(client: pg.Client | pg.Pool | pg.PoolClient): Promise<SelectJson12Result[]> {
 	const sql = `
 	SELECT
 		json_build_object(

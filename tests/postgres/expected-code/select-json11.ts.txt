@@ -14,7 +14,7 @@ export type SelectJson11JsonAggSubqueryType = {
 	key: number;
 }
 
-export async function selectJson11(client: pg.Client | pg.Pool): Promise<SelectJson11Result | null> {
+export async function selectJson11(client: pg.Client | pg.Pool | pg.PoolClient): Promise<SelectJson11Result | null> {
 	const sql = `
 	SELECT
 	  json_agg(

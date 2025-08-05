@@ -8,7 +8,7 @@ export type Insert02Result = {
 	rowCount: number;
 }
 
-export async function insert02(client: pg.Client | pg.Pool, params: Insert02Params): Promise<Insert02Result> {
+export async function insert02(client: pg.Client | pg.Pool | pg.PoolClient, params: Insert02Params): Promise<Insert02Result> {
 	const sql = `
 	INSERT INTO mytable1(value) values($1)
 	`

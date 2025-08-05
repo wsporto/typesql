@@ -4,7 +4,7 @@ export type SelectJson13Result = {
 	json_object_agg: Record<string, string | undefined>;
 }
 
-export async function selectJson13(client: pg.Client | pg.Pool): Promise<SelectJson13Result[]> {
+export async function selectJson13(client: pg.Client | pg.Pool | pg.PoolClient): Promise<SelectJson13Result[]> {
 	const sql = `
 	SELECT
 		json_object_agg(int4_column, date_column)

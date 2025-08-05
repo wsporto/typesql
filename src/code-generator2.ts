@@ -136,7 +136,7 @@ function generateTsCode(
 			}
 		});
 		writer.blankLine();
-		let functionArguments = 'client: pg.Client | pg.Pool';
+		let functionArguments = 'client: pg.Client | pg.Pool | pg.PoolClient';
 		// if (params.data.length > 0) {
 		// 	functionParams += `, data: ${dataType}`;
 		// }
@@ -656,7 +656,7 @@ function _writeCopyFunction(writer: CodeBlockWriter, params: ExecFunctionParamet
 
 function _writeExecFunction(writer: CodeBlockWriter, params: ExecFunctionParameters) {
 	const { functionName, paramsType, dataType, returnType, parameters, generateNested, nestedType } = params;
-	let functionParams = params.queryType === 'Copy' ? 'client: pg.Client | pg.PoolClient' : 'client: pg.Client | pg.Pool';
+	let functionParams = params.queryType === 'Copy' ? 'client: pg.Client | pg.PoolClient' : 'client: pg.Client | pg.Pool | pg.PoolClient'
 	if (params.data.length > 0) {
 		functionParams += `, data: ${dataType}`;
 	}
@@ -816,20 +816,22 @@ export function generateCrud(client: 'pg', queryType: CrudQueryType, tableName: 
 	const writer = createCodeBlockWriter();
 
 	const allColumns = dbSchema.filter((col) => col.table === tableName);
-	const keys = allColumns.filter((col) => col.columnKey === 'PRI');
-	if (keys.length === 0) {
-		keys.push(...allColumns.filter((col) => col.columnKey === 'UNI'));
+	const keyColumns = allColumns.filter((col) => col.columnKey === 'PRI');
+	if (keyColumns.length === 0) {
+		keyColumns.push(...allColumns.filter((col) => col.columnKey === 'UNI'));
 	}
-	const nonKeys = allColumns.filter(col => col.columnKey !== 'PRI');
+	const keys = keyColumns.map(col => ({ ...mapPostgresColumnSchemaToTsFieldDescriptor(col), optional: false }));
+	const nonKeys = allColumns.filter(col => col.columnKey !== 'PRI').map(col => mapPostgresColumnSchemaToTsFieldDescriptor(col));
+
 
 	const codeWriter = getCodeWriter(client);
 	codeWriter.writeImports(writer, queryType);
-	const uniqueDataParams = queryType === 'Update' ? nonKeys.map(col => mapPostgresColumnSchemaToTsFieldDescriptor(col)) : [];
+	const uniqueDataParams = queryType === 'Update' ? nonKeys.map(col => ({ ...col, optional: true })) : [];
 	if (uniqueDataParams.length > 0) {
 		writer.blankLine();
 		writeDataType(writer, dataTypeName, uniqueDataParams);
 	}
-	const uniqueParams = queryType === 'Insert' ? nonKeys.map(col => mapPostgresColumnSchemaToTsFieldDescriptor(col)) : keys.map(col => mapPostgresColumnSchemaToTsFieldDescriptor(col));
+	const uniqueParams = queryType === 'Insert' ? nonKeys : keys;
 	if (uniqueParams.length > 0) {
 		writer.blankLine();
 		writeParamsType(writer, paramsTypeName, uniqueParams, false, '');
@@ -847,8 +849,8 @@ export function generateCrud(client: 'pg', queryType: CrudQueryType, tableName: 
 		paramsTypeName,
 		resultTypeName,
 		columns,
-		nonKeys: nonKeys.map(col => col.column),
-		keys: keys.map(col => col.column)
+		nonKeys: nonKeys,
+		keys: keys.map(col => col.name)
 	}
 
 	const result = writeCrud(writer, crudParameters);
@@ -864,7 +866,7 @@ type CrudParameters = {
 	paramsTypeName: string;
 	resultTypeName: string;
 	columns: TsFieldDescriptor[];
-	nonKeys: string[];
+	nonKeys: TsFieldDescriptor[];
 	keys: string[]
 }
 
@@ -884,7 +886,7 @@ function writeCrud(writer: CodeBlockWriter, crudParamters: CrudParameters): stri
 
 function writeCrudSelect(writer: CodeBlockWriter, crudParamters: CrudParameters): string {
 	const { tableName, queryName, paramsTypeName, resultTypeName, columns, keys } = crudParamters;
-	writer.write(`export async function ${queryName}(client: pg.Client | pg.Pool, params: ${paramsTypeName}): Promise<${resultTypeName} | null>`).block(() => {
+	writer.write(`export async function ${queryName}(client: pg.Client | pg.Pool | pg.PoolClient, params: ${paramsTypeName}): Promise<${resultTypeName} | null>`).block(() => {
 		writer.writeLine('const sql = `');
 		writer.indent().write('SELECT').newLine();
 		columns.forEach((col, columnIndex) => {
@@ -915,68 +917,77 @@ function writeCrudSelect(writer: CodeBlockWriter, crudParamters: CrudParameters)
 
 function writeCrudInsert(writer: CodeBlockWriter, crudParamters: CrudParameters): string {
 	const { tableName, queryName, dataTypeName, paramsTypeName, resultTypeName, columns, nonKeys, keys } = crudParamters;
-	writer.write(`export async function ${queryName}(client: pg.Client | pg.Pool, params: ${paramsTypeName}): Promise<${resultTypeName} | null>`).block(() => {
-		writer.writeLine('const sql = `');
-		writer.indent().write(`INSERT INTO ${tableName} (${nonKeys.join(',')})`).newLine();
-		writer.indent().write(`VALUES (${nonKeys.map((_, index) => `$${index + 1}`).join(',')})`).newLine();
-		writer.indent().write('RETURNING *').newLine();
-		writer.indent().write('`').newLine();
-		writer.writeLine(`return client.query({ text: sql, values: [${nonKeys.map(col => `params.${col}`)}] })`);
-		writer.indent().write(`.then(res => mapArrayTo${resultTypeName}(res));`);
+	writer.write(`export async function ${queryName}(client: pg.Client | pg.Pool | pg.PoolClient, params: ${paramsTypeName}): Promise<${resultTypeName} | null>`).block(() => {
+		const hasOptional = nonKeys.some(field => field.optional);
+		if (hasOptional) {
+			writer.writeLine(`const insertColumns = [${nonKeys.map(col => `'${col.name}'`).join(', ')}] as const;`)
+			writer.writeLine('const columns: string[] = [];');
+			writer.writeLine('const placeholders: string[] = [];');
+			writer.writeLine('const values: unknown[] = [];');
+			writer.blankLine();
+			writer.writeLine('let parameterNumber = 1;');
+			writer.blankLine();
+			writer.write('for (const column of insertColumns)').block(() => {
+				writer.writeLine('const value = params[column];');
+				writer.write('if (value !== undefined)').block(() => {
+					writer.writeLine('columns.push(column);');
+					writer.writeLine('placeholders.push(`$${parameterNumber++}`);');
+					writer.writeLine('values.push(value);');
+				})
+			})
+			writer.blankLine();
+			writer.writeLine('const sql = columns.length === 0');
+			writer.indent().write('? `INSERT INTO roles DEFAULT VALUES RETURNING *`').newLine();
+			writer.indent().write(': `INSERT INTO roles (${columns.join(\', \')})').newLine();
+			writer.indent().write(`VALUES(\${placeholders.join(', ')})`).newLine();
+			writer.indent().write('RETURNING *`').newLine();
+			writer.blankLine();
+			writer.writeLine(`return client.query({ text: sql, values })`);
+		}
+		else {
+			writer.writeLine('const sql = `');
+			writer.indent().write(`INSERT INTO ${tableName} (${nonKeys.map(field => field.name).join(',')})`).newLine();
+			writer.indent().write(`VALUES (${nonKeys.map((_, index) => `$${index + 1}`).join(',')})`).newLine();
+			writer.indent().write('RETURNING *').newLine();
+			writer.indent().write('`').newLine();
+			writer.writeLine(`return client.query({ text: sql, values: [${nonKeys.map(col => `params.${col.name}`)}] })`);
+		}
+		writer.indent().write(`.then(res => res.rows[0] ?? null);`);
 	})
-
-	writer.blankLine();
-	writer.write(`function mapArrayTo${resultTypeName}(data: any) `).block(() => {
-		writer.write(`const result: ${resultTypeName} = `).block(() => {
-			columns.forEach((col, index) => {
-				const separator = index < columns.length - 1 ? ',' : '';
-				writer.writeLine(`${col.name}: ${toDriver(`data[${index}]`, col)}${separator}`);
-			});
-		});
-		writer.writeLine('return result;');
-	});
 	return writer.toString();
 }
 
 function writeCrudUpdate(writer: CodeBlockWriter, crudParamters: CrudParameters): string {
 	const { tableName, queryName, dataTypeName, paramsTypeName, resultTypeName, columns, nonKeys, keys } = crudParamters;
-	writer.write(`export async function ${queryName}(client: pg.Client | pg.Pool, data: ${dataTypeName}, params: ${paramsTypeName}): Promise<${resultTypeName} | null>`).block(() => {
-		writer.writeLine(`let sql = 'UPDATE ${tableName} SET';`);
-		writer.writeLine('const values: any[] = [];');
-		nonKeys.forEach((col, index) => {
-			writer.write(`if (data.${col} !== undefined)`).block(() => {
-				writer.conditionalWriteLine(index > 0, `if (values.length > 0) sql += ',';`);
-				writer.writeLine(`sql += ' ${col} = $${index + 1}';`);
-				writer.writeLine(`values.push(data.${col});`);
+	writer.write(`export async function ${queryName}(client: pg.Client | pg.Pool | pg.PoolClient, data: ${dataTypeName}, params: ${paramsTypeName}): Promise<${resultTypeName} | null>`).block(() => {
+		writer.writeLine(`const updateColumns = [${nonKeys.map(col => `'${col.name}'`).join(', ')}] as const;`);
+		writer.writeLine('const updates: string[] = [];');
+		writer.writeLine('const values: unknown[] = [];');
+		writer.writeLine('let parameterNumber = 1;');
+		writer.blankLine();
+		writer.write('for (const column of updateColumns)').block(() => {
+			writer.writeLine('const value = data[column];');
+			writer.write('if (value !== undefined)').block(() => {
+				writer.writeLine('updates.push(`${column} = $${parameterNumber++}`);');
+				writer.writeLine('values.push(value);');
 			})
 		})
+		writer.writeLine('if (updates.length === 0) return null;');
 		const keyName = keys[0];
-		writer.writeLine(`sql += ' WHERE ${keyName} = $${nonKeys.length + 1} RETURNING *';`);
 		writer.writeLine(`values.push(params.${keyName});`);
-		writer.write('if (values.length > 0)').block(() => {
-			writer.writeLine('return client.query({ text: sql, values })');
-			writer.indent().write(`.then(res => res.rows.length > 0 ? mapArrayTo${resultTypeName}(res) : null);`);
-		})
-		writer.writeLine('return null;');
-	})
+		writer.blankLine();
+		writer.writeLine(`const sql = \`UPDATE ${tableName} SET \${updates.join(', ')} WHERE ${keyName} = \$\${parameterNumber} RETURNING *\`;`);
 
-	writer.blankLine();
-	writer.write(`function mapArrayTo${resultTypeName}(data: any) `).block(() => {
-		writer.write(`const result: ${resultTypeName} = `).block(() => {
-			columns.forEach((col, index) => {
-				const separator = index < columns.length - 1 ? ',' : '';
-				writer.writeLine(`${col.name}: ${toDriver(`data[${index}]`, col)}${separator}`);
-			});
-		});
-		writer.writeLine('return result;');
-	});
+		writer.writeLine('return client.query({ text: sql, values })');
+		writer.indent().write('.then(res => res.rows[0] ?? null);');
+	})
 	return writer.toString();
 }
 
 function writeCrudDelete(writer: CodeBlockWriter, crudParamters: CrudParameters): string {
 	const { tableName, queryName, paramsTypeName, resultTypeName, columns, keys } = crudParamters;
 	const keyName = keys[0];
-	writer.write(`export async function ${queryName}(client: pg.Client | pg.Pool, params: ${paramsTypeName}): Promise<${resultTypeName} | null>`).block(() => {
+	writer.write(`export async function ${queryName}(client: pg.Client | pg.Pool | pg.PoolClient, params: ${paramsTypeName}): Promise<${resultTypeName} | null>`).block(() => {
 		writer.writeLine('const sql = `');
 		writer.indent().write(`DELETE FROM ${tableName} WHERE ${keyName} = $1`).newLine();
 		writer.indent().write('`').newLine();
@@ -1001,6 +1012,7 @@ export function mapPostgresColumnSchemaToTsFieldDescriptor(col: ColumnSchema): T
 	return {
 		name: col.column,
 		notNull: col.notNull,
+		optional: col.defaultValue != null,
 		tsType: mapColumnType(col.column_type as PostgresType),
 	}
 }

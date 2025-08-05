@@ -20,7 +20,7 @@ export type Nested04WithoutJoinTableNestedUsers = {
 	email: string | null;
 }
 
-export async function nested04WithoutJoinTable(client: pg.Client | pg.Pool): Promise<Nested04WithoutJoinTableResult[]> {
+export async function nested04WithoutJoinTable(client: pg.Client | pg.Pool | pg.PoolClient): Promise<Nested04WithoutJoinTableResult[]> {
 	const sql = `
 	-- @nested
 	SELECT
@@ -45,7 +45,7 @@ function mapArrayToNested04WithoutJoinTableResult(data: any) {
 	return result;
 }
 
-export async function nested04WithoutJoinTableNested(client: pg.Client | pg.Pool): Promise<Nested04WithoutJoinTableNestedSurveys[]> {
+export async function nested04WithoutJoinTableNested(client: pg.Client | pg.Pool | pg.PoolClient): Promise<Nested04WithoutJoinTableNestedSurveys[]> {
 	const selectResult = await nested04WithoutJoinTable(client);
 	if (selectResult.length == 0) {
 		return [];

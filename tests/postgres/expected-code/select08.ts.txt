@@ -11,7 +11,7 @@ export type Select08Result = {
 	param2: boolean;
 }
 
-export async function select08(client: pg.Client | pg.Pool, params: Select08Params): Promise<Select08Result[]> {
+export async function select08(client: pg.Client | pg.Pool | pg.PoolClient, params: Select08Params): Promise<Select08Result[]> {
 	const sql = `
 	SELECT
 		id,

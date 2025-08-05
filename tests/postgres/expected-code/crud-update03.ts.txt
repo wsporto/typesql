@@ -1,0 +1,37 @@
+import pg from 'pg';
+
+export type UpdateMytable3Data = {
+	double_value?: number | null;
+	name?: string;
+}
+
+export type UpdateMytable3Params = {
+	id: number;
+}
+
+export type UpdateMytable3Result = {
+	id: number;
+	double_value?: number;
+	name: string;
+}
+
+export async function updateMytable3(client: pg.Client | pg.Pool | pg.PoolClient, data: UpdateMytable3Data, params: UpdateMytable3Params): Promise<UpdateMytable3Result | null> {
+	const updateColumns = ['double_value', 'name'] as const;
+	const updates: string[] = [];
+	const values: unknown[] = [];
+	let parameterNumber = 1;
+
+	for (const column of updateColumns) {
+		const value = data[column];
+		if (value !== undefined) {
+			updates.push(`${column} = $${parameterNumber++}`);
+			values.push(value);
+		}
+	}
+	if (updates.length === 0) return null;
+	values.push(params.id);
+
+	const sql = `UPDATE mytable3 SET ${updates.join(', ')} WHERE id = $${parameterNumber} RETURNING *`;
+	return client.query({ text: sql, values })
+		.then(res => res.rows[0] ?? null);
+}

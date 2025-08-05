@@ -11,7 +11,7 @@ export type Select06Result = {
 }
 
 let currentIndex: number;
-export async function select06(client: pg.Client | pg.Pool, params: Select06Params): Promise<Select06Result[]> {
+export async function select06(client: pg.Client | pg.Pool | pg.PoolClient, params: Select06Params): Promise<Select06Result[]> {
 	currentIndex = 3;
 	const sql = `
 	SELECT id

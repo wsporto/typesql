@@ -5,7 +5,7 @@ export type SelectJsonBuildArray01Result = {
 	value2: (any | null | string | number)[];
 }
 
-export async function selectJsonBuildArray01(client: pg.Client | pg.Pool): Promise<SelectJsonBuildArray01Result | null> {
+export async function selectJsonBuildArray01(client: pg.Client | pg.Pool | pg.PoolClient): Promise<SelectJsonBuildArray01Result | null> {
 	const sql = `
 	SELECT
 		json_build_array('a', 'b') as value1,

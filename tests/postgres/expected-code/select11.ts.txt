@@ -5,7 +5,7 @@ export type Select11Result = {
 	role?: string;
 }
 
-export async function select11(client: pg.Client | pg.Pool): Promise<Select11Result[]> {
+export async function select11(client: pg.Client | pg.Pool | pg.PoolClient): Promise<Select11Result[]> {
 	const sql = `
 	SELECT
 		t1.id,

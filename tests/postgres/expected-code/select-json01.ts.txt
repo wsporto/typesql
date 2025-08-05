@@ -9,7 +9,7 @@ export type SelectJson01ResultType = {
 	key2: number;
 }
 
-export async function selectJson01(client: pg.Client | pg.Pool): Promise<SelectJson01Result | null> {
+export async function selectJson01(client: pg.Client | pg.Pool | pg.PoolClient): Promise<SelectJson01Result | null> {
 	const sql = `
 	SELECT json_agg(
 		json_build_object('key', name, 'key2', id)

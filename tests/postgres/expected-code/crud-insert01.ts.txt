@@ -9,20 +9,12 @@ export type InsertIntoMytable1Result = {
 	value?: number;
 }
 
-export async function insertIntoMytable1(client: pg.Client | pg.Pool, params: InsertIntoMytable1Params): Promise<InsertIntoMytable1Result | null> {
+export async function insertIntoMytable1(client: pg.Client | pg.Pool | pg.PoolClient, params: InsertIntoMytable1Params): Promise<InsertIntoMytable1Result | null> {
 	const sql = `
 	INSERT INTO mytable1 (value)
 	VALUES ($1)
 	RETURNING *
 	`
 	return client.query({ text: sql, values: [params.value] })
-		.then(res => mapArrayToInsertIntoMytable1Result(res));
-}
-
-function mapArrayToInsertIntoMytable1Result(data: any) {
-	const result: InsertIntoMytable1Result = {
-		id: data[0],
-		value: data[1]
-	}
-	return result;
+		.then(res => res.rows[0] ?? null);
 }

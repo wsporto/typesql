@@ -241,6 +241,18 @@ LEFT JOIN roles r on t1.id = r.id`;
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('insert05-default-not-null - INSERT INTO roles(role) VALUES (:role)', async () => {
+		const sql = 'INSERT INTO roles(role, fk_user) VALUES (:role, :fk_user)';
+
+		const actual = await generateCode(dialect, sql, 'insert05');
+		const expected = readFileSync('tests/postgres/expected-code/insert05.ts.txt', 'utf-8');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('update01 - UPDATE mytable1 SET value=? WHERE id=?', async () => {
 		const sql = 'UPDATE mytable1 SET value=$1 WHERE id=$2';
 
@@ -271,9 +283,21 @@ LEFT JOIN roles r on t1.id = r.id`;
 		assert.deepStrictEqual(actual, expected);
 	});
 
+	it('crud-select02 - select-id-serial', () => {
+		const actual = generateCrud('pg', 'Select', 'roles', dbSchema);
+		const expected = readFileSync('tests/postgres/expected-code/crud-select02.ts.txt', 'utf-8');
+		assert.deepStrictEqual(actual, expected);
+	});
+
 	it('crud-insert01', () => {
 		const actual = generateCrud('pg', 'Insert', 'mytable1', dbSchema);
 		const expected = readFileSync('tests/postgres/expected-code/crud-insert01.ts.txt', 'utf-8');
+		assert.deepStrictEqual(actual, expected);
+	});
+
+	it('crud-insert02-default-not-null', async () => {
+		const actual = generateCrud('pg', 'Insert', 'roles', dbSchema);
+		const expected = readFileSync('tests/postgres/expected-code/crud-insert02.ts.txt', 'utf-8');
 		assert.deepStrictEqual(actual, expected);
 	});
 
@@ -286,6 +310,12 @@ LEFT JOIN roles r on t1.id = r.id`;
 	it('crud-update02', () => {
 		const actual = generateCrud('pg', 'Update', 'mytable2', dbSchema);
 		const expected = readFileSync('tests/postgres/expected-code/crud-update02.ts.txt', 'utf-8');
+		assert.deepStrictEqual(actual, expected);
+	});
+
+	it('crud-update03 - not null', () => {
+		const actual = generateCrud('pg', 'Update', 'mytable3', dbSchema);
+		const expected = readFileSync('tests/postgres/expected-code/crud-update03.ts.txt', 'utf-8');
 		assert.deepStrictEqual(actual, expected);
 	});
 

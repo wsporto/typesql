@@ -41,8 +41,8 @@ export type DerivatedTableWhere =
 	| ['name', BetweenOperator, string | null, string | null]
 
 let currentIndex: number;
-export async function derivatedTable(client: pg.Client | pg.Pool, params?: DerivatedTableDynamicParams): Promise<DerivatedTableResult[]> {
-	currentIndex = 0;
+export async function derivatedTable(client: pg.Client | pg.Pool | pg.PoolClient, params?: DerivatedTableDynamicParams): Promise<DerivatedTableResult[]> {
+	currentIndex = 1;
 	const where = whereConditionsToObject(params?.where);
 	const paramsValues: any = [];
 	let sql = 'SELECT';

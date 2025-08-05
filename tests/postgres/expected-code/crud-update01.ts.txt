@@ -1,7 +1,7 @@
 import pg from 'pg';
 
 export type UpdateMytable1Data = {
-	value: number | null;
+	value?: number | null;
 }
 
 export type UpdateMytable1Params = {
@@ -13,26 +13,23 @@ export type UpdateMytable1Result = {
 	value?: number;
 }
 
-export async function updateMytable1(client: pg.Client | pg.Pool, data: UpdateMytable1Data, params: UpdateMytable1Params): Promise<UpdateMytable1Result | null> {
-	let sql = 'UPDATE mytable1 SET';
-	const values: any[] = [];
-	if (data.value !== undefined) {
-		sql += ' value = $1';
-		values.push(data.value);
-	}
-	sql += ' WHERE id = $2 RETURNING *';
-	values.push(params.id);
-	if (values.length > 0) {
-		return client.query({ text: sql, values })
-			.then(res => res.rows.length > 0 ? mapArrayToUpdateMytable1Result(res) : null);
-	}
-	return null;
-}
+export async function updateMytable1(client: pg.Client | pg.Pool | pg.PoolClient, data: UpdateMytable1Data, params: UpdateMytable1Params): Promise<UpdateMytable1Result | null> {
+	const updateColumns = ['value'] as const;
+	const updates: string[] = [];
+	const values: unknown[] = [];
+	let parameterNumber = 1;
 
-function mapArrayToUpdateMytable1Result(data: any) {
-	const result: UpdateMytable1Result = {
-		id: data[0],
-		value: data[1]
+	for (const column of updateColumns) {
+		const value = data[column];
+		if (value !== undefined) {
+			updates.push(`${column} = $${parameterNumber++}`);
+			values.push(value);
+		}
 	}
-	return result;
+	if (updates.length === 0) return null;
+	values.push(params.id);
+
+	const sql = `UPDATE mytable1 SET ${updates.join(', ')} WHERE id = $${parameterNumber} RETURNING *`;
+	return client.query({ text: sql, values })
+		.then(res => res.rows[0] ?? null);
 }
