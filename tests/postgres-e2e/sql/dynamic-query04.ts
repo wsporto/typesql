@@ -54,7 +54,7 @@ export type DynamicQuery04Where =
 	| ['descr', BetweenOperator, string | null, string | null]
 
 let currentIndex: number;
-export async function dynamicQuery04(client: pg.Client | pg.Pool, params?: DynamicQuery04DynamicParams): Promise<DynamicQuery04Result[]> {
+export async function dynamicQuery04(client: pg.Client | pg.Pool | pg.PoolClient, params?: DynamicQuery04DynamicParams): Promise<DynamicQuery04Result[]> {
 	currentIndex = 0;
 	const where = whereConditionsToObject(params?.where);
 	const paramsValues: any = [];

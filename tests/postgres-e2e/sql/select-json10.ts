@@ -10,7 +10,7 @@ export type SelectJson10Result2Type = {
 	value?: number;
 }
 
-export async function selectJson10(client: pg.Client | pg.Pool): Promise<SelectJson10Result | null> {
+export async function selectJson10(client: pg.Client | pg.Pool | pg.PoolClient): Promise<SelectJson10Result | null> {
 	const sql = `
 	SELECT
 		json_object_agg(id, value) as result1,

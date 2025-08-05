@@ -9,7 +9,7 @@ export type SelectUserFunction02Result = {
 	value?: number;
 }
 
-export async function selectUserFunction02(client: pg.Client | pg.Pool, params: SelectUserFunction02Params): Promise<SelectUserFunction02Result | null> {
+export async function selectUserFunction02(client: pg.Client | pg.Pool | pg.PoolClient, params: SelectUserFunction02Params): Promise<SelectUserFunction02Result | null> {
 	const sql = `
 	SELECT * FROM get_mytable1_by_id($1)
 	`

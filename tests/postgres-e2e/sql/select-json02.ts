@@ -16,7 +16,7 @@ export type SelectJson02SumNestedType = {
 	key2: number;
 }
 
-export async function selectJson02(client: pg.Client | pg.Pool): Promise<SelectJson02Result[]> {
+export async function selectJson02(client: pg.Client | pg.Pool | pg.PoolClient): Promise<SelectJson02Result[]> {
 	const sql = `
 	SELECT
 		json_build_object(
