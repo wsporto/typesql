@@ -22,6 +22,7 @@ export const postgresTypes: PostgresTypeHash = {
 	114: 'json',
 	142: 'xml',
 	143: '_xml',
+	194: 'pg_node_tree',
 	199: '_json',
 	// 269: 'table_am_handler',
 	// 325: 'index_am_handler',
@@ -69,8 +70,8 @@ export const postgresTypes: PostgresTypeHash = {
 	1022: '_float8',
 	1027: '_polygon',
 	1028: '_oid',
-	// 1033: 'aclitem',
-	// 1034: '_aclitem',
+	1033: 'aclitem',
+	1034: '_aclitem',
 	1040: '_macaddr',
 	1041: '_inet',
 	1042: 'bpchar',
@@ -86,7 +87,7 @@ export const postgresTypes: PostgresTypeHash = {
 	1186: 'interval',
 	1187: '_interval',
 	1231: '_numeric',
-	// 1263: '_cstring',
+	1263: '_cstring',
 	1266: 'timetz',
 	1270: '_timetz',
 	1560: 'bit',
@@ -107,9 +108,9 @@ export const postgresTypes: PostgresTypeHash = {
 	// 2210: '_regclass',
 	// 2211: '_regtype',
 	2249: 'record',
-	// 2275: 'cstring',
+	2275: 'cstring',
 	// 2276: 'any',
-	// 2277: 'anyarray',
+	2277: 'anyarray',
 	// 2278: 'void',
 	// 2279: 'trigger',
 	// 2280: 'language_handler',
@@ -118,8 +119,6 @@ export const postgresTypes: PostgresTypeHash = {
 	// 2283: 'anyelement',
 	2287: '_record',
 	// 2776: 'anynonarray',
-	// 2842: 'pg_authid',
-	// 2843: 'pg_auth_members',
 	// 2949: '_txid_snapshot',
 	2950: 'uuid',
 	2951: '_uuid',
@@ -168,6 +167,14 @@ function isEnumType(type: PostgresSimpleType): type is `enum(${string})` {
 }
 
 export function mapColumnType(postgresType: PostgresType, json = false): TsType {
+	const tsType = _mapColumnType(postgresType, json);
+	if (tsType == null) {
+		return 'any';
+	}
+	return tsType;
+}
+
+export function _mapColumnType(postgresType: PostgresType, json = false): TsType {
 	if (typeof postgresType === 'object') {
 		return 'any';
 	}
@@ -340,6 +347,10 @@ export function mapColumnType(postgresType: PostgresType, json = false): TsType 
 		case 'numrange':
 		case 'tsrange':
 		case 'tstzrange':
+		case 'aclitem':
+		case 'cstring':
+		case 'anyarray':
+		case 'pg_node_tree':
 			return 'string';
 		case '_oid':
 		case 'oid[]':
@@ -389,7 +400,13 @@ export function mapColumnType(postgresType: PostgresType, json = false): TsType 
 		case 'tsrange[]':
 		case '_tstzrange':
 		case 'tstzrange[]':
-			return 'string';
+		case '_aclitem':
+		case 'aclitem[]':
+		case '_cstring':
+		case 'cstring[]':
+		case 'anyarray[]':
+		case 'pg_node_tree[]':
+			return 'string[]';
 		case 'unknown':
 		case 'null': //pseudo type
 			return 'any';
