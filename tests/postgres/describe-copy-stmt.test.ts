@@ -1,16 +1,11 @@
 import assert from 'node:assert';
-import postgres from 'postgres';
 import { describeQuery } from '../../src/postgres-query-analyzer/describe';
 import { PostgresSchemaDef } from '../../src/postgres-query-analyzer/types';
+import { createTestClient, createSchemaInfo } from './schema';
 
 describe('postgres-describe-copy-stmt', () => {
-	const client = postgres({
-		host: 'localhost',
-		username: 'postgres',
-		password: 'password',
-		database: 'postgres',
-		port: 5432
-	});
+	const client = createTestClient();
+	const schemaInfo = createSchemaInfo();
 
 	after(async () => {
 		await client.end();
@@ -18,7 +13,7 @@ describe('postgres-describe-copy-stmt', () => {
 
 	it('COPY mytable1 (value) FROM STDIN WITH CSV', async () => {
 		const sql = 'COPY mytable1 (value) FROM STDIN WITH CSV';
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			multipleRowsResult: false,
 			queryType: 'Copy',

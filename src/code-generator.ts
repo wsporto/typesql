@@ -23,6 +23,7 @@ import type { ColumnSchema, DynamicSqlInfoResult, DynamicSqlInfoResult2, Fragmen
 import { EOL } from 'node:os';
 import { validateAndGenerateCode } from './sqlite-query-analyzer/code-generator';
 import { generateCode } from './code-generator2';
+import { PostgresSchemaInfo, SchemaInfo } from './schema-info';
 
 export function generateTsCodeForMySQL(tsDescriptor: TsDescriptor, fileName: string, crud = false): string {
 	const writer = new CodeBlockWriter();
@@ -683,7 +684,7 @@ export function convertToCamelCaseName(name: string): CamelCaseName {
 	return camelCaseStr;
 }
 
-export async function generateTsFile(client: DatabaseClient, sqlFile: string, dbSchema: ColumnSchema[], isCrudFile: boolean) {
+export async function generateTsFile(client: DatabaseClient, sqlFile: string, schemaInfo: SchemaInfo | PostgresSchemaInfo, isCrudFile: boolean) {
 	const sqlContent = fs.readFileSync(sqlFile, 'utf8');
 
 	if (sqlContent.trim() === '') {
@@ -691,27 +692,16 @@ export async function generateTsFile(client: DatabaseClient, sqlFile: string, db
 		return;
 	}
 
-	const fileName = parse(sqlFile).name;
-	const dirPath = parse(sqlFile).dir;
+	const { name: fileName, dir: dirPath } = parse(sqlFile);
 	const queryName = convertToCamelCaseName(fileName);
 
-	const tsContentResult = await (async (type: TypeSqlDialect) => {
-		switch (type) {
-			case 'mysql2':
-				return await generateTsFileFromContent(client as MySqlDialect, queryName, sqlContent, isCrudFile);
-			case 'better-sqlite3':
-			case 'bun:sqlite':
-			case 'libsql':
-			case 'd1':
-				return validateAndGenerateCode(client as SQLiteDialect | LibSqlClient | BunDialect, sqlContent, queryName, dbSchema, isCrudFile);
-			case 'pg':
-				const result = await generateCode(client as PgDielect, sqlContent, queryName);
-				if (result.isErr()) {
-					return left(result.error);
-				}
-				return right(result.value);
-		}
-	})(client.type);
+	const tsContentResult = await generateTypeScriptContent({
+		client,
+		queryName,
+		sqlContent,
+		schemaInfo,
+		isCrudFile,
+	})
 
 	const tsFilePath = `${path.resolve(dirPath, fileName)}.ts`;
 	if (isLeft(tsContentResult)) {
@@ -723,6 +713,30 @@ export async function generateTsFile(client: DatabaseClient, sqlFile: string, db
 	const tsContent = tsContentResult.right;
 
 	writeFile(tsFilePath, tsContent);
+}
+
+async function generateTypeScriptContent(params: {
+	client: DatabaseClient;
+	queryName: string;
+	sqlContent: string;
+	schemaInfo: SchemaInfo | PostgresSchemaInfo;
+	isCrudFile: boolean;
+}): Promise<Either<TypeSqlError, string>> {
+	const { client, queryName, sqlContent, schemaInfo, isCrudFile } = params;
+
+	switch (client.type) {
+		case 'mysql2':
+			return generateTsFileFromContent(client, queryName, sqlContent, isCrudFile);
+		case 'better-sqlite3':
+		case 'bun:sqlite':
+		case 'libsql':
+		case 'd1':
+			return validateAndGenerateCode(client, sqlContent, queryName, schemaInfo.columns as ColumnSchema[], isCrudFile);
+		case 'pg': {
+			const result = await generateCode(client, sqlContent, queryName, schemaInfo as PostgresSchemaInfo);
+			return result.isErr() ? left(result.error) : right(result.value);
+		}
+	}
 }
 
 export async function generateTsFileFromContent(

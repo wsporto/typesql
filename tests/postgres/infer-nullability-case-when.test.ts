@@ -1,17 +1,12 @@
 import assert from 'node:assert';
 import { describeQuery } from '../../src/postgres-query-analyzer/describe';
-import postgres from 'postgres';
 import { PostgresSchemaDef } from '../../src/postgres-query-analyzer/types';
+import { createSchemaInfo, createTestClient } from './schema';
 
 describe('postgres-infer-nullability-case-when', () => {
 
-	const client = postgres({
-		host: 'localhost',
-		username: 'postgres',
-		password: 'password',
-		database: 'postgres',
-		port: 5432
-	});
+	const client = createTestClient();
+	const schemaInfo = createSchemaInfo();
 
 	after(async () => {
 		await client.end(); // Close the connection
@@ -26,7 +21,7 @@ describe('postgres-infer-nullability-case-when', () => {
 				END AS computed_value
 			FROM mytable1
 			`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -57,7 +52,7 @@ describe('postgres-infer-nullability-case-when', () => {
 				END AS computed_value
 			FROM mytable1
 			`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -88,7 +83,7 @@ describe('postgres-infer-nullability-case-when', () => {
 				END AS computed_value
 			FROM mytable1 m1
 			`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -119,7 +114,7 @@ describe('postgres-infer-nullability-case-when', () => {
 				END AS computed_value
 			FROM mytable1 m1
 			`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -150,7 +145,7 @@ describe('postgres-infer-nullability-case-when', () => {
 				END AS computed_value
 			FROM mytable1 m1
 			`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -181,7 +176,7 @@ describe('postgres-infer-nullability-case-when', () => {
 				END AS computed_value
 			FROM mytable1 m1
 			`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -213,7 +208,7 @@ describe('postgres-infer-nullability-case-when', () => {
 			FROM mytable2 m2
 			INNER JOIN mytable5 m5 ON m2.id = m5.id
 			`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -245,7 +240,7 @@ describe('postgres-infer-nullability-case-when', () => {
 			FROM mytable2 m2
 			INNER JOIN mytable5 m5 ON m2.id = m5.id
 			`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -277,7 +272,7 @@ describe('postgres-infer-nullability-case-when', () => {
 			FROM mytable2 m2
 			INNER JOIN mytable5 m5 ON m2.id = m5.id
 			`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -309,7 +304,7 @@ describe('postgres-infer-nullability-case-when', () => {
 			FROM mytable2 m2
 			JOIN mytable5 m5 ON m2.id = m5.id
 			`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -342,7 +337,7 @@ describe('postgres-infer-nullability-case-when', () => {
 			FROM mytable2 m2
 			JOIN mytable5 m5 ON m2.id = m5.id
 			`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -374,7 +369,7 @@ describe('postgres-infer-nullability-case-when', () => {
 			FROM mytable2 m2
 			JOIN mytable5 m5 ON m2.id = m5.id
 			`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -406,7 +401,7 @@ describe('postgres-infer-nullability-case-when', () => {
 			FROM mytable2 m2
 			JOIN mytable5 m5 ON m2.id = m5.id
 			`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -438,7 +433,7 @@ describe('postgres-infer-nullability-case-when', () => {
 			FROM mytable1 m1
 			LEFT JOIN mytable2 m2 ON m1.id = m2.id
 			`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -470,7 +465,7 @@ describe('postgres-infer-nullability-case-when', () => {
 			FROM mytable1 m1
 			LEFT JOIN mytable2 m2 ON m1.id = m2.id
 			`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',

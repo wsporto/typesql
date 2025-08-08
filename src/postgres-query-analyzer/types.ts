@@ -9,6 +9,7 @@ export type PostgresColumnInfo = {
 	name: string;
 	type: PostgresType;
 	notNull: boolean;
+	optional?: boolean;
 	table: string;
 }
 

@@ -18,6 +18,7 @@ import CodeBlockWriter from 'code-block-writer';
 import type {
 	BunDialect,
 	CrudQueryType,
+	D1Dialect,
 	LibSqlClient,
 	ParameterDef,
 	QueryType,
@@ -61,7 +62,7 @@ type MapFunctionParams = {
 }
 
 export function validateAndGenerateCode(
-	client: SQLiteDialect | LibSqlClient | BunDialect,
+	client: SQLiteDialect | LibSqlClient | BunDialect | D1Dialect,
 	sql: string,
 	queryName: string,
 	sqliteDbSchema: ColumnSchema[],

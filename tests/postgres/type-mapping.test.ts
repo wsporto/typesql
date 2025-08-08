@@ -1,15 +1,15 @@
 import assert from 'node:assert';
-import postgres from 'postgres';
 import { describeQuery } from '../../src/postgres-query-analyzer/describe';
 import { PostgresSchemaDef } from '../../src/postgres-query-analyzer/types';
+import { createSchemaInfo, createTestClient } from './schema';
 
 describe('postgres-type-mapping', () => {
-	const client = postgres({
-		host: 'localhost',
-		username: 'postgres',
-		password: 'password',
-		database: 'postgres',
-		port: 5432
+
+	const client = createTestClient();
+	const schemaInfo = createSchemaInfo();
+
+	after(async () => {
+		await client.end();
 	});
 
 	after(async () => {
@@ -18,7 +18,7 @@ describe('postgres-type-mapping', () => {
 
 	it('select table with all types', async () => {
 		const sql = 'select * from all_types';
-		const actual = await describeQuery(client, sql, ['id']);
+		const actual = await describeQuery(client, sql, ['id'], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			multipleRowsResult: true,
 			queryType: 'Select',

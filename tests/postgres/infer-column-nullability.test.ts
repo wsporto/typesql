@@ -4,18 +4,12 @@ import { loadDbSchema } from '../../src/drivers/postgres';
 import { PostgresColumnSchema } from '../../src/drivers/types';
 import { parseSql } from '../../src/postgres-query-analyzer/parser';
 import { NotNullInfo, PostgresTraverseResult } from '../../src/postgres-query-analyzer/traverse';
-import { userDefinedFunctions } from './schema';
+import { createTestClient, userDefinedFunctions } from './schema';
 
 let dbSchema: PostgresColumnSchema[] = [];
 describe('Infer column nullability', () => {
 
-	const client = postgres({
-		host: 'localhost',
-		username: 'postgres',
-		password: 'password',
-		database: 'postgres',
-		port: 5432
-	});
+	const client = createTestClient();
 
 	after(async () => {
 		await client.end();
@@ -36,8 +30,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'id',
 				is_nullable: false,
-				table_name: 'mytable1',
-				table_schema: 'public',
+				table: 'mytable1',
+				schema: 'public',
 				type: 'int4'
 			}
 		];
@@ -52,8 +46,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'value',
 				is_nullable: false,
-				table_name: 'mytable1',
-				table_schema: 'public',
+				table: 'mytable1',
+				schema: 'public',
 				type: 'int4'
 			}
 		];
@@ -69,8 +63,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'value',
 				is_nullable: false,
-				table_name: 'mytable1',
-				table_schema: 'public',
+				table: 'mytable1',
+				schema: 'public',
 				type: 'int4'
 			}
 		];
@@ -86,8 +80,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'value',
 				is_nullable: false,
-				table_name: 'mytable1',
-				table_schema: 'public',
+				table: 'mytable1',
+				schema: 'public',
 				type: 'int4'
 			}
 		];
@@ -103,15 +97,15 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'id',
 				is_nullable: false,
-				table_name: 'mytable1',
-				table_schema: 'public',
+				table: 'mytable1',
+				schema: 'public',
 				type: 'int4'
 			},
 			{
 				column_name: 'value',
 				is_nullable: false,
-				table_name: 'mytable1',
-				table_schema: 'public',
+				table: 'mytable1',
+				schema: 'public',
 				type: 'int4'
 			}
 		];
@@ -127,8 +121,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: '?column?',
 				is_nullable: false,
-				table_name: '',
-				table_schema: '',
+				table: '',
+				schema: '',
 				type: 'int4' //int4 + int4
 			}
 		];
@@ -144,8 +138,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'value',
 				is_nullable: false,
-				table_name: 't1',
-				table_schema: 'public',
+				table: 't1',
+				schema: 'public',
 				type: 'int4'
 			}
 		];
@@ -161,8 +155,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'value',
 				is_nullable: false,
-				table_name: 't1',
-				table_schema: 'public',
+				table: 't1',
+				schema: 'public',
 				type: 'int4'
 			}
 		];
@@ -178,8 +172,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'value',
 				is_nullable: false,
-				table_name: 't1',
-				table_schema: 'public',
+				table: 't1',
+				schema: 'public',
 				type: 'int4'
 			}
 		];
@@ -195,8 +189,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: '?column?',
 				is_nullable: false,
-				table_name: '',
-				table_schema: '',
+				table: '',
+				schema: '',
 				type: 'int4' //int4 + int4
 			}
 		];
@@ -212,8 +206,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'alias',
 				is_nullable: false,
-				table_name: 't1',
-				table_schema: 'public',
+				table: 't1',
+				schema: 'public',
 				type: 'int4'
 			}
 		];
@@ -229,8 +223,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'value',
 				is_nullable: true,
-				table_name: 't1',
-				table_schema: 'public',
+				table: 't1',
+				schema: 'public',
 				type: 'int4'
 			}
 		];
@@ -246,8 +240,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'value',
 				is_nullable: true,
-				table_name: 'mytable1',
-				table_schema: 'public',
+				table: 'mytable1',
+				schema: 'public',
 				type: 'int4'
 			}
 		];
@@ -263,8 +257,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'value',
 				is_nullable: false,
-				table_name: 'mytable1',
-				table_schema: 'public',
+				table: 'mytable1',
+				schema: 'public',
 				type: 'int4'
 			}
 		];
@@ -280,8 +274,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'value',
 				is_nullable: false,
-				table_name: 'mytable1',
-				table_schema: 'public',
+				table: 'mytable1',
+				schema: 'public',
 				type: 'int4'
 			}
 		];
@@ -297,8 +291,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'value',
 				is_nullable: false,
-				table_name: 'mytable1',
-				table_schema: 'public',
+				table: 'mytable1',
+				schema: 'public',
 				type: 'int4'
 			}
 		];
@@ -314,8 +308,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'value',
 				is_nullable: false,
-				table_name: 'mytable1',
-				table_schema: 'public',
+				table: 'mytable1',
+				schema: 'public',
 				type: 'int4'
 			}
 		];
@@ -331,8 +325,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'value',
 				is_nullable: false,
-				table_name: 'mytable1',
-				table_schema: 'public',
+				table: 'mytable1',
+				schema: 'public',
 				type: 'int4'
 			}
 		];
@@ -348,8 +342,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'value',
 				is_nullable: false,
-				table_name: 'mytable1',
-				table_schema: 'public',
+				table: 'mytable1',
+				schema: 'public',
 				type: 'int4'
 			}
 		];
@@ -365,8 +359,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: '?column?',
 				is_nullable: false,
-				table_name: '',
-				table_schema: '',
+				table: '',
+				schema: '',
 				type: 'int4' //int4 + int4
 			}
 		];
@@ -382,8 +376,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: '?column?',
 				is_nullable: true,
-				table_name: '',
-				table_schema: '',
+				table: '',
+				schema: '',
 				type: 'int4' //int4 + int4
 			}
 		];
@@ -399,8 +393,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: '?column?',
 				is_nullable: false,
-				table_name: '',
-				table_schema: '',
+				table: '',
+				schema: '',
 				type: 'int4' //int4 + int4
 			}
 		];
@@ -416,8 +410,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: '?column?',
 				is_nullable: true,
-				table_name: '',
-				table_schema: '',
+				table: '',
+				schema: '',
 				type: 'int4' //int4 + int4
 			}
 		];
@@ -433,8 +427,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: '?column?',
 				is_nullable: false,
-				table_name: '',
-				table_schema: '',
+				table: '',
+				schema: '',
 				type: 'int4' //int4 + int4
 			}
 		];
@@ -450,8 +444,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'sum',
 				is_nullable: true,
-				table_name: '',
-				table_schema: '',
+				table: '',
+				schema: '',
 				type: 'int8'
 			}
 		];
@@ -467,8 +461,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'sum',
 				is_nullable: true,
-				table_name: '',
-				table_schema: '',
+				table: '',
+				schema: '',
 				type: 'int8'
 			}
 		];
@@ -484,8 +478,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'name',
 				is_nullable: false,
-				table_name: 't2',
-				table_schema: 'public',
+				table: 't2',
+				schema: 'public',
 				type: 'text'
 			}
 		];
@@ -501,8 +495,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'name',
 				is_nullable: true,
-				table_name: 't2',
-				table_schema: 'public',
+				table: 't2',
+				schema: 'public',
 				type: 'text'
 			}
 		];
@@ -522,8 +516,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'id',
 				is_nullable: true,
-				table_name: '',
-				table_schema: '',
+				table: '',
+				schema: '',
 				type: 'int4'
 			}
 		];
@@ -545,8 +539,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'name',
 				is_nullable: false,
-				table_name: '',
-				table_schema: '',
+				table: '',
+				schema: '',
 				type: 'text' //UNION types text and integer cannot be matched
 			}
 		];
@@ -568,8 +562,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'name',
 				is_nullable: true,
-				table_name: '',
-				table_schema: '',
+				table: '',
+				schema: '',
 				type: 'text' //UNION types text and integer cannot be matched
 			}
 		];
@@ -591,8 +585,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'name',
 				is_nullable: true,
-				table_name: '',
-				table_schema: '',
+				table: '',
+				schema: '',
 				type: 'text' //UNION types text and integer cannot be matched
 			}
 		];
@@ -614,8 +608,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'name',
 				is_nullable: true,
-				table_name: '',
-				table_schema: '',
+				table: '',
+				schema: '',
 				type: 'text' //UNION types text and integer cannot be matched
 			}
 		];
@@ -637,22 +631,22 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'id',
 				is_nullable: false,
-				table_name: '',
-				table_schema: '',
+				table: '',
+				schema: '',
 				type: 'int4'
 			},
 			{
 				column_name: 'value',
 				is_nullable: false,
-				table_name: '',
-				table_schema: '',
+				table: '',
+				schema: '',
 				type: 'int4'
 			},
 			{
 				column_name: '?column?',
 				is_nullable: true,
-				table_name: '',
-				table_schema: '',
+				table: '',
+				schema: '',
 				type: 'text'
 			}
 		];
@@ -674,8 +668,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'name',
 				is_nullable: true,
-				table_name: '',
-				table_schema: '',
+				table: '',
+				schema: '',
 				type: 'text'
 			}
 		];
@@ -697,8 +691,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'name',
 				is_nullable: false,
-				table_name: '',
-				table_schema: '',
+				table: '',
+				schema: '',
 				type: 'text'
 			}
 		];
@@ -716,22 +710,22 @@ describe('Infer column nullability', () => {
 			{
 				column_name: '?column?',
 				is_nullable: true,
-				table_name: '',
-				table_schema: '',
+				table: '',
+				schema: '',
 				type: 'int4'
 			},
 			{
 				column_name: 'name',
 				is_nullable: false,
-				table_name: 'mytable2',
-				table_schema: 'public',
+				table: 'mytable2',
+				schema: 'public',
 				type: 'text'
 			},
 			{
 				column_name: 'name2',
 				is_nullable: false,
-				table_name: 'mytable2',
-				table_schema: 'public',
+				table: 'mytable2',
+				schema: 'public',
 				type: 'text'
 			}
 		];
@@ -747,15 +741,15 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'name',
 				is_nullable: true,
-				table_name: 'mytable2',
-				table_schema: 'public',
+				table: 'mytable2',
+				schema: 'public',
 				type: 'text'
 			},
 			{
 				column_name: '?column?',
 				is_nullable: true,
-				table_name: '',
-				table_schema: '',
+				table: '',
+				schema: '',
 				type: 'int4'
 			}
 		];
@@ -771,8 +765,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: '?column?',
 				is_nullable: true,
-				table_name: '',
-				table_schema: '',
+				table: '',
+				schema: '',
 				type: 'int4' //int4+int4
 			}
 		];
@@ -788,8 +782,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'name',
 				is_nullable: false,
-				table_name: 't1',
-				table_schema: 'public',
+				table: 't1',
+				schema: 'public',
 				type: 'text'
 			}
 		];
@@ -805,8 +799,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'name',
 				is_nullable: false,
-				table_name: 't1',
-				table_schema: 'public',
+				table: 't1',
+				schema: 'public',
 				type: 'int4' //id as name
 			}
 		];
@@ -822,8 +816,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'id',
 				is_nullable: false,
-				table_name: 't1',
-				table_schema: 'public',
+				table: 't1',
+				schema: 'public',
 				type: 'int4'
 			}
 		];
@@ -839,22 +833,22 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'id',
 				is_nullable: false,
-				table_name: 't1',
-				table_schema: 'public',
+				table: 't1',
+				schema: 'public',
 				type: 'int4'
 			},
 			{
 				column_name: 'name',
 				is_nullable: false,
-				table_name: 't1',
-				table_schema: 'public',
+				table: 't1',
+				schema: 'public',
 				type: 'text'
 			},
 			{
 				column_name: 'descr',
 				is_nullable: false,
-				table_name: 't1',
-				table_schema: 'public',
+				table: 't1',
+				schema: 'public',
 				type: 'text'
 			}
 		];
@@ -870,22 +864,22 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'id',
 				is_nullable: false,
-				table_name: 't1',
-				table_schema: 'public',
+				table: 't1',
+				schema: 'public',
 				type: 'int4'
 			},
 			{
 				column_name: 'name',
 				is_nullable: true,
-				table_name: 't1',
-				table_schema: 'public',
+				table: 't1',
+				schema: 'public',
 				type: 'text'
 			},
 			{
 				column_name: 'descr',
 				is_nullable: true,
-				table_name: 't1',
-				table_schema: 'public',
+				table: 't1',
+				schema: 'public',
 				type: 'text'
 			}
 		];
@@ -901,22 +895,22 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'id',
 				is_nullable: false,
-				table_name: 't2',
-				table_schema: 'public',
+				table: 't2',
+				schema: 'public',
 				type: 'int4'
 			},
 			{
 				column_name: 'name',
 				is_nullable: false,
-				table_name: 't2',
-				table_schema: 'public',
+				table: 't2',
+				schema: 'public',
 				type: 'text'
 			},
 			{
 				column_name: 'descr',
 				is_nullable: false,
-				table_name: 't2',
-				table_schema: 'public',
+				table: 't2',
+				schema: 'public',
 				type: 'text'
 			}
 		];
@@ -932,8 +926,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'count',
 				is_nullable: false,
-				table_name: '',
-				table_schema: '',
+				table: '',
+				schema: '',
 				type: 'int8'
 			}
 		];
@@ -949,8 +943,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'count',
 				is_nullable: false,
-				table_name: '',
-				table_schema: '',
+				table: '',
+				schema: '',
 				type: 'int8'
 			}
 		];
@@ -966,8 +960,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'concat',
 				is_nullable: false,
-				table_name: '',
-				table_schema: '',
+				table: '',
+				schema: '',
 				type: 'text'
 			}
 		];
@@ -983,8 +977,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'concat',
 				is_nullable: false,
-				table_name: '',
-				table_schema: '',
+				table: '',
+				schema: '',
 				type: 'text'
 			}
 		];
@@ -1000,8 +994,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'concat',
 				is_nullable: true,
-				table_name: '',
-				table_schema: '',
+				table: '',
+				schema: '',
 				type: 'text'
 			}
 		];
@@ -1017,8 +1011,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'concat',
 				is_nullable: true,
-				table_name: '',
-				table_schema: '',
+				table: '',
+				schema: '',
 				type: 'text'
 			}
 		];
@@ -1034,8 +1028,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'concat',
 				is_nullable: false,
-				table_name: '',
-				table_schema: '',
+				table: '',
+				schema: '',
 				type: 'text'
 			}
 		];
@@ -1051,8 +1045,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: '?column?',
 				is_nullable: true,
-				table_name: '',
-				table_schema: '',
+				table: '',
+				schema: '',
 				type: 'int4'
 			}
 		];
@@ -1068,8 +1062,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: '?column?',
 				is_nullable: false,
-				table_name: '',
-				table_schema: '',
+				table: '',
+				schema: '',
 				type: 'int4'
 			}
 		];
@@ -1085,8 +1079,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: '?column?',
 				is_nullable: true,
-				table_name: '',
-				table_schema: '',
+				table: '',
+				schema: '',
 				type: 'int4'
 			}
 		];
@@ -1102,8 +1096,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: '?column?',
 				is_nullable: false,
-				table_name: '',
-				table_schema: '',
+				table: '',
+				schema: '',
 				type: 'int4'
 			}
 		];
@@ -1120,36 +1114,36 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'id',
 				is_nullable: false,
-				table_name: 't1',
-				table_schema: 'public',
+				table: 't1',
+				schema: 'public',
 				type: 'int4'
 			},
 			{
 				column_name: 'value',
 				is_nullable: true,
-				table_name: 't1',
-				table_schema: 'public',
+				table: 't1',
+				schema: 'public',
 				type: 'int4'
 			},
 			{
 				column_name: 'id',
 				is_nullable: false,
-				table_name: 't2',
-				table_schema: 'public',
+				table: 't2',
+				schema: 'public',
 				type: 'int4'
 			},
 			{
 				column_name: 'name',
 				is_nullable: true,
-				table_name: 't2',
-				table_schema: 'public',
+				table: 't2',
+				schema: 'public',
 				type: 'text'
 			},
 			{
 				column_name: 'descr',
 				is_nullable: true,
-				table_name: 't2',
-				table_schema: 'public',
+				table: 't2',
+				schema: 'public',
 				type: 'text'
 			}
 		];
@@ -1165,8 +1159,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'quantity',
 				is_nullable: false,
-				table_name: 't2',
-				table_schema: '',
+				table: 't2',
+				schema: '',
 				type: 'int8'
 			}
 		];
@@ -1182,8 +1176,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'name',
 				is_nullable: false,
-				table_name: 't',
-				table_schema: 'public',
+				table: 't',
+				schema: 'public',
 				type: 'text'
 			}
 		];
@@ -1199,8 +1193,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'name',
 				is_nullable: false,
-				table_name: 't',
-				table_schema: 'public',
+				table: 't',
+				schema: 'public',
 				type: 'text'
 			}
 		];
@@ -1216,8 +1210,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'name',
 				is_nullable: false,
-				table_name: 't',
-				table_schema: 'public',
+				table: 't',
+				schema: 'public',
 				type: 'text'
 			}
 		];
@@ -1233,22 +1227,22 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'COALESCE',
 				is_nullable: false,
-				table_name: '',
-				table_schema: '',
+				table: '',
+				schema: '',
 				type: 'int4'
 			},
 			{
 				column_name: 'COALESCE',
 				is_nullable: true,
-				table_name: '',
-				table_schema: '',
+				table: '',
+				schema: '',
 				type: 'int4'
 			},
 			{
 				column_name: 'COALESCE',
 				is_nullable: false,
-				table_name: '',
-				table_schema: '',
+				table: '',
+				schema: '',
 				type: 'int4'
 			}
 		];
@@ -1263,8 +1257,8 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'total',
 				is_nullable: false,
-				table_name: '',
-				table_schema: '',
+				table: '',
+				schema: '',
 				type: 'int8'
 			}
 		];
@@ -1284,29 +1278,29 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'id',
 				is_nullable: false,
-				table_name: 't1',
-				table_schema: 'public',
+				table: 't1',
+				schema: 'public',
 				type: 'int4'
 			},
 			{
 				column_name: 'id',
 				is_nullable: true,
-				table_name: 't2',
-				table_schema: 'public',
+				table: 't2',
+				schema: 'public',
 				type: 'int4'
 			},
 			{
 				column_name: 'value',
 				is_nullable: true,
-				table_name: 't1',
-				table_schema: 'public',
+				table: 't1',
+				schema: 'public',
 				type: 'int4'
 			},
 			{
 				column_name: 'name',
 				is_nullable: true,
-				table_name: 't2',
-				table_schema: 'public',
+				table: 't2',
+				schema: 'public',
 				type: 'text'
 			}
 		];
@@ -1328,15 +1322,15 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'id',
 				is_nullable: false,
-				table_name: 't1',
-				table_schema: 'public',
+				table: 't1',
+				schema: 'public',
 				type: 'int4'
 			},
 			{
 				column_name: 'role',
 				is_nullable: true,
-				table_name: 'r',
-				table_schema: 'public',
+				table: 'r',
+				schema: 'public',
 				type: 'text',
 				column_default: true
 			}
@@ -1554,43 +1548,43 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'id',
 				is_nullable: false,
-				table_name: 't1',
-				table_schema: 'public',
+				table: 't1',
+				schema: 'public',
 				type: 'int4'
 			},
 			{
 				column_name: 'id',
 				is_nullable: false,
-				table_name: 't2',
-				table_schema: 'public',
+				table: 't2',
+				schema: 'public',
 				type: 'int4'
 			},
 			{
 				column_name: 'id',
 				is_nullable: true,
-				table_name: 't3',
-				table_schema: 'public',
+				table: 't3',
+				schema: 'public',
 				type: 'int4'
 			},
 			{
 				column_name: 'value',
 				is_nullable: true,
-				table_name: 't1',
-				table_schema: 'public',
+				table: 't1',
+				schema: 'public',
 				type: 'int4'
 			},
 			{
 				column_name: 'name',
 				is_nullable: true,
-				table_name: 't2',
-				table_schema: 'public',
+				table: 't2',
+				schema: 'public',
 				type: 'text'
 			},
 			{
 				column_name: 'double_value',
 				is_nullable: true,
-				table_name: 't3',
-				table_schema: 'public',
+				table: 't3',
+				schema: 'public',
 				type: 'float4'
 			}
 		];
@@ -1616,8 +1610,8 @@ describe('Infer column nullability', () => {
 				{
 					column_name: 'id',
 					is_nullable: false,
-					table_name: 't',
-					table_schema: 'public',
+					table: 't',
+					schema: 'public',
 					type: 'int4'
 				}
 			],
@@ -1653,15 +1647,15 @@ describe('Infer column nullability', () => {
 				{
 					column_name: 'id',
 					is_nullable: false,
-					table_name: 't',
-					table_schema: 'public',
+					table: 't',
+					schema: 'public',
 					type: 'int4'
 				},
 				{
 					column_name: 'concat',
 					is_nullable: false,
-					table_name: '',
-					table_schema: '',
+					table: '',
+					schema: '',
 					type: 'text'
 				}
 			],
@@ -1692,8 +1686,8 @@ describe('Infer column nullability', () => {
 				{
 					column_name: 'id',
 					is_nullable: false,
-					table_name: 'mytable1',
-					table_schema: 'public',
+					table: 'mytable1',
+					schema: 'public',
 					type: 'int4'
 				}
 			],
@@ -1725,8 +1719,8 @@ describe('Infer column nullability', () => {
 				{
 					column_name: 'id',
 					is_nullable: false,
-					table_name: 'mytable1',
-					table_schema: 'public',
+					table: 'mytable1',
+					schema: 'public',
 					type: 'int4'
 				}
 			],
@@ -1785,8 +1779,8 @@ describe('Infer column nullability', () => {
 				{
 					column_name: 'id',
 					is_nullable: false,
-					table_name: 'mytable2',
-					table_schema: 'public',
+					table: 'mytable2',
+					schema: 'public',
 					type: 'int4'
 				}
 			],
@@ -1817,8 +1811,8 @@ describe('Infer column nullability', () => {
 				{
 					column_name: 'id',
 					is_nullable: false,
-					table_name: 'mytable2',
-					table_schema: 'public',
+					table: 'mytable2',
+					schema: 'public',
 					type: 'int4'
 				}
 			],
@@ -1843,8 +1837,8 @@ describe('Infer column nullability', () => {
 				{
 					column_name: 'id',
 					is_nullable: false,
-					table_name: 'mytable1',
-					table_schema: 'public',
+					table: 'mytable1',
+					schema: 'public',
 					type: 'int4'
 				}
 			],
@@ -1871,8 +1865,8 @@ describe('Infer column nullability', () => {
 				{
 					column_name: 'NULLIF',
 					is_nullable: true,
-					table_name: '',
-					table_schema: '',
+					table: '',
+					schema: '',
 					type: 'unknown'
 				}
 			],
@@ -1915,15 +1909,15 @@ describe('Infer column nullability', () => {
 				{
 					column_name: 'id',
 					is_nullable: false,
-					table_name: 'get_mytable1_by_id',
-					table_schema: 'public',
+					table: 'get_mytable1_by_id',
+					schema: 'public',
 					type: 'int4'
 				},
 				{
 					column_name: 'value',
 					is_nullable: true,
-					table_name: 'get_mytable1_by_id',
-					table_schema: 'public',
+					table: 'get_mytable1_by_id',
+					schema: 'public',
 					type: 'int4'
 				}
 			],

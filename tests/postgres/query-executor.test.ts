@@ -1,8 +1,8 @@
 import assert from 'node:assert';
 
 import postgres from 'postgres';
-import { postgresDescribe, loadDbSchema, createPostgresClient, loadForeignKeys, loadEnumsMap, EnumMap, EnumResult, loadCheckConstraints, CheckConstraintResult } from '../../src/drivers/postgres';
-import { schema } from './schema';
+import { postgresDescribe, loadDbSchema, loadForeignKeys, loadEnumsMap, EnumMap, EnumResult, loadCheckConstraints, CheckConstraintResult, loadUserFunctions } from '../../src/drivers/postgres';
+import { checkConstraints, enumMap, normalizeUserFunctions, schema, userFunctions } from './schema';
 import { PostgresDescribe } from '../../src/drivers/types';
 import { TypeSqlError } from '../../src/types';
 
@@ -82,63 +82,37 @@ describe('postgres-query-executor', () => {
 		if (result.isErr()) {
 			assert.fail(`Shouldn't return an error: ${result.error}`);
 		}
-		assert.deepStrictEqual(result.value.filter(col => !col.table_name.includes('flyway')), expected);
+		assert.deepStrictEqual(result.value.filter(col => !col.table.includes('flyway')), expected);
 	});
 
 	it('loadEnums', async () => {
 		const result = await loadEnumsMap(sql);
-		const expected: EnumMap = new Map();
-		const enumValues: EnumResult[] = [
-			{
-				type_oid: 16651,
-				enumlabel: 'x-small',
-				enum_name: 'sizes_enum'
-			},
-			{
-				type_oid: 16651,
-				enumlabel: 'small',
-				enum_name: 'sizes_enum'
-			},
-			{
-				type_oid: 16651,
-				enumlabel: 'medium',
-				enum_name: 'sizes_enum'
-			},
-			{
-				type_oid: 16651,
-				enumlabel: 'large',
-				enum_name: 'sizes_enum'
-			},
-			{
-				type_oid: 16651,
-				enumlabel: 'x-large',
-				enum_name: 'sizes_enum'
-			}
-		]
-		expected.set(16651, enumValues);
 
 		if (result.isErr()) {
 			assert.fail(`Shouldn't return an error: ${result.error}`);
 		}
-		assert.deepStrictEqual(result.value, expected);
+		assert.deepStrictEqual(result.value, enumMap);
 	})
 
 	it('loadCheckConstraints', async () => {
 		const result = await loadCheckConstraints(sql);
-		const expected: CheckConstraintResult = {
-			'[public][all_types][enum_constraint]': `enum('x-small','small','medium','large','x-large')`,
-			'[public][all_types][enum_constraint_default]': `enum('x-small','small','medium','large','x-large')`,
-			'[public][enum_types2][column1]': `enum('f','g')`,
-			'[public][enum_types][column1]': `enum('A','B','C')`,
-			'[public][enum_types][column2]': `enum(1,2)`,
-			'[public][enum_types][column5]': `enum('D','E')`,
-		}
-
 
 		if (result.isErr()) {
 			assert.fail(`Shouldn't return an error: ${result.error.description}`);
 		}
-		assert.deepStrictEqual(result.value, expected);
+		assert.deepStrictEqual(result.value, checkConstraints);
+	})
+
+	it('loadCheckConstraints', async () => {
+		const result = await loadUserFunctions(sql);
+
+		if (result.isErr()) {
+			assert.fail(`Shouldn't return an error: ${result.error.description}`);
+		}
+		const expected = normalizeUserFunctions(result.value);
+		const actual = normalizeUserFunctions(userFunctions);
+
+		assert.deepStrictEqual(actual, expected);
 	})
 
 	it('postgresDescribe', async () => {

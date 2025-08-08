@@ -1,18 +1,16 @@
 import assert from 'node:assert';
 import { ColumnDescription, describeNestedQuery, Relation2, RelationInfo2 } from '../../src/sqlite-query-analyzer/sqlite-describe-nested-query';
-import { ColumnInfo } from '../../src/mysql-query-analyzer/types';
 import { isLeft } from 'fp-ts/lib/Either';
 import { describeQuery } from '../../src/postgres-query-analyzer/describe';
-import postgres from 'postgres';
+import { createSchemaInfo, createTestClient } from '../postgres/schema';
 
 describe('nested-info', () => {
 
-	const pg = postgres({
-		host: 'localhost',
-		username: 'postgres',
-		password: 'password',
-		database: 'postgres',
-		port: 5432
+	const client = createTestClient();
+	const schemaInfo = createSchemaInfo();
+
+	after(async () => {
+		await client.end();
 	});
 
 	it('SELECT FROM users u INNER JOIN posts p', async () => {
@@ -256,7 +254,7 @@ describe('nested-info', () => {
         LEFT JOIN addresses as a2 ON a2.id = c.secondaryAddress
         WHERE c.id = $1`
 
-		const actual = await describeQuery(pg, sql, ['clientId']);
+		const actual = await describeQuery(client, sql, ['clientId'], schemaInfo);
 
 		const expected: RelationInfo2[] = [
 			{
@@ -335,7 +333,7 @@ describe('nested-info', () => {
 		INNER JOIN participants p on p.fk_survey = s.id
 		INNER JOIN users u on u.id = p.fk_user`;
 
-		const actual = await describeQuery(pg, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 
 		const expected: RelationInfo2[] = [
 			{

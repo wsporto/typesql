@@ -3,46 +3,29 @@ import assert from 'node:assert';
 import { readFileSync } from 'node:fs';
 import { generateCode, generateCrud } from '../../src/code-generator2';
 import { PgDielect } from '../../src/types';
-import postgres from 'postgres';
-import { loadDbSchema, mapToColumnSchema } from '../../src/drivers/postgres';
-import { ColumnSchema } from '../../src/mysql-query-analyzer/types';
+import { createTestClient, createSchemaInfo } from './schema';
 
 describe('postgres-code-generator', () => {
 
-	let dbSchema: ColumnSchema[] = [];
-
-	const databaseClient = postgres({
-		host: 'localhost',
-		user: 'postgres',
-		password: 'password',
-		port: 5432,
-		database: 'postgres',
-	});
+	const client = createTestClient();
 	const dialect: PgDielect = {
 		type: 'pg',
-		client: databaseClient
+		client
 	}
-
-	before(async function () {
-		const dbSchemaResult = await await loadDbSchema(databaseClient);
-		if (dbSchemaResult.isErr()) {
-			assert.fail(`Shouldn't return an error: ${dbSchemaResult.error}`);
-		}
-		dbSchema = dbSchemaResult.value.map(col => mapToColumnSchema(col));
-	});
+	const schemaInfo = createSchemaInfo();
 
 	after(async () => {
-		await databaseClient.end();
+		await client.end();
 	});
 
 	it('select01 - select id, name from mytable2 where id = ?', async () => {
 		const sql = 'select id, name from mytable2 where id = $1';
 
-		const actual = await generateCode(dialect, sql, 'select01');
+		const actual = await generateCode(dialect, sql, 'select01', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/select01.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
-			assert.fail(`Shouldn't return an error: ${actual.error}`);
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
@@ -50,7 +33,7 @@ describe('postgres-code-generator', () => {
 	it('select02 - select without parameters', async () => {
 		const sql = 'select id from mytable1';
 
-		const actual = await generateCode(dialect, sql, 'select02');
+		const actual = await generateCode(dialect, sql, 'select02', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/select02.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -62,7 +45,7 @@ describe('postgres-code-generator', () => {
 	it('select03 - select with same parameter used twice', async () => {
 		const sql = 'select id from mytable1 where id = :id or value = :id and value = :value';
 
-		const actual = await generateCode(dialect, sql, 'select03');
+		const actual = await generateCode(dialect, sql, 'select03', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/select03.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -77,7 +60,7 @@ FROM mytable2
 WHERE id IN (:ids)
 AND name IN (:names)`;
 
-		const actual = await generateCode(dialect, sql, 'select06');
+		const actual = await generateCode(dialect, sql, 'select06', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/select06.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -93,7 +76,7 @@ WHERE name = $1
 OR id in ($2)
 OR name = $3`;
 
-		const actual = await generateCode(dialect, sql, 'select06');
+		const actual = await generateCode(dialect, sql, 'select06', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/select06-2.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -109,7 +92,7 @@ WHERE id < ANY (:ids)
 AND name = SOME (:names)
 AND name <> :name`;
 
-		const actual = await generateCode(dialect, sql, 'select06');
+		const actual = await generateCode(dialect, sql, 'select06', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/select06-any.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -126,7 +109,7 @@ AND name <> :name`;
 FROM mytable1
 WHERE :param1 is true OR (:param2 is true OR :param2::bool is null)`;
 
-		const actual = await generateCode(dialect, sql, 'select08');
+		const actual = await generateCode(dialect, sql, 'select08', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/select08.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -141,7 +124,7 @@ WHERE :param1 is true OR (:param2 is true OR :param2::bool is null)`;
 FROM all_types
 where enum_column = :enum_value`;
 
-		const actual = await generateCode(dialect, sql, 'select09');
+		const actual = await generateCode(dialect, sql, 'select09', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/select09-enum.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -156,7 +139,7 @@ where enum_column = :enum_value`;
 FROM all_types
 where enum_constraint = :enum_value`;
 
-		const actual = await generateCode(dialect, sql, 'select09');
+		const actual = await generateCode(dialect, sql, 'select09', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/select09-enum-constraint.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -168,7 +151,7 @@ where enum_constraint = :enum_value`;
 	it('select-type-cast ', async () => {
 		const sql = 'SELECT id::int2 FROM mytable1';
 
-		const actual = await generateCode(dialect, sql, 'selectTypeCast');
+		const actual = await generateCode(dialect, sql, 'selectTypeCast', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/select-type-cast.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -184,7 +167,7 @@ where enum_constraint = :enum_value`;
 FROM mytable1 t1
 LEFT JOIN roles r on t1.id = r.id`;
 
-		const actual = await generateCode(dialect, sql, 'select11');
+		const actual = await generateCode(dialect, sql, 'select11', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/select11.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -196,7 +179,7 @@ LEFT JOIN roles r on t1.id = r.id`;
 	it('insert01 - INSERT INTO mytable1(value) values(10)', async () => {
 		const sql = 'INSERT INTO mytable1(value) values(10)';
 
-		const actual = await generateCode(dialect, sql, 'insert01');
+		const actual = await generateCode(dialect, sql, 'insert01', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/insert01.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -208,7 +191,7 @@ LEFT JOIN roles r on t1.id = r.id`;
 	it('insert02 - select with same parameter used twice', async () => {
 		const sql = 'INSERT INTO mytable1(value) values($1)';
 
-		const actual = await generateCode(dialect, sql, 'insert02');
+		const actual = await generateCode(dialect, sql, 'insert02', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/insert02.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -220,7 +203,7 @@ LEFT JOIN roles r on t1.id = r.id`;
 	it('insert03 - INSERT INTO mytable1(value) VALUES(:value) RETURNING *', async () => {
 		const sql = 'INSERT INTO mytable1(value) VALUES(:value) RETURNING *';
 
-		const actual = await generateCode(dialect, sql, 'insert03');
+		const actual = await generateCode(dialect, sql, 'insert03', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/insert03.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -232,7 +215,7 @@ LEFT JOIN roles r on t1.id = r.id`;
 	it('insert04-default - INSERT INTO all_types(integer_column_default) VALUES (:value)', async () => {
 		const sql = 'INSERT INTO all_types(integer_column_default) VALUES (:value)';
 
-		const actual = await generateCode(dialect, sql, 'insert04');
+		const actual = await generateCode(dialect, sql, 'insert04', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/insert04-default.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -244,7 +227,7 @@ LEFT JOIN roles r on t1.id = r.id`;
 	it('insert05-default-not-null - INSERT INTO roles(role) VALUES (:role)', async () => {
 		const sql = 'INSERT INTO roles(role, fk_user) VALUES (:role, :fk_user)';
 
-		const actual = await generateCode(dialect, sql, 'insert05');
+		const actual = await generateCode(dialect, sql, 'insert05', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/insert05.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -256,7 +239,7 @@ LEFT JOIN roles r on t1.id = r.id`;
 	it('update01 - UPDATE mytable1 SET value=? WHERE id=?', async () => {
 		const sql = 'UPDATE mytable1 SET value=$1 WHERE id=$2';
 
-		const actual = await generateCode(dialect, sql, 'update01');
+		const actual = await generateCode(dialect, sql, 'update01', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/update01.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -268,7 +251,7 @@ LEFT JOIN roles r on t1.id = r.id`;
 	it('update02 - update-no-data - UPDATE with no SET parameters should not include data parameter', async () => {
 		const sql = 'UPDATE mytable1 SET value = 42 WHERE id = :id';
 
-		const actual = await generateCode(dialect, sql, 'update02');
+		const actual = await generateCode(dialect, sql, 'update02', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/update02.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -280,7 +263,7 @@ LEFT JOIN roles r on t1.id = r.id`;
 	it('delete01 - DELETE FROM mytable1 WHERE id=?', async () => {
 		const sql = 'DELETE FROM mytable1 WHERE id=$1';
 
-		const actual = await generateCode(dialect, sql, 'delete01');
+		const actual = await generateCode(dialect, sql, 'delete01', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/delete01.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -290,49 +273,49 @@ LEFT JOIN roles r on t1.id = r.id`;
 	});
 
 	it('crud-select01', () => {
-		const actual = generateCrud('pg', 'Select', 'mytable1', dbSchema);
+		const actual = generateCrud('Select', 'mytable1', schemaInfo.columns);
 		const expected = readFileSync('tests/postgres/expected-code/crud-select01.ts.txt', 'utf-8');
 		assert.deepStrictEqual(actual, expected);
 	});
 
 	it('crud-select02 - select-id-serial', () => {
-		const actual = generateCrud('pg', 'Select', 'roles', dbSchema);
+		const actual = generateCrud('Select', 'roles', schemaInfo.columns);
 		const expected = readFileSync('tests/postgres/expected-code/crud-select02.ts.txt', 'utf-8');
 		assert.deepStrictEqual(actual, expected);
 	});
 
 	it('crud-insert01', () => {
-		const actual = generateCrud('pg', 'Insert', 'mytable1', dbSchema);
+		const actual = generateCrud('Insert', 'mytable1', schemaInfo.columns);
 		const expected = readFileSync('tests/postgres/expected-code/crud-insert01.ts.txt', 'utf-8');
 		assert.deepStrictEqual(actual, expected);
 	});
 
 	it('crud-insert02-default-not-null', async () => {
-		const actual = generateCrud('pg', 'Insert', 'roles', dbSchema);
+		const actual = generateCrud('Insert', 'roles', schemaInfo.columns);
 		const expected = readFileSync('tests/postgres/expected-code/crud-insert02.ts.txt', 'utf-8');
 		assert.deepStrictEqual(actual, expected);
 	});
 
 	it('crud-update01', () => {
-		const actual = generateCrud('pg', 'Update', 'mytable1', dbSchema);
+		const actual = generateCrud('Update', 'mytable1', schemaInfo.columns);
 		const expected = readFileSync('tests/postgres/expected-code/crud-update01.ts.txt', 'utf-8');
 		assert.deepStrictEqual(actual, expected);
 	});
 
 	it('crud-update02', () => {
-		const actual = generateCrud('pg', 'Update', 'mytable2', dbSchema);
+		const actual = generateCrud('Update', 'mytable2', schemaInfo.columns);
 		const expected = readFileSync('tests/postgres/expected-code/crud-update02.ts.txt', 'utf-8');
 		assert.deepStrictEqual(actual, expected);
 	});
 
 	it('crud-update03 - not null', () => {
-		const actual = generateCrud('pg', 'Update', 'mytable3', dbSchema);
+		const actual = generateCrud('Update', 'mytable3', schemaInfo.columns);
 		const expected = readFileSync('tests/postgres/expected-code/crud-update03.ts.txt', 'utf-8');
 		assert.deepStrictEqual(actual, expected);
 	});
 
 	it('crud-delete01', () => {
-		const actual = generateCrud('pg', 'Delete', 'mytable1', dbSchema);
+		const actual = generateCrud('Delete', 'mytable1', schemaInfo.columns);
 		const expected = readFileSync('tests/postgres/expected-code/crud-delete01.ts.txt', 'utf-8');
 
 		assert.deepStrictEqual(actual, expected);
@@ -348,7 +331,7 @@ SELECT
 FROM users u
 INNER JOIN posts p on p.fk_user = u.id`;
 
-		const actual = await generateCode(dialect, sql, 'nested01');
+		const actual = await generateCode(dialect, sql, 'nested01', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/nested01.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -368,7 +351,7 @@ INNER JOIN addresses as a1 ON a1.id = c.primaryAddress
 LEFT JOIN addresses as a2 ON a2.id = c.secondaryAddress
 WHERE c.id = :clientId`;
 
-		const actual = await generateCode(dialect, sql, 'nested02');
+		const actual = await generateCode(dialect, sql, 'nested02', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/nested02-clients-with-addresses.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -388,7 +371,7 @@ FROM surveys s
 INNER JOIN participants p on p.fk_survey = s.id
 INNER JOIN users u on u.id = p.fk_user`;
 
-		const actual = await generateCode(dialect, sql, 'nested03');
+		const actual = await generateCode(dialect, sql, 'nested03', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/nested03-many-to-many.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -403,7 +386,7 @@ INNER JOIN users u on u.id = p.fk_user`;
 	FROM mytable1 m1
 	INNER JOIN mytable2 m2 on m1.id = m2.id`;
 
-		const actual = await generateCode(dialect, sql, 'dynamic-query-01');
+		const actual = await generateCode(dialect, sql, 'dynamic-query-01', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/dynamic-query01.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -421,7 +404,7 @@ INNER JOIN ( -- derivated table
 	WHERE m.name = :subqueryName
 ) m2 on m2.id = m1.id`;
 
-		const actual = await generateCode(dialect, sql, 'derivated-table');
+		const actual = await generateCode(dialect, sql, 'derivated-table', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/dynamic-query02.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -435,7 +418,7 @@ INNER JOIN ( -- derivated table
 	SELECT t1.id, t1.value
 	FROM mytable1 t1`;
 
-		const actual = await generateCode(dialect, sql, 'dynamic-query-03');
+		const actual = await generateCode(dialect, sql, 'dynamic-query-03', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/dynamic-query03.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -451,7 +434,7 @@ INNER JOIN ( -- derivated table
 	FROM mytable1 m1
 	INNER JOIN mytable2 m2 on m2.id = m1.id`;
 
-		const actual = await generateCode(dialect, sql, 'dynamic-query-04');
+		const actual = await generateCode(dialect, sql, 'dynamic-query-04', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/dynamic-query04.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -472,7 +455,7 @@ SELECT
 FROM mytable1 m1
 INNER JOIN cte m2 on m2.id = m1.id`;
 
-		const actual = await generateCode(dialect, sql, 'dynamic-query-05');
+		const actual = await generateCode(dialect, sql, 'dynamic-query-05', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/dynamic-query05.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -488,7 +471,7 @@ SELECT
 FROM all_types 
 WHERE EXTRACT(YEAR FROM timestamp_not_null_column) = :param1 AND EXTRACT(MONTH FROM timestamp_not_null_column) = :param2`;
 
-		const actual = await generateCode(dialect, sql, 'dynamic-query-08');
+		const actual = await generateCode(dialect, sql, 'dynamic-query-08', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/dynamic-query08-date.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -500,7 +483,7 @@ WHERE EXTRACT(YEAR FROM timestamp_not_null_column) = :param1 AND EXTRACT(MONTH F
 	it('copy01', async () => {
 		const sql = `COPY mytable1 (value) FROM STDIN WITH CSV`;
 
-		const actual = await generateCode(dialect, sql, 'copy01');
+		const actual = await generateCode(dialect, sql, 'copy01', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/copy01.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -519,7 +502,7 @@ FROM (
 		(2, 'b')
 ) AS t(id, name)`;
 
-		const actual = await generateCode(dialect, sql, 'selectJson01');
+		const actual = await generateCode(dialect, sql, 'selectJson01', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/select-json01.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -542,7 +525,7 @@ FROM (
 FROM mytable1 m
 GROUP BY id`;
 
-		const actual = await generateCode(dialect, sql, 'selectJson02');
+		const actual = await generateCode(dialect, sql, 'selectJson02', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/select-json02.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -556,7 +539,7 @@ GROUP BY id`;
 	json_build_array('a', 'b') as value1, 
 	jsonb_build_array(null, 'c', 10) as value2`;
 
-		const actual = await generateCode(dialect, sql, 'selectJson03');
+		const actual = await generateCode(dialect, sql, 'selectJson03', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/select-json03.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -571,7 +554,7 @@ GROUP BY id`;
 	'list', json_build_array(1, 'a')
 ) as result`;
 
-		const actual = await generateCode(dialect, sql, 'selectJson04');
+		const actual = await generateCode(dialect, sql, 'selectJson04', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/select-json04.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -589,7 +572,7 @@ GROUP BY id`;
 	)
 ) as result`;
 
-		const actual = await generateCode(dialect, sql, 'selectJson05');
+		const actual = await generateCode(dialect, sql, 'selectJson05', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/select-json05.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -612,7 +595,7 @@ FROM users u
 LEFT JOIN posts p on p.fk_user = u.id
 group by u.id, u.name`;
 
-		const actual = await generateCode(dialect, sql, 'selectJson06');
+		const actual = await generateCode(dialect, sql, 'selectJson06', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/select-json06.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -635,7 +618,7 @@ FROM users u
 LEFT JOIN posts p on p.fk_user = u.id
 group by u.id, u.name`;
 
-		const actual = await generateCode(dialect, sql, 'selectJson07');
+		const actual = await generateCode(dialect, sql, 'selectJson07', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/select-json07.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -658,7 +641,7 @@ FROM users u
 LEFT JOIN posts p on p.fk_user = u.id
 group by u.id, u.name`;
 
-		const actual = await generateCode(dialect, sql, 'selectJson08');
+		const actual = await generateCode(dialect, sql, 'selectJson08', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/select-json08.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -675,7 +658,7 @@ group by u.id, u.name`;
 	) as result
 FROM mytable2`;
 
-		const actual = await generateCode(dialect, sql, 'selectJson09');
+		const actual = await generateCode(dialect, sql, 'selectJson09', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/select-json09.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -690,7 +673,7 @@ FROM mytable2`;
 	json_object_agg(id, row_to_json(mytable1)) as result2
 FROM mytable1`;
 
-		const actual = await generateCode(dialect, sql, 'selectJson10');
+		const actual = await generateCode(dialect, sql, 'selectJson10', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/select-json10.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -710,7 +693,7 @@ FROM mytable1`;
   ) 
 FROM mytable1 t`;
 
-		const actual = await generateCode(dialect, sql, 'selectJson11');
+		const actual = await generateCode(dialect, sql, 'selectJson11', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/select-json11.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -736,7 +719,7 @@ FROM mytable1 t`;
 	json_build_array(date_column)
 FROM all_types t`;
 
-		const actual = await generateCode(dialect, sql, 'selectJson12');
+		const actual = await generateCode(dialect, sql, 'selectJson12', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/select-json12.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {
@@ -751,7 +734,7 @@ FROM all_types t`;
 FROM all_types t
 GROUP BY int4_column`;
 
-		const actual = await generateCode(dialect, sql, 'selectJson13');
+		const actual = await generateCode(dialect, sql, 'selectJson13', schemaInfo);
 		const expected = readFileSync('tests/postgres/expected-code/select-json13.ts.txt', 'utf-8');
 
 		if (actual.isErr()) {

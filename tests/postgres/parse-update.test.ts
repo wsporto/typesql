@@ -1,16 +1,11 @@
 import assert from 'node:assert';
-import postgres from 'postgres';
 import { describeQuery } from '../../src/postgres-query-analyzer/describe';
 import { PostgresSchemaDef } from '../../src/postgres-query-analyzer/types';
+import { createSchemaInfo, createTestClient } from './schema';
 
 describe('postgres-parse-update', () => {
-	const client = postgres({
-		host: 'localhost',
-		username: 'postgres',
-		password: 'password',
-		database: 'postgres',
-		port: 5432
-	});
+	const client = createTestClient();
+	const schemaInfo = createSchemaInfo();
 
 	after(async () => {
 		await client.end();
@@ -18,7 +13,7 @@ describe('postgres-parse-update', () => {
 
 	it('update mytable1 set value = ? where id = ?', async () => {
 		const sql = 'update mytable1 set value = $1 where id = $2';
-		const actual = await describeQuery(client, sql, ['value', 'id']);
+		const actual = await describeQuery(client, sql, ['value', 'id'], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			multipleRowsResult: false,
 			queryType: 'Update',
@@ -48,7 +43,7 @@ describe('postgres-parse-update', () => {
 
 	it('CASE INSENSITIVE - UPDATE MYTABLE1 SET VALUE = ? WHERE ID = ?', async () => {
 		const sql = 'UPDATE MYTABLE1 SET VALUE = $1 WHERE ID = $2';
-		const actual = await describeQuery(client, sql, ['value', 'id']);
+		const actual = await describeQuery(client, sql, ['value', 'id'], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			multipleRowsResult: false,
 			queryType: 'Update',
@@ -78,7 +73,7 @@ describe('postgres-parse-update', () => {
 
 	it('update mytable3 set name = ? where id = ?', async () => {
 		const sql = 'update mytable3 set name = $1 where id = $2';
-		const actual = await describeQuery(client, sql, ['name', 'id']);
+		const actual = await describeQuery(client, sql, ['name', 'id'], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			multipleRowsResult: false,
 			queryType: 'Update',
@@ -110,7 +105,7 @@ describe('postgres-parse-update', () => {
 		const sql = `
 			UPDATE mytable2 SET name = $1, descr= $2 WHERE id = $3
 				`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Update',
@@ -147,7 +142,7 @@ describe('postgres-parse-update', () => {
 			UPDATE mytable2 t2
 			SET name = 'a'
 				`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Update',
@@ -168,7 +163,7 @@ describe('postgres-parse-update', () => {
 			SET name = 'a'
 			WHERE t2.id = $1
 			`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Update',
@@ -195,7 +190,7 @@ describe('postgres-parse-update', () => {
 			SET name = 'a'
 			WHERE mytable2.id = $1
 			`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Update',
@@ -231,7 +226,7 @@ describe('postgres-parse-update', () => {
 			WHERE t2.id = t3.id
 			AND t2.id IN (\${generatePlaceholders('$1', params.param1)})
 			`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql: expectedSql,
 			queryType: 'Update',
@@ -256,7 +251,7 @@ describe('postgres-parse-update', () => {
 		const sql = `
 			update mytable1 set value = $1 where id > $2 and id < $3
 				`;
-		const actual = await describeQuery(client, sql, ['value', 'min', 'max']);
+		const actual = await describeQuery(client, sql, ['value', 'min', 'max'], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Update',
@@ -293,7 +288,7 @@ describe('postgres-parse-update', () => {
 			update mytable1 set value = $1 where id > $2 or id < $3
 				`;
 
-		const actual = await describeQuery(client, sql, ['value', 'value', 'value']);
+		const actual = await describeQuery(client, sql, ['value', 'value', 'value'], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Update',
@@ -330,7 +325,7 @@ describe('postgres-parse-update', () => {
 			UPDATE mytable5 SET id = COALESCE($1, id)
 				`;
 
-		const actual = await describeQuery(client, sql, ['id']);
+		const actual = await describeQuery(client, sql, ['id'], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Update',
@@ -356,7 +351,7 @@ describe('postgres-parse-update', () => {
 			UPDATE mytable5 SET id = CASE WHEN $1 THEN $2 ELSE year END WHERE id = $3
 				`;
 
-		const actual = await describeQuery(client, sql, ['valueSet', 'value', 'id']);
+		const actual = await describeQuery(client, sql, ['valueSet', 'value', 'id'], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Update',
@@ -393,7 +388,7 @@ describe('postgres-parse-update', () => {
 			UPDATE mytable2 SET name = CASE WHEN $1 THEN $2 ELSE name END WHERE id = $3
 				`;
 
-		const actual = await describeQuery(client, sql, ['nameSet', 'name', 'id']);
+		const actual = await describeQuery(client, sql, ['nameSet', 'name', 'id'], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Update',
@@ -427,7 +422,7 @@ describe('postgres-parse-update', () => {
 
 	it('UPDATE mytable1 SET value = $1 RETURNING *', async () => {
 		const sql = 'UPDATE mytable1 SET value = $1 RETURNING *';
-		const actual = await describeQuery(client, sql, ['value']);
+		const actual = await describeQuery(client, sql, ['value'], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Update',
@@ -464,7 +459,7 @@ describe('postgres-parse-update', () => {
 
 	it('UPDATE mytable1 SET value = $1 RETURNING id, id+id, value', async () => {
 		const sql = 'UPDATE mytable1 SET value = $1 RETURNING id, id+id, value';
-		const actual = await describeQuery(client, sql, ['value']);
+		const actual = await describeQuery(client, sql, ['value'], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Update',
@@ -507,7 +502,7 @@ describe('postgres-parse-update', () => {
 
 	it('UPDATE all_types SET enum_column = :enum1, enum_column_constraint = :enum2 WHERE int4_column = :id', async () => {
 		const sql = 'UPDATE all_types SET enum_column = $1, enum_constraint = $2 WHERE enum_constraint = $3';
-		const actual = await describeQuery(client, sql, ['enum1', 'enum2', 'enum3']);
+		const actual = await describeQuery(client, sql, ['enum1', 'enum2', 'enum3'], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Update',
