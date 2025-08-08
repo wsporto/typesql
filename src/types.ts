@@ -174,6 +174,11 @@ export type TypeSqlConfig = {
 	loadExtensions?: string[];
 	includeCrudTables: string[];
 	moduleExtension?: 'js' | 'ts';
+	/**
+	 * Optional list of schemas to include during introspection.
+	 * Defaults to ['public'] if not specified.
+	 */
+	schemas?: string[];
 };
 
 export type SqlGenOption = 'select' | 's' | 'insert' | 'i' | 'update' | 'u' | 'delete' | 'd';

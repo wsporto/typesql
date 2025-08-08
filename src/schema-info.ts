@@ -44,7 +44,7 @@ export function createClient(databaseUri: string, dialect: TypeSqlDialect, attac
 	}
 }
 
-export function loadSchemaInfo(databaseClient: DatabaseClient): ResultAsync<SchemaInfo | PostgresSchemaInfo, TypeSqlError> {
+export function loadSchemaInfo(databaseClient: DatabaseClient, schemas?: string[]): ResultAsync<SchemaInfo | PostgresSchemaInfo, TypeSqlError> {
 	switch (databaseClient.type) {
 		case 'mysql2':
 			return loadMysqlSchema(databaseClient.client, databaseClient.schema).map(schema => ({
@@ -57,7 +57,7 @@ export function loadSchemaInfo(databaseClient: DatabaseClient): ResultAsync<Sche
 		case 'd1':
 			return loadDbSchema(databaseClient.client).asyncAndThen(columns => okAsync({ kind: databaseClient.type, columns } satisfies SchemaInfo));
 		case 'pg':
-			return _loadPostgresSchemaInfo(databaseClient.client);
+			return _loadPostgresSchemaInfo(databaseClient.client, schemas ?? null);
 
 	}
 }
@@ -76,8 +76,8 @@ export function loadTableSchema(databaseClient: DatabaseClient, tableName: strin
 	}
 }
 
-function _loadPostgresSchemaInfo(client: Sql): ResultAsync<PostgresSchemaInfo, TypeSqlError> {
-	const schemaResult = loadPostgresDbSchema(client);
+function _loadPostgresSchemaInfo(client: Sql, schemas: string[] | null): ResultAsync<PostgresSchemaInfo, TypeSqlError> {
+	const schemaResult = loadPostgresDbSchema(client, schemas);
 	const foreignKeysResult = loadPostgresForeignKeys(client);
 	const enumTypesResult = loadPostgresEnumsMap(client);
 	const userFunctionsResult = loadPostgresUserFunctions(client);

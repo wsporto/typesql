@@ -128,7 +128,7 @@ async function compile(watch: boolean, config: TypeSqlConfig) {
 	const includeCrudTables = config.includeCrudTables || [];
 	const databaseClient = databaseClientResult.value;
 
-	const dbSchema = await loadSchemaInfo(databaseClient);
+	const dbSchema = await loadSchemaInfo(databaseClient, config.schemas);
 	if (dbSchema.isErr()) {
 		console.error(`Error: ${dbSchema.error.description}.`);
 		return;

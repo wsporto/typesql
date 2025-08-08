@@ -2,14 +2,13 @@ import postgres, { PostgresError, Sql } from 'postgres';
 import { PostgresColumnSchema, DescribeQueryColumn, PostgresDescribe } from './types';
 import { DatabaseClient, TypeSqlError } from '../types';
 import { ok, Result, ResultAsync } from 'neverthrow';
-import { ColumnSchema } from '../mysql-query-analyzer/types';
 import { ForeignKeyInfo } from '../sqlite-query-analyzer/query-executor';
 import { groupBy } from '../util';
 import { transformCheckToEnum } from '../postgres-query-analyzer/enum-parser';
 import { UserFunctionSchema } from '../postgres-query-analyzer/types';
 import { PostgresEnumType } from '../sqlite-query-analyzer/types';
 
-export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], TypeSqlError> {
+export function loadDbSchema(sql: Sql, schemas: string[] | null = null): ResultAsync<PostgresColumnSchema[], TypeSqlError> {
 	return ResultAsync.fromThrowable(
 		async () => {
 			const result = await sql`
@@ -48,9 +47,13 @@ export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], Type
 			LEFT JOIN 
 			    pg_constraint con ON con.conrelid = c.oid
 			    AND col.ordinal_position = ANY (con.conkey)
-			WHERE 
-				t.table_type = 'BASE TABLE'  -- Only regular tables, excluding views
-				AND t.table_schema NOT IN ('information_schema', 'pg_catalog')  -- Exclude system schemas
+			WHERE 1 = 1
+				-- t.table_type = 'BASE TABLE'  -- Only regular tables, excluding views
+				AND (
+						(${schemas}::text[] IS NULL AND t.table_schema NOT IN ('information_schema', 'pg_catalog', 'pg_toast') AND t.table_schema NOT LIKE 'pg_temp%')
+						OR
+						(${schemas}::text[] IS NOT NULL AND t.table_schema = ANY(${schemas}))
+					)
 			ORDER BY 
 				t.table_schema, t.table_name, col.ordinal_position`;
 
@@ -144,21 +147,6 @@ async function _loadCheckConstraints(sql: Sql): Promise<CheckConstraintType[]> {
 		WHERE
 			c.contype = 'c'`;
 	return result;
-}
-
-export function mapToColumnSchema(col: PostgresColumnSchema): ColumnSchema {
-	const columnSchema: ColumnSchema = {
-		column: col.column_name,
-		column_type: col.type,
-		columnKey: col.column_key,
-		notNull: !col.is_nullable,
-		schema: col.schema,
-		table: col.table,
-		hidden: 0,
-		autoincrement: col.autoincrement,
-		defaultValue: col.column_default?.toString()
-	}
-	return columnSchema;
 }
 
 export const postgresDescribe = (sql: Sql, sqlQuery: string): ResultAsync<PostgresDescribe, TypeSqlError> => {
