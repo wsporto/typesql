@@ -82,7 +82,7 @@ describe('postgres-query-executor', () => {
 		if (result.isErr()) {
 			assert.fail(`Shouldn't return an error: ${result.error}`);
 		}
-		assert.deepStrictEqual(result.value.filter(col => !col.table_name.includes('flyway')), expected);
+		assert.deepStrictEqual(result.value.filter(col => !col.table.includes('flyway')), expected);
 	});
 
 	it('loadEnums', async () => {

@@ -3,8 +3,8 @@ import { PostgresSimpleType } from '../sqlite-query-analyzer/types';
 import { PostgresSchemaInfo } from '../schema-info';
 
 export type PostgresColumnSchema = {
-	table_schema: string;
-	table_name: string;
+	schema: string;
+	table: string;
 	column_name: string;
 	type: PostgresSimpleType;
 	is_nullable: boolean;

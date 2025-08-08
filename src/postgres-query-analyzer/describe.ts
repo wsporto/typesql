@@ -83,12 +83,12 @@ function createIndexToNameMap(names: string[]): Map<number, string> {
 }
 
 function mapToColumnInfo(col: DescribeQueryColumn, posgresTypes: PostgresTypeHash, enumTypes: EnumMap, checkConstraints: CheckConstraintResult, colInfo: NotNullInfo): PostgresColumnInfo {
-	const constraintKey = `[${colInfo.table_schema}][${colInfo.table_name}][${colInfo.column_name}]`;
+	const constraintKey = `[${colInfo.schema}][${colInfo.table}][${colInfo.column_name}]`;
 	return {
 		name: col.name,
 		notNull: !colInfo.is_nullable,
 		type: createType(col.typeId, posgresTypes, enumTypes.get(col.typeId), checkConstraints[constraintKey], colInfo.jsonType),
-		table: colInfo.table_name
+		table: colInfo.table
 	}
 }
 

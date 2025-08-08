@@ -817,7 +817,7 @@ export function generateCrud(queryType: CrudQueryType, tableName: string, dbSche
 
 	const writer = createCodeBlockWriter();
 
-	const allColumns = dbSchema.filter((col) => col.table_name === tableName);
+	const allColumns = dbSchema.filter((col) => col.table === tableName);
 	const keyColumns = allColumns.filter((col) => col.column_key === 'PRI');
 	if (keyColumns.length === 0) {
 		keyColumns.push(...allColumns.filter((col) => col.column_key === 'UNI'));

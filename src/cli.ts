@@ -232,8 +232,7 @@ function generateSql(dialect: TypeSqlDialect, stmtType: SqlGenOption, tableName:
 main().then(() => console.log('finished!'));
 
 function _filterTables(schemaInfo: SchemaInfo | PostgresSchemaInfo, includeCrudTables: string[]) {
-	const allTables = schemaInfo.kind == 'pg' ? schemaInfo.columns.map(col => ({ schema: col.table_schema, table: col.table_schema } satisfies Table))
-		: schemaInfo.columns.map(col => ({ schema: col.schema, table: col.table } satisfies Table));
+	const allTables = schemaInfo.columns.map(col => ({ schema: col.schema, table: col.schema } satisfies Table));
 	const uniqueTables = uniqBy(allTables, (item) => `${item.schema}:${item.table}`);
 	const filteredTables = filterTables(uniqueTables, includeCrudTables);
 	return filteredTables;

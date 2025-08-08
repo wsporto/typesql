@@ -56,8 +56,8 @@ export function loadDbSchema(sql: Sql): ResultAsync<PostgresColumnSchema[], Type
 
 			return result.map((row: any) => {
 				const result: PostgresColumnSchema = {
-					table_schema: row.table_schema,
-					table_name: row.table_name,
+					schema: row.table_schema,
+					table: row.table_name,
 					column_name: row.column_name,
 					type: row.type,
 					is_nullable: row.is_nullable === 'YES',
@@ -152,8 +152,8 @@ export function mapToColumnSchema(col: PostgresColumnSchema): ColumnSchema {
 		column_type: col.type,
 		columnKey: col.column_key,
 		notNull: !col.is_nullable,
-		schema: col.table_schema,
-		table: col.table_name,
+		schema: col.schema,
+		table: col.table,
 		hidden: 0,
 		autoincrement: col.autoincrement,
 		defaultValue: col.column_default?.toString()
