@@ -1,16 +1,11 @@
 import assert from 'node:assert';
-import postgres from 'postgres';
 import { describeQuery } from '../../src/postgres-query-analyzer/describe';
 import { PostgresSchemaDef } from '../../src/postgres-query-analyzer/types';
+import { createSchemaInfo, createTestClient } from './schema';
 
 describe('postgres-parse-select-functions', () => {
-	const client = postgres({
-		host: 'localhost',
-		username: 'postgres',
-		password: 'password',
-		database: 'postgres',
-		port: 5432
-	});
+	const client = createTestClient();
+	const schemaInfo = createSchemaInfo();
 
 	after(async () => {
 		await client.end();
@@ -20,7 +15,7 @@ describe('postgres-parse-select-functions', () => {
 		const sql = `
         select sum(value) from mytable1
         `;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -45,7 +40,7 @@ describe('postgres-parse-select-functions', () => {
 		const sql = `
         select sum(value) as total from mytable1
         `;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -70,7 +65,7 @@ describe('postgres-parse-select-functions', () => {
 		const sql = `
         select sum(t1.value) as total from mytable1 t1
         `;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -95,7 +90,7 @@ describe('postgres-parse-select-functions', () => {
 		const sql = `
         select count(id) from mytable1
         `;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -120,7 +115,7 @@ describe('postgres-parse-select-functions', () => {
 		const sql = `
         select count(*) from mytable1
         `;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -145,7 +140,7 @@ describe('postgres-parse-select-functions', () => {
 		const sql = `
         select sum(2*value) from  mytable1
         `;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -170,7 +165,7 @@ describe('postgres-parse-select-functions', () => {
 		const sql = `
         select avg(value) from mytable1
         `;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -195,7 +190,7 @@ describe('postgres-parse-select-functions', () => {
 		const sql = `
         select avg(value + (value + $1)) from mytable1
         `;
-		const actual = await describeQuery(client, sql, ['value']);
+		const actual = await describeQuery(client, sql, ['value'], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -226,7 +221,7 @@ describe('postgres-parse-select-functions', () => {
 		const sql = `
         select avg(value + (value + coalesce($1, 10))) from mytable1
         `;
-		const actual = await describeQuery(client, sql, ['value']);
+		const actual = await describeQuery(client, sql, ['value'], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -259,7 +254,7 @@ describe('postgres-parse-select-functions', () => {
 		FROM mytable1 
 		WHERE coalesce(abs($1::int4), id) = 1 OR coalesce($2, id) = 2
         `;
-		const actual = await describeQuery(client, sql, ['id1', 'id2']);
+		const actual = await describeQuery(client, sql, ['id1', 'id2'], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -295,7 +290,7 @@ describe('postgres-parse-select-functions', () => {
 		const sql = `
         select sum(t2.id + (t1.value + 2)) from mytable1 t1 inner join mytable2 t2 on t1.id = t2.id
         `;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -320,7 +315,7 @@ describe('postgres-parse-select-functions', () => {
 		const sql = `
        SELECT TO_DATE('21/5/2013', 'DD/MM/YYYY');
         `;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -350,7 +345,7 @@ describe('postgres-parse-select-functions', () => {
 			EXTRACT(MONTH FROM t.timestamptz_not_null_column) as month4
         from all_types t 
         `;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -393,7 +388,7 @@ describe('postgres-parse-select-functions', () => {
 		const sql = `
         select 10, CONCAT_WS('a', 'b'), 'a' as name
         `;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -431,7 +426,7 @@ describe('postgres-parse-select-functions', () => {
 		const sql = `
         SELECT TO_DATE(CONCAT_WS('/', $1::text, $2::text, $3::text),'DD/MM/YYYY')
         `;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -472,7 +467,7 @@ describe('postgres-parse-select-functions', () => {
 		const sql = `
         SELECT TO_DATE(COALESCE($1, null),'DD/MM/YYYY')
         `;
-		const actual = await describeQuery(client, sql, ['date']);
+		const actual = await describeQuery(client, sql, ['date'], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -501,7 +496,7 @@ describe('postgres-parse-select-functions', () => {
 
 	it('SELECT datediff(:date1, :date2) as days_stayed', async () => {
 		const sql = 'SELECT $1::date - $2::date as days_stayed';
-		const actual = await describeQuery(client, sql, ['date1', 'date2']);
+		const actual = await describeQuery(client, sql, ['date1', 'date2'], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -537,7 +532,7 @@ describe('postgres-parse-select-functions', () => {
 		const sql = `
         SELECT (TO_DATE(CONCAT_WS('/', $1::text, $2::text, $3::text), 'DD/MM/YYYY') - TO_DATE('01/01/2020', 'DD/MM/YYYY')) AS days_stayed
         `;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -578,7 +573,7 @@ describe('postgres-parse-select-functions', () => {
 		const sql = `
         SELECT coalesce(NULL, 'yes') as result1, coalesce('10', 'yes') as result2
         `;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -609,7 +604,7 @@ describe('postgres-parse-select-functions', () => {
 		const sql = `
         SELECT coalesce(value, id) as result from mytable1
         `;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -634,7 +629,7 @@ describe('postgres-parse-select-functions', () => {
 		const sql = `
         SELECT STRING_AGG(name, ', ') FROM mytable2
         `;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -659,7 +654,7 @@ describe('postgres-parse-select-functions', () => {
 		const sql = `
         SELECT STRING_AGG(id::text, ', ') FROM mytable2
         `;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -685,7 +680,7 @@ describe('postgres-parse-select-functions', () => {
        	SELECT STRING_AGG(DISTINCT name, ';' ORDER BY name DESC) AS result
 		FROM mytable2;
         `; //different from mysql; must use the displayed column (name) in the ORDER BY
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -710,7 +705,7 @@ describe('postgres-parse-select-functions', () => {
 		const sql = `
         SELECT NULLIF($1, 'a') FROM mytable1
         `;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -741,7 +736,7 @@ describe('postgres-parse-select-functions', () => {
 		const sql = `
          SELECT generate_series(1, 12) AS month
         `;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -771,7 +766,7 @@ describe('postgres-parse-select-functions', () => {
 			to_tsquery(null) as tsquery_result2 
 		from mytable2
         `;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -814,7 +809,7 @@ describe('postgres-parse-select-functions', () => {
 		const sql = `
          SELECT name FROM mytable2 WHERE to_tsvector(name) @@ to_tsquery($1)
         `;
-		const actual = await describeQuery(client, sql, ['query']);
+		const actual = await describeQuery(client, sql, ['query'], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -851,7 +846,7 @@ describe('postgres-parse-select-functions', () => {
 		 WHERE to_tsvector(name) @@ to_tsquery($1)
 		 ORDER BY rank
         `;
-		const actual = await describeQuery(client, sql, ['query']);
+		const actual = await describeQuery(client, sql, ['query'], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -901,7 +896,7 @@ describe('postgres-parse-select-functions', () => {
 			websearch_to_tsquery(name) as web2
 		 FROM mytable2
         `;
-		const actual = await describeQuery(client, sql, ['query']);
+		const actual = await describeQuery(client, sql, ['query'], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',

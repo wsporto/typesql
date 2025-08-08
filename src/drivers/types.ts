@@ -1,7 +1,6 @@
 import { TaskEither } from 'fp-ts/lib/TaskEither';
-import { CheckConstraintResult, EnumMap } from './postgres';
 import { PostgresSimpleType } from '../sqlite-query-analyzer/types';
-import { UserFunctionSchema } from '../postgres-query-analyzer/types';
+import { PostgresSchemaInfo } from '../schema-info';
 
 export type PostgresColumnSchema = {
 	table_schema: string;
@@ -24,10 +23,7 @@ export type DescribeQueryColumn = {
 export type DescribeParameters = {
 	sql: string;
 	postgresDescribeResult: PostgresDescribe;
-	dbSchema: PostgresColumnSchema[];
-	enumsTypes: EnumMap;
-	checkConstraints: CheckConstraintResult;
-	userFunctions: UserFunctionSchema[]
+	schemaInfo: PostgresSchemaInfo;
 	namedParameters: string[];
 }
 

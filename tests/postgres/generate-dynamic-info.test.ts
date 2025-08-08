@@ -1,32 +1,15 @@
 import assert from 'node:assert';
 import type { DynamicSqlInfo2, DynamicSqlInfoResult2 } from '../../src/mysql-query-analyzer/types';
-import { PostgresColumnSchema } from '../../src/drivers/types';
-import postgres from 'postgres';
-import { loadDbSchema } from '../../src/drivers/postgres';
 import { parseSql } from '../../src/postgres-query-analyzer/parser';
 import { describeQuery } from '../../src/postgres-query-analyzer/describe';
+import { createTestClient, createSchemaInfo, schema } from './schema';
 
 describe('postgres-generate-dynamic-info', () => {
-	let dbSchema: PostgresColumnSchema[] = [];
-
-	const databaseClient = postgres({
-		host: 'localhost',
-		user: 'postgres',
-		password: 'password',
-		port: 5432,
-		database: 'postgres',
-	});
+	const databaseClient = createTestClient();
+	const schemaInfo = createSchemaInfo();
 
 	after(async () => {
 		await databaseClient.end();
-	});
-
-	before(async function () {
-		const dbSchemaResult = await await loadDbSchema(databaseClient);
-		if (dbSchemaResult.isErr()) {
-			assert.fail(`Shouldn't return an error: ${dbSchemaResult.error}`);
-		}
-		dbSchema = dbSchemaResult.value;
 	});
 
 	it('dynamic-traverse-result-01', () => {
@@ -35,7 +18,7 @@ describe('postgres-generate-dynamic-info', () => {
 		FROM mytable1 m1
 		INNER JOIN mytable2 m2 on m1.id = m2.id`;
 
-		const actual = parseSql(sql, dbSchema, {}, [], { collectDynamicQueryInfo: true });
+		const actual = parseSql(sql, schema, {}, [], { collectDynamicQueryInfo: true });
 		const expected: DynamicSqlInfo2 = {
 			with: [],
 			select: [
@@ -94,7 +77,7 @@ describe('postgres-generate-dynamic-info', () => {
 		FROM mytable1 m1
 		INNER JOIN mytable2 m2 on m1.id = m2.id`;
 
-		const actual = await describeQuery(databaseClient, sql, []);
+		const actual = await describeQuery(databaseClient, sql, [], schemaInfo);
 		const expected: DynamicSqlInfoResult2 = {
 			with: [],
 			select: [
@@ -153,7 +136,7 @@ describe('postgres-generate-dynamic-info', () => {
 		) m2 on m2.id = m1.id
 		WHERE ($2 is NULL or m2.name = $3)`;
 
-		const actual = parseSql(sql, dbSchema, {}, [], { collectDynamicQueryInfo: true });
+		const actual = parseSql(sql, schema, {}, [], { collectDynamicQueryInfo: true });
 		const expected: DynamicSqlInfo2 = {
 			with: [],
 			select: [
@@ -211,7 +194,7 @@ describe('postgres-generate-dynamic-info', () => {
 			WHERE m.name = $1
 		) m2 on m2.id = m1.id`;
 
-		const actual = await describeQuery(databaseClient, sql, []);
+		const actual = await describeQuery(databaseClient, sql, [], schemaInfo);
 		const expected: DynamicSqlInfoResult2 = {
 			with: [],
 			select: [
@@ -263,7 +246,7 @@ describe('postgres-generate-dynamic-info', () => {
 		) m2 on m2.id = m1.id
 		WHERE ($2::text is NULL or m2.name = $2)`;
 
-		const actual = await describeQuery(databaseClient, sql, ['subqueryName', 'name', 'name']);
+		const actual = await describeQuery(databaseClient, sql, ['subqueryName', 'name', 'name'], schemaInfo);
 		const expected: DynamicSqlInfoResult2 = {
 			with: [],
 			select: [
@@ -323,7 +306,7 @@ describe('postgres-generate-dynamic-info', () => {
 		INNER JOIN cte m2 on m2.id = m1.id
 		WHERE m2.name LIKE concat('%', $1, '%')`;
 
-		const actual = parseSql(sql, dbSchema, {}, [], { collectDynamicQueryInfo: true });
+		const actual = parseSql(sql, schema, {}, [], { collectDynamicQueryInfo: true });
 		const expected: DynamicSqlInfo2 = {
 			with: [
 				{
@@ -389,7 +372,7 @@ describe('postgres-generate-dynamic-info', () => {
 		FROM mytable1 m1
 		INNER JOIN cte m2 on m2.id = m1.id`;
 
-		const actual = await describeQuery(databaseClient, sql, []);
+		const actual = await describeQuery(databaseClient, sql, [], schemaInfo);
 		const expected: DynamicSqlInfoResult2 = {
 			with: [
 				{
@@ -451,7 +434,7 @@ describe('postgres-generate-dynamic-info', () => {
 		INNER JOIN cte m2 on m2.id = m1.id
 		WHERE m2.name LIKE concat('%', $1::text, '%')`;
 
-		const actual = await describeQuery(databaseClient, sql, ['name']);
+		const actual = await describeQuery(databaseClient, sql, ['name'], schemaInfo);
 		const expected: DynamicSqlInfoResult2 = {
 			with: [
 				{
@@ -512,7 +495,7 @@ describe('postgres-generate-dynamic-info', () => {
 		INNER JOIN mytable2 m2 on m2.id = m1.id
 		INNER JOIN mytable3 m3 on m3.id = m2.id`;
 
-		const actual = parseSql(sql, dbSchema, {}, [], { collectDynamicQueryInfo: true });
+		const actual = parseSql(sql, schema, {}, [], { collectDynamicQueryInfo: true });
 		const expected: DynamicSqlInfo2 = {
 			with: [],
 			select: [
@@ -585,7 +568,7 @@ describe('postgres-generate-dynamic-info', () => {
 		INNER JOIN mytable2 m2 on m2.id = m1.id
 		INNER JOIN mytable3 m3 on m3.id = m2.id`;
 
-		const actual = await describeQuery(databaseClient, sql, []);
+		const actual = await describeQuery(databaseClient, sql, [], schemaInfo);
 		const expected: DynamicSqlInfoResult2 = {
 			with: [],
 			select: [
@@ -653,7 +636,7 @@ describe('postgres-generate-dynamic-info', () => {
 		inner join mytable3 t3 on t3.id = t2.id
 		where (concat('%', t2.name, '%') = $1 OR concat('%', t3.name, '%') = $1)`;
 
-		const actual = parseSql(sql, dbSchema, {}, [], { collectDynamicQueryInfo: true });
+		const actual = parseSql(sql, schema, {}, [], { collectDynamicQueryInfo: true });
 		const expected: DynamicSqlInfo2 = {
 			with: [],
 			select: [
@@ -705,7 +688,7 @@ describe('postgres-generate-dynamic-info', () => {
 		from mytable2 t2
 		inner join mytable3 t3 on t3.id = t2.id`;
 
-		const actual = await describeQuery(databaseClient, sql, []);
+		const actual = await describeQuery(databaseClient, sql, [], schemaInfo);
 		const expected: DynamicSqlInfoResult2 = {
 			with: [],
 			select: [
@@ -751,7 +734,7 @@ describe('postgres-generate-dynamic-info', () => {
 		inner join mytable3 t3 on t3.id = t2.id
 		where (concat('%', t2.name, '%') = $1 OR concat('%', t3.name, '%') = $1)`;
 
-		const actual = await describeQuery(databaseClient, sql, ['name']);
+		const actual = await describeQuery(databaseClient, sql, ['name'], schemaInfo);
 		const expected: DynamicSqlInfoResult2 = {
 			with: [],
 			select: [
@@ -802,7 +785,7 @@ describe('postgres-generate-dynamic-info', () => {
 		inner join mytable3 t3 on t3.id = t2.id
 		where t3.id > 1`;
 
-		const actual = parseSql(sql, dbSchema, {}, [], { collectDynamicQueryInfo: true });
+		const actual = parseSql(sql, schema, {}, [], { collectDynamicQueryInfo: true });
 		const expected: DynamicSqlInfo2 = {
 			with: [],
 			select: [
@@ -855,7 +838,7 @@ describe('postgres-generate-dynamic-info', () => {
 		inner join mytable3 t3 on t3.id = t2.id
 		where t3.id > 1`;
 
-		const actual = await describeQuery(databaseClient, sql, []);
+		const actual = await describeQuery(databaseClient, sql, [], schemaInfo);
 		const expected: DynamicSqlInfoResult2 = {
 			with: [],
 			select: [
@@ -908,7 +891,7 @@ describe('postgres-generate-dynamic-info', () => {
 		FROM mytable2 t2
 		INNER JOIN mytable3 t3 on t3.id = t2.id`;
 
-		const actual = parseSql(sql, dbSchema, {}, [], { collectDynamicQueryInfo: true });
+		const actual = parseSql(sql, schema, {}, [], { collectDynamicQueryInfo: true });
 		const expected: DynamicSqlInfo2 = {
 			with: [],
 			select: [
@@ -963,7 +946,7 @@ describe('postgres-generate-dynamic-info', () => {
 		FROM mytable2 t2
 		INNER JOIN mytable3 t3 on t3.id = t2.id`;
 
-		const actual = await describeQuery(databaseClient, sql, ['name', 'name']);
+		const actual = await describeQuery(databaseClient, sql, ['name', 'name'], schemaInfo);
 		const expected: DynamicSqlInfoResult2 = {
 			with: [],
 			select: [
@@ -1015,7 +998,7 @@ describe('postgres-generate-dynamic-info', () => {
 		WHERE m2.name = $1
 		LIMIT $2 OFFSET $3`;
 
-		const actual = parseSql(sql, dbSchema, {}, [], { collectDynamicQueryInfo: true });
+		const actual = parseSql(sql, schema, {}, [], { collectDynamicQueryInfo: true });
 		const expected: DynamicSqlInfo2 = {
 			with: [],
 			select: [
@@ -1082,7 +1065,7 @@ describe('postgres-generate-dynamic-info', () => {
 		FROM cte1 c1
 		INNER JOIN cte2 c2 on c1.id = c2.id`;
 
-		const actual = parseSql(sql, dbSchema, {}, [], { collectDynamicQueryInfo: true });
+		const actual = parseSql(sql, schema, {}, [], { collectDynamicQueryInfo: true });
 		const expected: DynamicSqlInfo2 = {
 			with: [
 				{
@@ -1156,7 +1139,7 @@ describe('postgres-generate-dynamic-info', () => {
 		FROM cte1 c1
 		INNER JOIN cte2 c2 on c1.id = c2.id`;
 
-		const actual = await describeQuery(databaseClient, sql, ['param1', 'param1', 'param2', 'param2']);
+		const actual = await describeQuery(databaseClient, sql, ['param1', 'param1', 'param2', 'param2'], schemaInfo);
 		const expected: DynamicSqlInfoResult2 = {
 			with: [
 				{
@@ -1234,7 +1217,7 @@ describe('postgres-generate-dynamic-info', () => {
 		INNER JOIN cte2 c2 on c1.id = c2.id
 		WHERE greatest(c1.id, $3) = least(c2.id, $3)`;
 
-		const actual = parseSql(sql, dbSchema, {}, [], { collectDynamicQueryInfo: true });
+		const actual = parseSql(sql, schema, {}, [], { collectDynamicQueryInfo: true });
 		const expected: DynamicSqlInfo2 = {
 			with: [
 				{
@@ -1315,7 +1298,7 @@ describe('postgres-generate-dynamic-info', () => {
 		INNER JOIN cte2 c2 on c1.id = c2.id
 		WHERE greatest(c1.id, $3) = least(c2.id, $3)`;
 
-		const actual = await describeQuery(databaseClient, sql, ['param1', 'param1', 'param2', 'param2', 'param1', 'param2']);
+		const actual = await describeQuery(databaseClient, sql, ['param1', 'param1', 'param2', 'param2', 'param1', 'param2'], schemaInfo);
 		const expected: DynamicSqlInfoResult2 = {
 			with: [
 				{

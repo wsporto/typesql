@@ -6,14 +6,15 @@ import yargs from 'yargs';
 import { generateTsFile, writeFile } from './code-generator';
 import { generateInsertStatement, generateUpdateStatement, generateDeleteStatement, generateSelectStatement } from './sql-generator';
 import type { ColumnSchema, Table } from './mysql-query-analyzer/types';
-import type { TypeSqlConfig, SqlGenOption, DatabaseClient, TypeSqlDialect, SQLiteClient, PgDielect, CrudQueryType } from './types';
+import type { TypeSqlConfig, SqlGenOption, DatabaseClient, TypeSqlDialect, SQLiteClient, CrudQueryType } from './types';
 import { type Either, isLeft, left } from 'fp-ts/lib/Either';
 import { globSync } from 'glob';
-import { closeClient, createClient, loadSchema, loadTableSchema, selectTables } from './schema-info';
+import { closeClient, createClient, loadSchemaInfo, loadTableSchema, PostgresSchemaInfo, SchemaInfo, selectTables } from './schema-info';
 import { generateCrud } from './sqlite-query-analyzer/code-generator';
 import { createCodeBlockWriter, generateCrud as generatePgCrud } from './code-generator2';
 import uniqBy from 'lodash.uniqby';
 import { loadConfig } from './load-config';
+import { PostgresColumnSchema } from './drivers/types';
 
 const CRUD_FOLDER = 'crud';
 
@@ -91,7 +92,7 @@ function validateDirectories(dir: string) {
 	}
 }
 
-function watchDirectories(client: DatabaseClient, dirPath: string, dbSchema: ColumnSchema[], config: TypeSqlConfig) {
+function watchDirectories(client: DatabaseClient, dirPath: string, dbSchema: SchemaInfo | PostgresSchemaInfo, config: TypeSqlConfig) {
 	const dirGlob = `${dirPath}/**/*.sql`;
 
 	chokidar
@@ -104,8 +105,8 @@ function watchDirectories(client: DatabaseClient, dirPath: string, dbSchema: Col
 		.on('change', (path) => rewiteFiles(client, path, dbSchema, isCrudFile(dirPath, path), config));
 }
 
-async function rewiteFiles(client: DatabaseClient, path: string, dbSchema: ColumnSchema[], isCrudFile: boolean, config: TypeSqlConfig) {
-	await generateTsFile(client, path, dbSchema, isCrudFile);
+async function rewiteFiles(client: DatabaseClient, path: string, schemaInfo: SchemaInfo | PostgresSchemaInfo, isCrudFile: boolean, config: TypeSqlConfig) {
+	await generateTsFile(client, path, schemaInfo, isCrudFile);
 	const dirPath = parse(path).dir;
 	await writeIndexFile(dirPath, config);
 }
@@ -127,13 +128,13 @@ async function compile(watch: boolean, config: TypeSqlConfig) {
 	const includeCrudTables = config.includeCrudTables || [];
 	const databaseClient = databaseClientResult.value;
 
-	const dbSchema = await loadSchema(databaseClient);
+	const dbSchema = await loadSchemaInfo(databaseClient);
 	if (dbSchema.isErr()) {
 		console.error(`Error: ${dbSchema.error.description}.`);
 		return;
 	}
 
-	await generateCrudTables(databaseClient, sqlDir, dbSchema.value, includeCrudTables);
+	await generateCrudTables(sqlDir, dbSchema.value, includeCrudTables);
 	const dirGlob = `${sqlDir}/**/*.sql`;
 
 	const sqlFiles = globSync(dirGlob);
@@ -230,11 +231,17 @@ function generateSql(dialect: TypeSqlDialect, stmtType: SqlGenOption, tableName:
 
 main().then(() => console.log('finished!'));
 
-async function generateCrudTables(client: DatabaseClient, sqlFolderPath: string, dbSchema: ColumnSchema[], includeCrudTables: string[]) {
-
-	const allTables = dbSchema.map(col => ({ schema: col.schema, table: col.table } satisfies Table));
+function _filterTables(schemaInfo: SchemaInfo | PostgresSchemaInfo, includeCrudTables: string[]) {
+	const allTables = schemaInfo.kind == 'pg' ? schemaInfo.columns.map(col => ({ schema: col.table_schema, table: col.table_schema } satisfies Table))
+		: schemaInfo.columns.map(col => ({ schema: col.schema, table: col.table } satisfies Table));
 	const uniqueTables = uniqBy(allTables, (item) => `${item.schema}:${item.table}`);
 	const filteredTables = filterTables(uniqueTables, includeCrudTables);
+	return filteredTables;
+}
+
+async function generateCrudTables(sqlFolderPath: string, schemaInfo: SchemaInfo | PostgresSchemaInfo, includeCrudTables: string[]) {
+
+	const filteredTables = _filterTables(schemaInfo, includeCrudTables);
 	for (const tableInfo of filteredTables) {
 		const tableName = tableInfo.table;
 		const filePath = `${sqlFolderPath}/${CRUD_FOLDER}/${tableName}/`;
@@ -242,24 +249,24 @@ async function generateCrudTables(client: DatabaseClient, sqlFolderPath: string,
 			fs.mkdirSync(filePath, { recursive: true });
 		}
 
-		const columns = dbSchema.filter((col) => col.table === tableName);
-		if (client.type === 'mysql2') {
-			checkAndGenerateSql(client.type, `${filePath}select-from-${tableName}.sql`, 'select', tableName, columns);
-			checkAndGenerateSql(client.type, `${filePath}insert-into-${tableName}.sql`, 'insert', tableName, columns);
-			checkAndGenerateSql(client.type, `${filePath}update-${tableName}.sql`, 'update', tableName, columns);
-			checkAndGenerateSql(client.type, `${filePath}delete-from-${tableName}.sql`, 'delete', tableName, columns);
+		if (schemaInfo.kind === 'mysql2') {
+			const columns = schemaInfo.columns.filter((col) => col.table === tableName);
+			checkAndGenerateSql(schemaInfo.kind, `${filePath}select-from-${tableName}.sql`, 'select', tableName, columns);
+			checkAndGenerateSql(schemaInfo.kind, `${filePath}insert-into-${tableName}.sql`, 'insert', tableName, columns);
+			checkAndGenerateSql(schemaInfo.kind, `${filePath}update-${tableName}.sql`, 'update', tableName, columns);
+			checkAndGenerateSql(schemaInfo.kind, `${filePath}delete-from-${tableName}.sql`, 'delete', tableName, columns);
 		} else {
-			generateAndWriteCrud(client.type, `${filePath}select-from-${tableName}.ts`, 'Select', tableName, dbSchema);
-			generateAndWriteCrud(client.type, `${filePath}insert-into-${tableName}.ts`, 'Insert', tableName, dbSchema);
-			generateAndWriteCrud(client.type, `${filePath}update-${tableName}.ts`, 'Update', tableName, dbSchema);
-			generateAndWriteCrud(client.type, `${filePath}delete-from-${tableName}.ts`, 'Delete', tableName, dbSchema);
+			generateAndWriteCrud(schemaInfo.kind, `${filePath}select-from-${tableName}.ts`, 'Select', tableName, schemaInfo.columns);
+			generateAndWriteCrud(schemaInfo.kind, `${filePath}insert-into-${tableName}.ts`, 'Insert', tableName, schemaInfo.columns);
+			generateAndWriteCrud(schemaInfo.kind, `${filePath}update-${tableName}.ts`, 'Update', tableName, schemaInfo.columns);
+			generateAndWriteCrud(schemaInfo.kind, `${filePath}delete-from-${tableName}.ts`, 'Delete', tableName, schemaInfo.columns);
 		}
 	}
 }
 
-function generateAndWriteCrud(client: SQLiteClient | PgDielect['type'], filePath: string, queryType: CrudQueryType, tableName: string, columns: ColumnSchema[]) {
+function generateAndWriteCrud(client: 'pg' | SQLiteClient, filePath: string, queryType: CrudQueryType, tableName: string, columns: ColumnSchema[] | PostgresColumnSchema[]) {
 
-	const content = client === 'pg' ? generatePgCrud(client, queryType, tableName, columns) : generateCrud(client, queryType, tableName, columns);
+	const content = client === 'pg' ? generatePgCrud(queryType, tableName, columns as PostgresColumnSchema[]) : generateCrud(client, queryType, tableName, columns as ColumnSchema[]);
 	writeFile(filePath, content);
 	console.log('Generated file:', filePath);
 }

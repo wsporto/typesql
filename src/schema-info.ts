@@ -1,17 +1,32 @@
 import { createLibSqlClient } from './drivers/libsql';
-import { createPostgresClient, EnumResult } from './drivers/postgres';
+import { CheckConstraintResult, createPostgresClient, EnumMap } from './drivers/postgres';
 import { ColumnSchema, Table } from './mysql-query-analyzer/types';
 import { createMysqlClient, loadMysqlSchema, loadMySqlTableSchema, selectTablesFromSchema } from './queryExectutor';
-import { createSqliteClient, ForeignKeyInfo, loadDbSchema, loadForeignKeys as loadSqliteForeignKeys, selectSqliteTablesFromSchema } from './sqlite-query-analyzer/query-executor';
-import { DatabaseClient, TypeSqlDialect, TypeSqlError } from './types';
-import { loadDbSchema as loadPostgresDbSchema, mapToColumnSchema, loadForeignKeys as loadPostgresForeignKeys, loadEnums as loadPostgresEnums } from './drivers/postgres';
+import { createSqliteClient, ForeignKeyInfo, loadDbSchema, selectSqliteTablesFromSchema } from './sqlite-query-analyzer/query-executor';
+import { DatabaseClient, MySqlClient, SQLiteClient, TypeSqlDialect, TypeSqlError } from './types';
+import {
+	loadDbSchema as loadPostgresDbSchema, loadForeignKeys as loadPostgresForeignKeys,
+	loadEnumsMap as loadPostgresEnumsMap, loadUserFunctions as loadPostgresUserFunctions, loadCheckConstraints as loadPostgresCheckConstraints
+} from './drivers/postgres';
 import { okAsync, ResultAsync } from 'neverthrow';
 import { Either, right } from 'fp-ts/lib/Either';
+import { UserFunctionSchema } from './postgres-query-analyzer/types';
+import { PostgresColumnSchema } from './drivers/types';
+import { Sql } from 'postgres';
+
 
 export type SchemaInfo = {
+	kind: SQLiteClient | MySqlClient;
 	columns: ColumnSchema[];
+}
+
+export type PostgresSchemaInfo = {
+	kind: 'pg';
+	columns: PostgresColumnSchema[];
 	foreignKeys: ForeignKeyInfo[];
-	enumTypes: string[];
+	userFunctions: UserFunctionSchema[];
+	enumTypes: EnumMap;
+	checkConstraints: CheckConstraintResult;
 }
 
 export function createClient(databaseUri: string, dialect: TypeSqlDialect, attach?: string[], loadExtensions?: string[], authToken?: string): ResultAsync<DatabaseClient, TypeSqlError> {
@@ -29,19 +44,20 @@ export function createClient(databaseUri: string, dialect: TypeSqlDialect, attac
 	}
 }
 
-export function loadSchema(databaseClient: DatabaseClient): ResultAsync<ColumnSchema[], TypeSqlError> {
+export function loadSchemaInfo(databaseClient: DatabaseClient): ResultAsync<SchemaInfo | PostgresSchemaInfo, TypeSqlError> {
 	switch (databaseClient.type) {
 		case 'mysql2':
-			return loadMysqlSchema(databaseClient.client, databaseClient.schema);
+			return loadMysqlSchema(databaseClient.client, databaseClient.schema).map(schema => ({
+				kind: databaseClient.type,
+				columns: schema
+			}) satisfies SchemaInfo);
 		case 'better-sqlite3':
 		case 'libsql':
 		case 'bun:sqlite':
 		case 'd1':
-			return loadDbSchema(databaseClient.client).asyncAndThen(res => okAsync(res));
+			return loadDbSchema(databaseClient.client).asyncAndThen(columns => okAsync({ kind: databaseClient.type, columns } satisfies SchemaInfo));
 		case 'pg':
-			const result = loadPostgresDbSchema(databaseClient.client)
-				.map(schema => schema.map(col => mapToColumnSchema(col)))
-			return result;
+			return _loadPostgresSchemaInfo(databaseClient.client);
 
 	}
 }
@@ -60,53 +76,25 @@ export function loadTableSchema(databaseClient: DatabaseClient, tableName: strin
 	}
 }
 
-export function loadForeignKeys(databaseClient: DatabaseClient): ResultAsync<ForeignKeyInfo[], TypeSqlError> {
-	switch (databaseClient.type) {
-		case 'better-sqlite3':
-		case 'libsql':
-		case 'bun:sqlite':
-		case 'd1':
-			return loadSqliteForeignKeys(databaseClient.client).asyncAndThen(res => okAsync(res));
-		case 'mysql2':
-			return okAsync([]);
-		case 'pg':
-			return loadPostgresForeignKeys(databaseClient.client);
-	}
-}
-
-function loadEnums(databaseClient: DatabaseClient): ResultAsync<EnumResult[], TypeSqlError> {
-	switch (databaseClient.type) {
-		case 'better-sqlite3':
-		case 'libsql':
-		case 'bun:sqlite':
-		case 'd1':
-		case 'mysql2':
-			return okAsync([]);
-		case 'pg':
-			return loadPostgresEnums(databaseClient.client);
-	}
-}
-
-export function loadSchemaInfo(databaseUri: string, client: TypeSqlDialect): ResultAsync<SchemaInfo, TypeSqlError> {
-	const result = createClient(databaseUri, client)
-		.andThen(db => {
-			const schemaResult = loadSchema(db);
-			const foreignKeysResult = loadForeignKeys(db);
-			const enumTypesResult = loadEnums(db);
-			const schemaInfo = ResultAsync.combine([schemaResult, foreignKeysResult, enumTypesResult])
-				.map(([schema, foreignKeys, enumTypes]) => {
-					const result: SchemaInfo = {
-						columns: schema,
-						foreignKeys,
-						enumTypes: [...new Set(enumTypes.map(enumType => enumType.enum_name))]
-					}
-					return result;
-				});
-			closeClient(db);
-			return schemaInfo;
-
-		})
-	return result;
+function _loadPostgresSchemaInfo(client: Sql): ResultAsync<PostgresSchemaInfo, TypeSqlError> {
+	const schemaResult = loadPostgresDbSchema(client);
+	const foreignKeysResult = loadPostgresForeignKeys(client);
+	const enumTypesResult = loadPostgresEnumsMap(client);
+	const userFunctionsResult = loadPostgresUserFunctions(client);
+	const checkConstraintsResult = loadPostgresCheckConstraints(client);
+	const schemaInfo = ResultAsync.combine([schemaResult, foreignKeysResult, enumTypesResult, userFunctionsResult, checkConstraintsResult])
+		.map(([schema, foreignKeys, enumTypes, userFunctions, checkConstraints]) => {
+			const result: PostgresSchemaInfo = {
+				kind: 'pg',
+				columns: schema,
+				foreignKeys,
+				userFunctions,
+				enumTypes,
+				checkConstraints
+			}
+			return result;
+		});
+	return schemaInfo;
 }
 
 export async function closeClient(db: DatabaseClient) {

@@ -11,15 +11,17 @@ import { getQueryName, mapPostgrsFieldToTsField, writeCollectFunction } from './
 import { mapToTsRelation2, RelationType2 } from './ts-nested-descriptor';
 import { EOL } from 'node:os';
 import { PostgresColumnInfo, PostgresParameterDef, PostgresSchemaDef } from './postgres-query-analyzer/types';
+import { PostgresSchemaInfo } from './schema-info';
+import { PostgresColumnSchema } from './drivers/types';
 
 
 
-export function generateCode(client: PgDielect, sql: string, queryName: string): ResultAsync<string, TypeSqlError> {
+export function generateCode(client: PgDielect, sql: string, queryName: string, schemaInfo: PostgresSchemaInfo): ResultAsync<string, TypeSqlError> {
 	if (isEmptySql(sql)) {
 		return okAsync('');
 	}
 	const { sql: processedSql, namedParameters } = preprocessSql(sql, 'postgres');
-	return _describeQuery(client, processedSql, namedParameters)
+	return _describeQuery(client, processedSql, namedParameters, schemaInfo)
 		.map(schemaDef => generateTsCode(processedSql, queryName, schemaDef, client.type))
 }
 
@@ -31,8 +33,8 @@ function isEmptySql(sql: string) {
 	return lines.every(line => line.trim() === '' || line.trim().startsWith('//'))
 }
 
-function _describeQuery(databaseClient: PgDielect, sql: string, namedParameters: string[]): ResultAsync<PostgresSchemaDef, TypeSqlError> {
-	return describeQuery(databaseClient.client, sql, namedParameters);
+function _describeQuery(databaseClient: PgDielect, sql: string, namedParameters: string[], dbSchema: PostgresSchemaInfo): ResultAsync<PostgresSchemaDef, TypeSqlError> {
+	return describeQuery(databaseClient.client, sql, namedParameters, dbSchema);
 }
 
 export function createCodeBlockWriter() {
@@ -804,7 +806,7 @@ function isList(param: TsParameterDescriptor) {
 	return param.tsType.endsWith('[]') && !param.isArray;
 }
 
-export function generateCrud(client: 'pg', queryType: CrudQueryType, tableName: string, dbSchema: ColumnSchema[]) {
+export function generateCrud(queryType: CrudQueryType, tableName: string, dbSchema: PostgresColumnSchema[]) {
 
 	const queryName = getQueryName(queryType, tableName);
 	const camelCaseName = convertToCamelCaseName(queryName);
@@ -815,16 +817,16 @@ export function generateCrud(client: 'pg', queryType: CrudQueryType, tableName: 
 
 	const writer = createCodeBlockWriter();
 
-	const allColumns = dbSchema.filter((col) => col.table === tableName);
-	const keyColumns = allColumns.filter((col) => col.columnKey === 'PRI');
+	const allColumns = dbSchema.filter((col) => col.table_name === tableName);
+	const keyColumns = allColumns.filter((col) => col.column_key === 'PRI');
 	if (keyColumns.length === 0) {
-		keyColumns.push(...allColumns.filter((col) => col.columnKey === 'UNI'));
+		keyColumns.push(...allColumns.filter((col) => col.column_key === 'UNI'));
 	}
 	const keys = keyColumns.map(col => ({ ...mapPostgresColumnSchemaToTsFieldDescriptor(col), optional: false }));
-	const nonKeys = allColumns.filter(col => col.columnKey !== 'PRI').map(col => mapPostgresColumnSchemaToTsFieldDescriptor(col));
+	const nonKeys = allColumns.filter(col => col.column_key !== 'PRI').map(col => mapPostgresColumnSchemaToTsFieldDescriptor(col));
 
 
-	const codeWriter = getCodeWriter(client);
+	const codeWriter = getCodeWriter('pg');
 	codeWriter.writeImports(writer, queryType);
 	const uniqueDataParams = queryType === 'Update' ? nonKeys.map(col => ({ ...col, optional: true })) : [];
 	if (uniqueDataParams.length > 0) {
@@ -1008,11 +1010,11 @@ function writeCrudDelete(writer: CodeBlockWriter, crudParamters: CrudParameters)
 	return writer.toString();
 }
 
-export function mapPostgresColumnSchemaToTsFieldDescriptor(col: ColumnSchema): TsFieldDescriptor {
+export function mapPostgresColumnSchemaToTsFieldDescriptor(col: PostgresColumnSchema): TsFieldDescriptor {
 	return {
-		name: col.column,
-		notNull: col.notNull,
-		optional: col.defaultValue != null,
-		tsType: mapColumnType(col.column_type as PostgresType),
+		name: col.column_name,
+		notNull: !col.is_nullable,
+		optional: col.column_default,
+		tsType: mapColumnType(col.type),
 	}
 }

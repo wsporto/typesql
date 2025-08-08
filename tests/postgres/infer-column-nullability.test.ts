@@ -4,18 +4,12 @@ import { loadDbSchema } from '../../src/drivers/postgres';
 import { PostgresColumnSchema } from '../../src/drivers/types';
 import { parseSql } from '../../src/postgres-query-analyzer/parser';
 import { NotNullInfo, PostgresTraverseResult } from '../../src/postgres-query-analyzer/traverse';
-import { userDefinedFunctions } from './schema';
+import { createTestClient, userDefinedFunctions } from './schema';
 
 let dbSchema: PostgresColumnSchema[] = [];
 describe('Infer column nullability', () => {
 
-	const client = postgres({
-		host: 'localhost',
-		username: 'postgres',
-		password: 'password',
-		database: 'postgres',
-		port: 5432
-	});
+	const client = createTestClient();
 
 	after(async () => {
 		await client.end();

@@ -1,16 +1,11 @@
 import assert from 'node:assert';
-import postgres from 'postgres';
 import { describeQuery } from '../../src/postgres-query-analyzer/describe';
 import { PostgresSchemaDef } from '../../src/postgres-query-analyzer/types';
+import { createSchemaInfo, createTestClient } from './schema';
 
 describe('postgres-json-functions', () => {
-	const client = postgres({
-		host: 'localhost',
-		username: 'postgres',
-		password: 'password',
-		database: 'postgres',
-		port: 5432
-	});
+	const client = createTestClient();
+	const schemaInfo = createSchemaInfo();
 
 	after(async () => {
 		await client.end();
@@ -18,7 +13,7 @@ describe('postgres-json-functions', () => {
 
 	it(`SELECT json_build_object('key', 'value')`, async () => {
 		const sql = `SELECT json_build_object('key', 'value'), jsonb_build_object('key', 'value')`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -65,7 +60,7 @@ describe('postgres-json-functions', () => {
 
 	it(`SELECT json_build_object('key', id) FROM mytable1`, async () => {
 		const sql = `SELECT json_build_object('key', id), jsonb_build_object('key', id) FROM mytable1`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -112,7 +107,7 @@ describe('postgres-json-functions', () => {
 
 	it(`SELECT json_build_object('key1', name, 'key2', id ) as value FROM mytable1`, async () => {
 		const sql = `SELECT json_build_object('key1', name, 'key2', id ) as value FROM mytable2`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -150,7 +145,7 @@ describe('postgres-json-functions', () => {
 		const sql = `SELECT json_build_object('key1', m2.name, 'key2', m2.descr, 'key3', m1.id, 'key4', m2.id ) as value
 					FROM mytable1 m1
 					LEFT JOIN mytable2 m2 ON m1.id = m2.id`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -196,7 +191,7 @@ describe('postgres-json-functions', () => {
 		const sql = `SELECT json_build_object('key1', m2.name, 'key2', json_build_object('nested', m1.id), 'key3', m2.id ) as value
 					FROM mytable1 m1
 					LEFT JOIN mytable2 m2 ON m1.id = m2.id`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -256,7 +251,7 @@ describe('postgres-json-functions', () => {
 	FROM users u
 	LEFT JOIN posts p on p.fk_user = u.id
 	group by u.id, u.name`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -320,7 +315,7 @@ describe('postgres-json-functions', () => {
 	FROM users u
 	LEFT JOIN posts p on p.fk_user = u.id
 	group by u.id, u.name`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -384,7 +379,7 @@ describe('postgres-json-functions', () => {
 	FROM users u
 	LEFT JOIN posts p on p.fk_user = u.id
 	group by u.id, u.name`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -448,7 +443,7 @@ describe('postgres-json-functions', () => {
 	FROM users u
 	INNER JOIN posts p on p.fk_user = u.id
 	group by u.id, u.name`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -512,7 +507,7 @@ describe('postgres-json-functions', () => {
 	FROM users u
 	INNER JOIN posts p on p.fk_user = u.id
 	group by u.id, u.name`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -571,7 +566,7 @@ describe('postgres-json-functions', () => {
 	FROM users u
 	LEFT JOIN posts p on p.fk_user = u.id
 	group by u.id, u.name`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -638,7 +633,7 @@ describe('postgres-json-functions', () => {
 	FROM users u
 	LEFT JOIN posts p on p.fk_user = u.id
 	group by u.id, u.name`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -707,7 +702,7 @@ describe('postgres-json-functions', () => {
 			)
 		) 
 		FROM mytable1 t`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -786,7 +781,7 @@ describe('postgres-json-functions', () => {
 				LIMIT 1
 			) AS latest_order
 			FROM users u`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -857,7 +852,7 @@ describe('postgres-json-functions', () => {
 			  LEFT JOIN posts p ON u.id = p.fk_user
 			  GROUP BY u.id, u.name
 			) t`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -933,7 +928,7 @@ describe('postgres-json-functions', () => {
 					to_jsonb(null::text) as col10,
 					to_json(array[null]) as col11,
 					to_jsonb(array[null]) as col12`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -1027,7 +1022,7 @@ describe('postgres-json-functions', () => {
 					json_agg(null::text) as col3,
 					jsonb_agg(null::text) as col4
 					`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -1102,7 +1097,7 @@ describe('postgres-json-functions', () => {
 
 	it(`SELECT json_agg(json_build_object('key', 'value'))`, async () => {
 		const sql = `SELECT json_agg(json_build_object('key', 'value')) as result`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -1147,7 +1142,7 @@ describe('postgres-json-functions', () => {
 						(1, 'a'),
 						(2, 'b')
 				) AS t(id, name)`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -1207,7 +1202,7 @@ describe('postgres-json-functions', () => {
 					) AS sum
 				FROM mytable1 m
 				GROUP BY id`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -1309,7 +1304,7 @@ describe('postgres-json-functions', () => {
 						'sum_float8', SUM(t.float8_column)
 					) AS result
 				FROM all_types t`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -1367,7 +1362,7 @@ describe('postgres-json-functions', () => {
 					) AS result
 				FROM mytable1 m
 				GROUP BY id`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -1408,7 +1403,7 @@ describe('postgres-json-functions', () => {
 					) AS sum
 				FROM mytable1 m
 				GROUP BY id`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -1464,7 +1459,7 @@ describe('postgres-json-functions', () => {
 					) AS sum
 				FROM mytable1 m
 				GROUP BY id`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -1504,7 +1499,7 @@ describe('postgres-json-functions', () => {
 							ELSE json_build_object('c', 3) END
 				) AS result
 				FROM mytable1 m`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -1538,7 +1533,7 @@ describe('postgres-json-functions', () => {
 
 		const sql = `
 				SELECT json_build_array('a', 1, 2, 3, 'b') as result`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -1572,7 +1567,7 @@ describe('postgres-json-functions', () => {
 
 		const sql = `
 				SELECT json_build_array(id, name, descr) as result FROM mytable2`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -1604,7 +1599,7 @@ describe('postgres-json-functions', () => {
 
 		const sql = `
 				SELECT json_build_array(json_build_array('a', 1), json_build_array('b', 2)) as result`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -1647,7 +1642,7 @@ describe('postgres-json-functions', () => {
 
 		const sql = `
 				SELECT json_build_array(json_build_array('a', null), json_build_array('b', null)) as result`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -1689,7 +1684,7 @@ describe('postgres-json-functions', () => {
 	it(`SELECT row_to_json(mytable1) from mytable1`, async () => {
 
 		const sql = 'SELECT row_to_json(mytable1) as result from mytable1';
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -1734,7 +1729,7 @@ describe('postgres-json-functions', () => {
 	it('SELECT row_to_json(t) as result from mytable1 t', async () => {
 
 		const sql = 'SELECT row_to_json(t) as result from mytable1 t';
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -1779,7 +1774,7 @@ describe('postgres-json-functions', () => {
 	it(`select row_to_json(row(1, 2, 'b')) as result`, async () => {
 
 		const sql = `select row_to_json(row(1, 2, 'b')) as result`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -1837,7 +1832,7 @@ describe('postgres-json-functions', () => {
 	FROM users u
 	LEFT JOIN posts p ON u.id = p.fk_user
 	GROUP BY u.id`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -1927,7 +1922,7 @@ describe('postgres-json-functions', () => {
 	  LEFT JOIN addresses a2 ON c.secondaryAddress = a2.id
 	  LEFT JOIN mytable1 t1 ON c.secondaryAddress = t1.id
 			`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -1993,7 +1988,7 @@ describe('postgres-json-functions', () => {
 	it(`SELECT json_object_agg(id, value) as result from mytable1`, async () => {
 
 		const sql = 'SELECT json_object_agg(id, value) as result from mytable1';
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -2024,7 +2019,7 @@ describe('postgres-json-functions', () => {
 	it(`SELECT json_build_object('positive_number_column', positive_number_column) as result FROM all_types`, async () => {
 
 		const sql = `SELECT json_build_object('positive_number_column', positive_number_column) as result FROM all_types`;
-		const actual = await describeQuery(client, sql, []);
+		const actual = await describeQuery(client, sql, [], schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
