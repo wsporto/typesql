@@ -128,7 +128,7 @@ async function compile(watch: boolean, config: TypeSqlConfig) {
 	const includeCrudTables = config.includeCrudTables || [];
 	const databaseClient = databaseClientResult.value;
 
-	const dbSchema = await loadSchemaInfo(databaseClient);
+	const dbSchema = await loadSchemaInfo(databaseClient, config.schemas);
 	if (dbSchema.isErr()) {
 		console.error(`Error: ${dbSchema.error.description}.`);
 		return;
@@ -232,7 +232,7 @@ function generateSql(dialect: TypeSqlDialect, stmtType: SqlGenOption, tableName:
 main().then(() => console.log('finished!'));
 
 function _filterTables(schemaInfo: SchemaInfo | PostgresSchemaInfo, includeCrudTables: string[]) {
-	const allTables = schemaInfo.columns.map(col => ({ schema: col.schema, table: col.schema } satisfies Table));
+	const allTables = schemaInfo.columns.map(col => ({ schema: col.schema, table: col.table } satisfies Table));
 	const uniqueTables = uniqBy(allTables, (item) => `${item.schema}:${item.table}`);
 	const filteredTables = filterTables(uniqueTables, includeCrudTables);
 	return filteredTables;
