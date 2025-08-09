@@ -2212,8 +2212,8 @@ function traverseInsertstmt(insertstmt: InsertstmtContext, dbSchema: PostgresCol
 function traverseDeletestmt(deleteStmt: DeletestmtContext, dbSchema: PostgresColumnSchema[], traverseResult: TraverseResult): PostgresTraverseResult {
 
 	const relation_expr = deleteStmt.relation_expr_opt_alias().relation_expr();
-	const tableName = relation_expr.getText();
-	const deleteColumns = dbSchema.filter(col => col.table.toLowerCase() === tableName.toLowerCase());
+	const tableName = splitName(relation_expr.getText());
+	const deleteColumns = filterSchemaColumns(dbSchema, tableName);
 
 	const paramIsListResult = getInParameterList(deleteStmt);
 

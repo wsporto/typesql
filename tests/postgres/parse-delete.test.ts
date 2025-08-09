@@ -181,4 +181,46 @@ describe('postgres-parse-delete', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('DELETE FROM schema1.users WHERE id = :id RETURNING id, username, schema1_field1', async () => {
+		const sql = 'DELETE FROM schema1.users WHERE id = $1 RETURNING id, username, schema1_field1';
+		const actual = await describeQuery(client, sql, ['id'], schemaInfo);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Delete',
+			multipleRowsResult: false,
+			returning: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'users'
+				},
+				{
+					name: 'username',
+					type: 'text',
+					notNull: true,
+					table: 'users'
+				},
+				{
+					name: 'schema1_field1',
+					type: `enum('str1','str2')`,
+					notNull: true,
+					table: 'users'
+				}
+			],
+			parameters: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });
