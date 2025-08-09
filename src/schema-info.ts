@@ -80,7 +80,7 @@ function _loadPostgresSchemaInfo(client: Sql, schemas: string[] | null): ResultA
 	const schemaResult = loadPostgresDbSchema(client, schemas);
 	const foreignKeysResult = loadPostgresForeignKeys(client);
 	const enumTypesResult = loadPostgresEnumsMap(client);
-	const userFunctionsResult = loadPostgresUserFunctions(client);
+	const userFunctionsResult = loadPostgresUserFunctions(client, schemas);
 	const checkConstraintsResult = loadPostgresCheckConstraints(client);
 	const schemaInfo = ResultAsync.combine([schemaResult, foreignKeysResult, enumTypesResult, userFunctionsResult, checkConstraintsResult])
 		.map(([schema, foreignKeys, enumTypes, userFunctions, checkConstraints]) => {

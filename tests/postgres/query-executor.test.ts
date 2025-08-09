@@ -103,7 +103,7 @@ describe('postgres-query-executor', () => {
 		assert.deepStrictEqual(result.value, checkConstraints);
 	})
 
-	it('loadCheckConstraints', async () => {
+	it('loadUserFunctions', async () => {
 		const result = await loadUserFunctions(sql);
 
 		if (result.isErr()) {

@@ -12,41 +12,38 @@ export function loadDbSchema(sql: Sql, schemas: string[] | null = null): ResultA
 	return ResultAsync.fromThrowable(
 		async () => {
 			const result = await sql`
-			SELECT 
+			SELECT
 				t.table_schema,
 				t.table_name,
 				col.column_name,
-				CASE WHEN ty.typtype = 'e' then 'enum()' ELSE ty.typname END as type,
+				CASE WHEN ty.typtype = 'e' THEN 'enum()' ELSE ty.typname END AS type,
 				col.is_nullable,
-				CASE 
-					WHEN con.contype = 'p' THEN 'PRI'  -- Primary key
-					WHEN con.contype = 'u' THEN 'UNI'  -- Unique constraint
-					ELSE ''  -- Otherwise, empty string
-    			END AS column_key,
-				CASE
-					WHEN (
-						-- Check if the column is of type SERIAL
-						col.column_default LIKE 'nextval%'
-						OR 
-						-- Check if the column is GENERATED ALWAYS AS IDENTITY
-						col.is_identity = 'YES'
-					) THEN true
-					ELSE false
-				END AS autoincrement,
+				COALESCE(agg.column_key, '') AS column_key,
+				COALESCE(
+				(col.column_default LIKE 'nextval%' OR col.is_identity = 'YES'), false) AS autoincrement,
 				col.column_default
-			FROM 
-				information_schema.tables t
-			JOIN 
-				pg_class c ON c.relname = t.table_name
-			JOIN 
-				information_schema.columns col
-				ON t.table_name = col.table_name 
-				AND t.table_schema = col.table_schema
-			JOIN
-				pg_catalog.pg_type ty on ty.typname = col.udt_name
-			LEFT JOIN 
-			    pg_constraint con ON con.conrelid = c.oid
-			    AND col.ordinal_position = ANY (con.conkey)
+				FROM information_schema.tables t
+				JOIN pg_class c ON c.relname = t.table_name AND c.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = t.table_schema)
+				JOIN information_schema.columns col ON col.table_name = t.table_name AND col.table_schema = t.table_schema
+				JOIN pg_type ty ON ty.typname = col.udt_name
+				LEFT JOIN (
+				SELECT
+					con.conrelid AS conrelid,
+					att.attname AS column_name,
+					MAX(
+					CASE
+						WHEN con.contype = 'p' THEN 'PRI'
+						WHEN con.contype = 'u' THEN 'UNI'
+						ELSE ''
+					END
+					) AS column_key
+				FROM pg_constraint con
+				JOIN unnest(con.conkey) AS colnum ON true
+				JOIN pg_attribute att ON att.attrelid = con.conrelid AND att.attnum = colnum
+				WHERE con.contype IN ('p','u')
+				GROUP BY con.conrelid, att.attname
+				) AS agg
+				ON agg.conrelid = c.oid AND agg.column_name = col.column_name
 			WHERE 1 = 1
 				-- t.table_type = 'BASE TABLE'  -- Only regular tables, excluding views
 				AND (
@@ -218,14 +215,14 @@ export function loadForeignKeys(sql: Sql): ResultAsync<ForeignKeyInfo[], TypeSql
 	)();
 }
 
-export function loadUserFunctions(sql: Sql): ResultAsync<UserFunctionSchema[], TypeSqlError> {
+export function loadUserFunctions(sql: Sql, schemas: string[] | null = null): ResultAsync<UserFunctionSchema[], TypeSqlError> {
 	return ResultAsync.fromThrowable(() =>
-		_loadUserFunctions(sql),
+		_loadUserFunctions(sql, schemas),
 		err => convertPostgresErrorToTypeSQLError(err)
 	)();
 }
 
-function _loadUserFunctions(sql: Sql): Promise<UserFunctionSchema[]> {
+function _loadUserFunctions(sql: Sql, schemas: string[] | null): Promise<UserFunctionSchema[]> {
 	return sql<UserFunctionSchema[]>`SELECT 
 			n.nspname AS schema,
 			p.proname AS function_name,
@@ -237,7 +234,11 @@ function _loadUserFunctions(sql: Sql): Promise<UserFunctionSchema[]> {
 		FROM pg_proc p
 		JOIN pg_namespace n ON n.oid = p.pronamespace
 		JOIN pg_language l ON l.oid = p.prolang
-		WHERE n.nspname NOT IN ('pg_catalog', 'information_schema')  -- exclude system functions
+		WHERE (
+			(${schemas}::text[] IS NULL AND n.nspname NOT IN ('information_schema', 'pg_catalog', 'pg_toast')) -- exclude system functions
+			OR
+			(${schemas}::text[] IS NOT NULL AND n.nspname = ANY(${schemas}::text[]))
+		)
 		AND p.prokind = 'f'  -- 'f' = function, 'p' = procedure, 'a' = aggregate
 		-- and l.lanname = 'sql'
 		ORDER BY n.nspname, p.proname`;
