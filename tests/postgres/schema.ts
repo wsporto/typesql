@@ -876,6 +876,43 @@ export const schema: PostgresColumnSchema[] = [
 		is_nullable: true,
 		column_key: "",
 		autoincrement: false
+	},
+	{
+		schema: "schema1",
+		table: "users",
+		column_name: "id",
+		type: 'int4',
+		is_nullable: false,
+		column_key: "PRI",
+		autoincrement: true,
+		column_default: true
+	},
+	{
+		schema: "schema1",
+		table: "users",
+		column_name: "username",
+		type: 'text',
+		is_nullable: false,
+		column_key: "",
+		autoincrement: false
+	},
+	{
+		schema: "schema1",
+		table: "users",
+		column_name: "password",
+		type: 'text',
+		is_nullable: true,
+		column_key: "",
+		autoincrement: false
+	},
+	{
+		schema: "schema1",
+		table: "users",
+		column_name: "schema1_field1",
+		type: 'text',
+		is_nullable: false,
+		column_key: "",
+		autoincrement: false
 	}
 ]
 
@@ -967,6 +1004,7 @@ export const checkConstraints: CheckConstraintResult = {
 	'[public][enum_types][column1]': `enum('A','B','C')`,
 	'[public][enum_types][column2]': `enum(1,2)`,
 	'[public][enum_types][column5]': `enum('D','E')`,
+	'[schema1][users][schema1_field1]': `enum('str1','str2')`
 }
 
 export const userFunctions: UserFunctionSchema[] = [
@@ -1099,6 +1137,34 @@ END;
 `,
 		language: "plpgsql",
 	},
+	{
+		schema: "schema2",
+		function_name: "get_user",
+		arguments: "user_id integer",
+		return_type: "schema1.users",
+		definition: `
+  SELECT * from schema1.users where id = user_id
+`,
+		language: "sql",
+	},
+	{
+		schema: "schema2",
+		function_name: "get_user_or_throw",
+		arguments: "user_id integer",
+		return_type: "schema1.users",
+		definition: `
+DECLARE
+  u schema1.users;
+BEGIN
+  SELECT * INTO u FROM schema1.users WHERE id = user_id;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'User with id % not found', user_id;
+  END IF;
+  RETURN u;
+END;
+`,
+		language: "plpgsql",
+	}
 ]
 
 export function createSchemaInfo(): PostgresSchemaInfo {

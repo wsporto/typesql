@@ -533,4 +533,33 @@ describe('postgres-parse-update', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('UPDATE schema1.users SET schema1_field1 = $1 WHERE id = $2', async () => {
+		const sql = 'UPDATE schema1.users SET schema1_field1 = $1 WHERE id = $2';
+		const actual = await describeQuery(client, sql, ['schema1_field1', 'id'], schemaInfo);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Update',
+			multipleRowsResult: false,
+			columns: [],
+			data: [
+				{
+					name: 'schema1_field1',
+					type: `enum('str1','str2')`,
+					notNull: true
+				}
+			],
+			parameters: [
+				{
+					name: 'id',
+					type: `int4`,
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });

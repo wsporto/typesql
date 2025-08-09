@@ -11,6 +11,100 @@ describe('postgres-user-functions', () => {
 		await client.end();
 	});
 
+	it('SELECT * FROM schema2.get_user(:id)', async () => {
+		const sql = 'SELECT * FROM schema2.get_user($1)';
+		const actual = await describeQuery(client, sql, ['id'], schemaInfo);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'get_user'
+				},
+				{
+					name: 'username',
+					type: 'text',
+					notNull: true,
+					table: 'get_user'
+				},
+				{
+					name: 'password',
+					type: 'text',
+					notNull: false,
+					table: 'get_user'
+				},
+				{
+					name: 'schema1_field1',
+					type: 'text',
+					notNull: true,
+					table: 'get_user'
+				}
+			],
+			parameters: [
+				{
+					name: 'id',
+					notNull: false, //todo: should be notNull: true
+					type: 'int4'
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
+	it('SELECT u.* FROM schema2.get_user($1) u', async () => {
+		const sql = 'SELECT u.* FROM schema2.get_user($1) u';
+		const actual = await describeQuery(client, sql, ['id'], schemaInfo);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'u'
+				},
+				{
+					name: 'username',
+					type: 'text',
+					notNull: true,
+					table: 'u'
+				},
+				{
+					name: 'password',
+					type: 'text',
+					notNull: false,
+					table: 'u'
+				},
+				{
+					name: 'schema1_field1',
+					type: 'text',
+					notNull: true,
+					table: 'u'
+				}
+			],
+			parameters: [
+				{
+					name: 'id',
+					notNull: false, //todo: should be notNull: true
+					type: 'int4'
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	})
+
 	it(`SELECT * FROM get_users_with_posts()`, async () => {
 		const sql = `SELECT * FROM get_users_with_posts()`;
 		const actual = await describeQuery(client, sql, [], schemaInfo);
@@ -178,13 +272,13 @@ describe('postgres-user-functions', () => {
 					name: 'id',
 					type: 'int4',
 					notNull: false, //LOOSE nullability information
-					table: ''
+					table: 'get_users_with_posts_plpgsql'
 				},
 				{
 					name: 'posts',
 					type: 'json',
 					notNull: false,
-					table: ''
+					table: 'get_users_with_posts_plpgsql'
 				}
 			],
 			parameters: []
@@ -300,13 +394,13 @@ describe('postgres-user-functions', () => {
 					name: 'id',
 					type: 'int4',
 					notNull: false, //loose nullability information
-					table: ''
+					table: 'get_mytable_plpgsql'
 				},
 				{
 					name: 'value',
 					type: 'int4',
 					notNull: false,
-					table: ''
+					table: 'get_mytable_plpgsql'
 				}
 			],
 			parameters: []
