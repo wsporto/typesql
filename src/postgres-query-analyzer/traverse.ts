@@ -2164,8 +2164,8 @@ function traverseInsertstmt(insertstmt: InsertstmtContext, dbSchema: PostgresCol
 		parameters: []
 	}
 	const insert_target = insertstmt.insert_target();
-	const tableName = insert_target.getText();
-	const insertColumns = dbSchema.filter(col => col.table.toLowerCase() === tableName.toLowerCase());
+	const tableName = splitName(insert_target.getText());
+	const insertColumns = filterSchemaColumns(dbSchema, tableName);
 
 	const insert_rest = insertstmt.insert_rest();
 	const insertColumnsList = insert_rest.insert_column_list()
@@ -2252,13 +2252,17 @@ function addConstraintIfNotNull(checkConstraint: PostgresEnumType | undefined): 
 	return checkConstraint !== undefined ? { checkConstraint } : undefined;
 }
 
+function filterSchemaColumns(dbSchema: PostgresColumnSchema[], tableName: FieldName): PostgresColumnSchema[] {
+	return dbSchema.filter(col => col.table.toLowerCase() === tableName.name.toLowerCase()
+		&& (tableName.prefix === '' || col.schema.toLowerCase() === tableName.prefix.toLowerCase()))
+}
+
 function traverseUpdatestmt(updatestmt: UpdatestmtContext, traverseContext: TraverseContext, traverseResult: TraverseResult): PostgresTraverseResult {
 
 	const relation_expr_opt_alias = updatestmt.relation_expr_opt_alias();
 	const tableName = splitName(relation_expr_opt_alias.relation_expr().getText());
 	const tableAlias = relation_expr_opt_alias.colid()?.getText() || '';
-	const updateColumns: NotNullInfo[] = traverseContext.dbSchema.filter(col => col.table.toLowerCase() === tableName.name.toLowerCase()
-		&& (tableName.prefix === '' || col.schema.toLowerCase() === tableName.prefix.toLowerCase()))
+	const updateColumns: NotNullInfo[] = filterSchemaColumns(traverseContext.dbSchema, tableName)
 		.map(col => ({ ...col, table: tableAlias || col.table } satisfies NotNullInfo));
 	const context: TraverseContext = {
 		...traverseContext,

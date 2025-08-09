@@ -705,4 +705,31 @@ describe('postgres-parse-insert', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('INSERT INTO schema1.users (username, schema1_field1) VALUES (:username, :schema1_field1)', async () => {
+		const sql = 'INSERT INTO schema1.users (username, schema1_field1) VALUES ($1, $2)';
+		const actual = await describeQuery(client, sql, ['username', 'schema1_field1'], schemaInfo);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Insert',
+			multipleRowsResult: false,
+			columns: [],
+			parameters: [
+				{
+					name: 'username',
+					type: `text`,
+					notNull: true
+				},
+				{
+					name: 'schema1_field1',
+					type: `text`,
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });
