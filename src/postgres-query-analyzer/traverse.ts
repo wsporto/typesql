@@ -2255,9 +2255,10 @@ function addConstraintIfNotNull(checkConstraint: PostgresEnumType | undefined): 
 function traverseUpdatestmt(updatestmt: UpdatestmtContext, traverseContext: TraverseContext, traverseResult: TraverseResult): PostgresTraverseResult {
 
 	const relation_expr_opt_alias = updatestmt.relation_expr_opt_alias();
-	const tableName = relation_expr_opt_alias.relation_expr().getText();
+	const tableName = splitName(relation_expr_opt_alias.relation_expr().getText());
 	const tableAlias = relation_expr_opt_alias.colid()?.getText() || '';
-	const updateColumns: NotNullInfo[] = traverseContext.dbSchema.filter(col => col.table.toLowerCase() === tableName.toLowerCase())
+	const updateColumns: NotNullInfo[] = traverseContext.dbSchema.filter(col => col.table.toLowerCase() === tableName.name.toLowerCase()
+		&& (tableName.prefix === '' || col.schema.toLowerCase() === tableName.prefix.toLowerCase()))
 		.map(col => ({ ...col, table: tableAlias || col.table } satisfies NotNullInfo));
 	const context: TraverseContext = {
 		...traverseContext,
