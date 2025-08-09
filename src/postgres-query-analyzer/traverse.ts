@@ -224,11 +224,13 @@ function traverse_select_no_parens(select_no_parens: Select_no_parensContext, co
 	const select_limit = select_no_parens.select_limit();
 	if (select_limit) {
 		const numParamsBefore = traverseResult.parameters.length;
-		const limit_clause = select_limit.limit_clause();
-		const limit_a_expr = limit_clause.select_limit_value().a_expr();
-		traverse_a_expr(limit_a_expr, context, traverseResult);
 		let fragment = '';
+		const limit_clause = select_limit.limit_clause();
 		if (limit_clause) {
+			const limit_a_expr = limit_clause.select_limit_value()?.a_expr();
+			if (limit_a_expr) {
+				traverse_a_expr(limit_a_expr, context, traverseResult);
+			}
 			if (context.collectDynamicQueryInfo) {
 				fragment += extractOriginalSql(limit_clause);
 			}
