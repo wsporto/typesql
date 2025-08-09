@@ -1516,4 +1516,28 @@ describe('postgres-select-single-table', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('SELECT id FROM mytable1 ORDER BY id DESC FETCH FIRST 10 ROWS ONLY', async () => {
+		const sql = 'SELECT id FROM mytable1 ORDER BY id DESC FETCH FIRST 10 ROWS ONLY';
+
+		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'mytable1'
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });
