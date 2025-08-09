@@ -1932,6 +1932,13 @@ export type SetofReturnType = {
 	table: string;
 };
 
+export type TableNameReturnType = {
+	kind: 'table_name';
+	table: string;
+}
+
+export type FunctionReturnType = TableReturnType | SetofReturnType | TableNameReturnType;
+
 function traverse_func_table(func_table: Func_tableContext, context: TraverseContext, traverseResult: TraverseResult): FromResult {
 	const func_expr_windowless = func_table.func_expr_windowless();
 	if (func_expr_windowless) {
@@ -1940,8 +1947,6 @@ function traverse_func_table(func_table: Func_tableContext, context: TraverseCon
 	}
 	throw Error('Stmt not supported: ' + func_table.getText());
 }
-
-export type FunctionReturnType = TableReturnType | SetofReturnType;
 
 export function parseReturnType(returnType: string): FunctionReturnType {
 	const trimmed = returnType.trim();
@@ -1970,32 +1975,81 @@ export function parseReturnType(returnType: string): FunctionReturnType {
 	if (setofMatch) {
 		return { kind: 'setof', table: setofMatch[1] };
 	}
+	else {
+		return { kind: 'table_name', table: trimmed }
+	}
 
 	throw new Error(`Unsupported return type format: ${returnType}`);
+}
+
+function handleFunctionReturn(dbSchema: PostgresColumnSchema[], returnType: FunctionReturnType): FromResult {
+	switch (returnType.kind) {
+		case 'table':
+			const columns = handleTableReturnType(returnType);
+			return {
+				columns,
+				singleRow: false
+			}
+		case 'setof':
+		case 'table_name':
+			const tableName = splitName(returnType.table);
+			const setOfColumns = dbSchema.filter(col => col.table.toLowerCase() === tableName.name && tableName.prefix === '' || col.schema === tableName.prefix);
+			return {
+				columns: setOfColumns,
+				singleRow: false
+			}
+	}
+}
+
+function handleTableReturnType(returnType: TableReturnType) {
+	const columns = returnType.columns.map(col => {
+		const columnInfo: NotNullInfo = {
+			column_name: col.name,
+			type: col.type as PostgresSimpleType,
+			is_nullable: true,
+			table: '',
+			schema: ''
+		}
+		return columnInfo;
+	});
+	return columns;
+}
+
+type ArgumentType = {
+	name: string;
+	type: PostgresSimpleType;
+};
+
+function parseArgumentList(argString: string): ArgumentType[] {
+	return argString
+		.split(',')
+		.map(arg => arg.trim())
+		.filter(arg => arg.length > 0)
+		.map(arg => {
+			const [name, ...typeParts] = arg.split(/\s+/);
+			return {
+				name,
+				type: typeParts.join(' ') as PostgresSimpleType  // Handles multi-word types like "character varying"
+			};
+		});
 }
 
 function traverse_func_expr_windowless(func_expr_windowless: Func_expr_windowlessContext, context: TraverseContext, traverseResult: TraverseResult): FromResult {
 	const func_application = func_expr_windowless.func_application();
 	if (func_application) {
-		const func_name = func_application.func_name().getText().toLowerCase();
-		const funcSchema = context.userFunctions.find(func => func.function_name.toLowerCase() === func_name);
+		const func_name = splitName(func_application.func_name().getText().toLowerCase());
+		const funcSchema = context.userFunctions.find(func => func.function_name.toLowerCase() === func_name.name && (func_name.prefix === '' || func_name.prefix === func.schema));
 		if (funcSchema) {
 			const definition = funcSchema.definition;
 			const returnType = parseReturnType(funcSchema.return_type);
-			const functionColumns = returnType.kind === 'table' ? returnType.columns.map(col => {
-				const columnInfo: NotNullInfo = {
-					column_name: col.name,
-					type: col.type as PostgresSimpleType,
-					is_nullable: true,
-					table: '',
-					schema: ''
-				}
-				return columnInfo;
-			}) : context.dbSchema.filter(col => col.table.toLowerCase() === returnType.table);
+			const argList = parseArgumentList(funcSchema.arguments);
+			const functionResult = handleFunctionReturn(context.dbSchema, returnType);
 			if (funcSchema.language.toLowerCase() === 'sql') {
 				const parser = parseSql(definition);
 				const selectstmt = parser.stmt().selectstmt();
-				const { columns, multipleRowsResult } = traverseSelectstmt(selectstmt, context, traverseResult);
+				const params: NotNullInfo[] = argList.map(arg => ({ column_name: arg.name, type: arg.type, is_nullable: false, schema: funcSchema.schema, table: '$' } satisfies NotNullInfo));
+				const newFromColumns = params.concat(context.fromColumns);
+				const { columns, multipleRowsResult } = traverseSelectstmt(selectstmt, { ...context, fromColumns: newFromColumns }, traverseResult);
 				return {
 					columns: columns.map((c) => ({ ...c, table: funcSchema.function_name } satisfies NotNullInfo)),
 					singleRow: !multipleRowsResult
@@ -2003,9 +2057,9 @@ function traverse_func_expr_windowless(func_expr_windowless: Func_expr_windowles
 			}
 			else {
 				return {
-					columns: functionColumns,
+					columns: functionResult.columns.map((c) => ({ ...c, table: funcSchema.function_name, schema: funcSchema.schema } satisfies NotNullInfo)),
 					singleRow: false
-				};
+				}
 			}
 
 		}
