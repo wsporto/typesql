@@ -324,7 +324,7 @@ function traverse_simple_select_pramary(simple_select_pramary: Simple_select_pra
 	if (from_clause) {
 		const where_clause = simple_select_pramary.where_clause();
 		fromResult = traverse_from_clause(from_clause, context, traverseResult);
-		fromResult.columns = where_clause != null ? fromResult.columns.map(field => checkIsNullable(where_clause, field)) : fromResult.columns;
+		fromResult.columns = where_clause != null ? fromResult.columns.map(field => ({ ...field, is_nullable: !checkIsNotNull(where_clause, field, fromResult.columns) })) : fromResult.columns;
 	}
 	const values_clause = simple_select_pramary.values_clause();
 	if (values_clause) {
@@ -834,10 +834,17 @@ function traverse_expr_typecast(a_expr_typecast: A_expr_typecastContext, context
 function traverseColumnRef(columnref: ColumnrefContext, fromColumns: NotNullInfo[]): NotNullInfo {
 
 	const fieldName = getFieldName(columnref);
-	const col = findColumn(fieldName, fromColumns);
-	return {
-		...col, is_nullable: col.is_nullable
+	const col = findColumnOrNull(fieldName, fromColumns);
+	if (col != null) {
+		return {
+			...col, is_nullable: col.is_nullable
+		}
 	}
+	const record = findRecordOrNull(fieldName, fromColumns);
+	if (record != null) {
+		return record
+	}
+	throw Error('Column not found: ' + fieldNameToString(fieldName));
 }
 
 function getFieldName(columnref: ColumnrefContext) {
@@ -1596,17 +1603,40 @@ function findColumnOrNull(fieldName: FieldName, fromColumns: NotNullInfo[]) {
 	return col;
 }
 
+function findRecordOrNull(fieldName: FieldName, fromColumns: NotNullInfo[]): NotNullInfo | null {
+	const table = fromColumns.filter(col => col.table.toLowerCase() === fieldName.name.toLowerCase()
+		|| fieldName.name === '*' && col.table === fieldName.prefix);
+	if (table.length === 0) {
+		return null;
+	}
+	return {
+		...table[0],
+		recordTypes: table
+	};
+}
+
 function fieldNameToString(fieldName: FieldName): string {
 	return fieldName.prefix !== '' ? `${fieldName.prefix}.${fieldName.name}` : fieldName.name;
 }
 
-function checkIsNullable(where_clause: Where_clauseContext, field: NotNullInfo): NotNullInfo {
-	const isNotNullResult = !field.is_nullable || isNotNull({ name: field.column_name, prefix: field.table }, where_clause);
-	const col: NotNullInfo = {
-		...field,
-		is_nullable: !isNotNullResult
+function checkIsNotNull(where_clause: Where_clauseContext, field: NotNullInfo, fromColumns: NotNullInfo[]): boolean {
+	if (!field.is_nullable) {
+		return true;
 	}
-	return col;
+	const fieldName = { name: field.column_name, prefix: field.table };
+	const isNotNullExpr = isNotNull(fieldName, where_clause);
+	if (!isNotNullExpr) {
+		return false; //notNull: true
+	}
+	const col = findColumnOrNull(fieldName, fromColumns);
+	if (col != null) {
+		return true; //notNull: true
+	}
+	const record = findRecordOrNull({ name: fieldName.prefix, prefix: '' }, fromColumns);
+	if (record != null) {
+		return true //notNull: true
+	}
+	return false;
 }
 
 function traverse_from_clause(from_clause: From_clauseContext, context: TraverseContext, traverseResult: TraverseResult): FromResult {
@@ -2111,6 +2141,9 @@ function get_indiretion_text(indirection: IndirectionContext): string {
 		if (colLabel) {
 			return get_colid_text(colLabel);
 		}
+		if (indirection_el_list[0].STAR()) {
+			return '*';
+		}
 	}
 	return '';
 }
@@ -2406,7 +2439,7 @@ function isNotNull_a_expr_in(a_expr_in: A_expr_inContext, field: FieldName): boo
 
 function isNotNull_a_expr_unary_not(a_expr_unary_not: A_expr_unary_notContext, field: FieldName): boolean {
 	const a_expr_isnull = a_expr_unary_not.a_expr_isnull();
-	if (a_expr_isnull) {
+	if (!a_expr_unary_not.NOT() && a_expr_isnull) {
 		return isNotNull_a_expr_isnull(a_expr_isnull, field);
 	}
 	return false;
@@ -2563,7 +2596,9 @@ function isNotNull_c_expr(c_expr: C_exprContext, field: FieldName): boolean {
 		const columnref = c_expr.columnref();
 		if (columnref) {
 			const fieldName = getFieldName(columnref);
-			return (fieldName.name === field.name && (fieldName.prefix === '' || field.prefix === fieldName.prefix));
+			const fieldIsNotNull = (fieldName.name === field.name && (fieldName.prefix === '' || field.prefix === fieldName.prefix));
+			const tableIsNotNull = (fieldName.name === '*' && fieldName.prefix === field.prefix) || fieldName.name === field.prefix;
+			return fieldIsNotNull || tableIsNotNull;
 		}
 		const aexprconst = c_expr.aexprconst();
 		if (aexprconst) {
