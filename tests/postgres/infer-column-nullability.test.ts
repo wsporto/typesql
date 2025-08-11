@@ -1942,4 +1942,149 @@ describe('Infer column nullability', () => {
 		const expected = [true];
 		assert.deepStrictEqual(actual.parametersNullability.map(param => param.isNotNull), expected);
 	});
+
+	it('SELECT * FROM mytable1 m1 WHERE not (value is not null)', async () => {
+		const sql = 'SELECT * FROM mytable1 m1 WHERE not (value is not null)';
+		const actual = parseSql(sql, dbSchema, {}, userDefinedFunctions);
+		const expected: PostgresTraverseResult = {
+			queryType: 'Select',
+			columns: [
+				{
+					column_name: 'id',
+					is_nullable: false,
+					table: 'm1',
+					schema: 'public',
+					type: 'int4'
+				},
+				{
+					column_name: 'value',
+					is_nullable: true,
+					table: 'm1',
+					schema: 'public',
+					type: 'int4'
+				}
+			],
+			multipleRowsResult: true,
+			parameterList: [],
+			parametersNullability: [],
+			limit: undefined
+		}
+		assert.deepStrictEqual(actual, expected);
+	});
+
+	it('SELECT * FROM mytable1 m1 WHERE m1 is not null', async () => {
+		const sql = 'SELECT * FROM mytable1 m1 WHERE m1 is not null';
+		const actual = parseSql(sql, dbSchema, {}, userDefinedFunctions);
+		const expected: PostgresTraverseResult = {
+			queryType: 'Select',
+			columns: [
+				{
+					column_name: 'id',
+					is_nullable: false,
+					table: 'm1',
+					schema: 'public',
+					type: 'int4'
+				},
+				{
+					column_name: 'value',
+					is_nullable: false,
+					table: 'm1',
+					schema: 'public',
+					type: 'int4'
+				}
+			],
+			multipleRowsResult: true,
+			parameterList: [],
+			parametersNullability: [],
+			limit: undefined
+		}
+		assert.deepStrictEqual(actual, expected);
+	});
+
+	it('SELECT * FROM mytable1 m1 WHERE m1 is null', async () => {
+		const sql = 'SELECT * FROM mytable1 m1 WHERE m1 is null';
+		const actual = parseSql(sql, dbSchema, {}, userDefinedFunctions);
+		const expected: PostgresTraverseResult = {
+			queryType: 'Select',
+			columns: [
+				{
+					column_name: 'id',
+					is_nullable: false,
+					table: 'm1',
+					schema: 'public',
+					type: 'int4'
+				},
+				{
+					column_name: 'value',
+					is_nullable: true,
+					table: 'm1',
+					schema: 'public',
+					type: 'int4'
+				}
+			],
+			multipleRowsResult: true,
+			parameterList: [],
+			parametersNullability: [],
+			limit: undefined
+		}
+		assert.deepStrictEqual(actual, expected);
+	});
+
+	it('SELECT * FROM mytable1 m1 WHERE not (m1 is null)', async () => {
+		const sql = 'SELECT * FROM mytable1 m1 WHERE not (m1 is null)';
+		const actual = parseSql(sql, dbSchema, {}, userDefinedFunctions);
+		const expected: PostgresTraverseResult = {
+			queryType: 'Select',
+			columns: [
+				{
+					column_name: 'id',
+					is_nullable: false,
+					table: 'm1',
+					schema: 'public',
+					type: 'int4'
+				},
+				{
+					column_name: 'value',
+					is_nullable: true,
+					table: 'm1',
+					schema: 'public',
+					type: 'int4'
+				}
+			],
+			multipleRowsResult: true,
+			parameterList: [],
+			parametersNullability: [],
+			limit: undefined
+		}
+		assert.deepStrictEqual(actual, expected);
+	});
+
+	it('SELECT * FROM mytable1 m1 WHERE not (m1 is null)', async () => {
+		const sql = 'SELECT * FROM mytable1 m1 WHERE not (m1 is not null)';
+		const actual = parseSql(sql, dbSchema, {}, userDefinedFunctions);
+		const expected: PostgresTraverseResult = {
+			queryType: 'Select',
+			columns: [
+				{
+					column_name: 'id',
+					is_nullable: false,
+					table: 'm1',
+					schema: 'public',
+					type: 'int4'
+				},
+				{
+					column_name: 'value',
+					is_nullable: true,
+					table: 'm1',
+					schema: 'public',
+					type: 'int4'
+				}
+			],
+			multipleRowsResult: true,
+			parameterList: [],
+			parametersNullability: [],
+			limit: undefined
+		}
+		assert.deepStrictEqual(actual, expected);
+	});
 });
