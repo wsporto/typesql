@@ -1604,7 +1604,8 @@ function findColumnOrNull(fieldName: FieldName, fromColumns: NotNullInfo[]) {
 }
 
 function findRecordOrNull(fieldName: FieldName, fromColumns: NotNullInfo[]): NotNullInfo | null {
-	const table = fromColumns.filter(col => col.table.toLowerCase() === fieldName.name.toLowerCase());
+	const table = fromColumns.filter(col => col.table.toLowerCase() === fieldName.name.toLowerCase()
+		|| fieldName.name === '*' && col.table === fieldName.prefix);
 	if (table.length === 0) {
 		return null;
 	}
@@ -2140,6 +2141,9 @@ function get_indiretion_text(indirection: IndirectionContext): string {
 		if (colLabel) {
 			return get_colid_text(colLabel);
 		}
+		if (indirection_el_list[0].STAR()) {
+			return '*';
+		}
 	}
 	return '';
 }
@@ -2593,7 +2597,7 @@ function isNotNull_c_expr(c_expr: C_exprContext, field: FieldName): boolean {
 		if (columnref) {
 			const fieldName = getFieldName(columnref);
 			const fieldIsNotNull = (fieldName.name === field.name && (fieldName.prefix === '' || field.prefix === fieldName.prefix));
-			const tableIsNotNull = fieldName.name === field.prefix;
+			const tableIsNotNull = (fieldName.name === '*' && fieldName.prefix === field.prefix) || fieldName.name === field.prefix;
 			return fieldIsNotNull || tableIsNotNull;
 		}
 		const aexprconst = c_expr.aexprconst();
