@@ -538,6 +538,29 @@ describe('postgres-parse-select-multiples-tables', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('parse a select with implicit lateral cross join', async () => {
+		const sql = 'SELECT name FROM mytable1, LATERAL ( SELECT name from mytable2 WHERE mytable2.id = mytable1.id) t';
+		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'name',
+					type: 'text',
+					notNull: false,
+					table: 't'
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	//not valid postgres query
 	it.skip('parse a query with extras parenteses', async () => {
 		const sql = `
