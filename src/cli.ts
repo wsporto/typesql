@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
+import dotenv from 'dotenv';
 import path, { parse } from 'node:path';
 import chokidar from 'chokidar';
 import yargs from 'yargs';
@@ -26,6 +27,10 @@ function parseArgs() {
 			type: 'string',
 			default: './typesql.json'
 		})
+		.option('env-file', {
+			describe: 'Path to the .env file to load',
+			type: 'string'
+		})
 		.command('init', 'generate config file', () => {
 			const config: TypeSqlConfig = {
 				databaseUri: 'mysql://root:password@localhost/mydb',
@@ -49,6 +54,15 @@ function parseArgs() {
 				});
 			},
 			(args) => {
+				const envFile = args.envFile;
+				if (envFile) {
+					if (fs.existsSync(envFile)) {
+						dotenv.config({ path: envFile, quiet: true });
+					} else {
+						console.warn(`Warning: .env file not found: ${envFile}`);
+					}
+				}
+
 				const config = loadConfig(args.config);
 				compile(args.watch, config);
 			}
