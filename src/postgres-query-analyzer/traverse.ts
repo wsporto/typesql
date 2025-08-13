@@ -1652,11 +1652,18 @@ function traverse_from_clause(from_clause: From_clauseContext, context: Traverse
 }
 
 function traverse_from_list(from_list: From_listContext, context: TraverseContext, traverseResult: TraverseResult): FromResult {
-	const fromListResult = from_list.table_ref_list().map(table_ref => traverse_table_ref(table_ref, context, traverseResult));
-	const columns = fromListResult.flatMap(tableRes => tableRes.columns);
+
+	const tableRefs = from_list.table_ref_list();
+	const columns: NotNullInfo[] = [];
+	let singleRow = false;
+	for (const table_ref of tableRefs) {
+		const result = traverse_table_ref(table_ref, { ...context, parentColumns: columns }, traverseResult);
+		columns.push(...result.columns);
+		singleRow = result.singleRow;
+	}
 	return {
 		columns: columns,
-		singleRow: fromListResult.length === 1 ? fromListResult[0].singleRow : false
+		singleRow: tableRefs.length === 1 ? singleRow : false
 	};
 }
 
