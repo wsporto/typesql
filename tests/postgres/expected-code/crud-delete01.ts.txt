@@ -6,7 +6,7 @@ export type DeleteFromMytable1Params = {
 
 export type DeleteFromMytable1Result = {
 	id: number;
-	value?: number;
+	value: number | null;
 }
 
 export async function deleteFromMytable1(client: pg.Client | pg.Pool | pg.PoolClient, params: DeleteFromMytable1Params): Promise<DeleteFromMytable1Result | null> {

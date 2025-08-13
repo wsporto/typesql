@@ -5,7 +5,7 @@ export type SelectJson02Result = {
 }
 
 export type SelectJson02SumType = {
-	total?: string;
+	total: string | null;
 	count: string;
 	coalesce: number;
 	nested: SelectJson02SumNestedType[];

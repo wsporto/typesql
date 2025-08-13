@@ -11,8 +11,8 @@ export type UpdateMytable2Params = {
 
 export type UpdateMytable2Result = {
 	id: number;
-	name?: string;
-	descr?: string;
+	name: string | null;
+	descr: string | null;
 }
 
 export async function updateMytable2(client: pg.Client | pg.Pool | pg.PoolClient, data: UpdateMytable2Data, params: UpdateMytable2Params): Promise<UpdateMytable2Result | null> {

@@ -2,7 +2,7 @@ import pg from 'pg';
 
 export type Select11Result = {
 	id: number;
-	role?: string;
+	role: string | null;
 }
 
 export async function select11(client: pg.Client | pg.Pool | pg.PoolClient): Promise<Select11Result[]> {

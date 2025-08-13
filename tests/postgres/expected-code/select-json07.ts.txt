@@ -3,7 +3,7 @@ import pg from 'pg';
 export type SelectJson07Result = {
 	user_id: number;
 	user_name: string;
-	jsonb_agg?: SelectJson07JsonbAggType[];
+	jsonb_agg: SelectJson07JsonbAggType[] | null;
 }
 
 export type SelectJson07JsonbAggType = {

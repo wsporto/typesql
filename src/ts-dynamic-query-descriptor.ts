@@ -20,7 +20,8 @@ function mapToResultColumn(r: TsFieldDescriptor): TsFieldDescriptor {
 	return {
 		name: r.name,
 		tsType: r.tsType,
-		notNull: false
+		notNull: false,
+		optional: true
 	};
 }
 

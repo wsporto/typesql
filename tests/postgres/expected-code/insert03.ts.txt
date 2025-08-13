@@ -6,7 +6,7 @@ export type Insert03Params = {
 
 export type Insert03Result = {
 	id: number;
-	value?: number;
+	value: number | null;
 }
 
 export async function insert03(client: pg.Client | pg.Pool | pg.PoolClient, params: Insert03Params): Promise<Insert03Result> {

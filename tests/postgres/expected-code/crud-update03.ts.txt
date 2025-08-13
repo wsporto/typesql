@@ -11,7 +11,7 @@ export type UpdateMytable3Params = {
 
 export type UpdateMytable3Result = {
 	id: number;
-	double_value?: number;
+	double_value: number | null;
 	name: string;
 }
 

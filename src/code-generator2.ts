@@ -356,13 +356,13 @@ function generateTsCode(
 			writer.write(`export type ${relationType} = `).block(() => {
 				const uniqueNameFields = renameInvalidNames(relation.fields.map((f) => f.name));
 				relation.fields.forEach((field, index) => {
-					const nullableOperator = field.notNull ? '' : ' | null';
-					writer.writeLine(`${uniqueNameFields[index]}: ${field.tsType}${nullableOperator};`);
+					const nullable = field.notNull ? '' : ' | null';
+					writer.writeLine(`${uniqueNameFields[index]}: ${field.tsType}${nullable};`);
 				});
 				relation.relations.forEach((field) => {
 					const nestedRelationType = generateRelationType(capitalizedName, field.tsType);
-					const nullableOperator = field.notNull ? '' : '?';
-					writer.writeLine(`${field.name}${nullableOperator}: ${nestedRelationType};`);
+					const nullable = field.notNull ? '' : ' | null';
+					writer.writeLine(`${field.name}: ${nestedRelationType}${nullable};`);
 				});
 			});
 		});
@@ -469,8 +469,9 @@ function writeParamsType(writer: CodeBlockWriter, paramsTypeName: string, params
 function writeResultType(writer: CodeBlockWriter, resultTypeName: string, columns: TsFieldDescriptor[]) {
 	writer.write(`export type ${resultTypeName} =`).block(() => {
 		columns.forEach((field) => {
-			const optionalOp = field.notNull ? '' : '?';
-			writer.writeLine(`${field.name}${optionalOp}: ${field.tsType};`);
+			const optionalOp = field.optional ? '?' : '';
+			const nullable = field.notNull ? '' : ' | null';
+			writer.writeLine(`${field.name}${optionalOp}: ${field.tsType}${nullable};`);
 		});
 	});
 }
@@ -485,16 +486,16 @@ function writeJsonTypes(writer: CodeBlockWriter, typeName: string, type: JsonObj
 	writer.write(`export type ${typeName}Type =`).block(() => {
 		type.properties.forEach((field) => {
 			if (isJsonObjType(field.type)) {
-				const optionalOp = field.type.notNull ? '' : '?';
+				const nullable = field.type.notNull ? '' : ' | null';
 				const jsonTypeName = createJsonType(typeName, field.key);
-				writer.writeLine(`${field.key}${optionalOp}: ${jsonTypeName}Type;`);
+				writer.writeLine(`${field.key}: ${jsonTypeName}Type${nullable};`);
 			} else if (isJsonArrayType(field.type)) {
 				const jsonParentName = createJsonType(typeName, field.key);
 				const jsonTypeName = createJsonArrayType(jsonParentName, field.type);
 				writer.writeLine(`${field.key}: ${jsonTypeName};`);
 			} else if (isJsonFieldType(field.type)) {
-				const optionalOp = field.type.notNull ? '' : '?';
-				writer.writeLine(`${field.key}${optionalOp}: ${mapColumnType(field.type.type, true)};`);
+				const nullable = field.type.notNull ? '' : ' | null';
+				writer.writeLine(`${field.key}: ${mapColumnType(field.type.type, true)}${nullable};`);
 			}
 		});
 	});
@@ -569,7 +570,8 @@ function mapColumnInfoToTsFieldDescriptor(capitalizedName: string, col: Postgres
 	const tsField: TsFieldDescriptor = {
 		name: col.name,
 		tsType: createTsType(typeName, col.type),
-		notNull: dynamicQuery ? false : col.notNull
+		optional: dynamicQuery ? true : false,
+		notNull: dynamicQuery ? true : col.notNull
 	}
 	return tsField;
 }
@@ -784,7 +786,7 @@ function getColumnsForQuery(capitalizedName: string, schemaDef: PostgresSchemaDe
 
 function toDriver(variableData: string, param: TsFieldDescriptor) {
 	if (param.tsType === 'Date') {
-		if (param.notNull) {
+		if (param.notNull && !param.optional) {
 			return `new Date(${variableData})`;
 		}
 		return `${variableData} != null ? new Date(${variableData}) : ${variableData}`;
@@ -839,7 +841,7 @@ export function generateCrud(queryType: CrudQueryType, tableName: string, dbSche
 		writeParamsType(writer, paramsTypeName, uniqueParams, false, '');
 	}
 	writer.blankLine();
-	const columns = allColumns.map(col => mapPostgresColumnSchemaToTsFieldDescriptor(col))
+	const columns = allColumns.map(col => ({ ...mapPostgresColumnSchemaToTsFieldDescriptor(col), optional: false }));
 	writeResultType(writer, resultTypeName, columns);
 	writer.blankLine();
 
