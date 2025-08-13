@@ -8,14 +8,14 @@ export type Nested02Result = {
 	id: number;
 	id_2: number;
 	address: string;
-	id_3?: number;
-	address_2?: string;
+	id_3: number | null;
+	address_2: string | null;
 }
 
 export type Nested02NestedC = {
 	id: number;
 	a1: Nested02NestedA1;
-	a2?: Nested02NestedA2;
+	a2: Nested02NestedA2 | null;
 }
 
 export type Nested02NestedA1 = {

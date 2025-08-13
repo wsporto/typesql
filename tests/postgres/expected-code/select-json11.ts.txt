@@ -6,8 +6,8 @@ export type SelectJson11Result = {
 
 export type SelectJson11JsonAggType = {
 	id: number;
-	value?: number;
-	subquery?: SelectJson11JsonAggSubqueryType;
+	value: number | null;
+	subquery: SelectJson11JsonAggSubqueryType | null;
 }
 
 export type SelectJson11JsonAggSubqueryType = {

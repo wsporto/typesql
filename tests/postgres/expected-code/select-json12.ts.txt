@@ -6,18 +6,18 @@ export type SelectJson12Result = {
 }
 
 export type SelectJson12JsonBuildObjectType = {
-	date_column?: string;
-	timestamp_column?: string;
-	timestamptz_column?: string;
-	bytea_column?: string;
+	date_column: string | null;
+	timestamp_column: string | null;
+	timestamptz_column: string | null;
+	bytea_column: string | null;
 	nested: SelectJson12JsonBuildObjectNestedType;
 }
 
 export type SelectJson12JsonBuildObjectNestedType = {
-	date_column?: string;
-	timestamp_column?: string;
-	timestamptz_column?: string;
-	bytea_column?: string;
+	date_column: string | null;
+	timestamp_column: string | null;
+	timestamptz_column: string | null;
+	bytea_column: string | null;
 }
 
 export async function selectJson12(client: pg.Client | pg.Pool | pg.PoolClient): Promise<SelectJson12Result[]> {

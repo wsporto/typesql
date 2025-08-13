@@ -6,7 +6,7 @@ export type SelectFromMytable1Params = {
 
 export type SelectFromMytable1Result = {
 	id: number;
-	value?: number;
+	value: number | null;
 }
 
 export async function selectFromMytable1(client: pg.Client | pg.Pool | pg.PoolClient, params: SelectFromMytable1Params): Promise<SelectFromMytable1Result | null> {
