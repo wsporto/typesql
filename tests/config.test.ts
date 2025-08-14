@@ -1,7 +1,7 @@
 import assert from 'node:assert';
 import path from 'path';
 import { TypeSqlConfig } from '../src/types';
-import { resolveConfig, resolveEnvVars } from '../src/load-config';
+import { resolveConfig, resolveEnvVars, resolveTsFilePath } from '../src/load-config';
 
 describe('resolveConfig', () => {
   const fakeConfigPath = '/project/src/sql/typesql.json';
@@ -156,5 +156,51 @@ describe('resolveEnvVars', () => {
     assert.strictEqual(warnCalled, true);
 
     console.warn = originalWarn;
+  });
+});
+
+describe('resolveTsFilePath', () => {
+  it('resolves path when outDir is not provided (defaults to sqlDir)', () => {
+    const sqlDir = path.resolve('/myapp/sql');
+    const sqlPath = path.resolve('/myapp/sql/users/get-user.sql');
+
+    const actual = resolveTsFilePath(sqlPath, sqlDir);
+    const expected = path.resolve('/myapp/sql/users/get-user.ts');
+
+    assert.strictEqual(actual, expected);
+  });
+
+  it('resolves path when outDir is provided and sqlPath is in subdirectory', () => {
+    const sqlDir = path.resolve('/myapp/sql');
+    const outDir = path.resolve('/myapp/generated');
+    const sqlPath = path.resolve('/myapp/sql/users/other/select-user.sql');
+
+    const actual = resolveTsFilePath(sqlPath, sqlDir, outDir);
+    const expected = path.resolve('/myapp/generated/users/other/select-user.ts');
+
+    assert.strictEqual(actual, expected);
+  });
+
+  it('resolves path when sqlPath is directly in sqlDir', () => {
+    const sqlDir = path.resolve('/myapp/sql');
+    const outDir = path.resolve('/myapp/out');
+    const sqlPath = path.resolve('/myapp/sql/find-user.sql');
+
+    const actual = resolveTsFilePath(sqlPath, sqlDir, outDir);
+    const expected = path.resolve('/myapp/out/find-user.ts');
+
+    assert.strictEqual(actual, expected);
+  });
+
+  it('resolves path correctly with relative sqlDir and outDir', () => {
+    const baseDir = process.cwd(); // simulate like configDir in your example
+    const sqlDir = './sql';
+    const outDir = './generated';
+    const sqlPath = path.join(baseDir, 'sql/users/get-user.sql');
+
+    const actual = resolveTsFilePath(sqlPath, path.resolve(baseDir, sqlDir), path.resolve(baseDir, outDir));
+    const expected = path.resolve(baseDir, 'generated/users/get-user.ts');
+
+    assert.strictEqual(actual, expected);
   });
 });

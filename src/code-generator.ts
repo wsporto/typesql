@@ -667,6 +667,8 @@ export function replaceOrderByParam(sql: string) {
 }
 
 export function writeFile(filePath: string, tsContent: string) {
+	const dir = path.dirname(filePath);
+	fs.mkdirSync(dir, { recursive: true });
 	fs.writeFileSync(filePath, tsContent);
 }
 
@@ -684,7 +686,7 @@ export function convertToCamelCaseName(name: string): CamelCaseName {
 	return camelCaseStr;
 }
 
-export async function generateTsFile(client: DatabaseClient, sqlFile: string, outDir: string, schemaInfo: SchemaInfo | PostgresSchemaInfo, isCrudFile: boolean) {
+export async function generateTsFile(client: DatabaseClient, sqlFile: string, tsFilePath: string, schemaInfo: SchemaInfo | PostgresSchemaInfo, isCrudFile: boolean) {
 	const sqlContent = fs.readFileSync(sqlFile, 'utf8');
 
 	if (sqlContent.trim() === '') {
@@ -703,7 +705,6 @@ export async function generateTsFile(client: DatabaseClient, sqlFile: string, ou
 		isCrudFile,
 	})
 
-	const tsFilePath = `${path.resolve(outDir, fileName)}.ts`;
 	if (isLeft(tsContentResult)) {
 		console.error('ERROR: ', tsContentResult.left.description);
 		console.error('at ', sqlFile);
