@@ -168,6 +168,7 @@ export type PgDielect = {
 export type TypeSqlConfig = {
 	databaseUri: string;
 	sqlDir: string;
+	outDir?: string;
 	client: TypeSqlDialect;
 	authToken?: string;
 	attach?: string[];

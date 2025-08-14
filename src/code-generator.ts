@@ -684,7 +684,7 @@ export function convertToCamelCaseName(name: string): CamelCaseName {
 	return camelCaseStr;
 }
 
-export async function generateTsFile(client: DatabaseClient, sqlFile: string, schemaInfo: SchemaInfo | PostgresSchemaInfo, isCrudFile: boolean) {
+export async function generateTsFile(client: DatabaseClient, sqlFile: string, outDir: string, schemaInfo: SchemaInfo | PostgresSchemaInfo, isCrudFile: boolean) {
 	const sqlContent = fs.readFileSync(sqlFile, 'utf8');
 
 	if (sqlContent.trim() === '') {
@@ -692,7 +692,7 @@ export async function generateTsFile(client: DatabaseClient, sqlFile: string, sc
 		return;
 	}
 
-	const { name: fileName, dir: dirPath } = parse(sqlFile);
+	const { name: fileName } = parse(sqlFile);
 	const queryName = convertToCamelCaseName(fileName);
 
 	const tsContentResult = await generateTypeScriptContent({
@@ -703,7 +703,7 @@ export async function generateTsFile(client: DatabaseClient, sqlFile: string, sc
 		isCrudFile,
 	})
 
-	const tsFilePath = `${path.resolve(dirPath, fileName)}.ts`;
+	const tsFilePath = `${path.resolve(outDir, fileName)}.ts`;
 	if (isLeft(tsContentResult)) {
 		console.error('ERROR: ', tsContentResult.left.description);
 		console.error('at ', sqlFile);
