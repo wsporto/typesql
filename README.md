@@ -72,6 +72,11 @@ deno syntax:
   "includeCrudTables": []
 }
 ```
+You can use environment variables in `typesql.json` with the `${VAR_NAME}` syntax for `databaseUri` and `authToken`.
+To load variables from a `.env` file, pass the `--env-file` flag:
+```sh
+typesql --env-file=.env compile
+```
 
 3. Write your queries in the folder specified in the configuration file. You can also use the cli to scaffold the queries.
 
