@@ -106,7 +106,7 @@ function validateDirectories(dir: string) {
 	}
 }
 
-function watchDirectories(client: DatabaseClient, dirPath: string, dbSchema: SchemaInfo | PostgresSchemaInfo, config: TypeSqlConfig) {
+function watchDirectories(client: DatabaseClient, dirPath: string, outDir: string, dbSchema: SchemaInfo | PostgresSchemaInfo, config: TypeSqlConfig) {
 	const dirGlob = `${dirPath}/**/*.sql`;
 
 	chokidar
@@ -115,14 +115,13 @@ function watchDirectories(client: DatabaseClient, dirPath: string, dbSchema: Sch
 				stabilityThreshold: 100
 			}
 		})
-		.on('add', (path) => rewiteFiles(client, path, dbSchema, isCrudFile(dirPath, path), config))
-		.on('change', (path) => rewiteFiles(client, path, dbSchema, isCrudFile(dirPath, path), config));
+		.on('add', (path) => rewiteFiles(client, path, outDir, dbSchema, isCrudFile(dirPath, path), config))
+		.on('change', (path) => rewiteFiles(client, path, outDir, dbSchema, isCrudFile(dirPath, path), config));
 }
 
-async function rewiteFiles(client: DatabaseClient, path: string, schemaInfo: SchemaInfo | PostgresSchemaInfo, isCrudFile: boolean, config: TypeSqlConfig) {
-	await generateTsFile(client, path, schemaInfo, isCrudFile);
-	const dirPath = parse(path).dir;
-	await writeIndexFile(dirPath, config);
+async function rewiteFiles(client: DatabaseClient, path: string, outDir: string, schemaInfo: SchemaInfo | PostgresSchemaInfo, isCrudFile: boolean, config: TypeSqlConfig) {
+	await generateTsFile(client, path, outDir, schemaInfo, isCrudFile);
+	await writeIndexFile(outDir, config);
 }
 
 async function main() {
@@ -130,7 +129,7 @@ async function main() {
 }
 
 async function compile(watch: boolean, config: TypeSqlConfig) {
-	const { sqlDir, databaseUri, client: dialect, attach, loadExtensions, authToken } = config;
+	const { sqlDir, outDir = sqlDir, databaseUri, client: dialect, attach, loadExtensions, authToken } = config;
 	validateDirectories(sqlDir);
 
 	const databaseClientResult = await createClient(databaseUri, dialect, attach, loadExtensions, authToken);
@@ -148,19 +147,19 @@ async function compile(watch: boolean, config: TypeSqlConfig) {
 		return;
 	}
 
-	await generateCrudTables(sqlDir, dbSchema.value, includeCrudTables);
+	await generateCrudTables(outDir, dbSchema.value, includeCrudTables);
 	const dirGlob = `${sqlDir}/**/*.sql`;
 
 	const sqlFiles = globSync(dirGlob);
 
-	const filesGeneration = sqlFiles.map((sqlFile) => generateTsFile(databaseClient, sqlFile, dbSchema.value, isCrudFile(sqlDir, sqlFile)));
+	const filesGeneration = sqlFiles.map((sqlFile) => generateTsFile(databaseClient, sqlFile, outDir, dbSchema.value, isCrudFile(sqlDir, sqlFile)));
 	await Promise.all(filesGeneration);
 
-	writeIndexFile(sqlDir, config);
+	writeIndexFile(outDir, config);
 
 	if (watch) {
 		console.log('watching mode!');
-		watchDirectories(databaseClient, sqlDir, dbSchema.value, config);
+		watchDirectories(databaseClient, sqlDir, outDir, dbSchema.value, config);
 	} else {
 		closeClient(databaseClient);
 	}
