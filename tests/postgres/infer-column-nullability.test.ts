@@ -1,5 +1,4 @@
 import assert from 'node:assert';
-import postgres from 'postgres';
 import { loadDbSchema } from '../../src/drivers/postgres';
 import { PostgresColumnSchema } from '../../src/drivers/types';
 import { parseSql } from '../../src/postgres-query-analyzer/parser';
@@ -1626,7 +1625,8 @@ describe('Infer column nullability', () => {
 				{
 					isNotNull: true
 				}
-			]
+			],
+			orderByColumns: ['id']
 		};
 		assert.deepStrictEqual(actual, expected);
 	});
@@ -1667,7 +1667,8 @@ describe('Infer column nullability', () => {
 				{
 					isNotNull: false
 				}
-			]
+			],
+			orderByColumns: ['id']
 		};
 		assert.deepStrictEqual(actual, expected);
 	});
@@ -1699,7 +1700,8 @@ describe('Infer column nullability', () => {
 				{
 					isNotNull: true
 				}
-			]
+			],
+			orderByColumns: ['id', 'value']
 		};
 		assert.deepStrictEqual(actual, expected);
 	});
@@ -1738,7 +1740,8 @@ describe('Infer column nullability', () => {
 				{
 					isNotNull: true
 				}
-			]
+			],
+			orderByColumns: ['id', 'value']
 		};
 		assert.deepStrictEqual(actual, expected);
 	});
@@ -1795,7 +1798,8 @@ describe('Infer column nullability', () => {
 				{
 					isNotNull: true
 				}
-			]
+			],
+			orderByColumns: ['id', 'name', 'descr']
 		};
 		assert.deepStrictEqual(actual, expected);
 	});
@@ -1821,7 +1825,8 @@ describe('Infer column nullability', () => {
 				{
 					isNotNull: true
 				}
-			]
+			],
+			orderByColumns: ['id', 'name', 'descr']
 		};
 		assert.deepStrictEqual(actual, expected);
 	});
@@ -1849,7 +1854,8 @@ describe('Infer column nullability', () => {
 				},
 				{
 					isNotNull: true
-				}]
+				}],
+			orderByColumns: ['id', 'value']
 		};
 		assert.deepStrictEqual(actual, expected);
 	});
@@ -1875,7 +1881,8 @@ describe('Infer column nullability', () => {
 				{
 					isNotNull: true
 				}
-			]
+			],
+			orderByColumns: ['id', 'value']
 		};
 		assert.deepStrictEqual(actual, expected);
 	});
@@ -1924,6 +1931,7 @@ describe('Infer column nullability', () => {
 			multipleRowsResult: false,
 			parameterList: [false],
 			parametersNullability: [{ isNotNull: true }],
+			orderByColumns: ['id', 'value'],
 			limit: undefined
 		}
 		assert.deepStrictEqual(actual, expected);
@@ -1967,6 +1975,7 @@ describe('Infer column nullability', () => {
 			multipleRowsResult: true,
 			parameterList: [],
 			parametersNullability: [],
+			orderByColumns: ['id', 'value'],
 			limit: undefined
 		}
 		assert.deepStrictEqual(actual, expected);
@@ -1996,6 +2005,7 @@ describe('Infer column nullability', () => {
 			multipleRowsResult: true,
 			parameterList: [],
 			parametersNullability: [],
+			orderByColumns: ['id', 'value'],
 			limit: undefined
 		}
 		assert.deepStrictEqual(actual, expected);
@@ -2025,6 +2035,7 @@ describe('Infer column nullability', () => {
 			multipleRowsResult: true,
 			parameterList: [],
 			parametersNullability: [],
+			orderByColumns: ['id', 'value'],
 			limit: undefined
 		}
 		assert.deepStrictEqual(actual, expected);
@@ -2054,6 +2065,7 @@ describe('Infer column nullability', () => {
 			multipleRowsResult: true,
 			parameterList: [],
 			parametersNullability: [],
+			orderByColumns: ['id', 'value'],
 			limit: undefined
 		}
 		assert.deepStrictEqual(actual, expected);
@@ -2083,6 +2095,7 @@ describe('Infer column nullability', () => {
 			multipleRowsResult: true,
 			parameterList: [],
 			parametersNullability: [],
+			orderByColumns: ['id', 'value'],
 			limit: undefined
 		}
 		assert.deepStrictEqual(actual, expected);
@@ -2112,6 +2125,7 @@ describe('Infer column nullability', () => {
 			multipleRowsResult: true,
 			parameterList: [],
 			parametersNullability: [],
+			orderByColumns: ['id', 'value'],
 			limit: undefined
 		}
 		assert.deepStrictEqual(actual, expected);
@@ -2141,6 +2155,7 @@ describe('Infer column nullability', () => {
 			multipleRowsResult: true,
 			parameterList: [],
 			parametersNullability: [],
+			orderByColumns: ['id', 'value'],
 			limit: undefined
 		}
 		assert.deepStrictEqual(actual, expected);
@@ -2170,6 +2185,7 @@ describe('Infer column nullability', () => {
 			multipleRowsResult: true,
 			parameterList: [],
 			parametersNullability: [],
+			orderByColumns: ['id', 'value'],
 			limit: undefined
 		}
 		assert.deepStrictEqual(actual, expected);

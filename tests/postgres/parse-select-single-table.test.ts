@@ -1125,7 +1125,7 @@ describe('postgres-select-single-table', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
-	it.skip('select value from mytable1 order by ?', async () => {
+	it('select value from mytable1 order by ?', async () => {
 		const sql = 'select value from mytable1 order by :orderBy';
 
 		const actual = await describeQuery(client, sql, schemaInfo);

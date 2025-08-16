@@ -10,6 +10,7 @@ import { JsonArrayType, JsonFieldType, JsonObjType, JsonPropertyDef, JsonType, P
 import { parseSql } from '@wsporto/typesql-parser/postgres';
 import { UserFunctionSchema } from './types';
 import { evaluatesTrueIfNull } from './case-nullability-checker';
+import { getOrderByColumns } from './util';
 
 export type NotNullInfo = {
 	schema: string;
@@ -33,6 +34,7 @@ export type PostgresTraverseResult = {
 	whereParamtersNullability?: ParamInfo[];
 	parameterList: boolean[];
 	limit?: number;
+	orderByColumns?: string[];
 	returning?: boolean;
 	relations?: Relation2[];
 	dynamicQueryInfo?: DynamicSqlInfo2;
@@ -184,8 +186,12 @@ function traverseSelectstmt(selectstmt: SelectstmtContext, context: TraverseCont
 		columns: selectResult.columns,
 		parametersNullability: traverseResult.parameters.map(param => ({ isNotNull: param.isNotNull, ...addConstraintIfNotNull(param.checkConstraint) })),
 		parameterList: paramIsListResult,
+		orderByColumns: selectResult.orderByColumns,
 		limit
 	};
+	if (selectResult.orderByColumns && selectResult.orderByColumns.length > 0) {
+		postgresTraverseResult.orderByColumns = selectResult.orderByColumns;
+	}
 	if (traverseResult.relations) {
 		postgresTraverseResult.relations = traverseResult.relations;
 	}
@@ -298,6 +304,7 @@ function traverse_select_clause(select_clause: Select_clauseContext, context: Tr
 
 	return {
 		columns,
+		orderByColumns: mainSelectResult.orderByColumns,
 		singleRow: simple_select_intersect_list.length == 1 ? mainSelectResult.singleRow : false
 	}
 
@@ -365,11 +372,13 @@ function traverse_simple_select_pramary(simple_select_pramary: Simple_select_pra
 	if (having_expr) {
 		traverse_a_expr(having_expr, newContext, traverseResult);
 	}
+	const orderByColumns: string[] = getOrderByColumns(context.fromColumns, fromResult.columns);
 
 	const filteredColumns = filterColumns_simple_select_pramary(simple_select_pramary, { ...context, fromColumns: fromResult.columns, parentColumns: context.fromColumns }, traverseResult);
 	return {
 		columns: filteredColumns,
-		singleRow: fromResult.singleRow
+		singleRow: fromResult.singleRow,
+		orderByColumns
 	};
 }
 
@@ -1669,7 +1678,8 @@ function traverse_from_list(from_list: From_listContext, context: TraverseContex
 
 type FromResult = {
 	singleRow: boolean;
-	columns: NotNullInfo[]
+	columns: NotNullInfo[];
+	orderByColumns?: string[];
 }
 
 function getFromColumns(tableName: TableName, withColumns: NotNullInfo[], dbSchema: PostgresColumnSchema[]) {

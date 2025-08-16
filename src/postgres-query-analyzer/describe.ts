@@ -14,6 +14,7 @@ import { describeDynamicQuery2 } from '../describe-dynamic-query';
 import { PostgresColumnInfo, PostgresParameterDef, PostgresSchemaDef } from './types';
 import { JsonType, PostgresEnumType, PostgresType } from '../sqlite-query-analyzer/types';
 import { PostgresSchemaInfo } from '../schema-info';
+import { replaceOrderByParamWithPlaceholder, replaceOrderByPlaceholderWithBuildOrderBy } from './util';
 
 function describeQueryRefine(describeParameters: DescribeParameters): Result<PostgresSchemaDef, TypeSqlError> {
 	const { sql, postgresDescribeResult, namedParameters, schemaInfo } = describeParameters;
@@ -54,6 +55,9 @@ function describeQueryRefine(describeParameters: DescribeParameters): Result<Pos
 	}
 	if (traverseResult.returning) {
 		descResult.returning = traverseResult.returning;
+	}
+	if (traverseResult.orderByColumns) {
+		descResult.orderByColumns = traverseResult.orderByColumns;
 	}
 	if (traverseResult.relations) {
 		const nestedResult = describeNestedQuery(descResult.columns, traverseResult.relations || []);
@@ -110,7 +114,8 @@ function mapToParamDef(postgresTypes: PostgresTypeHash, enumTypes: EnumMap, para
 }
 
 export function describeQuery(postgres: Sql, sql: string, schemaInfo: PostgresSchemaInfo): ResultAsync<PostgresSchemaDef, TypeSqlError> {
-	const { sql: preprocessed, namedParameters } = preprocessPostgresSql(sql);
+	const newSql = replaceOrderByParamWithPlaceholder(sql);
+	const { sql: preprocessed, namedParameters } = preprocessPostgresSql(newSql.sql);
 	return postgresDescribe(postgres, preprocessed).andThen(analyzeResult => {
 
 		const describeParameters: DescribeParameters = {
@@ -119,10 +124,19 @@ export function describeQuery(postgres: Sql, sql: string, schemaInfo: PostgresSc
 			namedParameters,
 			schemaInfo
 		}
-		return describeQueryRefine(describeParameters);
+		return describeQueryRefine(describeParameters).map(desc => {
+			const { orderByColumns, ...res } = desc;
+			const result: PostgresSchemaDef = {
+				...res,
+				sql: replaceOrderByPlaceholderWithBuildOrderBy(desc.sql)
+			}
+			if (newSql.replaced) {
+				result.orderByColumns = desc.orderByColumns;
+			}
+			return result;
+		});
 	});
 }
-
 function getColumnsForQuery(traverseResult: PostgresTraverseResult, postgresDescribeResult: PostgresDescribe, enumTypes: EnumMap, checkConstraints: CheckConstraintResult): PostgresColumnInfo[] {
 	return postgresDescribeResult.columns.map((col, index) => mapToColumnInfo(col, postgresTypes, enumTypes, checkConstraints, traverseResult.columns[index]))
 }
