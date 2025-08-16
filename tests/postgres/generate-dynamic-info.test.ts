@@ -77,7 +77,7 @@ describe('postgres-generate-dynamic-info', () => {
 		FROM mytable1 m1
 		INNER JOIN mytable2 m2 on m1.id = m2.id`;
 
-		const actual = await describeQuery(databaseClient, sql, [], schemaInfo);
+		const actual = await describeQuery(databaseClient, sql, schemaInfo);
 		const expected: DynamicSqlInfoResult2 = {
 			with: [],
 			select: [
@@ -131,7 +131,7 @@ describe('postgres-generate-dynamic-info', () => {
 		SELECT m1.id, m2.name
 		FROM mytable1 m1
 		INNER JOIN ( -- derivated table
-			SELECT id, name from mytable2 m 
+			SELECT id, name from mytable2 m
 			WHERE m.name = $1
 		) m2 on m2.id = m1.id
 		WHERE ($2 is NULL or m2.name = $3)`;
@@ -164,7 +164,7 @@ describe('postgres-generate-dynamic-info', () => {
 				},
 				{
 					fragment: `INNER JOIN ( -- derivated table
-			SELECT id, name from mytable2 m 
+			SELECT id, name from mytable2 m
 			WHERE m.name = $1
 		) m2 on m2.id = m1.id`,
 					relationName: 'm2',
@@ -190,11 +190,11 @@ describe('postgres-generate-dynamic-info', () => {
 		SELECT m1.id, m2.name
 		FROM mytable1 m1
 		INNER JOIN ( -- derivated table
-			SELECT id, name from mytable2 m 
+			SELECT id, name from mytable2 m
 			WHERE m.name = $1
 		) m2 on m2.id = m1.id`;
 
-		const actual = await describeQuery(databaseClient, sql, [], schemaInfo);
+		const actual = await describeQuery(databaseClient, sql, schemaInfo);
 		const expected: DynamicSqlInfoResult2 = {
 			with: [],
 			select: [
@@ -219,7 +219,7 @@ describe('postgres-generate-dynamic-info', () => {
 				},
 				{
 					fragment: `INNER JOIN ( -- derivated table
-			SELECT id, name from mytable2 m 
+			SELECT id, name from mytable2 m
 			WHERE m.name = $1
 		) m2 on m2.id = m1.id`,
 					relationName: 'm2',
@@ -241,12 +241,12 @@ describe('postgres-generate-dynamic-info', () => {
 		SELECT m1.id, m2.name
 		FROM mytable1 m1
 		INNER JOIN ( -- derivated table
-			SELECT id, name from mytable2 m 
-			WHERE m.name = $1
+			SELECT id, name from mytable2 m
+			WHERE m.name = :subqueryName
 		) m2 on m2.id = m1.id
-		WHERE ($2::text is NULL or m2.name = $2)`;
+		WHERE (:name::text is NULL or m2.name = :name)`;
 
-		const actual = await describeQuery(databaseClient, sql, ['subqueryName', 'name', 'name'], schemaInfo);
+		const actual = await describeQuery(databaseClient, sql, schemaInfo);
 		const expected: DynamicSqlInfoResult2 = {
 			with: [],
 			select: [
@@ -271,7 +271,7 @@ describe('postgres-generate-dynamic-info', () => {
 				},
 				{
 					fragment: `INNER JOIN ( -- derivated table
-			SELECT id, name from mytable2 m 
+			SELECT id, name from mytable2 m
 			WHERE m.name = $1
 		) m2 on m2.id = m1.id`,
 					relationName: 'm2',
@@ -295,11 +295,11 @@ describe('postgres-generate-dynamic-info', () => {
 
 	it('dynamic-traverse-result-05', () => {
 		const sql = `-- @dynamicQuery
-		WITH 
+		WITH
 			cte as (
 				select id, name from mytable2
 			)
-		SELECT 
+		SELECT
 			m1.id,
 			m2.name
 		FROM mytable1 m1
@@ -362,17 +362,17 @@ describe('postgres-generate-dynamic-info', () => {
 
 	it('dynamic-info-result05', async () => {
 		const sql = `-- @dynamicQuery
-		WITH 
+		WITH
 			cte as (
 				select id, name from mytable2
 			)
-		SELECT 
+		SELECT
 			m1.id,
 			m2.name
 		FROM mytable1 m1
 		INNER JOIN cte m2 on m2.id = m1.id`;
 
-		const actual = await describeQuery(databaseClient, sql, [], schemaInfo);
+		const actual = await describeQuery(databaseClient, sql, schemaInfo);
 		const expected: DynamicSqlInfoResult2 = {
 			with: [
 				{
@@ -423,18 +423,18 @@ describe('postgres-generate-dynamic-info', () => {
 
 	it('dynamic-info-result05-with-where', async () => {
 		const sql = `-- @dynamicQuery
-		WITH 
+		WITH
 			cte as (
 				select id, name from mytable2
 			)
-		SELECT 
+		SELECT
 			m1.id,
 			m2.name
 		FROM mytable1 m1
 		INNER JOIN cte m2 on m2.id = m1.id
-		WHERE m2.name LIKE concat('%', $1::text, '%')`;
+		WHERE m2.name LIKE concat('%', :name::text, '%')`;
 
-		const actual = await describeQuery(databaseClient, sql, ['name'], schemaInfo);
+		const actual = await describeQuery(databaseClient, sql, schemaInfo);
 		const expected: DynamicSqlInfoResult2 = {
 			with: [
 				{
@@ -568,7 +568,7 @@ describe('postgres-generate-dynamic-info', () => {
 		INNER JOIN mytable2 m2 on m2.id = m1.id
 		INNER JOIN mytable3 m3 on m3.id = m2.id`;
 
-		const actual = await describeQuery(databaseClient, sql, [], schemaInfo);
+		const actual = await describeQuery(databaseClient, sql, schemaInfo);
 		const expected: DynamicSqlInfoResult2 = {
 			with: [],
 			select: [
@@ -688,7 +688,7 @@ describe('postgres-generate-dynamic-info', () => {
 		from mytable2 t2
 		inner join mytable3 t3 on t3.id = t2.id`;
 
-		const actual = await describeQuery(databaseClient, sql, [], schemaInfo);
+		const actual = await describeQuery(databaseClient, sql, schemaInfo);
 		const expected: DynamicSqlInfoResult2 = {
 			with: [],
 			select: [
@@ -732,9 +732,9 @@ describe('postgres-generate-dynamic-info', () => {
 		select t2.name, t3.name as name2
 		from mytable2 t2
 		inner join mytable3 t3 on t3.id = t2.id
-		where (concat('%', t2.name, '%') = $1 OR concat('%', t3.name, '%') = $1)`;
+		where (concat('%', t2.name, '%') = :name OR concat('%', t3.name, '%') = :name)`;
 
-		const actual = await describeQuery(databaseClient, sql, ['name'], schemaInfo);
+		const actual = await describeQuery(databaseClient, sql, schemaInfo);
 		const expected: DynamicSqlInfoResult2 = {
 			with: [],
 			select: [
@@ -838,7 +838,7 @@ describe('postgres-generate-dynamic-info', () => {
 		inner join mytable3 t3 on t3.id = t2.id
 		where t3.id > 1`;
 
-		const actual = await describeQuery(databaseClient, sql, [], schemaInfo);
+		const actual = await describeQuery(databaseClient, sql, schemaInfo);
 		const expected: DynamicSqlInfoResult2 = {
 			with: [],
 			select: [
@@ -884,9 +884,9 @@ describe('postgres-generate-dynamic-info', () => {
 
 	it('dynamic-traverse-result: SELECT with parameters', () => {
 		const sql = `-- @dynamicQuery
-		SELECT 
-			t2.id, 
-			t3.double_value, 
+		SELECT
+			t2.id,
+			t3.double_value,
 			$1 is null OR concat('%', t2.name, t3.name, '%') LIKE $1 as likeName
 		FROM mytable2 t2
 		INNER JOIN mytable3 t3 on t3.id = t2.id`;
@@ -939,14 +939,14 @@ describe('postgres-generate-dynamic-info', () => {
 
 	it('dynamic-info-result: SELECT with parameters', async () => {
 		const sql = `-- @dynamicQuery
-		SELECT 
-			t2.id, 
-			t3.double_value, 
-			$1::text is null OR concat('%', t2.name, t3.name, '%') LIKE $1 as likeName
+		SELECT
+			t2.id,
+			t3.double_value,
+			:name::text is null OR concat('%', t2.name, t3.name, '%') LIKE :name as likeName
 		FROM mytable2 t2
 		INNER JOIN mytable3 t3 on t3.id = t2.id`;
 
-		const actual = await describeQuery(databaseClient, sql, ['name', 'name'], schemaInfo);
+		const actual = await describeQuery(databaseClient, sql, schemaInfo);
 		const expected: DynamicSqlInfoResult2 = {
 			with: [],
 			select: [
@@ -1050,7 +1050,7 @@ describe('postgres-generate-dynamic-info', () => {
 
 	it('dynamic-traverse-result-11', () => {
 		const sql = `-- @dynamicQuery
-		WITH 
+		WITH
 			cte1 as (
 				select id, value from mytable1
 				WHERE greatest(value, $1) = least(value, $1)
@@ -1059,7 +1059,7 @@ describe('postgres-generate-dynamic-info', () => {
 				select id, name from mytable2
 				WHERE greatest(name, $2) = least(name, $2)
 			)
-		SELECT 
+		SELECT
 			c1.id,
 			c2.name
 		FROM cte1 c1
@@ -1124,22 +1124,22 @@ describe('postgres-generate-dynamic-info', () => {
 
 	it('dynamic-info-result11', async () => {
 		const sql = `-- @dynamicQuery
-		WITH 
+		WITH
 			cte1 as (
 				select id, value from mytable1
-				WHERE greatest(value, $1) = least(value, $1)
+				WHERE greatest(value, :param1) = least(value, :param1)
 			),
 			cte2 as (
 				select id, name from mytable2
-				WHERE greatest(name, $2) = least(name, $2)
+				WHERE greatest(name, :param2) = least(name, :param2)
 			)
-		SELECT 
+		SELECT
 			c1.id,
 			c2.name
 		FROM cte1 c1
 		INNER JOIN cte2 c2 on c1.id = c2.id`;
 
-		const actual = await describeQuery(databaseClient, sql, ['param1', 'param1', 'param2', 'param2'], schemaInfo);
+		const actual = await describeQuery(databaseClient, sql, schemaInfo);
 		const expected: DynamicSqlInfoResult2 = {
 			with: [
 				{
@@ -1201,7 +1201,7 @@ describe('postgres-generate-dynamic-info', () => {
 
 	it('dynamic-traverse-result-12', () => {
 		const sql = `-- @dynamicQuery
-		WITH 
+		WITH
 			cte1 as (
 				select id, value from mytable1
 				WHERE greatest(value, $1) = least(value, $1)
@@ -1210,7 +1210,7 @@ describe('postgres-generate-dynamic-info', () => {
 				select id, name from mytable2
 				WHERE greatest(name, $2) = least(name, $2)
 			)
-		SELECT 
+		SELECT
 			c1.id,
 			c2.name
 		FROM cte1 c1
@@ -1282,23 +1282,23 @@ describe('postgres-generate-dynamic-info', () => {
 
 	it('dynamic-info-result12', async () => {
 		const sql = `-- @dynamicQuery
-		WITH 
+		WITH
 			cte1 as (
 				select id, value from mytable1
-				WHERE greatest(value, $1) = least(value, $1)
+				WHERE greatest(value, :param1) = least(value, :param1)
 			),
 			cte2 as (
 				select id, name from mytable2
-				WHERE greatest(name, $2) = least(name, $2)
+				WHERE greatest(name, :param2) = least(name, :param2)
 			)
-		SELECT 
+		SELECT
 			c1.id,
 			c2.name
 		FROM cte1 c1
 		INNER JOIN cte2 c2 on c1.id = c2.id
-		WHERE greatest(c1.id, $3) = least(c2.id, $3)`;
+		WHERE greatest(c1.id, :param3) = least(c2.id, :param3)`;
 
-		const actual = await describeQuery(databaseClient, sql, ['param1', 'param1', 'param2', 'param2', 'param1', 'param2'], schemaInfo);
+		const actual = await describeQuery(databaseClient, sql, schemaInfo);
 		const expected: DynamicSqlInfoResult2 = {
 			with: [
 				{

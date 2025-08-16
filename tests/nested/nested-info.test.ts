@@ -252,9 +252,9 @@ describe('nested-info', () => {
         FROM clients as c
         INNER JOIN addresses as a1 ON a1.id = c.primaryAddress
         LEFT JOIN addresses as a2 ON a2.id = c.secondaryAddress
-        WHERE c.id = $1`
+        WHERE c.id = :clientId`
 
-		const actual = await describeQuery(client, sql, ['clientId'], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 
 		const expected: RelationInfo2[] = [
 			{
@@ -333,7 +333,7 @@ describe('nested-info', () => {
 		INNER JOIN participants p on p.fk_survey = s.id
 		INNER JOIN users u on u.id = p.fk_user`;
 
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 
 		const expected: RelationInfo2[] = [
 			{

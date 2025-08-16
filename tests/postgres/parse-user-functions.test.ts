@@ -12,10 +12,10 @@ describe('postgres-user-functions', () => {
 	});
 
 	it('SELECT * FROM schema2.get_user(:id)', async () => {
-		const sql = 'SELECT * FROM schema2.get_user($1)';
-		const actual = await describeQuery(client, sql, ['id'], schemaInfo);
+		const sql = 'SELECT * FROM schema2.get_user(:id)';
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
-			sql,
+			sql: 'SELECT * FROM schema2.get_user($1)',
 			queryType: 'Select',
 			multipleRowsResult: false,
 			columns: [
@@ -59,10 +59,10 @@ describe('postgres-user-functions', () => {
 	})
 
 	it('SELECT u.* FROM schema2.get_user($1) u', async () => {
-		const sql = 'SELECT u.* FROM schema2.get_user($1) u';
-		const actual = await describeQuery(client, sql, ['id'], schemaInfo);
+		const sql = 'SELECT u.* FROM schema2.get_user(:id) u';
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
-			sql,
+			sql: 'SELECT u.* FROM schema2.get_user($1) u',
 			queryType: 'Select',
 			multipleRowsResult: false,
 			columns: [
@@ -107,7 +107,7 @@ describe('postgres-user-functions', () => {
 
 	it(`SELECT * FROM get_users_with_posts()`, async () => {
 		const sql = `SELECT * FROM get_users_with_posts()`;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -154,7 +154,7 @@ describe('postgres-user-functions', () => {
 
 	it(`SELECT u.* FROM get_users_with_posts() u`, async () => {
 		const sql = `SELECT u.* FROM get_users_with_posts() u`;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -201,7 +201,7 @@ describe('postgres-user-functions', () => {
 
 	it('SELECT * FROM get_clients_with_addresses()', async () => {
 		const sql = 'SELECT * FROM get_clients_with_addresses()';
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -262,7 +262,7 @@ describe('postgres-user-functions', () => {
 
 	it('SELECT * FROM get_users_with_posts_plpgsql()', async () => {
 		const sql = 'SELECT * FROM get_users_with_posts_plpgsql()';
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -291,7 +291,7 @@ describe('postgres-user-functions', () => {
 
 	it('SELECT * FROM get_mytable1()', async () => {
 		const sql = 'SELECT * FROM get_mytable1()';
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -320,7 +320,7 @@ describe('postgres-user-functions', () => {
 
 	it('SELECT * FROM get_mytable1() WHERE id = 1', async () => {
 		const sql = 'SELECT * FROM get_mytable1() WHERE id = 1';
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -348,10 +348,10 @@ describe('postgres-user-functions', () => {
 	})
 
 	it('SELECT * FROM get_mytable1_by_id(:id)', async () => {
-		const sql = 'SELECT * FROM get_mytable1_by_id($1)';
-		const actual = await describeQuery(client, sql, ['id'], schemaInfo);
+		const sql = 'SELECT * FROM get_mytable1_by_id(:id)';
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
-			sql,
+			sql: 'SELECT * FROM get_mytable1_by_id($1)',
 			queryType: 'Select',
 			multipleRowsResult: false,
 			columns: [
@@ -384,7 +384,7 @@ describe('postgres-user-functions', () => {
 
 	it('SELECT * FROM get_mytable_plpgsql()', async () => {
 		const sql = 'SELECT * FROM get_mytable_plpgsql()';
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -413,7 +413,7 @@ describe('postgres-user-functions', () => {
 
 	it('SELECT * FROM get_mytable_plpgsql()', async () => {
 		const sql = 'SELECT m.id FROM get_mytable_plpgsql() m';
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -441,7 +441,7 @@ describe('postgres-user-functions', () => {
 		get_users_with_posts.posts 
 		FROM mytable1
 		INNER JOIN get_users_with_posts() ON get_users_with_posts.id = mytable1.id`;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -494,7 +494,7 @@ describe('postgres-user-functions', () => {
 
 	it('SELECT * FROM get_mytable1_with_nested_function()', async () => {
 		const sql = 'SELECT * FROM get_mytable1_with_nested_function() get_users_with_posts';
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',

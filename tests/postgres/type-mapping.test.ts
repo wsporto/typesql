@@ -18,7 +18,7 @@ describe('postgres-type-mapping', () => {
 
 	it('select table with all types', async () => {
 		const sql = 'select * from all_types';
-		const actual = await describeQuery(client, sql, ['id'], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			multipleRowsResult: true,
 			queryType: 'Select',

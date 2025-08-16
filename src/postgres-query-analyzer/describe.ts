@@ -9,7 +9,7 @@ import { postgresTypes } from '../dialects/postgres';
 import { NotNullInfo, PostgresTraverseResult } from './traverse';
 import { describeNestedQuery } from '../sqlite-query-analyzer/sqlite-describe-nested-query';
 import { isLeft } from 'fp-ts/lib/Either';
-import { hasAnnotation } from '../describe-query';
+import { hasAnnotation, preprocessSql } from '../describe-query';
 import { describeDynamicQuery2 } from '../describe-dynamic-query';
 import { PostgresColumnInfo, PostgresParameterDef, PostgresSchemaDef } from './types';
 import { JsonType, PostgresEnumType, PostgresType } from '../sqlite-query-analyzer/types';
@@ -119,17 +119,18 @@ function mapToParamDef(postgresTypes: PostgresTypeHash, enumTypes: EnumMap, para
 	}
 }
 
-export function describeQuery(postgres: Sql, sql: string, namedParameters: string[], schemaInfo: PostgresSchemaInfo): ResultAsync<PostgresSchemaDef, TypeSqlError> {
-	return postgresDescribe(postgres, sql)
-		.andThen(analyzeResult => {
-			const describeParameters: DescribeParameters = {
-				sql,
-				postgresDescribeResult: analyzeResult,
-				namedParameters,
-				schemaInfo
-			}
-			return describeQueryRefine(describeParameters);
-		});
+export function describeQuery(postgres: Sql, sql: string, schemaInfo: PostgresSchemaInfo): ResultAsync<PostgresSchemaDef, TypeSqlError> {
+	const { sql: preprocessed, namedParameters } = preprocessSql(sql, 'postgres');
+	return postgresDescribe(postgres, preprocessed).andThen(analyzeResult => {
+
+		const describeParameters: DescribeParameters = {
+			sql: preprocessed,
+			postgresDescribeResult: analyzeResult,
+			namedParameters,
+			schemaInfo
+		}
+		return describeQueryRefine(describeParameters);
+	});
 }
 
 function getColumnsForQuery(traverseResult: PostgresTraverseResult, postgresDescribeResult: PostgresDescribe, enumTypes: EnumMap, checkConstraints: CheckConstraintResult): PostgresColumnInfo[] {

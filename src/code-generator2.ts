@@ -20,9 +20,8 @@ export function generateCode(client: PgDielect, sql: string, queryName: string, 
 	if (isEmptySql(sql)) {
 		return okAsync('');
 	}
-	const { sql: processedSql, namedParameters } = preprocessSql(sql, 'postgres');
-	return _describeQuery(client, processedSql, namedParameters, schemaInfo)
-		.map(schemaDef => generateTsCode(processedSql, queryName, schemaDef, client.type))
+	return _describeQuery(client, sql, schemaInfo)
+		.map(schemaDef => generateTsCode(sql, queryName, schemaDef, client.type))
 }
 
 function isEmptySql(sql: string) {
@@ -33,8 +32,8 @@ function isEmptySql(sql: string) {
 	return lines.every(line => line.trim() === '' || line.trim().startsWith('//'))
 }
 
-function _describeQuery(databaseClient: PgDielect, sql: string, namedParameters: string[], dbSchema: PostgresSchemaInfo): ResultAsync<PostgresSchemaDef, TypeSqlError> {
-	return describeQuery(databaseClient.client, sql, namedParameters, dbSchema);
+function _describeQuery(databaseClient: PgDielect, sql: string, dbSchema: PostgresSchemaInfo): ResultAsync<PostgresSchemaDef, TypeSqlError> {
+	return describeQuery(databaseClient.client, sql, dbSchema);
 }
 
 export function createCodeBlockWriter() {
