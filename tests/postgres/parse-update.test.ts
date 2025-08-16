@@ -282,12 +282,12 @@ describe('postgres-parse-update', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
-	it.skip('update mytable1 set value = :value where id > :value or id < :value', async () => {
-		const sql = 'update mytable1 set value = :value where id > :value or id < :value';
+	it('update mytable1 set value = :value where id > :id or id < :id', async () => {
+		const sql = 'update mytable1 set value = :value where id > :id or id < :id';
 
 		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
-			sql: 'update mytable1 set value = $1 where id > $1 or id < $1',
+			sql: 'update mytable1 set value = $1 where id > $2 or id < $2',
 			queryType: 'Update',
 			multipleRowsResult: false,
 			columns: [],
@@ -300,12 +300,7 @@ describe('postgres-parse-update', () => {
 			],
 			parameters: [
 				{
-					name: 'value',
-					type: 'int4',
-					notNull: true
-				},
-				{
-					name: 'value',
+					name: 'id',
 					type: 'int4',
 					notNull: true
 				}

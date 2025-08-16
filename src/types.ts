@@ -3,7 +3,6 @@ import type { Brand } from './utility-types';
 import type { ColumnInfo, ColumnSchema, DynamicSqlInfoResult, DynamicSqlInfoResult2 } from './mysql-query-analyzer/types';
 import type { QueryContext } from '@wsporto/typesql-parser/mysql/MySQLParser';
 import type { NestedResultInfo } from './describe-nested-query';
-import type { PostgresType, SQLiteType } from './sqlite-query-analyzer/types';
 import type { Database } from 'better-sqlite3';
 import type { Pool } from 'mysql2/promise';
 import type { RelationInfo2 } from './sqlite-query-analyzer/sqlite-describe-nested-query';
@@ -121,6 +120,13 @@ export type TypeSqlError = {
 export type PreprocessedSql = {
 	sql: string;
 	namedParameters: string[];
+};
+
+export type NamedParamInfo = { paramName: string; paramNumber: number };
+export type NamedParamWithType = NamedParamInfo & { typeOid: number };
+export type PreprocessedPostgresSql = {
+	sql: string;
+	namedParameters: NamedParamInfo[];
 };
 
 export type CamelCaseName = Brand<string, 'CamelCase'>;

@@ -1,4 +1,4 @@
-import type { SchemaDef, ParameterDef, TypeSqlError, PreprocessedSql, MySqlDialect } from './types';
+import type { SchemaDef, ParameterDef, TypeSqlError, PreprocessedSql, MySqlDialect, PreprocessedPostgresSql, NamedParamInfo } from './types';
 import { extractQueryInfo } from './mysql-query-analyzer/parse';
 import { type Either, isLeft, right, left } from 'fp-ts/lib/Either';
 import type { ColumnInfo, ColumnSchema } from './mysql-query-analyzer/types';
@@ -186,6 +186,71 @@ export function preprocessSql(sql: string, dialect: 'postgres' | 'mysql' | 'sqli
 		namedParameters: allParameters
 	};
 	return processedSql;
+}
+
+export function preprocessPostgresSql(sql: string): PreprocessedPostgresSql {
+	const namedParamRegex = /:[a-zA-Z$_]+[a-zA-Z\d$_]*/g;
+	const positionalParamRegex = /\$(\d+)/g;
+
+	type NamedParamInfo = { paramName: string; paramNumber: number };
+	const namedParameters: NamedParamInfo[] = [];
+
+	// If SQL already contains $1, $2... → treat as positional, return as is
+	if (positionalParamRegex.test(sql)) {
+		sql.replace(positionalParamRegex, (_, num) => {
+			const number = parseInt(num, 10);
+			namedParameters.push({
+				paramName: `param${number}`,
+				paramNumber: number
+			});
+			return _;
+		});
+		return {
+			sql,
+			namedParameters
+		};
+	}
+
+	// Otherwise, replace :paramName with $1, $2...
+	let tempSql = sql.replace(/::([a-zA-Z0-9_]+)/g, (_, type) => `/*TYPECAST*/${type}`);
+	const lines = tempSql.split('\n');
+	let newSql = '';
+	const paramMap: Record<string, number> = {};
+	let paramIndex = 1;
+
+	lines.forEach((line, index, array) => {
+		let newLine = line;
+		if (!line.trim().startsWith('--')) {
+			const matches = [...line.matchAll(namedParamRegex)];
+			matches.forEach((match) => {
+				const fullMatch = match[0];  // e.g. ":userId"
+				const param = fullMatch.slice(1); // remove `:`
+				if (!paramMap[param]) {
+					paramMap[param] = paramIndex++;
+				}
+				const assignedNumber = paramMap[param];
+
+				namedParameters.push({
+					paramName: param,
+					paramNumber: assignedNumber
+				});
+
+				newLine = newLine.replace(fullMatch, `$${assignedNumber}`);
+			});
+		}
+		newSql += newLine;
+		if (index !== array.length - 1) {
+			newSql += '\n';
+		}
+	});
+
+	// Restore typecasts
+	newSql = newSql.replace(/\/\*TYPECAST\*\/([a-zA-Z0-9_]+)/g, (_, type) => `::${type}`);
+
+	return {
+		sql: newSql,
+		namedParameters
+	};
 }
 
 //https://stackoverflow.com/a/1695647
