@@ -1,6 +1,7 @@
 import assert from 'node:assert';
 import { hasAnnotation, preprocessSql } from '../src/describe-query';
 import type { PreprocessedSql } from '../src/types';
+import { replaceOrderByParamWithPlaceholder, replaceOrderByPlaceholderWithBuildOrderBy } from '../src/postgres-query-analyzer/util';
 
 describe('preprocess-sql', () => {
 	it('preprocess sql with one parameter', async () => {
@@ -195,5 +196,78 @@ describe('preprocess-sql', () => {
 		};
 
 		assert.deepStrictEqual(actual, expected);
+	});
+});
+
+describe('replaceOrderByParamWithPlaceholder', () => {
+	it('replaces ORDER BY with a parameter placeholder', () => {
+		const sql = 'SELECT * FROM mytable1 ORDER BY $1';
+		const actual = replaceOrderByParamWithPlaceholder(sql);
+
+		const expected = {
+			sql: 'SELECT * FROM mytable1 ORDER BY /*__orderByPlaceholder__*/ 1',
+			replaced: true,
+		};
+
+		assert.deepStrictEqual(actual, expected);
+	});
+
+	it('replaces ORDER BY with a named parameter placeholder', () => {
+		const sql = 'SELECT * FROM mytable1 ORDER BY :sortKey';
+		const actual = replaceOrderByParamWithPlaceholder(sql);
+
+		const expected = {
+			sql: 'SELECT * FROM mytable1 ORDER BY /*__orderByPlaceholder__*/ 1',
+			replaced: true,
+		};
+
+		assert.deepStrictEqual(actual, expected);
+	});
+
+	it('returns original sql if no ORDER BY with param found', () => {
+		const sql = 'SELECT * FROM mytable1 ORDER BY id DESC';
+		const actual = replaceOrderByParamWithPlaceholder(sql);
+
+		const expected = {
+			sql,
+			replaced: false,
+		};
+
+		assert.deepStrictEqual(actual, expected);
+	});
+});
+
+describe('replaceOrderByPlaceholderWithBuildOrderBy', () => {
+	it('replaces the orderBy placeholder with buildOrderBy call', () => {
+		const sql = 'SELECT * FROM mytable ORDER BY /*__orderByPlaceholder__*/ 1';
+		const actual = replaceOrderByPlaceholderWithBuildOrderBy(sql);
+
+		const expected = 'SELECT * FROM mytable ORDER BY ${buildOrderBy(params.orderBy)}';
+
+		assert.strictEqual(actual, expected);
+	});
+
+	it('works with different casing for ORDER BY', () => {
+		const sql = 'select * from mytable order by /*__orderByPlaceholder__*/ 1';
+		const actual = replaceOrderByPlaceholderWithBuildOrderBy(sql);
+
+		const expected = 'select * from mytable order by ${buildOrderBy(params.orderBy)}';
+
+		assert.strictEqual(actual, expected);
+	});
+
+	it('returns original sql if placeholder not present', () => {
+		const sql = 'SELECT * FROM mytable ORDER BY created_at DESC';
+		const actual = replaceOrderByPlaceholderWithBuildOrderBy(sql);
+
+		assert.strictEqual(actual, sql);
+	});
+
+	it('does not replace ORDER BY with numeric constant 1', () => {
+		const sql = 'SELECT * FROM mytable ORDER BY 1';
+		const actual = replaceOrderByPlaceholderWithBuildOrderBy(sql);
+
+		// Should return the original SQL unchanged
+		assert.strictEqual(actual, sql);
 	});
 });
