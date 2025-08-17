@@ -40,18 +40,17 @@ function describeQueryRefine(describeParameters: DescribeParameters): Result<Pos
 
 	//replace list parameters
 	const newSql = replacePostgresParams(sql, traverseResult.parameterList, namedParameters.map(param => param.paramName));
+	const parameters = transformToParamDefList(traverseResult, enumTypes, paramWithTypes);
 
 	const descResult: PostgresSchemaDef = {
 		sql: newSql,
 		queryType: traverseResult.queryType,
 		multipleRowsResult: traverseResult.multipleRowsResult,
 		columns: getColumnsForQuery(traverseResult, postgresDescribeResult, enumTypes, checkConstraints),
-		parameters: traverseResult.queryType === 'Update'
-			? getParamtersForWhere(traverseResult, enumTypes, paramWithTypes)
-			: getParamtersForQuery(traverseResult, enumTypes, paramWithTypes)
+		parameters: getParametersForQuery(traverseResult, parameters)
 	}
 	if (traverseResult.queryType === 'Update') {
-		descResult.data = getDataForQuery(traverseResult, enumTypes, paramWithTypes);
+		descResult.data = getDataParametersForQuery(traverseResult, parameters);
 	}
 	if (traverseResult.returning) {
 		descResult.returning = traverseResult.returning;
@@ -141,21 +140,13 @@ function getColumnsForQuery(traverseResult: PostgresTraverseResult, postgresDesc
 	return postgresDescribeResult.columns.map((col, index) => mapToColumnInfo(col, postgresTypes, enumTypes, checkConstraints, traverseResult.columns[index]))
 }
 
-function getParamtersForQuery(traverseResult: PostgresTraverseResult, enumTypes: EnumMap, params: NamedParamWithType[]): PostgresParameterDef[] {
-	if (traverseResult.queryType === 'Copy') {
-		return getColumnsForCopyStmt(traverseResult);
-	}
-	return transformToParamDefList(traverseResult, enumTypes, params, false);
-}
-
-function transformToParamDefList(traverseResult: PostgresTraverseResult, enumTypes: EnumMap, params: NamedParamWithType[], whereParam: boolean): PostgresParameterDef[] {
-	const offset = whereParam ? traverseResult.parametersNullability.length : 0;
+function transformToParamDefList(traverseResult: PostgresTraverseResult, enumTypes: EnumMap, params: NamedParamWithType[]): PostgresParameterDef[] {
 	const parametersNullability = traverseResult.parametersNullability.concat(traverseResult.whereParamtersNullability || []);
-	const paramMap = groupByParamNumber(params.slice(offset));
+	const paramMap = groupByParamNumber(params);
 	return Object.values(paramMap).map(group => {
-		const notNull = group.every(param => parametersNullability[param.index + offset]?.isNotNull);
-		const paramList = group.every(param => traverseResult.parameterList[param.index + offset]);
-		const paramCheckConstraint = group.map(param => parametersNullability[param.index + offset]?.checkConstraint).find(Boolean);
+		const notNull = group.every(param => parametersNullability[param.index]?.isNotNull);
+		const paramList = group.every(param => traverseResult.parameterList[param.index]);
+		const paramCheckConstraint = group.map(param => parametersNullability[param.index]?.checkConstraint).find(Boolean);
 		const paramResult = mapToParamDef(postgresTypes, enumTypes, group[0].paramName, group[0].typeOid, paramCheckConstraint, notNull, paramList);
 		return paramResult;
 	})
@@ -187,11 +178,24 @@ function getColumnsForCopyStmt(traverseResult: PostgresTraverseResult): Postgres
 	});
 }
 
-function getParamtersForWhere(traverseResult: PostgresTraverseResult, enumTypes: EnumMap, params: NamedParamWithType[]): PostgresParameterDef[] {
-	return transformToParamDefList(traverseResult, enumTypes, params, true);
+function getParametersForQuery(traverseResult: PostgresTraverseResult, params: PostgresParameterDef[]): PostgresParameterDef[] {
+	if (traverseResult.queryType === 'Update') {
+		const dataParamCount = traverseResult.parametersNullability.length;
+		const dataParams = params.slice(0, dataParamCount);
+		const whereParams = params.slice(dataParamCount);
+		const dataParamNames = new Set(dataParams.map(p => p.name));
+		// Filter out whereParams that are already in dataParams
+		const filteredWhereParams = whereParams.filter(p => !dataParamNames.has(p.name));
+
+		return filteredWhereParams;
+	}
+	if (traverseResult.queryType === 'Copy') {
+		return getColumnsForCopyStmt(traverseResult);
+	}
+	return params;
 }
 
-function getDataForQuery(traverseResult: PostgresTraverseResult, enumTypes: EnumMap, params: NamedParamWithType[]): PostgresParameterDef[] {
+function getDataParametersForQuery(traverseResult: PostgresTraverseResult, params: PostgresParameterDef[]): PostgresParameterDef[] {
 	const dataParams = params.slice(0, traverseResult.parametersNullability.length);
-	return transformToParamDefList(traverseResult, enumTypes, dataParams, false);
+	return dataParams;
 }

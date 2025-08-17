@@ -282,6 +282,30 @@ describe('postgres-parse-update', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('update mytable1 set value = :value where id > :value or id < :value', async () => {
+		const sql = 'update mytable1 set value = :value where id > :value or id < :value';
+
+		const actual = await describeQuery(client, sql, schemaInfo);
+		const expected: PostgresSchemaDef = {
+			sql: 'update mytable1 set value = $1 where id > $1 or id < $1',
+			queryType: 'Update',
+			multipleRowsResult: false,
+			columns: [],
+			data: [
+				{
+					name: 'value',
+					type: 'int4',
+					notNull: false
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('update mytable1 set value = :value where id > :id or id < :id', async () => {
 		const sql = 'update mytable1 set value = :value where id > :id or id < :id';
 
