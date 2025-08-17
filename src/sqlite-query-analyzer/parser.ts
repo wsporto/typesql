@@ -33,13 +33,13 @@ export function traverseSql(sql: string, dbSchema: ColumnSchema[]): Either<TypeS
 	const dynamicQuery = hasAnnotation(sql, '@dynamicQuery');
 	const parser = parseSqlite(processedSql);
 	const sql_stmt = parser.sql_stmt();
-	const traverseResult = traverseQuery(sql_stmt, dbSchema, namedParameters);
+	const traverseResult = traverseQuery(sql_stmt, dbSchema);
 	if (isLeft(traverseResult)) {
 		return traverseResult;
 	}
 	const result: ParseAndTraverseResult = {
 		traverseResult: traverseResult.right,
-		namedParameters,
+		namedParameters: namedParameters.map(param => param.paramName),
 		nested,
 		processedSql,
 		dynamicQuery
@@ -56,7 +56,7 @@ export function parseSql(sql: string, dbSchema: ColumnSchema[]): Either<TypeSqlE
 	return createSchemaDefinition(processedSql, traverseResult, namedParameters, nested, dynamicQuery);
 }
 
-function traverseQuery(sql_stmtContext: Sql_stmtContext, dbSchema: ColumnSchema[], namedParameters: string[]) {
+function traverseQuery(sql_stmtContext: Sql_stmtContext, dbSchema: ColumnSchema[]) {
 	const traverseContext: TraverseContext = {
 		dbSchema,
 		withSchema: [],

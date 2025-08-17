@@ -9,7 +9,31 @@ describe('preprocess-sql', () => {
 
 		const expected: PreprocessedSql = {
 			sql: 'select * from mytable1 where ? = 10',
-			namedParameters: ['id']
+			namedParameters: [{ paramName: 'id', paramNumber: 1 }]
+		};
+
+		assert.deepStrictEqual(actual, expected);
+	});
+
+	it('preprocess sql with one parameter (?)', async () => {
+		const sql = 'select * from mytable1 where ? = 10';
+		const actual = preprocessSql(sql, 'mysql');
+
+		const expected: PreprocessedSql = {
+			sql: 'select * from mytable1 where ? = 10',
+			namedParameters: []
+		};
+
+		assert.deepStrictEqual(actual, expected);
+	});
+
+	it('preprocess sql with one parameter ($1)', async () => {
+		const sql = 'select * from mytable1 where $1 = 10';
+		const actual = preprocessSql(sql, 'postgres');
+
+		const expected: PreprocessedSql = {
+			sql: 'select * from mytable1 where $1 = 10',
+			namedParameters: [{ paramName: 'param1', paramNumber: 1 },]
 		};
 
 		assert.deepStrictEqual(actual, expected);
@@ -19,9 +43,15 @@ describe('preprocess-sql', () => {
 		const sql = 'select * from mytable1 where :id = 10 or :id=1 or : name > 10or:param1>0and :PARAM>0 and :PARAM1>0 and 10>20';
 		const actual = preprocessSql(sql, 'mysql');
 
-		const expected: PreprocessedSql = {
+		const expected = {
 			sql: 'select * from mytable1 where ? = 10 or ?=1 or : name > 10or?>0and ?>0 and ?>0 and 10>20',
-			namedParameters: ['id', 'id', 'param1', 'PARAM', 'PARAM1']
+			namedParameters: [
+				{ paramName: 'id', paramNumber: 1 },
+				{ paramName: 'id', paramNumber: 1 },
+				{ paramName: 'param1', paramNumber: 2 },
+				{ paramName: 'PARAM', paramNumber: 3 },
+				{ paramName: 'PARAM1', paramNumber: 4 },
+			],
 		};
 
 		assert.deepStrictEqual(actual, expected);
@@ -31,9 +61,12 @@ describe('preprocess-sql', () => {
 		const sql = 'select * from mytable1 where id = :emp_id or id = :$1';
 		const actual = preprocessSql(sql, 'mysql');
 
-		const expected: PreprocessedSql = {
+		const expected = {
 			sql: 'select * from mytable1 where id = ? or id = ?',
-			namedParameters: ['emp_id', '$1']
+			namedParameters: [
+				{ paramName: 'emp_id', paramNumber: 1 },
+				{ paramName: '$1', paramNumber: 2 }
+			]
 		};
 
 		assert.deepStrictEqual(actual, expected);
@@ -138,7 +171,13 @@ describe('preprocess-sql', () => {
 		const expected: PreprocessedSql = {
 			sql: `
         select $1, $1, $2, $3, $2 from mytable1`,
-			namedParameters: ['value1', 'value1', 'value2', 'value3', 'value2']
+			namedParameters: [
+				{ paramName: 'value1', paramNumber: 1 },
+				{ paramName: 'value1', paramNumber: 1 },
+				{ paramName: 'value2', paramNumber: 2 },
+				{ paramName: 'value3', paramNumber: 3 },
+				{ paramName: 'value2', paramNumber: 2 },
+			],
 		};
 
 		assert.deepStrictEqual(actual, expected);

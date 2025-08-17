@@ -1,4 +1,4 @@
-import type { SchemaDef, ParameterDef, TypeSqlError, PreprocessedSql, MySqlDialect, PreprocessedPostgresSql, NamedParamInfo } from './types';
+import type { SchemaDef, ParameterDef, TypeSqlError, PreprocessedSql, MySqlDialect, NamedParamInfo } from './types';
 import { extractQueryInfo } from './mysql-query-analyzer/parse';
 import { type Either, isLeft, right, left } from 'fp-ts/lib/Either';
 import type { ColumnInfo, ColumnSchema } from './mysql-query-analyzer/types';
@@ -7,11 +7,12 @@ import { explainSql, loadMysqlSchema } from './queryExectutor';
 
 export function describeSql(dbSchema: ColumnSchema[], sql: string): SchemaDef {
 	const { sql: processedSql, namedParameters } = preprocessSql(sql, 'mysql');
+	const paramNames = namedParameters.map(param => param.paramName);
 	const queryInfo = extractQueryInfo(sql, dbSchema);
 	if (queryInfo.kind === 'Select') {
 		const parametersDef = queryInfo.parameters.map((paramInfo, paramIndex) => {
 			const paramDef: ParameterDef = {
-				name: namedParameters?.[paramIndex] ? namedParameters[paramIndex] : `param${paramIndex + 1}`,
+				name: paramNames?.[paramIndex] ? paramNames[paramIndex] : `param${paramIndex + 1}`,
 				columnType: paramInfo.type,
 				notNull: paramInfo.notNull
 			};
@@ -50,7 +51,7 @@ export function describeSql(dbSchema: ColumnSchema[], sql: string): SchemaDef {
 			}
 		];
 
-		const parameters = namedParameters ? addParameterNames(queryInfo.parameters, namedParameters) : queryInfo.parameters;
+		const parameters = paramNames ? addParameterNames(queryInfo.parameters, paramNames) : queryInfo.parameters;
 		const verifiedParameters = parameters.map((param) => ({
 			...param,
 			columnType: verifyNotInferred(param.columnType)
@@ -90,7 +91,7 @@ export function describeSql(dbSchema: ColumnSchema[], sql: string): SchemaDef {
 				notNull: true
 			}
 		];
-		const parameters = namedParameters ? addParameterNames(queryInfo.parameters, namedParameters) : queryInfo.parameters;
+		const parameters = paramNames ? addParameterNames(queryInfo.parameters, paramNames) : queryInfo.parameters;
 		const schemaDef: SchemaDef = {
 			sql: processedSql,
 			queryType: 'Delete',
@@ -144,112 +145,65 @@ export async function parseSql(client: MySqlDialect, sql: string): Promise<Eithe
 
 //http://dev.mysql.com/doc/refman/8.0/en/identifiers.html
 //Permitted characters in unquoted identifiers: ASCII: [0-9,a-z,A-Z$_] (basic Latin letters, digits 0-9, dollar, underscore)
-export function preprocessSql(sql: string, dialect: 'postgres' | 'mysql' | 'sqlite') {
-	const regex = /:[a-zA-Z$_]+[a-zA-Z\d$_]*/g;
-	let tempSql = sql.replace(/::([a-zA-Z0-9_]+)/g, (match, type) => `/*TYPECAST*/${type}`);
-	const lines = tempSql.split('\n');
-	let newSql = '';
-	const allParameters: string[] = [];
-	const paramMap: Record<string, number> = {}; // Map for tracking named parameters
-	let paramIndex = 1; // For PostgreSQL, to track $1, $2, $3, ...
-	lines.forEach((line, index, array) => {
-		let newLine = line;
-		if (!line.trim().startsWith('--')) {
-			const parameters: string[] = line.match(regex)?.map((param) => param.slice(1)) || [];
-			allParameters.push(...parameters);
-			if (dialect == 'postgres') {
-				parameters.forEach((param) => {
-					// Check if the parameter has already been assigned an index
-					if (!paramMap[param]) {
-						paramMap[param] = paramIndex; // Assign new index for the named parameter
-						paramIndex++;
-					}
+export function preprocessSql(sql: string, dialect: 'postgres' | 'mysql' | 'sqlite'): PreprocessedSql {
+	const namedParamRegex = /:[a-zA-Z$_][a-zA-Z\d$_]*/g;
+	const tempSql = sql.replace(/::([a-zA-Z0-9_]+)/g, (_, type) => `/*TYPECAST*/${type}`);
 
-					// Replace the parameter with the assigned index
-					newLine = newLine.replace(`:${param}`, `$${paramMap[param]}`);
-				});
-			}
-			else {
-				// Replace named parameters with `?` for MySQL and sqlite
-				newLine = line.replace(regex, '?');
-			}
-		}
-		newSql += newLine;
-		if (index !== array.length - 1) {
-			newSql += '\n';
-		}
-	});
-	newSql = newSql.replace(/\/\*TYPECAST\*\/([a-zA-Z0-9_]+)/g, (_, type) => `::${type}`);
-
-	const processedSql: PreprocessedSql = {
-		sql: newSql,
-		namedParameters: allParameters
-	};
-	return processedSql;
-}
-
-export function preprocessPostgresSql(sql: string): PreprocessedPostgresSql {
-	const namedParamRegex = /:[a-zA-Z$_]+[a-zA-Z\d$_]*/g;
-	const positionalParamRegex = /\$(\d+)/g;
-
-	type NamedParamInfo = { paramName: string; paramNumber: number };
-	const namedParameters: NamedParamInfo[] = [];
-
-	// If SQL already contains $1, $2... → treat as positional, return as is
-	if (positionalParamRegex.test(sql)) {
-		sql.replace(positionalParamRegex, (_, num) => {
-			const number = parseInt(num, 10);
-			namedParameters.push({
-				paramName: `param${number}`,
-				paramNumber: number
-			});
-			return _;
-		});
-		return {
-			sql,
-			namedParameters
-		};
-	}
-
-	// Otherwise, replace :paramName with $1, $2...
-	let tempSql = sql.replace(/::([a-zA-Z0-9_]+)/g, (_, type) => `/*TYPECAST*/${type}`);
 	const lines = tempSql.split('\n');
 	let newSql = '';
 	const paramMap: Record<string, number> = {};
+	const namedParameters: NamedParamInfo[] = [];
 	let paramIndex = 1;
 
-	lines.forEach((line, index, array) => {
-		let newLine = line;
+	for (let i = 0; i < lines.length; i++) {
+		let line = lines[i];
+
 		if (!line.trim().startsWith('--')) {
+			// Extract named params (:paramName)
 			const matches = [...line.matchAll(namedParamRegex)];
-			matches.forEach((match) => {
-				const fullMatch = match[0];  // e.g. ":userId"
-				const param = fullMatch.slice(1); // remove `:`
-				if (!paramMap[param]) {
-					paramMap[param] = paramIndex++;
+			if (dialect === 'postgres') {
+				const positionalParamRegex = /\$(\d+)/g;
+				const positionalMatches = [...line.matchAll(positionalParamRegex)];
+				for (const match of positionalMatches) {
+					const paramNumber = parseInt(match[1], 10);
+					namedParameters.push({
+						paramName: `param${paramNumber}`,
+						paramNumber: paramNumber
+					});
 				}
-				const assignedNumber = paramMap[param];
+			}
 
-				namedParameters.push({
-					paramName: param,
-					paramNumber: assignedNumber
-				});
+			for (const match of matches) {
+				const fullMatch = match[0];
+				const paramName = fullMatch.slice(1);
 
-				newLine = newLine.replace(fullMatch, `$${assignedNumber}`);
-			});
+				if (!paramMap[paramName]) {
+					paramMap[paramName] = paramIndex++;
+				}
+				namedParameters.push({ paramName, paramNumber: paramMap[paramName] });
+			}
+
+			if (dialect === 'postgres') {
+				// Replace :paramName with $number
+				for (const param of Object.keys(paramMap)) {
+					const regex = new RegExp(`:${param}\\b`, 'g');
+					line = line.replace(regex, `$${paramMap[param]}`);
+				}
+			} else {
+				// For mysql/sqlite, replace :paramName with '?'
+				line = line.replace(namedParamRegex, '?');
+			}
 		}
-		newSql += newLine;
-		if (index !== array.length - 1) {
-			newSql += '\n';
-		}
-	});
 
-	// Restore typecasts
+		newSql += line;
+		if (i !== lines.length - 1) newSql += '\n';
+	}
+
 	newSql = newSql.replace(/\/\*TYPECAST\*\/([a-zA-Z0-9_]+)/g, (_, type) => `::${type}`);
 
 	return {
 		sql: newSql,
-		namedParameters
+		namedParameters,
 	};
 }
 

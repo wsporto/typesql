@@ -119,15 +119,11 @@ export type TypeSqlError = {
 
 export type PreprocessedSql = {
 	sql: string;
-	namedParameters: string[];
+	namedParameters: NamedParamInfo[];
 };
 
 export type NamedParamInfo = { paramName: string; paramNumber: number };
 export type NamedParamWithType = NamedParamInfo & { typeOid: number };
-export type PreprocessedPostgresSql = {
-	sql: string;
-	namedParameters: NamedParamInfo[];
-};
 
 export type CamelCaseName = Brand<string, 'CamelCase'>;
 
