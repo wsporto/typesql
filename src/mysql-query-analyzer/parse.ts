@@ -182,11 +182,12 @@ export function extractQueryInfo(
 	dbSchema: ColumnSchema[]
 ): QueryInfoResult | InsertInfoResult | UpdateInfoResult | DeleteInfoResult {
 	const { sql: processedSql, namedParameters } = preprocessSql(sql, 'mysql');
+	const paramNames = namedParameters.map(param => param.paramName);
 	const gererateNested = hasAnnotation(sql, '@nested');
 	const gererateDynamicQuery = hasAnnotation(sql, '@dynamicQuery');
 	const tree = parse(processedSql);
 
-	const traverseResult = traverseQueryContext(tree, dbSchema, namedParameters);
+	const traverseResult = traverseQueryContext(tree, dbSchema, paramNames);
 	if (traverseResult.type === 'Select') {
 		const queryInfoResult = extractSelectQueryInfo(traverseResult);
 		if (gererateNested) {
@@ -194,7 +195,7 @@ export function extractQueryInfo(
 			queryInfoResult.nestedResultInfo = nestedInfo;
 		}
 		if (gererateDynamicQuery) {
-			const dynamicQuery = describeDynamicQuery(traverseResult.dynamicSqlInfo, namedParameters, queryInfoResult.orderByColumns || []);
+			const dynamicQuery = describeDynamicQuery(traverseResult.dynamicSqlInfo, paramNames, queryInfoResult.orderByColumns || []);
 			queryInfoResult.dynamicQuery = dynamicQuery;
 		}
 

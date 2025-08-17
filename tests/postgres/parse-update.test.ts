@@ -12,8 +12,8 @@ describe('postgres-parse-update', () => {
 	});
 
 	it('update mytable1 set value = ? where id = ?', async () => {
-		const sql = 'update mytable1 set value = $1 where id = $2';
-		const actual = await describeQuery(client, sql, ['value', 'id'], schemaInfo);
+		const sql = 'update mytable1 set value = :value where id = :id';
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			multipleRowsResult: false,
 			queryType: 'Update',
@@ -42,12 +42,12 @@ describe('postgres-parse-update', () => {
 	});
 
 	it('CASE INSENSITIVE - UPDATE MYTABLE1 SET VALUE = ? WHERE ID = ?', async () => {
-		const sql = 'UPDATE MYTABLE1 SET VALUE = $1 WHERE ID = $2';
-		const actual = await describeQuery(client, sql, ['value', 'id'], schemaInfo);
+		const sql = 'UPDATE MYTABLE1 SET VALUE = :value WHERE ID = :id';
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
+			sql: 'UPDATE MYTABLE1 SET VALUE = $1 WHERE ID = $2',
 			multipleRowsResult: false,
 			queryType: 'Update',
-			sql,
 			columns: [],
 			data: [
 				{
@@ -72,8 +72,8 @@ describe('postgres-parse-update', () => {
 	});
 
 	it('update mytable3 set name = ? where id = ?', async () => {
-		const sql = 'update mytable3 set name = $1 where id = $2';
-		const actual = await describeQuery(client, sql, ['name', 'id'], schemaInfo);
+		const sql = 'update mytable3 set name = :name where id = :id';
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			multipleRowsResult: false,
 			queryType: 'Update',
@@ -105,7 +105,7 @@ describe('postgres-parse-update', () => {
 		const sql = `
 			UPDATE mytable2 SET name = $1, descr= $2 WHERE id = $3
 				`;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Update',
@@ -142,7 +142,7 @@ describe('postgres-parse-update', () => {
 			UPDATE mytable2 t2
 			SET name = 'a'
 				`;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Update',
@@ -163,7 +163,7 @@ describe('postgres-parse-update', () => {
 			SET name = 'a'
 			WHERE t2.id = $1
 			`;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Update',
@@ -190,7 +190,7 @@ describe('postgres-parse-update', () => {
 			SET name = 'a'
 			WHERE mytable2.id = $1
 			`;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Update',
@@ -226,7 +226,7 @@ describe('postgres-parse-update', () => {
 			WHERE t2.id = t3.id
 			AND t2.id IN (\${generatePlaceholders('$1', params.param1)})
 			`;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql: expectedSql,
 			queryType: 'Update',
@@ -248,12 +248,11 @@ describe('postgres-parse-update', () => {
 	});
 
 	it('update mytable1 set value = :value where id > :min and id < :max', async () => {
-		const sql = `
-			update mytable1 set value = $1 where id > $2 and id < $3
-				`;
-		const actual = await describeQuery(client, sql, ['value', 'min', 'max'], schemaInfo);
+		const sql = 'update mytable1 set value = :value where id > :min and id < :max';
+
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
-			sql,
+			sql: 'update mytable1 set value = $1 where id > $2 and id < $3',
 			queryType: 'Update',
 			multipleRowsResult: false,
 			columns: [],
@@ -284,13 +283,35 @@ describe('postgres-parse-update', () => {
 	});
 
 	it('update mytable1 set value = :value where id > :value or id < :value', async () => {
-		const sql = `
-			update mytable1 set value = $1 where id > $2 or id < $3
-				`;
+		const sql = 'update mytable1 set value = :value where id > :value or id < :value';
 
-		const actual = await describeQuery(client, sql, ['value', 'value', 'value'], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
-			sql,
+			sql: 'update mytable1 set value = $1 where id > $1 or id < $1',
+			queryType: 'Update',
+			multipleRowsResult: false,
+			columns: [],
+			data: [
+				{
+					name: 'value',
+					type: 'int4',
+					notNull: false
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('update mytable1 set value = :value where id > :id or id < :id', async () => {
+		const sql = 'update mytable1 set value = :value where id > :id or id < :id';
+
+		const actual = await describeQuery(client, sql, schemaInfo);
+		const expected: PostgresSchemaDef = {
+			sql: 'update mytable1 set value = $1 where id > $2 or id < $2',
 			queryType: 'Update',
 			multipleRowsResult: false,
 			columns: [],
@@ -303,12 +324,7 @@ describe('postgres-parse-update', () => {
 			],
 			parameters: [
 				{
-					name: 'value',
-					type: 'int4',
-					notNull: true
-				},
-				{
-					name: 'value',
+					name: 'id',
 					type: 'int4',
 					notNull: true
 				}
@@ -321,13 +337,11 @@ describe('postgres-parse-update', () => {
 	});
 
 	it('UPDATE mytable1 SET id = IFNULL(:id, id)', async () => {
-		const sql = `
-			UPDATE mytable5 SET id = COALESCE($1, id)
-				`;
+		const sql = 'UPDATE mytable5 SET id = COALESCE(:id, id)';
 
-		const actual = await describeQuery(client, sql, ['id'], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
-			sql,
+			sql: 'UPDATE mytable5 SET id = COALESCE($1, id)',
 			queryType: 'Update',
 			multipleRowsResult: false,
 			columns: [],
@@ -347,13 +361,11 @@ describe('postgres-parse-update', () => {
 	});
 
 	it('UPDATE mytable1 SET id = CASE WHEN :valueSet THEN :value ELSE value END WHERE id = :id', async () => {
-		const sql = `
-			UPDATE mytable5 SET id = CASE WHEN $1 THEN $2 ELSE year END WHERE id = $3
-				`;
+		const sql = 'UPDATE mytable5 SET id = CASE WHEN :valueSet THEN :value ELSE year END WHERE id = :id';
 
-		const actual = await describeQuery(client, sql, ['valueSet', 'value', 'id'], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
-			sql,
+			sql: 'UPDATE mytable5 SET id = CASE WHEN $1 THEN $2 ELSE year END WHERE id = $3',
 			queryType: 'Update',
 			multipleRowsResult: false,
 			columns: [],
@@ -384,13 +396,11 @@ describe('postgres-parse-update', () => {
 	});
 
 	it('UPDATE mytable2 SET name = CASE WHEN :nameSet THEN :name ELSE name END WHERE id = :id', async () => {
-		const sql = `
-			UPDATE mytable2 SET name = CASE WHEN $1 THEN $2 ELSE name END WHERE id = $3
-				`;
+		const sql = 'UPDATE mytable2 SET name = CASE WHEN :nameSet THEN :name ELSE name END WHERE id = :id';
 
-		const actual = await describeQuery(client, sql, ['nameSet', 'name', 'id'], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
-			sql,
+			sql: 'UPDATE mytable2 SET name = CASE WHEN $1 THEN $2 ELSE name END WHERE id = $3',
 			queryType: 'Update',
 			multipleRowsResult: false,
 			columns: [],
@@ -421,10 +431,10 @@ describe('postgres-parse-update', () => {
 	});
 
 	it('UPDATE mytable1 SET value = $1 RETURNING *', async () => {
-		const sql = 'UPDATE mytable1 SET value = $1 RETURNING *';
-		const actual = await describeQuery(client, sql, ['value'], schemaInfo);
+		const sql = 'UPDATE mytable1 SET value = :value RETURNING *';
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
-			sql,
+			sql: 'UPDATE mytable1 SET value = $1 RETURNING *',
 			queryType: 'Update',
 			multipleRowsResult: false,
 			returning: true,
@@ -458,10 +468,10 @@ describe('postgres-parse-update', () => {
 	});
 
 	it('UPDATE mytable1 SET value = $1 RETURNING id, id+id, value', async () => {
-		const sql = 'UPDATE mytable1 SET value = $1 RETURNING id, id+id, value';
-		const actual = await describeQuery(client, sql, ['value'], schemaInfo);
+		const sql = 'UPDATE mytable1 SET value = :value RETURNING id, id+id, value';
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
-			sql,
+			sql: 'UPDATE mytable1 SET value = $1 RETURNING id, id+id, value',
 			queryType: 'Update',
 			multipleRowsResult: false,
 			returning: true,
@@ -501,10 +511,10 @@ describe('postgres-parse-update', () => {
 	});
 
 	it('UPDATE all_types SET enum_column = :enum1, enum_column_constraint = :enum2 WHERE int4_column = :id', async () => {
-		const sql = 'UPDATE all_types SET enum_column = $1, enum_constraint = $2 WHERE enum_constraint = $3';
-		const actual = await describeQuery(client, sql, ['enum1', 'enum2', 'enum3'], schemaInfo);
+		const sql = 'UPDATE all_types SET enum_column = :enum1, enum_constraint = :enum2 WHERE enum_constraint = :enum3';
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
-			sql,
+			sql: 'UPDATE all_types SET enum_column = $1, enum_constraint = $2 WHERE enum_constraint = $3',
 			queryType: 'Update',
 			multipleRowsResult: false,
 			columns: [],
@@ -535,10 +545,10 @@ describe('postgres-parse-update', () => {
 	});
 
 	it('UPDATE schema1.users SET schema1_field1 = $1 WHERE id = $2', async () => {
-		const sql = 'UPDATE schema1.users SET schema1_field1 = $1 WHERE id = $2';
-		const actual = await describeQuery(client, sql, ['schema1_field1', 'id'], schemaInfo);
+		const sql = 'UPDATE schema1.users SET schema1_field1 = :schema1_field1 WHERE id = :id';
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
-			sql,
+			sql: 'UPDATE schema1.users SET schema1_field1 = $1 WHERE id = $2',
 			queryType: 'Update',
 			multipleRowsResult: false,
 			columns: [],

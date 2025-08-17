@@ -42,7 +42,7 @@ import { preprocessSql } from '../describe-query';
 export function parseAndInferNotNull(sql: string, dbSchema: ColumnSchema[]) {
 	const { sql: processedSql, namedParameters } = preprocessSql(sql, 'mysql');
 	const tree = parse(processedSql);
-	const result = traverseQueryContext(tree, dbSchema, namedParameters);
+	const result = traverseQueryContext(tree, dbSchema, namedParameters.map(param => param.paramName));
 	if (result.type === 'Select') {
 		return result.columns.map((col) => col.notNull);
 	}

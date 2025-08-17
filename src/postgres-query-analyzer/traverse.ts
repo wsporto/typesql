@@ -10,6 +10,7 @@ import { JsonArrayType, JsonFieldType, JsonObjType, JsonPropertyDef, JsonType, P
 import { parseSql } from '@wsporto/typesql-parser/postgres';
 import { UserFunctionSchema } from './types';
 import { evaluatesTrueIfNull } from './case-nullability-checker';
+import { getOrderByColumns } from './util';
 
 export type NotNullInfo = {
 	schema: string;
@@ -33,6 +34,7 @@ export type PostgresTraverseResult = {
 	whereParamtersNullability?: ParamInfo[];
 	parameterList: boolean[];
 	limit?: number;
+	orderByColumns?: string[];
 	returning?: boolean;
 	relations?: Relation2[];
 	dynamicQueryInfo?: DynamicSqlInfo2;
@@ -68,7 +70,7 @@ type TraverseContext = {
 	columnRefIsRecord?: true;
 	recursiveTableName?: string;
 	recursiveColumnNames?: string[];
-	groupBy?: boolean;
+	ignoreColumnRef?: boolean;
 }
 
 export type Relation3 = {
@@ -184,8 +186,12 @@ function traverseSelectstmt(selectstmt: SelectstmtContext, context: TraverseCont
 		columns: selectResult.columns,
 		parametersNullability: traverseResult.parameters.map(param => ({ isNotNull: param.isNotNull, ...addConstraintIfNotNull(param.checkConstraint) })),
 		parameterList: paramIsListResult,
+		orderByColumns: selectResult.orderByColumns,
 		limit
 	};
+	if (selectResult.orderByColumns && selectResult.orderByColumns.length > 0) {
+		postgresTraverseResult.orderByColumns = selectResult.orderByColumns;
+	}
 	if (traverseResult.relations) {
 		postgresTraverseResult.relations = traverseResult.relations;
 	}
@@ -221,6 +227,15 @@ function traverse_select_no_parens(select_no_parens: Select_no_parensContext, co
 	}
 	const select_clause = select_no_parens.select_clause();
 	const selectResult = traverse_select_clause(select_clause, context, traverseResult);
+	const sort_clause = select_no_parens.sort_clause_()?.sort_clause();
+	if (sort_clause) {
+		context.ignoreColumnRef = true;
+		sort_clause.sortby_list().sortby_list().forEach(sortby => {
+			const a_expr = sortby.a_expr();
+			traverse_a_expr(a_expr, context, traverseResult);
+		})
+		context.ignoreColumnRef = undefined;
+	}
 	const select_limit = select_no_parens.select_limit();
 	if (select_limit) {
 		const numParamsBefore = traverseResult.parameters.length;
@@ -298,6 +313,7 @@ function traverse_select_clause(select_clause: Select_clauseContext, context: Tr
 
 	return {
 		columns,
+		orderByColumns: mainSelectResult.orderByColumns,
 		singleRow: simple_select_intersect_list.length == 1 ? mainSelectResult.singleRow : false
 	}
 
@@ -354,11 +370,11 @@ function traverse_simple_select_pramary(simple_select_pramary: Simple_select_pra
 	simple_select_pramary.group_clause()?.group_by_list()?.group_by_item_list().forEach(group_by => {
 		const a_expr = group_by.a_expr();
 		if (a_expr) {
-			newContext.groupBy = true;
+			newContext.ignoreColumnRef = true;
 			/* The GROUP BY clause can reference column aliases defined in the SELECT list. 
 			There's no need to retrieve nullability or type information from the GROUP BY expressions (findColumn(col). */
 			traverse_a_expr(a_expr, newContext, traverseResult);
-			newContext.groupBy = false;
+			newContext.ignoreColumnRef = false;
 		}
 	});
 	const having_expr = simple_select_pramary.having_clause()?.a_expr();
@@ -367,9 +383,11 @@ function traverse_simple_select_pramary(simple_select_pramary: Simple_select_pra
 	}
 
 	const filteredColumns = filterColumns_simple_select_pramary(simple_select_pramary, { ...context, fromColumns: fromResult.columns, parentColumns: context.fromColumns }, traverseResult);
+	const orderByColumns: string[] = getOrderByColumns(fromResult.columns, filteredColumns);
 	return {
 		columns: filteredColumns,
-		singleRow: fromResult.singleRow
+		singleRow: fromResult.singleRow,
+		orderByColumns
 	};
 }
 
@@ -941,7 +959,7 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 		}
 		const columnref = c_expr.columnref();
 		if (columnref) {
-			if (context.groupBy) {
+			if (context.ignoreColumnRef) {
 				return {
 					column_name: columnref.getText(),
 					is_nullable: false,
@@ -1126,7 +1144,7 @@ function traversec_expr_case(c_expr_case: C_expr_caseContext, context: TraverseC
 	const elseIsNotNull = elseResult?.is_nullable === false || branchNotNull;
 	const notNull = elseIsNotNull && whenIsNotNull;
 	return {
-		column_name: '?column?',
+		column_name: 'case',
 		is_nullable: !notNull,
 		table: '',
 		schema: '',
@@ -1669,7 +1687,8 @@ function traverse_from_list(from_list: From_listContext, context: TraverseContex
 
 type FromResult = {
 	singleRow: boolean;
-	columns: NotNullInfo[]
+	columns: NotNullInfo[];
+	orderByColumns?: string[];
 }
 
 function getFromColumns(tableName: TableName, withColumns: NotNullInfo[], dbSchema: PostgresColumnSchema[]) {

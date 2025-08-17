@@ -1,0 +1,50 @@
+import pg from 'pg';
+
+export type Select05Params = {
+	orderBy: Select05OrderBy[];
+}
+
+export type Select05Result = {
+	id: number;
+}
+
+export async function select05(client: pg.Client | pg.Pool | pg.PoolClient, params: Select05Params): Promise<Select05Result[]> {
+	const sql = `
+	SELECT id FROM mytable1 ORDER BY ${buildOrderBy(params.orderBy)}
+	`
+	return client.query({ text: sql, rowMode: 'array' })
+		.then(res => res.rows.map(row => mapArrayToSelect05Result(row)));
+}
+
+function mapArrayToSelect05Result(data: any) {
+	const result: Select05Result = {
+		id: data[0]
+	}
+	return result;
+}
+
+const orderByColumns = ['id', 'value'] as const;
+
+export type Select05OrderBy = {
+	column: typeof orderByColumns[number];
+	direction: 'asc' | 'desc';
+}
+
+function buildOrderBy(orderBy: Select05OrderBy[]): string {
+	if (!Array.isArray(orderBy) || orderBy.length === 0) {
+		throw new Error('orderBy must be a non-empty array');
+	}
+
+	for (const { column, direction } of orderBy) {
+		if (!orderByColumns.includes(column)) {
+			throw new Error(`Invalid orderBy column: ${column}`);
+		}
+		if (direction !== 'asc' && direction !== 'desc') {
+			throw new Error(`Invalid orderBy direction: ${direction}`);
+		}
+	}
+
+	return orderBy
+		.map(({ column, direction }) => `"${column}" ${direction.toUpperCase()}`)
+		.join(', ');
+}

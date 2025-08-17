@@ -1,6 +1,7 @@
 import { TaskEither } from 'fp-ts/lib/TaskEither';
 import { PostgresSimpleType } from '../sqlite-query-analyzer/types';
 import { PostgresSchemaInfo } from '../schema-info';
+import { NamedParamInfo } from '../types';
 
 export type PostgresColumnSchema = {
 	schema: string;
@@ -24,7 +25,7 @@ export type DescribeParameters = {
 	sql: string;
 	postgresDescribeResult: PostgresDescribe;
 	schemaInfo: PostgresSchemaInfo;
-	namedParameters: string[];
+	namedParameters: NamedParamInfo[];
 }
 
 export type PostgresDescribe = {

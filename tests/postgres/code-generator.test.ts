@@ -54,6 +54,18 @@ describe('postgres-code-generator', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('select05 - SELECT id FROM mytable1 ORDER BY ?', async () => {
+		const sql = 'SELECT id FROM mytable1 ORDER BY :sort';
+
+		const actual = await generateCode(dialect, sql, 'select05', schemaInfo);
+		const expected = readFileSync('tests/postgres/expected-code/select05.ts.txt', 'utf-8');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('select06 - SELECT id FROM mytable1 ORDER BY ?', async () => {
 		const sql = `SELECT id
 FROM mytable2

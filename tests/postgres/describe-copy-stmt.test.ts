@@ -13,7 +13,7 @@ describe('postgres-describe-copy-stmt', () => {
 
 	it('COPY mytable1 (value) FROM STDIN WITH CSV', async () => {
 		const sql = 'COPY mytable1 (value) FROM STDIN WITH CSV';
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			multipleRowsResult: false,
 			queryType: 'Copy',

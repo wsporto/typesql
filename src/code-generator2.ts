@@ -20,9 +20,8 @@ export function generateCode(client: PgDielect, sql: string, queryName: string, 
 	if (isEmptySql(sql)) {
 		return okAsync('');
 	}
-	const { sql: processedSql, namedParameters } = preprocessSql(sql, 'postgres');
-	return _describeQuery(client, processedSql, namedParameters, schemaInfo)
-		.map(schemaDef => generateTsCode(processedSql, queryName, schemaDef, client.type))
+	return _describeQuery(client, sql, schemaInfo)
+		.map(schemaDef => generateTsCode(sql, queryName, schemaDef, client.type))
 }
 
 function isEmptySql(sql: string) {
@@ -33,8 +32,8 @@ function isEmptySql(sql: string) {
 	return lines.every(line => line.trim() === '' || line.trim().startsWith('//'))
 }
 
-function _describeQuery(databaseClient: PgDielect, sql: string, namedParameters: string[], dbSchema: PostgresSchemaInfo): ResultAsync<PostgresSchemaDef, TypeSqlError> {
-	return describeQuery(databaseClient.client, sql, namedParameters, dbSchema);
+function _describeQuery(databaseClient: PgDielect, sql: string, dbSchema: PostgresSchemaInfo): ResultAsync<PostgresSchemaDef, TypeSqlError> {
+	return describeQuery(databaseClient.client, sql, dbSchema);
 }
 
 export function createCodeBlockWriter() {
@@ -381,8 +380,10 @@ function generateTsCode(
 			parameters: tsDescriptor.parameters,
 			data: tsDescriptor.data || [],
 			returning: schemaDef.returning || false,
+			orderByTypeName: orderByTypeName,
+			orderByColumns: tsDescriptor.orderByColumns || [],
 			generateNested: tsDescriptor.nestedDescriptor2 != null,
-			nestedType: tsDescriptor.nestedDescriptor2 ? tsDescriptor.nestedDescriptor2[0].name : ''
+			nestedType: tsDescriptor.nestedDescriptor2 ? tsDescriptor.nestedDescriptor2[0].name : '',
 		}
 		codeWriter.writeExecFunction(writer, execFunctionParams);
 	}
@@ -461,7 +462,7 @@ function writeParamsType(writer: CodeBlockWriter, paramsTypeName: string, params
 			writer.writeLine(`${field.name}${optionalOp}: ${field.tsType}${orNull};`);
 		});
 		if (generateOrderBy) {
-			writer.writeLine(`orderBy: [${orderByTypeName}, 'asc' | 'desc'][];`);
+			writer.writeLine(`orderBy: ${orderByTypeName}[];`);
 		}
 	});
 }
@@ -510,6 +511,9 @@ function createTsDescriptor(capitalizedName: string, schemaDef: PostgresSchemaDe
 		multipleRowsResult: schemaDef.multipleRowsResult,
 		parameterNames: [],
 		data: schemaDef.data?.map(param => mapParameterToTsFieldDescriptor(param))
+	}
+	if (schemaDef.orderByColumns) {
+		tsDescriptor.orderByColumns = schemaDef.orderByColumns;
 	}
 	if (schemaDef.nestedInfo) {
 		const nestedDescriptor2 = schemaDef.nestedInfo.map((relation) => {
@@ -608,6 +612,8 @@ type ExecFunctionParameters = {
 	parameters: TsParameterDescriptor[];
 	data: TsParameterDescriptor[];
 	returning: boolean;
+	orderByTypeName: string;
+	orderByColumns: string[];
 	generateNested: boolean;
 	nestedType: string;
 }
@@ -659,12 +665,12 @@ function _writeCopyFunction(writer: CodeBlockWriter, params: ExecFunctionParamet
 }
 
 function _writeExecFunction(writer: CodeBlockWriter, params: ExecFunctionParameters) {
-	const { functionName, paramsType, dataType, returnType, parameters, generateNested, nestedType } = params;
+	const { functionName, paramsType, dataType, returnType, parameters, orderByTypeName, orderByColumns, generateNested, nestedType } = params;
 	let functionParams = params.queryType === 'Copy' ? 'client: pg.Client | pg.PoolClient' : 'client: pg.Client | pg.Pool | pg.PoolClient'
 	if (params.data.length > 0) {
 		functionParams += `, data: ${dataType}`;
 	}
-	if (parameters.length > 0) {
+	if (parameters.length > 0 || orderByColumns.length > 0) {
 		functionParams += `, params: ${paramsType}`;
 	}
 	const allParamters = [...params.data.map(param => paramToDriver(param, 'data')),
@@ -730,6 +736,34 @@ function _writeExecFunction(writer: CodeBlockWriter, params: ExecFunctionParamet
 		});
 		writer.writeLine('return result;');
 	});
+	if (orderByColumns.length > 0) {
+		writer.blankLine();
+		writer.writeLine(`const orderByColumns = [${orderByColumns.map(col => `'${col}'`).join(', ')}] as const;`);
+		writer.blankLine();
+		writer.write(`export type ${orderByTypeName} =`).block(() => {
+			writer.writeLine('column: typeof orderByColumns[number];');
+			writer.writeLine(`direction: 'asc' | 'desc';`);
+		});
+		writer.blankLine();
+		writer.write(`function buildOrderBy(orderBy: ${orderByTypeName}[]): string`).block(() => {
+			writer.write('if (!Array.isArray(orderBy) || orderBy.length === 0)').block(() => {
+				writer.writeLine(`throw new Error('orderBy must be a non-empty array');`);
+			});
+			writer.blankLine();
+			writer.write('for (const { column, direction } of orderBy)').block(() => {
+				writer.write('if (!orderByColumns.includes(column))').block(() => {
+					writer.writeLine('throw new Error(`Invalid orderBy column: ${column}`);');
+				});
+				writer.write(`if (direction !== 'asc' && direction !== 'desc')`).block(() => {
+					writer.writeLine('throw new Error(`Invalid orderBy direction: ${direction}`);');
+				});
+			});
+			writer.blankLine();
+			writer.writeLine('return orderBy');
+			writer.indent().write('.map(({ column, direction }) => `"${column}" ${direction.toUpperCase()}`)').newLine();
+			writer.indent().write(`.join(', ');`).newLine();
+		});
+	}
 
 	if (generateNested) {
 		writer.blankLine();

@@ -17,7 +17,7 @@ describe('postgres-parse-select-subqueries', () => {
             select id from mytable1
         ) t
         `;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -45,7 +45,7 @@ describe('postgres-parse-select-subqueries', () => {
             inner join mytable2 t2 on t1.id = t2.id
         ) t
         `;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -78,7 +78,7 @@ describe('postgres-parse-select-subqueries', () => {
             select value as id from mytable1
         ) t1
         `;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -105,7 +105,7 @@ describe('postgres-parse-select-subqueries', () => {
             select value as id from mytable1
         ) t1
         `;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -132,7 +132,7 @@ describe('postgres-parse-select-subqueries', () => {
             select name, name as id from mytable2
         ) t2
         `;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -167,7 +167,7 @@ describe('postgres-parse-select-subqueries', () => {
         ) t2
         WHERE t2.id = $1 and t2.name = $2
         `;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -213,7 +213,7 @@ describe('postgres-parse-select-subqueries', () => {
             ) t1
         ) t2
         `;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -242,7 +242,7 @@ describe('postgres-parse-select-subqueries', () => {
             ) t1
         ) t2
         `;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -267,7 +267,7 @@ describe('postgres-parse-select-subqueries', () => {
 		const sql = `
         SELECT * from (select * from (select id, name from mytable2) t1) t2
         `;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -302,7 +302,7 @@ describe('postgres-parse-select-subqueries', () => {
             ) t1
         ) t2
         `;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -335,7 +335,7 @@ describe('postgres-parse-select-subqueries', () => {
             ) t2
         ) t3
         `;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -368,7 +368,7 @@ describe('postgres-parse-select-subqueries', () => {
             ) t2
         ) t3
         `;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -393,7 +393,7 @@ describe('postgres-parse-select-subqueries', () => {
 		const sql = `
         select name from mytable1, (select count(*) as name from mytable2) t2
         `;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -418,7 +418,7 @@ describe('postgres-parse-select-subqueries', () => {
 		const sql = `
         select name from mytable2 where exists ( select id from mytable1 where value = $1)
         `;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -446,10 +446,10 @@ describe('postgres-parse-select-subqueries', () => {
 	});
 
 	it('select name from mytable2 where not exists ( select id from mytable1 where id = :a and value = :b)', async () => {
-		const sql = 'select name from mytable2 where not exists ( select id from mytable1 where id = $1 and value = $2)';
-		const actual = await describeQuery(client, sql, ['a', 'b'], schemaInfo);
+		const sql = 'select name from mytable2 where not exists ( select id from mytable1 where id = :a and value = :b)';
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
-			sql,
+			sql: 'select name from mytable2 where not exists ( select id from mytable1 where id = $1 and value = $2)',
 			queryType: 'Select',
 			multipleRowsResult: true,
 			columns: [
@@ -483,7 +483,7 @@ describe('postgres-parse-select-subqueries', () => {
 		const sql = `
         SELECT id from (SELECT * FROM mytable1) as t1 WHERE t1.id > $1
         `;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -514,7 +514,7 @@ describe('postgres-parse-select-subqueries', () => {
 		const sql = `
         SELECT id, exists(SELECT 1 FROM mytable2 t2 where t2.id = t1.id) as has from mytable1 t1
         `;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -547,7 +547,7 @@ describe('postgres-parse-select-subqueries', () => {
 			id, (select max(id) from mytable2 m2 where m2.id =1) as subQuery
 		FROM mytable1
         `;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -578,7 +578,7 @@ describe('postgres-parse-select-subqueries', () => {
 		const sql = `
         SELECT id, exists(SELECT min(id) FROM mytable2 t2 where t2.id = t1.id) as has from mytable1 t1
         `;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -615,7 +615,7 @@ describe('postgres-parse-select-subqueries', () => {
 			) AS array
 		FROM mytable1
         `;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -649,7 +649,7 @@ describe('postgres-parse-select-subqueries', () => {
 		) t
 		
         `;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',

@@ -12,12 +12,12 @@ describe('postgres-parse-delete', () => {
 	});
 
 	it('delete from mytable1 where id = ?', async () => {
-		const sql = 'delete from mytable1 where id = $1';
-		const actual = await describeQuery(client, sql, ['id'], schemaInfo);
+		const sql = 'delete from mytable1 where id = :id';
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
+			sql: 'delete from mytable1 where id = $1',
 			multipleRowsResult: false,
 			queryType: 'Delete',
-			sql,
 			columns: [],
 			parameters: [
 				{
@@ -35,12 +35,12 @@ describe('postgres-parse-delete', () => {
 	});
 
 	it('delete from mytable1 where id = ?', async () => {
-		const sql = 'delete from mytable1 where value = $1';
-		const actual = await describeQuery(client, sql, ['value'], schemaInfo);
+		const sql = 'delete from mytable1 where value = :value';
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
+			sql: 'delete from mytable1 where value = $1',
 			multipleRowsResult: false,
 			queryType: 'Delete',
-			sql,
 			columns: [],
 			parameters: [
 				{
@@ -58,12 +58,12 @@ describe('postgres-parse-delete', () => {
 	});
 
 	it('CASE INSENSITIVE - DELETE FROM MYTABLE1 WHERE ID = ?', async () => {
-		const sql = 'DELETE FROM MYTABLE1 WHERE ID = $1';
-		const actual = await describeQuery(client, sql, ['id'], schemaInfo);
+		const sql = 'DELETE FROM MYTABLE1 WHERE ID = :id';
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
+			sql: 'DELETE FROM MYTABLE1 WHERE ID = $1',
 			multipleRowsResult: false,
 			queryType: 'Delete',
-			sql,
 			columns: [],
 			parameters: [
 				{
@@ -81,9 +81,9 @@ describe('postgres-parse-delete', () => {
 	});
 
 	it('delete from mytable1 where id in (?)', async () => {
-		const sql = 'delete from mytable1 where id in ($1)';
+		const sql = 'delete from mytable1 where id in (:id)';
 		const expectedSql = `delete from mytable1 where id in (\${generatePlaceholders('$1', params.id)})`;
-		const actual = await describeQuery(client, sql, ['id'], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			multipleRowsResult: false,
 			queryType: 'Delete',
@@ -105,10 +105,10 @@ describe('postgres-parse-delete', () => {
 	});
 
 	it('DELETE FROM mytable1 WHERE id = :id RETURNING *', async () => {
-		const sql = 'DELETE FROM mytable1 WHERE id = $1 RETURNING *';
-		const actual = await describeQuery(client, sql, ['id'], schemaInfo);
+		const sql = 'DELETE FROM mytable1 WHERE id = :id RETURNING *';
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
-			sql,
+			sql: 'DELETE FROM mytable1 WHERE id = $1 RETURNING *',
 			queryType: 'Delete',
 			multipleRowsResult: false,
 			returning: true,
@@ -141,10 +141,10 @@ describe('postgres-parse-delete', () => {
 	});
 
 	it('DELETE FROM mytable1 WHERE id = :id RETURNING id, id+id, value', async () => {
-		const sql = 'DELETE FROM mytable1 WHERE id = $1 RETURNING id, id+id, value';
-		const actual = await describeQuery(client, sql, ['id'], schemaInfo);
+		const sql = 'DELETE FROM mytable1 WHERE id = :id RETURNING id, id+id, value';
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
-			sql,
+			sql: 'DELETE FROM mytable1 WHERE id = $1 RETURNING id, id+id, value',
 			queryType: 'Delete',
 			multipleRowsResult: false,
 			returning: true,
@@ -183,10 +183,10 @@ describe('postgres-parse-delete', () => {
 	});
 
 	it('DELETE FROM schema1.users WHERE id = :id RETURNING id, username, schema1_field1', async () => {
-		const sql = 'DELETE FROM schema1.users WHERE id = $1 RETURNING id, username, schema1_field1';
-		const actual = await describeQuery(client, sql, ['id'], schemaInfo);
+		const sql = 'DELETE FROM schema1.users WHERE id = :id RETURNING id, username, schema1_field1';
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
-			sql,
+			sql: 'DELETE FROM schema1.users WHERE id = $1 RETURNING id, username, schema1_field1',
 			queryType: 'Delete',
 			multipleRowsResult: false,
 			returning: true,

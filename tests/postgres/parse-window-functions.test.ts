@@ -18,7 +18,7 @@ describe('postgres-parse-window-functions', () => {
             ROW_NUMBER() OVER() as num
         FROM mytable1
         `;
-		const actual = await describeQuery(client, sql, ['id'], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -46,7 +46,7 @@ describe('postgres-parse-window-functions', () => {
 				(ROW_NUMBER() OVER()) as num
 			FROM mytable1
 			`;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -90,7 +90,7 @@ describe('postgres-parse-window-functions', () => {
 				CUME_DIST() OVER() as cumeDistValue
 			FROM mytable2
 			`;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -147,7 +147,7 @@ describe('postgres-parse-window-functions', () => {
 				SUM(value) OVER() AS total
 			FROM mytable1
 			`;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -172,7 +172,7 @@ describe('postgres-parse-window-functions', () => {
 		const sql = `
 			SELECT AVG(value) OVER() as avgResult FROM mytable1
 			`;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -200,7 +200,7 @@ describe('postgres-parse-window-functions', () => {
 				LAG(name) OVER() as lagValue
 			FROM mytable2
 			`;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -237,7 +237,7 @@ describe('postgres-parse-window-functions', () => {
 				NTILE(COALESCE($2::int4, id)) OVER() as value5
 			FROM mytable1
 			`;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -303,7 +303,7 @@ describe('postgres-parse-window-functions', () => {
 				NTILE(COALESCE($2::int4, id)) OVER() as value5
 			FROM mytable1
 			`;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -365,7 +365,7 @@ describe('postgres-parse-window-functions', () => {
 				NTH_VALUE(value, $1) OVER() as nthValue
 			FROM mytable1
 			`;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',

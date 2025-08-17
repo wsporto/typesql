@@ -21,7 +21,7 @@ describe('parse-select-complex-queries', () => {
         GROUP BY t1.value, t2.name, t3.id
         HAVING count(*) > 1
         `;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -71,7 +71,7 @@ describe('parse-select-complex-queries', () => {
         HAVING
             SUM(double_value) > $1
         `;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -120,7 +120,7 @@ describe('parse-select-complex-queries', () => {
             AND SUM(double_value) = $4
 
         `;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -182,7 +182,7 @@ describe('parse-select-complex-queries', () => {
         UNION
         SELECT id FROM mytable3
         `;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -209,7 +209,7 @@ describe('parse-select-complex-queries', () => {
 			UNION
 			SELECT int8_column as col FROM all_types
             `;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -235,7 +235,7 @@ describe('parse-select-complex-queries', () => {
         SELECT (SELECT name FROM mytable2 where id = t1.id) as fullname
         FROM mytable1 t1
         `;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -261,7 +261,7 @@ describe('parse-select-complex-queries', () => {
         SELECT (SELECT name as namealias FROM mytable2 where id = $1) as fullname
         FROM mytable1 t1
         `;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -295,7 +295,7 @@ describe('parse-select-complex-queries', () => {
         )
         SELECT name from names
         `;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -325,7 +325,7 @@ describe('parse-select-complex-queries', () => {
         FROM names n
         INNER JOIN allvalues v ON n.id = v.id
         `;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -365,7 +365,7 @@ describe('parse-select-complex-queries', () => {
             allvalues AS (SELECT t1.id, name FROM mytable1 t1 INNER JOIN names n ON t1.id = n.id)
         SELECT * from allvalues;
         `;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -399,7 +399,7 @@ describe('parse-select-complex-queries', () => {
         SELECT names.*
         FROM names
         `;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -436,7 +436,7 @@ describe('parse-select-complex-queries', () => {
         SELECT *
         FROM result
         `;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -471,7 +471,7 @@ describe('parse-select-complex-queries', () => {
         ORDER BY t1.value DESC
 		LIMIT 100
         `;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -525,7 +525,7 @@ describe('parse-select-complex-queries', () => {
 			)
 			SELECT * FROM seq
 			`;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -556,7 +556,7 @@ describe('parse-select-complex-queries', () => {
 			)
 			SELECT * FROM conc
 			`;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -587,7 +587,7 @@ describe('parse-select-complex-queries', () => {
 			)
 			SELECT * FROM cte
 			`;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -618,7 +618,7 @@ describe('parse-select-complex-queries', () => {
 			)
 			SELECT * FROM cte
 			`;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -655,7 +655,7 @@ describe('parse-select-complex-queries', () => {
 			)
 			SELECT * FROM dates
 			`;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -690,7 +690,7 @@ describe('parse-select-complex-queries', () => {
 			SELECT id, value FROM parent
 			WHERE id <> $2`;
 
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -742,7 +742,7 @@ describe('parse-select-complex-queries', () => {
 			SELECT a,b FROM parent
 			WHERE a <> $2`;
 
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
@@ -795,7 +795,7 @@ describe('parse-select-complex-queries', () => {
 			)
 			SELECT * from cte
 			`;
-		const actual = await describeQuery(client, sql, [], schemaInfo);
+		const actual = await describeQuery(client, sql, schemaInfo);
 		const expected: PostgresSchemaDef = {
 			sql,
 			queryType: 'Select',
