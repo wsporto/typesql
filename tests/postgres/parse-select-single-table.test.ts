@@ -1241,6 +1241,74 @@ describe('postgres-select-single-table', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('select with order by function', async () => {
+		const sql = `
+			select name from mytable2 order by concat(name, $1::text)
+			`;
+		const actual = await describeQuery(client, sql, schemaInfo);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'name',
+					type: 'text',
+					notNull: false,
+					table: 'mytable2'
+				}
+			],
+			//only return order by columns for expressions like "order by $1"
+			//orderByColumns: [],
+			parameters: [
+				{
+					name: 'param1',
+					type: 'text',
+					notNull: true
+				}
+			]
+		};
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('remove the ordering column from select', async () => {
+		const sql = `
+			select value from (
+			select id, value, case when value = 1 then 1 else 2 end from mytable1
+			) t order by $1`;
+
+		const expectedSql = `
+			select value from (
+			select id, value, case when value = 1 then 1 else 2 end from mytable1
+			) t order by \${buildOrderBy(params.orderBy)}`;
+
+		const actual = await describeQuery(client, sql, schemaInfo);
+		const expected: PostgresSchemaDef = {
+			sql: expectedSql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'value',
+					type: 'int4',
+					notNull: false,
+					table: 't'
+				}
+			],
+			orderByColumns: ['id', 'value', 'case'],
+			parameters: []
+		};
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('SELECT id FROM mytable1 LIMIT ?, ?', async () => {
 		const sql = 'SELECT id FROM mytable1 LIMIT $1 OFFSET $2';
 

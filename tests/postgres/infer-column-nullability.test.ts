@@ -1042,7 +1042,7 @@ describe('Infer column nullability', () => {
 
 		const expected: NotNullInfo[] = [
 			{
-				column_name: '?column?',
+				column_name: 'case',
 				is_nullable: true,
 				table: '',
 				schema: '',
@@ -1059,7 +1059,7 @@ describe('Infer column nullability', () => {
 
 		const expected: NotNullInfo[] = [
 			{
-				column_name: '?column?',
+				column_name: 'case',
 				is_nullable: false,
 				table: '',
 				schema: '',
@@ -1076,7 +1076,7 @@ describe('Infer column nullability', () => {
 
 		const expected: NotNullInfo[] = [
 			{
-				column_name: '?column?',
+				column_name: 'case',
 				is_nullable: true,
 				table: '',
 				schema: '',
@@ -1093,7 +1093,7 @@ describe('Infer column nullability', () => {
 
 		const expected: NotNullInfo[] = [
 			{
-				column_name: '?column?',
+				column_name: 'case',
 				is_nullable: false,
 				table: '',
 				schema: '',

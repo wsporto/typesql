@@ -70,7 +70,7 @@ type TraverseContext = {
 	columnRefIsRecord?: true;
 	recursiveTableName?: string;
 	recursiveColumnNames?: string[];
-	groupBy?: boolean;
+	ignoreColumnRef?: boolean;
 }
 
 export type Relation3 = {
@@ -227,6 +227,15 @@ function traverse_select_no_parens(select_no_parens: Select_no_parensContext, co
 	}
 	const select_clause = select_no_parens.select_clause();
 	const selectResult = traverse_select_clause(select_clause, context, traverseResult);
+	const sort_clause = select_no_parens.sort_clause_()?.sort_clause();
+	if (sort_clause) {
+		context.ignoreColumnRef = true;
+		sort_clause.sortby_list().sortby_list().forEach(sortby => {
+			const a_expr = sortby.a_expr();
+			traverse_a_expr(a_expr, context, traverseResult);
+		})
+		context.ignoreColumnRef = undefined;
+	}
 	const select_limit = select_no_parens.select_limit();
 	if (select_limit) {
 		const numParamsBefore = traverseResult.parameters.length;
@@ -361,11 +370,11 @@ function traverse_simple_select_pramary(simple_select_pramary: Simple_select_pra
 	simple_select_pramary.group_clause()?.group_by_list()?.group_by_item_list().forEach(group_by => {
 		const a_expr = group_by.a_expr();
 		if (a_expr) {
-			newContext.groupBy = true;
+			newContext.ignoreColumnRef = true;
 			/* The GROUP BY clause can reference column aliases defined in the SELECT list. 
 			There's no need to retrieve nullability or type information from the GROUP BY expressions (findColumn(col). */
 			traverse_a_expr(a_expr, newContext, traverseResult);
-			newContext.groupBy = false;
+			newContext.ignoreColumnRef = false;
 		}
 	});
 	const having_expr = simple_select_pramary.having_clause()?.a_expr();
@@ -950,7 +959,7 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 		}
 		const columnref = c_expr.columnref();
 		if (columnref) {
-			if (context.groupBy) {
+			if (context.ignoreColumnRef) {
 				return {
 					column_name: columnref.getText(),
 					is_nullable: false,
@@ -1135,7 +1144,7 @@ function traversec_expr_case(c_expr_case: C_expr_caseContext, context: TraverseC
 	const elseIsNotNull = elseResult?.is_nullable === false || branchNotNull;
 	const notNull = elseIsNotNull && whenIsNotNull;
 	return {
-		column_name: '?column?',
+		column_name: 'case',
 		is_nullable: !notNull,
 		table: '',
 		schema: '',
