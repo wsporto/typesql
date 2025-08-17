@@ -1150,6 +1150,97 @@ describe('postgres-select-single-table', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('select value as myValue from mytable1 order by ?', async () => {
+		const sql = 'select value as myvalue from mytable1 order by $1';
+
+		const actual = await describeQuery(client, sql, schemaInfo);
+		const expected: PostgresSchemaDef = {
+			sql: 'select value as myvalue from mytable1 order by ${buildOrderBy(params.orderBy)}',
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'myvalue',
+					type: 'int4',
+					notNull: false,
+					table: 'mytable1'
+				}
+			],
+			orderByColumns: ['id', 'value', 'myvalue'],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('order by with case when expression', async () => {
+		const sql = 'select value, case when value = 1 then 1 else 2 end as ordering from mytable1 order by $1';
+
+		const actual = await describeQuery(client, sql, schemaInfo);
+		const expected: PostgresSchemaDef = {
+			sql: 'select value, case when value = 1 then 1 else 2 end as ordering from mytable1 order by ${buildOrderBy(params.orderBy)}',
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'value',
+					type: 'int4',
+					notNull: false,
+					table: 'mytable1'
+				},
+				{
+					name: 'ordering',
+					type: 'int4',
+					notNull: true,
+					table: ''
+				}
+			],
+			orderByColumns: ['id', 'value', 'ordering'],
+			parameters: []
+		};
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('order by with subselect', async () => {
+		const sql = `
+			select value from (
+			select id, value, case when value = 1 then 1 else 2 end as ordering from mytable1
+			) t order by $1`;
+
+		const expectedSql = `
+			select value from (
+			select id, value, case when value = 1 then 1 else 2 end as ordering from mytable1
+			) t order by \${buildOrderBy(params.orderBy)}`
+
+		const actual = await describeQuery(client, sql, schemaInfo);
+		const expected: PostgresSchemaDef = {
+			sql: expectedSql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'value',
+					type: 'int4',
+					notNull: false,
+					table: 't'
+				}
+			],
+			orderByColumns: ['id', 'value', 'ordering'],
+			parameters: []
+		};
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('SELECT id FROM mytable1 LIMIT ?, ?', async () => {
 		const sql = 'SELECT id FROM mytable1 LIMIT $1 OFFSET $2';
 
