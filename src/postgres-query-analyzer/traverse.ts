@@ -372,9 +372,9 @@ function traverse_simple_select_pramary(simple_select_pramary: Simple_select_pra
 	if (having_expr) {
 		traverse_a_expr(having_expr, newContext, traverseResult);
 	}
-	const orderByColumns: string[] = getOrderByColumns(context.fromColumns, fromResult.columns);
 
 	const filteredColumns = filterColumns_simple_select_pramary(simple_select_pramary, { ...context, fromColumns: fromResult.columns, parentColumns: context.fromColumns }, traverseResult);
+	const orderByColumns: string[] = getOrderByColumns(fromResult.columns, filteredColumns);
 	return {
 		columns: filteredColumns,
 		singleRow: fromResult.singleRow,

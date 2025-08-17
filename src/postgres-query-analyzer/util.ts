@@ -1,34 +1,35 @@
 import { NotNullInfo } from './traverse';
 
 export function getOrderByColumns(fromColumns: NotNullInfo[], selectColumns: NotNullInfo[]): string[] {
-	const orderByColumns: string[] = [];
-	fromColumns.forEach((col) => {
-		const ambiguous = isAmbiguous(fromColumns, col.column_name);
-		if (!ambiguous) {
-			const exists = orderByColumns.find((orderBy) => orderBy === col.column_name);
-			if (!exists) {
-				orderByColumns.push(col.column_name);
-			}
-		}
-		if (col.table) {
-			orderByColumns.push(`${col.table}.${col.column_name}`);
-		}
-	});
-	selectColumns.forEach((col) => {
-		const duplicated = selectColumns.filter((orderBy) => orderBy.column_name === col.column_name);
-		if (duplicated.length <= 1) {
-			const exists = orderByColumns.find((orderBy) => orderBy === col.column_name);
-			if (!exists) {
-				orderByColumns.push(col.column_name);
-			}
-		}
-	});
+	const seen = new Set<string>();
+	const result: string[] = [];
 
-	return orderByColumns;
+	// Add fromColumns
+	for (const col of fromColumns) {
+		const name = isAmbiguous(fromColumns, col.column_name)
+			? `${col.table}.${col.column_name}`
+			: col.column_name;
+		const lowerName = name.toLowerCase();
+		if (!seen.has(lowerName)) {
+			result.push(lowerName);
+			seen.add(lowerName);
+		}
+	}
+
+	// Add selectColumns (may include expressions like 'nullif')
+	for (const col of selectColumns) {
+		const lowerName = col.column_name.toLowerCase();
+		if (!seen.has(lowerName)) {
+			result.push(lowerName);
+			seen.add(lowerName);
+		}
+	}
+
+	return result;
 }
 
 function isAmbiguous(columns: NotNullInfo[], columnName: string) {
-	const filterByName = columns.filter((col) => col.column_name === columnName);
+	const filterByName = columns.filter((col) => col.column_name.toLowerCase() === columnName.toLowerCase());
 	return filterByName.length > 1;
 }
 

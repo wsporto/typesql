@@ -1668,7 +1668,7 @@ describe('Infer column nullability', () => {
 					isNotNull: false
 				}
 			],
-			orderByColumns: ['id']
+			orderByColumns: ['id', 'concat']
 		};
 		assert.deepStrictEqual(actual, expected);
 	});
@@ -1882,7 +1882,7 @@ describe('Infer column nullability', () => {
 					isNotNull: true
 				}
 			],
-			orderByColumns: ['id', 'value']
+			orderByColumns: ['id', 'value', 'nullif']
 		};
 		assert.deepStrictEqual(actual, expected);
 	});
