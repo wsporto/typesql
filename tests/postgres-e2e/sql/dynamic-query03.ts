@@ -27,67 +27,65 @@ type SetOperator = 'IN' | 'NOT IN';
 type BetweenOperator = 'BETWEEN';
 
 export type DynamicQuery03Where =
-	| ['id', NumericOperator, number | null]
-	| ['id', SetOperator, number[]]
-	| ['id', BetweenOperator, number | null, number | null]
-	| ['value', NumericOperator, number | null]
-	| ['value', SetOperator, number[]]
-	| ['value', BetweenOperator, number | null, number | null]
+	| { column: 'id'; op: NumericOperator; value: number | null }
+	| { column: 'id'; op: SetOperator; value: number[] }
+	| { column: 'id'; op: BetweenOperator; value: [number | null, number | null] }
+	| { column: 'value'; op: NumericOperator; value: number | null }
+	| { column: 'value'; op: SetOperator; value: number[] }
+	| { column: 'value'; op: BetweenOperator; value: [number | null, number | null] }
 
-let currentIndex: number;
 export async function dynamicQuery03(client: pg.Client | pg.Pool | pg.PoolClient, params?: DynamicQuery03DynamicParams): Promise<DynamicQuery03Result[]> {
-	currentIndex = 0;
-	const where = whereConditionsToObject(params?.where);
-	const paramsValues: any = [];
-	let sql = 'SELECT';
-	if (params?.select == null || params.select.id) {
-		sql = appendSelect(sql, `t1.id`);
+	const isSelected = (field: keyof DynamicQuery03Select) =>
+		params?.select == null || params.select[field] === true;
+
+	const selectedSqlFragments: string[] = [];
+	const selectedFields: (keyof DynamicQuery03Result)[] = [];
+	const paramsValues: any[] = [];
+
+	const whereColumns = new Set(params?.where?.map(w => w.column) || []);
+
+	if (isSelected('id')) {
+		selectedSqlFragments.push('t1.id');
+		selectedFields.push('id');
 	}
-	if (params?.select == null || params.select.value) {
-		sql = appendSelect(sql, `t1.value`);
+	if (isSelected('value')) {
+		selectedSqlFragments.push('t1.value');
+		selectedFields.push('value');
 	}
-	sql += EOL + `FROM mytable1 t1`;
-	sql += EOL + `WHERE 1 = 1`;
+
+	const fromSqlFragments: string[] = [];
+	fromSqlFragments.push(`FROM mytable1 t1`);
+
+	const whereSqlFragments: string[] = [];
+
+	let currentIndex = paramsValues.length;
+	const placeholder = () => `$${++currentIndex}`;
+
 	params?.where?.forEach(condition => {
-		const where = whereCondition(condition);
-		if (where?.hasValue) {
-			sql += EOL + 'AND ' + where.sql;
-			paramsValues.push(...where.values);
+		const whereClause = whereCondition(condition, placeholder);
+		if (whereClause?.hasValue) {
+			whereSqlFragments.push(whereClause.sql);
+			paramsValues.push(...whereClause.values);
 		}
 	});
+
+	const whereSql = whereSqlFragments.length > 0 ? `WHERE ${whereSqlFragments.join(' AND ')}` : '';
+
+	const sql = `SELECT
+	${selectedSqlFragments.join(`,${EOL}`)}
+	${fromSqlFragments.join(EOL)}
+	${whereSql}`;
+
 	return client.query({ text: sql, rowMode: 'array', values: paramsValues })
-		.then(res => res.rows.map(row => mapArrayToDynamicQuery03Result(row, params?.select)));
+		.then(res => res.rows.map(row => mapArrayToDynamicQuery03Result(row, selectedFields)));
 }
 
-function mapArrayToDynamicQuery03Result(data: any, select?: DynamicQuery03Select) {
-	const result = {} as DynamicQuery03Result;
-	let rowIndex = -1;
-	if (select == null || select.id) {
-		rowIndex++;
-		result.id = data[rowIndex];
-	}
-	if (select == null || select.value) {
-		rowIndex++;
-		result.value = data[rowIndex];
-	}
-	return result;
-}
-
-function appendSelect(sql: string, selectField: string) {
-	if (sql.toUpperCase().endsWith('SELECT')) {
-		return sql + EOL + selectField;
-	}
-	else {
-		return sql + ', ' + EOL + selectField;
-	}
-}
-
-function whereConditionsToObject(whereConditions?: DynamicQuery03Where[]) {
-	const obj = {} as any;
-	whereConditions?.forEach(condition => {
-		obj[condition[0]] = true;
+function mapArrayToDynamicQuery03Result(data: any, selectedFields: (keyof DynamicQuery03Result)[]) {
+	const result: DynamicQuery03Result = {};
+	selectedFields.forEach((field, index) => {
+		result[field] = data[index];
 	});
-	return obj;
+	return result;
 }
 
 type WhereConditionResult = {
@@ -96,35 +94,34 @@ type WhereConditionResult = {
 	values: any[];
 }
 
-function whereCondition(condition: DynamicQuery03Where): WhereConditionResult | null {
+function whereCondition(condition: DynamicQuery03Where, placeholder: () => string): WhereConditionResult | null {
+	const selectFragment = selectFragments[condition.column];
+	const { op, value } = condition;
 
-	const selectFragment = selectFragments[condition[0]];
-	const operator = condition[1];
-
-	if (operator == 'BETWEEN') {
+	if (op === 'BETWEEN') {
+		const [from, to] = Array.isArray(value) ? value : [null, null];
 		return {
 			sql: `${selectFragment} BETWEEN ${placeholder()} AND ${placeholder()}`,
-			hasValue: condition[2] != null && condition[3] != null,
-			values: [condition[2], condition[3]]
+			hasValue: from != null && to != null,
+			values: [from, to]
 		}
 	}
-	if (operator == 'IN' || operator == 'NOT IN') {
+	if (op === 'IN' || op === 'NOT IN') {
+		if (!Array.isArray(value) || value.length === 0) {
+			return { sql: '', hasValue: false, values: [] };
+		}
 		return {
-			sql: `${selectFragment} ${operator} (${condition[2]?.map(_ => placeholder()).join(', ')})`,
-			hasValue: condition[2] != null && condition[2].length > 0,
-			values: condition[2]
+			sql: `${selectFragment} ${op} (${value.map(() => placeholder()).join(', ')})`,
+			hasValue: true,
+			values: value
 		}
 	}
-	if (NumericOperatorList.includes(operator)) {
+	if (NumericOperatorList.includes(op)) {
 		return {
-			sql: `${selectFragment} ${operator} ${placeholder()}`,
-			hasValue: condition[2] != null,
-			values: [condition[2]]
+			sql: `${selectFragment} ${op} ${placeholder()}`,
+			hasValue: value != null,
+			values: [value]
 		}
 	}
 	return null;
-}
-
-function placeholder(): string {
-	return `$${++currentIndex}`;
 }

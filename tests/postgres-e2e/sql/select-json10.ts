@@ -7,7 +7,7 @@ export type SelectJson10Result = {
 
 export type SelectJson10Result2Type = {
 	id: number;
-	value?: number;
+	value: number | null;
 }
 
 export async function selectJson10(client: pg.Client | pg.Pool | pg.PoolClient): Promise<SelectJson10Result | null> {
