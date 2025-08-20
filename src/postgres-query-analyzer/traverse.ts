@@ -361,7 +361,7 @@ function traverse_simple_select_pramary(simple_select_pramary: Simple_select_pra
 			const parameters = traverseResult.parameters.slice(numParamsBefore).map((_, index) => index + numParamsBefore);
 			const relations = extractRelations(where_a_expr);
 			traverseResult.dynamicQueryInfo?.where.push({
-				fragment: `AND ${extractOriginalSql(where_a_expr)}`,
+				fragment: `${extractOriginalSql(where_a_expr)}`,
 				parameters,
 				dependOnRelations: relations
 			})

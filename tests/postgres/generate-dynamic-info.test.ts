@@ -176,7 +176,7 @@ describe('postgres-generate-dynamic-info', () => {
 			],
 			where: [
 				{
-					fragment: 'AND ($2 is NULL or m2.name = $3)',
+					fragment: '($2 is NULL or m2.name = $3)',
 					dependOnRelations: ['m2'],
 					parameters: [1, 2]
 				}
@@ -282,7 +282,7 @@ describe('postgres-generate-dynamic-info', () => {
 			],
 			where: [
 				{
-					fragment: 'AND ($2::text is NULL or m2.name = $2)',
+					fragment: '($2::text is NULL or m2.name = $2)',
 					parameters: [1, 2]
 				}
 			]
@@ -351,7 +351,7 @@ describe('postgres-generate-dynamic-info', () => {
 			],
 			where: [
 				{
-					fragment: `AND m2.name LIKE concat('%', $1, '%')`,
+					fragment: `m2.name LIKE concat('%', $1, '%')`,
 					dependOnRelations: ['m2'],
 					parameters: [0]
 				}
@@ -477,7 +477,7 @@ describe('postgres-generate-dynamic-info', () => {
 			],
 			where: [
 				{
-					fragment: `AND m2.name LIKE concat('%', $1::text, '%')`,
+					fragment: `m2.name LIKE concat('%', $1::text, '%')`,
 					parameters: [0]
 				}
 			]
@@ -673,7 +673,7 @@ describe('postgres-generate-dynamic-info', () => {
 			],
 			where: [
 				{
-					fragment: `AND (concat('%', t2.name, '%') = $1 OR concat('%', t3.name, '%') = $1)`,
+					fragment: `(concat('%', t2.name, '%') = $1 OR concat('%', t3.name, '%') = $1)`,
 					dependOnRelations: ['t2', 't3'],
 					parameters: [0, 1]
 				}
@@ -767,7 +767,7 @@ describe('postgres-generate-dynamic-info', () => {
 			],
 			where: [
 				{
-					fragment: `AND (concat('%', t2.name, '%') = $1 OR concat('%', t3.name, '%') = $1)`,
+					fragment: `(concat('%', t2.name, '%') = $1 OR concat('%', t3.name, '%') = $1)`,
 					parameters: [0, 1]
 				}
 			]
@@ -822,7 +822,7 @@ describe('postgres-generate-dynamic-info', () => {
 			],
 			where: [
 				{
-					fragment: 'AND t3.id > 1',
+					fragment: 't3.id > 1',
 					dependOnRelations: ['t3'],
 					parameters: []
 				}
@@ -871,7 +871,7 @@ describe('postgres-generate-dynamic-info', () => {
 			],
 			where: [
 				{
-					fragment: 'AND t3.id > 1',
+					fragment: 't3.id > 1',
 					parameters: []
 				}
 			]
@@ -1035,7 +1035,7 @@ describe('postgres-generate-dynamic-info', () => {
 			],
 			where: [
 				{
-					fragment: 'AND m2.name = $1',
+					fragment: 'm2.name = $1',
 					dependOnRelations: ['m2'],
 					parameters: [0]
 				}
@@ -1271,7 +1271,7 @@ describe('postgres-generate-dynamic-info', () => {
 			],
 			where: [
 				{
-					fragment: `AND greatest(c1.id, $3) = least(c2.id, $3)`,
+					fragment: `greatest(c1.id, $3) = least(c2.id, $3)`,
 					dependOnRelations: ['c1', 'c2'],
 					parameters: [4, 5]
 				}
@@ -1352,7 +1352,7 @@ describe('postgres-generate-dynamic-info', () => {
 			],
 			where: [
 				{
-					fragment: `AND greatest(c1.id, $3) = least(c2.id, $3)`,
+					fragment: `greatest(c1.id, $3) = least(c2.id, $3)`,
 					parameters: [4, 5]
 				}
 			]
