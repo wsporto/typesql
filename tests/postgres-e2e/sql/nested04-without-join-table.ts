@@ -5,7 +5,7 @@ export type Nested04WithoutJoinTableResult = {
 	name: string;
 	id_2: number;
 	name_2: string;
-	email?: string;
+	email: string | null;
 }
 
 export type Nested04WithoutJoinTableNestedSurveys = {

@@ -80,7 +80,7 @@ describe('e2e-postgres-dynamic-query', () => {
 				name: true
 			},
 			where: [
-				['id', 'BETWEEN', 2, 3]
+				{ column: 'id', op: 'BETWEEN', value: [2, 3] }
 			]
 		});
 
@@ -105,7 +105,7 @@ describe('e2e-postgres-dynamic-query', () => {
 				name: true
 			},
 			where: [
-				['id', 'IN', [1, 4]]
+				{ column: 'id', op: 'IN', value: [1, 4] }
 			]
 		});
 
@@ -130,7 +130,7 @@ describe('e2e-postgres-dynamic-query', () => {
 				name: true
 			},
 			where: [
-				['id', 'NOT IN', [1, 4]]
+				{ column: 'id', op: 'NOT IN', value: [1, 4] }
 			]
 		});
 
@@ -155,8 +155,8 @@ describe('e2e-postgres-dynamic-query', () => {
 				name: true
 			},
 			where: [
-				['id', '>=', 2],
-				['id', '<=', 3]
+				{ column: 'id', op: '>=', value: 2 },
+				{ column: 'id', op: '<=', value: 3 }
 			]
 		});
 
@@ -197,7 +197,7 @@ describe('e2e-postgres-dynamic-query', () => {
 				value: true
 			},
 			where: [
-				['value', '=', 2]
+				{ column: 'value', op: '=', value: 2 }
 			]
 		});
 
@@ -217,7 +217,7 @@ describe('e2e-postgres-dynamic-query', () => {
 				name: true
 			},
 			where: [
-				['name', 'LIKE', 'o%']
+				{ column: 'name', op: 'LIKE', value: 'o%' }
 			]
 		});
 
@@ -238,7 +238,7 @@ describe('e2e-postgres-dynamic-query', () => {
 				name: true
 			},
 			where: [
-				['name', 'LIKE', '%o%']
+				{ column: 'name', op: 'LIKE', value: '%o%' }
 			]
 		});
 
@@ -267,7 +267,7 @@ describe('e2e-postgres-dynamic-query', () => {
 				name: true
 			},
 			where: [
-				['name', '=', 'two']
+				{ column: 'name', op: '=', value: 'two' }
 			]
 		});
 
@@ -287,7 +287,7 @@ describe('e2e-postgres-dynamic-query', () => {
 				id: true
 			},
 			where: [
-				['id', '=', 1]
+				{ column: 'id', op: '=', value: 1 }
 			]
 		});
 
@@ -324,7 +324,7 @@ describe('e2e-postgres-dynamic-query', () => {
 				param2: 1
 			},
 			where: [
-				['timestamp_not_null_column', '>=', new Date(2025, 0, 2)]
+				{ column: 'timestamp_not_null_column', op: '>=', value: new Date(2025, 0, 2) }
 			]
 		});
 

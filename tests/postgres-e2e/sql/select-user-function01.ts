@@ -2,7 +2,7 @@ import pg from 'pg';
 
 export type SelectUserFunction01Result = {
 	id: number;
-	value?: number;
+	value: number | null;
 }
 
 export async function selectUserFunction01(client: pg.Client | pg.Pool | pg.PoolClient): Promise<SelectUserFunction01Result[]> {

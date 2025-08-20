@@ -6,7 +6,7 @@ export type SelectUserFunction02Params = {
 
 export type SelectUserFunction02Result = {
 	id: number;
-	value?: number;
+	value: number | null;
 }
 
 export async function selectUserFunction02(client: pg.Client | pg.Pool | pg.PoolClient, params: SelectUserFunction02Params): Promise<SelectUserFunction02Result | null> {
