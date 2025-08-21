@@ -6,7 +6,7 @@ import {
     generateTsCodeForMySQL as generateTsCode,
     generateTsDescriptor,
     generateTsFileFromContent
-} from '../src/code-generator';
+} from '../src/codegen/mysql2';
 import { describeSql } from '../src/describe-query';
 import { dbSchema } from './mysql-query-analyzer/create-schema';
 import { createMysqlClientForTest } from '../src/queryExectutor';

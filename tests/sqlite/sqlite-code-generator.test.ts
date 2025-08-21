@@ -1,7 +1,7 @@
 import assert from 'node:assert';
 
 import { readFileSync } from 'node:fs';
-import { generateCrud, generateTsCode } from '../../src/sqlite-query-analyzer/code-generator';
+import { generateCrud, generateTsCode } from '../../src/codegen/sqlite';
 import { sqliteDbSchema } from '../mysql-query-analyzer/create-schema';
 import Database from 'better-sqlite3';
 import { isLeft } from 'fp-ts/lib/Either';

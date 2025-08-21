@@ -1,7 +1,7 @@
 import assert from 'node:assert';
 
 import { readFileSync } from 'node:fs';
-import { generateCode, generateCrud } from '../../src/code-generator2';
+import { generateCode, generateCrud } from '../../src/codegen/pg';
 import { PgDielect } from '../../src/types';
 import { createTestClient, createSchemaInfo } from './schema';
 

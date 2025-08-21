@@ -1,6 +1,6 @@
 import { type Either, isLeft, left, right } from 'fp-ts/lib/Either';
 import type { ColumnInfo, ColumnSchema } from '../mysql-query-analyzer/types';
-import { parseSql } from './parser';
+import { parseSql } from '../sqlite-query-analyzer/parser';
 import {
 	type TsDescriptor,
 	capitalize,
@@ -13,7 +13,7 @@ import {
 	renameInvalidNames,
 	replaceOrderByParam,
 	writeTypeBlock
-} from '../code-generator';
+} from './mysql2';
 import CodeBlockWriter from 'code-block-writer';
 import type {
 	BunDialect,
@@ -29,17 +29,17 @@ import type {
 	TsParameterDescriptor,
 	TypeSqlError
 } from '../types';
-import type { SQLiteType } from './types';
-import type { Field2 } from './sqlite-describe-nested-query';
+import type { SQLiteType } from '../sqlite-query-analyzer/types';
+import type { Field2 } from '../sqlite-query-analyzer/sqlite-describe-nested-query';
 import { type RelationType2, type TsField2, mapToTsRelation2 } from '../ts-nested-descriptor';
 import { preprocessSql } from '../describe-query';
-import { explainSql } from './query-executor';
+import { explainSql } from '../sqlite-query-analyzer/query-executor';
 import { mapToDynamicParams, mapToDynamicResultColumns, mapToDynamicSelectColumns } from '../ts-dynamic-query-descriptor';
 import { EOL } from 'node:os';
 import { mapColumnType } from '../drivers/sqlite';
 import { mapColumnType as mapPgColumnType } from '../dialects/postgres';
 import { PostgresColumnInfo } from '../postgres-query-analyzer/types';
-import { writeDynamicQueryOperators, writeWhereConditionFunction } from '../generic/codegen-util';
+import { writeDynamicQueryOperators, writeWhereConditionFunction } from './shared/codegen-util';
 
 type ExecFunctionParams = {
 	functionName: string;

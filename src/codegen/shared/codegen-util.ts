@@ -1,5 +1,5 @@
 import CodeBlockWriter from 'code-block-writer';
-import { TsFieldDescriptor } from '../types';
+import { TsFieldDescriptor } from '../../types';
 
 export function hasStringColumn(columns: TsFieldDescriptor[]) {
 	return columns.some((c) => c.tsType === 'string');

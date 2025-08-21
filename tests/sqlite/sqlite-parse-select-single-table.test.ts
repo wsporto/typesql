@@ -4,7 +4,7 @@ import { isLeft } from 'fp-ts/lib/Either';
 import { parseSql } from '../../src/sqlite-query-analyzer/parser';
 import { sqliteDbSchema } from '../mysql-query-analyzer/create-schema';
 import Database from 'better-sqlite3';
-import { validateAndGenerateCode } from '../../src/sqlite-query-analyzer/code-generator';
+import { validateAndGenerateCode } from '../../src/codegen/sqlite';
 import { loadDbSchema } from '../../src/sqlite-query-analyzer/query-executor';
 
 describe('sqlite-Test simple select statements', () => {

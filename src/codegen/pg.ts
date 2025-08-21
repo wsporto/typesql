@@ -1,19 +1,19 @@
 import CodeBlockWriter from 'code-block-writer';
-import { capitalize, convertToCamelCaseName, generateRelationType, getOperator, hasStringColumn, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor } from './code-generator';
-import { CrudQueryType, PgDielect, QueryType, TsFieldDescriptor, TsParameterDescriptor, TypeSqlError } from './types';
-import { describeQuery } from './postgres-query-analyzer/describe';
-import { ColumnSchema } from './mysql-query-analyzer/types';
-import { mapColumnType } from './dialects/postgres';
-import { JsonArrayType, JsonFieldType, JsonMapType, JsonObjType, JsonType, PostgresType } from './sqlite-query-analyzer/types';
-import { preprocessSql } from './describe-query';
+import { capitalize, convertToCamelCaseName, generateRelationType, getOperator, hasStringColumn, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor } from './mysql2';
+import { CrudQueryType, PgDielect, QueryType, TsFieldDescriptor, TsParameterDescriptor, TypeSqlError } from '../types';
+import { describeQuery } from '../postgres-query-analyzer/describe';
+import { ColumnSchema } from '../mysql-query-analyzer/types';
+import { mapColumnType } from '../dialects/postgres';
+import { JsonArrayType, JsonFieldType, JsonMapType, JsonObjType, JsonType, PostgresType } from '../sqlite-query-analyzer/types';
+import { preprocessSql } from '../describe-query';
 import { okAsync, ResultAsync } from 'neverthrow';
-import { getQueryName, mapPostgrsFieldToTsField, writeCollectFunction } from './sqlite-query-analyzer/code-generator';
-import { mapToTsRelation2, RelationType2 } from './ts-nested-descriptor';
+import { getQueryName, mapPostgrsFieldToTsField, writeCollectFunction } from './sqlite';
+import { mapToTsRelation2, RelationType2 } from '../ts-nested-descriptor';
 import { EOL } from 'node:os';
-import { PostgresColumnInfo, PostgresParameterDef, PostgresSchemaDef } from './postgres-query-analyzer/types';
-import { PostgresSchemaInfo } from './schema-info';
-import { PostgresColumnSchema } from './drivers/types';
-import { writeDynamicQueryOperators, writeWhereConditionFunction } from './generic/codegen-util';
+import { PostgresColumnInfo, PostgresParameterDef, PostgresSchemaDef } from '../postgres-query-analyzer/types';
+import { PostgresSchemaInfo } from '../schema-info';
+import { PostgresColumnSchema } from '../drivers/types';
+import { writeDynamicQueryOperators, writeWhereConditionFunction } from './shared/codegen-util';
 
 
 
