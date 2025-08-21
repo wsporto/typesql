@@ -37,19 +37,19 @@ type SetOperator = 'IN' | 'NOT IN';
 type BetweenOperator = 'BETWEEN';
 
 export type DynamicQuery08Where =
-	| ['text_column', StringOperator, string | null]
-	| ['text_column', SetOperator, string[]]
-	| ['text_column', BetweenOperator, string | null, string | null]
-	| ['date', NumericOperator, Date | null]
-	| ['date', SetOperator, Date[]]
-	| ['date', BetweenOperator, Date | null, Date | null]
-	| ['date_time', NumericOperator, Date | null]
-	| ['date_time', SetOperator, Date[]]
-	| ['date_time', BetweenOperator, Date | null, Date | null]
+	| { column: 'text_column'; op: StringOperator; value: string | null }
+	| { column: 'text_column'; op: SetOperator; value: string[] }
+	| { column: 'text_column'; op: BetweenOperator; value: [string | null, string | null] }
+	| { column: 'date'; op: NumericOperator; value: Date | null }
+	| { column: 'date'; op: SetOperator; value: Date[] }
+	| { column: 'date'; op: BetweenOperator; value: [Date | null, Date | null] }
+	| { column: 'date_time'; op: NumericOperator; value: Date | null }
+	| { column: 'date_time'; op: SetOperator; value: Date[] }
+	| { column: 'date_time'; op: BetweenOperator; value: [Date | null, Date | null] }
 
 export function dynamicQuery08(db: Database, params?: DynamicQuery08DynamicParams): DynamicQuery08Result[] {
-	const where = whereConditionsToObject(params?.where);
 	const paramsValues: any = [];
+	const whereColumns = new Set(params?.where?.map(w => w.column) || []);
 	let sql = 'SELECT';
 	if (params?.select == null || params.select.text_column) {
 		sql = appendSelect(sql, `text_column`);
@@ -66,7 +66,7 @@ export function dynamicQuery08(db: Database, params?: DynamicQuery08DynamicParam
 	paramsValues.push(params?.params?.param1?.toISOString().split('T')[0] ?? null);
 	paramsValues.push(params?.params?.param2?.toISOString().split('.')[0].replace('T', ' ') ?? null);
 	params?.where?.forEach(condition => {
-		const where = whereCondition(condition);
+		const where = whereCondition(condition, () => '?');
 		if (where?.hasValue) {
 			sql += EOL + 'AND ' + where.sql;
 			paramsValues.push(...where.values);
@@ -105,62 +105,49 @@ function appendSelect(sql: string, selectField: string) {
 	}
 }
 
-function whereConditionsToObject(whereConditions?: DynamicQuery08Where[]) {
-	const obj = {} as any;
-	whereConditions?.forEach(condition => {
-		const where = whereCondition(condition);
-		if (where?.hasValue) {
-			obj[condition[0]] = true;
-		}
-	});
-	return obj;
-}
-
 type WhereConditionResult = {
 	sql: string;
 	hasValue: boolean;
 	values: any[];
 }
 
-function whereCondition(condition: DynamicQuery08Where): WhereConditionResult | undefined {
+function whereCondition(condition: DynamicQuery08Where, placeholder: () => string): WhereConditionResult | null {
+	const selectFragment = selectFragments[condition.column];
+	const { op, value } = condition;
 
-	const selectFragment = selectFragments[condition[0]];
-	const operator = condition[1];
-
-	if (operator == 'LIKE') {
+	if (op === 'LIKE') {
 		return {
-			sql: `${selectFragment} LIKE concat('%', ?, '%')`,
-			hasValue: condition[2] != null,
-			values: [condition[2]]
-		}
-	}
-	if (operator == 'BETWEEN') {
-		const value1 = isDate(condition[2]) ? condition[2]?.toISOString() : condition[2];
-		const value2 = isDate(condition[3]) ? condition[3]?.toISOString() : condition[3];
-		const param = isDate(condition[2]) && isDate(condition[3]) ? 'date(?)' : '?';
-		return {
-			sql: `${selectFragment} BETWEEN ${param} AND ${param}`,
-			hasValue: value1 != null && value2 != null,
-			values: [value1, value2]
-		}
-	}
-	if (operator == 'IN' || operator == 'NOT IN') {
-		return {
-			sql: `${selectFragment} ${operator} (${condition[2]?.map(value => isDate(value) ? 'date(?)' : '?').join(', ')})`,
-			hasValue: condition[2] != null && condition[2].length > 0,
-			values: condition[2].map(value => isDate(value) ? value.toISOString() : value)
-		}
-	}
-	if (NumericOperatorList.includes(operator)) {
-		const value = isDate(condition[2]) ? condition[2]?.toISOString() : condition[2];
-		const param = isDate(condition[2]) ? 'date(?)' : '?';
-		return {
-			sql: `${selectFragment} ${operator} ${param}`,
+			sql: `${selectFragment} LIKE ${placeholder()}`,
 			hasValue: value != null,
 			values: [value]
 		}
 	}
-	return undefined;
+	if (op === 'BETWEEN') {
+		const [from, to] = Array.isArray(value) ? value : [null, null];
+		return {
+			sql: `${selectFragment} BETWEEN ${placeholder()} AND ${placeholder()}`,
+			hasValue: from != null && to != null,
+			values: [from, to]
+		}
+	}
+	if (op === 'IN' || op === 'NOT IN') {
+		if (!Array.isArray(value) || value.length === 0) {
+			return { sql: '', hasValue: false, values: [] };
+		}
+		return {
+			sql: `${selectFragment} ${op} (${value.map(() => placeholder()).join(', ')})`,
+			hasValue: true,
+			values: value
+		}
+	}
+	if (NumericOperatorList.includes(op)) {
+		return {
+			sql: `${selectFragment} ${op} ${placeholder()}`,
+			hasValue: value != null,
+			values: [value]
+		}
+	}
+	return null;
 }
 
 function isDate(value: any): value is Date {

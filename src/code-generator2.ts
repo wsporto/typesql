@@ -13,6 +13,7 @@ import { EOL } from 'node:os';
 import { PostgresColumnInfo, PostgresParameterDef, PostgresSchemaDef } from './postgres-query-analyzer/types';
 import { PostgresSchemaInfo } from './schema-info';
 import { PostgresColumnSchema } from './drivers/types';
+import { writeDynamicQueryOperators, writeWhereConditionFunction } from './generic/codegen-util';
 
 
 
@@ -121,21 +122,7 @@ function generateTsCode(
 		});
 		writer.write(' as const;');
 		writer.blankLine();
-		writer.writeLine(`const NumericOperatorList = ['=', '<>', '>', '<', '>=', '<='] as const;`);
-		writer.writeLine('type NumericOperator = typeof NumericOperatorList[number];');
-		if (hasStringColumn(tsDescriptor.columns)) {
-			writer.writeLine(`type StringOperator = '=' | '<>' | '>' | '<' | '>=' | '<=' | 'LIKE';`);
-		}
-		writer.writeLine(`type SetOperator = 'IN' | 'NOT IN';`);
-		writer.writeLine(`type BetweenOperator = 'BETWEEN';`);
-		writer.blankLine();
-		writer.write(`export type ${whereTypeName} =`).indent(() => {
-			for (const col of tsDescriptor.columns) {
-				writer.writeLine(`| { column: '${col.name}'; op: ${getOperator(col.tsType)}; value: ${col.tsType} | null }`);
-				writer.writeLine(`| { column: '${col.name}'; op: SetOperator; value: ${col.tsType}[] }`);
-				writer.writeLine(`| { column: '${col.name}'; op: BetweenOperator; value: [${col.tsType} | null, ${col.tsType} | null] }`);
-			}
-		});
+		writeDynamicQueryOperators(writer, whereTypeName, tsDescriptor.columns);
 		writer.blankLine();
 		let functionArguments = 'client: pg.Client | pg.Pool | pg.PoolClient';
 		// if (params.data.length > 0) {
@@ -307,46 +294,7 @@ function generateTsCode(
 			writer.writeLine('values: any[];');
 		});
 		writer.blankLine();
-		writer.write(`function whereCondition(condition: ${whereTypeName}, placeholder: () => string): WhereConditionResult | null `).block(() => {
-			writer.writeLine('const selectFragment = selectFragments[condition.column];');
-			writer.writeLine('const { op, value } = condition;');
-			writer.blankLine();
-			if (hasStringColumn(tsDescriptor.columns)) {
-				writer.write(`if (op === 'LIKE') `).block(() => {
-					writer.write('return ').block(() => {
-						writer.writeLine("sql: `${selectFragment} LIKE ${placeholder()}`,");
-						writer.writeLine('hasValue: value != null,');
-						writer.writeLine('values: [value]');
-					});
-				});
-			}
-			writer.write(`if (op === 'BETWEEN') `).block(() => {
-				writer.writeLine('const [from, to] = Array.isArray(value) ? value : [null, null];');
-				writer.write('return ').block(() => {
-					writer.writeLine('sql: `${selectFragment} BETWEEN ${placeholder()} AND ${placeholder()}`,');
-					writer.writeLine('hasValue: from != null && to != null,');
-					writer.writeLine('values: [from, to]');
-				});
-			});
-			writer.write(`if (op === 'IN' || op === 'NOT IN') `).block(() => {
-				writer.write('if (!Array.isArray(value) || value.length === 0)').block(() => {
-					writer.writeLine(`return { sql: '', hasValue: false, values: [] };`);
-				})
-				writer.write('return ').block(() => {
-					writer.writeLine("sql: `${selectFragment} ${op} (${value.map(() => placeholder()).join(', ')})`,");
-					writer.writeLine('hasValue: true,');
-					writer.writeLine('values: value');
-				});
-			});
-			writer.write('if (NumericOperatorList.includes(op)) ').block(() => {
-				writer.write('return ').block(() => {
-					writer.writeLine('sql: `${selectFragment} ${op} ${placeholder()}`,');
-					writer.writeLine('hasValue: value != null,');
-					writer.writeLine('values: [value]');
-				});
-			});
-			writer.writeLine('return null;');
-		});
+		writeWhereConditionFunction(writer, whereTypeName, tsDescriptor.columns);
 	}
 
 	if (tsDescriptor.nestedDescriptor2) {

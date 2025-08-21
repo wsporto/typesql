@@ -29,17 +29,17 @@ type SetOperator = 'IN' | 'NOT IN';
 type BetweenOperator = 'BETWEEN';
 
 export type DynamicQuery07Where =
-	| ['myId', NumericOperator, number | null]
-	| ['myId', SetOperator, number[]]
-	| ['myId', BetweenOperator, number | null, number | null]
-	| ['name', StringOperator, string | null]
-	| ['name', SetOperator, string[]]
-	| ['name', BetweenOperator, string | null, string | null]
+	| { column: 'myId'; op: NumericOperator; value: number | null }
+	| { column: 'myId'; op: SetOperator; value: number[] }
+	| { column: 'myId'; op: BetweenOperator; value: [number | null, number | null] }
+	| { column: 'name'; op: StringOperator; value: string | null }
+	| { column: 'name'; op: SetOperator; value: string[] }
+	| { column: 'name'; op: BetweenOperator; value: [string | null, string | null] }
 
 export function dynamicQuery07(db: Database, params: DynamicQuery07DynamicParams): DynamicQuery07Result[] {
-	const where = whereConditionsToObject(params?.where);
 	const orderBy = orderByToObject(params.orderBy);
 	const paramsValues: any = [];
+	const whereColumns = new Set(params?.where?.map(w => w.column) || []);
 	let sql = 'SELECT';
 	if (params?.select == null || params.select.myId) {
 		sql = appendSelect(sql, `m1.id as myId`);
@@ -50,7 +50,7 @@ export function dynamicQuery07(db: Database, params: DynamicQuery07DynamicParams
 	sql += EOL + `FROM mytable1 m1`;
 	if (params?.select == null
 		|| params.select.name
-		|| where.name != null
+		|| whereColumns.has('name')
 		|| orderBy['m2.id'] != null
 		|| orderBy['name'] != null
 		|| orderBy['m2.name'] != null
@@ -60,7 +60,7 @@ export function dynamicQuery07(db: Database, params: DynamicQuery07DynamicParams
 	}
 	sql += EOL + `WHERE 1 = 1`;
 	params?.where?.forEach(condition => {
-		const where = whereCondition(condition);
+		const where = whereCondition(condition, () => '?');
 		if (where?.hasValue) {
 			sql += EOL + 'AND ' + where.sql;
 			paramsValues.push(...where.values);
@@ -96,17 +96,6 @@ function appendSelect(sql: string, selectField: string) {
 	}
 }
 
-function whereConditionsToObject(whereConditions?: DynamicQuery07Where[]) {
-	const obj = {} as any;
-	whereConditions?.forEach(condition => {
-		const where = whereCondition(condition);
-		if (where?.hasValue) {
-			obj[condition[0]] = true;
-		}
-	});
-	return obj;
-}
-
 function orderByToObject(orderBy: DynamicQuery07DynamicParams['orderBy']) {
 	const obj = {} as any;
 	orderBy?.forEach(order => {
@@ -121,40 +110,43 @@ type WhereConditionResult = {
 	values: any[];
 }
 
-function whereCondition(condition: DynamicQuery07Where): WhereConditionResult | undefined {
+function whereCondition(condition: DynamicQuery07Where, placeholder: () => string): WhereConditionResult | null {
+	const selectFragment = selectFragments[condition.column];
+	const { op, value } = condition;
 
-	const selectFragment = selectFragments[condition[0]];
-	const operator = condition[1];
-
-	if (operator == 'LIKE') {
+	if (op === 'LIKE') {
 		return {
-			sql: `${selectFragment} LIKE concat('%', ?, '%')`,
-			hasValue: condition[2] != null,
-			values: [condition[2]]
+			sql: `${selectFragment} LIKE ${placeholder()}`,
+			hasValue: value != null,
+			values: [value]
 		}
 	}
-	if (operator == 'BETWEEN') {
+	if (op === 'BETWEEN') {
+		const [from, to] = Array.isArray(value) ? value : [null, null];
 		return {
-			sql: `${selectFragment} BETWEEN ? AND ?`,
-			hasValue: condition[2] != null && condition[3] != null,
-			values: [condition[2], condition[3]]
+			sql: `${selectFragment} BETWEEN ${placeholder()} AND ${placeholder()}`,
+			hasValue: from != null && to != null,
+			values: [from, to]
 		}
 	}
-	if (operator == 'IN' || operator == 'NOT IN') {
+	if (op === 'IN' || op === 'NOT IN') {
+		if (!Array.isArray(value) || value.length === 0) {
+			return { sql: '', hasValue: false, values: [] };
+		}
 		return {
-			sql: `${selectFragment} ${operator} (${condition[2]?.map(_ => '?').join(', ')})`,
-			hasValue: condition[2] != null && condition[2].length > 0,
-			values: condition[2]
+			sql: `${selectFragment} ${op} (${value.map(() => placeholder()).join(', ')})`,
+			hasValue: true,
+			values: value
 		}
 	}
-	if (NumericOperatorList.includes(operator)) {
+	if (NumericOperatorList.includes(op)) {
 		return {
-			sql: `${selectFragment} ${operator} ?`,
-			hasValue: condition[2] != null,
-			values: [condition[2]]
+			sql: `${selectFragment} ${op} ${placeholder()}`,
+			hasValue: value != null,
+			values: [value]
 		}
 	}
-	return undefined;
+	return null;
 }
 
 const orderByFragments = {
