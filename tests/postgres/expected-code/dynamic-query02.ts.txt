@@ -41,6 +41,13 @@ export type DerivatedTableWhere =
 	| { column: 'name'; op: BetweenOperator; value: [string | null, string | null] }
 
 export async function derivatedTable(client: pg.Client | pg.Pool | pg.PoolClient, params?: DerivatedTableDynamicParams): Promise<DerivatedTableResult[]> {
+
+	const { sql, paramsValues, selectedFields } = buildSql(params);
+	return client.query({ text: sql, rowMode: 'array', values: paramsValues })
+		.then(res => res.rows.map(row => mapArrayToDerivatedTableResult(row, selectedFields)));
+}
+
+function buildSql(params?: DerivatedTableDynamicParams) {
 	const isSelected = (field: keyof DerivatedTableSelect) =>
 		params?.select == null || params.select[field] === true;
 
@@ -93,8 +100,7 @@ export async function derivatedTable(client: pg.Client | pg.Pool | pg.PoolClient
 	${fromSqlFragments.join(EOL)}
 	${whereSql}`;
 
-	return client.query({ text: sql, rowMode: 'array', values: paramsValues })
-		.then(res => res.rows.map(row => mapArrayToDerivatedTableResult(row, selectedFields)));
+	return { sql, paramsValues, selectedFields };
 }
 
 function mapArrayToDerivatedTableResult(data: any, selectedFields: (keyof DerivatedTableResult)[]) {

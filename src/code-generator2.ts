@@ -133,6 +133,13 @@ function generateTsCode(
 			// if (orderByField != null) {
 			// 	writer.writeLine('const orderBy = orderByToObject(params.orderBy);');
 			// }
+			writer.blankLine();
+			writer.writeLine('const { sql, paramsValues, selectedFields } = buildSql(params);');
+			writer.write(`return client.query({ text: sql, rowMode: 'array', values: paramsValues })`).newLine();
+			writer.indent().write(`.then(res => res.rows.map(row => mapArrayTo${resultTypeName}(row, selectedFields)));`)
+		});
+		writer.blankLine();
+		writer.write(`function buildSql(params?: ${dynamicParamsTypeName})`).block(() => {
 			writer.writeLine(`const isSelected = (field: keyof ${selectColumnsTypeName}) =>`);
 			writer.indent().write('params?.select == null || params.select[field] === true;').newLine();
 			writer.blankLine();
@@ -263,9 +270,8 @@ function generateTsCode(
 			writer.indent().write('${fromSqlFragments.join(EOL)}').newLine();;
 			writer.indent().write('${whereSql}`;').newLine();
 			writer.blankLine();
-			writer.write(`return client.query({ text: sql, rowMode: 'array', values: paramsValues })`).newLine();
-			writer.indent().write(`.then(res => res.rows.map(row => mapArrayTo${resultTypeName}(row, selectedFields)));`)
-		});
+			writer.writeLine('return { sql, paramsValues, selectedFields };');
+		})
 
 		writer.blankLine();
 		writer.write(`function mapArrayTo${resultTypeName}(data: any, selectedFields: (keyof ${resultTypeName})[])`).block(() => {

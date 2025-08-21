@@ -35,6 +35,13 @@ export type DynamicQuery08Where =
 	| { column: 'timestamp_not_null_column'; op: BetweenOperator; value: [Date | null, Date | null] }
 
 export async function dynamicQuery08(client: pg.Client | pg.Pool | pg.PoolClient, params?: DynamicQuery08DynamicParams): Promise<DynamicQuery08Result[]> {
+
+	const { sql, paramsValues, selectedFields } = buildSql(params);
+	return client.query({ text: sql, rowMode: 'array', values: paramsValues })
+		.then(res => res.rows.map(row => mapArrayToDynamicQuery08Result(row, selectedFields)));
+}
+
+function buildSql(params?: DynamicQuery08DynamicParams) {
 	const isSelected = (field: keyof DynamicQuery08Select) =>
 		params?.select == null || params.select[field] === true;
 
@@ -75,8 +82,7 @@ export async function dynamicQuery08(client: pg.Client | pg.Pool | pg.PoolClient
 	${fromSqlFragments.join(EOL)}
 	${whereSql}`;
 
-	return client.query({ text: sql, rowMode: 'array', values: paramsValues })
-		.then(res => res.rows.map(row => mapArrayToDynamicQuery08Result(row, selectedFields)));
+	return { sql, paramsValues, selectedFields };
 }
 
 function mapArrayToDynamicQuery08Result(data: any, selectedFields: (keyof DynamicQuery08Result)[]) {

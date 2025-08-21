@@ -35,6 +35,13 @@ export type DynamicQuery03Where =
 	| { column: 'value'; op: BetweenOperator; value: [number | null, number | null] }
 
 export async function dynamicQuery03(client: pg.Client | pg.Pool | pg.PoolClient, params?: DynamicQuery03DynamicParams): Promise<DynamicQuery03Result[]> {
+
+	const { sql, paramsValues, selectedFields } = buildSql(params);
+	return client.query({ text: sql, rowMode: 'array', values: paramsValues })
+		.then(res => res.rows.map(row => mapArrayToDynamicQuery03Result(row, selectedFields)));
+}
+
+function buildSql(params?: DynamicQuery03DynamicParams) {
 	const isSelected = (field: keyof DynamicQuery03Select) =>
 		params?.select == null || params.select[field] === true;
 
@@ -76,8 +83,7 @@ export async function dynamicQuery03(client: pg.Client | pg.Pool | pg.PoolClient
 	${fromSqlFragments.join(EOL)}
 	${whereSql}`;
 
-	return client.query({ text: sql, rowMode: 'array', values: paramsValues })
-		.then(res => res.rows.map(row => mapArrayToDynamicQuery03Result(row, selectedFields)));
+	return { sql, paramsValues, selectedFields };
 }
 
 function mapArrayToDynamicQuery03Result(data: any, selectedFields: (keyof DynamicQuery03Result)[]) {
