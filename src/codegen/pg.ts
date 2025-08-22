@@ -13,7 +13,7 @@ import { EOL } from 'node:os';
 import { PostgresColumnInfo, PostgresParameterDef, PostgresSchemaDef } from '../postgres-query-analyzer/types';
 import { PostgresSchemaInfo } from '../schema-info';
 import { PostgresColumnSchema } from '../drivers/types';
-import { writeDynamicQueryOperators, writeWhereConditionFunction } from './shared/codegen-util';
+import { writeBuildOrderByBlock, writeDynamicQueryOperators, writeWhereConditionFunction } from './shared/codegen-util';
 
 
 
@@ -694,31 +694,7 @@ function _writeExecFunction(writer: CodeBlockWriter, params: ExecFunctionParamet
 	});
 	if (orderByColumns.length > 0) {
 		writer.blankLine();
-		writer.writeLine(`const orderByColumns = [${orderByColumns.map(col => `'${col}'`).join(', ')}] as const;`);
-		writer.blankLine();
-		writer.write(`export type ${orderByTypeName} =`).block(() => {
-			writer.writeLine('column: typeof orderByColumns[number];');
-			writer.writeLine(`direction: 'asc' | 'desc';`);
-		});
-		writer.blankLine();
-		writer.write(`function buildOrderBy(orderBy: ${orderByTypeName}[]): string`).block(() => {
-			writer.write('if (!Array.isArray(orderBy) || orderBy.length === 0)').block(() => {
-				writer.writeLine(`throw new Error('orderBy must be a non-empty array');`);
-			});
-			writer.blankLine();
-			writer.write('for (const { column, direction } of orderBy)').block(() => {
-				writer.write('if (!orderByColumns.includes(column))').block(() => {
-					writer.writeLine('throw new Error(`Invalid orderBy column: ${column}`);');
-				});
-				writer.write(`if (direction !== 'asc' && direction !== 'desc')`).block(() => {
-					writer.writeLine('throw new Error(`Invalid orderBy direction: ${direction}`);');
-				});
-			});
-			writer.blankLine();
-			writer.writeLine('return orderBy');
-			writer.indent().write('.map(({ column, direction }) => `"${column}" ${direction.toUpperCase()}`)').newLine();
-			writer.indent().write(`.join(', ');`).newLine();
-		});
+		writeBuildOrderByBlock(writer, orderByColumns, orderByTypeName);
 	}
 
 	if (generateNested) {

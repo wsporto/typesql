@@ -4,7 +4,7 @@ import { EOL } from 'os';
 export type DynamicQuery07DynamicParams = {
 	select?: DynamicQuery07Select;
 	where?: DynamicQuery07Where[];
-	orderBy: [DynamicQuery07OrderBy, 'asc' | 'desc'][];
+	orderBy: DynamicQuery07OrderBy[];
 }
 
 export type DynamicQuery07Result = {
@@ -75,7 +75,7 @@ function buildSql(params: DynamicQuery07DynamicParams) {
 			paramsValues.push(...where.values);
 		}
 	});
-	sql += EOL + `ORDER BY ${escapeOrderBy(params.orderBy)}`;
+	sql += EOL + `ORDER BY ${buildOrderBy(params.orderBy)}`;
 	return { sql, paramsValues }
 }
 
@@ -155,20 +155,28 @@ function whereCondition(condition: DynamicQuery07Where, placeholder: () => strin
 	return null;
 }
 
-const orderByFragments = {
-	'm1.id': `m1.id`,
-	'value': `value`,
-	'm1.value': `m1.value`,
-	'm2.id': `m2.id`,
-	'name': `name`,
-	'm2.name': `m2.name`,
-	'descr': `descr`,
-	'm2.descr': `m2.descr`,
-	'myId': `myId`,
-} as const;
+const orderByColumns = ['m1.id', 'value', 'm1.value', 'm2.id', 'name', 'm2.name', 'descr', 'm2.descr', 'myId'] as const;
 
-export type DynamicQuery07OrderBy = keyof typeof orderByFragments;
+export type DynamicQuery07OrderBy = {
+	column: typeof orderByColumns[number];
+	direction: 'asc' | 'desc';
+}
 
-function escapeOrderBy(orderBy: DynamicQuery07DynamicParams['orderBy']): string {
-	return orderBy.map(order => `${orderByFragments[order[0]]} ${order[1] == 'desc' ? 'desc' : 'asc'}`).join(', ');
+function buildOrderBy(orderBy: DynamicQuery07OrderBy[]): string {
+	if (!Array.isArray(orderBy) || orderBy.length === 0) {
+		throw new Error('orderBy must be a non-empty array');
+	}
+
+	for (const { column, direction } of orderBy) {
+		if (!orderByColumns.includes(column)) {
+			throw new Error(`Invalid orderBy column: ${column}`);
+		}
+		if (direction !== 'asc' && direction !== 'desc') {
+			throw new Error(`Invalid orderBy direction: ${direction}`);
+		}
+	}
+
+	return orderBy
+		.map(({ column, direction }) => `"${column}" ${direction.toUpperCase()}`)
+		.join(', ');
 }

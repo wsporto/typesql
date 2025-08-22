@@ -1,7 +1,7 @@
 import type { Database } from 'better-sqlite3';
 
 export type Select05Params = {
-	orderBy: [Select05OrderBy, 'asc' | 'desc'][];
+	orderBy: Select05OrderBy[];
 }
 
 export type Select05Result = {
@@ -10,7 +10,7 @@ export type Select05Result = {
 
 export function select05(db: Database, params: Select05Params): Select05Result[] {
 	const sql = `
-	SELECT id FROM mytable1 ORDER BY ${escapeOrderBy(params.orderBy)}
+	SELECT id FROM mytable1 ORDER BY ${buildOrderBy(params.orderBy)}
 	`
 	return db.prepare(sql)
 		.raw(true)
@@ -25,15 +25,28 @@ function mapArrayToSelect05Result(data: any) {
 	return result;
 }
 
-const orderByFragments = {
-	'id': `id`,
-	'mytable1.id': `mytable1.id`,
-	'value': `value`,
-	'mytable1.value': `mytable1.value`,
-} as const;
+const orderByColumns = ['id', 'mytable1.id', 'value', 'mytable1.value'] as const;
 
-export type Select05OrderBy = keyof typeof orderByFragments;
+export type Select05OrderBy = {
+	column: typeof orderByColumns[number];
+	direction: 'asc' | 'desc';
+}
 
-function escapeOrderBy(orderBy: Select05Params['orderBy']): string {
-	return orderBy.map(order => `${orderByFragments[order[0]]} ${order[1] == 'desc' ? 'desc' : 'asc'}`).join(', ');
+function buildOrderBy(orderBy: Select05OrderBy[]): string {
+	if (!Array.isArray(orderBy) || orderBy.length === 0) {
+		throw new Error('orderBy must be a non-empty array');
+	}
+
+	for (const { column, direction } of orderBy) {
+		if (!orderByColumns.includes(column)) {
+			throw new Error(`Invalid orderBy column: ${column}`);
+		}
+		if (direction !== 'asc' && direction !== 'desc') {
+			throw new Error(`Invalid orderBy direction: ${direction}`);
+		}
+	}
+
+	return orderBy
+		.map(({ column, direction }) => `"${column}" ${direction.toUpperCase()}`)
+		.join(', ');
 }

@@ -39,7 +39,7 @@ import { EOL } from 'node:os';
 import { mapColumnType } from '../drivers/sqlite';
 import { mapColumnType as mapPgColumnType } from '../dialects/postgres';
 import { PostgresColumnInfo } from '../postgres-query-analyzer/types';
-import { writeDynamicQueryOperators, writeWhereConditionFunction } from './shared/codegen-util';
+import { writeBuildOrderByBlock, writeDynamicQueryOperators, writeWhereConditionFunction } from './shared/codegen-util';
 
 type ExecFunctionParams = {
 	functionName: string;
@@ -340,7 +340,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 	const uniqueParams = removeDuplicatedParameters2(tsDescriptor.parameters);
 	const uniqueUpdateParams = removeDuplicatedParameters2(tsDescriptor.data || []);
 
-	const orderByField = generateOrderBy ? `orderBy: [${orderByTypeName}, 'asc' | 'desc'][]` : undefined;
+	const orderByField = generateOrderBy ? `orderBy: ${orderByTypeName}[]` : undefined;
 	const paramsTypes = removeDuplicatedParameters2(
 		tsDescriptor.dynamicQuery2 == null ? tsDescriptor.parameters : mapToDynamicParams(tsDescriptor.parameters)
 	);
@@ -553,7 +553,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 				});
 				writer.write(');').newLine();
 				if (tsDescriptor.orderByColumns) {
-					writer.writeLine('sql += EOL + `ORDER BY ${escapeOrderBy(params.orderBy)}`;');
+					writer.writeLine('sql += EOL + `ORDER BY ${buildOrderBy(params.orderBy)}`;');
 				}
 				const limitOffset = tsDescriptor.dynamicQuery2?.limitOffset;
 				if (limitOffset) {
@@ -633,7 +633,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 					writer.writeLine(`${field.name}${optionalOp}: ${field.tsType}${orNull};`);
 				});
 				if (generateOrderBy) {
-					writer.writeLine(`orderBy: [${orderByTypeName}, 'asc' | 'desc'][];`);
+					writer.writeLine(`orderBy: ${orderByTypeName}[];`);
 				}
 			});
 		}
@@ -697,25 +697,9 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 	if (tsDescriptor.dynamicQuery2 == null && !isCrud) {
 		writeExecFunction(writer, client, executeFunctionParams);
 	}
-	if (tsDescriptor.orderByColumns) {
-		const orderByType = tsDescriptor.dynamicQuery2 == null ? paramsTypeName : dynamicParamsTypeName;
-		if (orderByField != null) {
-			writer.blankLine();
-			writer.write('const orderByFragments = ').inlineBlock(() => {
-				tsDescriptor.orderByColumns?.forEach((col) => {
-					writer.writeLine(`'${col}': \`${col}\`,`);
-				});
-			});
-			writer.write(' as const;');
-		}
+	if (tsDescriptor.orderByColumns?.length) {
 		writer.blankLine();
-		writer.writeLine(`export type ${orderByTypeName} = keyof typeof orderByFragments;`);
-		writer.blankLine();
-		writer.write(`function escapeOrderBy(orderBy: ${orderByType}['orderBy']): string`).block(() => {
-			writer.writeLine(
-				`return orderBy.map(order => \`\${orderByFragments[order[0]]} \${order[1] == 'desc' ? 'desc' : 'asc'}\`).join(', ');`
-			);
-		});
+		writeBuildOrderByBlock(writer, tsDescriptor.orderByColumns, orderByTypeName);
 	}
 
 	if (tsDescriptor.nestedDescriptor2) {

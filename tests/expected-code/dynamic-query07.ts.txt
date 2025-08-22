@@ -78,7 +78,7 @@ export async function dynamicQuery07(connection: Connection, params: DynamicQuer
             paramsValues.push(...where.values);
         }
     });
-    sql += EOL + `ORDER BY ${escapeOrderBy(params.orderBy)}`;
+    sql += EOL + `ORDER BY ${buildOrderBy(params.orderBy)}`;
     return connection.query({ sql, rowsAsArray: true }, paramsValues)
         .then(res => res[0] as any[])
         .then(res => res.map(data => mapArrayToDynamicQuery07Result(data, params?.select)));
@@ -170,6 +170,6 @@ export type DynamicQuery07OrderBy = {
     direction: 'asc' | 'desc';
 }
 
-function escapeOrderBy(orderBy: DynamicQuery07OrderBy[]): string {
+function buildOrderBy(orderBy: DynamicQuery07OrderBy[]): string {
     return orderBy.map(order => `${orderByFragments[order.column]} ${order.direction == 'desc' ? 'desc' : 'asc'}`).join(', ');
 }

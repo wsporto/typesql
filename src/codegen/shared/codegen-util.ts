@@ -12,6 +12,34 @@ export function getOperator(type: string) {
 	return 'StringOperator';
 }
 
+export function writeBuildOrderByBlock(writer: CodeBlockWriter, orderByColumns: string[], orderByTypeName: string) {
+	writer.writeLine(`const orderByColumns = [${orderByColumns.map(col => `'${col}'`).join(', ')}] as const;`);
+	writer.blankLine();
+	writer.write(`export type ${orderByTypeName} =`).block(() => {
+		writer.writeLine('column: typeof orderByColumns[number];');
+		writer.writeLine(`direction: 'asc' | 'desc';`);
+	});
+	writer.blankLine();
+	writer.write(`function buildOrderBy(orderBy: ${orderByTypeName}[]): string`).block(() => {
+		writer.write('if (!Array.isArray(orderBy) || orderBy.length === 0)').block(() => {
+			writer.writeLine(`throw new Error('orderBy must be a non-empty array');`);
+		});
+		writer.blankLine();
+		writer.write('for (const { column, direction } of orderBy)').block(() => {
+			writer.write('if (!orderByColumns.includes(column))').block(() => {
+				writer.writeLine('throw new Error(`Invalid orderBy column: ${column}`);');
+			});
+			writer.write(`if (direction !== 'asc' && direction !== 'desc')`).block(() => {
+				writer.writeLine('throw new Error(`Invalid orderBy direction: ${direction}`);');
+			});
+		});
+		writer.blankLine();
+		writer.writeLine('return orderBy');
+		writer.indent().write('.map(({ column, direction }) => `"${column}" ${direction.toUpperCase()}`)').newLine();
+		writer.indent().write(`.join(', ');`).newLine();
+	});
+}
+
 export function writeDynamicQueryOperators(writer: CodeBlockWriter, whereTypeName: string, columns: TsFieldDescriptor[]) {
 	writer.writeLine(`const NumericOperatorList = ['=', '<>', '>', '<', '>=', '<='] as const;`);
 	writer.writeLine('type NumericOperator = typeof NumericOperatorList[number];');

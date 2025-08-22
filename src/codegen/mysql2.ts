@@ -202,7 +202,7 @@ export function generateTsCodeForMySQL(tsDescriptor: TsDescriptor, fileName: str
 			});
 			writer.write(');');
 			if (tsDescriptor.orderByColumns) {
-				writer.writeLine('sql += EOL + `ORDER BY ${escapeOrderBy(params.orderBy)}`;');
+				writer.writeLine('sql += EOL + `ORDER BY ${buildOrderBy(params.orderBy)}`;');
 			}
 		}
 
@@ -340,7 +340,7 @@ export function generateTsCodeForMySQL(tsDescriptor: TsDescriptor, fileName: str
 			writer.writeLine(`direction: 'asc' | 'desc';`);
 		});
 		writer.blankLine();
-		writer.write(`function escapeOrderBy(orderBy: ${orderByTypeName}[]): string`).block(() => {
+		writer.write(`function buildOrderBy(orderBy: ${orderByTypeName}[]): string`).block(() => {
 			if (tsDescriptor.dynamicQuery == null) {
 				writer.writeLine(
 					`return orderBy.map(order => \`\\\`\${order.column}\\\` \${order.direction == 'desc' ? 'desc' : 'asc' }\`).join(', ');`
@@ -662,7 +662,7 @@ export function hasDateColumn(columns: TsFieldDescriptor[]) {
 
 export function replaceOrderByParam(sql: string) {
 	const patern = /(.*order\s+by\s*)(\?)(.\n$)*/i;
-	const newSql = sql.replace(patern, '$1${escapeOrderBy(params.orderBy)}$3');
+	const newSql = sql.replace(patern, '$1${buildOrderBy(params.orderBy)}$3');
 	return newSql;
 }
 
