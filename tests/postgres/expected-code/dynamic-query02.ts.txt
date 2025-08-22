@@ -44,7 +44,7 @@ export async function derivatedTable(client: pg.Client | pg.Pool | pg.PoolClient
 
 	const { sql, paramsValues } = buildSql(params);
 	return client.query({ text: sql, rowMode: 'array', values: paramsValues })
-		.then(res => res.rows.map(row => mapArrayToDerivatedTableResult(row, params)));
+		.then(res => res.rows.map(row => mapArrayToDerivatedTableResult(row, params?.select)));
 }
 
 function buildSql(params?: DerivatedTableDynamicParams) {
@@ -100,9 +100,9 @@ function buildSql(params?: DerivatedTableDynamicParams) {
 	return { sql, paramsValues };
 }
 
-function mapArrayToDerivatedTableResult(data: any, params?: DerivatedTableDynamicParams) {
+function mapArrayToDerivatedTableResult(data: any, select?: DerivatedTableSelect) {
 	const isSelected = (field: keyof DerivatedTableSelect) =>
-		params?.select == null || params.select[field] === true;
+		!select || select[field] === true;
 
 	const result = {} as DerivatedTableResult;
 	let rowIndex = -1;

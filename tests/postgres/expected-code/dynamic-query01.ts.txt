@@ -51,7 +51,7 @@ export async function dynamicQuery01(client: pg.Client | pg.Pool | pg.PoolClient
 
 	const { sql, paramsValues } = buildSql(params);
 	return client.query({ text: sql, rowMode: 'array', values: paramsValues })
-		.then(res => res.rows.map(row => mapArrayToDynamicQuery01Result(row, params)));
+		.then(res => res.rows.map(row => mapArrayToDynamicQuery01Result(row, params?.select)));
 }
 
 function buildSql(params?: DynamicQuery01DynamicParams) {
@@ -111,9 +111,9 @@ function buildSql(params?: DynamicQuery01DynamicParams) {
 	return { sql, paramsValues };
 }
 
-function mapArrayToDynamicQuery01Result(data: any, params?: DynamicQuery01DynamicParams) {
+function mapArrayToDynamicQuery01Result(data: any, select?: DynamicQuery01Select) {
 	const isSelected = (field: keyof DynamicQuery01Select) =>
-		params?.select == null || params.select[field] === true;
+		!select || select[field] === true;
 
 	const result = {} as DynamicQuery01Result;
 	let rowIndex = -1;

@@ -57,7 +57,7 @@ export async function dynamicQuery04(client: pg.Client | pg.Pool | pg.PoolClient
 
 	const { sql, paramsValues } = buildSql(params);
 	return client.query({ text: sql, rowMode: 'array', values: paramsValues })
-		.then(res => res.rows.map(row => mapArrayToDynamicQuery04Result(row, params)));
+		.then(res => res.rows.map(row => mapArrayToDynamicQuery04Result(row, params?.select)));
 }
 
 function buildSql(params?: DynamicQuery04DynamicParams) {
@@ -122,9 +122,9 @@ function buildSql(params?: DynamicQuery04DynamicParams) {
 	return { sql, paramsValues };
 }
 
-function mapArrayToDynamicQuery04Result(data: any, params?: DynamicQuery04DynamicParams) {
+function mapArrayToDynamicQuery04Result(data: any, select?: DynamicQuery04Select) {
 	const isSelected = (field: keyof DynamicQuery04Select) =>
-		params?.select == null || params.select[field] === true;
+		!select || select[field] === true;
 
 	const result = {} as DynamicQuery04Result;
 	let rowIndex = -1;

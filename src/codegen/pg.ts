@@ -128,7 +128,7 @@ function generateTsCode(queryName: string, schemaDef: PostgresSchemaDef, client:
 			writer.blankLine();
 			writer.writeLine('const { sql, paramsValues } = buildSql(params);');
 			writer.write(`return client.query({ text: sql, rowMode: 'array', values: paramsValues })`).newLine();
-			writer.indent().write(`.then(res => res.rows.map(row => mapArrayTo${resultTypeName}(row, params)));`)
+			writer.indent().write(`.then(res => res.rows.map(row => mapArrayTo${resultTypeName}(row, params?.select)));`)
 		});
 		writer.blankLine();
 		writeBuildSqlFunction(writer, {
@@ -140,7 +140,7 @@ function generateTsCode(queryName: string, schemaDef: PostgresSchemaDef, client:
 		})
 
 		writer.blankLine();
-		writeMapToResultFunction(writer, tsDescriptor.columns, resultTypeName, dynamicParamsTypeName, selectColumnsTypeName);
+		writeMapToResultFunction(writer, tsDescriptor.columns, resultTypeName, selectColumnsTypeName);
 		// if (orderByField != null) {
 		// 	writer.blankLine();
 		// 	writer.write(`function orderByToObject(orderBy: ${dynamicParamsTypeName}['orderBy'])`).block(() => {

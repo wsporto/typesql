@@ -264,9 +264,10 @@ export function writeBuildSqlFunction(writer: CodeBlockWriter, params: BuildSqlF
 	})
 }
 
-export function writeMapToResultFunction(writer: CodeBlockWriter, columns: TsFieldDescriptor[], resultTypeName: string, dynamicParamsTypeName: string, selectColumnsTypeName: string) {
-	writer.write(`function mapArrayTo${resultTypeName}(data: any, params?: ${dynamicParamsTypeName})`).block(() => {
-		writeIsSelectedFunction(writer, selectColumnsTypeName);
+export function writeMapToResultFunction(writer: CodeBlockWriter, columns: TsFieldDescriptor[], resultTypeName: string, selectColumnsTypeName: string) {
+	writer.write(`function mapArrayTo${resultTypeName}(data: any, select?: ${selectColumnsTypeName})`).block(() => {
+		writer.writeLine(`const isSelected = (field: keyof ${selectColumnsTypeName}) =>`);
+		writer.indent().write('!select || select[field] === true;').newLine();
 		writer.blankLine();
 		writer.writeLine(`const result = {} as ${resultTypeName};`);
 		writer.writeLine('let rowIndex = -1;');
