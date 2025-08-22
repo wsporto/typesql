@@ -117,9 +117,13 @@ export function writeWhereConditionsToObjectFunction(writer: CodeBlockWriter, wh
 	});
 }
 
+function writeIsSelectedFunction(writer: CodeBlockWriter, selectColumnsTypeName: string) {
+	writer.writeLine(`const isSelected = (field: keyof ${selectColumnsTypeName}) =>`);
+	writer.indent().write('params?.select == null || params.select[field] === true;').newLine();
+}
+
 export type BuildSqlFunction = {
 	dynamicParamsTypeName: string;
-	resultTypeName: string;
 	selectColumnsTypeName: string;
 	dynamicQueryInfo: DynamicSqlInfoResult2;
 	columns: TsFieldDescriptor[];
@@ -127,13 +131,11 @@ export type BuildSqlFunction = {
 }
 
 export function writeBuildSqlFunction(writer: CodeBlockWriter, params: BuildSqlFunction) {
-	const { dynamicParamsTypeName, resultTypeName, selectColumnsTypeName, dynamicQueryInfo, columns, parameters } = params;
+	const { dynamicParamsTypeName, selectColumnsTypeName, dynamicQueryInfo, columns, parameters } = params;
 	writer.write(`function buildSql(params?: ${dynamicParamsTypeName})`).block(() => {
-		writer.writeLine(`const isSelected = (field: keyof ${selectColumnsTypeName}) =>`);
-		writer.indent().write('params?.select == null || params.select[field] === true;').newLine();
+		writeIsSelectedFunction(writer, selectColumnsTypeName);
 		writer.blankLine();
 		writer.writeLine('const selectedSqlFragments: string[] = [];');
-		writer.writeLine(`const selectedFields: (keyof ${resultTypeName})[] = [];`);
 		writer.writeLine('const paramsValues: any[] = [];');
 		writer.blankLine();
 		writer.writeLine('const whereColumns = new Set(params?.where?.map(w => w.column) || []);');
@@ -171,7 +173,6 @@ export function writeBuildSqlFunction(writer: CodeBlockWriter, params: BuildSqlF
 		dynamicQueryInfo.select.forEach((select, index) => {
 			writer.write(`if (isSelected('${columns[index].name}'))`).block(() => {
 				writer.writeLine(`selectedSqlFragments.push('${select.fragment}');`);
-				writer.writeLine(`selectedFields.push('${columns[index].name}');`);
 				select.parameters.forEach((param) => {
 					writer.writeLine(`paramsValues.push(params?.params?.${param} ?? null);`);
 				});
@@ -259,6 +260,22 @@ export function writeBuildSqlFunction(writer: CodeBlockWriter, params: BuildSqlF
 		writer.indent().write('${fromSqlFragments.join(EOL)}').newLine();;
 		writer.indent().write('${whereSql}`;').newLine();
 		writer.blankLine();
-		writer.writeLine('return { sql, paramsValues, selectedFields };');
+		writer.writeLine('return { sql, paramsValues };');
 	})
+}
+
+export function writeMapToResultFunction(writer: CodeBlockWriter, columns: TsFieldDescriptor[], resultTypeName: string, dynamicParamsTypeName: string, selectColumnsTypeName: string) {
+	writer.write(`function mapArrayTo${resultTypeName}(data: any, params?: ${dynamicParamsTypeName})`).block(() => {
+		writeIsSelectedFunction(writer, selectColumnsTypeName);
+		writer.blankLine();
+		writer.writeLine(`const result = {} as ${resultTypeName};`);
+		writer.writeLine('let rowIndex = -1;');
+		columns.forEach((tsField) => {
+			writer.write(`if (isSelected('${tsField.name}'))`).block(() => {
+				writer.writeLine('rowIndex++;');
+				writer.writeLine(`result.${tsField.name} = data[rowIndex];`) //${toDriver('data[rowIndex]', tsField)};`);
+			});
+		});
+		writer.write('return result;');
+	});
 }

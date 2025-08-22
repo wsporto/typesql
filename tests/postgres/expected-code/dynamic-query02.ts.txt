@@ -42,9 +42,9 @@ export type DerivatedTableWhere =
 
 export async function derivatedTable(client: pg.Client | pg.Pool | pg.PoolClient, params?: DerivatedTableDynamicParams): Promise<DerivatedTableResult[]> {
 
-	const { sql, paramsValues, selectedFields } = buildSql(params);
+	const { sql, paramsValues } = buildSql(params);
 	return client.query({ text: sql, rowMode: 'array', values: paramsValues })
-		.then(res => res.rows.map(row => mapArrayToDerivatedTableResult(row, selectedFields)));
+		.then(res => res.rows.map(row => mapArrayToDerivatedTableResult(row, params)));
 }
 
 function buildSql(params?: DerivatedTableDynamicParams) {
@@ -52,18 +52,15 @@ function buildSql(params?: DerivatedTableDynamicParams) {
 		params?.select == null || params.select[field] === true;
 
 	const selectedSqlFragments: string[] = [];
-	const selectedFields: (keyof DerivatedTableResult)[] = [];
 	const paramsValues: any[] = [];
 
 	const whereColumns = new Set(params?.where?.map(w => w.column) || []);
 
 	if (isSelected('id')) {
 		selectedSqlFragments.push('m1.id');
-		selectedFields.push('id');
 	}
 	if (isSelected('name')) {
 		selectedSqlFragments.push('m2.name');
-		selectedFields.push('name');
 	}
 
 	const fromSqlFragments: string[] = [];
@@ -100,14 +97,23 @@ function buildSql(params?: DerivatedTableDynamicParams) {
 	${fromSqlFragments.join(EOL)}
 	${whereSql}`;
 
-	return { sql, paramsValues, selectedFields };
+	return { sql, paramsValues };
 }
 
-function mapArrayToDerivatedTableResult(data: any, selectedFields: (keyof DerivatedTableResult)[]) {
-	const result: DerivatedTableResult = {};
-	selectedFields.forEach((field, index) => {
-		result[field] = data[index];
-	});
+function mapArrayToDerivatedTableResult(data: any, params?: DerivatedTableDynamicParams) {
+	const isSelected = (field: keyof DerivatedTableSelect) =>
+		params?.select == null || params.select[field] === true;
+
+	const result = {} as DerivatedTableResult;
+	let rowIndex = -1;
+	if (isSelected('id')) {
+		rowIndex++;
+		result.id = data[rowIndex];
+	}
+	if (isSelected('name')) {
+		rowIndex++;
+		result.name = data[rowIndex];
+	}
 	return result;
 }
 

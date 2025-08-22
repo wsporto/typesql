@@ -11,7 +11,7 @@ import { EOL } from 'node:os';
 import { PostgresColumnInfo, PostgresParameterDef, PostgresSchemaDef } from '../postgres-query-analyzer/types';
 import { PostgresSchemaInfo } from '../schema-info';
 import { PostgresColumnSchema } from '../drivers/types';
-import { writeBuildOrderByBlock, writeBuildSqlFunction, writeDynamicQueryOperators, writeWhereConditionFunction } from './shared/codegen-util';
+import { writeBuildOrderByBlock, writeBuildSqlFunction, writeDynamicQueryOperators, writeMapToResultFunction, writeWhereConditionFunction } from './shared/codegen-util';
 
 
 
@@ -126,14 +126,13 @@ function generateTsCode(queryName: string, schemaDef: PostgresSchemaDef, client:
 			// 	writer.writeLine('const orderBy = orderByToObject(params.orderBy);');
 			// }
 			writer.blankLine();
-			writer.writeLine('const { sql, paramsValues, selectedFields } = buildSql(params);');
+			writer.writeLine('const { sql, paramsValues } = buildSql(params);');
 			writer.write(`return client.query({ text: sql, rowMode: 'array', values: paramsValues })`).newLine();
-			writer.indent().write(`.then(res => res.rows.map(row => mapArrayTo${resultTypeName}(row, selectedFields)));`)
+			writer.indent().write(`.then(res => res.rows.map(row => mapArrayTo${resultTypeName}(row, params)));`)
 		});
 		writer.blankLine();
 		writeBuildSqlFunction(writer, {
 			dynamicParamsTypeName,
-			resultTypeName,
 			columns: tsDescriptor.columns,
 			parameters: tsDescriptor.parameters,
 			dynamicQueryInfo,
@@ -141,14 +140,7 @@ function generateTsCode(queryName: string, schemaDef: PostgresSchemaDef, client:
 		})
 
 		writer.blankLine();
-		writer.write(`function mapArrayTo${resultTypeName}(data: any, selectedFields: (keyof ${resultTypeName})[])`).block(() => {
-			writer.writeLine(`const result: ${resultTypeName} = {};`);
-			writer.write(`selectedFields.forEach((field, index) => `).inlineBlock(() => {
-				writer.writeLine(`result[field] = data[index];`);
-			});
-			writer.write(');').newLine();
-			writer.write('return result;');
-		});
+		writeMapToResultFunction(writer, tsDescriptor.columns, resultTypeName, dynamicParamsTypeName, selectColumnsTypeName);
 		// if (orderByField != null) {
 		// 	writer.blankLine();
 		// 	writer.write(`function orderByToObject(orderBy: ${dynamicParamsTypeName}['orderBy'])`).block(() => {
