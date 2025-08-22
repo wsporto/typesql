@@ -1,11 +1,9 @@
 import CodeBlockWriter from 'code-block-writer';
-import { capitalize, convertToCamelCaseName, generateRelationType, getOperator, hasStringColumn, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor } from './mysql2';
+import { capitalize, convertToCamelCaseName, generateRelationType, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor } from './mysql2';
 import { CrudQueryType, PgDielect, QueryType, TsFieldDescriptor, TsParameterDescriptor, TypeSqlError } from '../types';
 import { describeQuery } from '../postgres-query-analyzer/describe';
-import { ColumnSchema } from '../mysql-query-analyzer/types';
 import { mapColumnType } from '../dialects/postgres';
 import { JsonArrayType, JsonFieldType, JsonMapType, JsonObjType, JsonType, PostgresType } from '../sqlite-query-analyzer/types';
-import { preprocessSql } from '../describe-query';
 import { okAsync, ResultAsync } from 'neverthrow';
 import { getQueryName, mapPostgrsFieldToTsField, writeCollectFunction } from './sqlite';
 import { mapToTsRelation2, RelationType2 } from '../ts-nested-descriptor';
@@ -22,7 +20,7 @@ export function generateCode(client: PgDielect, sql: string, queryName: string, 
 		return okAsync('');
 	}
 	return _describeQuery(client, sql, schemaInfo)
-		.map(schemaDef => generateTsCode(sql, queryName, schemaDef, client.type))
+		.map(schemaDef => generateTsCode(queryName, schemaDef, client.type))
 }
 
 function isEmptySql(sql: string) {
@@ -45,13 +43,7 @@ export function createCodeBlockWriter() {
 	return writer;
 }
 
-function generateTsCode(
-	sqlOld: string,
-	queryName: string,
-	schemaDef: PostgresSchemaDef,
-	client: 'pg',
-	isCrud = false
-): string {
+function generateTsCode(queryName: string, schemaDef: PostgresSchemaDef, client: 'pg'): string {
 
 	const { sql } = schemaDef;
 
@@ -346,7 +338,7 @@ function generateTsCode(
 
 	if (tsDescriptor.nestedDescriptor2) {
 		const relations = tsDescriptor.nestedDescriptor2;
-		relations.forEach((relation, index) => {
+		relations.forEach((relation) => {
 			writeCollectFunction(writer, relation, tsDescriptor.columns, capitalizedName, resultTypeName);
 		});
 		writer.blankLine();
@@ -720,17 +712,6 @@ function writeSql(writer: CodeBlockWriter, sql: string) {
 	writer.indent().write('`').newLine();
 }
 
-function getFunctionReturnType(queryType: QueryType, multipleRowsResult: boolean, returnType: string): string {
-	if (queryType === 'Copy') {
-		return 'void';
-	}
-	if (multipleRowsResult) {
-		return `${returnType}[]`;
-	}
-	const orNull = queryType === 'Select' ? ' | null' : '';
-	return `${returnType}${orNull}`;
-}
-
 function getColumnsForQuery(capitalizedName: string, schemaDef: PostgresSchemaDef): TsFieldDescriptor[] {
 	if (schemaDef.queryType === 'Select' || schemaDef.returning) {
 		const columns = schemaDef.columns.map(col => mapColumnInfoToTsFieldDescriptor(capitalizedName, col, schemaDef.dynamicSqlQuery2 != null))
@@ -886,7 +867,7 @@ function writeCrudSelect(writer: CodeBlockWriter, crudParamters: CrudParameters)
 }
 
 function writeCrudInsert(writer: CodeBlockWriter, crudParamters: CrudParameters): string {
-	const { tableName, queryName, dataTypeName, paramsTypeName, resultTypeName, columns, nonKeys, keys } = crudParamters;
+	const { tableName, queryName, paramsTypeName, resultTypeName, nonKeys } = crudParamters;
 	writer.write(`export async function ${queryName}(client: pg.Client | pg.Pool | pg.PoolClient, params: ${paramsTypeName}): Promise<${resultTypeName} | null>`).block(() => {
 		const hasOptional = nonKeys.some(field => field.optional);
 		if (hasOptional) {
@@ -928,7 +909,7 @@ function writeCrudInsert(writer: CodeBlockWriter, crudParamters: CrudParameters)
 }
 
 function writeCrudUpdate(writer: CodeBlockWriter, crudParamters: CrudParameters): string {
-	const { tableName, queryName, dataTypeName, paramsTypeName, resultTypeName, columns, nonKeys, keys } = crudParamters;
+	const { tableName, queryName, dataTypeName, paramsTypeName, resultTypeName, nonKeys, keys } = crudParamters;
 	writer.write(`export async function ${queryName}(client: pg.Client | pg.Pool | pg.PoolClient, data: ${dataTypeName}, params: ${paramsTypeName}): Promise<${resultTypeName} | null>`).block(() => {
 		writer.writeLine(`const updateColumns = [${nonKeys.map(col => `'${col.name}'`).join(', ')}] as const;`);
 		writer.writeLine('const updates: string[] = [];');
