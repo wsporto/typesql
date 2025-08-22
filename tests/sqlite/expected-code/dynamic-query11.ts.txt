@@ -42,6 +42,15 @@ export type DynamicQuery11Where =
 	| { column: 'name'; op: BetweenOperator; value: [string | null, string | null] }
 
 export function dynamicQuery11(db: Database, params?: DynamicQuery11DynamicParams): DynamicQuery11Result[] {
+
+	const { sql, paramsValues } = buildSql(params);
+	return db.prepare(sql)
+		.raw(true)
+		.all(paramsValues)
+		.map(data => mapArrayToDynamicQuery11Result(data, params?.select));
+}
+
+function buildSql(params?: DynamicQuery11DynamicParams) {
 	const paramsValues: any = [];
 	const whereColumns = new Set(params?.where?.map(w => w.column) || []);
 	const withClause = [];
@@ -82,10 +91,7 @@ export function dynamicQuery11(db: Database, params?: DynamicQuery11DynamicParam
 			paramsValues.push(...where.values);
 		}
 	});
-	return db.prepare(sql)
-		.raw(true)
-		.all(paramsValues)
-		.map(data => mapArrayToDynamicQuery11Result(data, params?.select));
+	return { sql, paramsValues }
 }
 
 function mapArrayToDynamicQuery11Result(data: any, select?: DynamicQuery11Select) {

@@ -41,6 +41,15 @@ export type DerivatedTableWhere =
 	| { column: 'name'; op: BetweenOperator; value: [string | null, string | null] }
 
 export function derivatedTable(db: Database, params?: DerivatedTableDynamicParams): DerivatedTableResult[] {
+
+	const { sql, paramsValues } = buildSql(params);
+	return db.prepare(sql)
+		.raw(true)
+		.all(paramsValues)
+		.map(data => mapArrayToDerivatedTableResult(data, params?.select));
+}
+
+function buildSql(params?: DerivatedTableDynamicParams) {
 	const paramsValues: any = [];
 	const whereColumns = new Set(params?.where?.map(w => w.column) || []);
 	let sql = 'SELECT';
@@ -68,10 +77,7 @@ export function derivatedTable(db: Database, params?: DerivatedTableDynamicParam
 			paramsValues.push(...where.values);
 		}
 	});
-	return db.prepare(sql)
-		.raw(true)
-		.all(paramsValues)
-		.map(data => mapArrayToDerivatedTableResult(data, params?.select));
+	return { sql, paramsValues }
 }
 
 function mapArrayToDerivatedTableResult(data: any, select?: DerivatedTableSelect) {

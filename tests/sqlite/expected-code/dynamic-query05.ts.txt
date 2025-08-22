@@ -36,6 +36,15 @@ export type CteWhere =
 	| { column: 'name'; op: BetweenOperator; value: [string | null, string | null] }
 
 export function cte(db: Database, params?: CteDynamicParams): CteResult[] {
+
+	const { sql, paramsValues } = buildSql(params);
+	return db.prepare(sql)
+		.raw(true)
+		.all(paramsValues)
+		.map(data => mapArrayToCteResult(data, params?.select));
+}
+
+function buildSql(params?: CteDynamicParams) {
 	const paramsValues: any = [];
 	const whereColumns = new Set(params?.where?.map(w => w.column) || []);
 	const withClause = [];
@@ -67,10 +76,7 @@ export function cte(db: Database, params?: CteDynamicParams): CteResult[] {
 			paramsValues.push(...where.values);
 		}
 	});
-	return db.prepare(sql)
-		.raw(true)
-		.all(paramsValues)
-		.map(data => mapArrayToCteResult(data, params?.select));
+	return { sql, paramsValues }
 }
 
 function mapArrayToCteResult(data: any, select?: CteSelect) {

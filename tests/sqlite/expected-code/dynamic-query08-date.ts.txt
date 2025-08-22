@@ -48,6 +48,15 @@ export type DynamicQuery08Where =
 	| { column: 'date_time'; op: BetweenOperator; value: [Date | null, Date | null] }
 
 export function dynamicQuery08(db: Database, params?: DynamicQuery08DynamicParams): DynamicQuery08Result[] {
+
+	const { sql, paramsValues } = buildSql(params);
+	return db.prepare(sql)
+		.raw(true)
+		.all(paramsValues)
+		.map(data => mapArrayToDynamicQuery08Result(data, params?.select));
+}
+
+function buildSql(params?: DynamicQuery08DynamicParams) {
 	const paramsValues: any = [];
 	const whereColumns = new Set(params?.where?.map(w => w.column) || []);
 	let sql = 'SELECT';
@@ -72,10 +81,7 @@ export function dynamicQuery08(db: Database, params?: DynamicQuery08DynamicParam
 			paramsValues.push(...where.values);
 		}
 	});
-	return db.prepare(sql)
-		.raw(true)
-		.all(paramsValues)
-		.map(data => mapArrayToDynamicQuery08Result(data, params?.select));
+	return { sql, paramsValues }
 }
 
 function mapArrayToDynamicQuery08Result(data: any, select?: DynamicQuery08Select) {

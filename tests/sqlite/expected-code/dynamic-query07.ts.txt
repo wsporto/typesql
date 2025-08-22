@@ -37,6 +37,15 @@ export type DynamicQuery07Where =
 	| { column: 'name'; op: BetweenOperator; value: [string | null, string | null] }
 
 export function dynamicQuery07(db: Database, params: DynamicQuery07DynamicParams): DynamicQuery07Result[] {
+
+	const { sql, paramsValues } = buildSql(params);
+	return db.prepare(sql)
+		.raw(true)
+		.all(paramsValues)
+		.map(data => mapArrayToDynamicQuery07Result(data, params?.select));
+}
+
+function buildSql(params: DynamicQuery07DynamicParams) {
 	const orderBy = orderByToObject(params.orderBy);
 	const paramsValues: any = [];
 	const whereColumns = new Set(params?.where?.map(w => w.column) || []);
@@ -67,10 +76,7 @@ export function dynamicQuery07(db: Database, params: DynamicQuery07DynamicParams
 		}
 	});
 	sql += EOL + `ORDER BY ${escapeOrderBy(params.orderBy)}`;
-	return db.prepare(sql)
-		.raw(true)
-		.all(paramsValues)
-		.map(data => mapArrayToDynamicQuery07Result(data, params?.select));
+	return { sql, paramsValues }
 }
 
 function mapArrayToDynamicQuery07Result(data: any, select?: DynamicQuery07Select) {

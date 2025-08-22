@@ -43,6 +43,15 @@ export type DynamicQuery10Where =
 	| { column: 'name'; op: BetweenOperator; value: [string | null, string | null] }
 
 export function dynamicQuery10(db: Database, params?: DynamicQuery10DynamicParams): DynamicQuery10Result[] {
+
+	const { sql, paramsValues } = buildSql(params);
+	return db.prepare(sql)
+		.raw(true)
+		.all(paramsValues)
+		.map(data => mapArrayToDynamicQuery10Result(data, params?.select));
+}
+
+function buildSql(params?: DynamicQuery10DynamicParams) {
 	const paramsValues: any = [];
 	const whereColumns = new Set(params?.where?.map(w => w.column) || []);
 	let sql = 'SELECT';
@@ -67,10 +76,7 @@ export function dynamicQuery10(db: Database, params?: DynamicQuery10DynamicParam
 	sql += EOL + `LIMIT ? OFFSET ?`;
 	paramsValues.push(params?.params?.limit ?? null);
 	paramsValues.push(params?.params?.offset ?? null);
-	return db.prepare(sql)
-		.raw(true)
-		.all(paramsValues)
-		.map(data => mapArrayToDynamicQuery10Result(data, params?.select));
+	return { sql, paramsValues }
 }
 
 function mapArrayToDynamicQuery10Result(data: any, select?: DynamicQuery10Select) {

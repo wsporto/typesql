@@ -46,6 +46,15 @@ export type DynamicQuery09Where =
 	| { column: 'likeName'; op: BetweenOperator; value: [number | null, number | null] }
 
 export function dynamicQuery09(db: Database, params?: DynamicQuery09DynamicParams): DynamicQuery09Result[] {
+
+	const { sql, paramsValues } = buildSql(params);
+	return db.prepare(sql)
+		.raw(true)
+		.all(paramsValues)
+		.map(data => mapArrayToDynamicQuery09Result(data, params?.select));
+}
+
+function buildSql(params?: DynamicQuery09DynamicParams) {
 	const paramsValues: any = [];
 	const whereColumns = new Set(params?.where?.map(w => w.column) || []);
 	let sql = 'SELECT';
@@ -80,10 +89,7 @@ export function dynamicQuery09(db: Database, params?: DynamicQuery09DynamicParam
 			paramsValues.push(...where.values);
 		}
 	});
-	return db.prepare(sql)
-		.raw(true)
-		.all(paramsValues)
-		.map(data => mapArrayToDynamicQuery09Result(data, params?.select));
+	return { sql, paramsValues }
 }
 
 function mapArrayToDynamicQuery09Result(data: any, select?: DynamicQuery09Select) {

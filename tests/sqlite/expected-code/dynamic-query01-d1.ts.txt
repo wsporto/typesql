@@ -48,6 +48,15 @@ export type DynamicQuery01Where =
 	| { column: 'description'; op: BetweenOperator; value: [string | null, string | null] }
 
 export async function dynamicQuery01(db: D1Database, params?: DynamicQuery01DynamicParams): Promise<DynamicQuery01Result[]> {
+
+	const { sql, paramsValues } = buildSql(params);
+	return db.prepare(sql)
+		.bind(...paramsValues)
+		.raw()
+		.then(rows => rows.map(row => mapArrayToDynamicQuery01Result(row, params?.select)));
+}
+
+function buildSql(params?: DynamicQuery01DynamicParams) {
 	const paramsValues: any = [];
 	const whereColumns = new Set(params?.where?.map(w => w.column) || []);
 	let sql = 'SELECT';
@@ -79,10 +88,7 @@ export async function dynamicQuery01(db: D1Database, params?: DynamicQuery01Dyna
 			paramsValues.push(...where.values);
 		}
 	});
-	return db.prepare(sql)
-		.bind(...paramsValues)
-		.raw()
-		.then(rows => rows.map(row => mapArrayToDynamicQuery01Result(row, params?.select)));
+	return { sql, paramsValues }
 }
 
 function mapArrayToDynamicQuery01Result(data: any, select?: DynamicQuery01Select) {

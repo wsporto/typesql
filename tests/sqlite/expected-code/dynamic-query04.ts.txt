@@ -54,6 +54,15 @@ export type DynamicQuery04Where =
 	| { column: 'descr'; op: BetweenOperator; value: [string | null, string | null] }
 
 export function dynamicQuery04(db: Database, params?: DynamicQuery04DynamicParams): DynamicQuery04Result[] {
+
+	const { sql, paramsValues } = buildSql(params);
+	return db.prepare(sql)
+		.raw(true)
+		.all(paramsValues)
+		.map(data => mapArrayToDynamicQuery04Result(data, params?.select));
+}
+
+function buildSql(params?: DynamicQuery04DynamicParams) {
 	const paramsValues: any = [];
 	const whereColumns = new Set(params?.where?.map(w => w.column) || []);
 	let sql = 'SELECT';
@@ -90,10 +99,7 @@ export function dynamicQuery04(db: Database, params?: DynamicQuery04DynamicParam
 			paramsValues.push(...where.values);
 		}
 	});
-	return db.prepare(sql)
-		.raw(true)
-		.all(paramsValues)
-		.map(data => mapArrayToDynamicQuery04Result(data, params?.select));
+	return { sql, paramsValues }
 }
 
 function mapArrayToDynamicQuery04Result(data: any, select?: DynamicQuery04Select) {

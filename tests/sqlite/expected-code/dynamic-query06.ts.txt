@@ -55,6 +55,15 @@ export type DynamicQuery06Where =
 	| { column: 'descr'; op: BetweenOperator; value: [string | null, string | null] }
 
 export function dynamicQuery06(db: Database, params: DynamicQuery06DynamicParams): DynamicQuery06Result[] {
+
+	const { sql, paramsValues } = buildSql(params);
+	return db.prepare(sql)
+		.raw(true)
+		.all(paramsValues)
+		.map(data => mapArrayToDynamicQuery06Result(data, params?.select));
+}
+
+function buildSql(params: DynamicQuery06DynamicParams) {
 	const orderBy = orderByToObject(params.orderBy);
 	const paramsValues: any = [];
 	const whereColumns = new Set(params?.where?.map(w => w.column) || []);
@@ -98,10 +107,7 @@ export function dynamicQuery06(db: Database, params: DynamicQuery06DynamicParams
 		}
 	});
 	sql += EOL + `ORDER BY ${escapeOrderBy(params.orderBy)}`;
-	return db.prepare(sql)
-		.raw(true)
-		.all(paramsValues)
-		.map(data => mapArrayToDynamicQuery06Result(data, params?.select));
+	return { sql, paramsValues }
 }
 
 function mapArrayToDynamicQuery06Result(data: any, select?: DynamicQuery06Select) {
