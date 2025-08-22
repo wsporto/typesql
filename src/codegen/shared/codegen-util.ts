@@ -1,5 +1,7 @@
 import CodeBlockWriter from 'code-block-writer';
-import { TsFieldDescriptor } from '../../types';
+import { TsFieldDescriptor, TsParameterDescriptor } from '../../types';
+import { DynamicSqlInfoResult2 } from '../../mysql-query-analyzer/types';
+import { EOL } from 'os';
 
 export function hasStringColumn(columns: TsFieldDescriptor[]) {
 	return columns.some((c) => c.tsType === 'string');
@@ -113,4 +115,150 @@ export function writeWhereConditionsToObjectFunction(writer: CodeBlockWriter, wh
 		writer.write(');');
 		writer.writeLine('return obj;');
 	});
+}
+
+export type BuildSqlFunction = {
+	dynamicParamsTypeName: string;
+	resultTypeName: string;
+	selectColumnsTypeName: string;
+	dynamicQueryInfo: DynamicSqlInfoResult2;
+	columns: TsFieldDescriptor[];
+	parameters: TsParameterDescriptor[];
+}
+
+export function writeBuildSqlFunction(writer: CodeBlockWriter, params: BuildSqlFunction) {
+	const { dynamicParamsTypeName, resultTypeName, selectColumnsTypeName, dynamicQueryInfo, columns, parameters } = params;
+	writer.write(`function buildSql(params?: ${dynamicParamsTypeName})`).block(() => {
+		writer.writeLine(`const isSelected = (field: keyof ${selectColumnsTypeName}) =>`);
+		writer.indent().write('params?.select == null || params.select[field] === true;').newLine();
+		writer.blankLine();
+		writer.writeLine('const selectedSqlFragments: string[] = [];');
+		writer.writeLine(`const selectedFields: (keyof ${resultTypeName})[] = [];`);
+		writer.writeLine('const paramsValues: any[] = [];');
+		writer.blankLine();
+		writer.writeLine('const whereColumns = new Set(params?.where?.map(w => w.column) || []);');
+		writer.blankLine();
+
+		if (dynamicQueryInfo.with.length > 0) {
+			writer.writeLine(`const withFragments: string[] = [];`);
+			dynamicQueryInfo.with.forEach((withFragment) => {
+				const selectConditions = withFragment.dependOnFields.map((fieldIndex) => `isSelected('${columns[fieldIndex].name}')`);
+				const whereConditions = withFragment.dependOnFields.map((fieldIndex) => `whereColumns.has('${columns[fieldIndex].name}')`);
+				const orderByConditions = withFragment.dependOnOrderBy?.map((orderBy) => `orderBy['${orderBy}'] != null`) || [];
+				const allConditions = [...selectConditions, ...whereConditions, ...orderByConditions];
+				const paramValues = withFragment.parameters.map((paramIndex) => {
+					const param = parameters[paramIndex];
+					return `params?.params?.${param.name}`;
+				});
+				if (allConditions.length > 0) {
+					writer.writeLine(`if (`);
+					writer.indent().write(`${allConditions.join(`${EOL}\t|| `)}`).newLine();
+					writer.write(') ').inlineBlock(() => {
+						writer.write(`withFragments.push(\`${withFragment.fragment}\`);`);
+						paramValues.forEach((paramValues) => {
+							writer.writeLine(`paramsValues.push(${paramValues});`);
+						});
+					}).newLine();
+				}
+				else {
+					writer.writeLine(`withFragments.push(\`${withFragment.fragment}\`);`);
+					paramValues.forEach((paramValues) => {
+						writer.writeLine(`paramsValues.push(${paramValues});`);
+					});
+				}
+			});
+		}
+		dynamicQueryInfo.select.forEach((select, index) => {
+			writer.write(`if (isSelected('${columns[index].name}'))`).block(() => {
+				writer.writeLine(`selectedSqlFragments.push('${select.fragment}');`);
+				writer.writeLine(`selectedFields.push('${columns[index].name}');`);
+				select.parameters.forEach((param) => {
+					writer.writeLine(`paramsValues.push(params?.params?.${param} ?? null);`);
+				});
+			});
+		});
+		writer.blankLine();
+		writer.writeLine('const fromSqlFragments: string[] = [];');
+
+		dynamicQueryInfo.from.forEach((from) => {
+			const selectConditions = from.dependOnFields.map((fieldIndex) => `isSelected('${columns[fieldIndex].name}')`);
+			const whereConditions = from.dependOnFields.map((fieldIndex) => `whereColumns.has('${columns[fieldIndex].name}')`);
+			const orderByConditions = from.dependOnOrderBy?.map((orderBy) => `orderBy['${orderBy}'] != null`) || [];
+			const allConditions = [...selectConditions, ...whereConditions, ...orderByConditions];
+			const paramValues = from.parameters.map((paramIndex) => {
+				const param = parameters[paramIndex];
+				return `params?.params?.${param.name}`;
+			});
+			if (allConditions.length > 0) {
+				writer.blankLine();
+				writer.writeLine(`if (`);
+				writer.indent().write(`${allConditions.join(`${EOL}\t|| `)}`).newLine();
+				writer.write(') ').inlineBlock(() => {
+					writer.write(`fromSqlFragments.push(\`${from.fragment}\`);`);
+				})
+				paramValues.forEach((paramValues) => {
+					writer.writeLine(`paramsValues.push(${paramValues});`);
+				});
+			}
+			else {
+				writer.writeLine(`fromSqlFragments.push(\`${from.fragment}\`);`);
+				paramValues.forEach((paramValues) => {
+					writer.writeLine(`paramsValues.push(${paramValues});`);
+				});
+			}
+		});
+		writer.blankLine();
+		writer.writeLine('const whereSqlFragments: string[] = [];');
+		writer.blankLine();
+		dynamicQueryInfo.where.forEach((fragment) => {
+			const paramValues = fragment.parameters.map((paramIndex) => {
+				const param = parameters[paramIndex];
+				return `params?.params?.${param.name} ?? null`;
+			});
+			writer.writeLine(`whereSqlFragments.push(\`${fragment.fragment}\`);`);
+			paramValues.forEach((paramValues) => {
+				writer.writeLine(`paramsValues.push(${paramValues});`);
+			});
+		});
+		writer.writeLine(`let currentIndex = paramsValues.length;`);
+		writer.writeLine('const placeholder = () => `$${++currentIndex}`;');
+		writer.blankLine();
+		writer.write('params?.where?.forEach(condition => ').inlineBlock(() => {
+			writer.writeLine('const whereClause = whereCondition(condition, placeholder);');
+			dynamicQueryInfo.select.forEach((select, index) => {
+				if (select.parameters.length > 0) {
+					writer.write(`if (condition[0] == '${columns[index].name}')`).block(() => {
+						select.parameters.forEach((param) => {
+							writer.writeLine(`paramsValues.push(params?.params?.${param} ?? null);`);
+						});
+					});
+				}
+			});
+			writer.write('if (whereClause?.hasValue)').block(() => {
+				writer.writeLine(`whereSqlFragments.push(whereClause.sql);`);
+				writer.write('paramsValues.push(...whereClause.values);');
+			});
+		});
+		writer.write(');').newLine();
+		if (dynamicQueryInfo.with.length > 0) {
+			writer.blankLine();
+			writer.writeLine('const withSql = withFragments.length > 0');
+			writer.indent().write('? `WITH${EOL}${withFragments.join(`,${EOL}`)}${EOL}`').newLine();
+			writer.indent().write(`: '';`).newLine();
+		}
+		writer.blankLine();
+		writer.writeLine('const whereSql = whereSqlFragments.length > 0 ? `WHERE ${whereSqlFragments.join(\' AND \')}` : \'\';');
+		writer.blankLine();
+		if (dynamicQueryInfo.with.length > 0) {
+			writer.writeLine('const sql = `${withSql}SELECT');
+		}
+		else {
+			writer.writeLine('const sql = `SELECT');
+		}
+		writer.indent().write('${selectedSqlFragments.join(`,${EOL}`)}').newLine();
+		writer.indent().write('${fromSqlFragments.join(EOL)}').newLine();;
+		writer.indent().write('${whereSql}`;').newLine();
+		writer.blankLine();
+		writer.writeLine('return { sql, paramsValues, selectedFields };');
+	})
 }
