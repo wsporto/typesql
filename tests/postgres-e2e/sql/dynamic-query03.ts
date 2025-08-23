@@ -35,22 +35,25 @@ export type DynamicQuery03Where =
 	| { column: 'value'; op: BetweenOperator; value: [number | null, number | null] }
 
 export async function dynamicQuery03(client: pg.Client | pg.Pool | pg.PoolClient, params?: DynamicQuery03DynamicParams): Promise<DynamicQuery03Result[]> {
-	const isSelected = (field: keyof DynamicQuery03Select) =>
-		params?.select == null || params.select[field] === true;
+
+	const { sql, paramsValues } = buildSql(params);
+	return client.query({ text: sql, rowMode: 'array', values: paramsValues })
+		.then(res => res.rows.map(row => mapArrayToDynamicQuery03Result(row, params?.select)));
+}
+
+function buildSql(queryParams?: DynamicQuery03DynamicParams) {
+	const { select, where } = queryParams || {};
 
 	const selectedSqlFragments: string[] = [];
-	const selectedFields: (keyof DynamicQuery03Result)[] = [];
 	const paramsValues: any[] = [];
 
-	const whereColumns = new Set(params?.where?.map(w => w.column) || []);
+	const whereColumns = new Set(where?.map(w => w.column) || []);
 
-	if (isSelected('id')) {
-		selectedSqlFragments.push('t1.id');
-		selectedFields.push('id');
+	if (!select || select.id === true) {
+		selectedSqlFragments.push(`t1.id`);
 	}
-	if (isSelected('value')) {
-		selectedSqlFragments.push('t1.value');
-		selectedFields.push('value');
+	if (!select || select.value === true) {
+		selectedSqlFragments.push(`t1.value`);
 	}
 
 	const fromSqlFragments: string[] = [];
@@ -61,7 +64,7 @@ export async function dynamicQuery03(client: pg.Client | pg.Pool | pg.PoolClient
 	let currentIndex = paramsValues.length;
 	const placeholder = () => `$${++currentIndex}`;
 
-	params?.where?.forEach(condition => {
+	where?.forEach(condition => {
 		const whereClause = whereCondition(condition, placeholder);
 		if (whereClause?.hasValue) {
 			whereSqlFragments.push(whereClause.sql);
@@ -76,15 +79,20 @@ export async function dynamicQuery03(client: pg.Client | pg.Pool | pg.PoolClient
 	${fromSqlFragments.join(EOL)}
 	${whereSql}`;
 
-	return client.query({ text: sql, rowMode: 'array', values: paramsValues })
-		.then(res => res.rows.map(row => mapArrayToDynamicQuery03Result(row, selectedFields)));
+	return { sql, paramsValues };
 }
 
-function mapArrayToDynamicQuery03Result(data: any, selectedFields: (keyof DynamicQuery03Result)[]) {
-	const result: DynamicQuery03Result = {};
-	selectedFields.forEach((field, index) => {
-		result[field] = data[index];
-	});
+function mapArrayToDynamicQuery03Result(data: any, select?: DynamicQuery03Select) {
+	const result = {} as DynamicQuery03Result;
+	let rowIndex = -1;
+	if (!select || select.id === true) {
+		rowIndex++;
+		result.id = data[rowIndex];
+	}
+	if (!select || select.value === true) {
+		rowIndex++;
+		result.value = data[rowIndex];
+	}
 	return result;
 }
 
