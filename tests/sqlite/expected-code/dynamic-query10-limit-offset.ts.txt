@@ -51,20 +51,19 @@ export function dynamicQuery10(db: Database, params?: DynamicQuery10DynamicParam
 		.map(data => mapArrayToDynamicQuery10Result(data, params?.select));
 }
 
-function buildSql(params?: DynamicQuery10DynamicParams) {
-	const isSelected = (field: keyof DynamicQuery10Select) =>
-		params?.select == null || params.select[field] === true;
+function buildSql(queryParams?: DynamicQuery10DynamicParams) {
+	const { select, where, params } = queryParams || {};
 
 	const selectedSqlFragments: string[] = [];
 	const paramsValues: any[] = [];
 
-	const whereColumns = new Set(params?.where?.map(w => w.column) || []);
+	const whereColumns = new Set(where?.map(w => w.column) || []);
 
-	if (isSelected('id')) {
-		selectedSqlFragments.push('t1.id');
+	if (!select || select.id === true) {
+		selectedSqlFragments.push(`t1.id`);
 	}
-	if (isSelected('name')) {
-		selectedSqlFragments.push('t2.name');
+	if (!select || select.name === true) {
+		selectedSqlFragments.push(`t2.name`);
 	}
 
 	const fromSqlFragments: string[] = [];
@@ -74,10 +73,10 @@ function buildSql(params?: DynamicQuery10DynamicParams) {
 	const whereSqlFragments: string[] = [];
 
 	whereSqlFragments.push(`name = ?`);
-	paramsValues.push(params?.params?.name ?? null);
+	paramsValues.push(params?.name ?? null);
 	const placeholder = () => '?';
 
-	params?.where?.forEach(condition => {
+	where?.forEach(condition => {
 		const whereClause = whereCondition(condition, placeholder);
 		if (whereClause?.hasValue) {
 			whereSqlFragments.push(whereClause.sql);
@@ -93,8 +92,8 @@ function buildSql(params?: DynamicQuery10DynamicParams) {
 	${whereSql}
 	LIMIT ? OFFSET ?`;
 
-	paramsValues.push(params?.params?.limit ?? null);
-	paramsValues.push(params?.params?.offset ?? null);
+	paramsValues.push(params?.limit ?? null);
+	paramsValues.push(params?.offset ?? null);
 
 	return { sql, paramsValues };
 }

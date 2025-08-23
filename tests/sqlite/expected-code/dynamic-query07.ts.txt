@@ -45,28 +45,27 @@ export function dynamicQuery07(db: Database, params: DynamicQuery07DynamicParams
 		.map(data => mapArrayToDynamicQuery07Result(data, params?.select));
 }
 
-function buildSql(params: DynamicQuery07DynamicParams) {
-	const isSelected = (field: keyof DynamicQuery07Select) =>
-		params?.select == null || params.select[field] === true;
+function buildSql(queryParams: DynamicQuery07DynamicParams) {
+	const { select, where } = queryParams || {};
 
-	const orderBy = orderByToObject(params.orderBy);
+	const orderBy = orderByToObject(queryParams.orderBy);
 	const selectedSqlFragments: string[] = [];
 	const paramsValues: any[] = [];
 
-	const whereColumns = new Set(params?.where?.map(w => w.column) || []);
+	const whereColumns = new Set(where?.map(w => w.column) || []);
 
-	if (isSelected('myId')) {
-		selectedSqlFragments.push('m1.id as myId');
+	if (!select || select.myId === true) {
+		selectedSqlFragments.push(`m1.id as myId`);
 	}
-	if (isSelected('name')) {
-		selectedSqlFragments.push('m2.name');
+	if (!select || select.name === true) {
+		selectedSqlFragments.push(`m2.name`);
 	}
 
 	const fromSqlFragments: string[] = [];
 	fromSqlFragments.push(`FROM mytable1 m1`);
 
 	if (
-		isSelected('name')
+		(!select || select.name === true)
 		|| whereColumns.has('name')
 		|| orderBy['m2.id'] != null
 		|| orderBy['name'] != null
@@ -81,7 +80,7 @@ function buildSql(params: DynamicQuery07DynamicParams) {
 
 	const placeholder = () => '?';
 
-	params?.where?.forEach(condition => {
+	where?.forEach(condition => {
 		const whereClause = whereCondition(condition, placeholder);
 		if (whereClause?.hasValue) {
 			whereSqlFragments.push(whereClause.sql);
@@ -95,7 +94,7 @@ function buildSql(params: DynamicQuery07DynamicParams) {
 	${selectedSqlFragments.join(`,${EOL}`)}
 	${fromSqlFragments.join(EOL)}
 	${whereSql}
-	ORDER BY ${buildOrderBy(params.orderBy)}`;
+	ORDER BY ${buildOrderBy(queryParams.orderBy)}`;
 
 	return { sql, paramsValues };
 }

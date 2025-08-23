@@ -63,39 +63,38 @@ export function dynamicQuery06(db: Database, params: DynamicQuery06DynamicParams
 		.map(data => mapArrayToDynamicQuery06Result(data, params?.select));
 }
 
-function buildSql(params: DynamicQuery06DynamicParams) {
-	const isSelected = (field: keyof DynamicQuery06Select) =>
-		params?.select == null || params.select[field] === true;
+function buildSql(queryParams: DynamicQuery06DynamicParams) {
+	const { select, where } = queryParams || {};
 
-	const orderBy = orderByToObject(params.orderBy);
+	const orderBy = orderByToObject(queryParams.orderBy);
 	const selectedSqlFragments: string[] = [];
 	const paramsValues: any[] = [];
 
-	const whereColumns = new Set(params?.where?.map(w => w.column) || []);
+	const whereColumns = new Set(where?.map(w => w.column) || []);
 
-	if (isSelected('id')) {
-		selectedSqlFragments.push('m1.id');
+	if (!select || select.id === true) {
+		selectedSqlFragments.push(`m1.id`);
 	}
-	if (isSelected('value')) {
-		selectedSqlFragments.push('m1.value');
+	if (!select || select.value === true) {
+		selectedSqlFragments.push(`m1.value`);
 	}
-	if (isSelected('id_2')) {
-		selectedSqlFragments.push('m2.id');
+	if (!select || select.id_2 === true) {
+		selectedSqlFragments.push(`m2.id`);
 	}
-	if (isSelected('name')) {
-		selectedSqlFragments.push('m2.name');
+	if (!select || select.name === true) {
+		selectedSqlFragments.push(`m2.name`);
 	}
-	if (isSelected('descr')) {
-		selectedSqlFragments.push('m2.descr');
+	if (!select || select.descr === true) {
+		selectedSqlFragments.push(`m2.descr`);
 	}
 
 	const fromSqlFragments: string[] = [];
 	fromSqlFragments.push(`FROM mytable1 m1`);
 
 	if (
-		isSelected('id_2')
-		|| isSelected('name')
-		|| isSelected('descr')
+		(!select || select.id_2 === true)
+		|| (!select || select.name === true)
+		|| (!select || select.descr === true)
 		|| whereColumns.has('id_2')
 		|| whereColumns.has('name')
 		|| whereColumns.has('descr')
@@ -112,7 +111,7 @@ function buildSql(params: DynamicQuery06DynamicParams) {
 
 	const placeholder = () => '?';
 
-	params?.where?.forEach(condition => {
+	where?.forEach(condition => {
 		const whereClause = whereCondition(condition, placeholder);
 		if (whereClause?.hasValue) {
 			whereSqlFragments.push(whereClause.sql);
@@ -126,7 +125,7 @@ function buildSql(params: DynamicQuery06DynamicParams) {
 	${selectedSqlFragments.join(`,${EOL}`)}
 	${fromSqlFragments.join(EOL)}
 	${whereSql}
-	ORDER BY ${buildOrderBy(params.orderBy)}`;
+	ORDER BY ${buildOrderBy(queryParams.orderBy)}`;
 
 	return { sql, paramsValues };
 }

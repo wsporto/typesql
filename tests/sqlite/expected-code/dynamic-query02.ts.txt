@@ -49,27 +49,26 @@ export function derivatedTable(db: Database, params?: DerivatedTableDynamicParam
 		.map(data => mapArrayToDerivatedTableResult(data, params?.select));
 }
 
-function buildSql(params?: DerivatedTableDynamicParams) {
-	const isSelected = (field: keyof DerivatedTableSelect) =>
-		params?.select == null || params.select[field] === true;
+function buildSql(queryParams?: DerivatedTableDynamicParams) {
+	const { select, where, params } = queryParams || {};
 
 	const selectedSqlFragments: string[] = [];
 	const paramsValues: any[] = [];
 
-	const whereColumns = new Set(params?.where?.map(w => w.column) || []);
+	const whereColumns = new Set(where?.map(w => w.column) || []);
 
-	if (isSelected('id')) {
-		selectedSqlFragments.push('m1.id');
+	if (!select || select.id === true) {
+		selectedSqlFragments.push(`m1.id`);
 	}
-	if (isSelected('name')) {
-		selectedSqlFragments.push('m2.name');
+	if (!select || select.name === true) {
+		selectedSqlFragments.push(`m2.name`);
 	}
 
 	const fromSqlFragments: string[] = [];
 	fromSqlFragments.push(`FROM mytable1 m1`);
 
 	if (
-		isSelected('name')
+		(!select || select.name === true)
 		|| whereColumns.has('name')
 	) {
 		fromSqlFragments.push(`INNER JOIN ( -- derivated table
@@ -77,13 +76,13 @@ function buildSql(params?: DerivatedTableDynamicParams) {
 	WHERE m.name = ?
 ) m2 on m2.id = m1.id`);
 	}
-	paramsValues.push(params?.params?.subqueryName);
+	paramsValues.push(params?.subqueryName);
 
 	const whereSqlFragments: string[] = [];
 
 	const placeholder = () => '?';
 
-	params?.where?.forEach(condition => {
+	where?.forEach(condition => {
 		const whereClause = whereCondition(condition, placeholder);
 		if (whereClause?.hasValue) {
 			whereSqlFragments.push(whereClause.sql);

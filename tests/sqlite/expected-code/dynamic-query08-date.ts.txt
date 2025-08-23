@@ -56,23 +56,22 @@ export function dynamicQuery08(db: Database, params?: DynamicQuery08DynamicParam
 		.map(data => mapArrayToDynamicQuery08Result(data, params?.select));
 }
 
-function buildSql(params?: DynamicQuery08DynamicParams) {
-	const isSelected = (field: keyof DynamicQuery08Select) =>
-		params?.select == null || params.select[field] === true;
+function buildSql(queryParams?: DynamicQuery08DynamicParams) {
+	const { select, where, params } = queryParams || {};
 
 	const selectedSqlFragments: string[] = [];
 	const paramsValues: any[] = [];
 
-	const whereColumns = new Set(params?.where?.map(w => w.column) || []);
+	const whereColumns = new Set(where?.map(w => w.column) || []);
 
-	if (isSelected('text_column')) {
-		selectedSqlFragments.push('text_column');
+	if (!select || select.text_column === true) {
+		selectedSqlFragments.push(`text_column`);
 	}
-	if (isSelected('date')) {
-		selectedSqlFragments.push('date(text_column) as date');
+	if (!select || select.date === true) {
+		selectedSqlFragments.push(`date(text_column) as date`);
 	}
-	if (isSelected('date_time')) {
-		selectedSqlFragments.push('datetime(text_column) as date_time');
+	if (!select || select.date_time === true) {
+		selectedSqlFragments.push(`datetime(text_column) as date_time`);
 	}
 
 	const fromSqlFragments: string[] = [];
@@ -81,11 +80,11 @@ function buildSql(params?: DynamicQuery08DynamicParams) {
 	const whereSqlFragments: string[] = [];
 
 	whereSqlFragments.push(`date(text_column) = ? AND datetime(text_column) = ?`);
-	paramsValues.push(params?.params?.param1?.toISOString().split('T')[0] ?? null);
-	paramsValues.push(params?.params?.param2?.toISOString().split('.')[0].replace('T', ' ') ?? null);
+	paramsValues.push(params?.param1?.toISOString().split('T')[0] ?? null);
+	paramsValues.push(params?.param2?.toISOString().split('.')[0].replace('T', ' ') ?? null);
 	const placeholder = () => '?';
 
-	params?.where?.forEach(condition => {
+	where?.forEach(condition => {
 		const whereClause = whereCondition(condition, placeholder);
 		if (whereClause?.hasValue) {
 			whereSqlFragments.push(whereClause.sql);

@@ -54,33 +54,32 @@ export function dynamicQuery09(db: Database, params?: DynamicQuery09DynamicParam
 		.map(data => mapArrayToDynamicQuery09Result(data, params?.select));
 }
 
-function buildSql(params?: DynamicQuery09DynamicParams) {
-	const isSelected = (field: keyof DynamicQuery09Select) =>
-		params?.select == null || params.select[field] === true;
+function buildSql(queryParams?: DynamicQuery09DynamicParams) {
+	const { select, where, params } = queryParams || {};
 
 	const selectedSqlFragments: string[] = [];
 	const paramsValues: any[] = [];
 
-	const whereColumns = new Set(params?.where?.map(w => w.column) || []);
+	const whereColumns = new Set(where?.map(w => w.column) || []);
 
-	if (isSelected('id')) {
-		selectedSqlFragments.push('t2.id');
+	if (!select || select.id === true) {
+		selectedSqlFragments.push(`t2.id`);
 	}
-	if (isSelected('double_value')) {
-		selectedSqlFragments.push('t3.double_value');
+	if (!select || select.double_value === true) {
+		selectedSqlFragments.push(`t3.double_value`);
 	}
-	if (isSelected('likeName')) {
-		selectedSqlFragments.push('? is null OR concat('%', t2.name, t3.name, '%') LIKE ? as likeName');
-		paramsValues.push(params?.params?.name ?? null);
-		paramsValues.push(params?.params?.name ?? null);
+	if (!select || select.likeName === true) {
+		selectedSqlFragments.push(`? is null OR concat('%', t2.name, t3.name, '%') LIKE ? as likeName`);
+		paramsValues.push(params?.name ?? null);
+		paramsValues.push(params?.name ?? null);
 	}
 
 	const fromSqlFragments: string[] = [];
 	fromSqlFragments.push(`FROM mytable2 t2`);
 
 	if (
-		isSelected('double_value')
-		|| isSelected('likeName')
+		(!select || select.double_value === true)
+		|| (!select || select.likeName === true)
 		|| whereColumns.has('double_value')
 		|| whereColumns.has('likeName')
 	) {
@@ -91,11 +90,11 @@ function buildSql(params?: DynamicQuery09DynamicParams) {
 
 	const placeholder = () => '?';
 
-	params?.where?.forEach(condition => {
+	where?.forEach(condition => {
 		const whereClause = whereCondition(condition, placeholder);
 		if (condition[0] == 'likeName') {
-			paramsValues.push(params?.params?.name ?? null);
-			paramsValues.push(params?.params?.name ?? null);
+			paramsValues.push(params?.name ?? null);
+			paramsValues.push(params?.name ?? null);
 		}
 		if (whereClause?.hasValue) {
 			whereSqlFragments.push(whereClause.sql);

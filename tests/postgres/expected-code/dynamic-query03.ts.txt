@@ -41,20 +41,19 @@ export async function dynamicQuery03(client: pg.Client | pg.Pool | pg.PoolClient
 		.then(res => res.rows.map(row => mapArrayToDynamicQuery03Result(row, params?.select)));
 }
 
-function buildSql(params?: DynamicQuery03DynamicParams) {
-	const isSelected = (field: keyof DynamicQuery03Select) =>
-		params?.select == null || params.select[field] === true;
+function buildSql(queryParams?: DynamicQuery03DynamicParams) {
+	const { select, where } = queryParams || {};
 
 	const selectedSqlFragments: string[] = [];
 	const paramsValues: any[] = [];
 
-	const whereColumns = new Set(params?.where?.map(w => w.column) || []);
+	const whereColumns = new Set(where?.map(w => w.column) || []);
 
-	if (isSelected('id')) {
-		selectedSqlFragments.push('t1.id');
+	if (!select || select.id === true) {
+		selectedSqlFragments.push(`t1.id`);
 	}
-	if (isSelected('value')) {
-		selectedSqlFragments.push('t1.value');
+	if (!select || select.value === true) {
+		selectedSqlFragments.push(`t1.value`);
 	}
 
 	const fromSqlFragments: string[] = [];
@@ -65,7 +64,7 @@ function buildSql(params?: DynamicQuery03DynamicParams) {
 	let currentIndex = paramsValues.length;
 	const placeholder = () => `$${++currentIndex}`;
 
-	params?.where?.forEach(condition => {
+	where?.forEach(condition => {
 		const whereClause = whereCondition(condition, placeholder);
 		if (whereClause?.hasValue) {
 			whereSqlFragments.push(whereClause.sql);

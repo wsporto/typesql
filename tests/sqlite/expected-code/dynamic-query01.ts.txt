@@ -56,34 +56,33 @@ export function dynamicQuery01(db: Database, params?: DynamicQuery01DynamicParam
 		.map(data => mapArrayToDynamicQuery01Result(data, params?.select));
 }
 
-function buildSql(params?: DynamicQuery01DynamicParams) {
-	const isSelected = (field: keyof DynamicQuery01Select) =>
-		params?.select == null || params.select[field] === true;
+function buildSql(queryParams?: DynamicQuery01DynamicParams) {
+	const { select, where } = queryParams || {};
 
 	const selectedSqlFragments: string[] = [];
 	const paramsValues: any[] = [];
 
-	const whereColumns = new Set(params?.where?.map(w => w.column) || []);
+	const whereColumns = new Set(where?.map(w => w.column) || []);
 
-	if (isSelected('id')) {
-		selectedSqlFragments.push('m1.id');
+	if (!select || select.id === true) {
+		selectedSqlFragments.push(`m1.id`);
 	}
-	if (isSelected('value')) {
-		selectedSqlFragments.push('m1.value');
+	if (!select || select.value === true) {
+		selectedSqlFragments.push(`m1.value`);
 	}
-	if (isSelected('name')) {
-		selectedSqlFragments.push('m2.name');
+	if (!select || select.name === true) {
+		selectedSqlFragments.push(`m2.name`);
 	}
-	if (isSelected('description')) {
-		selectedSqlFragments.push('m2.descr as description');
+	if (!select || select.description === true) {
+		selectedSqlFragments.push(`m2.descr as description`);
 	}
 
 	const fromSqlFragments: string[] = [];
 	fromSqlFragments.push(`FROM mytable1 m1`);
 
 	if (
-		isSelected('name')
-		|| isSelected('description')
+		(!select || select.name === true)
+		|| (!select || select.description === true)
 		|| whereColumns.has('name')
 		|| whereColumns.has('description')
 	) {
@@ -94,7 +93,7 @@ function buildSql(params?: DynamicQuery01DynamicParams) {
 
 	const placeholder = () => '?';
 
-	params?.where?.forEach(condition => {
+	where?.forEach(condition => {
 		const whereClause = whereCondition(condition, placeholder);
 		if (whereClause?.hasValue) {
 			whereSqlFragments.push(whereClause.sql);

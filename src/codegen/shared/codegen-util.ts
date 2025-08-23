@@ -117,14 +117,8 @@ export function writeWhereConditionsToObjectFunction(writer: CodeBlockWriter, wh
 	});
 }
 
-function writeIsSelectedFunction(writer: CodeBlockWriter, selectColumnsTypeName: string) {
-	writer.writeLine(`const isSelected = (field: keyof ${selectColumnsTypeName}) =>`);
-	writer.indent().write('params?.select == null || params.select[field] === true;').newLine();
-}
-
 export type BuildSqlFunction = {
 	dynamicParamsTypeName: string;
-	selectColumnsTypeName: string;
 	dynamicQueryInfo: DynamicSqlInfoResult2;
 	columns: TsFieldDescriptor[];
 	parameters: TsParameterDescriptor[];
@@ -134,30 +128,31 @@ export type BuildSqlFunction = {
 }
 
 export function writeBuildSqlFunction(writer: CodeBlockWriter, params: BuildSqlFunction) {
-	const { dynamicParamsTypeName, selectColumnsTypeName, dynamicQueryInfo, columns, parameters, placeHolderType, hasOrderBy, toDrive } = params;
+	const { dynamicParamsTypeName, dynamicQueryInfo, columns, parameters, placeHolderType, hasOrderBy, toDrive } = params;
 	const optional = hasOrderBy ? '' : '?';
-	writer.write(`function buildSql(params${optional}: ${dynamicParamsTypeName})`).block(() => {
-		writeIsSelectedFunction(writer, selectColumnsTypeName);
+	const paramsVar = parameters.length > 0 ? ', params' : '';
+	writer.write(`function buildSql(queryParams${optional}: ${dynamicParamsTypeName})`).block(() => {
+		writer.writeLine(`const { select, where${paramsVar} } = queryParams || {};`);
 		writer.blankLine();
 		if (hasOrderBy) {
-			writer.writeLine('const orderBy = orderByToObject(params.orderBy);');
+			writer.writeLine('const orderBy = orderByToObject(queryParams.orderBy);');
 		}
 		writer.writeLine('const selectedSqlFragments: string[] = [];');
 		writer.writeLine('const paramsValues: any[] = [];');
 		writer.blankLine();
-		writer.writeLine('const whereColumns = new Set(params?.where?.map(w => w.column) || []);');
+		writer.writeLine('const whereColumns = new Set(where?.map(w => w.column) || []);');
 		writer.blankLine();
 
 		if (dynamicQueryInfo.with.length > 0) {
 			writer.writeLine(`const withFragments: string[] = [];`);
 			dynamicQueryInfo.with.forEach((withFragment) => {
-				const selectConditions = withFragment.dependOnFields.map((fieldIndex) => `isSelected('${columns[fieldIndex].name}')`);
+				const selectConditions = withFragment.dependOnFields.map((fieldIndex) => `(!select || select.${columns[fieldIndex].name} === true)`);
 				const whereConditions = withFragment.dependOnFields.map((fieldIndex) => `whereColumns.has('${columns[fieldIndex].name}')`);
 				const orderByConditions = withFragment.dependOnOrderBy?.map((orderBy) => `orderBy['${orderBy}'] != null`) || [];
 				const allConditions = [...selectConditions, ...whereConditions, ...orderByConditions];
 				const paramValues = withFragment.parameters.map((paramIndex) => {
 					const param = parameters[paramIndex];
-					return toDrive('params?.params?', param);
+					return toDrive('params?', param);
 				});
 				if (allConditions.length > 0) {
 					writer.writeLine(`if (`);
@@ -178,10 +173,10 @@ export function writeBuildSqlFunction(writer: CodeBlockWriter, params: BuildSqlF
 			});
 		}
 		dynamicQueryInfo.select.forEach((select, index) => {
-			writer.write(`if (isSelected('${columns[index].name}'))`).block(() => {
-				writer.writeLine(`selectedSqlFragments.push('${select.fragment}');`);
+			writer.write(`if (!select || select.${columns[index].name} === true)`).block(() => {
+				writer.writeLine(`selectedSqlFragments.push(\`${select.fragment}\`);`);
 				select.parameters.forEach((param) => {
-					writer.writeLine(`paramsValues.push(params?.params?.${param} ?? null);`);
+					writer.writeLine(`paramsValues.push(params?.${param} ?? null);`);
 				});
 			});
 		});
@@ -189,13 +184,13 @@ export function writeBuildSqlFunction(writer: CodeBlockWriter, params: BuildSqlF
 		writer.writeLine('const fromSqlFragments: string[] = [];');
 
 		dynamicQueryInfo.from.forEach((from, index) => {
-			const selectConditions = from.dependOnFields.map((fieldIndex) => `isSelected('${columns[fieldIndex].name}')`);
+			const selectConditions = from.dependOnFields.map((fieldIndex) => `(!select || select.${columns[fieldIndex].name} === true)`);
 			const whereConditions = from.dependOnFields.map((fieldIndex) => `whereColumns.has('${columns[fieldIndex].name}')`);
 			const orderByConditions = from.dependOnOrderBy?.map((orderBy) => `orderBy['${orderBy}'] != null`) || [];
 			const allConditions = [...selectConditions, ...whereConditions, ...orderByConditions];
 			const paramValues = from.parameters.map((paramIndex) => {
 				const param = parameters[paramIndex];
-				return toDrive('params?.params?', param);
+				return toDrive('params?', param);
 			});
 			if (index != 0 && allConditions.length > 0) {
 				writer.blankLine();
@@ -221,7 +216,7 @@ export function writeBuildSqlFunction(writer: CodeBlockWriter, params: BuildSqlF
 		dynamicQueryInfo.where.forEach((fragment) => {
 			const paramValues = fragment.parameters.map((paramIndex) => {
 				const param = parameters[paramIndex];
-				return `${toDrive('params?.params?', param)} ?? null`;
+				return `${toDrive('params?', param)} ?? null`;
 			});
 			writer.writeLine(`whereSqlFragments.push(\`${fragment.fragment}\`);`);
 			paramValues.forEach((paramValues) => {
@@ -236,13 +231,13 @@ export function writeBuildSqlFunction(writer: CodeBlockWriter, params: BuildSqlF
 			writer.writeLine('const placeholder = () => `$${++currentIndex}`;');
 		}
 		writer.blankLine();
-		writer.write('params?.where?.forEach(condition => ').inlineBlock(() => {
+		writer.write('where?.forEach(condition => ').inlineBlock(() => {
 			writer.writeLine('const whereClause = whereCondition(condition, placeholder);');
 			dynamicQueryInfo.select.forEach((select, index) => {
 				if (select.parameters.length > 0) {
 					writer.write(`if (condition[0] == '${columns[index].name}')`).block(() => {
 						select.parameters.forEach((param) => {
-							writer.writeLine(`paramsValues.push(params?.params?.${param} ?? null);`);
+							writer.writeLine(`paramsValues.push(params?.${param} ?? null);`);
 						});
 					});
 				}
@@ -273,7 +268,7 @@ export function writeBuildSqlFunction(writer: CodeBlockWriter, params: BuildSqlF
 		writer.indent().write('${whereSql}');
 		if (hasOrderBy) {
 			writer.newLine();
-			writer.indent().write('ORDER BY ${buildOrderBy(params.orderBy)}');
+			writer.indent().write('ORDER BY ${buildOrderBy(queryParams.orderBy)}');
 		}
 		const limitOffset = dynamicQueryInfo?.limitOffset;
 		if (limitOffset) {
@@ -285,7 +280,7 @@ export function writeBuildSqlFunction(writer: CodeBlockWriter, params: BuildSqlF
 		if (dynamicQueryInfo?.limitOffset) {
 			writer.blankLine();
 			dynamicQueryInfo?.limitOffset.parameters.forEach((param) => {
-				writer.writeLine(`paramsValues.push(params?.params?.${param} ?? null);`);
+				writer.writeLine(`paramsValues.push(params?.${param} ?? null);`);
 			});
 		}
 

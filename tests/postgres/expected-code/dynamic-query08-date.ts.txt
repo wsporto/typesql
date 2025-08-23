@@ -41,17 +41,16 @@ export async function dynamicQuery08(client: pg.Client | pg.Pool | pg.PoolClient
 		.then(res => res.rows.map(row => mapArrayToDynamicQuery08Result(row, params?.select)));
 }
 
-function buildSql(params?: DynamicQuery08DynamicParams) {
-	const isSelected = (field: keyof DynamicQuery08Select) =>
-		params?.select == null || params.select[field] === true;
+function buildSql(queryParams?: DynamicQuery08DynamicParams) {
+	const { select, where, params } = queryParams || {};
 
 	const selectedSqlFragments: string[] = [];
 	const paramsValues: any[] = [];
 
-	const whereColumns = new Set(params?.where?.map(w => w.column) || []);
+	const whereColumns = new Set(where?.map(w => w.column) || []);
 
-	if (isSelected('timestamp_not_null_column')) {
-		selectedSqlFragments.push('timestamp_not_null_column');
+	if (!select || select.timestamp_not_null_column === true) {
+		selectedSqlFragments.push(`timestamp_not_null_column`);
 	}
 
 	const fromSqlFragments: string[] = [];
@@ -60,12 +59,12 @@ function buildSql(params?: DynamicQuery08DynamicParams) {
 	const whereSqlFragments: string[] = [];
 
 	whereSqlFragments.push(`EXTRACT(YEAR FROM timestamp_not_null_column) = $1 AND EXTRACT(MONTH FROM timestamp_not_null_column) = $2`);
-	paramsValues.push(params?.params?.param1 ?? null);
-	paramsValues.push(params?.params?.param2 ?? null);
+	paramsValues.push(params?.param1 ?? null);
+	paramsValues.push(params?.param2 ?? null);
 	let currentIndex = paramsValues.length;
 	const placeholder = () => `$${++currentIndex}`;
 
-	params?.where?.forEach(condition => {
+	where?.forEach(condition => {
 		const whereClause = whereCondition(condition, placeholder);
 		if (whereClause?.hasValue) {
 			whereSqlFragments.push(whereClause.sql);
