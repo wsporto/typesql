@@ -116,7 +116,7 @@ function mapArrayToDynamicQuery07Result(data: any, select?: DynamicQuery07Select
 function orderByToObject(orderBy: DynamicQuery07DynamicParams['orderBy']) {
 	const obj = {} as any;
 	orderBy?.forEach(order => {
-		obj[order[0]] = true;
+		obj[order.column] = true;
 	});
 	return obj;
 }

@@ -458,7 +458,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 			writer.write(`function orderByToObject(orderBy: ${dynamicParamsTypeName}['orderBy'])`).block(() => {
 				writer.writeLine('const obj = {} as any;');
 				writer.write('orderBy?.forEach(order => ').inlineBlock(() => {
-					writer.writeLine('obj[order[0]] = true;');
+					writer.writeLine('obj[order.column] = true;');
 				});
 				writer.write(');');
 				writer.writeLine('return obj;');
