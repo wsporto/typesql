@@ -100,16 +100,13 @@ function buildSql(queryParams?: DerivatedTableDynamicParams) {
 }
 
 function mapArrayToDerivatedTableResult(data: any, select?: DerivatedTableSelect) {
-	const isSelected = (field: keyof DerivatedTableSelect) =>
-		!select || select[field] === true;
-
 	const result = {} as DerivatedTableResult;
 	let rowIndex = -1;
-	if (isSelected('id')) {
+	if (!select || select.id === true) {
 		rowIndex++;
 		result.id = data[rowIndex];
 	}
-	if (isSelected('name')) {
+	if (!select || select.name === true) {
 		rowIndex++;
 		result.name = data[rowIndex];
 	}

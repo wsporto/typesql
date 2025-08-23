@@ -105,16 +105,13 @@ function buildSql(queryParams?: CteDynamicParams) {
 }
 
 function mapArrayToCteResult(data: any, select?: CteSelect) {
-	const isSelected = (field: keyof CteSelect) =>
-		!select || select[field] === true;
-
 	const result = {} as CteResult;
 	let rowIndex = -1;
-	if (isSelected('id')) {
+	if (!select || select.id === true) {
 		rowIndex++;
 		result.id = data[rowIndex];
 	}
-	if (isSelected('name')) {
+	if (!select || select.name === true) {
 		rowIndex++;
 		result.name = data[rowIndex];
 	}

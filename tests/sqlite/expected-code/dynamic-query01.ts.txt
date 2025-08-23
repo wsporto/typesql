@@ -112,24 +112,21 @@ function buildSql(queryParams?: DynamicQuery01DynamicParams) {
 }
 
 function mapArrayToDynamicQuery01Result(data: any, select?: DynamicQuery01Select) {
-	const isSelected = (field: keyof DynamicQuery01Select) =>
-		!select || select[field] === true;
-
 	const result = {} as DynamicQuery01Result;
 	let rowIndex = -1;
-	if (isSelected('id')) {
+	if (!select || select.id === true) {
 		rowIndex++;
 		result.id = data[rowIndex];
 	}
-	if (isSelected('value')) {
+	if (!select || select.value === true) {
 		rowIndex++;
 		result.value = data[rowIndex];
 	}
-	if (isSelected('name')) {
+	if (!select || select.name === true) {
 		rowIndex++;
 		result.name = data[rowIndex];
 	}
-	if (isSelected('description')) {
+	if (!select || select.description === true) {
 		rowIndex++;
 		result.description = data[rowIndex];
 	}

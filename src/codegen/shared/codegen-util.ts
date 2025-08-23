@@ -298,13 +298,10 @@ type MapToResultParameters = {
 export function writeMapToResultFunction(writer: CodeBlockWriter, params: MapToResultParameters) {
 	const { columns, resultTypeName, selectColumnsTypeName, fromDriver } = params;
 	writer.write(`function mapArrayTo${resultTypeName}(data: any, select?: ${selectColumnsTypeName})`).block(() => {
-		writer.writeLine(`const isSelected = (field: keyof ${selectColumnsTypeName}) =>`);
-		writer.indent().write('!select || select[field] === true;').newLine();
-		writer.blankLine();
 		writer.writeLine(`const result = {} as ${resultTypeName};`);
 		writer.writeLine('let rowIndex = -1;');
 		columns.forEach((tsField) => {
-			writer.write(`if (isSelected('${tsField.name}'))`).block(() => {
+			writer.write(`if (!select || select.${tsField.name} === true)`).block(() => {
 				writer.writeLine('rowIndex++;');
 				writer.writeLine(`result.${tsField.name} = ${fromDriver('data[rowIndex]', tsField)};`);
 			});

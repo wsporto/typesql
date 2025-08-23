@@ -123,28 +123,25 @@ function buildSql(queryParams?: DynamicQuery04DynamicParams) {
 }
 
 function mapArrayToDynamicQuery04Result(data: any, select?: DynamicQuery04Select) {
-	const isSelected = (field: keyof DynamicQuery04Select) =>
-		!select || select[field] === true;
-
 	const result = {} as DynamicQuery04Result;
 	let rowIndex = -1;
-	if (isSelected('id')) {
+	if (!select || select.id === true) {
 		rowIndex++;
 		result.id = data[rowIndex];
 	}
-	if (isSelected('value')) {
+	if (!select || select.value === true) {
 		rowIndex++;
 		result.value = data[rowIndex];
 	}
-	if (isSelected('id_2')) {
+	if (!select || select.id_2 === true) {
 		rowIndex++;
 		result.id_2 = data[rowIndex];
 	}
-	if (isSelected('name')) {
+	if (!select || select.name === true) {
 		rowIndex++;
 		result.name = data[rowIndex];
 	}
-	if (isSelected('descr')) {
+	if (!select || select.descr === true) {
 		rowIndex++;
 		result.descr = data[rowIndex];
 	}

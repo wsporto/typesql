@@ -104,16 +104,13 @@ function buildSql(queryParams?: DynamicQuery05DynamicParams) {
 }
 
 function mapArrayToDynamicQuery05Result(data: any, select?: DynamicQuery05Select) {
-	const isSelected = (field: keyof DynamicQuery05Select) =>
-		!select || select[field] === true;
-
 	const result = {} as DynamicQuery05Result;
 	let rowIndex = -1;
-	if (isSelected('id')) {
+	if (!select || select.id === true) {
 		rowIndex++;
 		result.id = data[rowIndex];
 	}
-	if (isSelected('name')) {
+	if (!select || select.name === true) {
 		rowIndex++;
 		result.name = data[rowIndex];
 	}

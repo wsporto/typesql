@@ -113,16 +113,13 @@ function buildSql(queryParams?: DynamicQuery12DynamicParams) {
 }
 
 function mapArrayToDynamicQuery12Result(data: any, select?: DynamicQuery12Select) {
-	const isSelected = (field: keyof DynamicQuery12Select) =>
-		!select || select[field] === true;
-
 	const result = {} as DynamicQuery12Result;
 	let rowIndex = -1;
-	if (isSelected('id')) {
+	if (!select || select.id === true) {
 		rowIndex++;
 		result.id = data[rowIndex];
 	}
-	if (isSelected('name')) {
+	if (!select || select.name === true) {
 		rowIndex++;
 		result.name = data[rowIndex];
 	}
