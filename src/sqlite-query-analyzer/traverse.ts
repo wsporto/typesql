@@ -311,7 +311,7 @@ function traverse_select_core(
 		if (!traverseContext.subQuery) {
 			const { relations, params } = extractRelationsAndParams(whereExpr, fromColumns.concat(newColumns), traverseContext.parameters);
 			traverseContext.dynamicSqlInfo2.where.push({
-				fragment: `AND ${extractOriginalSql(whereExpr)}`,
+				fragment: `${extractOriginalSql(whereExpr)}`,
 				dependOnRelations: [...new Set(relations)], //remove duplicated
 				parameters: params
 			});

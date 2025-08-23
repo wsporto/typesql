@@ -41,29 +41,32 @@ export type DerivatedTableWhere =
 	| { column: 'name'; op: BetweenOperator; value: [string | null, string | null] }
 
 export async function derivatedTable(client: pg.Client | pg.Pool | pg.PoolClient, params?: DerivatedTableDynamicParams): Promise<DerivatedTableResult[]> {
-	const isSelected = (field: keyof DerivatedTableSelect) =>
-		params?.select == null || params.select[field] === true;
+
+	const { sql, paramsValues } = buildSql(params);
+	return client.query({ text: sql, rowMode: 'array', values: paramsValues })
+		.then(res => res.rows.map(row => mapArrayToDerivatedTableResult(row, params?.select)));
+}
+
+function buildSql(queryParams?: DerivatedTableDynamicParams) {
+	const { select, where, params } = queryParams || {};
 
 	const selectedSqlFragments: string[] = [];
-	const selectedFields: (keyof DerivatedTableResult)[] = [];
 	const paramsValues: any[] = [];
 
-	const whereColumns = new Set(params?.where?.map(w => w.column) || []);
+	const whereColumns = new Set(where?.map(w => w.column) || []);
 
-	if (isSelected('id')) {
-		selectedSqlFragments.push('m1.id');
-		selectedFields.push('id');
+	if (!select || select.id === true) {
+		selectedSqlFragments.push(`m1.id`);
 	}
-	if (isSelected('name')) {
-		selectedSqlFragments.push('m2.name');
-		selectedFields.push('name');
+	if (!select || select.name === true) {
+		selectedSqlFragments.push(`m2.name`);
 	}
 
 	const fromSqlFragments: string[] = [];
 	fromSqlFragments.push(`FROM mytable1 m1`);
 
 	if (
-		isSelected('name')
+		(!select || select.name === true)
 		|| whereColumns.has('name')
 	) {
 		fromSqlFragments.push(`INNER JOIN ( -- derivated table
@@ -71,14 +74,14 @@ export async function derivatedTable(client: pg.Client | pg.Pool | pg.PoolClient
 	WHERE m.name = $1
 ) m2 on m2.id = m1.id`);
 	}
-	paramsValues.push(params?.params?.subqueryName);
+	paramsValues.push(params?.subqueryName);
 
 	const whereSqlFragments: string[] = [];
 
 	let currentIndex = paramsValues.length;
 	const placeholder = () => `$${++currentIndex}`;
 
-	params?.where?.forEach(condition => {
+	where?.forEach(condition => {
 		const whereClause = whereCondition(condition, placeholder);
 		if (whereClause?.hasValue) {
 			whereSqlFragments.push(whereClause.sql);
@@ -93,15 +96,20 @@ export async function derivatedTable(client: pg.Client | pg.Pool | pg.PoolClient
 	${fromSqlFragments.join(EOL)}
 	${whereSql}`;
 
-	return client.query({ text: sql, rowMode: 'array', values: paramsValues })
-		.then(res => res.rows.map(row => mapArrayToDerivatedTableResult(row, selectedFields)));
+	return { sql, paramsValues };
 }
 
-function mapArrayToDerivatedTableResult(data: any, selectedFields: (keyof DerivatedTableResult)[]) {
-	const result: DerivatedTableResult = {};
-	selectedFields.forEach((field, index) => {
-		result[field] = data[index];
-	});
+function mapArrayToDerivatedTableResult(data: any, select?: DerivatedTableSelect) {
+	const result = {} as DerivatedTableResult;
+	let rowIndex = -1;
+	if (!select || select.id === true) {
+		rowIndex++;
+		result.id = data[rowIndex];
+	}
+	if (!select || select.name === true) {
+		rowIndex++;
+		result.name = data[rowIndex];
+	}
 	return result;
 }
 

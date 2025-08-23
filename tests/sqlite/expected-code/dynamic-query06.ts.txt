@@ -4,7 +4,7 @@ import { EOL } from 'os';
 export type DynamicQuery06DynamicParams = {
 	select?: DynamicQuery06Select;
 	where?: DynamicQuery06Where[];
-	orderBy: [DynamicQuery06OrderBy, 'asc' | 'desc'][];
+	orderBy: DynamicQuery06OrderBy[];
 }
 
 export type DynamicQuery06Result = {
@@ -38,116 +38,122 @@ type SetOperator = 'IN' | 'NOT IN';
 type BetweenOperator = 'BETWEEN';
 
 export type DynamicQuery06Where =
-	| ['id', NumericOperator, number | null]
-	| ['id', SetOperator, number[]]
-	| ['id', BetweenOperator, number | null, number | null]
-	| ['value', NumericOperator, number | null]
-	| ['value', SetOperator, number[]]
-	| ['value', BetweenOperator, number | null, number | null]
-	| ['id_2', NumericOperator, number | null]
-	| ['id_2', SetOperator, number[]]
-	| ['id_2', BetweenOperator, number | null, number | null]
-	| ['name', StringOperator, string | null]
-	| ['name', SetOperator, string[]]
-	| ['name', BetweenOperator, string | null, string | null]
-	| ['descr', StringOperator, string | null]
-	| ['descr', SetOperator, string[]]
-	| ['descr', BetweenOperator, string | null, string | null]
+	| { column: 'id'; op: NumericOperator; value: number | null }
+	| { column: 'id'; op: SetOperator; value: number[] }
+	| { column: 'id'; op: BetweenOperator; value: [number | null, number | null] }
+	| { column: 'value'; op: NumericOperator; value: number | null }
+	| { column: 'value'; op: SetOperator; value: number[] }
+	| { column: 'value'; op: BetweenOperator; value: [number | null, number | null] }
+	| { column: 'id_2'; op: NumericOperator; value: number | null }
+	| { column: 'id_2'; op: SetOperator; value: number[] }
+	| { column: 'id_2'; op: BetweenOperator; value: [number | null, number | null] }
+	| { column: 'name'; op: StringOperator; value: string | null }
+	| { column: 'name'; op: SetOperator; value: string[] }
+	| { column: 'name'; op: BetweenOperator; value: [string | null, string | null] }
+	| { column: 'descr'; op: StringOperator; value: string | null }
+	| { column: 'descr'; op: SetOperator; value: string[] }
+	| { column: 'descr'; op: BetweenOperator; value: [string | null, string | null] }
 
 export function dynamicQuery06(db: Database, params: DynamicQuery06DynamicParams): DynamicQuery06Result[] {
-	const where = whereConditionsToObject(params?.where);
-	const orderBy = orderByToObject(params.orderBy);
-	const paramsValues: any = [];
-	let sql = 'SELECT';
-	if (params?.select == null || params.select.id) {
-		sql = appendSelect(sql, `m1.id`);
-	}
-	if (params?.select == null || params.select.value) {
-		sql = appendSelect(sql, `m1.value`);
-	}
-	if (params?.select == null || params.select.id_2) {
-		sql = appendSelect(sql, `m2.id`);
-	}
-	if (params?.select == null || params.select.name) {
-		sql = appendSelect(sql, `m2.name`);
-	}
-	if (params?.select == null || params.select.descr) {
-		sql = appendSelect(sql, `m2.descr`);
-	}
-	sql += EOL + `FROM mytable1 m1`;
-	if (params?.select == null
-		|| params.select.id_2
-		|| params.select.name
-		|| params.select.descr
-		|| where.id_2 != null
-		|| where.name != null
-		|| where.descr != null
-		|| orderBy['m2.id'] != null
-		|| orderBy['name'] != null
-		|| orderBy['m2.name'] != null
-		|| orderBy['descr'] != null
-		|| orderBy['m2.descr'] != null) {
-		sql += EOL + `INNER JOIN mytable2 m2 on m2.id = m1.id`;
-	}
-	sql += EOL + `WHERE 1 = 1`;
-	params?.where?.forEach(condition => {
-		const where = whereCondition(condition);
-		if (where?.hasValue) {
-			sql += EOL + 'AND ' + where.sql;
-			paramsValues.push(...where.values);
-		}
-	});
-	sql += EOL + `ORDER BY ${escapeOrderBy(params.orderBy)}`;
+
+	const { sql, paramsValues } = buildSql(params);
 	return db.prepare(sql)
 		.raw(true)
 		.all(paramsValues)
 		.map(data => mapArrayToDynamicQuery06Result(data, params?.select));
 }
 
+function buildSql(queryParams: DynamicQuery06DynamicParams) {
+	const { select, where } = queryParams || {};
+
+	const orderBy = orderByToObject(queryParams.orderBy);
+	const selectedSqlFragments: string[] = [];
+	const paramsValues: any[] = [];
+
+	const whereColumns = new Set(where?.map(w => w.column) || []);
+
+	if (!select || select.id === true) {
+		selectedSqlFragments.push(`m1.id`);
+	}
+	if (!select || select.value === true) {
+		selectedSqlFragments.push(`m1.value`);
+	}
+	if (!select || select.id_2 === true) {
+		selectedSqlFragments.push(`m2.id`);
+	}
+	if (!select || select.name === true) {
+		selectedSqlFragments.push(`m2.name`);
+	}
+	if (!select || select.descr === true) {
+		selectedSqlFragments.push(`m2.descr`);
+	}
+
+	const fromSqlFragments: string[] = [];
+	fromSqlFragments.push(`FROM mytable1 m1`);
+
+	if (
+		(!select || select.id_2 === true)
+		|| (!select || select.name === true)
+		|| (!select || select.descr === true)
+		|| whereColumns.has('id_2')
+		|| whereColumns.has('name')
+		|| whereColumns.has('descr')
+		|| orderBy['m2.id'] != null
+		|| orderBy['name'] != null
+		|| orderBy['m2.name'] != null
+		|| orderBy['descr'] != null
+		|| orderBy['m2.descr'] != null
+	) {
+		fromSqlFragments.push(`INNER JOIN mytable2 m2 on m2.id = m1.id`);
+	}
+
+	const whereSqlFragments: string[] = [];
+
+	const placeholder = () => '?';
+
+	where?.forEach(condition => {
+		const whereClause = whereCondition(condition, placeholder);
+		if (whereClause?.hasValue) {
+			whereSqlFragments.push(whereClause.sql);
+			paramsValues.push(...whereClause.values);
+		}
+	});
+
+	const whereSql = whereSqlFragments.length > 0 ? `WHERE ${whereSqlFragments.join(' AND ')}` : '';
+
+	const sql = `SELECT
+	${selectedSqlFragments.join(`,${EOL}`)}
+	${fromSqlFragments.join(EOL)}
+	${whereSql}
+	ORDER BY ${buildOrderBy(queryParams.orderBy)}`;
+
+	return { sql, paramsValues };
+}
+
 function mapArrayToDynamicQuery06Result(data: any, select?: DynamicQuery06Select) {
 	const result = {} as DynamicQuery06Result;
 	let rowIndex = -1;
-	if (select == null || select.id) {
+	if (!select || select.id === true) {
 		rowIndex++;
 		result.id = data[rowIndex];
 	}
-	if (select == null || select.value) {
+	if (!select || select.value === true) {
 		rowIndex++;
 		result.value = data[rowIndex];
 	}
-	if (select == null || select.id_2) {
+	if (!select || select.id_2 === true) {
 		rowIndex++;
 		result.id_2 = data[rowIndex];
 	}
-	if (select == null || select.name) {
+	if (!select || select.name === true) {
 		rowIndex++;
 		result.name = data[rowIndex];
 	}
-	if (select == null || select.descr) {
+	if (!select || select.descr === true) {
 		rowIndex++;
 		result.descr = data[rowIndex];
 	}
 	return result;
-}
-
-function appendSelect(sql: string, selectField: string) {
-	if (sql.toUpperCase().endsWith('SELECT')) {
-		return sql + EOL + selectField;
-	}
-	else {
-		return sql + ', ' + EOL + selectField;
-	}
-}
-
-function whereConditionsToObject(whereConditions?: DynamicQuery06Where[]) {
-	const obj = {} as any;
-	whereConditions?.forEach(condition => {
-		const where = whereCondition(condition);
-		if (where?.hasValue) {
-			obj[condition[0]] = true;
-		}
-	});
-	return obj;
 }
 
 function orderByToObject(orderBy: DynamicQuery06DynamicParams['orderBy']) {
@@ -164,55 +170,67 @@ type WhereConditionResult = {
 	values: any[];
 }
 
-function whereCondition(condition: DynamicQuery06Where): WhereConditionResult | undefined {
+function whereCondition(condition: DynamicQuery06Where, placeholder: () => string): WhereConditionResult | null {
+	const selectFragment = selectFragments[condition.column];
+	const { op, value } = condition;
 
-	const selectFragment = selectFragments[condition[0]];
-	const operator = condition[1];
-
-	if (operator == 'LIKE') {
+	if (op === 'LIKE') {
 		return {
-			sql: `${selectFragment} LIKE concat('%', ?, '%')`,
-			hasValue: condition[2] != null,
-			values: [condition[2]]
+			sql: `${selectFragment} LIKE ${placeholder()}`,
+			hasValue: value != null,
+			values: [value]
 		}
 	}
-	if (operator == 'BETWEEN') {
+	if (op === 'BETWEEN') {
+		const [from, to] = Array.isArray(value) ? value : [null, null];
 		return {
-			sql: `${selectFragment} BETWEEN ? AND ?`,
-			hasValue: condition[2] != null && condition[3] != null,
-			values: [condition[2], condition[3]]
+			sql: `${selectFragment} BETWEEN ${placeholder()} AND ${placeholder()}`,
+			hasValue: from != null && to != null,
+			values: [from, to]
 		}
 	}
-	if (operator == 'IN' || operator == 'NOT IN') {
+	if (op === 'IN' || op === 'NOT IN') {
+		if (!Array.isArray(value) || value.length === 0) {
+			return { sql: '', hasValue: false, values: [] };
+		}
 		return {
-			sql: `${selectFragment} ${operator} (${condition[2]?.map(_ => '?').join(', ')})`,
-			hasValue: condition[2] != null && condition[2].length > 0,
-			values: condition[2]
+			sql: `${selectFragment} ${op} (${value.map(() => placeholder()).join(', ')})`,
+			hasValue: true,
+			values: value
 		}
 	}
-	if (NumericOperatorList.includes(operator)) {
+	if (NumericOperatorList.includes(op)) {
 		return {
-			sql: `${selectFragment} ${operator} ?`,
-			hasValue: condition[2] != null,
-			values: [condition[2]]
+			sql: `${selectFragment} ${op} ${placeholder()}`,
+			hasValue: value != null,
+			values: [value]
 		}
 	}
-	return undefined;
+	return null;
 }
 
-const orderByFragments = {
-	'm1.id': `m1.id`,
-	'value': `value`,
-	'm1.value': `m1.value`,
-	'm2.id': `m2.id`,
-	'name': `name`,
-	'm2.name': `m2.name`,
-	'descr': `descr`,
-	'm2.descr': `m2.descr`,
-} as const;
+const orderByColumns = ['m1.id', 'value', 'm1.value', 'm2.id', 'name', 'm2.name', 'descr', 'm2.descr'] as const;
 
-export type DynamicQuery06OrderBy = keyof typeof orderByFragments;
+export type DynamicQuery06OrderBy = {
+	column: typeof orderByColumns[number];
+	direction: 'asc' | 'desc';
+}
 
-function escapeOrderBy(orderBy: DynamicQuery06DynamicParams['orderBy']): string {
-	return orderBy.map(order => `${orderByFragments[order[0]]} ${order[1] == 'desc' ? 'desc' : 'asc'}`).join(', ');
+function buildOrderBy(orderBy: DynamicQuery06OrderBy[]): string {
+	if (!Array.isArray(orderBy) || orderBy.length === 0) {
+		throw new Error('orderBy must be a non-empty array');
+	}
+
+	for (const { column, direction } of orderBy) {
+		if (!orderByColumns.includes(column)) {
+			throw new Error(`Invalid orderBy column: ${column}`);
+		}
+		if (direction !== 'asc' && direction !== 'desc') {
+			throw new Error(`Invalid orderBy direction: ${direction}`);
+		}
+	}
+
+	return orderBy
+		.map(({ column, direction }) => `"${column}" ${direction.toUpperCase()}`)
+		.join(', ');
 }

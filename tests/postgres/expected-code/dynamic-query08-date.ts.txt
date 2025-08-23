@@ -35,18 +35,22 @@ export type DynamicQuery08Where =
 	| { column: 'timestamp_not_null_column'; op: BetweenOperator; value: [Date | null, Date | null] }
 
 export async function dynamicQuery08(client: pg.Client | pg.Pool | pg.PoolClient, params?: DynamicQuery08DynamicParams): Promise<DynamicQuery08Result[]> {
-	const isSelected = (field: keyof DynamicQuery08Select) =>
-		params?.select == null || params.select[field] === true;
+
+	const { sql, paramsValues } = buildSql(params);
+	return client.query({ text: sql, rowMode: 'array', values: paramsValues })
+		.then(res => res.rows.map(row => mapArrayToDynamicQuery08Result(row, params?.select)));
+}
+
+function buildSql(queryParams?: DynamicQuery08DynamicParams) {
+	const { select, where, params } = queryParams || {};
 
 	const selectedSqlFragments: string[] = [];
-	const selectedFields: (keyof DynamicQuery08Result)[] = [];
 	const paramsValues: any[] = [];
 
-	const whereColumns = new Set(params?.where?.map(w => w.column) || []);
+	const whereColumns = new Set(where?.map(w => w.column) || []);
 
-	if (isSelected('timestamp_not_null_column')) {
-		selectedSqlFragments.push('timestamp_not_null_column');
-		selectedFields.push('timestamp_not_null_column');
+	if (!select || select.timestamp_not_null_column === true) {
+		selectedSqlFragments.push(`timestamp_not_null_column`);
 	}
 
 	const fromSqlFragments: string[] = [];
@@ -55,12 +59,12 @@ export async function dynamicQuery08(client: pg.Client | pg.Pool | pg.PoolClient
 	const whereSqlFragments: string[] = [];
 
 	whereSqlFragments.push(`EXTRACT(YEAR FROM timestamp_not_null_column) = $1 AND EXTRACT(MONTH FROM timestamp_not_null_column) = $2`);
-	paramsValues.push(params?.params?.param1 ?? null);
-	paramsValues.push(params?.params?.param2 ?? null);
+	paramsValues.push(params?.param1 ?? null);
+	paramsValues.push(params?.param2 ?? null);
 	let currentIndex = paramsValues.length;
 	const placeholder = () => `$${++currentIndex}`;
 
-	params?.where?.forEach(condition => {
+	where?.forEach(condition => {
 		const whereClause = whereCondition(condition, placeholder);
 		if (whereClause?.hasValue) {
 			whereSqlFragments.push(whereClause.sql);
@@ -75,15 +79,16 @@ export async function dynamicQuery08(client: pg.Client | pg.Pool | pg.PoolClient
 	${fromSqlFragments.join(EOL)}
 	${whereSql}`;
 
-	return client.query({ text: sql, rowMode: 'array', values: paramsValues })
-		.then(res => res.rows.map(row => mapArrayToDynamicQuery08Result(row, selectedFields)));
+	return { sql, paramsValues };
 }
 
-function mapArrayToDynamicQuery08Result(data: any, selectedFields: (keyof DynamicQuery08Result)[]) {
-	const result: DynamicQuery08Result = {};
-	selectedFields.forEach((field, index) => {
-		result[field] = data[index];
-	});
+function mapArrayToDynamicQuery08Result(data: any, select?: DynamicQuery08Select) {
+	const result = {} as DynamicQuery08Result;
+	let rowIndex = -1;
+	if (!select || select.timestamp_not_null_column === true) {
+		rowIndex++;
+		result.timestamp_not_null_column = data[rowIndex];
+	}
 	return result;
 }
 

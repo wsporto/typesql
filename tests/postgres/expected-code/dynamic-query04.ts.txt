@@ -54,43 +54,43 @@ export type DynamicQuery04Where =
 	| { column: 'descr'; op: BetweenOperator; value: [string | null, string | null] }
 
 export async function dynamicQuery04(client: pg.Client | pg.Pool | pg.PoolClient, params?: DynamicQuery04DynamicParams): Promise<DynamicQuery04Result[]> {
-	const isSelected = (field: keyof DynamicQuery04Select) =>
-		params?.select == null || params.select[field] === true;
+
+	const { sql, paramsValues } = buildSql(params);
+	return client.query({ text: sql, rowMode: 'array', values: paramsValues })
+		.then(res => res.rows.map(row => mapArrayToDynamicQuery04Result(row, params?.select)));
+}
+
+function buildSql(queryParams?: DynamicQuery04DynamicParams) {
+	const { select, where } = queryParams || {};
 
 	const selectedSqlFragments: string[] = [];
-	const selectedFields: (keyof DynamicQuery04Result)[] = [];
 	const paramsValues: any[] = [];
 
-	const whereColumns = new Set(params?.where?.map(w => w.column) || []);
+	const whereColumns = new Set(where?.map(w => w.column) || []);
 
-	if (isSelected('id')) {
-		selectedSqlFragments.push('m1.id');
-		selectedFields.push('id');
+	if (!select || select.id === true) {
+		selectedSqlFragments.push(`m1.id`);
 	}
-	if (isSelected('value')) {
-		selectedSqlFragments.push('m1.value');
-		selectedFields.push('value');
+	if (!select || select.value === true) {
+		selectedSqlFragments.push(`m1.value`);
 	}
-	if (isSelected('id_2')) {
-		selectedSqlFragments.push('m2.id');
-		selectedFields.push('id_2');
+	if (!select || select.id_2 === true) {
+		selectedSqlFragments.push(`m2.id`);
 	}
-	if (isSelected('name')) {
-		selectedSqlFragments.push('m2.name');
-		selectedFields.push('name');
+	if (!select || select.name === true) {
+		selectedSqlFragments.push(`m2.name`);
 	}
-	if (isSelected('descr')) {
-		selectedSqlFragments.push('m2.descr');
-		selectedFields.push('descr');
+	if (!select || select.descr === true) {
+		selectedSqlFragments.push(`m2.descr`);
 	}
 
 	const fromSqlFragments: string[] = [];
 	fromSqlFragments.push(`FROM mytable1 m1`);
 
 	if (
-		isSelected('id_2')
-		|| isSelected('name')
-		|| isSelected('descr')
+		(!select || select.id_2 === true)
+		|| (!select || select.name === true)
+		|| (!select || select.descr === true)
 		|| whereColumns.has('id_2')
 		|| whereColumns.has('name')
 		|| whereColumns.has('descr')
@@ -103,7 +103,7 @@ export async function dynamicQuery04(client: pg.Client | pg.Pool | pg.PoolClient
 	let currentIndex = paramsValues.length;
 	const placeholder = () => `$${++currentIndex}`;
 
-	params?.where?.forEach(condition => {
+	where?.forEach(condition => {
 		const whereClause = whereCondition(condition, placeholder);
 		if (whereClause?.hasValue) {
 			whereSqlFragments.push(whereClause.sql);
@@ -118,15 +118,32 @@ export async function dynamicQuery04(client: pg.Client | pg.Pool | pg.PoolClient
 	${fromSqlFragments.join(EOL)}
 	${whereSql}`;
 
-	return client.query({ text: sql, rowMode: 'array', values: paramsValues })
-		.then(res => res.rows.map(row => mapArrayToDynamicQuery04Result(row, selectedFields)));
+	return { sql, paramsValues };
 }
 
-function mapArrayToDynamicQuery04Result(data: any, selectedFields: (keyof DynamicQuery04Result)[]) {
-	const result: DynamicQuery04Result = {};
-	selectedFields.forEach((field, index) => {
-		result[field] = data[index];
-	});
+function mapArrayToDynamicQuery04Result(data: any, select?: DynamicQuery04Select) {
+	const result = {} as DynamicQuery04Result;
+	let rowIndex = -1;
+	if (!select || select.id === true) {
+		rowIndex++;
+		result.id = data[rowIndex];
+	}
+	if (!select || select.value === true) {
+		rowIndex++;
+		result.value = data[rowIndex];
+	}
+	if (!select || select.id_2 === true) {
+		rowIndex++;
+		result.id_2 = data[rowIndex];
+	}
+	if (!select || select.name === true) {
+		rowIndex++;
+		result.name = data[rowIndex];
+	}
+	if (!select || select.descr === true) {
+		rowIndex++;
+		result.descr = data[rowIndex];
+	}
 	return result;
 }
 

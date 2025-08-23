@@ -1,18 +1,17 @@
 import CodeBlockWriter from 'code-block-writer';
-import { capitalize, convertToCamelCaseName, generateRelationType, getOperator, hasStringColumn, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor } from './code-generator';
-import { CrudQueryType, PgDielect, QueryType, TsFieldDescriptor, TsParameterDescriptor, TypeSqlError } from './types';
-import { describeQuery } from './postgres-query-analyzer/describe';
-import { ColumnSchema } from './mysql-query-analyzer/types';
-import { mapColumnType } from './dialects/postgres';
-import { JsonArrayType, JsonFieldType, JsonMapType, JsonObjType, JsonType, PostgresType } from './sqlite-query-analyzer/types';
-import { preprocessSql } from './describe-query';
+import { capitalize, convertToCamelCaseName, generateRelationType, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor } from './mysql2';
+import { CrudQueryType, PgDielect, QueryType, TsFieldDescriptor, TsParameterDescriptor, TypeSqlError } from '../types';
+import { describeQuery } from '../postgres-query-analyzer/describe';
+import { mapColumnType } from '../dialects/postgres';
+import { JsonArrayType, JsonFieldType, JsonMapType, JsonObjType, JsonType, PostgresType } from '../sqlite-query-analyzer/types';
 import { okAsync, ResultAsync } from 'neverthrow';
-import { getQueryName, mapPostgrsFieldToTsField, writeCollectFunction } from './sqlite-query-analyzer/code-generator';
-import { mapToTsRelation2, RelationType2 } from './ts-nested-descriptor';
+import { getQueryName, mapPostgrsFieldToTsField, writeCollectFunction } from './sqlite';
+import { mapToTsRelation2, RelationType2 } from '../ts-nested-descriptor';
 import { EOL } from 'node:os';
-import { PostgresColumnInfo, PostgresParameterDef, PostgresSchemaDef } from './postgres-query-analyzer/types';
-import { PostgresSchemaInfo } from './schema-info';
-import { PostgresColumnSchema } from './drivers/types';
+import { PostgresColumnInfo, PostgresParameterDef, PostgresSchemaDef } from '../postgres-query-analyzer/types';
+import { PostgresSchemaInfo } from '../schema-info';
+import { PostgresColumnSchema } from '../drivers/types';
+import { writeBuildOrderByBlock, writeBuildSqlFunction, writeDynamicQueryOperators, writeMapToResultFunction, writeWhereConditionFunction } from './shared/codegen-util';
 
 
 
@@ -21,7 +20,7 @@ export function generateCode(client: PgDielect, sql: string, queryName: string, 
 		return okAsync('');
 	}
 	return _describeQuery(client, sql, schemaInfo)
-		.map(schemaDef => generateTsCode(sql, queryName, schemaDef, client.type))
+		.map(schemaDef => generateTsCode(queryName, schemaDef, client.type))
 }
 
 function isEmptySql(sql: string) {
@@ -44,13 +43,7 @@ export function createCodeBlockWriter() {
 	return writer;
 }
 
-function generateTsCode(
-	sqlOld: string,
-	queryName: string,
-	schemaDef: PostgresSchemaDef,
-	client: 'pg',
-	isCrud = false
-): string {
+function generateTsCode(queryName: string, schemaDef: PostgresSchemaDef, client: 'pg'): string {
 
 	const { sql } = schemaDef;
 
@@ -121,21 +114,7 @@ function generateTsCode(
 		});
 		writer.write(' as const;');
 		writer.blankLine();
-		writer.writeLine(`const NumericOperatorList = ['=', '<>', '>', '<', '>=', '<='] as const;`);
-		writer.writeLine('type NumericOperator = typeof NumericOperatorList[number];');
-		if (hasStringColumn(tsDescriptor.columns)) {
-			writer.writeLine(`type StringOperator = '=' | '<>' | '>' | '<' | '>=' | '<=' | 'LIKE';`);
-		}
-		writer.writeLine(`type SetOperator = 'IN' | 'NOT IN';`);
-		writer.writeLine(`type BetweenOperator = 'BETWEEN';`);
-		writer.blankLine();
-		writer.write(`export type ${whereTypeName} =`).indent(() => {
-			for (const col of tsDescriptor.columns) {
-				writer.writeLine(`| { column: '${col.name}'; op: ${getOperator(col.tsType)}; value: ${col.tsType} | null }`);
-				writer.writeLine(`| { column: '${col.name}'; op: SetOperator; value: ${col.tsType}[] }`);
-				writer.writeLine(`| { column: '${col.name}'; op: BetweenOperator; value: [${col.tsType} | null, ${col.tsType} | null] }`);
-			}
-		});
+		writeDynamicQueryOperators(writer, whereTypeName, tsDescriptor.columns);
 		writer.blankLine();
 		let functionArguments = 'client: pg.Client | pg.Pool | pg.PoolClient';
 		// if (params.data.length > 0) {
@@ -146,148 +125,28 @@ function generateTsCode(
 			// if (orderByField != null) {
 			// 	writer.writeLine('const orderBy = orderByToObject(params.orderBy);');
 			// }
-			writer.writeLine(`const isSelected = (field: keyof ${selectColumnsTypeName}) =>`);
-			writer.indent().write('params?.select == null || params.select[field] === true;').newLine();
 			writer.blankLine();
-			writer.writeLine('const selectedSqlFragments: string[] = [];');
-			writer.writeLine(`const selectedFields: (keyof ${resultTypeName})[] = [];`);
-			writer.writeLine('const paramsValues: any[] = [];');
-			writer.blankLine();
-			writer.writeLine('const whereColumns = new Set(params?.where?.map(w => w.column) || []);');
-			writer.blankLine();
-
-			if (dynamicQueryInfo.with.length > 0) {
-				writer.writeLine(`const withFragments: string[] = [];`);
-				dynamicQueryInfo.with.forEach((withFragment) => {
-					const selectConditions = withFragment.dependOnFields.map((fieldIndex) => `isSelected('${tsDescriptor.columns[fieldIndex].name}')`);
-					const whereConditions = withFragment.dependOnFields.map((fieldIndex) => `whereColumns.has('${tsDescriptor.columns[fieldIndex].name}')`);
-					const orderByConditions = withFragment.dependOnOrderBy?.map((orderBy) => `orderBy['${orderBy}'] != null`) || [];
-					const allConditions = [...selectConditions, ...whereConditions, ...orderByConditions];
-					const paramValues = withFragment.parameters.map((paramIndex) => {
-						const param = tsDescriptor.parameters[paramIndex];
-						return `params?.params?.${param.name}`;
-					});
-					if (allConditions.length > 0) {
-						writer.writeLine(`if (`);
-						writer.indent().write(`${allConditions.join(`${EOL}\t|| `)}`).newLine();
-						writer.write(') ').inlineBlock(() => {
-							writer.write(`withFragments.push(\`${withFragment.fragment}\`);`);
-							paramValues.forEach((paramValues) => {
-								writer.writeLine(`paramsValues.push(${paramValues});`);
-							});
-						}).newLine();
-					}
-					else {
-						writer.writeLine(`withFragments.push(\`${withFragment.fragment}\`);`);
-						paramValues.forEach((paramValues) => {
-							writer.writeLine(`paramsValues.push(${paramValues});`);
-						});
-					}
-				});
-			}
-			dynamicQueryInfo.select.forEach((select, index) => {
-				writer.write(`if (isSelected('${tsDescriptor.columns[index].name}'))`).block(() => {
-					writer.writeLine(`selectedSqlFragments.push('${select.fragment}');`);
-					writer.writeLine(`selectedFields.push('${tsDescriptor.columns[index].name}');`);
-					select.parameters.forEach((param) => {
-						writer.writeLine(`paramsValues.push(params?.params?.${param} ?? null);`);
-					});
-				});
-			});
-			writer.blankLine();
-			writer.writeLine('const fromSqlFragments: string[] = [];');
-
-			dynamicQueryInfo.from.forEach((from) => {
-				const selectConditions = from.dependOnFields.map((fieldIndex) => `isSelected('${tsDescriptor.columns[fieldIndex].name}')`);
-				const whereConditions = from.dependOnFields.map((fieldIndex) => `whereColumns.has('${tsDescriptor.columns[fieldIndex].name}')`);
-				const orderByConditions = from.dependOnOrderBy?.map((orderBy) => `orderBy['${orderBy}'] != null`) || [];
-				const allConditions = [...selectConditions, ...whereConditions, ...orderByConditions];
-				const paramValues = from.parameters.map((paramIndex) => {
-					const param = tsDescriptor.parameters[paramIndex];
-					return `params?.params?.${param.name}`;
-				});
-				if (allConditions.length > 0) {
-					writer.blankLine();
-					writer.writeLine(`if (`);
-					writer.indent().write(`${allConditions.join(`${EOL}\t|| `)}`).newLine();
-					writer.write(') ').inlineBlock(() => {
-						writer.write(`fromSqlFragments.push(\`${from.fragment}\`);`);
-					})
-					paramValues.forEach((paramValues) => {
-						writer.writeLine(`paramsValues.push(${paramValues});`);
-					});
-				}
-				else {
-					writer.writeLine(`fromSqlFragments.push(\`${from.fragment}\`);`);
-					paramValues.forEach((paramValues) => {
-						writer.writeLine(`paramsValues.push(${paramValues});`);
-					});
-				}
-			});
-			writer.blankLine();
-			writer.writeLine('const whereSqlFragments: string[] = [];');
-			writer.blankLine();
-			dynamicQueryInfo.where.forEach((fragment) => {
-				const paramValues = fragment.parameters.map((paramIndex) => {
-					const param = tsDescriptor.parameters[paramIndex];
-					return `params?.params?.${param.name} ?? null`;
-				});
-				writer.writeLine(`whereSqlFragments.push(\`${fragment.fragment}\`);`);
-				paramValues.forEach((paramValues) => {
-					writer.writeLine(`paramsValues.push(${paramValues});`);
-				});
-			});
-			writer.writeLine(`let currentIndex = paramsValues.length;`);
-			writer.writeLine('const placeholder = () => `$${++currentIndex}`;');
-			writer.blankLine();
-			writer.write('params?.where?.forEach(condition => ').inlineBlock(() => {
-				writer.writeLine('const whereClause = whereCondition(condition, placeholder);');
-				dynamicQueryInfo.select.forEach((select, index) => {
-					if (select.parameters.length > 0) {
-						writer.write(`if (condition[0] == '${tsDescriptor.columns[index].name}')`).block(() => {
-							select.parameters.forEach((param) => {
-								writer.writeLine(`paramsValues.push(params?.params?.${param} ?? null);`);
-							});
-						});
-					}
-				});
-				writer.write('if (whereClause?.hasValue)').block(() => {
-					writer.writeLine(`whereSqlFragments.push(whereClause.sql);`);
-					writer.write('paramsValues.push(...whereClause.values);');
-				});
-			});
-			writer.write(');').newLine();
-			if (dynamicQueryInfo.with.length > 0) {
-				writer.blankLine();
-				writer.writeLine('const withSql = withFragments.length > 0');
-				writer.indent().write('? `WITH${EOL}${withFragments.join(`,${EOL}`)}${EOL}`').newLine();
-				writer.indent().write(`: '';`).newLine();
-			}
-			writer.blankLine();
-			writer.writeLine('const whereSql = whereSqlFragments.length > 0 ? `WHERE ${whereSqlFragments.join(\' AND \')}` : \'\';');
-			writer.blankLine();
-			if (dynamicQueryInfo.with.length > 0) {
-				writer.writeLine('const sql = `${withSql}SELECT');
-			}
-			else {
-				writer.writeLine('const sql = `SELECT');
-			}
-			writer.indent().write('${selectedSqlFragments.join(`,${EOL}`)}').newLine();
-			writer.indent().write('${fromSqlFragments.join(EOL)}').newLine();;
-			writer.indent().write('${whereSql}`;').newLine();
-			writer.blankLine();
+			writer.writeLine('const { sql, paramsValues } = buildSql(params);');
 			writer.write(`return client.query({ text: sql, rowMode: 'array', values: paramsValues })`).newLine();
-			writer.indent().write(`.then(res => res.rows.map(row => mapArrayTo${resultTypeName}(row, selectedFields)));`)
+			writer.indent().write(`.then(res => res.rows.map(row => mapArrayTo${resultTypeName}(row, params?.select)));`)
 		});
+		writer.blankLine();
+		writeBuildSqlFunction(writer, {
+			dynamicParamsTypeName,
+			columns: tsDescriptor.columns,
+			parameters: tsDescriptor.parameters,
+			dynamicQueryInfo,
+			placeHolderType: 'numbered',
+			hasOrderBy: tsDescriptor.orderByColumns != null,
+			toDrive: (variable, param) => `${variable}.${param.name}`
+		})
 
 		writer.blankLine();
-		writer.write(`function mapArrayTo${resultTypeName}(data: any, selectedFields: (keyof ${resultTypeName})[])`).block(() => {
-			writer.writeLine(`const result: ${resultTypeName} = {};`);
-			writer.write(`selectedFields.forEach((field, index) => `).inlineBlock(() => {
-				writer.writeLine(`result[field] = data[index];`);
-			});
-			writer.write(');').newLine();
-			writer.write('return result;');
+		writeMapToResultFunction(writer, {
+			columns: tsDescriptor.columns,
+			resultTypeName,
+			selectColumnsTypeName,
+			fromDriver: (variable, _param) => variable
 		});
 		// if (orderByField != null) {
 		// 	writer.blankLine();
@@ -307,46 +166,7 @@ function generateTsCode(
 			writer.writeLine('values: any[];');
 		});
 		writer.blankLine();
-		writer.write(`function whereCondition(condition: ${whereTypeName}, placeholder: () => string): WhereConditionResult | null `).block(() => {
-			writer.writeLine('const selectFragment = selectFragments[condition.column];');
-			writer.writeLine('const { op, value } = condition;');
-			writer.blankLine();
-			if (hasStringColumn(tsDescriptor.columns)) {
-				writer.write(`if (op === 'LIKE') `).block(() => {
-					writer.write('return ').block(() => {
-						writer.writeLine("sql: `${selectFragment} LIKE ${placeholder()}`,");
-						writer.writeLine('hasValue: value != null,');
-						writer.writeLine('values: [value]');
-					});
-				});
-			}
-			writer.write(`if (op === 'BETWEEN') `).block(() => {
-				writer.writeLine('const [from, to] = Array.isArray(value) ? value : [null, null];');
-				writer.write('return ').block(() => {
-					writer.writeLine('sql: `${selectFragment} BETWEEN ${placeholder()} AND ${placeholder()}`,');
-					writer.writeLine('hasValue: from != null && to != null,');
-					writer.writeLine('values: [from, to]');
-				});
-			});
-			writer.write(`if (op === 'IN' || op === 'NOT IN') `).block(() => {
-				writer.write('if (!Array.isArray(value) || value.length === 0)').block(() => {
-					writer.writeLine(`return { sql: '', hasValue: false, values: [] };`);
-				})
-				writer.write('return ').block(() => {
-					writer.writeLine("sql: `${selectFragment} ${op} (${value.map(() => placeholder()).join(', ')})`,");
-					writer.writeLine('hasValue: true,');
-					writer.writeLine('values: value');
-				});
-			});
-			writer.write('if (NumericOperatorList.includes(op)) ').block(() => {
-				writer.write('return ').block(() => {
-					writer.writeLine('sql: `${selectFragment} ${op} ${placeholder()}`,');
-					writer.writeLine('hasValue: value != null,');
-					writer.writeLine('values: [value]');
-				});
-			});
-			writer.writeLine('return null;');
-		});
+		writeWhereConditionFunction(writer, whereTypeName, tsDescriptor.columns);
 	}
 
 	if (tsDescriptor.nestedDescriptor2) {
@@ -392,7 +212,7 @@ function generateTsCode(
 
 	if (tsDescriptor.nestedDescriptor2) {
 		const relations = tsDescriptor.nestedDescriptor2;
-		relations.forEach((relation, index) => {
+		relations.forEach((relation) => {
 			writeCollectFunction(writer, relation, tsDescriptor.columns, capitalizedName, resultTypeName);
 		});
 		writer.blankLine();
@@ -740,31 +560,7 @@ function _writeExecFunction(writer: CodeBlockWriter, params: ExecFunctionParamet
 	});
 	if (orderByColumns.length > 0) {
 		writer.blankLine();
-		writer.writeLine(`const orderByColumns = [${orderByColumns.map(col => `'${col}'`).join(', ')}] as const;`);
-		writer.blankLine();
-		writer.write(`export type ${orderByTypeName} =`).block(() => {
-			writer.writeLine('column: typeof orderByColumns[number];');
-			writer.writeLine(`direction: 'asc' | 'desc';`);
-		});
-		writer.blankLine();
-		writer.write(`function buildOrderBy(orderBy: ${orderByTypeName}[]): string`).block(() => {
-			writer.write('if (!Array.isArray(orderBy) || orderBy.length === 0)').block(() => {
-				writer.writeLine(`throw new Error('orderBy must be a non-empty array');`);
-			});
-			writer.blankLine();
-			writer.write('for (const { column, direction } of orderBy)').block(() => {
-				writer.write('if (!orderByColumns.includes(column))').block(() => {
-					writer.writeLine('throw new Error(`Invalid orderBy column: ${column}`);');
-				});
-				writer.write(`if (direction !== 'asc' && direction !== 'desc')`).block(() => {
-					writer.writeLine('throw new Error(`Invalid orderBy direction: ${direction}`);');
-				});
-			});
-			writer.blankLine();
-			writer.writeLine('return orderBy');
-			writer.indent().write('.map(({ column, direction }) => `"${column}" ${direction.toUpperCase()}`)').newLine();
-			writer.indent().write(`.join(', ');`).newLine();
-		});
+		writeBuildOrderByBlock(writer, orderByColumns, orderByTypeName);
 	}
 
 	if (generateNested) {
@@ -788,17 +584,6 @@ function writeSql(writer: CodeBlockWriter, sql: string) {
 		writer.indent().write(sqlLine.trimEnd()).newLine();
 	});
 	writer.indent().write('`').newLine();
-}
-
-function getFunctionReturnType(queryType: QueryType, multipleRowsResult: boolean, returnType: string): string {
-	if (queryType === 'Copy') {
-		return 'void';
-	}
-	if (multipleRowsResult) {
-		return `${returnType}[]`;
-	}
-	const orNull = queryType === 'Select' ? ' | null' : '';
-	return `${returnType}${orNull}`;
 }
 
 function getColumnsForQuery(capitalizedName: string, schemaDef: PostgresSchemaDef): TsFieldDescriptor[] {
@@ -956,7 +741,7 @@ function writeCrudSelect(writer: CodeBlockWriter, crudParamters: CrudParameters)
 }
 
 function writeCrudInsert(writer: CodeBlockWriter, crudParamters: CrudParameters): string {
-	const { tableName, queryName, dataTypeName, paramsTypeName, resultTypeName, columns, nonKeys, keys } = crudParamters;
+	const { tableName, queryName, paramsTypeName, resultTypeName, nonKeys } = crudParamters;
 	writer.write(`export async function ${queryName}(client: pg.Client | pg.Pool | pg.PoolClient, params: ${paramsTypeName}): Promise<${resultTypeName} | null>`).block(() => {
 		const hasOptional = nonKeys.some(field => field.optional);
 		if (hasOptional) {
@@ -998,7 +783,7 @@ function writeCrudInsert(writer: CodeBlockWriter, crudParamters: CrudParameters)
 }
 
 function writeCrudUpdate(writer: CodeBlockWriter, crudParamters: CrudParameters): string {
-	const { tableName, queryName, dataTypeName, paramsTypeName, resultTypeName, columns, nonKeys, keys } = crudParamters;
+	const { tableName, queryName, dataTypeName, paramsTypeName, resultTypeName, nonKeys, keys } = crudParamters;
 	writer.write(`export async function ${queryName}(client: pg.Client | pg.Pool | pg.PoolClient, data: ${dataTypeName}, params: ${paramsTypeName}): Promise<${resultTypeName} | null>`).block(() => {
 		writer.writeLine(`const updateColumns = [${nonKeys.map(col => `'${col.name}'`).join(', ')}] as const;`);
 		writer.writeLine('const updates: string[] = [];');

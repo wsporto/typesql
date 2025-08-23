@@ -1,7 +1,7 @@
 import assert from 'node:assert';
 
 import { readFileSync } from 'node:fs';
-import { generateCrud, generateTsCode } from '../../src/sqlite-query-analyzer/code-generator';
+import { generateCrud, generateTsCode } from '../../src/codegen/sqlite';
 import { sqliteDbSchema } from '../mysql-query-analyzer/create-schema';
 import Database from 'better-sqlite3';
 import { isLeft } from 'fp-ts/lib/Either';
@@ -1108,13 +1108,13 @@ INNER JOIN mytable2 m2 on m2.id = m1.id`;
 
 	it('dynamic-query-05', () => {
 		const sql = `-- @dynamicQuery
-    WITH 
-    cte as (
-            select id, name from mytable2
-        )
+WITH 
+cte as (
+	select id, name from mytable2
+)
 SELECT 
-    m1.id,
-    m2.name
+	m1.id,
+	m2.name
 FROM mytable1 m1
 INNER JOIN cte m2 on m2.id = m1.id`;
 

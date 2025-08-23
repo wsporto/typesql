@@ -6,7 +6,7 @@ import {
     generateTsCodeForMySQL as generateTsCode,
     generateTsDescriptor,
     generateTsFileFromContent
-} from '../src/code-generator';
+} from '../src/codegen/mysql2';
 import { describeSql } from '../src/describe-query';
 import { dbSchema } from './mysql-query-analyzer/create-schema';
 import { createMysqlClientForTest } from '../src/queryExectutor';
@@ -211,7 +211,7 @@ export type SelectPersonResult = {
 
 export async function selectPerson(connection: Connection, params: SelectPersonParams): Promise<SelectPersonResult | null> {
     const sql = \`
-    SELECT id FROM person ORDER BY \${escapeOrderBy(params.orderBy)}
+    SELECT id FROM person ORDER BY \${buildOrderBy(params.orderBy)}
     \`
 
     return connection.query({sql, rowsAsArray: true})
@@ -232,7 +232,7 @@ export type SelectPersonOrderBy = {
     direction: 'asc' | 'desc';
 }
 
-function escapeOrderBy(orderBy: SelectPersonOrderBy[]): string {
+function buildOrderBy(orderBy: SelectPersonOrderBy[]): string {
     return orderBy.map(order => \`\\\`\${order.column}\\\` \${order.direction == 'desc' ? 'desc' : 'asc' }\`).join(', ');
 }`;
 
@@ -250,7 +250,7 @@ function escapeOrderBy(orderBy: SelectPersonOrderBy[]): string {
         const expected = `
         SELECT *
         FROM mytable1
-        ORDER BY \${escapeOrderBy(params.orderBy)}`;
+        ORDER BY \${buildOrderBy(params.orderBy)}`;
 
         assert.deepStrictEqual(actual, expected);
     });
@@ -266,7 +266,7 @@ function escapeOrderBy(orderBy: SelectPersonOrderBy[]): string {
         const expected = `
         SELECT *
         FROM mytable1
-        ORDER BY \${escapeOrderBy(params.orderBy)} LIMIT 10`;
+        ORDER BY \${buildOrderBy(params.orderBy)} LIMIT 10`;
 
         assert.deepStrictEqual(actual, expected);
     });
@@ -284,7 +284,7 @@ function escapeOrderBy(orderBy: SelectPersonOrderBy[]): string {
         const expected = `
         SELECT *
         FROM mytable1
-        ORDER BY \${escapeOrderBy(params.orderBy)}
+        ORDER BY \${buildOrderBy(params.orderBy)}
         
         `;
 
@@ -471,7 +471,7 @@ export type SelectIdResult = {
 
 export async function selectId(connection: Connection, params: SelectIdParams): Promise<SelectIdResult[]> {
     const sql = \`
-    SELECT id from mytable1 ORDER BY \${escapeOrderBy(params.orderBy)}
+    SELECT id from mytable1 ORDER BY \${buildOrderBy(params.orderBy)}
     \`
 
     return connection.query({sql, rowsAsArray: true})
@@ -491,7 +491,7 @@ export type SelectIdOrderBy = {
     direction: 'asc' | 'desc';
 }
 
-function escapeOrderBy(orderBy: SelectIdOrderBy[]): string {
+function buildOrderBy(orderBy: SelectIdOrderBy[]): string {
     return orderBy.map(order => \`\\\`\${order.column}\\\` \${order.direction == 'desc' ? 'desc' : 'asc' }\`).join(', ');
 }`;
 

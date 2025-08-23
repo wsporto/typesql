@@ -9,21 +9,21 @@ import {
 	TsParameterDescriptor,
 	TypeSqlDialect, type SQLiteDialect, type LibSqlClient, type BunDialect, PgDielect,
 	QueryType
-} from './types';
+} from '../types';
 import fs from 'node:fs';
 import path, { parse } from 'node:path';
 import camelCase from 'camelcase';
 import { type Either, isLeft, left, right } from 'fp-ts/lib/Either';
-import { converToTsType, type MySqlType } from './mysql-mapping';
-import { parseSql } from './describe-query';
+import { converToTsType, type MySqlType } from '../mysql-mapping';
+import { parseSql } from '../describe-query';
 import CodeBlockWriter from 'code-block-writer';
-import { type NestedTsDescriptor, type RelationType2, createNestedTsDescriptor } from './ts-nested-descriptor';
-import { mapToDynamicResultColumns, mapToDynamicParams, mapToDynamicSelectColumns } from './ts-dynamic-query-descriptor';
-import type { ColumnSchema, DynamicSqlInfoResult, DynamicSqlInfoResult2, FragmentInfoResult } from './mysql-query-analyzer/types';
+import { type NestedTsDescriptor, type RelationType2, createNestedTsDescriptor } from '../ts-nested-descriptor';
+import { mapToDynamicResultColumns, mapToDynamicParams, mapToDynamicSelectColumns } from '../ts-dynamic-query-descriptor';
+import type { ColumnSchema, DynamicSqlInfoResult, DynamicSqlInfoResult2, FragmentInfoResult } from '../mysql-query-analyzer/types';
 import { EOL } from 'node:os';
-import { validateAndGenerateCode } from './sqlite-query-analyzer/code-generator';
-import { generateCode } from './code-generator2';
-import { PostgresSchemaInfo, SchemaInfo } from './schema-info';
+import { validateAndGenerateCode } from './sqlite';
+import { generateCode } from './pg';
+import { PostgresSchemaInfo, SchemaInfo } from '../schema-info';
 
 export function generateTsCodeForMySQL(tsDescriptor: TsDescriptor, fileName: string, crud = false): string {
 	const writer = new CodeBlockWriter();
@@ -202,7 +202,7 @@ export function generateTsCodeForMySQL(tsDescriptor: TsDescriptor, fileName: str
 			});
 			writer.write(');');
 			if (tsDescriptor.orderByColumns) {
-				writer.writeLine('sql += EOL + `ORDER BY ${escapeOrderBy(params.orderBy)}`;');
+				writer.writeLine('sql += EOL + `ORDER BY ${buildOrderBy(params.orderBy)}`;');
 			}
 		}
 
@@ -340,7 +340,7 @@ export function generateTsCodeForMySQL(tsDescriptor: TsDescriptor, fileName: str
 			writer.writeLine(`direction: 'asc' | 'desc';`);
 		});
 		writer.blankLine();
-		writer.write(`function escapeOrderBy(orderBy: ${orderByTypeName}[]): string`).block(() => {
+		writer.write(`function buildOrderBy(orderBy: ${orderByTypeName}[]): string`).block(() => {
 			if (tsDescriptor.dynamicQuery == null) {
 				writer.writeLine(
 					`return orderBy.map(order => \`\\\`\${order.column}\\\` \${order.direction == 'desc' ? 'desc' : 'asc' }\`).join(', ');`
@@ -662,7 +662,7 @@ export function hasDateColumn(columns: TsFieldDescriptor[]) {
 
 export function replaceOrderByParam(sql: string) {
 	const patern = /(.*order\s+by\s*)(\?)(.\n$)*/i;
-	const newSql = sql.replace(patern, '$1${escapeOrderBy(params.orderBy)}$3');
+	const newSql = sql.replace(patern, '$1${buildOrderBy(params.orderBy)}$3');
 	return newSql;
 }
 
