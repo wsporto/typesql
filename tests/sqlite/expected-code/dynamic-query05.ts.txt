@@ -45,61 +45,81 @@ export function cte(db: Database, params?: CteDynamicParams): CteResult[] {
 }
 
 function buildSql(params?: CteDynamicParams) {
-	const paramsValues: any = [];
+	const isSelected = (field: keyof CteSelect) =>
+		params?.select == null || params.select[field] === true;
+
+	const selectedSqlFragments: string[] = [];
+	const paramsValues: any[] = [];
+
 	const whereColumns = new Set(params?.where?.map(w => w.column) || []);
-	const withClause = [];
-	if (params?.select == null
-		|| params.select.name
-		|| whereColumns.has('name')) {
-		withClause.push(`cte as (
+
+	const withFragments: string[] = [];
+	if (
+		isSelected('name')
+		|| whereColumns.has('name')
+	) {
+		withFragments.push(`cte as (
             select id, name from mytable2
         )`);
 	}
-	let sql = 'WITH ' + withClause.join(',' + EOL) + EOL + 'SELECT';
-	if (params?.select == null || params.select.id) {
-		sql = appendSelect(sql, `m1.id`);
+	if (isSelected('id')) {
+		selectedSqlFragments.push('m1.id');
 	}
-	if (params?.select == null || params.select.name) {
-		sql = appendSelect(sql, `m2.name`);
+	if (isSelected('name')) {
+		selectedSqlFragments.push('m2.name');
 	}
-	sql += EOL + `FROM mytable1 m1`;
-	if (params?.select == null
-		|| params.select.name
-		|| whereColumns.has('name')) {
-		sql += EOL + `INNER JOIN cte m2 on m2.id = m1.id`;
+
+	const fromSqlFragments: string[] = [];
+	fromSqlFragments.push(`FROM mytable1 m1`);
+
+	if (
+		isSelected('name')
+		|| whereColumns.has('name')
+	) {
+		fromSqlFragments.push(`INNER JOIN cte m2 on m2.id = m1.id`);
 	}
-	sql += EOL + `WHERE 1 = 1`;
+
+	const whereSqlFragments: string[] = [];
+
+	const placeholder = () => '?';
+
 	params?.where?.forEach(condition => {
-		const where = whereCondition(condition, () => '?');
-		if (where?.hasValue) {
-			sql += EOL + 'AND ' + where.sql;
-			paramsValues.push(...where.values);
+		const whereClause = whereCondition(condition, placeholder);
+		if (whereClause?.hasValue) {
+			whereSqlFragments.push(whereClause.sql);
+			paramsValues.push(...whereClause.values);
 		}
 	});
-	return { sql, paramsValues }
+
+	const withSql = withFragments.length > 0
+		? `WITH${EOL}${withFragments.join(`,${EOL}`)}${EOL}`
+		: '';
+
+	const whereSql = whereSqlFragments.length > 0 ? `WHERE ${whereSqlFragments.join(' AND ')}` : '';
+
+	const sql = `${withSql}SELECT
+	${selectedSqlFragments.join(`,${EOL}`)}
+	${fromSqlFragments.join(EOL)}
+	${whereSql}`;
+
+	return { sql, paramsValues };
 }
 
 function mapArrayToCteResult(data: any, select?: CteSelect) {
+	const isSelected = (field: keyof CteSelect) =>
+		!select || select[field] === true;
+
 	const result = {} as CteResult;
 	let rowIndex = -1;
-	if (select == null || select.id) {
+	if (isSelected('id')) {
 		rowIndex++;
 		result.id = data[rowIndex];
 	}
-	if (select == null || select.name) {
+	if (isSelected('name')) {
 		rowIndex++;
 		result.name = data[rowIndex];
 	}
 	return result;
-}
-
-function appendSelect(sql: string, selectField: string) {
-	if (sql.toUpperCase().endsWith('SELECT')) {
-		return sql + EOL + selectField;
-	}
-	else {
-		return sql + ', ' + EOL + selectField;
-	}
 }
 
 type WhereConditionResult = {

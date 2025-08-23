@@ -6,9 +6,7 @@ import {
 	capitalize,
 	convertToCamelCaseName,
 	generateRelationType,
-	getOperator,
 	hasDateColumn,
-	hasStringColumn,
 	removeDuplicatedParameters2,
 	renameInvalidNames,
 	replaceOrderByParam,
@@ -35,11 +33,10 @@ import { type RelationType2, type TsField2, mapToTsRelation2 } from '../ts-neste
 import { preprocessSql } from '../describe-query';
 import { explainSql } from '../sqlite-query-analyzer/query-executor';
 import { mapToDynamicParams, mapToDynamicResultColumns, mapToDynamicSelectColumns } from '../ts-dynamic-query-descriptor';
-import { EOL } from 'node:os';
 import { mapColumnType } from '../drivers/sqlite';
 import { mapColumnType as mapPgColumnType } from '../dialects/postgres';
 import { PostgresColumnInfo } from '../postgres-query-analyzer/types';
-import { writeBuildOrderByBlock, writeDynamicQueryOperators, writeWhereConditionFunction } from './shared/codegen-util';
+import { writeBuildOrderByBlock, writeBuildSqlFunction, writeDynamicQueryOperators, writeMapToResultFunction, writeWhereConditionFunction } from './shared/codegen-util';
 
 type ExecFunctionParams = {
 	functionName: string;
@@ -362,8 +359,8 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 	const orNull = queryType === 'Select' ? ' | null' : '';
 	const returnType = tsDescriptor.multipleRowsResult ? `${resultTypeName}[]` : `${resultTypeName}${orNull}`;
 
-	const allParameters = (tsDescriptor.data?.map((param) => fromDriver('data', param)) || []).concat(
-		tsDescriptor.parameters.map((param) => fromDriver('params', param))
+	const allParameters = (tsDescriptor.data?.map((param) => toDriver('data', param)) || []).concat(
+		tsDescriptor.parameters.map((param) => toDriver('params', param))
 	);
 
 	const queryParamsWithoutBrackets = allParameters.length > 0 ? `${allParameters.join(', ')}` : '';
@@ -439,152 +436,23 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 		});
 		if (tsDescriptor.dynamicQuery2) {
 			writer.blankLine();
-			const optional = orderByField ? '' : '?';
-			writer.write(`function buildSql(params${optional}: ${dynamicParamsTypeName})`).block(() => {
-				if (orderByField != null) {
-					writer.writeLine('const orderBy = orderByToObject(params.orderBy);');
-				}
-				writer.write('const paramsValues: any = [];').newLine();
-				writer.write('const whereColumns = new Set(params?.where?.map(w => w.column) || []);').newLine();
-				const hasCte = (tsDescriptor.dynamicQuery2?.with.length || 0) > 0;
-				if (hasCte) {
-					writer.writeLine('const withClause = [];');
-					tsDescriptor.dynamicQuery2?.with.forEach((withFragment, index, array) => {
-						const selectConditions = withFragment.dependOnFields.map(
-							(fieldIndex) => `params.select.${tsDescriptor.columns[fieldIndex].name}`
-						);
-						if (selectConditions.length > 0) {
-							selectConditions.unshift('params?.select == null');
-						}
-						const whereConditions = withFragment.dependOnFields.map((fieldIndex) => `whereColumns.has('${tsDescriptor.columns[fieldIndex].name}')`);
-						const orderByConditions = withFragment.dependOnOrderBy?.map((orderBy) => `orderBy['${orderBy}'] != null`) || [];
-						const allConditions = [...selectConditions, ...whereConditions, ...orderByConditions];
-						const paramValues = withFragment.parameters.map((paramIndex) => {
-							const param = tsDescriptor.parameters[paramIndex];
-							return fromDriver('params?.params?', param);
-						});
-						if (allConditions.length > 0) {
-							writer.write(`if (${allConditions.join(`${EOL}\t|| `)})`).block(() => {
-								writer.write(`withClause.push(\`${withFragment.fragment}\`);`);
-								paramValues.forEach((paramValues) => {
-									writer.writeLine(`paramsValues.push(${paramValues});`);
-								});
-							});
-						}
-						else {
-							writer.write(`withClause.push(\`${withFragment.fragment}\`);`);
-							paramValues.forEach((paramValues) => {
-								writer.writeLine(`paramsValues.push(${paramValues});`);
-							});
-						}
-
-					});
-					writer.write(`let sql = 'WITH ' + withClause.join(',' + EOL) + EOL + 'SELECT';`).newLine();
-				} else {
-					writer.write(`let sql = 'SELECT';`).newLine();
-				}
-				tsDescriptor.dynamicQuery2?.select.forEach((select, index) => {
-					writer.write(`if (params?.select == null || params.select.${tsDescriptor.columns[index].name})`).block(() => {
-						writer.writeLine(`sql = appendSelect(sql, \`${select.fragment}\`);`);
-						select.parameters.forEach((param) => {
-							writer.writeLine(`paramsValues.push(params?.params?.${param} ?? null);`);
-						});
-					});
-				});
-
-				tsDescriptor.dynamicQuery2?.from.forEach((from, index) => {
-					if (index === 0) {
-						writer.writeLine(`sql += EOL + \`${from.fragment}\`;`);
-					} else {
-						const selectConditions = from.dependOnFields.map((fieldIndex) => `params.select.${tsDescriptor.columns[fieldIndex].name}`);
-						if (selectConditions.length > 0) {
-							selectConditions.unshift('params?.select == null');
-						}
-						const whereConditions = from.dependOnFields.map((fieldIndex) => `whereColumns.has('${tsDescriptor.columns[fieldIndex].name}')`);
-						const orderByConditions = from.dependOnOrderBy?.map((orderBy) => `orderBy['${orderBy}'] != null`) || [];
-						const allConditions = [...selectConditions, ...whereConditions, ...orderByConditions];
-						const paramValues = from.parameters.map((paramIndex) => {
-							const param = tsDescriptor.parameters[paramIndex];
-							return fromDriver('params?.params?', param);
-						});
-						if (allConditions.length > 0) {
-							writer.write(`if (${allConditions.join(`${EOL}\t|| `)})`).block(() => {
-								writer.write(`sql += EOL + \`${from.fragment}\`;`);
-								paramValues.forEach((paramValues) => {
-									writer.writeLine(`paramsValues.push(${paramValues});`);
-								});
-							});
-						}
-						else {
-							writer.write(`sql += EOL + \`${from.fragment}\`;`);
-							paramValues.forEach((paramValues) => {
-								writer.writeLine(`paramsValues.push(${paramValues});`);
-							});
-						}
-
-					}
-				});
-				writer.writeLine('sql += EOL + `WHERE 1 = 1`;');
-				tsDescriptor.dynamicQuery2?.where.forEach((fragment) => {
-					const paramValues = fragment.parameters.map((paramIndex) => {
-						const param = tsDescriptor.parameters[paramIndex];
-						return `${fromDriver('params?.params?', param)} ?? null`
-					});
-					writer.writeLine(`sql += EOL + \`${fragment.fragment}\`;`);
-					paramValues.forEach((paramValues) => {
-						writer.writeLine(`paramsValues.push(${paramValues});`);
-					});
-				});
-				writer.write('params?.where?.forEach(condition => ').inlineBlock(() => {
-					writer.writeLine(`const where = whereCondition(condition, () => '?');`);
-					tsDescriptor.dynamicQuery2?.select.forEach((select, index) => {
-						if (select.parameters.length > 0) {
-							writer.write(`if (condition[0] == '${tsDescriptor.columns[index].name}')`).block(() => {
-								select.parameters.forEach((param) => {
-									writer.writeLine(`paramsValues.push(params?.params?.${param} ?? null);`);
-								});
-							});
-						}
-					});
-					writer.write('if (where?.hasValue)').block(() => {
-						writer.writeLine(`sql += EOL + 'AND ' + where.sql;`);
-						writer.write('paramsValues.push(...where.values);');
-					});
-				});
-				writer.write(');').newLine();
-				if (tsDescriptor.orderByColumns) {
-					writer.writeLine('sql += EOL + `ORDER BY ${buildOrderBy(params.orderBy)}`;');
-				}
-				const limitOffset = tsDescriptor.dynamicQuery2?.limitOffset;
-				if (limitOffset) {
-					writer.writeLine(`sql += EOL + \`${limitOffset.fragment}\`;`);
-					limitOffset.parameters.forEach((param) => {
-						writer.writeLine(`paramsValues.push(params?.params?.${param} ?? null);`);
-					});
-				}
-				writer.writeLine('return { sql, paramsValues }')
+			writeBuildSqlFunction(writer, {
+				dynamicParamsTypeName,
+				columns: tsDescriptor.columns,
+				parameters: tsDescriptor.parameters,
+				dynamicQueryInfo: tsDescriptor.dynamicQuery2,
+				selectColumnsTypeName,
+				placeHolderType: 'questionMark',
+				hasOrderBy: orderByField != null,
+				toDrive: toDriver
 			})
 		}
 		writer.blankLine();
-		writer.write(`function mapArrayTo${resultTypeName}(data: any, select?: ${selectColumnsTypeName})`).block(() => {
-			writer.writeLine(`const result = {} as ${resultTypeName};`);
-			writer.writeLine('let rowIndex = -1;');
-			tsDescriptor.columns.forEach((tsField) => {
-				writer.write(`if (select == null || select.${tsField.name})`).block(() => {
-					writer.writeLine('rowIndex++;');
-					writer.writeLine(`result.${tsField.name} = ${toDriver('data[rowIndex]', tsField)};`);
-				});
-			});
-			writer.write('return result;');
-		});
-		writer.blankLine();
-		writer.write('function appendSelect(sql: string, selectField: string)').block(() => {
-			writer.write(`if (sql.toUpperCase().endsWith('SELECT'))`).block(() => {
-				writer.writeLine('return sql + EOL + selectField;');
-			});
-			writer.write('else').block(() => {
-				writer.writeLine(`return sql + ', ' + EOL + selectField;`);
-			});
+		writeMapToResultFunction(writer, {
+			columns: tsDescriptor.columns,
+			resultTypeName,
+			selectColumnsTypeName,
+			fromDriver: fromDriver
 		});
 		if (orderByField != null) {
 			writer.blankLine();
@@ -926,7 +794,7 @@ function writeExecutDeleteCrudBlock(
 	}
 }
 
-function toDriver(variableData: string, param: TsFieldDescriptor) {
+function fromDriver(variableData: string, param: TsFieldDescriptor) {
 	if (param.tsType === 'Date') {
 		if (param.notNull) {
 			return `new Date(${variableData})`;
@@ -939,7 +807,7 @@ function toDriver(variableData: string, param: TsFieldDescriptor) {
 	return variableData;
 }
 
-function fromDriver(variableName: string, param: TsParameterDescriptor): string {
+function toDriver(variableName: string, param: TsParameterDescriptor): string {
 	if (param.tsType === 'Date') {
 		return `${variableName}.${param.toDriver}`;
 	}
@@ -1192,7 +1060,7 @@ function writeMapFunction(writer: CodeBlockWriter, params: MapFunctionParams): v
 		writer.write(`const result: ${resultTypeName} = `).block(() => {
 			columns.forEach((col, index) => {
 				const separator = index < columns.length - 1 ? ',' : '';
-				writer.writeLine(`${col.name}: ${toDriver(`data[${index}]`, col)}${separator}`);
+				writer.writeLine(`${col.name}: ${fromDriver(`data[${index}]`, col)}${separator}`);
 			});
 		});
 		writer.writeLine('return result;');

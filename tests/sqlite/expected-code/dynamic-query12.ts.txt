@@ -52,65 +52,82 @@ export function dynamicQuery12(db: Database, params?: DynamicQuery12DynamicParam
 }
 
 function buildSql(params?: DynamicQuery12DynamicParams) {
-	const paramsValues: any = [];
+	const isSelected = (field: keyof DynamicQuery12Select) =>
+		params?.select == null || params.select[field] === true;
+
+	const selectedSqlFragments: string[] = [];
+	const paramsValues: any[] = [];
+
 	const whereColumns = new Set(params?.where?.map(w => w.column) || []);
-	const withClause = [];
-	withClause.push(`cte1 as (
+
+	const withFragments: string[] = [];
+	withFragments.push(`cte1 as (
 		select id, value from mytable1
 		WHERE max(date(value, 'auto'), ?) = min(date(value, 'auto'), ?)
 	)`);
 	paramsValues.push(params?.params?.param1?.toISOString().split('T')[0]);
 	paramsValues.push(params?.params?.param1?.toISOString().split('T')[0]);
-	withClause.push(`cte2 as (
+	withFragments.push(`cte2 as (
 		select id, name from mytable2
 		WHERE max(name, ?) = min(name, ?)
 	)`);
 	paramsValues.push(params?.params?.param2);
 	paramsValues.push(params?.params?.param2);
-	let sql = 'WITH ' + withClause.join(',' + EOL) + EOL + 'SELECT';
-	if (params?.select == null || params.select.id) {
-		sql = appendSelect(sql, `c1.id`);
+	if (isSelected('id')) {
+		selectedSqlFragments.push('c1.id');
 	}
-	if (params?.select == null || params.select.name) {
-		sql = appendSelect(sql, `c2.name`);
+	if (isSelected('name')) {
+		selectedSqlFragments.push('c2.name');
 	}
-	sql += EOL + `FROM cte1 c1`;
-	sql += EOL + `INNER JOIN cte2 c2 on c1.id = c2.id`;
-	sql += EOL + `WHERE 1 = 1`;
-	sql += EOL + `AND max(c1.id, ?) = min(c2.id, ?)`;
+
+	const fromSqlFragments: string[] = [];
+	fromSqlFragments.push(`FROM cte1 c1`);
+	fromSqlFragments.push(`INNER JOIN cte2 c2 on c1.id = c2.id`);
+
+	const whereSqlFragments: string[] = [];
+
+	whereSqlFragments.push(`max(c1.id, ?) = min(c2.id, ?)`);
 	paramsValues.push(params?.params?.param3 ?? null);
 	paramsValues.push(params?.params?.param3 ?? null);
+	const placeholder = () => '?';
+
 	params?.where?.forEach(condition => {
-		const where = whereCondition(condition, () => '?');
-		if (where?.hasValue) {
-			sql += EOL + 'AND ' + where.sql;
-			paramsValues.push(...where.values);
+		const whereClause = whereCondition(condition, placeholder);
+		if (whereClause?.hasValue) {
+			whereSqlFragments.push(whereClause.sql);
+			paramsValues.push(...whereClause.values);
 		}
 	});
-	return { sql, paramsValues }
+
+	const withSql = withFragments.length > 0
+		? `WITH${EOL}${withFragments.join(`,${EOL}`)}${EOL}`
+		: '';
+
+	const whereSql = whereSqlFragments.length > 0 ? `WHERE ${whereSqlFragments.join(' AND ')}` : '';
+
+	const sql = `${withSql}SELECT
+	${selectedSqlFragments.join(`,${EOL}`)}
+	${fromSqlFragments.join(EOL)}
+	${whereSql}`;
+
+	return { sql, paramsValues };
 }
 
 function mapArrayToDynamicQuery12Result(data: any, select?: DynamicQuery12Select) {
+	const isSelected = (field: keyof DynamicQuery12Select) =>
+		!select || select[field] === true;
+
 	const result = {} as DynamicQuery12Result;
 	let rowIndex = -1;
-	if (select == null || select.id) {
+	if (isSelected('id')) {
 		rowIndex++;
 		result.id = data[rowIndex];
 	}
-	if (select == null || select.name) {
+	if (isSelected('name')) {
 		rowIndex++;
 		result.name = data[rowIndex];
 	}
 	return result;
-}
-
-function appendSelect(sql: string, selectField: string) {
-	if (sql.toUpperCase().endsWith('SELECT')) {
-		return sql + EOL + selectField;
-	}
-	else {
-		return sql + ', ' + EOL + selectField;
-	}
 }
 
 type WhereConditionResult = {

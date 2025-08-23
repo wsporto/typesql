@@ -52,54 +52,68 @@ export function dynamicQuery10(db: Database, params?: DynamicQuery10DynamicParam
 }
 
 function buildSql(params?: DynamicQuery10DynamicParams) {
-	const paramsValues: any = [];
+	const isSelected = (field: keyof DynamicQuery10Select) =>
+		params?.select == null || params.select[field] === true;
+
+	const selectedSqlFragments: string[] = [];
+	const paramsValues: any[] = [];
+
 	const whereColumns = new Set(params?.where?.map(w => w.column) || []);
-	let sql = 'SELECT';
-	if (params?.select == null || params.select.id) {
-		sql = appendSelect(sql, `t1.id`);
+
+	if (isSelected('id')) {
+		selectedSqlFragments.push('t1.id');
 	}
-	if (params?.select == null || params.select.name) {
-		sql = appendSelect(sql, `t2.name`);
+	if (isSelected('name')) {
+		selectedSqlFragments.push('t2.name');
 	}
-	sql += EOL + `FROM mytable1 t1`;
-	sql += EOL + `INNER JOIN mytable2 t2 on t2.id = t1.id`;
-	sql += EOL + `WHERE 1 = 1`;
-	sql += EOL + `AND name = ?`;
+
+	const fromSqlFragments: string[] = [];
+	fromSqlFragments.push(`FROM mytable1 t1`);
+	fromSqlFragments.push(`INNER JOIN mytable2 t2 on t2.id = t1.id`);
+
+	const whereSqlFragments: string[] = [];
+
+	whereSqlFragments.push(`name = ?`);
 	paramsValues.push(params?.params?.name ?? null);
+	const placeholder = () => '?';
+
 	params?.where?.forEach(condition => {
-		const where = whereCondition(condition, () => '?');
-		if (where?.hasValue) {
-			sql += EOL + 'AND ' + where.sql;
-			paramsValues.push(...where.values);
+		const whereClause = whereCondition(condition, placeholder);
+		if (whereClause?.hasValue) {
+			whereSqlFragments.push(whereClause.sql);
+			paramsValues.push(...whereClause.values);
 		}
 	});
-	sql += EOL + `LIMIT ? OFFSET ?`;
+
+	const whereSql = whereSqlFragments.length > 0 ? `WHERE ${whereSqlFragments.join(' AND ')}` : '';
+
+	const sql = `SELECT
+	${selectedSqlFragments.join(`,${EOL}`)}
+	${fromSqlFragments.join(EOL)}
+	${whereSql}
+	LIMIT ? OFFSET ?`;
+
 	paramsValues.push(params?.params?.limit ?? null);
 	paramsValues.push(params?.params?.offset ?? null);
-	return { sql, paramsValues }
+
+	return { sql, paramsValues };
 }
 
 function mapArrayToDynamicQuery10Result(data: any, select?: DynamicQuery10Select) {
+	const isSelected = (field: keyof DynamicQuery10Select) =>
+		!select || select[field] === true;
+
 	const result = {} as DynamicQuery10Result;
 	let rowIndex = -1;
-	if (select == null || select.id) {
+	if (isSelected('id')) {
 		rowIndex++;
 		result.id = data[rowIndex];
 	}
-	if (select == null || select.name) {
+	if (isSelected('name')) {
 		rowIndex++;
 		result.name = data[rowIndex];
 	}
 	return result;
-}
-
-function appendSelect(sql: string, selectField: string) {
-	if (sql.toUpperCase().endsWith('SELECT')) {
-		return sql + EOL + selectField;
-	}
-	else {
-		return sql + ', ' + EOL + selectField;
-	}
 }
 
 type WhereConditionResult = {

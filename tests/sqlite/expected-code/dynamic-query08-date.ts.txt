@@ -57,58 +57,71 @@ export function dynamicQuery08(db: Database, params?: DynamicQuery08DynamicParam
 }
 
 function buildSql(params?: DynamicQuery08DynamicParams) {
-	const paramsValues: any = [];
+	const isSelected = (field: keyof DynamicQuery08Select) =>
+		params?.select == null || params.select[field] === true;
+
+	const selectedSqlFragments: string[] = [];
+	const paramsValues: any[] = [];
+
 	const whereColumns = new Set(params?.where?.map(w => w.column) || []);
-	let sql = 'SELECT';
-	if (params?.select == null || params.select.text_column) {
-		sql = appendSelect(sql, `text_column`);
+
+	if (isSelected('text_column')) {
+		selectedSqlFragments.push('text_column');
 	}
-	if (params?.select == null || params.select.date) {
-		sql = appendSelect(sql, `date(text_column) as date`);
+	if (isSelected('date')) {
+		selectedSqlFragments.push('date(text_column) as date');
 	}
-	if (params?.select == null || params.select.date_time) {
-		sql = appendSelect(sql, `datetime(text_column) as date_time`);
+	if (isSelected('date_time')) {
+		selectedSqlFragments.push('datetime(text_column) as date_time');
 	}
-	sql += EOL + `FROM all_types`;
-	sql += EOL + `WHERE 1 = 1`;
-	sql += EOL + `AND date(text_column) = ? AND datetime(text_column) = ?`;
+
+	const fromSqlFragments: string[] = [];
+	fromSqlFragments.push(`FROM all_types`);
+
+	const whereSqlFragments: string[] = [];
+
+	whereSqlFragments.push(`date(text_column) = ? AND datetime(text_column) = ?`);
 	paramsValues.push(params?.params?.param1?.toISOString().split('T')[0] ?? null);
 	paramsValues.push(params?.params?.param2?.toISOString().split('.')[0].replace('T', ' ') ?? null);
+	const placeholder = () => '?';
+
 	params?.where?.forEach(condition => {
-		const where = whereCondition(condition, () => '?');
-		if (where?.hasValue) {
-			sql += EOL + 'AND ' + where.sql;
-			paramsValues.push(...where.values);
+		const whereClause = whereCondition(condition, placeholder);
+		if (whereClause?.hasValue) {
+			whereSqlFragments.push(whereClause.sql);
+			paramsValues.push(...whereClause.values);
 		}
 	});
-	return { sql, paramsValues }
+
+	const whereSql = whereSqlFragments.length > 0 ? `WHERE ${whereSqlFragments.join(' AND ')}` : '';
+
+	const sql = `SELECT
+	${selectedSqlFragments.join(`,${EOL}`)}
+	${fromSqlFragments.join(EOL)}
+	${whereSql}`;
+
+	return { sql, paramsValues };
 }
 
 function mapArrayToDynamicQuery08Result(data: any, select?: DynamicQuery08Select) {
+	const isSelected = (field: keyof DynamicQuery08Select) =>
+		!select || select[field] === true;
+
 	const result = {} as DynamicQuery08Result;
 	let rowIndex = -1;
-	if (select == null || select.text_column) {
+	if (isSelected('text_column')) {
 		rowIndex++;
 		result.text_column = data[rowIndex];
 	}
-	if (select == null || select.date) {
+	if (isSelected('date')) {
 		rowIndex++;
 		result.date = data[rowIndex] != null ? new Date(data[rowIndex]) : data[rowIndex];
 	}
-	if (select == null || select.date_time) {
+	if (isSelected('date_time')) {
 		rowIndex++;
 		result.date_time = data[rowIndex] != null ? new Date(data[rowIndex]) : data[rowIndex];
 	}
 	return result;
-}
-
-function appendSelect(sql: string, selectField: string) {
-	if (sql.toUpperCase().endsWith('SELECT')) {
-		return sql + EOL + selectField;
-	}
-	else {
-		return sql + ', ' + EOL + selectField;
-	}
 }
 
 type WhereConditionResult = {

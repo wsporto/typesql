@@ -136,11 +136,19 @@ function generateTsCode(queryName: string, schemaDef: PostgresSchemaDef, client:
 			columns: tsDescriptor.columns,
 			parameters: tsDescriptor.parameters,
 			dynamicQueryInfo,
-			selectColumnsTypeName
+			selectColumnsTypeName,
+			placeHolderType: 'numbered',
+			hasOrderBy: tsDescriptor.orderByColumns != null,
+			toDrive: (variable, param) => `${variable}.${param.name}`
 		})
 
 		writer.blankLine();
-		writeMapToResultFunction(writer, tsDescriptor.columns, resultTypeName, selectColumnsTypeName);
+		writeMapToResultFunction(writer, {
+			columns: tsDescriptor.columns,
+			resultTypeName,
+			selectColumnsTypeName,
+			fromDriver: (variable, _param) => variable
+		});
 		// if (orderByField != null) {
 		// 	writer.blankLine();
 		// 	writer.write(`function orderByToObject(orderBy: ${dynamicParamsTypeName}['orderBy'])`).block(() => {

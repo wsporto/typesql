@@ -174,7 +174,7 @@ describe('sqlite-generate-dynamic-info', () => {
 			],
 			where: [
 				{
-					fragment: 'AND (? is NULL or m2.name = ?)',
+					fragment: '(? is NULL or m2.name = ?)',
 					dependOnRelations: ['m2'],
 					parameters: [1, 2]
 				}
@@ -285,7 +285,7 @@ describe('sqlite-generate-dynamic-info', () => {
 			],
 			where: [
 				{
-					fragment: 'AND (? is NULL or m2.name = ?)',
+					fragment: '(? is NULL or m2.name = ?)',
 					parameters: [1, 2]
 				}
 			]
@@ -355,7 +355,7 @@ describe('sqlite-generate-dynamic-info', () => {
 			],
 			where: [
 				{
-					fragment: `AND m2.name LIKE concat('%', ?, '%')`,
+					fragment: `m2.name LIKE concat('%', ?, '%')`,
 					dependOnRelations: ['m2'],
 					parameters: [0]
 				}
@@ -487,7 +487,7 @@ describe('sqlite-generate-dynamic-info', () => {
 			],
 			where: [
 				{
-					fragment: `AND m2.name LIKE concat('%', ?, '%')`,
+					fragment: `m2.name LIKE concat('%', ?, '%')`,
 					parameters: [0]
 				}
 			]
@@ -690,7 +690,7 @@ describe('sqlite-generate-dynamic-info', () => {
 			],
 			where: [
 				{
-					fragment: `AND (concat('%', t2.name, '%') = ? OR concat('%', t3.name, '%') = ?)`,
+					fragment: `(concat('%', t2.name, '%') = ? OR concat('%', t3.name, '%') = ?)`,
 					dependOnRelations: ['t2', 't3'],
 					parameters: [0, 1]
 				}
@@ -790,7 +790,7 @@ describe('sqlite-generate-dynamic-info', () => {
 			],
 			where: [
 				{
-					fragment: `AND (concat('%', t2.name, '%') = ? OR concat('%', t3.name, '%') = ?)`,
+					fragment: `(concat('%', t2.name, '%') = ? OR concat('%', t3.name, '%') = ?)`,
 					parameters: [0, 1]
 				}
 			]
@@ -846,7 +846,7 @@ describe('sqlite-generate-dynamic-info', () => {
 			],
 			where: [
 				{
-					fragment: 'AND t3.id > 1',
+					fragment: 't3.id > 1',
 					dependOnRelations: ['t3'],
 					parameters: []
 				}
@@ -900,7 +900,7 @@ describe('sqlite-generate-dynamic-info', () => {
 			],
 			where: [
 				{
-					fragment: 'AND t3.id > 1',
+					fragment: 't3.id > 1',
 					parameters: []
 				}
 			]
@@ -1071,7 +1071,7 @@ describe('sqlite-generate-dynamic-info', () => {
 			],
 			where: [
 				{
-					fragment: 'AND m2.name = ?',
+					fragment: 'm2.name = ?',
 					dependOnRelations: ['m2'],
 					parameters: [0]
 				}
@@ -1318,7 +1318,7 @@ describe('sqlite-generate-dynamic-info', () => {
 			],
 			where: [
 				{
-					fragment: `AND max(c1.id, ?) = min(c2.id, ?)`,
+					fragment: `max(c1.id, ?) = min(c2.id, ?)`,
 					dependOnRelations: ['c1', 'c2'],
 					parameters: [4, 5]
 				}
@@ -1404,7 +1404,7 @@ describe('sqlite-generate-dynamic-info', () => {
 			],
 			where: [
 				{
-					fragment: `AND max(c1.id, ?) = min(c2.id, ?)`,
+					fragment: `max(c1.id, ?) = min(c2.id, ?)`,
 					parameters: [4, 5]
 				}
 			]

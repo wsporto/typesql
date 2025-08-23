@@ -64,30 +64,38 @@ export function dynamicQuery06(db: Database, params: DynamicQuery06DynamicParams
 }
 
 function buildSql(params: DynamicQuery06DynamicParams) {
+	const isSelected = (field: keyof DynamicQuery06Select) =>
+		params?.select == null || params.select[field] === true;
+
 	const orderBy = orderByToObject(params.orderBy);
-	const paramsValues: any = [];
+	const selectedSqlFragments: string[] = [];
+	const paramsValues: any[] = [];
+
 	const whereColumns = new Set(params?.where?.map(w => w.column) || []);
-	let sql = 'SELECT';
-	if (params?.select == null || params.select.id) {
-		sql = appendSelect(sql, `m1.id`);
+
+	if (isSelected('id')) {
+		selectedSqlFragments.push('m1.id');
 	}
-	if (params?.select == null || params.select.value) {
-		sql = appendSelect(sql, `m1.value`);
+	if (isSelected('value')) {
+		selectedSqlFragments.push('m1.value');
 	}
-	if (params?.select == null || params.select.id_2) {
-		sql = appendSelect(sql, `m2.id`);
+	if (isSelected('id_2')) {
+		selectedSqlFragments.push('m2.id');
 	}
-	if (params?.select == null || params.select.name) {
-		sql = appendSelect(sql, `m2.name`);
+	if (isSelected('name')) {
+		selectedSqlFragments.push('m2.name');
 	}
-	if (params?.select == null || params.select.descr) {
-		sql = appendSelect(sql, `m2.descr`);
+	if (isSelected('descr')) {
+		selectedSqlFragments.push('m2.descr');
 	}
-	sql += EOL + `FROM mytable1 m1`;
-	if (params?.select == null
-		|| params.select.id_2
-		|| params.select.name
-		|| params.select.descr
+
+	const fromSqlFragments: string[] = [];
+	fromSqlFragments.push(`FROM mytable1 m1`);
+
+	if (
+		isSelected('id_2')
+		|| isSelected('name')
+		|| isSelected('descr')
 		|| whereColumns.has('id_2')
 		|| whereColumns.has('name')
 		|| whereColumns.has('descr')
@@ -95,54 +103,61 @@ function buildSql(params: DynamicQuery06DynamicParams) {
 		|| orderBy['name'] != null
 		|| orderBy['m2.name'] != null
 		|| orderBy['descr'] != null
-		|| orderBy['m2.descr'] != null) {
-		sql += EOL + `INNER JOIN mytable2 m2 on m2.id = m1.id`;
+		|| orderBy['m2.descr'] != null
+	) {
+		fromSqlFragments.push(`INNER JOIN mytable2 m2 on m2.id = m1.id`);
 	}
-	sql += EOL + `WHERE 1 = 1`;
+
+	const whereSqlFragments: string[] = [];
+
+	const placeholder = () => '?';
+
 	params?.where?.forEach(condition => {
-		const where = whereCondition(condition, () => '?');
-		if (where?.hasValue) {
-			sql += EOL + 'AND ' + where.sql;
-			paramsValues.push(...where.values);
+		const whereClause = whereCondition(condition, placeholder);
+		if (whereClause?.hasValue) {
+			whereSqlFragments.push(whereClause.sql);
+			paramsValues.push(...whereClause.values);
 		}
 	});
-	sql += EOL + `ORDER BY ${buildOrderBy(params.orderBy)}`;
-	return { sql, paramsValues }
+
+	const whereSql = whereSqlFragments.length > 0 ? `WHERE ${whereSqlFragments.join(' AND ')}` : '';
+
+	const sql = `SELECT
+	${selectedSqlFragments.join(`,${EOL}`)}
+	${fromSqlFragments.join(EOL)}
+	${whereSql}
+	ORDER BY ${buildOrderBy(params.orderBy)}`;
+
+	return { sql, paramsValues };
 }
 
 function mapArrayToDynamicQuery06Result(data: any, select?: DynamicQuery06Select) {
+	const isSelected = (field: keyof DynamicQuery06Select) =>
+		!select || select[field] === true;
+
 	const result = {} as DynamicQuery06Result;
 	let rowIndex = -1;
-	if (select == null || select.id) {
+	if (isSelected('id')) {
 		rowIndex++;
 		result.id = data[rowIndex];
 	}
-	if (select == null || select.value) {
+	if (isSelected('value')) {
 		rowIndex++;
 		result.value = data[rowIndex];
 	}
-	if (select == null || select.id_2) {
+	if (isSelected('id_2')) {
 		rowIndex++;
 		result.id_2 = data[rowIndex];
 	}
-	if (select == null || select.name) {
+	if (isSelected('name')) {
 		rowIndex++;
 		result.name = data[rowIndex];
 	}
-	if (select == null || select.descr) {
+	if (isSelected('descr')) {
 		rowIndex++;
 		result.descr = data[rowIndex];
 	}
 	return result;
-}
-
-function appendSelect(sql: string, selectField: string) {
-	if (sql.toUpperCase().endsWith('SELECT')) {
-		return sql + EOL + selectField;
-	}
-	else {
-		return sql + ', ' + EOL + selectField;
-	}
 }
 
 function orderByToObject(orderBy: DynamicQuery06DynamicParams['orderBy']) {

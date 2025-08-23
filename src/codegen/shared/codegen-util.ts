@@ -128,13 +128,20 @@ export type BuildSqlFunction = {
 	dynamicQueryInfo: DynamicSqlInfoResult2;
 	columns: TsFieldDescriptor[];
 	parameters: TsParameterDescriptor[];
+	placeHolderType: 'questionMark' | 'numbered';
+	hasOrderBy: boolean;
+	toDrive: (variable: string, param: TsParameterDescriptor) => string;
 }
 
 export function writeBuildSqlFunction(writer: CodeBlockWriter, params: BuildSqlFunction) {
-	const { dynamicParamsTypeName, selectColumnsTypeName, dynamicQueryInfo, columns, parameters } = params;
-	writer.write(`function buildSql(params?: ${dynamicParamsTypeName})`).block(() => {
+	const { dynamicParamsTypeName, selectColumnsTypeName, dynamicQueryInfo, columns, parameters, placeHolderType, hasOrderBy, toDrive } = params;
+	const optional = hasOrderBy ? '' : '?';
+	writer.write(`function buildSql(params${optional}: ${dynamicParamsTypeName})`).block(() => {
 		writeIsSelectedFunction(writer, selectColumnsTypeName);
 		writer.blankLine();
+		if (hasOrderBy) {
+			writer.writeLine('const orderBy = orderByToObject(params.orderBy);');
+		}
 		writer.writeLine('const selectedSqlFragments: string[] = [];');
 		writer.writeLine('const paramsValues: any[] = [];');
 		writer.blankLine();
@@ -150,7 +157,7 @@ export function writeBuildSqlFunction(writer: CodeBlockWriter, params: BuildSqlF
 				const allConditions = [...selectConditions, ...whereConditions, ...orderByConditions];
 				const paramValues = withFragment.parameters.map((paramIndex) => {
 					const param = parameters[paramIndex];
-					return `params?.params?.${param.name}`;
+					return toDrive('params?.params?', param);
 				});
 				if (allConditions.length > 0) {
 					writer.writeLine(`if (`);
@@ -181,16 +188,16 @@ export function writeBuildSqlFunction(writer: CodeBlockWriter, params: BuildSqlF
 		writer.blankLine();
 		writer.writeLine('const fromSqlFragments: string[] = [];');
 
-		dynamicQueryInfo.from.forEach((from) => {
+		dynamicQueryInfo.from.forEach((from, index) => {
 			const selectConditions = from.dependOnFields.map((fieldIndex) => `isSelected('${columns[fieldIndex].name}')`);
 			const whereConditions = from.dependOnFields.map((fieldIndex) => `whereColumns.has('${columns[fieldIndex].name}')`);
 			const orderByConditions = from.dependOnOrderBy?.map((orderBy) => `orderBy['${orderBy}'] != null`) || [];
 			const allConditions = [...selectConditions, ...whereConditions, ...orderByConditions];
 			const paramValues = from.parameters.map((paramIndex) => {
 				const param = parameters[paramIndex];
-				return `params?.params?.${param.name}`;
+				return toDrive('params?.params?', param);
 			});
-			if (allConditions.length > 0) {
+			if (index != 0 && allConditions.length > 0) {
 				writer.blankLine();
 				writer.writeLine(`if (`);
 				writer.indent().write(`${allConditions.join(`${EOL}\t|| `)}`).newLine();
@@ -214,15 +221,20 @@ export function writeBuildSqlFunction(writer: CodeBlockWriter, params: BuildSqlF
 		dynamicQueryInfo.where.forEach((fragment) => {
 			const paramValues = fragment.parameters.map((paramIndex) => {
 				const param = parameters[paramIndex];
-				return `params?.params?.${param.name} ?? null`;
+				return `${toDrive('params?.params?', param)} ?? null`;
 			});
 			writer.writeLine(`whereSqlFragments.push(\`${fragment.fragment}\`);`);
 			paramValues.forEach((paramValues) => {
 				writer.writeLine(`paramsValues.push(${paramValues});`);
 			});
 		});
-		writer.writeLine(`let currentIndex = paramsValues.length;`);
-		writer.writeLine('const placeholder = () => `$${++currentIndex}`;');
+		if (placeHolderType === 'questionMark') {
+			writer.writeLine(`const placeholder = () => '?';`);
+		}
+		else if (placeHolderType === 'numbered') {
+			writer.writeLine(`let currentIndex = paramsValues.length;`);
+			writer.writeLine('const placeholder = () => `$${++currentIndex}`;');
+		}
 		writer.blankLine();
 		writer.write('params?.where?.forEach(condition => ').inlineBlock(() => {
 			writer.writeLine('const whereClause = whereCondition(condition, placeholder);');
@@ -258,13 +270,38 @@ export function writeBuildSqlFunction(writer: CodeBlockWriter, params: BuildSqlF
 		}
 		writer.indent().write('${selectedSqlFragments.join(`,${EOL}`)}').newLine();
 		writer.indent().write('${fromSqlFragments.join(EOL)}').newLine();;
-		writer.indent().write('${whereSql}`;').newLine();
+		writer.indent().write('${whereSql}');
+		if (hasOrderBy) {
+			writer.newLine();
+			writer.indent().write('ORDER BY ${buildOrderBy(params.orderBy)}');
+		}
+		const limitOffset = dynamicQueryInfo?.limitOffset;
+		if (limitOffset) {
+			writer.newLine();
+			writer.indent().write(`${limitOffset.fragment}`);
+
+		}
+		writer.write('`;');
+		if (dynamicQueryInfo?.limitOffset) {
+			writer.blankLine();
+			dynamicQueryInfo?.limitOffset.parameters.forEach((param) => {
+				writer.writeLine(`paramsValues.push(params?.params?.${param} ?? null);`);
+			});
+		}
+
 		writer.blankLine();
 		writer.writeLine('return { sql, paramsValues };');
 	})
 }
 
-export function writeMapToResultFunction(writer: CodeBlockWriter, columns: TsFieldDescriptor[], resultTypeName: string, selectColumnsTypeName: string) {
+type MapToResultParameters = {
+	columns: TsFieldDescriptor[];
+	resultTypeName: string;
+	selectColumnsTypeName: string;
+	fromDriver: (variable: string, field: TsFieldDescriptor) => string;
+}
+export function writeMapToResultFunction(writer: CodeBlockWriter, params: MapToResultParameters) {
+	const { columns, resultTypeName, selectColumnsTypeName, fromDriver } = params;
 	writer.write(`function mapArrayTo${resultTypeName}(data: any, select?: ${selectColumnsTypeName})`).block(() => {
 		writer.writeLine(`const isSelected = (field: keyof ${selectColumnsTypeName}) =>`);
 		writer.indent().write('!select || select[field] === true;').newLine();
@@ -274,7 +311,7 @@ export function writeMapToResultFunction(writer: CodeBlockWriter, columns: TsFie
 		columns.forEach((tsField) => {
 			writer.write(`if (isSelected('${tsField.name}'))`).block(() => {
 				writer.writeLine('rowIndex++;');
-				writer.writeLine(`result.${tsField.name} = data[rowIndex];`) //${toDriver('data[rowIndex]', tsField)};`);
+				writer.writeLine(`result.${tsField.name} = ${fromDriver('data[rowIndex]', tsField)};`);
 			});
 		});
 		writer.write('return result;');
