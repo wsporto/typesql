@@ -1,22 +1,22 @@
 import pg from 'pg';
 import { EOL } from 'os';
 
-export type DerivatedTableParams = {
+export type DynamicQuery02Params = {
 	subqueryName: string;
 }
 
-export type DerivatedTableResult = {
+export type DynamicQuery02Result = {
 	id?: number;
 	name?: string;
 }
 
-export type DerivatedTableDynamicParams = {
-	select?: DerivatedTableSelect;
-	params: DerivatedTableParams;
-	where?: DerivatedTableWhere[];
+export type DynamicQuery02DynamicParams = {
+	select?: DynamicQuery02Select;
+	params: DynamicQuery02Params;
+	where?: DynamicQuery02Where[];
 }
 
-export type DerivatedTableSelect = {
+export type DynamicQuery02Select = {
 	id?: boolean;
 	name?: boolean;
 }
@@ -32,7 +32,7 @@ type StringOperator = '=' | '<>' | '>' | '<' | '>=' | '<=' | 'LIKE';
 type SetOperator = 'IN' | 'NOT IN';
 type BetweenOperator = 'BETWEEN';
 
-export type DerivatedTableWhere =
+export type DynamicQuery02Where =
 	| { column: 'id'; op: NumericOperator; value: number | null }
 	| { column: 'id'; op: SetOperator; value: number[] }
 	| { column: 'id'; op: BetweenOperator; value: [number | null, number | null] }
@@ -40,14 +40,14 @@ export type DerivatedTableWhere =
 	| { column: 'name'; op: SetOperator; value: string[] }
 	| { column: 'name'; op: BetweenOperator; value: [string | null, string | null] }
 
-export async function derivatedTable(client: pg.Client | pg.Pool | pg.PoolClient, params?: DerivatedTableDynamicParams): Promise<DerivatedTableResult[]> {
+export async function dynamicQuery02(client: pg.Client | pg.Pool | pg.PoolClient, params?: DynamicQuery02DynamicParams): Promise<DynamicQuery02Result[]> {
 
 	const { sql, paramsValues } = buildSql(params);
 	return client.query({ text: sql, rowMode: 'array', values: paramsValues })
-		.then(res => res.rows.map(row => mapArrayToDerivatedTableResult(row, params?.select)));
+		.then(res => res.rows.map(row => mapArrayToDynamicQuery02Result(row, params?.select)));
 }
 
-function buildSql(queryParams?: DerivatedTableDynamicParams) {
+function buildSql(queryParams?: DynamicQuery02DynamicParams) {
 	const { select, where, params } = queryParams || {};
 
 	const selectedSqlFragments: string[] = [];
@@ -99,8 +99,8 @@ function buildSql(queryParams?: DerivatedTableDynamicParams) {
 	return { sql, paramsValues };
 }
 
-function mapArrayToDerivatedTableResult(data: any, select?: DerivatedTableSelect) {
-	const result = {} as DerivatedTableResult;
+function mapArrayToDynamicQuery02Result(data: any, select?: DynamicQuery02Select) {
+	const result = {} as DynamicQuery02Result;
 	let rowIndex = -1;
 	if (!select || select.id === true) {
 		rowIndex++;
@@ -119,7 +119,7 @@ type WhereConditionResult = {
 	values: any[];
 }
 
-function whereCondition(condition: DerivatedTableWhere, placeholder: () => string): WhereConditionResult | null {
+function whereCondition(condition: DynamicQuery02Where, placeholder: () => string): WhereConditionResult | null {
 	const selectFragment = selectFragments[condition.column];
 	const { op, value } = condition;
 

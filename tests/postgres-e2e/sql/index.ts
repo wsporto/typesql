@@ -1,5 +1,5 @@
-export * from "./derivated-table";
-export * from "./dynamic-query-01";
+export * from "./dynamic-query01";
+export * from "./dynamic-query02";
 export * from "./dynamic-query03";
 export * from "./dynamic-query04";
 export * from "./dynamic-query05";
