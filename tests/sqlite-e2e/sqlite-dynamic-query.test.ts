@@ -1,18 +1,17 @@
 import assert from 'node:assert';
-import pg from 'pg'
+import { dynamicQuery01, DynamicQuery01Result } from './sql/dynamic-query01';
+import Database from 'better-sqlite3';
 import {
-	dynamicQuery01, DynamicQuery01Result, dynamicQuery02, DynamicQuery02Result, dynamicQuery03, DynamicQuery03Result,
-	dynamicQuery04, DynamicQuery04Result, dynamicQuery05, DynamicQuery05Result, dynamicQuery08, DynamicQuery08Result
+	dynamicQuery02, DynamicQuery02Result, dynamicQuery03, DynamicQuery03Result,
+	dynamicQuery04, DynamicQuery04Result, dynamicQuery05, DynamicQuery05Result
 } from './sql';
 
-describe('e2e-postgres-dynamic-query', () => {
+describe('e2e-sqlite-dynamic-query', () => {
 
-	const pool = new pg.Pool({
-		connectionString: 'postgres://postgres:password@127.0.0.1:5432/postgres'
-	})
+	const db = new Database('./mydb.db');
 
-	it('dynamicQuery01 - without filters', async () => {
-		const result = await dynamicQuery01(pool);
+	it('dynamicQuery01 - without filters', () => {
+		const result = dynamicQuery01(db);
 
 		const expectedResult: DynamicQuery01Result[] = [
 			{
@@ -45,8 +44,8 @@ describe('e2e-postgres-dynamic-query', () => {
 		assert.deepStrictEqual(result, expectedResult);
 	});
 
-	it('dynamicQuery01 - select columns', async () => {
-		const result = await dynamicQuery01(pool, {
+	it('dynamicQuery01 - select columns', () => {
+		const result = dynamicQuery01(db, {
 			select: {
 				id: true,
 				name: true
@@ -75,8 +74,8 @@ describe('e2e-postgres-dynamic-query', () => {
 		assert.deepStrictEqual(result, expectedResult);
 	});
 
-	it('dynamicQuery01 - where BETWEEN', async () => {
-		const result = await dynamicQuery01(pool, {
+	it('dynamicQuery01 - where BETWEEN', () => {
+		const result = dynamicQuery01(db, {
 			select: {
 				id: true,
 				name: true
@@ -100,8 +99,8 @@ describe('e2e-postgres-dynamic-query', () => {
 		assert.deepStrictEqual(result, expectedResult);
 	});
 
-	it('dynamicQuery01 - IN', async () => {
-		const result = await dynamicQuery01(pool, {
+	it('dynamicQuery01 - IN', () => {
+		const result = dynamicQuery01(db, {
 			select: {
 				id: true,
 				name: true
@@ -125,8 +124,8 @@ describe('e2e-postgres-dynamic-query', () => {
 		assert.deepStrictEqual(result, expectedResult);
 	});
 
-	it('dynamicQuery01 - NOT IN', async () => {
-		const result = await dynamicQuery01(pool, {
+	it('dynamicQuery01 - NOT IN', () => {
+		const result = dynamicQuery01(db, {
 			select: {
 				id: true,
 				name: true
@@ -150,8 +149,8 @@ describe('e2e-postgres-dynamic-query', () => {
 		assert.deepStrictEqual(result, expectedResult);
 	});
 
-	it('dynamicQuery01 - >= and <=', async () => {
-		const result = await dynamicQuery01(pool, {
+	it('dynamicQuery01 - >= and <=', () => {
+		const result = dynamicQuery01(db, {
 			select: {
 				id: true,
 				name: true
@@ -176,8 +175,8 @@ describe('e2e-postgres-dynamic-query', () => {
 		assert.deepStrictEqual(result, expectedResult);
 	});
 
-	it('dynamic-query02 - derivated-table', async () => {
-		const result = await dynamicQuery02(pool, {
+	it('dynamic-query02 - derivated-table', () => {
+		const result = dynamicQuery02(db, {
 			params: {
 				subqueryName: 'two'
 			}
@@ -193,8 +192,8 @@ describe('e2e-postgres-dynamic-query', () => {
 		assert.deepStrictEqual(result, expectedResult);
 	});
 
-	it('dynamic-query-03', async () => {
-		const result = await dynamicQuery03(pool, {
+	it('dynamic-query-03', () => {
+		const result = dynamicQuery03(db, {
 			select: {
 				value: true
 			},
@@ -212,8 +211,8 @@ describe('e2e-postgres-dynamic-query', () => {
 		assert.deepStrictEqual(result, expectedResult);
 	});
 
-	it('dynamic-query-04 - LIKE o%', async () => {
-		const result = await dynamicQuery04(pool, {
+	it('dynamic-query-04 - LIKE o%', () => {
+		const result = dynamicQuery04(db, {
 			select: {
 				value: true,
 				name: true
@@ -233,8 +232,8 @@ describe('e2e-postgres-dynamic-query', () => {
 		assert.deepStrictEqual(result, expectedResult);
 	});
 
-	it('dynamic-query-04 - LIKE %o%', async () => {
-		const result = await dynamicQuery04(pool, {
+	it('dynamic-query-04 - LIKE %o%', () => {
+		const result = dynamicQuery04(db, {
 			select: {
 				value: true,
 				name: true
@@ -262,8 +261,8 @@ describe('e2e-postgres-dynamic-query', () => {
 		assert.deepStrictEqual(result, expectedResult);
 	});
 
-	it('dynamic-query-05 - cte', async () => {
-		const result = await dynamicQuery05(pool, {
+	it('dynamic-query-05 - cte', () => {
+		const result = dynamicQuery05(db, {
 			select: {
 				id: true,
 				name: true
@@ -283,8 +282,8 @@ describe('e2e-postgres-dynamic-query', () => {
 		assert.deepStrictEqual(result, expectedResult);
 	});
 
-	it('dynamic-query-05 - exclude CTE', async () => {
-		const result = await dynamicQuery05(pool, {
+	it('dynamic-query-05 - exclude CTE', () => {
+		const result = dynamicQuery05(db, {
 			select: {
 				id: true
 			},
@@ -296,46 +295,6 @@ describe('e2e-postgres-dynamic-query', () => {
 		const expectedResult: DynamicQuery05Result[] = [
 			{
 				id: 1
-			}
-		];
-
-		assert.deepStrictEqual(result, expectedResult);
-	});
-
-	it('dynamic-query-08 - date', async () => {
-		const result = await dynamicQuery08(pool, {
-			params: {
-				param1: 2024,
-				param2: 12
-			}
-		});
-
-		const expectedResult: DynamicQuery08Result[] = [
-			{
-				timestamp_not_null_column: new Date(2024, 11, 31)
-			}
-		];
-
-		assert.deepStrictEqual(result, expectedResult);
-	});
-
-	it('dynamic-query-08 - date >= new Date(2025, 0, 2)', async () => {
-		const result = await dynamicQuery08(pool, {
-			params: {
-				param1: 2025,
-				param2: 1
-			},
-			where: [
-				{ column: 'timestamp_not_null_column', op: '>=', value: new Date(2025, 0, 2) }
-			]
-		});
-
-		const expectedResult: DynamicQuery08Result[] = [
-			{
-				timestamp_not_null_column: new Date(2025, 0, 2)
-			},
-			{
-				timestamp_not_null_column: new Date(2025, 0, 3)
 			}
 		];
 

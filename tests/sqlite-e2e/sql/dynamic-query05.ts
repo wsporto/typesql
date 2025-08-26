@@ -1,22 +1,17 @@
-import pg from 'pg';
+import type { Database } from 'better-sqlite3';
 import { EOL } from 'os';
 
-export type DerivatedTableParams = {
-	subqueryName: string;
+export type DynamicQuery05DynamicParams = {
+	select?: DynamicQuery05Select;
+	where?: DynamicQuery05Where[];
 }
 
-export type DerivatedTableResult = {
+export type DynamicQuery05Result = {
 	id?: number;
 	name?: string;
 }
 
-export type DerivatedTableDynamicParams = {
-	select?: DerivatedTableSelect;
-	params: DerivatedTableParams;
-	where?: DerivatedTableWhere[];
-}
-
-export type DerivatedTableSelect = {
+export type DynamicQuery05Select = {
 	id?: boolean;
 	name?: boolean;
 }
@@ -32,7 +27,7 @@ type StringOperator = '=' | '<>' | '>' | '<' | '>=' | '<=' | 'LIKE';
 type SetOperator = 'IN' | 'NOT IN';
 type BetweenOperator = 'BETWEEN';
 
-export type DerivatedTableWhere =
+export type DynamicQuery05Where =
 	| { column: 'id'; op: NumericOperator; value: number | null }
 	| { column: 'id'; op: SetOperator; value: number[] }
 	| { column: 'id'; op: BetweenOperator; value: [number | null, number | null] }
@@ -40,21 +35,32 @@ export type DerivatedTableWhere =
 	| { column: 'name'; op: SetOperator; value: string[] }
 	| { column: 'name'; op: BetweenOperator; value: [string | null, string | null] }
 
-export async function derivatedTable(client: pg.Client | pg.Pool | pg.PoolClient, params?: DerivatedTableDynamicParams): Promise<DerivatedTableResult[]> {
+export function dynamicQuery05(db: Database, params?: DynamicQuery05DynamicParams): DynamicQuery05Result[] {
 
 	const { sql, paramsValues } = buildSql(params);
-	return client.query({ text: sql, rowMode: 'array', values: paramsValues })
-		.then(res => res.rows.map(row => mapArrayToDerivatedTableResult(row, params?.select)));
+	return db.prepare(sql)
+		.raw(true)
+		.all(paramsValues)
+		.map(data => mapArrayToDynamicQuery05Result(data, params?.select));
 }
 
-function buildSql(queryParams?: DerivatedTableDynamicParams) {
-	const { select, where, params } = queryParams || {};
+function buildSql(queryParams?: DynamicQuery05DynamicParams) {
+	const { select, where } = queryParams || {};
 
 	const selectedSqlFragments: string[] = [];
 	const paramsValues: any[] = [];
 
 	const whereColumns = new Set(where?.map(w => w.column) || []);
 
+	const withFragments: string[] = [];
+	if (
+		(!select || select.name === true)
+		|| whereColumns.has('name')
+	) {
+		withFragments.push(`cte as (
+		select id, name from mytable2
+	)`);
+	}
 	if (!select || select.id === true) {
 		selectedSqlFragments.push(`m1.id`);
 	}
@@ -69,17 +75,12 @@ function buildSql(queryParams?: DerivatedTableDynamicParams) {
 		(!select || select.name === true)
 		|| whereColumns.has('name')
 	) {
-		fromSqlFragments.push(`INNER JOIN ( -- derivated table
-	SELECT id, name from mytable2 m 
-	WHERE m.name = $1
-) m2 on m2.id = m1.id`);
+		fromSqlFragments.push(`INNER JOIN cte m2 on m2.id = m1.id`);
 	}
-	paramsValues.push(params?.subqueryName);
 
 	const whereSqlFragments: string[] = [];
 
-	let currentIndex = paramsValues.length;
-	const placeholder = () => `$${++currentIndex}`;
+	const placeholder = () => '?';
 
 	where?.forEach(condition => {
 		const whereClause = whereCondition(condition, placeholder);
@@ -89,9 +90,13 @@ function buildSql(queryParams?: DerivatedTableDynamicParams) {
 		}
 	});
 
+	const withSql = withFragments.length > 0
+		? `WITH${EOL}${withFragments.join(`,${EOL}`)}${EOL}`
+		: '';
+
 	const whereSql = whereSqlFragments.length > 0 ? `WHERE ${whereSqlFragments.join(' AND ')}` : '';
 
-	const sql = `SELECT
+	const sql = `${withSql}SELECT
 	${selectedSqlFragments.join(`,${EOL}`)}
 	${fromSqlFragments.join(EOL)}
 	${whereSql}`;
@@ -99,8 +104,8 @@ function buildSql(queryParams?: DerivatedTableDynamicParams) {
 	return { sql, paramsValues };
 }
 
-function mapArrayToDerivatedTableResult(data: any, select?: DerivatedTableSelect) {
-	const result = {} as DerivatedTableResult;
+function mapArrayToDynamicQuery05Result(data: any, select?: DynamicQuery05Select) {
+	const result = {} as DynamicQuery05Result;
 	let rowIndex = -1;
 	if (!select || select.id === true) {
 		rowIndex++;
@@ -119,7 +124,7 @@ type WhereConditionResult = {
 	values: any[];
 }
 
-function whereCondition(condition: DerivatedTableWhere, placeholder: () => string): WhereConditionResult | null {
+function whereCondition(condition: DynamicQuery05Where, placeholder: () => string): WhereConditionResult | null {
 	const selectFragment = selectFragments[condition.column];
 	const { op, value } = condition;
 
