@@ -26,6 +26,7 @@ export type DescribeParameters = {
 	postgresDescribeResult: PostgresDescribe;
 	schemaInfo: PostgresSchemaInfo;
 	namedParameters: NamedParamInfo[];
+	hasOrderBy: boolean;
 }
 
 export type PostgresDescribe = {

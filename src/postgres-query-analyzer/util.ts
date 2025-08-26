@@ -18,7 +18,10 @@ export function getOrderByColumns(fromColumns: NotNullInfo[], selectColumns: Not
 
 	// Add selectColumns (may include expressions like 'nullif')
 	for (const col of selectColumns) {
-		const lowerName = col.column_name.toLowerCase();
+		const name = isAmbiguous(fromColumns, col.column_name)
+			? `${col.table}.${col.column_name}`
+			: col.column_name;
+		const lowerName = name.toLowerCase();
 		if (!seen.has(lowerName)) {
 			result.push(lowerName);
 			seen.add(lowerName);

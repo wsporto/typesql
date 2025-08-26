@@ -36,7 +36,7 @@ import { mapToDynamicParams, mapToDynamicResultColumns, mapToDynamicSelectColumn
 import { mapColumnType } from '../drivers/sqlite';
 import { mapColumnType as mapPgColumnType } from '../dialects/postgres';
 import { PostgresColumnInfo } from '../postgres-query-analyzer/types';
-import { writeBuildOrderByBlock, writeBuildSqlFunction, writeDynamicQueryOperators, writeMapToResultFunction, writeWhereConditionFunction } from './shared/codegen-util';
+import { writeBuildOrderByBlock, writeBuildSqlFunction, writeDynamicQueryOperators, writeMapToResultFunction, writeOrderByToObjectFunction, writeWhereConditionFunction } from './shared/codegen-util';
 
 type ExecFunctionParams = {
 	functionName: string;
@@ -455,14 +455,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 		});
 		if (orderByField != null) {
 			writer.blankLine();
-			writer.write(`function orderByToObject(orderBy: ${dynamicParamsTypeName}['orderBy'])`).block(() => {
-				writer.writeLine('const obj = {} as any;');
-				writer.write('orderBy?.forEach(order => ').inlineBlock(() => {
-					writer.writeLine('obj[order.column] = true;');
-				});
-				writer.write(');');
-				writer.writeLine('return obj;');
-			});
+			writeOrderByToObjectFunction(writer, dynamicParamsTypeName);
 		}
 		writer.blankLine();
 		writer.write('type WhereConditionResult = ').block(() => {

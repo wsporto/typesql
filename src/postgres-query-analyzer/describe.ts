@@ -69,7 +69,8 @@ function describeQueryRefine(describeParameters: DescribeParameters): Result<Pos
 		descResult.nestedInfo = nestedResult.right;
 	}
 	if (traverseResult.dynamicQueryInfo) {
-		const dynamicSqlQueryInfo = describeDynamicQuery2(traverseResult.dynamicQueryInfo, namedParameters.map(param => param.paramName), []);
+		const orderByColumns = describeParameters.hasOrderBy ? traverseResult.orderByColumns || [] : [];
+		const dynamicSqlQueryInfo = describeDynamicQuery2(traverseResult.dynamicQueryInfo, namedParameters.map(param => param.paramName), orderByColumns);
 		descResult.dynamicSqlQuery2 = dynamicSqlQueryInfo;
 	}
 	return ok(descResult);
@@ -121,7 +122,8 @@ export function describeQuery(postgres: Sql, sql: string, schemaInfo: PostgresSc
 			sql: preprocessed,
 			postgresDescribeResult: analyzeResult,
 			namedParameters,
-			schemaInfo
+			schemaInfo,
+			hasOrderBy: newSql.replaced
 		}
 		return describeQueryRefine(describeParameters).map(desc => {
 			const { orderByColumns, ...res } = desc;

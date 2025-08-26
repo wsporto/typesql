@@ -1,6 +1,12 @@
 import pg from 'pg';
 import { EOL } from 'os';
 
+export type DerivatedTableDynamicParams = {
+	select?: DerivatedTableSelect;
+	params: DerivatedTableParams;
+	where?: DerivatedTableWhere[];
+}
+
 export type DerivatedTableParams = {
 	subqueryName: string;
 }
@@ -8,12 +14,6 @@ export type DerivatedTableParams = {
 export type DerivatedTableResult = {
 	id?: number;
 	name?: string;
-}
-
-export type DerivatedTableDynamicParams = {
-	select?: DerivatedTableSelect;
-	params: DerivatedTableParams;
-	where?: DerivatedTableWhere[];
 }
 
 export type DerivatedTableSelect = {

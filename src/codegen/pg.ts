@@ -11,7 +11,7 @@ import { EOL } from 'node:os';
 import { PostgresColumnInfo, PostgresParameterDef, PostgresSchemaDef } from '../postgres-query-analyzer/types';
 import { PostgresSchemaInfo } from '../schema-info';
 import { PostgresColumnSchema } from '../drivers/types';
-import { writeBuildOrderByBlock, writeBuildSqlFunction, writeDynamicQueryOperators, writeMapToResultFunction, writeWhereConditionFunction } from './shared/codegen-util';
+import { writeBuildOrderByBlock, writeBuildSqlFunction, writeDynamicQueryOperators, writeMapToResultFunction, writeOrderByToObjectFunction, writeWhereConditionFunction } from './shared/codegen-util';
 
 
 
@@ -73,7 +73,22 @@ function generateTsCode(queryName: string, schemaDef: PostgresSchemaDef, client:
 		writer.blankLine();
 		writeDataType(writer, dataTypeName, uniqueDataParams);
 	}
-	if (uniqueParams.length > 0 || generateOrderBy) {
+	const dynamicQueryInfo = tsDescriptor.dynamicQuery2;
+	const orderByField = tsDescriptor.orderByColumns != null && tsDescriptor.orderByColumns.length > 0 ? 'orderBy' : '';
+	if (dynamicQueryInfo) {
+		writer.blankLine();
+		writer.write(`export type ${dynamicParamsTypeName} = `).block(() => {
+			writer.writeLine(`select?: ${selectColumnsTypeName};`);
+			if (tsDescriptor.parameters.length > 0) {
+				writer.writeLine(`params: ${paramsTypeName};`);
+			}
+			writer.writeLine(`where?: ${whereTypeName}[];`);
+			if (orderByField) {
+				writer.writeLine(`${orderByField}: ${orderByTypeName}[];`);
+			}
+		});
+	}
+	if (uniqueParams.length > 0 || (orderByField && !dynamicQueryInfo)) {
 		writer.blankLine();
 		writeParamsType(writer, paramsTypeName, uniqueParams, generateOrderBy, orderByTypeName)
 	}
@@ -86,19 +101,7 @@ function generateTsCode(queryName: string, schemaDef: PostgresSchemaDef, client:
 			writeJsonTypes(writer, type.typeName, type.type);
 		});
 	}
-	const dynamicQueryInfo = tsDescriptor.dynamicQuery2;
 	if (dynamicQueryInfo) {
-		writer.blankLine();
-		writer.write(`export type ${dynamicParamsTypeName} = `).block(() => {
-			writer.writeLine(`select?: ${selectColumnsTypeName};`);
-			if (tsDescriptor.parameters.length > 0) {
-				writer.writeLine(`params: ${paramsTypeName};`);
-			}
-			writer.writeLine(`where?: ${whereTypeName}[];`);
-			// if (orderByField) {
-			// 	writer.writeLine(`${orderByField};`);
-			// }
-		});
 		writer.blankLine();
 		writer.write(`export type ${selectColumnsTypeName} =`).block(() => {
 			tsDescriptor.columns.forEach((tsField) => {
@@ -120,11 +123,9 @@ function generateTsCode(queryName: string, schemaDef: PostgresSchemaDef, client:
 		// if (params.data.length > 0) {
 		// 	functionParams += `, data: ${dataType}`;
 		// }
-		functionArguments += `, params?: ${dynamicParamsTypeName}`;
+		const optional = uniqueDataParams.length > 0 || orderByField ? '' : '?';
+		functionArguments += `, params${optional}: ${dynamicParamsTypeName}`;
 		writer.write(`export async function ${camelCaseName}(${functionArguments}): Promise<${resultTypeName}[]>`).block(() => {
-			// if (orderByField != null) {
-			// 	writer.writeLine('const orderBy = orderByToObject(params.orderBy);');
-			// }
 			writer.blankLine();
 			writer.writeLine('const { sql, paramsValues } = buildSql(params);');
 			writer.write(`return client.query({ text: sql, rowMode: 'array', values: paramsValues })`).newLine();
@@ -148,17 +149,6 @@ function generateTsCode(queryName: string, schemaDef: PostgresSchemaDef, client:
 			selectColumnsTypeName,
 			fromDriver: (variable, _param) => variable
 		});
-		// if (orderByField != null) {
-		// 	writer.blankLine();
-		// 	writer.write(`function orderByToObject(orderBy: ${dynamicParamsTypeName}['orderBy'])`).block(() => {
-		// 		writer.writeLine('const obj = {} as any;');
-		// 		writer.write('orderBy?.forEach(order => ').inlineBlock(() => {
-		// 			writer.writeLine('obj[order[0]] = true;');
-		// 		});
-		// 		writer.write(');');
-		// 		writer.writeLine('return obj;');
-		// 	});
-		// }
 		writer.blankLine();
 		writer.write('type WhereConditionResult = ').block(() => {
 			writer.writeLine('sql: string;');
@@ -167,6 +157,12 @@ function generateTsCode(queryName: string, schemaDef: PostgresSchemaDef, client:
 		});
 		writer.blankLine();
 		writeWhereConditionFunction(writer, whereTypeName, tsDescriptor.columns);
+		if (tsDescriptor.orderByColumns != null) {
+			writer.blankLine();
+			writeOrderByToObjectFunction(writer, dynamicParamsTypeName);
+			writer.blankLine();
+			writeBuildOrderByBlock(writer, tsDescriptor.orderByColumns, orderByTypeName);
+		}
 	}
 
 	if (tsDescriptor.nestedDescriptor2) {
