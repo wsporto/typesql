@@ -2,16 +2,17 @@ import CodeBlockWriter from 'code-block-writer';
 import { capitalize, convertToCamelCaseName, generateRelationType, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor } from './mysql2';
 import { CrudQueryType, PgDielect, QueryType, TsFieldDescriptor, TsParameterDescriptor, TypeSqlError } from '../types';
 import { describeQuery } from '../postgres-query-analyzer/describe';
-import { mapColumnType } from '../dialects/postgres';
+import { mapper } from '../dialects/postgres';
 import { JsonArrayType, JsonFieldType, JsonMapType, JsonObjType, JsonType, PostgresType } from '../sqlite-query-analyzer/types';
 import { okAsync, ResultAsync } from 'neverthrow';
-import { getQueryName, mapPostgrsFieldToTsField, writeCollectFunction } from './sqlite';
-import { mapToTsRelation2, RelationType2 } from '../ts-nested-descriptor';
+import { getQueryName, writeCollectFunction } from './sqlite';
+import { mapToTsRelation2, RelationType2, TsField2 } from '../ts-nested-descriptor';
 import { EOL } from 'node:os';
 import { PostgresColumnInfo, PostgresParameterDef, PostgresSchemaDef } from '../postgres-query-analyzer/types';
 import { PostgresSchemaInfo } from '../schema-info';
 import { PostgresColumnSchema } from '../drivers/types';
 import { writeBuildOrderByBlock, writeBuildSqlFunction, writeDynamicQueryOperators, writeMapToResultFunction, writeOrderByToObjectFunction, writeWhereConditionFunction } from './shared/codegen-util';
+import { Field2 } from '../sqlite-query-analyzer/sqlite-describe-nested-query';
 
 
 
@@ -314,7 +315,7 @@ function writeJsonTypes(writer: CodeBlockWriter, typeName: string, type: JsonObj
 				writer.writeLine(`${field.key}: ${jsonTypeName};`);
 			} else if (isJsonFieldType(field.type)) {
 				const nullable = field.type.notNull ? '' : ' | null';
-				writer.writeLine(`${field.key}: ${mapColumnType(field.type.type, true)}${nullable};`);
+				writer.writeLine(`${field.key}: ${mapper.mapColumnType(field.type.type, true)}${nullable};`);
 			}
 		});
 	});
@@ -354,7 +355,7 @@ function createTsDescriptor(capitalizedName: string, schemaDef: PostgresSchemaDe
 function createJsonArrayType(name: string, type: JsonArrayType) {
 	const typeNames = type.properties.flatMap(p => {
 		if (isJsonFieldType(p)) {
-			const baseType = mapColumnType(p.type, true)
+			const baseType = mapper.mapColumnType(p.type, true)
 			if (!p.notNull) {
 				return [baseType, 'null'];
 			}
@@ -368,7 +369,7 @@ function createJsonArrayType(name: string, type: JsonArrayType) {
 }
 
 function createJsonMapType(name: string, type: JsonMapType) {
-	const valueType = isJsonFieldType(type.type) ? mapColumnType(type.type.type, true) : `${name}Type`;
+	const valueType = isJsonFieldType(type.type) ? mapper.mapColumnType(type.type.type, true) : `${name}Type`;
 	return `Record<string, ${valueType} | undefined>`;
 }
 
@@ -384,7 +385,7 @@ function createTsType(name: string, type: PostgresType): string {
 			return createJsonMapType(name, type);
 		}
 	}
-	return mapColumnType(type);
+	return mapper.mapColumnType(type);
 }
 
 function mapColumnInfoToTsFieldDescriptor(capitalizedName: string, col: PostgresColumnInfo, dynamicQuery: boolean): TsFieldDescriptor {
@@ -401,7 +402,7 @@ function mapColumnInfoToTsFieldDescriptor(capitalizedName: string, col: Postgres
 function mapParameterToTsFieldDescriptor(param: PostgresParameterDef): TsParameterDescriptor {
 	const tsDesc: TsParameterDescriptor = {
 		name: param.name,
-		tsType: mapColumnType(param.type),
+		tsType: mapper.mapColumnType(param.type),
 		notNull: param.notNull ? param.notNull : false,
 		toDriver: '',
 		isArray: param.type.startsWith('_')
@@ -829,11 +830,21 @@ function writeCrudDelete(writer: CodeBlockWriter, crudParamters: CrudParameters)
 	return writer.toString();
 }
 
-export function mapPostgresColumnSchemaToTsFieldDescriptor(col: PostgresColumnSchema): TsFieldDescriptor {
+function mapPostgrsFieldToTsField(columns: PostgresColumnInfo[], field: Field2): TsField2 {
+	const tsField: TsField2 = {
+		name: field.name,
+		index: field.index,
+		tsType: mapper.mapColumnType(columns[field.index].type),
+		notNull: columns[field.index].notNull
+	};
+	return tsField;
+}
+
+function mapPostgresColumnSchemaToTsFieldDescriptor(col: PostgresColumnSchema): TsFieldDescriptor {
 	return {
 		name: col.column_name,
 		notNull: !col.is_nullable,
 		optional: col.column_default,
-		tsType: mapColumnType(col.type),
+		tsType: mapper.mapColumnType(col.type),
 	}
 }

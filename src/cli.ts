@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import dotenv from 'dotenv';
-import path, { parse } from 'node:path';
+import path from 'node:path';
 import chokidar from 'chokidar';
 import yargs from 'yargs';
-import { generateTsFile, writeFile } from './codegen/mysql2';
+import { generateTsFile, writeFile } from './codegen/code-generator';
 import { generateInsertStatement, generateUpdateStatement, generateDeleteStatement, generateSelectStatement } from './sql-generator';
 import type { ColumnSchema, Table } from './mysql-query-analyzer/types';
 import type { TypeSqlConfig, SqlGenOption, DatabaseClient, TypeSqlDialect, SQLiteClient, CrudQueryType } from './types';

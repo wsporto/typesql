@@ -166,7 +166,7 @@ function isEnumType(type: PostgresSimpleType): type is `enum(${string})` {
 	return type.startsWith('enum(');
 }
 
-export function mapColumnType(postgresType: PostgresType, json = false): TsType {
+function mapColumnType(postgresType: PostgresType, json = false): TsType {
 	const tsType = _mapColumnType(postgresType, json);
 	if (tsType == null) {
 		return 'any';
@@ -412,3 +412,11 @@ export function _mapColumnType(postgresType: PostgresType, json = false): TsType
 			return 'any';
 	}
 }
+
+export type PostgresTypeMapper = {
+	mapColumnType: (postgresType: PostgresType, json?: boolean) => TsType;
+}
+
+export const mapper: PostgresTypeMapper = {
+	mapColumnType
+};

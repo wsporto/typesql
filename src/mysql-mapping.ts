@@ -79,7 +79,7 @@ export type TsType =
 	| 'any[]'
 	| 'null';
 
-export function converToTsType(mySqlType: MySqlType | 'any'): TsType {
+function convertToTsType(mySqlType: MySqlType | 'any'): TsType {
 	switch (mySqlType) {
 		case 'tinyint':
 		case 'smallint':
@@ -221,4 +221,11 @@ export const typesMapping: MySqlTypeHash = {
 	253: 'varchar', //aka VAR_STRING, VARBINARY
 	254: 'binary',
 	255: 'geometry'
+};
+
+export type MySqlTypeMapper = {
+	convertToTsType: (mySqlType: MySqlType | 'any') => TsType;
+}
+export const mapper: MySqlTypeMapper = {
+	convertToTsType
 };
