@@ -1,5 +1,5 @@
 import type { Field, RelationInfo, NestedResultInfo, RelationField } from './describe-nested-query';
-import { type MySqlType, type TsType, converToTsType } from './mysql-mapping';
+import { mapper, type MySqlType, type TsType } from './mysql-mapping';
 import type { ColumnInfo } from './mysql-query-analyzer/types';
 import type { RelationField2 } from './sqlite-query-analyzer/sqlite-describe-nested-query';
 
@@ -85,7 +85,7 @@ function mapToField(columns: ColumnInfo[], field: Field | RelationField): FieldT
 
 function mapModelColumnToTsField(columns: ColumnInfo[], modelColumn: Field): TsField {
 	const column = columns.find((col) => col.name === modelColumn.name)!;
-	const tsType = converToTsType(column.type as MySqlType);
+	const tsType = mapper.convertToTsType(column.type as MySqlType);
 
 	const field: TsField = {
 		type: 'field',

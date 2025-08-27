@@ -11,7 +11,7 @@ import {
 } from '../types';
 import camelCase from 'camelcase';
 import { type Either, isLeft, right } from 'fp-ts/lib/Either';
-import { converToTsType, type MySqlType } from '../mysql-mapping';
+import { mapper, type MySqlType } from '../mysql-mapping';
 import { parseSql } from '../describe-query';
 import CodeBlockWriter from 'code-block-writer';
 import { type NestedTsDescriptor, type RelationType2, createNestedTsDescriptor } from '../ts-nested-descriptor';
@@ -642,7 +642,7 @@ export function escapeInvalidTsField(columnName: string) {
 function mapColumnType(columnType: MySqlType | MySqlType[] | 'any'): string {
 	if (columnType === 'any') return 'any';
 	const types = ([] as MySqlType[]).concat(columnType);
-	const mappedTypes = types.map((type) => converToTsType(type));
+	const mappedTypes = types.map((type) => mapper.convertToTsType(type));
 	return mappedTypes.join(' | '); // number | string
 }
 

@@ -2,7 +2,7 @@ import { TsType } from '../mysql-mapping';
 import { SQLiteType } from '../sqlite-query-analyzer/types';
 import { SQLiteClient } from '../types';
 
-export function mapColumnType(sqliteType: SQLiteType, client: SQLiteClient): TsType {
+function mapColumnType(sqliteType: SQLiteType, client: SQLiteClient): TsType {
 	switch (sqliteType) {
 		case 'INTEGER':
 			return 'number';
@@ -35,3 +35,11 @@ export function mapColumnType(sqliteType: SQLiteType, client: SQLiteClient): TsT
 	}
 	return 'any';
 }
+
+export type SQLiteTypeMapper = {
+	mapColumnType: (sqliteType: SQLiteType, client: SQLiteClient) => TsType;
+}
+
+export const mapper: SQLiteTypeMapper = {
+	mapColumnType
+};

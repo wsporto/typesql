@@ -1,4 +1,3 @@
-import { mapColumnType, postgresTypes } from '../dialects/postgres';
 import type { ParameterNameAndPosition } from '../types';
 
 export function replaceListParams(sql: string, listParamPositions: ParameterNameAndPosition[]): string {

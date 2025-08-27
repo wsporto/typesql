@@ -33,9 +33,7 @@ import { type RelationType2, type TsField2, mapToTsRelation2 } from '../ts-neste
 import { preprocessSql } from '../describe-query';
 import { explainSql } from '../sqlite-query-analyzer/query-executor';
 import { mapToDynamicParams, mapToDynamicResultColumns, mapToDynamicSelectColumns } from '../ts-dynamic-query-descriptor';
-import { mapColumnType } from '../drivers/sqlite';
-import { mapColumnType as mapPgColumnType } from '../dialects/postgres';
-import { PostgresColumnInfo } from '../postgres-query-analyzer/types';
+import { mapper } from '../drivers/sqlite';
 import { writeBuildOrderByBlock, writeBuildSqlFunction, writeDynamicQueryOperators, writeMapToResultFunction, writeOrderByToObjectFunction, writeWhereConditionFunction } from './shared/codegen-util';
 
 type ExecFunctionParams = {
@@ -243,21 +241,11 @@ function getInsertUpdateResult(client: SQLiteClient) {
 	}
 }
 
-export function mapPostgrsFieldToTsField(columns: PostgresColumnInfo[], field: Field2): TsField2 {
-	const tsField: TsField2 = {
-		name: field.name,
-		index: field.index,
-		tsType: mapPgColumnType(columns[field.index].type),
-		notNull: columns[field.index].notNull
-	};
-	return tsField;
-}
-
 export function mapFieldToTsField(columns: ColumnInfo[], field: Field2, client: SQLiteClient): TsField2 {
 	const tsField: TsField2 = {
 		name: field.name,
 		index: field.index,
-		tsType: mapColumnType(columns[field.index].type as SQLiteType, client),
+		tsType: mapper.mapColumnType(columns[field.index].type as SQLiteType, client),
 		notNull: columns[field.index].notNull
 	};
 	return tsField;
@@ -266,7 +254,7 @@ export function mapFieldToTsField(columns: ColumnInfo[], field: Field2, client: 
 function mapParameterToTsFieldDescriptor(col: ParameterDef, client: SQLiteClient): TsParameterDescriptor {
 	const tsDesc: TsParameterDescriptor = {
 		name: col.name,
-		tsType: mapColumnType(col.columnType as SQLiteType, client),
+		tsType: mapper.mapColumnType(col.columnType as SQLiteType, client),
 		notNull: col.notNull ? col.notNull : false,
 		toDriver: parameterToDriver(col),
 		isArray: false
@@ -297,7 +285,7 @@ function columnToDriver(col: ColumnInfo): string {
 function mapColumnToTsFieldDescriptor(col: ColumnInfo, client: SQLiteClient) {
 	const tsDesc: TsFieldDescriptor = {
 		name: col.name,
-		tsType: mapColumnType(col.type as SQLiteType, client),
+		tsType: mapper.mapColumnType(col.type as SQLiteType, client),
 		notNull: col.notNull,
 		optional: col.optional
 	};
@@ -307,7 +295,7 @@ function mapColumnToTsFieldDescriptor(col: ColumnInfo, client: SQLiteClient) {
 function mapColumnToTsParameterDescriptor(col: ColumnInfo, client: SQLiteClient): TsParameterDescriptor {
 	const tsDesc: TsParameterDescriptor = {
 		name: col.name,
-		tsType: mapColumnType(col.type as SQLiteType, client),
+		tsType: mapper.mapColumnType(col.type as SQLiteType, client),
 		notNull: col.notNull,
 		optional: col.optional,
 		toDriver: columnToDriver(col),
