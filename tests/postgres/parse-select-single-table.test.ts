@@ -1175,6 +1175,34 @@ describe('postgres-select-single-table', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('select value from mytable1 order by value', async () => {
+		const sql = `
+			select value from mytable1 order by value
+			`;
+		const actual = await describeQuery(client, sql, schemaInfo);
+		const expected: PostgresSchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'value',
+					type: 'int4',
+					notNull: false,
+					table: 'mytable1'
+				}
+			],
+			//shouldn't include order by columns because there is no parameters on the order by clause
+			//orderByColumns: ['id', 'value'],
+			parameters: []
+		};
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('order by with case when expression', async () => {
 		const sql = 'select value, case when value = 1 then 1 else 2 end as ordering from mytable1 order by $1';
 
