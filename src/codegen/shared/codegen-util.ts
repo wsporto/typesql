@@ -7,13 +7,6 @@ export function hasStringColumn(columns: TsFieldDescriptor[]) {
 	return columns.some((c) => c.tsType === 'string');
 }
 
-export function getOperator(type: string) {
-	if (type === 'number' || type === 'Date') {
-		return 'NumericOperator';
-	}
-	return 'StringOperator';
-}
-
 export function writeBuildOrderByBlock(writer: CodeBlockWriter, orderByColumns: string[], orderByTypeName: string) {
 	writer.writeLine(`const orderByColumns = [${orderByColumns.map(col => `'${col}'`).join(', ')}] as const;`);
 	writer.blankLine();
@@ -53,7 +46,12 @@ export function writeDynamicQueryOperators(writer: CodeBlockWriter, whereTypeNam
 	writer.blankLine();
 	writer.write(`export type ${whereTypeName} =`).indent(() => {
 		for (const col of columns) {
-			writer.writeLine(`| { column: '${col.name}'; op: ${getOperator(col.tsType)}; value: ${col.tsType} | null }`);
+			if (col.tsType === 'string') {
+				writer.writeLine(`| { column: '${col.name}'; op: StringOperator; value: ${col.tsType} | null }`);
+			}
+			else {
+				writer.writeLine(`| { column: '${col.name}'; op: NumericOperator; value: ${col.tsType} | null }`);
+			}
 			writer.writeLine(`| { column: '${col.name}'; op: SetOperator; value: ${col.tsType}[] }`);
 			writer.writeLine(`| { column: '${col.name}'; op: BetweenOperator; value: [${col.tsType} | null, ${col.tsType} | null] }`);
 		}
@@ -235,7 +233,7 @@ export function writeBuildSqlFunction(writer: CodeBlockWriter, params: BuildSqlF
 			writer.writeLine('const whereClause = whereCondition(condition, placeholder);');
 			dynamicQueryInfo.select.forEach((select, index) => {
 				if (select.parameters.length > 0) {
-					writer.write(`if (condition[0] == '${columns[index].name}')`).block(() => {
+					writer.write(`if (condition.column === '${columns[index].name}')`).block(() => {
 						select.parameters.forEach((param) => {
 							writer.writeLine(`paramsValues.push(params?.${param} ?? null);`);
 						});

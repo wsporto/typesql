@@ -1,32 +1,32 @@
-import type { Database } from 'better-sqlite3';
+import pg from 'pg';
 import { EOL } from 'os';
 
 export type DynamicQuery09DynamicParams = {
 	select?: DynamicQuery09Select;
-	params?: DynamicQuery09Params;
+	params: DynamicQuery09Params;
 	where?: DynamicQuery09Where[];
 }
 
 export type DynamicQuery09Params = {
-	name?: string | null;
+	name: string | null;
 }
 
 export type DynamicQuery09Result = {
 	id?: number;
 	double_value?: number;
-	likeName?: number;
+	likename?: boolean;
 }
 
 export type DynamicQuery09Select = {
 	id?: boolean;
 	double_value?: boolean;
-	likeName?: boolean;
+	likename?: boolean;
 }
 
 const selectFragments = {
 	id: `t2.id`,
 	double_value: `t3.double_value`,
-	likeName: `? is null OR concat('%', t2.name, t3.name, '%') LIKE ?`,
+	likename: `$1::text is null OR concat('%', t2.name, t3.name, '%') LIKE $1`,
 } as const;
 
 const NumericOperatorList = ['=', '<>', '>', '<', '>=', '<='] as const;
@@ -41,17 +41,15 @@ export type DynamicQuery09Where =
 	| { column: 'double_value'; op: NumericOperator; value: number | null }
 	| { column: 'double_value'; op: SetOperator; value: number[] }
 	| { column: 'double_value'; op: BetweenOperator; value: [number | null, number | null] }
-	| { column: 'likeName'; op: NumericOperator; value: number | null }
-	| { column: 'likeName'; op: SetOperator; value: number[] }
-	| { column: 'likeName'; op: BetweenOperator; value: [number | null, number | null] }
+	| { column: 'likename'; op: NumericOperator; value: boolean | null }
+	| { column: 'likename'; op: SetOperator; value: boolean[] }
+	| { column: 'likename'; op: BetweenOperator; value: [boolean | null, boolean | null] }
 
-export function dynamicQuery09(db: Database, params?: DynamicQuery09DynamicParams): DynamicQuery09Result[] {
+export async function dynamicQuery09(client: pg.Client | pg.Pool | pg.PoolClient, params?: DynamicQuery09DynamicParams): Promise<DynamicQuery09Result[]> {
 
 	const { sql, paramsValues } = buildSql(params);
-	return db.prepare(sql)
-		.raw(true)
-		.all(paramsValues)
-		.map(data => mapArrayToDynamicQuery09Result(data, params?.select));
+	return client.query({ text: sql, rowMode: 'array', values: paramsValues })
+		.then(res => res.rows.map(row => mapArrayToDynamicQuery09Result(row, params?.select)));
 }
 
 function buildSql(queryParams?: DynamicQuery09DynamicParams) {
@@ -68,8 +66,8 @@ function buildSql(queryParams?: DynamicQuery09DynamicParams) {
 	if (!select || select.double_value === true) {
 		selectedSqlFragments.push(`t3.double_value`);
 	}
-	if (!select || select.likeName === true) {
-		selectedSqlFragments.push(`? is null OR concat('%', t2.name, t3.name, '%') LIKE ? as likeName`);
+	if (!select || select.likename === true) {
+		selectedSqlFragments.push(`$1::text is null OR concat('%', t2.name, t3.name, '%') LIKE $1 as likeName`);
 		paramsValues.push(params?.name ?? null);
 		paramsValues.push(params?.name ?? null);
 	}
@@ -79,20 +77,21 @@ function buildSql(queryParams?: DynamicQuery09DynamicParams) {
 
 	if (
 		(!select || select.double_value === true)
-		|| (!select || select.likeName === true)
+		|| (!select || select.likename === true)
 		|| whereColumns.has('double_value')
-		|| whereColumns.has('likeName')
+		|| whereColumns.has('likename')
 	) {
 		fromSqlFragments.push(`INNER JOIN mytable3 t3 on t3.id = t2.id`);
 	}
 
 	const whereSqlFragments: string[] = [];
 
-	const placeholder = () => '?';
+	let currentIndex = paramsValues.length;
+	const placeholder = () => `$${++currentIndex}`;
 
 	where?.forEach(condition => {
 		const whereClause = whereCondition(condition, placeholder);
-		if (condition.column === 'likeName') {
+		if (condition.column === 'likename') {
 			paramsValues.push(params?.name ?? null);
 			paramsValues.push(params?.name ?? null);
 		}
@@ -123,9 +122,9 @@ function mapArrayToDynamicQuery09Result(data: any, select?: DynamicQuery09Select
 		rowIndex++;
 		result.double_value = data[rowIndex];
 	}
-	if (!select || select.likeName === true) {
+	if (!select || select.likename === true) {
 		rowIndex++;
-		result.likeName = data[rowIndex];
+		result.likename = data[rowIndex];
 	}
 	return result;
 }

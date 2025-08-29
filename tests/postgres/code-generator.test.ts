@@ -527,6 +527,24 @@ WHERE EXTRACT(YEAR FROM timestamp_not_null_column) = :param1 AND EXTRACT(MONTH F
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('dynamic-query-09 - params on select', async () => {
+		const sql = `-- @dynamicQuery
+	SELECT 
+		t2.id, 
+		t3.double_value, 
+		:name::text is null OR concat('%', t2.name, t3.name, '%') LIKE :name as likeName
+	FROM mytable2 t2
+	INNER JOIN mytable3 t3 on t3.id = t2.id`;
+
+		const actual = await generateCode(dialect, sql, 'dynamic-query-09', schemaInfo);
+		const expected = readFileSync('tests/postgres/expected-code/dynamic-query09.ts.txt', 'utf-8');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('copy01', async () => {
 		const sql = `COPY mytable1 (value) FROM STDIN WITH CSV`;
 
