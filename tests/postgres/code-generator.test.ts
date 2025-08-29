@@ -545,6 +545,25 @@ WHERE EXTRACT(YEAR FROM timestamp_not_null_column) = :param1 AND EXTRACT(MONTH F
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('dynamic-query-10 - limit offset', async () => {
+		const sql = `-- @dynamicQuery
+	SELECT 
+		t1.id, 
+		t2.name
+	FROM mytable1 t1
+	INNER JOIN mytable2 t2 on t2.id = t1.id
+	WHERE name = :name
+	LIMIT :limit OFFSET :offset`;
+
+		const actual = await generateCode(dialect, sql, 'dynamic-query-10', schemaInfo);
+		const expected = readFileSync('tests/postgres/expected-code/dynamic-query10.ts.txt', 'utf-8');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('copy01', async () => {
 		const sql = `COPY mytable1 (value) FROM STDIN WITH CSV`;
 
