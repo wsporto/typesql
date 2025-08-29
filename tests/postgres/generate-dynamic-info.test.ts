@@ -283,7 +283,7 @@ describe('postgres-generate-dynamic-info', () => {
 			where: [
 				{
 					fragment: '($2::text is NULL or m2.name = $2)',
-					parameters: [1, 2]
+					parameters: [1]
 				}
 			]
 		};
@@ -675,7 +675,7 @@ describe('postgres-generate-dynamic-info', () => {
 				{
 					fragment: `(concat('%', t2.name, '%') = $1 OR concat('%', t3.name, '%') = $1)`,
 					dependOnRelations: ['t2', 't3'],
-					parameters: [0, 1]
+					parameters: [0]
 				}
 			]
 		};
@@ -768,7 +768,7 @@ describe('postgres-generate-dynamic-info', () => {
 			where: [
 				{
 					fragment: `(concat('%', t2.name, '%') = $1 OR concat('%', t3.name, '%') = $1)`,
-					parameters: [0, 1]
+					parameters: [0]
 				}
 			]
 		};
@@ -911,7 +911,7 @@ describe('postgres-generate-dynamic-info', () => {
 					fragment: `$1 is null OR concat('%', t2.name, t3.name, '%') LIKE $1 as likeName`,
 					fragmentWitoutAlias: `$1 is null OR concat('%', t2.name, t3.name, '%') LIKE $1`,
 					dependOnRelations: ['t2', 't3'],
-					parameters: [0, 1]
+					parameters: [0]
 				}
 			],
 			from: [
@@ -963,7 +963,7 @@ describe('postgres-generate-dynamic-info', () => {
 				{
 					fragment: `$1::text is null OR concat('%', t2.name, t3.name, '%') LIKE $1 as likeName`,
 					fragmentWitoutAlias: `$1::text is null OR concat('%', t2.name, t3.name, '%') LIKE $1`,
-					parameters: ['name', 'name']
+					parameters: ['name']
 				}
 			],
 			from: [
@@ -1074,7 +1074,7 @@ describe('postgres-generate-dynamic-info', () => {
 				WHERE greatest(value, $1) = least(value, $1)
 			)`,
 					relationName: 'cte1',
-					parameters: [0, 1]
+					parameters: [0]
 				},
 				{
 					fragment: `cte2 as (
@@ -1082,7 +1082,7 @@ describe('postgres-generate-dynamic-info', () => {
 				WHERE greatest(name, $2) = least(name, $2)
 			)`,
 					relationName: 'cte2',
-					parameters: [2, 3]
+					parameters: [1]
 				}
 			],
 			select: [
@@ -1150,7 +1150,7 @@ describe('postgres-generate-dynamic-info', () => {
 					relationName: 'cte1',
 					dependOnFields: [], //FROM made this block mandatory
 					dependOnOrderBy: [],
-					parameters: [0, 1]
+					parameters: [0]
 				},
 				{
 					fragment: `cte2 as (
@@ -1160,7 +1160,7 @@ describe('postgres-generate-dynamic-info', () => {
 					relationName: 'cte2',
 					dependOnFields: [1], //c2.name
 					dependOnOrderBy: [],
-					parameters: [2, 3]
+					parameters: [1]
 				}
 			],
 			select: [
@@ -1226,7 +1226,7 @@ describe('postgres-generate-dynamic-info', () => {
 				WHERE greatest(value, $1) = least(value, $1)
 			)`,
 					relationName: 'cte1',
-					parameters: [0, 1]
+					parameters: [0]
 				},
 				{
 					fragment: `cte2 as (
@@ -1234,7 +1234,7 @@ describe('postgres-generate-dynamic-info', () => {
 				WHERE greatest(name, $2) = least(name, $2)
 			)`,
 					relationName: 'cte2',
-					parameters: [2, 3]
+					parameters: [1]
 				}
 			],
 			select: [
@@ -1273,7 +1273,7 @@ describe('postgres-generate-dynamic-info', () => {
 				{
 					fragment: `greatest(c1.id, $3) = least(c2.id, $3)`,
 					dependOnRelations: ['c1', 'c2'],
-					parameters: [4, 5]
+					parameters: [2]
 				}
 			]
 		};
@@ -1309,7 +1309,7 @@ describe('postgres-generate-dynamic-info', () => {
 					relationName: 'cte1',
 					dependOnFields: [],
 					dependOnOrderBy: [],
-					parameters: [0, 1]
+					parameters: [0]
 				},
 				{
 					fragment: `cte2 as (
@@ -1319,7 +1319,7 @@ describe('postgres-generate-dynamic-info', () => {
 					relationName: 'cte2',
 					dependOnFields: [], //The WHERE expr made this block mandatory (WHERE ... min(c2.id, ?))
 					dependOnOrderBy: [],
-					parameters: [2, 3]
+					parameters: [1]
 				}
 			],
 			select: [
@@ -1353,7 +1353,7 @@ describe('postgres-generate-dynamic-info', () => {
 			where: [
 				{
 					fragment: `greatest(c1.id, $3) = least(c2.id, $3)`,
-					parameters: [4, 5]
+					parameters: [2]
 				}
 			]
 		};

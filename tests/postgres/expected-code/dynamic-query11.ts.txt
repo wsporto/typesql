@@ -1,58 +1,54 @@
 import pg from 'pg';
 import { EOL } from 'os';
 
-export type DynamicQuery09DynamicParams = {
-	select?: DynamicQuery09Select;
-	params: DynamicQuery09Params;
-	where?: DynamicQuery09Where[];
+export type DynamicQuery11DynamicParams = {
+	select?: DynamicQuery11Select;
+	params: DynamicQuery11Params;
+	where?: DynamicQuery11Where[];
 }
 
-export type DynamicQuery09Params = {
-	name: string | null;
+export type DynamicQuery11Params = {
+	param1: number | null;
+	param2: string | null;
 }
 
-export type DynamicQuery09Result = {
+export type DynamicQuery11Result = {
 	id?: number;
-	double_value?: number;
-	likename?: boolean;
+	name?: string;
 }
 
-export type DynamicQuery09Select = {
+export type DynamicQuery11Select = {
 	id?: boolean;
-	double_value?: boolean;
-	likename?: boolean;
+	name?: boolean;
 }
 
 const selectFragments = {
-	id: `t2.id`,
-	double_value: `t3.double_value`,
-	likename: `$1::text is null OR concat('%', t2.name, t3.name, '%') LIKE $1`,
+	id: `c1.id`,
+	name: `c2.name`,
 } as const;
 
 const NumericOperatorList = ['=', '<>', '>', '<', '>=', '<='] as const;
 type NumericOperator = typeof NumericOperatorList[number];
+type StringOperator = '=' | '<>' | '>' | '<' | '>=' | '<=' | 'LIKE';
 type SetOperator = 'IN' | 'NOT IN';
 type BetweenOperator = 'BETWEEN';
 
-export type DynamicQuery09Where =
+export type DynamicQuery11Where =
 	| { column: 'id'; op: NumericOperator; value: number | null }
 	| { column: 'id'; op: SetOperator; value: number[] }
 	| { column: 'id'; op: BetweenOperator; value: [number | null, number | null] }
-	| { column: 'double_value'; op: NumericOperator; value: number | null }
-	| { column: 'double_value'; op: SetOperator; value: number[] }
-	| { column: 'double_value'; op: BetweenOperator; value: [number | null, number | null] }
-	| { column: 'likename'; op: NumericOperator; value: boolean | null }
-	| { column: 'likename'; op: SetOperator; value: boolean[] }
-	| { column: 'likename'; op: BetweenOperator; value: [boolean | null, boolean | null] }
+	| { column: 'name'; op: StringOperator; value: string | null }
+	| { column: 'name'; op: SetOperator; value: string[] }
+	| { column: 'name'; op: BetweenOperator; value: [string | null, string | null] }
 
-export async function dynamicQuery09(client: pg.Client | pg.Pool | pg.PoolClient, params?: DynamicQuery09DynamicParams): Promise<DynamicQuery09Result[]> {
+export async function dynamicQuery11(client: pg.Client | pg.Pool | pg.PoolClient, params?: DynamicQuery11DynamicParams): Promise<DynamicQuery11Result[]> {
 
 	const { sql, paramsValues } = buildSql(params);
 	return client.query({ text: sql, rowMode: 'array', values: paramsValues })
-		.then(res => res.rows.map(row => mapArrayToDynamicQuery09Result(row, params?.select)));
+		.then(res => res.rows.map(row => mapArrayToDynamicQuery11Result(row, params?.select)));
 }
 
-function buildSql(queryParams?: DynamicQuery09DynamicParams) {
+function buildSql(queryParams?: DynamicQuery11DynamicParams) {
 	const { select, where, params } = queryParams || {};
 
 	const selectedSqlFragments: string[] = [];
@@ -60,27 +56,37 @@ function buildSql(queryParams?: DynamicQuery09DynamicParams) {
 
 	const whereColumns = new Set(where?.map(w => w.column) || []);
 
+	const withFragments: string[] = [];
+	withFragments.push(`cte1 as (
+		select id, value from mytable1
+		WHERE greatest(value, $1) = least(value, $1)
+	)`);
+	paramsValues.push(params?.param1);
+	if (
+		(!select || select.name === true)
+		|| whereColumns.has('name')
+	) {
+		withFragments.push(`cte2 as (
+		select id, name from mytable2
+		WHERE greatest(name, $2) = least(name, $2)
+	)`);
+		paramsValues.push(params?.param2);
+	}
 	if (!select || select.id === true) {
-		selectedSqlFragments.push(`t2.id`);
+		selectedSqlFragments.push(`c1.id`);
 	}
-	if (!select || select.double_value === true) {
-		selectedSqlFragments.push(`t3.double_value`);
-	}
-	if (!select || select.likename === true) {
-		selectedSqlFragments.push(`$1::text is null OR concat('%', t2.name, t3.name, '%') LIKE $1 as likeName`);
-		paramsValues.push(params?.name ?? null);
+	if (!select || select.name === true) {
+		selectedSqlFragments.push(`c2.name`);
 	}
 
 	const fromSqlFragments: string[] = [];
-	fromSqlFragments.push(`FROM mytable2 t2`);
+	fromSqlFragments.push(`FROM cte1 c1`);
 
 	if (
-		(!select || select.double_value === true)
-		|| (!select || select.likename === true)
-		|| whereColumns.has('double_value')
-		|| whereColumns.has('likename')
+		(!select || select.name === true)
+		|| whereColumns.has('name')
 	) {
-		fromSqlFragments.push(`INNER JOIN mytable3 t3 on t3.id = t2.id`);
+		fromSqlFragments.push(`INNER JOIN cte2 c2 on c1.id = c2.id`);
 	}
 
 	const whereSqlFragments: string[] = [];
@@ -90,18 +96,19 @@ function buildSql(queryParams?: DynamicQuery09DynamicParams) {
 
 	where?.forEach(condition => {
 		const whereClause = whereCondition(condition, placeholder);
-		if (condition.column === 'likename') {
-			paramsValues.push(params?.name ?? null);
-		}
 		if (whereClause?.hasValue) {
 			whereSqlFragments.push(whereClause.sql);
 			paramsValues.push(...whereClause.values);
 		}
 	});
 
+	const withSql = withFragments.length > 0
+		? `WITH${EOL}${withFragments.join(`,${EOL}`)}${EOL}`
+		: '';
+
 	const whereSql = whereSqlFragments.length > 0 ? `WHERE ${whereSqlFragments.join(' AND ')}` : '';
 
-	const sql = `SELECT
+	const sql = `${withSql}SELECT
 	${selectedSqlFragments.join(`,${EOL}`)}
 	${fromSqlFragments.join(EOL)}
 	${whereSql}`;
@@ -109,20 +116,16 @@ function buildSql(queryParams?: DynamicQuery09DynamicParams) {
 	return { sql, paramsValues };
 }
 
-function mapArrayToDynamicQuery09Result(data: any, select?: DynamicQuery09Select) {
-	const result = {} as DynamicQuery09Result;
+function mapArrayToDynamicQuery11Result(data: any, select?: DynamicQuery11Select) {
+	const result = {} as DynamicQuery11Result;
 	let rowIndex = -1;
 	if (!select || select.id === true) {
 		rowIndex++;
 		result.id = data[rowIndex];
 	}
-	if (!select || select.double_value === true) {
+	if (!select || select.name === true) {
 		rowIndex++;
-		result.double_value = data[rowIndex];
-	}
-	if (!select || select.likename === true) {
-		rowIndex++;
-		result.likename = data[rowIndex];
+		result.name = data[rowIndex];
 	}
 	return result;
 }
@@ -133,10 +136,17 @@ type WhereConditionResult = {
 	values: any[];
 }
 
-function whereCondition(condition: DynamicQuery09Where, placeholder: () => string): WhereConditionResult | null {
+function whereCondition(condition: DynamicQuery11Where, placeholder: () => string): WhereConditionResult | null {
 	const selectFragment = selectFragments[condition.column];
 	const { op, value } = condition;
 
+	if (op === 'LIKE') {
+		return {
+			sql: `${selectFragment} LIKE ${placeholder()}`,
+			hasValue: value != null,
+			values: [value]
+		}
+	}
 	if (op === 'BETWEEN') {
 		const [from, to] = Array.isArray(value) ? value : [null, null];
 		return {

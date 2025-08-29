@@ -564,6 +564,32 @@ WHERE EXTRACT(YEAR FROM timestamp_not_null_column) = :param1 AND EXTRACT(MONTH F
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('dynamic-query-11-multiple-CTEs', async () => {
+		const sql = `-- @dynamicQuery
+WITH 
+	cte1 as (
+		select id, value from mytable1
+		WHERE greatest(value, :param1) = least(value, :param1)
+	),
+	cte2 as (
+		select id, name from mytable2
+		WHERE greatest(name, :param2) = least(name, :param2)
+	)
+SELECT 
+	c1.id,
+	c2.name
+FROM cte1 c1
+INNER JOIN cte2 c2 on c1.id = c2.id`;
+
+		const actual = await generateCode(dialect, sql, 'dynamic-query-11', schemaInfo);
+		const expected = readFileSync('tests/postgres/expected-code/dynamic-query11.ts.txt', 'utf-8');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('copy01', async () => {
 		const sql = `COPY mytable1 (value) FROM STDIN WITH CSV`;
 
