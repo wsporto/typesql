@@ -120,13 +120,13 @@ export type BuildSqlFunction = {
 	dynamicQueryInfo: DynamicSqlInfoResult2;
 	columns: TsFieldDescriptor[];
 	parameters: TsParameterDescriptor[];
-	placeHolderType: 'questionMark' | 'numbered';
+	dialect: 'sqlite' | 'postgres';
 	hasOrderBy: boolean;
 	toDrive: (variable: string, param: TsParameterDescriptor) => string;
 }
 
 export function writeBuildSqlFunction(writer: CodeBlockWriter, params: BuildSqlFunction) {
-	const { dynamicParamsTypeName, dynamicQueryInfo, columns, parameters, placeHolderType, hasOrderBy, toDrive } = params;
+	const { dynamicParamsTypeName, dynamicQueryInfo, columns, parameters, dialect, hasOrderBy, toDrive } = params;
 	const optional = hasOrderBy ? '' : '?';
 	const paramsVar = parameters.length > 0 ? ', params' : '';
 	writer.write(`function buildSql(queryParams${optional}: ${dynamicParamsTypeName})`).block(() => {
@@ -221,10 +221,16 @@ export function writeBuildSqlFunction(writer: CodeBlockWriter, params: BuildSqlF
 				writer.writeLine(`paramsValues.push(${paramValues});`);
 			});
 		});
-		if (placeHolderType === 'questionMark') {
+		if (dialect === 'postgres' && dynamicQueryInfo?.limitOffset) {
+			dynamicQueryInfo?.limitOffset.parameters.forEach((param) => {
+				writer.writeLine(`paramsValues.push(params?.${param} ?? null);`);
+			});
+			writer.blankLine();
+		}
+		if (dialect === 'sqlite') {
 			writer.writeLine(`const placeholder = () => '?';`);
 		}
-		else if (placeHolderType === 'numbered') {
+		else if (dialect === 'postgres') {
 			writer.writeLine(`let currentIndex = paramsValues.length;`);
 			writer.writeLine('const placeholder = () => `$${++currentIndex}`;');
 		}
@@ -275,7 +281,7 @@ export function writeBuildSqlFunction(writer: CodeBlockWriter, params: BuildSqlF
 
 		}
 		writer.write('`;');
-		if (dynamicQueryInfo?.limitOffset) {
+		if (dialect === 'sqlite' && dynamicQueryInfo?.limitOffset) {
 			writer.blankLine();
 			dynamicQueryInfo?.limitOffset.parameters.forEach((param) => {
 				writer.writeLine(`paramsValues.push(params?.${param} ?? null);`);

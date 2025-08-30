@@ -552,7 +552,7 @@ WHERE EXTRACT(YEAR FROM timestamp_not_null_column) = :param1 AND EXTRACT(MONTH F
 		t2.name
 	FROM mytable1 t1
 	INNER JOIN mytable2 t2 on t2.id = t1.id
-	WHERE name = :name
+	WHERE name <> :name
 	LIMIT :limit OFFSET :offset`;
 
 		const actual = await generateCode(dialect, sql, 'dynamic-query-10', schemaInfo);

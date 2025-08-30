@@ -138,7 +138,7 @@ function generateTsCode(queryName: string, schemaDef: PostgresSchemaDef, client:
 			columns: tsDescriptor.columns,
 			parameters: tsDescriptor.parameters,
 			dynamicQueryInfo,
-			placeHolderType: 'numbered',
+			dialect: 'postgres',
 			hasOrderBy: tsDescriptor.orderByColumns != null,
 			toDrive: (variable, param) => `${variable}.${param.name}`
 		})

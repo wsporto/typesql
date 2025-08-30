@@ -429,7 +429,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 				columns: tsDescriptor.columns,
 				parameters: tsDescriptor.parameters,
 				dynamicQueryInfo: tsDescriptor.dynamicQuery2,
-				placeHolderType: 'questionMark',
+				dialect: 'sqlite',
 				hasOrderBy: orderByField != null,
 				toDrive: toDriver
 			})
