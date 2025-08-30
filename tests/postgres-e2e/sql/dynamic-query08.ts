@@ -1,6 +1,12 @@
 import pg from 'pg';
 import { EOL } from 'os';
 
+export type DynamicQuery08DynamicParams = {
+	select?: DynamicQuery08Select;
+	params: DynamicQuery08Params;
+	where?: DynamicQuery08Where[];
+}
+
 export type DynamicQuery08Params = {
 	param1: number;
 	param2: number;
@@ -8,12 +14,6 @@ export type DynamicQuery08Params = {
 
 export type DynamicQuery08Result = {
 	timestamp_not_null_column?: Date;
-}
-
-export type DynamicQuery08DynamicParams = {
-	select?: DynamicQuery08Select;
-	params: DynamicQuery08Params;
-	where?: DynamicQuery08Where[];
 }
 
 export type DynamicQuery08Select = {

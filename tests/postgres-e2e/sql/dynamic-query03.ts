@@ -1,14 +1,14 @@
 import pg from 'pg';
 import { EOL } from 'os';
 
-export type DynamicQuery03Result = {
-	id?: number;
-	value?: number;
-}
-
 export type DynamicQuery03DynamicParams = {
 	select?: DynamicQuery03Select;
 	where?: DynamicQuery03Where[];
+}
+
+export type DynamicQuery03Result = {
+	id?: number;
+	value?: number;
 }
 
 export type DynamicQuery03Select = {
