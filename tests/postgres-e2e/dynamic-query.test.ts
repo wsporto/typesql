@@ -2,7 +2,8 @@ import assert from 'node:assert';
 import pg from 'pg'
 import {
 	dynamicQuery01, DynamicQuery01Result, dynamicQuery02, DynamicQuery02Result, dynamicQuery03, DynamicQuery03Result,
-	dynamicQuery04, DynamicQuery04Result, dynamicQuery05, DynamicQuery05Result, dynamicQuery08, DynamicQuery08Result
+	dynamicQuery04, DynamicQuery04Result, dynamicQuery05, DynamicQuery05Result, dynamicQuery08, DynamicQuery08Result,
+	dynamicQuery10, DynamicQuery10Result
 } from './sql';
 
 describe('e2e-postgres-dynamic-query', () => {
@@ -336,6 +337,51 @@ describe('e2e-postgres-dynamic-query', () => {
 			},
 			{
 				timestamp_not_null_column: new Date(2025, 0, 3)
+			}
+		];
+
+		assert.deepStrictEqual(result, expectedResult);
+	});
+
+	it('dynamic-query-10 - limit and offset', async () => {
+		const result = await dynamicQuery10(pool, {
+			params: {
+				name: 'two',
+				limit: '2',
+				offset: '0'
+			}
+		});
+
+		const expectedResult: DynamicQuery10Result[] = [
+			{
+				id: 1,
+				name: 'one'
+			},
+			{
+				id: 3,
+				name: 'three'
+			}
+		];
+
+		assert.deepStrictEqual(result, expectedResult);
+	});
+
+	it('dynamic-query-10 - limit, offset and where', async () => {
+		const result = await dynamicQuery10(pool, {
+			params: {
+				name: 'two',
+				limit: '2',
+				offset: '0'
+			},
+			where: [
+				{ column: 'id', op: '=', value: 1 }
+			]
+		});
+
+		const expectedResult: DynamicQuery10Result[] = [
+			{
+				id: 1,
+				name: 'one'
 			}
 		];
 
