@@ -602,6 +602,18 @@ INNER JOIN cte2 c2 on c1.id = c2.id`;
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('copy02', async () => {
+		const sql = `COPY mytable4 FROM STDIN WITH CSV`;
+
+		const actual = await generateCode(dialect, sql, 'copy02', schemaInfo);
+		const expected = readFileSync('tests/postgres/expected-code/copy02.ts.txt', 'utf-8');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('select-json01', async () => {
 		const sql = `SELECT json_agg(
 	json_build_object('key', name, 'key2', id)

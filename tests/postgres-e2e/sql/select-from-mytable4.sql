@@ -1,0 +1,3 @@
+SELECT
+	*
+FROM mytable4

@@ -29,6 +29,7 @@
 		"@types/mocha": "^10.0.10",
 		"@types/node": "^20.19.1",
 		"@types/pg": "^8.15.4",
+		"@types/pg-copy-streams": "^1.2.5",
 		"@types/yargs": "^17.0.33",
 		"mocha": "^10.8.2",
 		"pg": "^8.16.1",

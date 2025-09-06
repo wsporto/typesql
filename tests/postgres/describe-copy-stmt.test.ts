@@ -33,4 +33,32 @@ describe('postgres-describe-copy-stmt', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	it('COPY mytable1 FROM STDIN WITH CSV', async () => {
+		const sql = 'COPY mytable1 FROM STDIN WITH CSV';
+		const actual = await describeQuery(client, sql, schemaInfo);
+		const expected: PostgresSchemaDef = {
+			multipleRowsResult: false,
+			queryType: 'Copy',
+			sql,
+			columns: [],
+			parameters: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true
+				},
+				{
+					name: 'value',
+					type: 'int4',
+					notNull: false
+				}
+			]
+		};
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });
