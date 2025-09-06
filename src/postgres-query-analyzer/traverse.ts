@@ -2973,8 +2973,9 @@ function traverseCopystmt(copyStmt: CopystmtContext, dbSchema: PostgresColumnSch
 
 	const tableName = copyStmt.qualified_name().getText();
 	const copyColumns = dbSchema.filter(col => col.table.toLowerCase() === tableName.toLowerCase());
-	const columnlist = copyStmt.column_list_()?.columnlist()?.columnElem_list()
-		.map(columnElem => traverse_columnElem(columnElem, copyColumns, traverseResult));
+	const column_list_ = copyStmt.column_list_();
+	const columnlist = column_list_ != null ? column_list_.columnlist().columnElem_list()
+		.map(columnElem => traverse_columnElem(columnElem, copyColumns, traverseResult)) : copyColumns;
 
 	return {
 		queryType: 'Copy',

@@ -1,0 +1,1 @@
+COPY mytable4 FROM STDIN WITH CSV

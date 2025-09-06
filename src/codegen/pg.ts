@@ -458,6 +458,9 @@ const postgresCodeWriter: CodeWriter = {
 
 function _writeCopyFunction(writer: CodeBlockWriter, params: ExecFunctionParameters) {
 	const { functionName, paramsType } = params;
+
+	writer.writeLine(`const columns = [${params.parameters.map(param => `'${param.name}'`).join(', ')}] as const;`);
+	writer.blankLine();
 	let functionParams = `client: pg.Client | pg.PoolClient, values: ${paramsType}[]`;
 	writer.write(`export async function ${functionName}(${functionParams}): Promise<void>`).block(() => {
 		writeSql(writer, params.sql);
@@ -471,7 +474,7 @@ function _writeCopyFunction(writer: CodeBlockWriter, params: ExecFunctionParamet
 	writer.write(`function jsonToCsv(values: ${paramsType}[]): string`).block(() => {
 		writer.writeLine('return values');
 		writer.indent().write('.map(value =>').newLine();
-		writer.indent(2).write('Object.values(value)').newLine();
+		writer.indent(2).write('columns.map(col => value[col])').newLine();
 		writer.indent(3).write('.map(val => escapeValue(val))').newLine();
 		writer.indent(3).write(`.join(',')`).newLine();
 		writer.indent().write(')').newLine();

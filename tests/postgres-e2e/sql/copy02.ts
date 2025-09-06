@@ -3,15 +3,17 @@ import { from as copyFrom } from 'pg-copy-streams';
 import { pipeline } from 'stream/promises';
 import { Readable } from 'stream';
 
-export type Copy01Params = {
-	value: number | null;
+export type Copy02Params = {
+	id: string;
+	name: string | null;
+	year: number | null;
 }
 
-const columns = ['value'] as const;
+const columns = ['id', 'name', 'year'] as const;
 
-export async function copy01(client: pg.Client | pg.PoolClient, values: Copy01Params[]): Promise<void> {
+export async function copy02(client: pg.Client | pg.PoolClient, values: Copy02Params[]): Promise<void> {
 	const sql = `
-	COPY mytable1 (value) FROM STDIN WITH CSV
+	COPY mytable4 FROM STDIN WITH CSV
 	`
 	const csv = jsonToCsv(values);
 
@@ -20,7 +22,7 @@ export async function copy01(client: pg.Client | pg.PoolClient, values: Copy01Pa
 	await pipeline(sourceStream, stream)
 }
 
-function jsonToCsv(values: Copy01Params[]): string {
+function jsonToCsv(values: Copy02Params[]): string {
 	return values
 		.map(value =>
 			columns.map(col => value[col])
