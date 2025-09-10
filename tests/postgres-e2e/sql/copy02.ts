@@ -33,5 +33,10 @@ function jsonToCsv(values: Copy02Params[]): string {
 }
 
 function escapeValue(val: any): string {
-	return val != null ? JSON.stringify(val).replace(/\n/g, '\\n') : '';
+	if (val == null) {
+		return '';
+	}
+	const str = String(val);
+	const escaped = str.replace(/"/g, '""');
+	return `"${escaped}"`;
 }

@@ -482,7 +482,12 @@ function _writeCopyFunction(writer: CodeBlockWriter, params: ExecFunctionParamet
 	});
 	writer.blankLine();
 	writer.write(`function escapeValue(val: any): string`).block(() => {
-		writer.writeLine(`return val != null ? JSON.stringify(val).replace(/\\n/g, '\\\\n') : '';`);
+		writer.write('if (val == null)').block(() => {
+			writer.writeLine(`return '';`);
+		});
+		writer.writeLine('const str = String(val);');
+		writer.writeLine(`const escaped = str.replace(/"/g, '""');`);
+		writer.writeLine('return `"${escaped}"`;');
 	});
 }
 
