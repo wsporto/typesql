@@ -1,7 +1,88 @@
 import CodeBlockWriter from 'code-block-writer';
-import { TsFieldDescriptor, TsParameterDescriptor } from '../../types';
-import { DynamicSqlInfoResult2 } from '../../mysql-query-analyzer/types';
+import { CamelCaseName, QueryType, TsFieldDescriptor, TsParameterDescriptor } from '../../types';
+import { DynamicSqlInfoResult, DynamicSqlInfoResult2 } from '../../mysql-query-analyzer/types';
 import { EOL } from 'os';
+import { NestedTsDescriptor, RelationType2 } from '../../ts-nested-descriptor';
+import camelCase from 'camelcase';
+
+export type TsDescriptor = {
+	sql: string;
+	queryType: QueryType;
+	returning?: true;
+	multipleRowsResult: boolean;
+	columns: TsFieldDescriptor[];
+	parameterNames: ParamInfo[];
+	parameters: TsParameterDescriptor[];
+	data?: TsParameterDescriptor[];
+	orderByColumns?: string[];
+	nestedDescriptor?: NestedTsDescriptor;
+	nestedDescriptor2?: RelationType2[];
+	dynamicQuery?: DynamicSqlInfoResult;
+	dynamicQuery2?: DynamicSqlInfoResult2;
+};
+
+export type ParamInfo = {
+	name: string;
+	isList: boolean;
+};
+
+export function capitalize(name: CamelCaseName) {
+	return capitalizeStr(name);
+}
+
+export function convertToCamelCaseName(name: string): CamelCaseName {
+	const camelCaseStr = camelCase(name) as CamelCaseName;
+	return camelCaseStr;
+}
+
+export function generateRelationType(functionName: string, relationName: string) {
+	return `${capitalizeStr(functionName)}Nested${capitalizeStr(relationName)}`;
+}
+
+function capitalizeStr(name: string) {
+	if (name.length === 0) return name;
+	return name.charAt(0).toUpperCase() + name.slice(1);
+}
+
+//TODO - remove duplicated code
+export function removeDuplicatedParameters2(parameters: TsFieldDescriptor[]): TsFieldDescriptor[] {
+	const columnsCount: Map<string, TsFieldDescriptor> = new Map();
+	parameters.forEach((param) => {
+		const dupParam = columnsCount.get(param.name);
+		if (dupParam != null) {
+			//duplicated - two parameter null and notNull, resturn the null param (notNull == false)
+			if (param.notNull === false) {
+				columnsCount.set(param.name, param);
+			}
+			// return param;
+		} else {
+			columnsCount.set(param.name, param);
+		}
+	});
+	return [...columnsCount.values()];
+}
+
+export function renameInvalidNames(columnNames: string[]): string[] {
+	const columnsCount: Map<string, number> = new Map();
+	return columnNames.map((columnName) => {
+		if (columnsCount.has(columnName)) {
+			const count = columnsCount.get(columnName)! + 1;
+			columnsCount.set(columnName, count);
+			const newName = `${columnName}_${count}`;
+			return escapeInvalidTsField(newName);
+		}
+		columnsCount.set(columnName, 1);
+		return escapeInvalidTsField(columnName);
+	});
+}
+
+export function escapeInvalidTsField(columnName: string) {
+	const validPattern = /^[a-zA-Z0-9_$]+$/g;
+	if (!validPattern.test(columnName)) {
+		return `"${columnName}"`;
+	}
+	return columnName;
+}
 
 export function hasStringColumn(columns: TsFieldDescriptor[]) {
 	return columns.some((c) => c.tsType === 'string');
@@ -322,5 +403,24 @@ export function writeOrderByToObjectFunction(writer: CodeBlockWriter, dynamicPar
 		});
 		writer.write(');');
 		writer.writeLine('return obj;');
+	});
+}
+
+export function writeNestedTypes(writer: CodeBlockWriter, relations: RelationType2[], captalizedName: string) {
+	relations.forEach((relation) => {
+		const relationType = generateRelationType(captalizedName, relation.name);
+		writer.blankLine();
+		writer.write(`export type ${relationType} = `).block(() => {
+			const uniqueNameFields = renameInvalidNames(relation.fields.map((f) => f.name));
+			relation.fields.forEach((field, index) => {
+				const nullable = field.notNull ? '' : ' | null';
+				writer.writeLine(`${uniqueNameFields[index]}: ${field.tsType}${nullable};`);
+			});
+			relation.relations.forEach((field) => {
+				const nestedRelationType = generateRelationType(captalizedName, field.tsType);
+				const nullable = field.notNull ? '' : ' | null';
+				writer.writeLine(`${field.name}: ${nestedRelationType}${nullable};`);
+			});
+		});
 	});
 }

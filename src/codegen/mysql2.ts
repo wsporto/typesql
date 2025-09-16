@@ -1,23 +1,13 @@
-import {
-	SchemaDef,
-	CamelCaseName,
-	TsFieldDescriptor,
-	ParameterDef,
-	MySqlDialect,
-	TypeSqlError,
-	TsParameterDescriptor,
-
-	QueryType
-} from '../types';
-import camelCase from 'camelcase';
+import { SchemaDef, TsFieldDescriptor, ParameterDef, MySqlDialect, TypeSqlError, TsParameterDescriptor } from '../types';
 import { type Either, isLeft, right } from 'fp-ts/lib/Either';
 import { mapper, type MySqlType } from '../mysql-mapping';
 import { parseSql } from '../describe-query';
 import CodeBlockWriter from 'code-block-writer';
-import { type NestedTsDescriptor, type RelationType2, createNestedTsDescriptor } from '../ts-nested-descriptor';
+import { createNestedTsDescriptor } from '../ts-nested-descriptor';
 import { mapToDynamicResultColumns, mapToDynamicParams, mapToDynamicSelectColumns } from '../ts-dynamic-query-descriptor';
-import type { DynamicSqlInfoResult, DynamicSqlInfoResult2, FragmentInfoResult } from '../mysql-query-analyzer/types';
+import type { FragmentInfoResult } from '../mysql-query-analyzer/types';
 import { EOL } from 'node:os';
+import { capitalize, convertToCamelCaseName, generateRelationType, ParamInfo, renameInvalidNames, TsDescriptor } from './shared/codegen-util';
 
 export function generateTsCodeForMySQL(tsDescriptor: TsDescriptor, fileName: string, crud = false): string {
 	const writer = new CodeBlockWriter();
@@ -470,10 +460,6 @@ function generateParam(param: ParamInfo) {
 	return `params.${param.name}`;
 }
 
-export function generateRelationType(functionName: string, relationName: string) {
-	return `${capitalizeStr(functionName)}Nested${capitalizeStr(relationName)}`;
-}
-
 export function writeTypeBlock(
 	writer: CodeBlockWriter,
 	fields: TsFieldDescriptor[],
@@ -594,50 +580,13 @@ export function removeDuplicatedParameters(parameters: ParameterDef[]): Paramete
 	return [...columnsCount.values()];
 }
 
-//TODO - remove duplicated code
-export function removeDuplicatedParameters2(parameters: TsFieldDescriptor[]): TsFieldDescriptor[] {
-	const columnsCount: Map<string, TsFieldDescriptor> = new Map();
-	parameters.forEach((param) => {
-		const dupParam = columnsCount.get(param.name);
-		if (dupParam != null) {
-			//duplicated - two parameter null and notNull, resturn the null param (notNull == false)
-			if (param.notNull === false) {
-				columnsCount.set(param.name, param);
-			}
-			// return param;
-		} else {
-			columnsCount.set(param.name, param);
-		}
-	});
-	return [...columnsCount.values()];
-}
-
-export function renameInvalidNames(columnNames: string[]): string[] {
-	const columnsCount: Map<string, number> = new Map();
-	return columnNames.map((columnName) => {
-		if (columnsCount.has(columnName)) {
-			const count = columnsCount.get(columnName)! + 1;
-			columnsCount.set(columnName, count);
-			const newName = `${columnName}_${count}`;
-			return escapeInvalidTsField(newName);
-		}
-		columnsCount.set(columnName, 1);
-		return escapeInvalidTsField(columnName);
-	});
-}
 
 function scapeBackStick(sql: string) {
 	const pattern = /`/g;
 	return sql.replace(pattern, '\\`');
 }
 
-export function escapeInvalidTsField(columnName: string) {
-	const validPattern = /^[a-zA-Z0-9_$]+$/g;
-	if (!validPattern.test(columnName)) {
-		return `"${columnName}"`;
-	}
-	return columnName;
-}
+
 
 function mapColumnType(columnType: MySqlType | MySqlType[] | 'any'): string {
 	if (columnType === 'any') return 'any';
@@ -660,19 +609,7 @@ export function replaceOrderByParam(sql: string) {
 	return newSql;
 }
 
-export function capitalize(name: CamelCaseName) {
-	return capitalizeStr(name);
-}
 
-function capitalizeStr(name: string) {
-	if (name.length === 0) return name;
-	return name.charAt(0).toUpperCase() + name.slice(1);
-}
-
-export function convertToCamelCaseName(name: string): CamelCaseName {
-	const camelCaseStr = camelCase(name) as CamelCaseName;
-	return camelCaseStr;
-}
 
 
 
@@ -693,27 +630,6 @@ export async function generateTsFileFromContent(
 	const tsContent = generateTsCodeForMySQL(tsDescriptor, queryName, crud);
 	return right(tsContent);
 }
-
-export type ParamInfo = {
-	name: string;
-	isList: boolean;
-};
-
-export type TsDescriptor = {
-	sql: string;
-	queryType: QueryType;
-	returning?: true;
-	multipleRowsResult: boolean;
-	columns: TsFieldDescriptor[];
-	parameterNames: ParamInfo[];
-	parameters: TsParameterDescriptor[];
-	data?: TsParameterDescriptor[];
-	orderByColumns?: string[];
-	nestedDescriptor?: NestedTsDescriptor;
-	nestedDescriptor2?: RelationType2[];
-	dynamicQuery?: DynamicSqlInfoResult;
-	dynamicQuery2?: DynamicSqlInfoResult2;
-};
 
 function commaSeparator(length: number, index: number) {
 	return length > 1 && index !== length - 1 ? ',' : '';

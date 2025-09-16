@@ -2,11 +2,12 @@ import fs from 'node:fs';
 import path, { parse } from 'node:path';
 import { PostgresSchemaInfo, SchemaInfo } from '../schema-info';
 import { DatabaseClient, TypeSqlError } from '../types';
-import { convertToCamelCaseName, generateTsFileFromContent } from './mysql2';
+import { generateTsFileFromContent } from './mysql2';
 import { Either, isLeft, left, right } from 'fp-ts/lib/Either';
 import { validateAndGenerateCode } from './sqlite';
 import { generateCode } from './pg';
 import { ColumnSchema } from '../mysql-query-analyzer/types';
+import { convertToCamelCaseName } from './shared/codegen-util';
 
 export async function generateTsFile(client: DatabaseClient, sqlFile: string, tsFilePath: string, schemaInfo: SchemaInfo | PostgresSchemaInfo, isCrudFile: boolean) {
 	const sqlContent = fs.readFileSync(sqlFile, 'utf8');

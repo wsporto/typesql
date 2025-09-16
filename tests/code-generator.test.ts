@@ -1,18 +1,12 @@
 import assert from 'node:assert';
-import {
-    type TsDescriptor,
-    convertToCamelCaseName,
-    replaceOrderByParam,
-    generateTsCodeForMySQL as generateTsCode,
-    generateTsDescriptor,
-    generateTsFileFromContent
-} from '../src/codegen/mysql2';
+import { replaceOrderByParam, generateTsCodeForMySQL as generateTsCode, generateTsDescriptor, generateTsFileFromContent } from '../src/codegen/mysql2';
 import { describeSql } from '../src/describe-query';
 import { dbSchema } from './mysql-query-analyzer/create-schema';
 import { createMysqlClientForTest } from '../src/queryExectutor';
 import { readFileSync } from 'node:fs';
 import type { MySqlDialect } from '../src/types';
 import { isLeft } from 'fp-ts/lib/Either';
+import { convertToCamelCaseName, TsDescriptor } from '../src/codegen/shared/codegen-util';
 
 describe('code-generator', () => {
     let client!: MySqlDialect;

@@ -1,5 +1,5 @@
 import CodeBlockWriter from 'code-block-writer';
-import { capitalize, convertToCamelCaseName, generateRelationType, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor } from './mysql2';
+import { capitalize, convertToCamelCaseName, generateRelationType, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor, writeNestedTypes } from './shared/codegen-util';
 import { CrudQueryType, PgDielect, QueryType, TsFieldDescriptor, TsParameterDescriptor, TypeSqlError } from '../types';
 import { describeQuery } from '../postgres-query-analyzer/describe';
 import { mapper } from '../dialects/postgres';
@@ -13,8 +13,6 @@ import { PostgresSchemaInfo } from '../schema-info';
 import { PostgresColumnSchema } from '../drivers/types';
 import { writeBuildOrderByBlock, writeBuildSqlFunction, writeDynamicQueryOperators, writeMapToResultFunction, writeOrderByToObjectFunction, writeWhereConditionFunction } from './shared/codegen-util';
 import { Field2 } from '../sqlite-query-analyzer/sqlite-describe-nested-query';
-
-
 
 export function generateCode(client: PgDielect, sql: string, queryName: string, schemaInfo: PostgresSchemaInfo): ResultAsync<string, TypeSqlError> {
 	if (isEmptySql(sql)) {
@@ -167,23 +165,8 @@ function generateTsCode(queryName: string, schemaDef: PostgresSchemaDef, client:
 	}
 
 	if (tsDescriptor.nestedDescriptor2) {
-		const relations = tsDescriptor.nestedDescriptor2;
-		relations.forEach((relation) => {
-			const relationType = generateRelationType(capitalizedName, relation.name);
-			writer.blankLine();
-			writer.write(`export type ${relationType} = `).block(() => {
-				const uniqueNameFields = renameInvalidNames(relation.fields.map((f) => f.name));
-				relation.fields.forEach((field, index) => {
-					const nullable = field.notNull ? '' : ' | null';
-					writer.writeLine(`${uniqueNameFields[index]}: ${field.tsType}${nullable};`);
-				});
-				relation.relations.forEach((field) => {
-					const nestedRelationType = generateRelationType(capitalizedName, field.tsType);
-					const nullable = field.notNull ? '' : ' | null';
-					writer.writeLine(`${field.name}: ${nestedRelationType}${nullable};`);
-				});
-			});
-		});
+		const relations = tsDescriptor.nestedDescriptor2 || [];
+		writeNestedTypes(writer, relations, capitalizedName);
 	}
 	if (!dynamicQueryInfo) {
 		writer.blankLine();

@@ -1,5 +1,6 @@
 import assert from 'node:assert';
-import { renameInvalidNames, escapeInvalidTsField, generateTsDescriptor, removeDuplicatedParameters } from '../src/codegen/mysql2';
+import { escapeInvalidTsField, renameInvalidNames } from '../src/codegen/shared/codegen-util';
+import { generateTsDescriptor, removeDuplicatedParameters } from '../src/codegen/mysql2';
 import type { ParameterDef, SchemaDef } from '../src/types';
 
 describe('rename invalid names', () => {
