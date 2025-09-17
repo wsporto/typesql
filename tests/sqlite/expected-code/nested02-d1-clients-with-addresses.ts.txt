@@ -44,7 +44,7 @@ function mapArrayToNested02Result(data: any) {
 export type Nested02NestedC = {
 	id: number;
 	a1: Nested02NestedA1;
-	a2?: Nested02NestedA2;
+	a2: Nested02NestedA2 | null;
 }
 
 export type Nested02NestedA1 = {
@@ -53,8 +53,8 @@ export type Nested02NestedA1 = {
 }
 
 export type Nested02NestedA2 = {
-	id: number;
-	address: string;
+	id: number | null;
+	address: string | null;
 }
 
 export async function nested02Nested(db: D1Database, params: Nested02Params): Promise<Nested02NestedC[]> {

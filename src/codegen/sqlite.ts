@@ -24,7 +24,7 @@ import { preprocessSql } from '../describe-query';
 import { explainSql } from '../sqlite-query-analyzer/query-executor';
 import { mapToDynamicParams, mapToDynamicResultColumns, mapToDynamicSelectColumns } from '../ts-dynamic-query-descriptor';
 import { mapper } from '../drivers/sqlite';
-import { capitalize, convertToCamelCaseName, generateRelationType, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor, writeBuildOrderByBlock, writeBuildSqlFunction, writeDynamicQueryOperators, writeMapToResultFunction, writeOrderByToObjectFunction, writeWhereConditionFunction } from './shared/codegen-util';
+import { capitalize, convertToCamelCaseName, generateRelationType, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor, writeBuildOrderByBlock, writeBuildSqlFunction, writeDynamicQueryOperators, writeMapToResultFunction, writeNestedTypes, writeOrderByToObjectFunction, writeWhereConditionFunction } from './shared/codegen-util';
 
 type ExecFunctionParams = {
 	functionName: string;
@@ -542,21 +542,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 
 	if (tsDescriptor.nestedDescriptor2) {
 		const relations = tsDescriptor.nestedDescriptor2 || [];
-		relations.forEach((relation) => {
-			const relationType = generateRelationType(capitalizedName, relation.name);
-			writer.blankLine();
-			writer.write(`export type ${relationType} = `).block(() => {
-				const uniqueNameFields = renameInvalidNames(relation.fields.map((f) => f.name));
-				relation.fields.forEach((field, index) => {
-					writer.writeLine(`${uniqueNameFields[index]}: ${field.tsType};`);
-				});
-				relation.relations.forEach((field) => {
-					const nestedRelationType = generateRelationType(capitalizedName, field.tsType);
-					const nullableOperator = field.notNull ? '' : '?';
-					writer.writeLine(`${field.name}${nullableOperator}: ${nestedRelationType};`);
-				});
-			});
-		});
+		writeNestedTypes(writer, relations, capitalizedName);
 		writer.blankLine();
 
 		relations.forEach((relation, index) => {
