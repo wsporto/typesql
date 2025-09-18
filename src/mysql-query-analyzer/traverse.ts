@@ -211,7 +211,7 @@ function traverseSelectStatement(
 		const paramInference = inferParamNullabilityQueryExpression(queryExpression);
 
 		const allParameters = traverseContext.parameters.map((param, index) => {
-			const param2: TypeAndNullInfer = {
+			const param2: TypeAndNullInferParam = {
 				...param,
 				notNull: paramInference[index]
 			};

@@ -75,6 +75,7 @@ export type ColumnDef = {
 	columnKey: 'PRI' | 'MUL' | 'UNI' | 'VT' | '';
 	tableAlias?: string;
 	notNull?: boolean; //true, false or undefined (can't infere)
+	intrinsicNotNull?: boolean;
 	hidden: number;
 };
 
@@ -87,6 +88,7 @@ export type ColumnInfo = {
 	name: string;
 	type: DbType | '?';
 	notNull: boolean;
+	intrinsicNotNull?: boolean;
 	table?: string;
 	optional?: boolean;
 };
@@ -227,6 +229,7 @@ export type TypeAndNullInfer = {
 	name: string; //TODO - need?
 	type: TypeVar;
 	notNull?: boolean; //true, false or undefined (can't infere)
+	intrinsicNotNull?: boolean;
 	table: string;
 	hidden?: number;
 };

@@ -236,7 +236,7 @@ export function mapFieldToTsField(columns: ColumnInfo[], field: Field2, client: 
 		name: field.name,
 		index: field.index,
 		tsType: mapper.mapColumnType(columns[field.index].type as SQLiteType, client),
-		notNull: columns[field.index].notNull
+		notNull: columns[field.index].intrinsicNotNull!
 	};
 	return tsField;
 }

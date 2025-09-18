@@ -46,7 +46,7 @@ function describeQueryRefine(describeParameters: DescribeParameters): Result<Pos
 		sql: newSql,
 		queryType: traverseResult.queryType,
 		multipleRowsResult: traverseResult.multipleRowsResult,
-		columns: getColumnsForQuery(traverseResult, postgresDescribeResult, enumTypes, checkConstraints),
+		columns: getColumnsForQuery(generateNestedInfo, traverseResult, postgresDescribeResult, enumTypes, checkConstraints),
 		parameters: getParametersForQuery(traverseResult, parameters)
 	}
 	if (traverseResult.queryType === 'Update') {
@@ -76,14 +76,18 @@ function describeQueryRefine(describeParameters: DescribeParameters): Result<Pos
 	return ok(descResult);
 }
 
-function mapToColumnInfo(col: DescribeQueryColumn, posgresTypes: PostgresTypeHash, enumTypes: EnumMap, checkConstraints: CheckConstraintResult, colInfo: NotNullInfo): PostgresColumnInfo {
+function mapToColumnInfo(collectNestedInfo: boolean, col: DescribeQueryColumn, posgresTypes: PostgresTypeHash, enumTypes: EnumMap, checkConstraints: CheckConstraintResult, colInfo: NotNullInfo): PostgresColumnInfo {
 	const constraintKey = `[${colInfo.schema}][${colInfo.table}][${colInfo.column_name}]`;
-	return {
+	const columnInfo: PostgresColumnInfo = {
 		name: col.name,
 		notNull: !colInfo.is_nullable,
 		type: createType(col.typeId, posgresTypes, enumTypes.get(col.typeId), checkConstraints[constraintKey], colInfo.jsonType),
 		table: colInfo.table
 	}
+	if (collectNestedInfo) {
+		columnInfo.intrinsicNotNull = !colInfo.original_is_nullable;
+	}
+	return columnInfo;
 }
 
 function createType(typeId: number, postgresTypes: PostgresTypeHash, enumType: EnumResult[] | undefined, checkConstraint: PostgresEnumType | undefined, jsonType: JsonType | undefined): PostgresType {
@@ -138,8 +142,8 @@ export function describeQuery(postgres: Sql, sql: string, schemaInfo: PostgresSc
 		});
 	});
 }
-function getColumnsForQuery(traverseResult: PostgresTraverseResult, postgresDescribeResult: PostgresDescribe, enumTypes: EnumMap, checkConstraints: CheckConstraintResult): PostgresColumnInfo[] {
-	return postgresDescribeResult.columns.map((col, index) => mapToColumnInfo(col, postgresTypes, enumTypes, checkConstraints, traverseResult.columns[index]))
+function getColumnsForQuery(collectNestedInfo: boolean, traverseResult: PostgresTraverseResult, postgresDescribeResult: PostgresDescribe, enumTypes: EnumMap, checkConstraints: CheckConstraintResult): PostgresColumnInfo[] {
+	return postgresDescribeResult.columns.map((col, index) => mapToColumnInfo(collectNestedInfo, col, postgresTypes, enumTypes, checkConstraints, traverseResult.columns[index]))
 }
 
 function transformToParamDefList(traverseResult: PostgresTraverseResult, enumTypes: EnumMap, params: NamedParamWithType[]): PostgresParameterDef[] {

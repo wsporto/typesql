@@ -43,6 +43,7 @@ export type NestedRelation = {
 export type ColumnDescription = {
 	name: string;
 	notNull: boolean;
+	intrinsicNotNull?: boolean;
 	table?: string;
 }
 

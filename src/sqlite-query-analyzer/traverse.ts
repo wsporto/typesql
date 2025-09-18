@@ -240,6 +240,7 @@ function traverse_select_core(
 						name: col.columnName,
 						type: col.columnType,
 						notNull: col.notNull,
+						intrinsicNotNull: col.intrinsicNotNull,
 						table: table,
 						hidden: col.hidden
 					});
@@ -297,6 +298,7 @@ function traverse_select_core(
 			table: selectField.table,
 			columnType: selectField.type,
 			notNull: selectField.notNull,
+			intrinsicNotNull: selectField.intrinsicNotNull,
 			columnKey: '',
 			hidden: selectField.hidden || 0
 		};
@@ -338,7 +340,8 @@ function traverse_select_core(
 			const columnName: ColumnName = { name: col.name, table: col.table };
 			const column: TypeAndNullInfer = {
 				...col,
-				notNull: col.notNull || isNotNull(columnName, whereExpr) || isNotNull(columnName, havingExpr)
+				notNull: col.notNull || isNotNull(columnName, whereExpr) || isNotNull(columnName, havingExpr),
+				intrinsicNotNull: col.intrinsicNotNull
 			}
 			return column;
 		}),
@@ -426,7 +429,8 @@ function traverse_table_or_subquery(
 				allFields.push(
 					...filteredFields.map((field) => ({
 						...field,
-						notNull: false
+						notNull: false,
+						intrinsicNotNull: field.notNull
 					}))
 				);
 			} else {
@@ -539,6 +543,7 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
 			name: type.columnName,
 			type: type.columnType,
 			notNull: type.notNull,
+			intrinsicNotNull: type.notNull,
 			table: type.tableAlias || type.table,
 			hidden: type.hidden
 		};

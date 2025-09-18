@@ -124,6 +124,9 @@ function createSchemaDefinition(
 				notNull: columnNotNull,
 				table: col.table
 			};
+			if (nestedQuery) {
+				colInfo.intrinsicNotNull = col.intrinsicNotNull;
+			}
 			return colInfo;
 		});
 		const paramsResult = queryResult.parameters.map((param, index) => {

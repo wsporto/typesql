@@ -69,7 +69,8 @@ export function filterColumns(
 		const r: ColumnDef = {
 			...col,
 			table: table.name,
-			tableAlias: tableAlias
+			tableAlias: tableAlias,
+			intrinsicNotNull: col.notNull
 		};
 		return r;
 	});

@@ -52,8 +52,8 @@ export type Nested02NestedA1 = {
 }
 
 export type Nested02NestedA2 = {
-	id: number | null;
-	address: string | null;
+	id: number;
+	address: string;
 }
 
 export function nested02Nested(db: Database, params: Nested02Params): Nested02NestedC[] {
