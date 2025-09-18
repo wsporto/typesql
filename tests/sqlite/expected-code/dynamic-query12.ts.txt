@@ -3,7 +3,7 @@ import { EOL } from 'os';
 
 export type DynamicQuery12DynamicParams = {
 	select?: DynamicQuery12Select;
-	params?: DynamicQuery12Params;
+	params: DynamicQuery12Params;
 	where?: DynamicQuery12Where[];
 }
 

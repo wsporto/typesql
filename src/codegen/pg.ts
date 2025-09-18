@@ -1,5 +1,5 @@
 import CodeBlockWriter from 'code-block-writer';
-import { capitalize, convertToCamelCaseName, generateRelationType, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor, writeNestedTypes, writeCollectFunction, writeGroupByFunction, createTypeNames, createCodeBlockWriter } from './shared/codegen-util';
+import { capitalize, convertToCamelCaseName, generateRelationType, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor, writeNestedTypes, writeCollectFunction, writeGroupByFunction, createTypeNames, createCodeBlockWriter, writeDynamicQueryParamType } from './shared/codegen-util';
 import { CrudQueryType, PgDielect, QueryType, TsFieldDescriptor, TsParameterDescriptor, TypeSqlError } from '../types';
 import { describeQuery } from '../postgres-query-analyzer/describe';
 import { mapper } from '../dialects/postgres';
@@ -69,16 +69,7 @@ function generateTsCode(queryName: string, schemaDef: PostgresSchemaDef, client:
 	const orderByField = tsDescriptor.orderByColumns != null && tsDescriptor.orderByColumns.length > 0 ? 'orderBy' : '';
 	if (dynamicQueryInfo) {
 		writer.blankLine();
-		writer.write(`export type ${dynamicParamsTypeName} = `).block(() => {
-			writer.writeLine(`select?: ${selectColumnsTypeName};`);
-			if (tsDescriptor.parameters.length > 0) {
-				writer.writeLine(`params: ${paramsTypeName};`);
-			}
-			writer.writeLine(`where?: ${whereTypeName}[];`);
-			if (orderByField) {
-				writer.writeLine(`${orderByField}: ${orderByTypeName}[];`);
-			}
-		});
+		writeDynamicQueryParamType(writer, queryName, uniqueParams.length > 0, orderByField);
 	}
 	if (uniqueParams.length > 0 || (orderByField && !dynamicQueryInfo)) {
 		writer.blankLine();

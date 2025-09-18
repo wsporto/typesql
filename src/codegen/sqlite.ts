@@ -24,7 +24,7 @@ import { preprocessSql } from '../describe-query';
 import { explainSql } from '../sqlite-query-analyzer/query-executor';
 import { mapToDynamicParams, mapToDynamicResultColumns, mapToDynamicSelectColumns } from '../ts-dynamic-query-descriptor';
 import { mapper } from '../drivers/sqlite';
-import { capitalize, convertToCamelCaseName, generateRelationType, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor, writeBuildOrderByBlock, writeBuildSqlFunction, writeDynamicQueryOperators, writeMapToResultFunction, writeNestedTypes, writeOrderByToObjectFunction, writeWhereConditionFunction, writeCollectFunction, writeGroupByFunction, createTypeNames, createCodeBlockWriter } from './shared/codegen-util';
+import { capitalize, convertToCamelCaseName, generateRelationType, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor, writeBuildOrderByBlock, writeBuildSqlFunction, writeDynamicQueryOperators, writeMapToResultFunction, writeNestedTypes, writeOrderByToObjectFunction, writeWhereConditionFunction, writeCollectFunction, writeGroupByFunction, createTypeNames, createCodeBlockWriter, writeDynamicQueryParamType } from './shared/codegen-util';
 
 type ExecFunctionParams = {
 	functionName: string;
@@ -315,7 +315,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 	const uniqueParams = removeDuplicatedParameters2(tsDescriptor.parameters);
 	const uniqueUpdateParams = removeDuplicatedParameters2(tsDescriptor.data || []);
 
-	const orderByField = generateOrderBy ? `orderBy: ${orderByTypeName}[]` : undefined;
+	const orderByField = generateOrderBy ? `orderBy` : undefined;
 	const paramsTypes = removeDuplicatedParameters2(
 		tsDescriptor.dynamicQuery2 == null ? tsDescriptor.parameters : mapToDynamicParams(tsDescriptor.parameters)
 	);
@@ -348,16 +348,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 	writeImports(writer, client, isDynamicQuery);
 	if (tsDescriptor.dynamicQuery2 != null) {
 		writer.blankLine();
-		writer.write(`export type ${dynamicParamsTypeName} = `).block(() => {
-			writer.writeLine(`select?: ${selectColumnsTypeName};`);
-			if (paramsTypes.length > 0) {
-				writer.writeLine(`params?: ${paramsTypeName};`);
-			}
-			writer.writeLine(`where?: ${whereTypeName}[];`);
-			if (orderByField) {
-				writer.writeLine(`${orderByField};`);
-			}
-		});
+		writeDynamicQueryParamType(writer, queryName, paramsTypes.length > 0, orderByField);
 		writer.blankLine();
 		writeTypeBlock(writer, paramsTypes, paramsTypeName, false, tsDescriptor.dynamicQuery2 ? undefined : orderByField);
 		const resultTypes = tsDescriptor.dynamicQuery2 == null ? tsDescriptor.columns : mapToDynamicResultColumns(tsDescriptor.columns);

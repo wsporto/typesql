@@ -160,6 +160,20 @@ export function writeBuildOrderByBlock(writer: CodeBlockWriter, orderByColumns: 
 	});
 }
 
+export function writeDynamicQueryParamType(writer: CodeBlockWriter, queryName: string, hasParams: boolean, orderByField: string | undefined) {
+	const { dynamicParamsTypeName, selectColumnsTypeName, paramsTypeName, whereTypeName, orderByTypeName } = createTypeNames(queryName);
+	writer.write(`export type ${dynamicParamsTypeName} = `).block(() => {
+		writer.writeLine(`select?: ${selectColumnsTypeName};`);
+		if (hasParams) {
+			writer.writeLine(`params: ${paramsTypeName};`);
+		}
+		writer.writeLine(`where?: ${whereTypeName}[];`);
+		if (orderByField) {
+			writer.writeLine(`${orderByField}: ${orderByTypeName}[];`);
+		}
+	});
+}
+
 export function writeDynamicQueryOperators(writer: CodeBlockWriter, whereTypeName: string, columns: TsFieldDescriptor[]) {
 	writer.writeLine(`const NumericOperatorList = ['=', '<>', '>', '<', '>=', '<='] as const;`);
 	writer.writeLine('type NumericOperator = typeof NumericOperatorList[number];');
