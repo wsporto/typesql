@@ -24,7 +24,7 @@ import { preprocessSql } from '../describe-query';
 import { explainSql } from '../sqlite-query-analyzer/query-executor';
 import { mapToDynamicParams, mapToDynamicResultColumns, mapToDynamicSelectColumns } from '../ts-dynamic-query-descriptor';
 import { mapper } from '../drivers/sqlite';
-import { capitalize, convertToCamelCaseName, generateRelationType, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor, writeBuildOrderByBlock, writeBuildSqlFunction, writeDynamicQueryOperators, writeMapToResultFunction, writeNestedTypes, writeOrderByToObjectFunction, writeWhereConditionFunction, writeCollectFunction, writeGroupByFunction, createTypeNames } from './shared/codegen-util';
+import { capitalize, convertToCamelCaseName, generateRelationType, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor, writeBuildOrderByBlock, writeBuildSqlFunction, writeDynamicQueryOperators, writeMapToResultFunction, writeNestedTypes, writeOrderByToObjectFunction, writeWhereConditionFunction, writeCollectFunction, writeGroupByFunction, createTypeNames, createCodeBlockWriter } from './shared/codegen-util';
 
 type ExecFunctionParams = {
 	functionName: string;
@@ -295,9 +295,7 @@ function mapColumnToTsParameterDescriptor(col: ColumnInfo, client: SQLiteClient)
 }
 
 function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, tsDescriptor: TsDescriptor, isCrud = false, tableName = '') {
-	const writer = new CodeBlockWriter({
-		useTabs: true
-	});
+	const writer = createCodeBlockWriter();
 
 	const {
 		camelCaseName,
