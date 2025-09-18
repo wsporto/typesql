@@ -1,5 +1,5 @@
 import CodeBlockWriter from 'code-block-writer';
-import { capitalize, convertToCamelCaseName, generateRelationType, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor, writeNestedTypes, writeCollectFunction, writeGroupByFunction } from './shared/codegen-util';
+import { capitalize, convertToCamelCaseName, generateRelationType, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor, writeNestedTypes, writeCollectFunction, writeGroupByFunction, createTypeNames, createCodeBlockWriter } from './shared/codegen-util';
 import { CrudQueryType, PgDielect, QueryType, TsFieldDescriptor, TsParameterDescriptor, TypeSqlError } from '../types';
 import { describeQuery } from '../postgres-query-analyzer/describe';
 import { mapper } from '../dialects/postgres';
@@ -7,7 +7,6 @@ import { JsonArrayType, JsonFieldType, JsonMapType, JsonObjType, JsonType, Postg
 import { okAsync, ResultAsync } from 'neverthrow';
 import { getQueryName } from './sqlite';
 import { mapToTsRelation2, RelationType2, TsField2 } from '../ts-nested-descriptor';
-import { EOL } from 'node:os';
 import { PostgresColumnInfo, PostgresParameterDef, PostgresSchemaDef } from '../postgres-query-analyzer/types';
 import { PostgresSchemaInfo } from '../schema-info';
 import { PostgresColumnSchema } from '../drivers/types';
@@ -34,29 +33,23 @@ function _describeQuery(databaseClient: PgDielect, sql: string, dbSchema: Postgr
 	return describeQuery(databaseClient.client, sql, dbSchema);
 }
 
-export function createCodeBlockWriter() {
-	const writer = new CodeBlockWriter({
-		useTabs: true,
-		newLine: EOL as '\n' | '\r\n'
-	});
-	return writer;
-}
-
 function generateTsCode(queryName: string, schemaDef: PostgresSchemaDef, client: 'pg'): string {
 
 	const { sql } = schemaDef;
 
 	const writer = createCodeBlockWriter();
 
-	const camelCaseName = convertToCamelCaseName(queryName);
-	const capitalizedName = capitalize(camelCaseName);
-	const dataTypeName = `${capitalizedName}Data`;
-	const resultTypeName = `${capitalizedName}Result`;
-	const paramsTypeName = `${capitalizedName}Params`;
-	const orderByTypeName = `${capitalizedName}OrderBy`;
-	const dynamicParamsTypeName = `${capitalizedName}DynamicParams`;
-	const selectColumnsTypeName = `${capitalizedName}Select`;
-	const whereTypeName = `${capitalizedName}Where`;
+	const {
+		camelCaseName,
+		capitalizedName,
+		dataTypeName,
+		resultTypeName,
+		paramsTypeName,
+		orderByTypeName,
+		dynamicParamsTypeName,
+		selectColumnsTypeName,
+		whereTypeName
+	} = createTypeNames(queryName);
 
 	const tsDescriptor = createTsDescriptor(capitalizedName, schemaDef);
 	const uniqueParams = removeDuplicatedParameters2(tsDescriptor.parameters);

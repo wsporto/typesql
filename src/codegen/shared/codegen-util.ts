@@ -26,6 +26,26 @@ export type ParamInfo = {
 	isList: boolean;
 };
 
+export type TypeNames = {
+	camelCaseName: string;
+	capitalizedName: string;
+	dataTypeName: string;
+	resultTypeName: string;
+	paramsTypeName: string;
+	orderByTypeName: string;
+	dynamicParamsTypeName: string;
+	selectColumnsTypeName: string;
+	whereTypeName: string;
+}
+
+export function createCodeBlockWriter() {
+	const writer = new CodeBlockWriter({
+		useTabs: true,
+		newLine: EOL as '\n' | '\r\n'
+	});
+	return writer;
+}
+
 export function capitalize(name: CamelCaseName) {
 	return capitalizeStr(name);
 }
@@ -33,6 +53,30 @@ export function capitalize(name: CamelCaseName) {
 export function convertToCamelCaseName(name: string): CamelCaseName {
 	const camelCaseStr = camelCase(name) as CamelCaseName;
 	return camelCaseStr;
+}
+
+export function createTypeNames(queryName: string): TypeNames {
+	const camelCaseName = convertToCamelCaseName(queryName);
+	const capitalizedName = capitalize(camelCaseName);
+	const dataTypeName = `${capitalizedName}Data`;
+	const resultTypeName = `${capitalizedName}Result`;
+	const paramsTypeName = `${capitalizedName}Params`;
+	const orderByTypeName = `${capitalizedName}OrderBy`;
+	const dynamicParamsTypeName = `${capitalizedName}DynamicParams`;
+	const selectColumnsTypeName = `${capitalizedName}Select`;
+	const whereTypeName = `${capitalizedName}Where`;
+
+	return {
+		camelCaseName,
+		capitalizedName,
+		dataTypeName,
+		resultTypeName,
+		paramsTypeName,
+		orderByTypeName,
+		dynamicParamsTypeName,
+		selectColumnsTypeName,
+		whereTypeName
+	}
 }
 
 export function generateRelationType(functionName: string, relationName: string) {

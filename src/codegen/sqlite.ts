@@ -24,7 +24,7 @@ import { preprocessSql } from '../describe-query';
 import { explainSql } from '../sqlite-query-analyzer/query-executor';
 import { mapToDynamicParams, mapToDynamicResultColumns, mapToDynamicSelectColumns } from '../ts-dynamic-query-descriptor';
 import { mapper } from '../drivers/sqlite';
-import { capitalize, convertToCamelCaseName, generateRelationType, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor, writeBuildOrderByBlock, writeBuildSqlFunction, writeDynamicQueryOperators, writeMapToResultFunction, writeNestedTypes, writeOrderByToObjectFunction, writeWhereConditionFunction, writeCollectFunction, writeGroupByFunction } from './shared/codegen-util';
+import { capitalize, convertToCamelCaseName, generateRelationType, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor, writeBuildOrderByBlock, writeBuildSqlFunction, writeDynamicQueryOperators, writeMapToResultFunction, writeNestedTypes, writeOrderByToObjectFunction, writeWhereConditionFunction, writeCollectFunction, writeGroupByFunction, createTypeNames } from './shared/codegen-util';
 
 type ExecFunctionParams = {
 	functionName: string;
@@ -299,18 +299,20 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 		useTabs: true
 	});
 
-	const camelCaseName = convertToCamelCaseName(queryName);
-	const capitalizedName = capitalize(camelCaseName);
+	const {
+		camelCaseName,
+		capitalizedName,
+		dataTypeName,
+		resultTypeName,
+		paramsTypeName,
+		orderByTypeName,
+		dynamicParamsTypeName,
+		selectColumnsTypeName,
+		whereTypeName
+	} = createTypeNames(queryName);
 
 	const queryType = tsDescriptor.queryType;
 	const sql = tsDescriptor.sql;
-	const dataTypeName = `${capitalizedName}Data`;
-	const paramsTypeName = `${capitalizedName}Params`;
-	const resultTypeName = `${capitalizedName}Result`;
-	const dynamicParamsTypeName = `${capitalizedName}DynamicParams`;
-	const selectColumnsTypeName = `${capitalizedName}Select`;
-	const whereTypeName = `${capitalizedName}Where`;
-	const orderByTypeName = `${capitalizedName}OrderBy`;
 	const generateOrderBy = tsDescriptor.orderByColumns != null && tsDescriptor.orderByColumns.length > 0;
 	const uniqueParams = removeDuplicatedParameters2(tsDescriptor.parameters);
 	const uniqueUpdateParams = removeDuplicatedParameters2(tsDescriptor.data || []);
