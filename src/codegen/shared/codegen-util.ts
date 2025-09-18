@@ -517,7 +517,8 @@ export function writeCollectFunction(
 				});
 				relation.relations.forEach((fieldRelation) => {
 					const relationType = generateRelationType(capitalizedName, fieldRelation.name);
-					const cardinality = fieldRelation.list ? '' : '[0]';
+					const orNull = fieldRelation.notNull ? '' : ' ?? null';
+					const cardinality = fieldRelation.list ? '' : `[0]${orNull}`;
 					writer.writeLine(`${fieldRelation.name}: collect${relationType}(row)${cardinality},`);
 				});
 			})
