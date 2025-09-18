@@ -1,11 +1,11 @@
 import CodeBlockWriter from 'code-block-writer';
-import { capitalize, convertToCamelCaseName, generateRelationType, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor, writeNestedTypes } from './shared/codegen-util';
+import { capitalize, convertToCamelCaseName, generateRelationType, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor, writeNestedTypes, writeCollectFunction, writeGroupByFunction } from './shared/codegen-util';
 import { CrudQueryType, PgDielect, QueryType, TsFieldDescriptor, TsParameterDescriptor, TypeSqlError } from '../types';
 import { describeQuery } from '../postgres-query-analyzer/describe';
 import { mapper } from '../dialects/postgres';
 import { JsonArrayType, JsonFieldType, JsonMapType, JsonObjType, JsonType, PostgresType } from '../sqlite-query-analyzer/types';
 import { okAsync, ResultAsync } from 'neverthrow';
-import { getQueryName, writeCollectFunction } from './sqlite';
+import { getQueryName } from './sqlite';
 import { mapToTsRelation2, RelationType2, TsField2 } from '../ts-nested-descriptor';
 import { EOL } from 'node:os';
 import { PostgresColumnInfo, PostgresParameterDef, PostgresSchemaDef } from '../postgres-query-analyzer/types';
@@ -196,16 +196,7 @@ function generateTsCode(queryName: string, schemaDef: PostgresSchemaDef, client:
 			writeCollectFunction(writer, relation, tsDescriptor.columns, capitalizedName, resultTypeName);
 		});
 		writer.blankLine();
-		writer.write('const groupBy = <T, Q>(array: T[], predicate: (value: T, index: number, array: T[]) => Q) =>').block(() => {
-			writer
-				.write('return array.reduce((map, value, index, array) => ')
-				.inlineBlock(() => {
-					writer.writeLine('const key = predicate(value, index, array);');
-					writer.writeLine('map.get(key)?.push(value) ?? map.set(key, [value]);');
-					writer.writeLine('return map;');
-				})
-				.write(', new Map<Q, T[]>());');
-		});
+		writeGroupByFunction(writer);
 	}
 	return writer.toString();
 }

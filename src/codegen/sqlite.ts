@@ -24,7 +24,7 @@ import { preprocessSql } from '../describe-query';
 import { explainSql } from '../sqlite-query-analyzer/query-executor';
 import { mapToDynamicParams, mapToDynamicResultColumns, mapToDynamicSelectColumns } from '../ts-dynamic-query-descriptor';
 import { mapper } from '../drivers/sqlite';
-import { capitalize, convertToCamelCaseName, generateRelationType, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor, writeBuildOrderByBlock, writeBuildSqlFunction, writeDynamicQueryOperators, writeMapToResultFunction, writeNestedTypes, writeOrderByToObjectFunction, writeWhereConditionFunction } from './shared/codegen-util';
+import { capitalize, convertToCamelCaseName, generateRelationType, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor, writeBuildOrderByBlock, writeBuildSqlFunction, writeDynamicQueryOperators, writeMapToResultFunction, writeNestedTypes, writeOrderByToObjectFunction, writeWhereConditionFunction, writeCollectFunction, writeGroupByFunction } from './shared/codegen-util';
 
 type ExecFunctionParams = {
 	functionName: string;
@@ -573,16 +573,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 		});
 
 		writer.blankLine();
-		writer.write('const groupBy = <T, Q>(array: T[], predicate: (value: T, index: number, array: T[]) => Q) =>').block(() => {
-			writer
-				.write('return array.reduce((map, value, index, array) => ')
-				.inlineBlock(() => {
-					writer.writeLine('const key = predicate(value, index, array);');
-					writer.writeLine('map.get(key)?.push(value) ?? map.set(key, [value]);');
-					writer.writeLine('return map;');
-				})
-				.write(', new Map<Q, T[]>());');
-		});
+		writeGroupByFunction(writer);
 	}
 
 	return writer.toString();
@@ -775,37 +766,6 @@ function toDriver(variableName: string, param: TsParameterDescriptor): string {
 		return `...${variableName}.${param.name}`;
 	}
 	return `${variableName}.${param.name}`;
-}
-export function writeCollectFunction(
-	writer: CodeBlockWriter,
-	relation: RelationType2,
-	columns: TsFieldDescriptor[],
-	capitalizedName: string,
-	resultTypeName: string
-) {
-	const relationType = generateRelationType(capitalizedName, relation.name);
-	const collectFunctionName = `collect${relationType}`;
-	writer.blankLine();
-	writer.write(`function ${collectFunctionName}(selectResult: ${resultTypeName}[]): ${relationType}[]`).block(() => {
-		const groupBy = columns[relation.groupIndex].name;
-		writer.writeLine(`const grouped = groupBy(selectResult.filter(r => r.${groupBy} != null), r => r.${groupBy});`);
-		writer
-			.write('return [...grouped.values()].map(row => (')
-			.inlineBlock(() => {
-				relation.fields.forEach((field, index) => {
-					const uniqueNameFields = renameInvalidNames(relation.fields.map((f) => f.name));
-					const separator = ',';
-					const fieldName = columns[field.index].name;
-					writer.writeLine(`${uniqueNameFields[index]}: row[0].${fieldName}!${separator}`);
-				});
-				relation.relations.forEach((fieldRelation) => {
-					const relationType = generateRelationType(capitalizedName, fieldRelation.name);
-					const cardinality = fieldRelation.list ? '' : '[0]';
-					writer.writeLine(`${fieldRelation.name}: collect${relationType}(row)${cardinality},`);
-				});
-			})
-			.write('))');
-	});
 }
 
 function writeImports(writer: CodeBlockWriter, client: SQLiteClient, isDynamicQuery: boolean) {
