@@ -1,6 +1,6 @@
 import CodeBlockWriter from 'code-block-writer';
 import { CamelCaseName, QueryType, TsFieldDescriptor, TsParameterDescriptor } from '../../types';
-import { DynamicSqlInfoResult, DynamicSqlInfoResult2 } from '../../mysql-query-analyzer/types';
+import { DynamicSqlInfoResult, DynamicSqlInfoResult2, SelectFragmentResult } from '../../mysql-query-analyzer/types';
 import { EOL } from 'os';
 import { NestedTsDescriptor, RelationType2 } from '../../ts-nested-descriptor';
 import camelCase from 'camelcase';
@@ -172,6 +172,16 @@ export function writeDynamicQueryParamType(writer: CodeBlockWriter, queryName: s
 			writer.writeLine(`${orderByField}: ${orderByTypeName}[];`);
 		}
 	});
+}
+
+export function writeSelectFragements(writer: CodeBlockWriter, selectFragements: SelectFragmentResult[], columns: TsFieldDescriptor[]) {
+	writer.write('const selectFragments = ').inlineBlock(() => {
+		selectFragements.forEach((fragment, index) => {
+			const field = columns[index].name;
+			writer.writeLine(`${field}: \`${fragment.fragmentWitoutAlias}\`,`);
+		});
+	});
+	writer.write(' as const;');
 }
 
 export function writeDynamicQueryOperators(writer: CodeBlockWriter, whereTypeName: string, columns: TsFieldDescriptor[]) {

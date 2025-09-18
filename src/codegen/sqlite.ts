@@ -24,7 +24,7 @@ import { preprocessSql } from '../describe-query';
 import { explainSql } from '../sqlite-query-analyzer/query-executor';
 import { mapToDynamicParams, mapToDynamicResultColumns, mapToDynamicSelectColumns } from '../ts-dynamic-query-descriptor';
 import { mapper } from '../drivers/sqlite';
-import { capitalize, convertToCamelCaseName, generateRelationType, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor, writeBuildOrderByBlock, writeBuildSqlFunction, writeDynamicQueryOperators, writeMapToResultFunction, writeNestedTypes, writeOrderByToObjectFunction, writeWhereConditionFunction, writeCollectFunction, writeGroupByFunction, createTypeNames, createCodeBlockWriter, writeDynamicQueryParamType } from './shared/codegen-util';
+import { capitalize, convertToCamelCaseName, generateRelationType, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor, writeBuildOrderByBlock, writeBuildSqlFunction, writeDynamicQueryOperators, writeMapToResultFunction, writeNestedTypes, writeOrderByToObjectFunction, writeWhereConditionFunction, writeCollectFunction, writeGroupByFunction, createTypeNames, createCodeBlockWriter, writeDynamicQueryParamType, writeSelectFragements } from './shared/codegen-util';
 
 type ExecFunctionParams = {
 	functionName: string;
@@ -355,13 +355,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 		writeTypeBlock(writer, resultTypes, resultTypeName, false);
 		const selectFields = mapToDynamicSelectColumns(tsDescriptor.columns);
 		writeTypeBlock(writer, selectFields, selectColumnsTypeName, false);
-		writer.write('const selectFragments = ').inlineBlock(() => {
-			tsDescriptor.dynamicQuery2?.select.forEach((fragment, index) => {
-				const field = tsDescriptor.columns[index].name;
-				writer.writeLine(`${field}: \`${fragment.fragmentWitoutAlias}\`,`);
-			});
-		});
-		writer.write(' as const;');
+		writeSelectFragements(writer, tsDescriptor.dynamicQuery2.select, tsDescriptor.columns);
 		writer.blankLine();
 		writeDynamicQueryOperators(writer, whereTypeName, tsDescriptor.columns);
 		writer.blankLine();

@@ -1,5 +1,5 @@
 import CodeBlockWriter from 'code-block-writer';
-import { capitalize, convertToCamelCaseName, generateRelationType, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor, writeNestedTypes, writeCollectFunction, writeGroupByFunction, createTypeNames, createCodeBlockWriter, writeDynamicQueryParamType } from './shared/codegen-util';
+import { capitalize, convertToCamelCaseName, generateRelationType, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor, writeNestedTypes, writeCollectFunction, writeGroupByFunction, createTypeNames, createCodeBlockWriter, writeDynamicQueryParamType, writeSelectFragements } from './shared/codegen-util';
 import { CrudQueryType, PgDielect, QueryType, TsFieldDescriptor, TsParameterDescriptor, TypeSqlError } from '../types';
 import { describeQuery } from '../postgres-query-analyzer/describe';
 import { mapper } from '../dialects/postgres';
@@ -92,13 +92,7 @@ function generateTsCode(queryName: string, schemaDef: PostgresSchemaDef, client:
 			});
 		});
 		writer.blankLine();
-		writer.write('const selectFragments = ').inlineBlock(() => {
-			dynamicQueryInfo.select.forEach((fragment, index) => {
-				const field = tsDescriptor.columns[index].name;
-				writer.writeLine(`${field}: \`${fragment.fragmentWitoutAlias}\`,`);
-			});
-		});
-		writer.write(' as const;');
+		writeSelectFragements(writer, dynamicQueryInfo.select, tsDescriptor.columns);
 		writer.blankLine();
 		writeDynamicQueryOperators(writer, whereTypeName, tsDescriptor.columns);
 		writer.blankLine();
