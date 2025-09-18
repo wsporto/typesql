@@ -950,7 +950,7 @@ function writeSql(writer: CodeBlockWriter, sql: string) {
 	const sqlSplit = sql.split('\n');
 	writer.write('const sql = `').newLine();
 	sqlSplit.forEach((sqlLine) => {
-		writer.indent().write(sqlLine).newLine();
+		writer.indent().write(sqlLine.trimEnd()).newLine();
 	});
 	writer.indent().write('`').newLine();
 }

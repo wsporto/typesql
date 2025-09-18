@@ -17,7 +17,7 @@ export function select08(db: Database, params: Select08Params): Select08Result[]
 		id,
 		? as param1,
 		? as param2
-	FROM mytable1 
+	FROM mytable1
 	WHERE ? is true OR (? is true OR ? is null)
 	`
 	return db.prepare(sql)

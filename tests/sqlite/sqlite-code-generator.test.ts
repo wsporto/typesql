@@ -143,14 +143,14 @@ describe('sqlite-code-generator', () => {
 	});
 
 	it('select04 - select with same parameter used twice', async () => {//
-		const sql = `SELECT 
-	text_column, 
+		const sql = `SELECT
+	text_column,
 	date(text_column) as date_text,
 	datetime(text_column) as datetime_text,
 	integer_column,
 	date(integer_column, 'auto') as date_integer,
 	datetime(integer_column, 'auto') as datetime_integer
-FROM all_types 
+FROM all_types
 WHERE date(text_column) = :date
 AND date(integer_column, 'auto') = :date
 AND datetime(text_column) = :date_time
@@ -166,14 +166,14 @@ AND datetime(integer_column, 'auto') = :date_time`;
 	});
 
 	it('select04-bun - select with same parameter used twice', async () => {
-		const sql = `SELECT 
-	text_column, 
+		const sql = `SELECT
+	text_column,
 	date(text_column) as date_text,
 	datetime(text_column) as datetime_text,
 	integer_column,
 	date(integer_column, 'auto') as date_integer,
 	datetime(integer_column, 'auto') as datetime_integer
-FROM all_types 
+FROM all_types
 WHERE date(text_column) = :date
 AND date(integer_column, 'auto') = :date
 AND datetime(text_column) = :date_time
@@ -189,14 +189,14 @@ AND datetime(integer_column, 'auto') = :date_time`;
 	});
 
 	it('select04-d1 - select with same parameter used twice', async () => {
-		const sql = `SELECT 
-	text_column, 
+		const sql = `SELECT
+	text_column,
 	date(text_column) as date_text,
 	datetime(text_column) as datetime_text,
 	integer_column,
 	date(integer_column, 'auto') as date_integer,
 	datetime(integer_column, 'auto') as datetime_integer
-FROM all_types 
+FROM all_types
 WHERE date(text_column) = :date
 AND date(integer_column, 'auto') = :date
 AND datetime(text_column) = :date_time
@@ -682,7 +682,7 @@ LIMIT 20`;
 	id,
 	:param1 as param1,
 	:param2 as param2
-FROM mytable1 
+FROM mytable1
 WHERE :param1 is true OR (:param2 is true OR :param2 is null)`;
 
 		const isCrud = false;
@@ -745,8 +745,8 @@ where enum_column = :enum_value`;
 
 	it('nested01 - FROM users u INNER JOIN posts p', () => {
 		const sql = `-- @nested
-SELECT 
-	u.id as user_id, 
+SELECT
+	u.id as user_id,
 	u.name as user_name,
 	p.id as post_id,
 	p.title as post_title
@@ -765,8 +765,8 @@ INNER JOIN posts p on p.fk_user = u.id`;
 
 	it('nested01-libsql - FROM users u INNER JOIN posts p', () => {
 		const sql = `-- @nested
-SELECT 
-	u.id as user_id, 
+SELECT
+	u.id as user_id,
 	u.name as user_name,
 	p.id as post_id,
 	p.title as post_title
@@ -785,8 +785,8 @@ INNER JOIN posts p on p.fk_user = u.id`;
 
 	it('nested01-bun - FROM users u INNER JOIN posts p', () => {
 		const sql = `-- @nested
-SELECT 
-	u.id as user_id, 
+SELECT
+	u.id as user_id,
 	u.name as user_name,
 	p.id as post_id,
 	p.title as post_title
@@ -805,8 +805,8 @@ INNER JOIN posts p on p.fk_user = u.id`;
 
 	it('nested01-d1 - FROM users u INNER JOIN posts p', () => {
 		const sql = `-- @nested
-SELECT 
-	u.id as user_id, 
+SELECT
+	u.id as user_id,
 	u.name as user_name,
 	p.id as post_id,
 	p.title as post_title
