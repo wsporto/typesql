@@ -224,8 +224,7 @@ describe('postgres-nested-result', () => {
 					id: 3,
 					address: 'address3'
 				},
-				//@ts-ignore
-				a2: undefined
+				a2: null
 			}
 		];
 

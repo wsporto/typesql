@@ -221,7 +221,7 @@ describe('sqlite-nested-result', () => {
 					id: 3,
 					address: 'address3'
 				},
-				a2: undefined
+				a2: null
 			}
 		];
 

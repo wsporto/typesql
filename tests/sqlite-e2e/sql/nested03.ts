@@ -44,7 +44,7 @@ function mapArrayToNested03Result(data: any) {
 export type Nested03NestedC = {
 	id: number;
 	a1: Nested03NestedA1;
-	a2?: Nested03NestedA2;
+	a2: Nested03NestedA2 | null;
 }
 
 export type Nested03NestedA1 = {
@@ -70,7 +70,7 @@ function collectNested03NestedC(selectResult: Nested03Result[]): Nested03NestedC
 	return [...grouped.values()].map(row => ({
 		id: row[0].id!,
 		a1: collectNested03NestedA1(row)[0],
-		a2: collectNested03NestedA2(row)[0],
+		a2: collectNested03NestedA2(row)[0] ?? null,
 	}))
 }
 
