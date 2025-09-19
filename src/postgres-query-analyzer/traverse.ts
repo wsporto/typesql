@@ -1830,13 +1830,13 @@ function traverse_joins(joinList: Join[], context: TraverseContext, traverseResu
 
 		const joinTableRefResult = traverse_table_ref(join.tableRef, { ...context, fromColumns: context.fromColumns.concat(allColumns) }, traverseResult);
 		const joinColumns = joinQual?.USING() ? filterUsingColumns(joinTableRefResult.columns, joinQual) : joinTableRefResult.columns;
-		const nullableColumns = joinType?.LEFT()
-			? joinColumns.map(col => ({
-				...col,
-				original_is_nullable: col.is_nullable,
-				is_nullable: checkLeftJoinIsNullable(join, subsequentJoints, joinColumns) ? true : col.is_nullable,
-			}))
-			: joinColumns;
+		const isLeftJoin = joinType?.LEFT() != null;
+		const nullableColumns = joinColumns.map(col => ({
+			...col,
+			original_is_nullable: col.is_nullable,
+			is_nullable: isLeftJoin && checkLeftJoinIsNullable(join, subsequentJoints, joinColumns) ? true : col.is_nullable,
+		}));
+
 		allColumns.push(...nullableColumns);
 
 		if (context.collectNestedInfo && joinQual) {

@@ -1127,6 +1127,7 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'id',
 				is_nullable: false,
+				original_is_nullable: false,
 				table: 't2',
 				schema: 'public',
 				type: 'int4'
@@ -1134,6 +1135,7 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'name',
 				is_nullable: true,
+				original_is_nullable: true,
 				table: 't2',
 				schema: 'public',
 				type: 'text'
@@ -1141,6 +1143,7 @@ describe('Infer column nullability', () => {
 			{
 				column_name: 'descr',
 				is_nullable: true,
+				original_is_nullable: true,
 				table: 't2',
 				schema: 'public',
 				type: 'text'
