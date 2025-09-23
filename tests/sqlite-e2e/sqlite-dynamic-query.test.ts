@@ -3,7 +3,9 @@ import { dynamicQuery01, DynamicQuery01Result } from './sql/dynamic-query01';
 import Database from 'better-sqlite3';
 import {
 	dynamicQuery02, DynamicQuery02Result, dynamicQuery03, DynamicQuery03Result,
-	dynamicQuery04, DynamicQuery04Result, dynamicQuery05, DynamicQuery05Result
+	dynamicQuery04, DynamicQuery04Result, dynamicQuery05, DynamicQuery05Result,
+	dynamicQuery10,
+	DynamicQuery10Result
 } from './sql';
 
 describe('e2e-sqlite-dynamic-query', () => {
@@ -295,6 +297,51 @@ describe('e2e-sqlite-dynamic-query', () => {
 		const expectedResult: DynamicQuery05Result[] = [
 			{
 				id: 1
+			}
+		];
+
+		assert.deepStrictEqual(result, expectedResult);
+	});
+
+	it('dynamic-query-10 - limit and offset', async () => {
+		const result = await dynamicQuery10(db, {
+			params: {
+				name: 'two',
+				limit: 2,
+				offset: 0
+			}
+		});
+
+		const expectedResult: DynamicQuery10Result[] = [
+			{
+				id: 1,
+				name: 'one'
+			},
+			{
+				id: 3,
+				name: 'three'
+			}
+		];
+
+		assert.deepStrictEqual(result, expectedResult);
+	});
+
+	it('dynamic-query-10 - limit, offset and where', async () => {
+		const result = await dynamicQuery10(db, {
+			params: {
+				name: 'two',
+				limit: 2,
+				offset: 0
+			},
+			where: [
+				{ column: 'id', op: '=', value: 1 }
+			]
+		});
+
+		const expectedResult: DynamicQuery10Result[] = [
+			{
+				id: 1,
+				name: 'one'
 			}
 		];
 
