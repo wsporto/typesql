@@ -440,7 +440,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 			writer.blankLine();
 			writer.write(`export type ${dataTypeName} =`).block(() => {
 				uniqueUpdateParams.forEach((field) => {
-					const optionalOp = field.optional ? '?' : '';
+					const optionalOp = field.optional || isCrud ? '?' : '';
 					const orNull = field.notNull ? '' : ' | null';
 					writer.writeLine(`${field.name}${optionalOp}: ${field.tsType}${orNull};`);
 				});

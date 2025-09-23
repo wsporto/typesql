@@ -543,6 +543,20 @@ AND datetime(integer_column, 'auto') = :date_time`;
 		assert.deepStrictEqual(actual, expected);
 	});
 
+	it('crud-update02', () => {
+		const actual = generateCrud('better-sqlite3', 'Update', 'mytable2', sqliteDbSchema);
+		const expected = readFileSync('tests/sqlite/expected-code/crud-update02.ts.txt', 'utf-8');
+
+		assert.deepStrictEqual(actual, expected);
+	});
+
+	it('crud-update03', () => {
+		const actual = generateCrud('better-sqlite3', 'Update', 'mytable3', sqliteDbSchema);
+		const expected = readFileSync('tests/sqlite/expected-code/crud-update03.ts.txt', 'utf-8');
+
+		assert.deepStrictEqual(actual, expected);
+	});
+
 	it('crud-delete01', () => {
 		const actual = generateCrud('better-sqlite3', 'Delete', 'mytable1', sqliteDbSchema);
 		const expected = readFileSync('tests/sqlite/expected-code/crud-delete01.ts.txt', 'utf-8');

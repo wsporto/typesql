@@ -1,0 +1,29 @@
+import type { Database } from 'better-sqlite3';
+
+export type UpdateMytable2Data = {
+	name?: string | null;
+	descr?: string | null;
+}
+
+export type UpdateMytable2Params = {
+	id: number;
+}
+
+export type UpdateMytable2Result = {
+	changes: number;
+}
+
+export function updateMytable2(db: Database, data: UpdateMytable2Data, params: UpdateMytable2Params): UpdateMytable2Result {
+
+	const keys = Object.keys(data) as Array<keyof UpdateMytable2Data>;
+	const columns = keys.filter(key => data[key] !== undefined);
+	const values = columns.map(col => data[col]!).concat(params.id);
+
+	const sql = `
+	UPDATE mytable2
+	SET ${columns.map(col => `${col} = ?`).join(', ')}
+	WHERE id = ?`
+
+	return db.prepare(sql)
+		.run(values) as UpdateMytable2Result;
+}
