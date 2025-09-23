@@ -2,5 +2,5 @@
     "databaseUri": "./mydb.db",
     "sqlDir": "./tests/sqlite-e2e/sql",
     "client": "better-sqlite3",
-    "includeCrudTables": []
+    "includeCrudTables": ["roles"]
 }
