@@ -590,6 +590,21 @@ INNER JOIN cte2 c2 on c1.id = c2.id`;
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('dynamic-query-13-enum', async () => {
+		const sql = `-- @dynamicQuery
+		SELECT
+			enum_column
+		FROM all_types`;
+
+		const actual = await generateCode(dialect, sql, 'dynamic-query-13', schemaInfo);
+		const expected = readFileSync('tests/postgres/expected-code/dynamic-query13-enum.ts.txt', 'utf-8');
+
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('copy01', async () => {
 		const sql = `COPY mytable1 (value) FROM STDIN WITH CSV`;
 

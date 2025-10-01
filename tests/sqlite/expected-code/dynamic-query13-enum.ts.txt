@@ -1,0 +1,123 @@
+import type { Database } from 'better-sqlite3';
+import { EOL } from 'os';
+
+export type DynamicQuery13DynamicParams = {
+	select?: DynamicQuery13Select;
+	where?: DynamicQuery13Where[];
+}
+
+export type DynamicQuery13Result = {
+	enum_column?: ('x-small' | 'small' | 'medium' | 'large' | 'x-large');
+}
+
+export type DynamicQuery13Select = {
+	enum_column?: boolean;
+}
+
+const selectFragments = {
+	enum_column: `enum_column`,
+} as const;
+
+const NumericOperatorList = ['=', '<>', '>', '<', '>=', '<='] as const;
+type NumericOperator = typeof NumericOperatorList[number];
+type SetOperator = 'IN' | 'NOT IN';
+type BetweenOperator = 'BETWEEN';
+
+export type DynamicQuery13Where =
+	| { column: 'enum_column'; op: NumericOperator; value: ('x-small' | 'small' | 'medium' | 'large' | 'x-large') | null }
+	| { column: 'enum_column'; op: SetOperator; value: ('x-small' | 'small' | 'medium' | 'large' | 'x-large')[] }
+	| { column: 'enum_column'; op: BetweenOperator; value: [('x-small' | 'small' | 'medium' | 'large' | 'x-large') | null, ('x-small' | 'small' | 'medium' | 'large' | 'x-large') | null] }
+
+export function dynamicQuery13(db: Database, params?: DynamicQuery13DynamicParams): DynamicQuery13Result[] {
+
+	const { sql, paramsValues } = buildSql(params);
+	return db.prepare(sql)
+		.raw(true)
+		.all(paramsValues)
+		.map(data => mapArrayToDynamicQuery13Result(data, params?.select));
+}
+
+function buildSql(queryParams?: DynamicQuery13DynamicParams) {
+	const { select, where } = queryParams || {};
+
+	const selectedSqlFragments: string[] = [];
+	const paramsValues: any[] = [];
+
+	const whereColumns = new Set(where?.map(w => w.column) || []);
+
+	if (!select || select.enum_column === true) {
+		selectedSqlFragments.push(`enum_column`);
+	}
+
+	const fromSqlFragments: string[] = [];
+	fromSqlFragments.push(`FROM all_types`);
+
+	const whereSqlFragments: string[] = [];
+
+	const placeholder = () => '?';
+
+	where?.forEach(condition => {
+		const whereClause = whereCondition(condition, placeholder);
+		if (whereClause?.hasValue) {
+			whereSqlFragments.push(whereClause.sql);
+			paramsValues.push(...whereClause.values);
+		}
+	});
+
+	const whereSql = whereSqlFragments.length > 0 ? `WHERE ${whereSqlFragments.join(' AND ')}` : '';
+
+	const sql = `SELECT
+	${selectedSqlFragments.join(`,${EOL}`)}
+	${fromSqlFragments.join(EOL)}
+	${whereSql}`;
+
+	return { sql, paramsValues };
+}
+
+function mapArrayToDynamicQuery13Result(data: any, select?: DynamicQuery13Select) {
+	const result = {} as DynamicQuery13Result;
+	let rowIndex = -1;
+	if (!select || select.enum_column === true) {
+		rowIndex++;
+		result.enum_column = data[rowIndex];
+	}
+	return result;
+}
+
+type WhereConditionResult = {
+	sql: string;
+	hasValue: boolean;
+	values: any[];
+}
+
+function whereCondition(condition: DynamicQuery13Where, placeholder: () => string): WhereConditionResult | null {
+	const selectFragment = selectFragments[condition.column];
+	const { op, value } = condition;
+
+	if (op === 'BETWEEN') {
+		const [from, to] = Array.isArray(value) ? value : [null, null];
+		return {
+			sql: `${selectFragment} BETWEEN ${placeholder()} AND ${placeholder()}`,
+			hasValue: from != null && to != null,
+			values: [from, to]
+		}
+	}
+	if (op === 'IN' || op === 'NOT IN') {
+		if (!Array.isArray(value) || value.length === 0) {
+			return { sql: '', hasValue: false, values: [] };
+		}
+		return {
+			sql: `${selectFragment} ${op} (${value.map(() => placeholder()).join(', ')})`,
+			hasValue: true,
+			values: value
+		}
+	}
+	if (NumericOperatorList.includes(op)) {
+		return {
+			sql: `${selectFragment} ${op} ${placeholder()}`,
+			hasValue: value != null,
+			values: [value]
+		}
+	}
+	return null;
+}

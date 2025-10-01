@@ -180,7 +180,7 @@ export function _mapColumnType(postgresType: PostgresType, json = false): TsType
 	}
 	if (isEnumType(postgresType)) {
 		const enumValues = postgresType.substring(postgresType.indexOf('(') + 1, postgresType.indexOf(')'));
-		return enumValues.split(',').join(' | ') as TsType;
+		return `(${enumValues.split(',').join(' | ')})` as TsType;
 	}
 	switch (postgresType) {
 		case 'bool':
