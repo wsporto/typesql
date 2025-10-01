@@ -31,7 +31,7 @@ function mapColumnType(sqliteType: SQLiteType, client: SQLiteClient): TsType {
 	}
 	if (sqliteType.startsWith('ENUM')) {
 		const enumValues = sqliteType.substring(sqliteType.indexOf('(') + 1, sqliteType.indexOf(')'));
-		return enumValues.split(',').join(' | ') as TsType;
+		return `(${enumValues.split(',').join(' | ')})` as TsType;
 	}
 	return 'any';
 }

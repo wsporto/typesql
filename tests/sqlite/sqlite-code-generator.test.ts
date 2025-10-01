@@ -1292,4 +1292,19 @@ WHERE max(c1.id, :param3) = min(c2.id, :param3)`;
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('dynamic-query-13-enum', () => {
+		const sql = `-- @dynamicQuery
+SELECT
+    enum_column
+FROM all_types`;
+
+		const isCrud = false;
+		const actual = generateTsCode(sql, 'dynamic-query13', sqliteDbSchema, 'better-sqlite3', isCrud);
+		const expected = readFileSync('tests/sqlite/expected-code/dynamic-query13-enum.ts.txt', 'utf-8');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
 });

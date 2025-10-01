@@ -1,11 +1,11 @@
 import type { Database } from 'bun:sqlite';
 
 export type Select09Params = {
-	enum_value: 'x-small' | 'small' | 'medium' | 'large' | 'x-large';
+	enum_value: ('x-small' | 'small' | 'medium' | 'large' | 'x-large');
 }
 
 export type Select09Result = {
-	enum_column: 'x-small' | 'small' | 'medium' | 'large' | 'x-large';
+	enum_column: ('x-small' | 'small' | 'medium' | 'large' | 'x-large');
 }
 
 export function select09(db: Database, params: Select09Params): Select09Result[] {

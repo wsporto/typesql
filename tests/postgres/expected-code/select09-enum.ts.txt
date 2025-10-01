@@ -1,11 +1,11 @@
 import pg from 'pg';
 
 export type Select09Params = {
-	enum_value: 'x-small' | 'small' | 'medium' | 'large' | 'x-large';
+	enum_value: ('x-small' | 'small' | 'medium' | 'large' | 'x-large');
 }
 
 export type Select09Result = {
-	enum_column: 'x-small' | 'small' | 'medium' | 'large' | 'x-large';
+	enum_column: ('x-small' | 'small' | 'medium' | 'large' | 'x-large');
 }
 
 export async function select09(client: pg.Client | pg.Pool | pg.PoolClient, params: Select09Params): Promise<Select09Result[]> {
