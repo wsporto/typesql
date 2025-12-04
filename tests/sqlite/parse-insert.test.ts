@@ -710,6 +710,45 @@ describe('sqlite-parse-insert', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('INSERT INTO mytable1 (value) RETURNING id, id+id, value', async () => {
+		const sql = 'INSERT INTO mytable1 (value) VALUES (:value) RETURNING id, id+id, value';
+		const actual = await parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql: 'INSERT INTO mytable1 (value) VALUES (?) RETURNING id, id+id, value',
+			queryType: 'Insert',
+			multipleRowsResult: false,
+			returning: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'INTEGER',
+					notNull: true
+				},
+				{
+					name: 'id+id',
+					type: 'INTEGER',
+					notNull: true
+				},
+				{
+					name: 'value',
+					type: 'INTEGER',
+					notNull: false
+				}
+			],
+			parameters: [
+				{
+					name: 'value',
+					columnType: 'INTEGER',
+					notNull: false
+				}
+			]
+		};
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('insert into all_types (blob_column) values (vector(?))', () => {
 		const sql = 'insert into all_types (blob_column) values (vector(?))';
 		const actual = parseSql(sql, sqliteDbSchema);

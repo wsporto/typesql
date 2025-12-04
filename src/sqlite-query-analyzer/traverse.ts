@@ -2057,7 +2057,7 @@ function traverse_insert_stmt(insert_stmt: Insert_stmtContext, traverseContext: 
 	}
 
 	const returning_clause = insert_stmt.returning_clause();
-	const returninColumns = returning_clause ? traverse_returning_clause(returning_clause, fromColumns) : [];
+	const returninColumns = returning_clause ? traverse_returning_clause(returning_clause, { ...traverseContext, fromColumns }) : [];
 
 	const queryResult: InsertResult = {
 		queryType: 'Insert',
@@ -2069,7 +2069,9 @@ function traverse_insert_stmt(insert_stmt: Insert_stmtContext, traverseContext: 
 	return queryResult;
 }
 
-function traverse_returning_clause(returning_clause: Returning_clauseContext, fromColumns: ColumnDef[]) {
+function traverse_returning_clause(returning_clause: Returning_clauseContext, traverseContext: TraverseContext) {
+	const { fromColumns } = traverseContext;
+
 	const result_column_list = returning_clause.result_column_list();
 	const result = result_column_list.flatMap((result_column) => {
 		if (result_column.STAR()) {
@@ -2082,6 +2084,11 @@ function traverse_returning_clause(returning_clause: Returning_clauseContext, fr
 				};
 				return newCol;
 			});
+		}
+		const expr = result_column.expr();
+		if (expr) {
+			const exprResult = traverse_expr(expr, traverseContext);
+			return exprResult;
 		}
 		return [];
 	});
