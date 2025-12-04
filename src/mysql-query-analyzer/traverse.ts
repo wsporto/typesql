@@ -657,6 +657,8 @@ export type UpdateResult = {
 	constraints: Constraint[];
 	columns: TypeAndNullInfer[];
 	whereParams: TypeAndNullInferParam[];
+	returningColumns: TypeAndNullInfer[];
+	returing: boolean;
 };
 export type DeleteResult = {
 	constraints: Constraint[];

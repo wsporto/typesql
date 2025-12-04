@@ -266,4 +266,79 @@ describe('sqlite-parse-update', () => {
 		}
 		assert.deepStrictEqual(actual.right, expected);
 	});
+
+	it('UPDATE mytable1 SET value = $1 RETURNING *', () => {
+		const sql = 'UPDATE mytable1 SET value = :value RETURNING *';
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql: 'UPDATE mytable1 SET value = ? RETURNING *',
+			queryType: 'Update',
+			multipleRowsResult: false,
+			returning: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'INTEGER',
+					notNull: true
+				},
+				{
+					name: 'value',
+					type: 'INTEGER',
+					notNull: false
+				}
+			],
+			data: [
+				{
+					name: 'value',
+					columnType: 'INTEGER',
+					notNull: false
+				}
+			],
+			parameters: []
+		};
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('UPDATE mytable1 SET value = $1 RETURNING id, id+id, value', () => {
+		const sql = 'UPDATE mytable1 SET value = :value RETURNING id, id+id, value';
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql: 'UPDATE mytable1 SET value = ? RETURNING id, id+id, value',
+			queryType: 'Update',
+			multipleRowsResult: false,
+			returning: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'INTEGER',
+					notNull: true
+				},
+				{
+					name: 'id+id',
+					type: 'INTEGER',
+					notNull: true
+				},
+				{
+					name: 'value',
+					type: 'INTEGER',
+					notNull: false
+				}
+			],
+			data: [
+				{
+					name: 'value',
+					columnType: 'INTEGER',
+					notNull: false
+				}
+			],
+			parameters: []
+		};
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
 });

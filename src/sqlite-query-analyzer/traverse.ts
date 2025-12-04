@@ -2135,12 +2135,17 @@ function traverse_update_stmt(update_stmt: Update_stmtContext, traverseContext: 
 		}
 	});
 
+	const returning_clause = update_stmt.returning_clause();
+	const returningColumns = returning_clause ? traverse_returning_clause(returning_clause, { ...traverseContext, fromColumns }) : [];
+
 	const queryResult: UpdateResult = {
 		queryType: 'Update',
 		constraints: traverseContext.constraints,
 		columns: updateColumns,
 		whereParams: whereParams,
-		parameters: traverseContext.parameters
+		parameters: traverseContext.parameters,
+		returing: returning_clause != null,
+		returningColumns
 	};
 	return queryResult;
 }
