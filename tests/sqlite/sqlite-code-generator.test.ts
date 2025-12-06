@@ -295,7 +295,19 @@ AND datetime(integer_column, 'auto') = :date_time`;
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
-	it('insert03-libsql - select with same parameter used twice', async () => {
+	it('insert03 - INSERT INTO mytable1(value) VALUES(:value) RETURNING *', async () => {
+		const sql = 'INSERT INTO mytable1(value) VALUES(:value) RETURNING *';
+
+		const actual = await generateTsCode(sql, 'insert03', sqliteDbSchema, 'better-sqlite3', false);
+		const expected = readFileSync('tests/sqlite/expected-code/insert03.ts.txt', 'utf-8');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('insert03-libsql - INSERT INTO mytable1(value) VALUES(:value) RETURNING *', async () => {
 		const sql = 'INSERT INTO mytable1(value) VALUES(:value) RETURNING *';
 
 		const actual = await generateTsCode(sql, 'insert03', sqliteDbSchema, 'libsql', false);
@@ -307,7 +319,7 @@ AND datetime(integer_column, 'auto') = :date_time`;
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
-	it('insert03-d1 - select with same parameter used twice', async () => {
+	it('insert03-d1 - INSERT INTO mytable1(value) VALUES(:value) RETURNING *', async () => {
 		const sql = 'INSERT INTO mytable1(value) VALUES(:value) RETURNING *';
 
 		const actual = await generateTsCode(sql, 'insert03', sqliteDbSchema, 'd1', false);
@@ -419,6 +431,19 @@ AND datetime(integer_column, 'auto') = :date_time`;
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('update03 - returning *', () => {
+		const sql = 'UPDATE mytable1 SET value = ? WHERE id = ? RETURNING *';
+
+		const actual = generateTsCode(sql, 'update03', sqliteDbSchema, 'better-sqlite3');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+
+		const expected = readFileSync('tests/sqlite/expected-code/update03.ts.txt', 'utf-8');
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('delete01 - DELETE FROM mytable1 WHERE id=?', () => {
 		const sql = 'DELETE FROM mytable1 WHERE id=?';
 
@@ -460,6 +485,18 @@ AND datetime(integer_column, 'auto') = :date_time`;
 
 		const actual = generateTsCode(sql, 'delete01', sqliteDbSchema, 'd1');
 		const expected = readFileSync('tests/sqlite/expected-code/delete01-d1.ts.txt', 'utf-8');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('delete02 - returning *', () => {
+		const sql = 'DELETE FROM mytable1 WHERE id=? RETURNING *';
+
+		const actual = generateTsCode(sql, 'delete02', sqliteDbSchema, 'better-sqlite3');
+		const expected = readFileSync('tests/sqlite/expected-code/delete02.ts.txt', 'utf-8');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);

@@ -1,3 +1,4 @@
+export * from "./delete02";
 export * from "./dynamic-query01";
 export * from "./dynamic-query02";
 export * from "./dynamic-query03";
@@ -5,8 +6,10 @@ export * from "./dynamic-query04";
 export * from "./dynamic-query05";
 export * from "./dynamic-query08";
 export * from "./dynamic-query10";
+export * from "./insert03";
 export * from "./nested01";
 export * from "./nested02";
 export * from "./nested03";
 export * from "./nested04-without-join-table";
 export * from "./nested04";
+export * from "./update03";

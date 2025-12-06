@@ -1,0 +1,29 @@
+import type { Database } from 'better-sqlite3';
+
+export type Insert03Params = {
+	param1: number | null;
+}
+
+export type Insert03Result = {
+	id: number;
+	value?: number;
+}
+
+export function insert03(db: Database, params: Insert03Params): Insert03Result {
+	const sql = `
+	INSERT INTO mytable1(value) VALUES(?) RETURNING *
+	`
+	const res = db.prepare(sql)
+		.raw(true)
+		.get([params.param1]);
+
+	return mapArrayToInsert03Result(res);
+}
+
+function mapArrayToInsert03Result(data: any) {
+	const result: Insert03Result = {
+		id: data[0],
+		value: data[1]
+	}
+	return result;
+}

@@ -168,12 +168,14 @@ function createTsDescriptor(queryInfo: SchemaDef, client: SQLiteClient): TsDescr
 
 function mapColumns(client: SQLiteClient, queryType: SchemaDef['queryType'], columns: ColumnInfo[], returning = false) {
 
-	const resultColumns = getInsertUpdateResult(client);
-	if (queryType === 'Insert' && !returning) {
-		return resultColumns;
-	}
-	if (queryType === 'Update' || queryType === 'Delete') {
-		return [resultColumns[0]];
+	if (!returning) {
+		const resultColumns = getInsertUpdateResult(client);
+		if (queryType === 'Insert') {
+			return resultColumns;
+		}
+		if (queryType === 'Update' || queryType === 'Delete') {
+			return [resultColumns[0]];
+		}
 	}
 
 	const escapedColumnsNames = renameInvalidNames(columns.map((col) => col.name));
@@ -817,7 +819,7 @@ function writeExecFunction(writer: CodeBlockWriter, client: SQLiteClient, params
 	switch (client) {
 		case 'better-sqlite3':
 			const betterSqliteArgs = 'db: Database' + restParameters;
-			if (queryType === 'Select') {
+			if (queryType === 'Select' || returning) {
 				writer.write(`export function ${functionName}(${betterSqliteArgs}): ${returnType}`).block(() => {
 					writeSql(writer, sql);
 					if (multipleRowsResult) {
@@ -831,13 +833,18 @@ function writeExecFunction(writer: CodeBlockWriter, client: SQLiteClient, params
 						writer.indent().write('.raw(true)').newLine();
 						writer.indent().write(`.get(${queryParams});`).newLine();
 						writer.blankLine();
-						writer.write(`return res ? mapArrayTo${resultTypeName}(res) : null;`);
+						if (!returning) {
+							writer.write(`return res ? mapArrayTo${resultTypeName}(res) : null;`);
+						}
+						else {
+							writer.write(`return mapArrayTo${resultTypeName}(res);`);
+						}
 					}
 				});
 				writer.blankLine();
 				writeMapFunction(writer, mapFunctionParams);
 			}
-			if (queryType === 'Update' || queryType === 'Delete' || (queryType === 'Insert' && !returning)) {
+			if ((queryType === 'Update' || queryType === 'Delete' || queryType === 'Insert') && !returning) {
 				writer.write(`export function ${functionName}(${betterSqliteArgs}): ${resultTypeName}`).block(() => {
 					writeSql(writer, sql);
 					writer.write('return db.prepare(sql)').newLine();
