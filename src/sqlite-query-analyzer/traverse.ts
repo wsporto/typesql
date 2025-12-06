@@ -2157,10 +2157,15 @@ function traverse_delete_stmt(delete_stmt: Delete_stmtContext, traverseContext: 
 	const expr = delete_stmt.expr();
 	traverse_expr(expr, { ...traverseContext, fromColumns });
 
+	const returning_clause = delete_stmt.returning_clause();
+	const returningColumns = returning_clause ? traverse_returning_clause(returning_clause, { ...traverseContext, fromColumns }) : [];
+
 	const queryResult: DeleteResult = {
 		queryType: 'Delete',
 		constraints: traverseContext.constraints,
-		parameters: traverseContext.parameters
+		parameters: traverseContext.parameters,
+		returningColumns,
+		returing: returning_clause != null
 	};
 	return queryResult;
 }

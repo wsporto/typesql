@@ -664,6 +664,8 @@ export type DeleteResult = {
 	constraints: Constraint[];
 	queryType: 'Delete';
 	parameters: TypeAndNullInferParam[];
+	returningColumns: TypeAndNullInfer[];
+	returing: boolean;
 };
 
 function renameFromColumns(fromColumns: TypeAndNullInfer[], recursiveNames: string[]): ColumnDef[] {
