@@ -492,6 +492,18 @@ AND datetime(integer_column, 'auto') = :date_time`;
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('delete02 - returning *', () => {
+		const sql = 'DELETE FROM mytable1 WHERE id=? RETURNING *';
+
+		const actual = generateTsCode(sql, 'delete02', sqliteDbSchema, 'better-sqlite3');
+		const expected = readFileSync('tests/sqlite/expected-code/delete02.ts.txt', 'utf-8');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('crud-select01', () => {
 		const actual = generateCrud('better-sqlite3', 'Select', 'mytable1', sqliteDbSchema);
 		const expected = readFileSync('tests/sqlite/expected-code/crud-select01.ts.txt', 'utf-8');

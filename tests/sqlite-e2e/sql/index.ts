@@ -1,3 +1,4 @@
+export * from "./delete02";
 export * from "./dynamic-query01";
 export * from "./dynamic-query02";
 export * from "./dynamic-query03";
