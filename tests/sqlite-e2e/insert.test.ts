@@ -1,6 +1,5 @@
 import assert from 'node:assert';
 import Database from 'better-sqlite3';
-import { insertIntoRoles, selectFromRoles, SelectFromRolesResult, updateRoles } from './sql/crud/roles';
 import { insert03, Insert03Result } from './sql';
 
 describe('sqlite-insert', () => {

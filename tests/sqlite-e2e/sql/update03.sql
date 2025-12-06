@@ -1,0 +1,1 @@
+UPDATE mytable1 SET value = ? WHERE id = ? RETURNING *

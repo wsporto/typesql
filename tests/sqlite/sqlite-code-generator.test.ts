@@ -431,6 +431,19 @@ AND datetime(integer_column, 'auto') = :date_time`;
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('update03 - returning *', () => {
+		const sql = 'UPDATE mytable1 SET value = ? WHERE id = ? RETURNING *';
+
+		const actual = generateTsCode(sql, 'update03', sqliteDbSchema, 'better-sqlite3');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+
+		const expected = readFileSync('tests/sqlite/expected-code/update03.ts.txt', 'utf-8');
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('delete01 - DELETE FROM mytable1 WHERE id=?', () => {
 		const sql = 'DELETE FROM mytable1 WHERE id=?';
 
