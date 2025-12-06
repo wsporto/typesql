@@ -817,7 +817,7 @@ function writeExecFunction(writer: CodeBlockWriter, client: SQLiteClient, params
 	switch (client) {
 		case 'better-sqlite3':
 			const betterSqliteArgs = 'db: Database' + restParameters;
-			if (queryType === 'Select') {
+			if (queryType === 'Select' || returning) {
 				writer.write(`export function ${functionName}(${betterSqliteArgs}): ${returnType}`).block(() => {
 					writeSql(writer, sql);
 					if (multipleRowsResult) {
@@ -831,7 +831,12 @@ function writeExecFunction(writer: CodeBlockWriter, client: SQLiteClient, params
 						writer.indent().write('.raw(true)').newLine();
 						writer.indent().write(`.get(${queryParams});`).newLine();
 						writer.blankLine();
-						writer.write(`return res ? mapArrayTo${resultTypeName}(res) : null;`);
+						if (!returning) {
+							writer.write(`return res ? mapArrayTo${resultTypeName}(res) : null;`);
+						}
+						else {
+							writer.write(`return mapArrayTo${resultTypeName}(res);`);
+						}
 					}
 				});
 				writer.blankLine();

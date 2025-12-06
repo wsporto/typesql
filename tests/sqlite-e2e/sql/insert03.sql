@@ -1,0 +1,1 @@
+INSERT INTO mytable1(value) VALUES(?) RETURNING *
