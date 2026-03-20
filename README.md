@@ -86,6 +86,7 @@ Options:
 | **sqlDir** | Directory where SQL queries are stored. Will search recursively by appending the `**/*.sql` glob pattern. | `./src` |
 | **authToken** | Authentication token. Required **only for the `libsql` client**. Supports environment variables (`${VAR_NAME}`). ||
 | **includeCrudTables** | Generates `select`, `insert`, `update`, and `delete` queries for specified tables. | `['users', 'permissions', 'tags']` |
+| **ignoreFiles** | Glob pattern(s) for SQL files to ignore. Can be a single pattern or an array of patterns. | <ul><li>`"**/*-draft.sql"`</li><li>`["**/test-*.sql", "**/temp/**"]`</li></ul> |
 
 To load variables from a `.env` file, pass the `--env-file` flag:
 ```sh
