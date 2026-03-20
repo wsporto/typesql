@@ -182,6 +182,11 @@ export type TypeSqlConfig = {
 	 * Defaults to ['public'] if not specified.
 	 */
 	schemas?: string[];
+	/**
+	 * Optional glob pattern or list of glob patterns for SQL files to ignore.
+	 * Example: "**\/*-draft.sql" or ["**\/*-draft.sql", "tests/**\/*.sql"]
+	 */
+	ignoreFiles?: string | string[];
 };
 
 export type SqlGenOption = 'select' | 's' | 'insert' | 'i' | 'update' | 'u' | 'delete' | 'd';

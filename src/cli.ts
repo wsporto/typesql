@@ -109,9 +109,11 @@ function validateDirectories(dir: string) {
 
 function watchDirectories(client: DatabaseClient, sqlDir: string, outDir: string, dbSchema: SchemaInfo | PostgresSchemaInfo, config: TypeSqlConfig) {
 	const dirGlob = `${sqlDir}/**/*.sql`;
+	const ignorePatterns = normalizeIgnorePatterns(config.ignoreFiles);
 
 	chokidar
 		.watch(dirGlob, {
+			ignored: ignorePatterns,
 			awaitWriteFinish: {
 				stabilityThreshold: 100
 			}
@@ -152,8 +154,9 @@ async function compile(watch: boolean, config: TypeSqlConfig) {
 
 	await generateCrudTables(outDir, dbSchema.value, includeCrudTables);
 	const dirGlob = `${sqlDir}/**/*.sql`;
+	const ignorePatterns = normalizeIgnorePatterns(config.ignoreFiles);
 
-	const sqlFiles = globSync(dirGlob);
+	const sqlFiles = globSync(dirGlob, { ignore: ignorePatterns });
 
 	const filesGeneration = sqlFiles.map((sqlPath) => generateTsFile(databaseClient, sqlPath, resolveTsFilePath(sqlPath, sqlDir, outDir), dbSchema.value, isCrudFile(sqlDir, sqlPath)));
 	await Promise.all(filesGeneration);
@@ -310,4 +313,11 @@ function isCrudFile(sqlDir: string, sqlFile: string): boolean {
 	const relative = path.relative(`${sqlDir}/${CRUD_FOLDER}`, sqlFile);
 	const result = relative != null && !relative.startsWith('..') && !path.isAbsolute(relative);
 	return result;
+}
+
+function normalizeIgnorePatterns(ignoreFiles: string | string[] | undefined): string[] {
+	if (!ignoreFiles) {
+		return [];
+	}
+	return Array.isArray(ignoreFiles) ? ignoreFiles : [ignoreFiles];
 }
