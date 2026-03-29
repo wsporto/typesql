@@ -954,7 +954,7 @@ function writeExecFunction(writer: CodeBlockWriter, client: SQLiteClient, params
 }
 
 function writeSql(writer: CodeBlockWriter, sql: string) {
-	const sqlSplit = sql.split('\n');
+	const sqlSplit = sql.trim().split('\n');
 	writer.write('const sql = `').newLine();
 	sqlSplit.forEach((sqlLine) => {
 		writer.indent().write(sqlLine.trimEnd()).newLine();

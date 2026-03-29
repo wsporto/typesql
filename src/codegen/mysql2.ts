@@ -121,7 +121,7 @@ export function generateTsCodeForMySQL(tsDescriptor: TsDescriptor, fileName: str
 
 	const escapedBackstick = scapeBackStick(tsDescriptor.sql);
 	const processedSql = replaceOrderByParam(escapedBackstick);
-	const sqlSplit = processedSql.split('\n');
+	const sqlSplit = processedSql.trim().split('\n');
 
 	writer.write(`export async function ${camelCaseName}(${functionArguments}): Promise<${functionReturnType}>`).block(() => {
 		if (tsDescriptor.dynamicQuery == null) {

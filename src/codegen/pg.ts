@@ -535,7 +535,7 @@ function _writeExecFunction(writer: CodeBlockWriter, params: ExecFunctionParamet
 }
 
 function writeSql(writer: CodeBlockWriter, sql: string) {
-	const sqlSplit = sql.trimEnd().split('\n');
+	const sqlSplit = sql.trim().split('\n');
 	writer.write('const sql = `').newLine();
 	sqlSplit.forEach((sqlLine) => {
 		writer.indent().write(sqlLine.trimEnd()).newLine();
