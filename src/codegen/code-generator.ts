@@ -9,7 +9,7 @@ import { generateCode } from './pg';
 import { ColumnSchema } from '../mysql-query-analyzer/types';
 import { convertToCamelCaseName } from './shared/codegen-util';
 
-export async function generateTsFile(client: DatabaseClient, sqlFile: string, tsFilePath: string, schemaInfo: SchemaInfo | PostgresSchemaInfo, isCrudFile: boolean) {
+export async function generateTsFile(client: DatabaseClient, sqlFile: string, tsFilePath: string, schemaInfo: SchemaInfo | PostgresSchemaInfo, isCrudFile: boolean, lineEndings?: '\n' | '\r\n') {
 	const sqlContent = fs.readFileSync(sqlFile, 'utf8');
 
 	if (sqlContent.trim() === '') {
@@ -26,6 +26,7 @@ export async function generateTsFile(client: DatabaseClient, sqlFile: string, ts
 		sqlContent,
 		schemaInfo,
 		isCrudFile,
+		lineEndings,
 	})
 
 	if (isLeft(tsContentResult)) {
@@ -45,19 +46,20 @@ export async function generateTypeScriptContent(params: {
 	sqlContent: string;
 	schemaInfo: SchemaInfo | PostgresSchemaInfo;
 	isCrudFile: boolean;
+	lineEndings?: '\n' | '\r\n';
 }): Promise<Either<TypeSqlError, string>> {
-	const { client, queryName, sqlContent, schemaInfo, isCrudFile } = params;
+	const { client, queryName, sqlContent, schemaInfo, isCrudFile, lineEndings } = params;
 
 	switch (client.type) {
 		case 'mysql2':
-			return generateTsFileFromContent(client, queryName, sqlContent, isCrudFile);
+			return generateTsFileFromContent(client, queryName, sqlContent, isCrudFile, lineEndings);
 		case 'better-sqlite3':
 		case 'bun:sqlite':
 		case 'libsql':
 		case 'd1':
-			return validateAndGenerateCode(client, sqlContent, queryName, schemaInfo.columns as ColumnSchema[], isCrudFile);
+			return validateAndGenerateCode(client, sqlContent, queryName, schemaInfo.columns as ColumnSchema[], isCrudFile, lineEndings);
 		case 'pg': {
-			const result = await generateCode(client, sqlContent, queryName, schemaInfo as PostgresSchemaInfo);
+			const result = await generateCode(client, sqlContent, queryName, schemaInfo as PostgresSchemaInfo, lineEndings);
 			return result.isErr() ? left(result.error) : right(result.value);
 		}
 	}

@@ -13,12 +13,12 @@ import { PostgresColumnSchema } from '../drivers/types';
 import { writeBuildOrderByBlock, writeBuildSqlFunction, writeDynamicQueryOperators, writeMapToResultFunction, writeOrderByToObjectFunction, writeWhereConditionFunction } from './shared/codegen-util';
 import { Field2 } from '../sqlite-query-analyzer/sqlite-describe-nested-query';
 
-export function generateCode(client: PgDielect, sql: string, queryName: string, schemaInfo: PostgresSchemaInfo): ResultAsync<string, TypeSqlError> {
+export function generateCode(client: PgDielect, sql: string, queryName: string, schemaInfo: PostgresSchemaInfo, newLine?: '\n' | '\r\n'): ResultAsync<string, TypeSqlError> {
 	if (isEmptySql(sql)) {
 		return okAsync('');
 	}
 	return _describeQuery(client, sql, schemaInfo)
-		.map(schemaDef => generateTsCode(queryName, schemaDef, client.type))
+		.map(schemaDef => generateTsCode(queryName, schemaDef, client.type, newLine))
 }
 
 function isEmptySql(sql: string) {
@@ -33,11 +33,11 @@ function _describeQuery(databaseClient: PgDielect, sql: string, dbSchema: Postgr
 	return describeQuery(databaseClient.client, sql, dbSchema);
 }
 
-function generateTsCode(queryName: string, schemaDef: PostgresSchemaDef, client: 'pg'): string {
+function generateTsCode(queryName: string, schemaDef: PostgresSchemaDef, client: 'pg', newLine?: '\n' | '\r\n'): string {
 
 	const { sql } = schemaDef;
 
-	const writer = createCodeBlockWriter();
+	const writer = createCodeBlockWriter(newLine);
 
 	const {
 		camelCaseName,
@@ -586,7 +586,7 @@ function isList(param: TsParameterDescriptor) {
 	return param.tsType.endsWith('[]') && !param.isArray;
 }
 
-export function generateCrud(queryType: CrudQueryType, tableName: string, dbSchema: PostgresColumnSchema[]) {
+export function generateCrud(queryType: CrudQueryType, tableName: string, dbSchema: PostgresColumnSchema[], newLine?: '\n' | '\r\n') {
 
 	const queryName = getQueryName(queryType, tableName);
 	const camelCaseName = convertToCamelCaseName(queryName);
@@ -595,8 +595,7 @@ export function generateCrud(queryType: CrudQueryType, tableName: string, dbSche
 	const resultTypeName = `${capitalizedName}Result`;
 	const paramsTypeName = `${capitalizedName}Params`;
 
-	const writer = createCodeBlockWriter();
-
+	const writer = createCodeBlockWriter(newLine);
 	const allColumns = dbSchema.filter((col) => col.table === tableName);
 	const keyColumns = allColumns.filter((col) => col.column_key === 'PRI');
 	if (keyColumns.length === 0) {

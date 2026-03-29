@@ -122,7 +122,7 @@ function watchDirectories(client: DatabaseClient, sqlDir: string, outDir: string
 
 async function rewiteFiles(client: DatabaseClient, sqlPath: string, sqlDir: string, outDir: string, schemaInfo: SchemaInfo | PostgresSchemaInfo, isCrudFile: boolean, config: TypeSqlConfig) {
 	const tsFilePath = resolveTsFilePath(sqlPath, sqlDir, outDir);
-	await generateTsFile(client, sqlPath, tsFilePath, schemaInfo, isCrudFile);
+	await generateTsFile(client, sqlPath, tsFilePath, schemaInfo, isCrudFile, config.lineEndings);
 	const tsDir = path.dirname(tsFilePath);
 	writeIndexFileFor(tsDir, config);
 }
@@ -150,12 +150,12 @@ async function compile(watch: boolean, config: TypeSqlConfig) {
 		return;
 	}
 
-	await generateCrudTables(outDir, dbSchema.value, includeCrudTables);
+	await generateCrudTables(outDir, dbSchema.value, includeCrudTables, config.lineEndings);
 	const dirGlob = `${sqlDir}/**/*.sql`;
 
 	const sqlFiles = globSync(dirGlob);
 
-	const filesGeneration = sqlFiles.map((sqlPath) => generateTsFile(databaseClient, sqlPath, resolveTsFilePath(sqlPath, sqlDir, outDir), dbSchema.value, isCrudFile(sqlDir, sqlPath)));
+	const filesGeneration = sqlFiles.map((sqlPath) => generateTsFile(databaseClient, sqlPath, resolveTsFilePath(sqlPath, sqlDir, outDir), dbSchema.value, isCrudFile(sqlDir, sqlPath), config.lineEndings));
 	await Promise.all(filesGeneration);
 
 	writeIndexFile(outDir, config);
@@ -264,7 +264,7 @@ function _filterTables(schemaInfo: SchemaInfo | PostgresSchemaInfo, includeCrudT
 	return filteredTables;
 }
 
-async function generateCrudTables(sqlFolderPath: string, schemaInfo: SchemaInfo | PostgresSchemaInfo, includeCrudTables: string[]) {
+async function generateCrudTables(sqlFolderPath: string, schemaInfo: SchemaInfo | PostgresSchemaInfo, includeCrudTables: string[], newLine?: '\n' | '\r\n') {
 
 	const filteredTables = _filterTables(schemaInfo, includeCrudTables);
 	for (const tableInfo of filteredTables) {
@@ -277,17 +277,17 @@ async function generateCrudTables(sqlFolderPath: string, schemaInfo: SchemaInfo 
 			checkAndGenerateSql(schemaInfo.kind, `${filePath}update-${tableName}.sql`, 'update', tableName, columns);
 			checkAndGenerateSql(schemaInfo.kind, `${filePath}delete-from-${tableName}.sql`, 'delete', tableName, columns);
 		} else {
-			generateAndWriteCrud(schemaInfo.kind, `${filePath}select-from-${tableName}.ts`, 'Select', tableName, schemaInfo.columns);
-			generateAndWriteCrud(schemaInfo.kind, `${filePath}insert-into-${tableName}.ts`, 'Insert', tableName, schemaInfo.columns);
-			generateAndWriteCrud(schemaInfo.kind, `${filePath}update-${tableName}.ts`, 'Update', tableName, schemaInfo.columns);
-			generateAndWriteCrud(schemaInfo.kind, `${filePath}delete-from-${tableName}.ts`, 'Delete', tableName, schemaInfo.columns);
+			generateAndWriteCrud(schemaInfo.kind, `${filePath}select-from-${tableName}.ts`, 'Select', tableName, schemaInfo.columns, newLine);
+			generateAndWriteCrud(schemaInfo.kind, `${filePath}insert-into-${tableName}.ts`, 'Insert', tableName, schemaInfo.columns, newLine);
+			generateAndWriteCrud(schemaInfo.kind, `${filePath}update-${tableName}.ts`, 'Update', tableName, schemaInfo.columns, newLine);
+			generateAndWriteCrud(schemaInfo.kind, `${filePath}delete-from-${tableName}.ts`, 'Delete', tableName, schemaInfo.columns, newLine);
 		}
 	}
 }
 
-function generateAndWriteCrud(client: 'pg' | SQLiteClient, filePath: string, queryType: CrudQueryType, tableName: string, columns: ColumnSchema[] | PostgresColumnSchema[]) {
+function generateAndWriteCrud(client: 'pg' | SQLiteClient, filePath: string, queryType: CrudQueryType, tableName: string, columns: ColumnSchema[] | PostgresColumnSchema[], newLine?: '\n' | '\r\n') {
 
-	const content = client === 'pg' ? generatePgCrud(queryType, tableName, columns as PostgresColumnSchema[]) : generateCrud(client, queryType, tableName, columns as ColumnSchema[]);
+	const content = client === 'pg' ? generatePgCrud(queryType, tableName, columns as PostgresColumnSchema[], newLine) : generateCrud(client, queryType, tableName, columns as ColumnSchema[], newLine);
 	writeFile(filePath, content);
 	console.log('Generated file:', filePath);
 }

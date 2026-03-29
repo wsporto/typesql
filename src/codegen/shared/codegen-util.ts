@@ -38,10 +38,10 @@ export type TypeNames = {
 	whereTypeName: string;
 }
 
-export function createCodeBlockWriter() {
+export function createCodeBlockWriter(newLine?: '\n' | '\r\n') {
 	const writer = new CodeBlockWriter({
 		useTabs: true,
-		newLine: EOL as '\n' | '\r\n'
+		newLine: newLine ?? EOL as '\n' | '\r\n'
 	});
 	return writer;
 }

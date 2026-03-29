@@ -9,8 +9,11 @@ import type { FragmentInfoResult } from '../mysql-query-analyzer/types';
 import { EOL } from 'node:os';
 import { capitalize, convertToCamelCaseName, generateRelationType, ParamInfo, renameInvalidNames, TsDescriptor } from './shared/codegen-util';
 
-export function generateTsCodeForMySQL(tsDescriptor: TsDescriptor, fileName: string, crud = false): string {
-	const writer = new CodeBlockWriter();
+export function generateTsCodeForMySQL(tsDescriptor: TsDescriptor, fileName: string, crud = false, newLine?: '\n' | '\r\n'): string {
+	const writer = new CodeBlockWriter({
+		useTabs: true,
+		newLine: newLine ?? EOL as '\n' | '\r\n'
+	});
 
 	const camelCaseName = convertToCamelCaseName(fileName);
 	const capitalizedName = capitalize(camelCaseName);
@@ -619,7 +622,8 @@ export async function generateTsFileFromContent(
 	client: MySqlDialect,
 	queryName: string,
 	sqlContent: string,
-	crud = false
+	crud = false,
+	newLine?: '\n' | '\r\n'
 ): Promise<Either<TypeSqlError, string>> {
 	const queryInfoResult = await parseSql(client, sqlContent);
 
@@ -627,7 +631,7 @@ export async function generateTsFileFromContent(
 		return queryInfoResult;
 	}
 	const tsDescriptor = generateTsDescriptor(queryInfoResult.right);
-	const tsContent = generateTsCodeForMySQL(tsDescriptor, queryName, crud);
+	const tsContent = generateTsCodeForMySQL(tsDescriptor, queryName, crud, newLine);
 	return right(tsContent);
 }
 

@@ -182,6 +182,11 @@ export type TypeSqlConfig = {
 	 * Defaults to ['public'] if not specified.
 	 */
 	schemas?: string[];
+	/**
+	 * Line ending style to use in generated files.
+	 * Defaults to the OS line ending if not specified.
+	 */
+	lineEndings?: '\n' | '\r\n';
 };
 
 export type SqlGenOption = 'select' | 's' | 'insert' | 'i' | 'update' | 'u' | 'delete' | 'd';

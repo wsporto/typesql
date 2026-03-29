@@ -52,7 +52,8 @@ export function validateAndGenerateCode(
 	sql: string,
 	queryName: string,
 	sqliteDbSchema: ColumnSchema[],
-	isCrud = false
+	isCrud = false,
+	newLine?: '\n' | '\r\n'
 ): Either<TypeSqlError, string> {
 	const { sql: processedSql } = preprocessSql(sql, 'sqlite');
 	const explainSqlResult = explainSql(client.client, processedSql);
@@ -62,7 +63,7 @@ export function validateAndGenerateCode(
 			description: explainSqlResult.left.description
 		});
 	}
-	const code = generateTsCode(sql, queryName, sqliteDbSchema, client.type, isCrud);
+	const code = generateTsCode(sql, queryName, sqliteDbSchema, client.type, isCrud, newLine);
 	return code;
 }
 
@@ -78,7 +79,7 @@ function mapToColumnInfo(col: ColumnSchema, checkOptional: boolean) {
 	return columnInfo;
 }
 
-export function generateCrud(client: SQLiteClient, queryType: CrudQueryType, tableName: string, dbSchema: ColumnSchema[]) {
+export function generateCrud(client: SQLiteClient, queryType: CrudQueryType, tableName: string, dbSchema: ColumnSchema[], newLine?: '\n' | '\r\n') {
 	const columns = dbSchema.filter((col) => col.table === tableName);
 
 	const columnInfo = columns.map((col) => mapToColumnInfo(col, queryType === 'Insert' || queryType === 'Update'));
@@ -103,7 +104,7 @@ export function generateCrud(client: SQLiteClient, queryType: CrudQueryType, tab
 
 	const queryName = getQueryName(queryType, tableName);
 
-	const code = generateCodeFromTsDescriptor(client, queryName, tsDescriptor, true, tableName);
+	const code = generateCodeFromTsDescriptor(client, queryName, tsDescriptor, true, tableName, newLine);
 	return code;
 }
 
@@ -127,14 +128,15 @@ export function generateTsCode(
 	queryName: string,
 	sqliteDbSchema: ColumnSchema[],
 	client: SQLiteClient,
-	isCrud = false
+	isCrud = false,
+	newLine?: '\n' | '\r\n'
 ): Either<TypeSqlError, string> {
 	const schemaDefResult = parseSql(sql, sqliteDbSchema);
 	if (isLeft(schemaDefResult)) {
 		return schemaDefResult;
 	}
 	const tsDescriptor = createTsDescriptor(schemaDefResult.right, client);
-	const code = generateCodeFromTsDescriptor(client, queryName, tsDescriptor, isCrud);
+	const code = generateCodeFromTsDescriptor(client, queryName, tsDescriptor, isCrud, undefined, newLine);
 	return right(code);
 }
 
@@ -296,8 +298,8 @@ function mapColumnToTsParameterDescriptor(col: ColumnInfo, client: SQLiteClient)
 	return tsDesc;
 }
 
-function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, tsDescriptor: TsDescriptor, isCrud = false, tableName = '') {
-	const writer = createCodeBlockWriter();
+function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, tsDescriptor: TsDescriptor, isCrud = false, tableName = '', newLine?: '\n' | '\r\n') {
+	const writer = createCodeBlockWriter(newLine);
 
 	const {
 		camelCaseName,
