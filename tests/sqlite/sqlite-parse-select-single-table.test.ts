@@ -93,6 +93,30 @@ describe('sqlite-Test simple select statements', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('SELECT id as "customQuotedName" FROM mytable1 - quoted alias', async () => {
+		const sql = 'SELECT id as "customQuotedName" FROM mytable1';
+		const actual = await parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'customQuotedName',
+					type: 'INTEGER',
+					notNull: true,
+					table: 'mytable1'
+				}
+			],
+			parameters: []
+		};
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('SELECT * FROM mytable1', async () => {
 		const sql = 'SELECT * FROM mytable1';
 

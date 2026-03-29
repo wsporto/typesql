@@ -88,9 +88,9 @@ export function selectAllColumns(tablePrefix: string, fromColumns: ColumnDef[]) 
 }
 
 export function getColumnName(selectItem: SelectItemContext) {
-	const alias = selectItem.selectAlias()?.identifier()?.getText();
-	if (alias) {
-		return alias;
+	const aliasRaw = selectItem.selectAlias()?.identifier()?.getText();
+	if (aliasRaw) {
+		return aliasRaw.startsWith('"') && aliasRaw.endsWith('"') ? aliasRaw.slice(1, -1) : aliasRaw;
 	}
 	const tokens = getSimpleExpressions(selectItem);
 	const columnName = extractOriginalSql(selectItem.expr()!)!; //TODO VERIFICAR NULL
