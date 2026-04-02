@@ -73,7 +73,7 @@ describe('Test simple select statements', () => {
 	});
 
 	it('SELECT id as "customQuotedName" FROM mytable1 - quoted alias', async () => {
-		const sql = 'SELECT id as "customQuotedName" FROM mytable1';
+		const sql = `SELECT id as "customQuotedName", id as 'customQuotedName2', id as \`customQuotedName3\` FROM mytable1`;
 		const actual = await parseSql(client, sql);
 		const expected: SchemaDef = {
 			sql,
@@ -82,6 +82,18 @@ describe('Test simple select statements', () => {
 			columns: [
 				{
 					name: 'customQuotedName',
+					type: 'int',
+					notNull: true,
+					table: 'mytable1'
+				},
+				{
+					name: 'customQuotedName2',
+					type: 'int',
+					notNull: true,
+					table: 'mytable1'
+				},
+				{
+					name: 'customQuotedName3',
 					type: 'int',
 					notNull: true,
 					table: 'mytable1'
