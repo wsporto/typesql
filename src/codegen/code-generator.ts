@@ -9,7 +9,7 @@ import { generateCode } from './pg';
 import { ColumnSchema } from '../mysql-query-analyzer/types';
 import { convertToCamelCaseName } from './shared/codegen-util';
 
-export async function generateTsFile(client: DatabaseClient, sqlFile: string, tsFilePath: string, schemaInfo: SchemaInfo | PostgresSchemaInfo, isCrudFile: boolean, lineEndings?: '\n' | '\r\n') {
+export async function generateTsFile(client: DatabaseClient, sqlFile: string, tsFilePath: string, schemaInfo: SchemaInfo | PostgresSchemaInfo, isCrudFile: boolean, newLine?: '\n' | '\r\n') {
 	const sqlContent = fs.readFileSync(sqlFile, 'utf8');
 
 	if (sqlContent.trim() === '') {
@@ -26,7 +26,7 @@ export async function generateTsFile(client: DatabaseClient, sqlFile: string, ts
 		sqlContent,
 		schemaInfo,
 		isCrudFile,
-		lineEndings,
+		newLine,
 	})
 
 	if (isLeft(tsContentResult)) {
@@ -46,20 +46,20 @@ export async function generateTypeScriptContent(params: {
 	sqlContent: string;
 	schemaInfo: SchemaInfo | PostgresSchemaInfo;
 	isCrudFile: boolean;
-	lineEndings?: '\n' | '\r\n';
+	newLine?: '\n' | '\r\n';
 }): Promise<Either<TypeSqlError, string>> {
-	const { client, queryName, sqlContent, schemaInfo, isCrudFile, lineEndings } = params;
+	const { client, queryName, sqlContent, schemaInfo, isCrudFile, newLine } = params;
 
 	switch (client.type) {
 		case 'mysql2':
-			return generateTsFileFromContent(client, queryName, sqlContent, isCrudFile, lineEndings);
+			return generateTsFileFromContent(client, queryName, sqlContent, isCrudFile, newLine);
 		case 'better-sqlite3':
 		case 'bun:sqlite':
 		case 'libsql':
 		case 'd1':
-			return validateAndGenerateCode(client, sqlContent, queryName, schemaInfo.columns as ColumnSchema[], isCrudFile, lineEndings);
+			return validateAndGenerateCode(client, sqlContent, queryName, schemaInfo.columns as ColumnSchema[], isCrudFile, newLine);
 		case 'pg': {
-			const result = await generateCode(client, sqlContent, queryName, schemaInfo as PostgresSchemaInfo, lineEndings);
+			const result = await generateCode(client, sqlContent, queryName, schemaInfo as PostgresSchemaInfo, newLine);
 			return result.isErr() ? left(result.error) : right(result.value);
 		}
 	}

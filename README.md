@@ -86,7 +86,7 @@ Options:
 | **sqlDir**            | Directory where SQL queries are stored. Will search recursively by appending the `**/*.sql` glob pattern.             | `./src`                                                                                                 |
 | **authToken**         | Authentication token. Required **only for the `libsql` client**. Supports environment variables (`${VAR_NAME}`).      |                                                                                                         |
 | **includeCrudTables** | Generates `select`, `insert`, `update`, and `delete` queries for specified tables.                                    | `['users', 'permissions', 'tags']`                                                                      |
-| **lineEndings**       | Defines the line-endings to use in the generated files. If this option is omitted, it will default to the OS default. | <ul><li>`\n\r`</li><li>`\n`</li>                                                                        |
+| **endOfLine**         | End-of-line style to use in generated files. If this option is omitted, it will default to the OS default.           | <ul><li>`CRLF`</li><li>`LF`</li></ul>                                                                  |                                                                        |
 
 To load variables from a `.env` file, pass the `--env-file` flag:
 ```sh

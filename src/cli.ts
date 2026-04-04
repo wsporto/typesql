@@ -120,9 +120,15 @@ function watchDirectories(client: DatabaseClient, sqlDir: string, outDir: string
 		.on('change', (path) => rewiteFiles(client, path, sqlDir, outDir, dbSchema, isCrudFile(sqlDir, path), config));
 }
 
+function toNewLine(endOfLine?: 'LF' | 'CRLF'): '\n' | '\r\n' | undefined {
+	if (endOfLine === 'LF') return '\n';
+	if (endOfLine === 'CRLF') return '\r\n';
+	return undefined;
+}
+
 async function rewiteFiles(client: DatabaseClient, sqlPath: string, sqlDir: string, outDir: string, schemaInfo: SchemaInfo | PostgresSchemaInfo, isCrudFile: boolean, config: TypeSqlConfig) {
 	const tsFilePath = resolveTsFilePath(sqlPath, sqlDir, outDir);
-	await generateTsFile(client, sqlPath, tsFilePath, schemaInfo, isCrudFile, config.lineEndings);
+	await generateTsFile(client, sqlPath, tsFilePath, schemaInfo, isCrudFile, toNewLine(config.endOfLine));
 	const tsDir = path.dirname(tsFilePath);
 	writeIndexFileFor(tsDir, config);
 }
@@ -150,12 +156,13 @@ async function compile(watch: boolean, config: TypeSqlConfig) {
 		return;
 	}
 
-	await generateCrudTables(outDir, dbSchema.value, includeCrudTables, config.lineEndings);
+	const newLine = toNewLine(config.endOfLine);
+	await generateCrudTables(outDir, dbSchema.value, includeCrudTables, newLine);
 	const dirGlob = `${sqlDir}/**/*.sql`;
 
 	const sqlFiles = globSync(dirGlob);
 
-	const filesGeneration = sqlFiles.map((sqlPath) => generateTsFile(databaseClient, sqlPath, resolveTsFilePath(sqlPath, sqlDir, outDir), dbSchema.value, isCrudFile(sqlDir, sqlPath), config.lineEndings));
+	const filesGeneration = sqlFiles.map((sqlPath) => generateTsFile(databaseClient, sqlPath, resolveTsFilePath(sqlPath, sqlDir, outDir), dbSchema.value, isCrudFile(sqlDir, sqlPath), newLine));
 	await Promise.all(filesGeneration);
 
 	writeIndexFile(outDir, config);
