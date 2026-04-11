@@ -257,7 +257,8 @@ function traverse_select_core(
 		}
 
 		const expr = result_column.expr();
-		const alias = result_column.column_alias()?.getText();
+		const aliasRaw = result_column.column_alias()?.getText();
+		const alias = aliasRaw && aliasRaw.startsWith('"') && aliasRaw.endsWith('"') ? aliasRaw.slice(1, -1) : aliasRaw;
 		if (expr) {
 			const exprType = traverse_expr(expr, {
 				...traverseContext,

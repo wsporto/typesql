@@ -87,10 +87,21 @@ export function selectAllColumns(tablePrefix: string, fromColumns: ColumnDef[]) 
 	return allColumns;
 }
 
+const stripQuotes = (text: string) => text.slice(1, -1);
+
 export function getColumnName(selectItem: SelectItemContext) {
-	const alias = selectItem.selectAlias()?.identifier()?.getText();
-	if (alias) {
-		return alias;
+	const identifier = selectItem.selectAlias()?.identifier();
+	if (identifier) {
+		const pureIdentifier = identifier.pureIdentifier();
+		if (pureIdentifier?.BACK_TICK_QUOTED_ID() || pureIdentifier?.DOUBLE_QUOTED_TEXT()) {
+			return stripQuotes(pureIdentifier.getText()); //id as `customQuotedName`
+		}
+		return identifier.getText();
+	}
+	const textStringLiteral = selectItem.selectAlias()?.textStringLiteral();
+	//id as "customQuotedName" or id as 'customQuotedName'
+	if (textStringLiteral?.DOUBLE_QUOTED_TEXT() || textStringLiteral?.SINGLE_QUOTED_TEXT()) {
+		return stripQuotes(textStringLiteral.getText());
 	}
 	const tokens = getSimpleExpressions(selectItem);
 	const columnName = extractOriginalSql(selectItem.expr()!)!; //TODO VERIFICAR NULL
