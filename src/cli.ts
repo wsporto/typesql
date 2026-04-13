@@ -124,7 +124,9 @@ async function rewiteFiles(client: DatabaseClient, sqlPath: string, sqlDir: stri
 	const tsFilePath = resolveTsFilePath(sqlPath, sqlDir, outDir);
 	await generateTsFile(client, sqlPath, tsFilePath, schemaInfo, isCrudFile);
 	const tsDir = path.dirname(tsFilePath);
-	writeIndexFileFor(tsDir, config);
+	if (config.generateIndexFiles !== false) {
+		writeIndexFileFor(tsDir, config);
+	}
 }
 
 async function main() {
@@ -158,7 +160,9 @@ async function compile(watch: boolean, config: TypeSqlConfig) {
 	const filesGeneration = sqlFiles.map((sqlPath) => generateTsFile(databaseClient, sqlPath, resolveTsFilePath(sqlPath, sqlDir, outDir), dbSchema.value, isCrudFile(sqlDir, sqlPath)));
 	await Promise.all(filesGeneration);
 
-	writeIndexFile(outDir, config);
+	if (config.generateIndexFiles !== false) {
+		writeIndexFile(outDir, config);
+	}
 
 	if (watch) {
 		console.log('watching mode!');

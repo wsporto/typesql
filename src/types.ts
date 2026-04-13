@@ -182,6 +182,11 @@ export type TypeSqlConfig = {
 	 * Defaults to ['public'] if not specified.
 	 */
 	schemas?: string[];
+	/**
+	 * Whether to recursively generate index.ts barrel files in each output folder.
+	 * Defaults to true if not specified.
+	 */
+	generateIndexFiles?: boolean;
 };
 
 export type SqlGenOption = 'select' | 's' | 'insert' | 'i' | 'update' | 'u' | 'delete' | 'd';
