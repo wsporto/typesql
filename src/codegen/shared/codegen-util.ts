@@ -1,7 +1,6 @@
 import CodeBlockWriter from 'code-block-writer';
 import { CamelCaseName, QueryType, TsFieldDescriptor, TsParameterDescriptor } from '../../types';
 import { DynamicSqlInfoResult, DynamicSqlInfoResult2, SelectFragmentResult } from '../../mysql-query-analyzer/types';
-import { EOL } from 'os';
 import { NestedTsDescriptor, RelationType2 } from '../../ts-nested-descriptor';
 import camelCase from 'camelcase';
 
@@ -41,7 +40,7 @@ export type TypeNames = {
 export function createCodeBlockWriter() {
 	const writer = new CodeBlockWriter({
 		useTabs: true,
-		newLine: EOL as '\n' | '\r\n'
+		newLine: '\n'
 	});
 	return writer;
 }
@@ -303,7 +302,7 @@ export function writeBuildSqlFunction(writer: CodeBlockWriter, params: BuildSqlF
 				});
 				if (allConditions.length > 0) {
 					writer.writeLine(`if (`);
-					writer.indent().write(`${allConditions.join(`${EOL}\t|| `)}`).newLine();
+					writer.indent().write(`${allConditions.join(`\n\t|| `)}`).newLine();
 					writer.write(') ').inlineBlock(() => {
 						writer.write(`withFragments.push(\`${withFragment.fragment}\`);`);
 						paramValues.forEach((paramValues) => {
@@ -342,7 +341,7 @@ export function writeBuildSqlFunction(writer: CodeBlockWriter, params: BuildSqlF
 			if (index != 0 && allConditions.length > 0) {
 				writer.blankLine();
 				writer.writeLine(`if (`);
-				writer.indent().write(`${allConditions.join(`${EOL}\t|| `)}`).newLine();
+				writer.indent().write(`${allConditions.join(`\n\t|| `)}`).newLine();
 				writer.write(') ').inlineBlock(() => {
 					writer.write(`fromSqlFragments.push(\`${from.fragment}\`);`);
 				})

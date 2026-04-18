@@ -6,7 +6,6 @@ import CodeBlockWriter from 'code-block-writer';
 import { createNestedTsDescriptor } from '../ts-nested-descriptor';
 import { mapToDynamicResultColumns, mapToDynamicParams, mapToDynamicSelectColumns } from '../ts-dynamic-query-descriptor';
 import type { FragmentInfoResult } from '../mysql-query-analyzer/types';
-import { EOL } from 'node:os';
 import { capitalize, convertToCamelCaseName, generateRelationType, ParamInfo, renameInvalidNames, TsDescriptor } from './shared/codegen-util';
 
 export function generateTsCodeForMySQL(tsDescriptor: TsDescriptor, fileName: string, crud = false): string {
@@ -432,7 +431,7 @@ function generateDynamicQueryFrom(
 	const allConditions = [...selectConditions, ...paramConditions, ...whereConditions, ...orderByConditions];
 	const paramValues = fragment.parameters.map((param) => `params?.params?.${param}`);
 	if (allConditions.length > 0) {
-		writer.write(`if (${allConditions.join(`${EOL}    || `)})`).block(() => {
+		writer.write(`if (${allConditions.join(`\n    || `)})`).block(() => {
 			writer.write(`${sqlVar} += EOL + \`${fragment.fragment}\`;`);
 			for (const paramValue of paramValues) {
 				writer.writeLine(`paramsValues.push(${paramValue});`);
