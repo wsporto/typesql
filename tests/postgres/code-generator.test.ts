@@ -672,8 +672,8 @@ GROUP BY id`;
 	});
 
 	it('select-json03', async () => {
-		const sql = `SELECT 
-	json_build_array('a', 'b') as value1, 
+		const sql = `SELECT
+	json_build_array('a', 'b') as value1,
 	jsonb_build_array(null, 'c', 10) as value2`;
 
 		const actual = await generateCode(dialect, sql, 'selectJson03', schemaInfo);
@@ -789,7 +789,7 @@ group by u.id, u.name`;
 
 	it('select-json09', async () => {
 		const sql = `SELECT json_build_array(
-		json_build_array('a', null), 
+		json_build_array('a', null),
 		json_build_array(1, 2),
 		json_build_array(id, name, descr)
 	) as result
@@ -805,7 +805,7 @@ FROM mytable2`;
 	});
 
 	it('select-json10', async () => {
-		const sql = `SELECT 
+		const sql = `SELECT
 	json_object_agg(id, value) as result1,
 	json_object_agg(id, row_to_json(mytable1)) as result2
 FROM mytable1`;
@@ -820,14 +820,14 @@ FROM mytable1`;
 	});
 
 	it('select-json11', async () => {
-		const sql = `SELECT 
+		const sql = `SELECT
   json_agg(
     json_build_object(
       'id', t.id,
       'value', t.value,
       'subquery', (select json_build_object('key', 10))
     )
-  ) 
+  )
 FROM mytable1 t`;
 
 		const actual = await generateCode(dialect, sql, 'selectJson11', schemaInfo);
@@ -840,7 +840,7 @@ FROM mytable1 t`;
 	});
 
 	it('select-json12-serialization', async () => {
-		const sql = `SELECT 
+		const sql = `SELECT
 	json_build_object(
 		'date_column', t.date_column,
 		'timestamp_column', t.timestamp_column,
@@ -866,7 +866,7 @@ FROM all_types t`;
 	});
 
 	it('select-json13-serialization', async () => {
-		const sql = `SELECT 
+		const sql = `SELECT
 	json_object_agg(int4_column, date_column)
 FROM all_types t
 GROUP BY int4_column`;

@@ -1,5 +1,5 @@
 import CodeBlockWriter from 'code-block-writer';
-import { capitalize, convertToCamelCaseName, generateRelationType, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor, writeNestedTypes, writeCollectFunction, writeGroupByFunction, createTypeNames, createCodeBlockWriter, writeDynamicQueryParamType, writeSelectFragements } from './shared/codegen-util';
+import { capitalize, convertToCamelCaseName, generateRelationType, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor, writeNestedTypes, writeCollectFunction, writeGroupByFunction, createTypeNames, createCodeBlockWriter, writeDynamicQueryParamType, writeSelectFragements, writeSql } from './shared/codegen-util';
 import { CrudQueryType, PgDielect, QueryType, TsFieldDescriptor, TsParameterDescriptor, TypeSqlError } from '../types';
 import { describeQuery } from '../postgres-query-analyzer/describe';
 import { mapper } from '../dialects/postgres';
@@ -532,15 +532,6 @@ function _writeExecFunction(writer: CodeBlockWriter, params: ExecFunctionParamet
 			writer.writeLine(`return collect${relationType}(selectResult);`);
 		});
 	}
-}
-
-function writeSql(writer: CodeBlockWriter, sql: string) {
-	const sqlSplit = sql.trimEnd().split('\n');
-	writer.write('const sql = `').newLine();
-	sqlSplit.forEach((sqlLine) => {
-		writer.indent().write(sqlLine.trimEnd()).newLine();
-	});
-	writer.indent().write('`').newLine();
 }
 
 function getColumnsForQuery(capitalizedName: string, schemaDef: PostgresSchemaDef): TsFieldDescriptor[] {

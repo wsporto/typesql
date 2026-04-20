@@ -6,7 +6,7 @@ import CodeBlockWriter from 'code-block-writer';
 import { createNestedTsDescriptor } from '../ts-nested-descriptor';
 import { mapToDynamicResultColumns, mapToDynamicParams, mapToDynamicSelectColumns } from '../ts-dynamic-query-descriptor';
 import type { FragmentInfoResult } from '../mysql-query-analyzer/types';
-import { capitalize, convertToCamelCaseName, generateRelationType, ParamInfo, renameInvalidNames, TsDescriptor } from './shared/codegen-util';
+import { capitalize, convertToCamelCaseName, generateRelationType, ParamInfo, renameInvalidNames, TsDescriptor, writeSql } from './shared/codegen-util';
 
 export function generateTsCodeForMySQL(tsDescriptor: TsDescriptor, fileName: string, crud = false): string {
 	const writer = new CodeBlockWriter();
@@ -120,16 +120,10 @@ export function generateTsCodeForMySQL(tsDescriptor: TsDescriptor, fileName: str
 
 	const escapedBackstick = scapeBackStick(tsDescriptor.sql);
 	const processedSql = replaceOrderByParam(escapedBackstick);
-	const sqlSplit = processedSql.split('\n');
 
 	writer.write(`export async function ${camelCaseName}(${functionArguments}): Promise<${functionReturnType}>`).block(() => {
 		if (tsDescriptor.dynamicQuery == null) {
-			writer.writeLine('const sql = `');
-			sqlSplit.forEach((sqlLine) => {
-				writer.indent().write(sqlLine);
-				writer.newLine();
-			});
-			writer.indent().write('`');
+			writeSql(writer, processedSql);
 			writer.blankLine();
 		} else {
 			writer.writeLine('const where = whereConditionsToObject(params?.where);');

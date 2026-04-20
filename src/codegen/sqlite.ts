@@ -24,7 +24,7 @@ import { preprocessSql } from '../describe-query';
 import { explainSql } from '../sqlite-query-analyzer/query-executor';
 import { mapToDynamicParams, mapToDynamicResultColumns, mapToDynamicSelectColumns } from '../ts-dynamic-query-descriptor';
 import { mapper } from '../drivers/sqlite';
-import { capitalize, convertToCamelCaseName, generateRelationType, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor, writeBuildOrderByBlock, writeBuildSqlFunction, writeDynamicQueryOperators, writeMapToResultFunction, writeNestedTypes, writeOrderByToObjectFunction, writeWhereConditionFunction, writeCollectFunction, writeGroupByFunction, createTypeNames, createCodeBlockWriter, writeDynamicQueryParamType, writeSelectFragements } from './shared/codegen-util';
+import { capitalize, convertToCamelCaseName, generateRelationType, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor, writeBuildOrderByBlock, writeBuildSqlFunction, writeDynamicQueryOperators, writeMapToResultFunction, writeNestedTypes, writeOrderByToObjectFunction, writeWhereConditionFunction, writeCollectFunction, writeGroupByFunction, createTypeNames, createCodeBlockWriter, writeDynamicQueryParamType, writeSelectFragements, writeSql } from './shared/codegen-util';
 
 type ExecFunctionParams = {
 	functionName: string;
@@ -951,15 +951,6 @@ function writeExecFunction(writer: CodeBlockWriter, client: SQLiteClient, params
 		default:
 			return client satisfies never;
 	}
-}
-
-function writeSql(writer: CodeBlockWriter, sql: string) {
-	const sqlSplit = sql.split('\n');
-	writer.write('const sql = `').newLine();
-	sqlSplit.forEach((sqlLine) => {
-		writer.indent().write(sqlLine.trimEnd()).newLine();
-	});
-	writer.indent().write('`').newLine();
 }
 
 function writeMapFunction(writer: CodeBlockWriter, params: MapFunctionParams): void {

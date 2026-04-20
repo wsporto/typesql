@@ -589,8 +589,8 @@ function mapArrayToSelectIdResult(data: any) {
     it('generate nested result', async () => {
         const queryName = 'select-users';
         const sql = `-- @nested
-SELECT 
-    u.id as user_id, 
+SELECT
+    u.id as user_id,
     u.name as user_name,
     p.id as post_id,
     p.title as post_title,
@@ -598,7 +598,7 @@ SELECT
     r.id as role_id,
     r.role,
     c.id as comment_id,
-    c.comment 
+    c.comment
 FROM users u
 LEFT JOIN posts p on p.fk_user = u.id
 LEFT JOIN roles r on r.fk_user = u.id
@@ -622,8 +622,8 @@ export type SelectUsersResult = {
 export async function selectUsers(connection: Connection): Promise<SelectUsersResult[]> {
     const sql = \`
     -- @nested
-    SELECT 
-        u.id as user_id, 
+    SELECT
+        u.id as user_id,
         u.name as user_name,
         p.id as post_id,
         p.title as post_title,
@@ -631,7 +631,7 @@ export async function selectUsers(connection: Connection): Promise<SelectUsersRe
         r.id as role_id,
         r.role,
         c.id as comment_id,
-        c.comment 
+        c.comment
     FROM users u
     LEFT JOIN posts p on p.fk_user = u.id
     LEFT JOIN roles r on r.fk_user = u.id
@@ -766,8 +766,8 @@ const groupBy = <T, Q>(array: T[], predicate: (value: T, index: number, array: T
     it('generate nested with params', async () => {
         const queryName = 'select-users';
         const sql = `-- @nested
-SELECT 
-    u.id as user_id, 
+SELECT
+    u.id as user_id,
     u.name as user_name,
     p.id as post_id,
     p.title as post_title,
@@ -794,8 +794,8 @@ export type SelectUsersResult = {
 export async function selectUsers(connection: Connection, params: SelectUsersParams): Promise<SelectUsersResult[]> {
     const sql = \`
     -- @nested
-    SELECT 
-        u.id as user_id, 
+    SELECT
+        u.id as user_id,
         u.name as user_name,
         p.id as post_id,
         p.title as post_title,
