@@ -473,6 +473,16 @@ export function writeOrderByToObjectFunction(writer: CodeBlockWriter, dynamicPar
 	});
 }
 
+export function writeResultType(writer: CodeBlockWriter, resultTypeName: string, columns: TsFieldDescriptor[]) {
+	writer.write(`export type ${resultTypeName} =`).block(() => {
+		columns.forEach((field) => {
+			const optionalOp = field.optional ? '?' : '';
+			const nullable = field.notNull ? '' : ' | null';
+			writer.writeLine(`${field.name}${optionalOp}: ${field.tsType}${nullable};`);
+		});
+	});
+}
+
 export function writeNestedTypes(writer: CodeBlockWriter, relations: RelationType2[], captalizedName: string) {
 	relations.forEach((relation) => {
 		const relationType = generateRelationType(captalizedName, relation.name);

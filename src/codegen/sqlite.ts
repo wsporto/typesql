@@ -22,9 +22,9 @@ import type { Field2 } from '../sqlite-query-analyzer/sqlite-describe-nested-que
 import { type RelationType2, type TsField2, mapToTsRelation2 } from '../ts-nested-descriptor';
 import { preprocessSql } from '../describe-query';
 import { explainSql } from '../sqlite-query-analyzer/query-executor';
-import { mapToDynamicParams, mapToDynamicResultColumns, mapToDynamicSelectColumns } from '../ts-dynamic-query-descriptor';
+import { mapToDynamicParams, mapToDynamicSelectColumns } from '../ts-dynamic-query-descriptor';
 import { mapper } from '../drivers/sqlite';
-import { capitalize, convertToCamelCaseName, generateRelationType, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor, writeBuildOrderByBlock, writeBuildSqlFunction, writeDynamicQueryOperators, writeMapToResultFunction, writeNestedTypes, writeOrderByToObjectFunction, writeWhereConditionFunction, writeCollectFunction, writeGroupByFunction, createTypeNames, createCodeBlockWriter, writeDynamicQueryParamType, writeSelectFragements, writeSql } from './shared/codegen-util';
+import { capitalize, convertToCamelCaseName, generateRelationType, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor, writeBuildOrderByBlock, writeBuildSqlFunction, writeDynamicQueryOperators, writeMapToResultFunction, writeNestedTypes, writeOrderByToObjectFunction, writeResultType, writeWhereConditionFunction, writeCollectFunction, writeGroupByFunction, createTypeNames, createCodeBlockWriter, writeDynamicQueryParamType, writeSelectFragements, writeSql } from './shared/codegen-util';
 
 type ExecFunctionParams = {
 	functionName: string;
@@ -353,8 +353,9 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 		writeDynamicQueryParamType(writer, queryName, paramsTypes.length > 0, orderByField);
 		writer.blankLine();
 		writeTypeBlock(writer, paramsTypes, paramsTypeName, false, tsDescriptor.dynamicQuery2 ? undefined : orderByField);
-		const resultTypes = tsDescriptor.dynamicQuery2 == null ? tsDescriptor.columns : mapToDynamicResultColumns(tsDescriptor.columns);
-		writeTypeBlock(writer, resultTypes, resultTypeName, false);
+		const resultTypes = tsDescriptor.columns.map((c) => ({ ...c, optional: true, notNull: true }));
+		writeResultType(writer, resultTypeName, resultTypes);
+		writer.blankLine();
 		const selectFields = mapToDynamicSelectColumns(tsDescriptor.columns);
 		writeTypeBlock(writer, selectFields, selectColumnsTypeName, false);
 		writeSelectFragements(writer, tsDescriptor.dynamicQuery2.select, tsDescriptor.columns);
@@ -464,12 +465,7 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 		}
 
 		writer.blankLine();
-		writer.write(`export type ${resultTypeName} =`).block(() => {
-			tsDescriptor.columns.forEach((field) => {
-				const optionalOp = field.notNull ? '' : '?';
-				writer.writeLine(`${field.name}${optionalOp}: ${field.tsType};`);
-			});
-		});
+		writeResultType(writer, resultTypeName, tsDescriptor.columns);
 		writer.blankLine();
 	}
 

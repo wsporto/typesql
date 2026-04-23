@@ -6,7 +6,7 @@ export type Select01Params = {
 
 export type Select01Result = {
 	id: number;
-	name?: string;
+	name: string | null;
 }
 
 export function select01(db: Database, params: Select01Params): Select01Result | null {

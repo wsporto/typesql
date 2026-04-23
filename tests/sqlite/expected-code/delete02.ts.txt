@@ -6,7 +6,7 @@ export type Delete02Params = {
 
 export type Delete02Result = {
 	id: number;
-	value?: number;
+	value: number | null;
 }
 
 export function delete02(db: Database, params: Delete02Params): Delete02Result {

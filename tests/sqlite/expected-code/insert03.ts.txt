@@ -6,7 +6,7 @@ export type Insert03Params = {
 
 export type Insert03Result = {
 	id: number;
-	value?: number;
+	value: number | null;
 }
 
 export function insert03(db: Database, params: Insert03Params): Insert03Result {
