@@ -482,6 +482,60 @@ describe('sqlite-parse-insert', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('UPSERT with :ts reused across VALUES and DO UPDATE (issue #118 repro)', () => {
+		const sql = `
+        INSERT INTO mytable2 (id, name, descr)
+        VALUES (:id, :name, :descr)
+        ON CONFLICT(id) DO UPDATE SET name = COALESCE(:name, name), descr = :descr`;
+		const actual = parseSql(sql, sqliteDbSchema);
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		// 5 `?` placeholders: :id, :name, :descr in VALUES + :name, :descr in upsert.
+		// Before fix: parameters length was 6 with a synthetic `param6` at index 5.
+		assert.strictEqual(actual.right.parameters.length, 5);
+		const names = actual.right.parameters.map((p) => p.name);
+		assert.deepStrictEqual(names, ['id', 'name', 'descr', 'name', 'descr']);
+		for (const p of actual.right.parameters) {
+			assert.ok(!/^param\d+$/.test(p.name), `synthetic param leaked: ${p.name}`);
+		}
+	});
+
+	it('UPSERT with two reused named params (direct assign)', () => {
+		const sql = `
+        INSERT INTO mytable2 (id, name, descr)
+        VALUES (:id, :name, :descr)
+        ON CONFLICT(id) DO UPDATE SET name = :name, descr = :descr`;
+		const actual = parseSql(sql, sqliteDbSchema);
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.strictEqual(actual.right.parameters.length, 5);
+		assert.deepStrictEqual(
+			actual.right.parameters.map((p) => p.name),
+			['id', 'name', 'descr', 'name', 'descr']
+		);
+	});
+
+	it('UPSERT with fresh named params not in VALUES', () => {
+		const sql = `
+        INSERT INTO mytable2 (id, name, descr)
+        VALUES (:id, :name, :descr)
+        ON CONFLICT(id) DO UPDATE SET name = :newname, descr = :newdescr`;
+		const actual = parseSql(sql, sqliteDbSchema);
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.strictEqual(actual.right.parameters.length, 5);
+		assert.deepStrictEqual(
+			actual.right.parameters.map((p) => p.name),
+			['id', 'name', 'descr', 'newname', 'newdescr']
+		);
+		for (const p of actual.right.parameters) {
+			assert.ok(!/^param\d+$/.test(p.name), `synthetic param leaked: ${p.name}`);
+		}
+	});
+
 	it('INSERT INTO mytable2 (id, name) SELECT ?, ?', async () => {
 		const sql = `
         INSERT INTO mytable2 (id, name)

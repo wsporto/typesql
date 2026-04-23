@@ -2031,8 +2031,8 @@ function traverse_insert_stmt(insert_stmt: Insert_stmtContext, traverseContext: 
 	const upsert_clause = insert_stmt.upsert_clause();
 	if (upsert_clause) {
 		const assign_list = upsert_clause.ASSIGN_list();
-		const paramsBefore = traverseContext.parameters.length;
 		assign_list.forEach((_, index) => {
+			const paramsBefore = traverseContext.parameters.length;
 			const column_name = upsert_clause.column_name(index);
 			const col = traverse_column_name(column_name, null, fromColumns);
 			const expr = upsert_clause.expr(index);
