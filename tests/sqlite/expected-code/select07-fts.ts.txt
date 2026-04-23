@@ -5,9 +5,9 @@ export type Select07Params = {
 }
 
 export type Select07Result = {
-	id?: any;
-	name?: any;
-	descr?: any;
+	id: any | null;
+	name: any | null;
+	descr: any | null;
 }
 
 export function select07(db: Database, params: Select07Params): Select07Result[] {

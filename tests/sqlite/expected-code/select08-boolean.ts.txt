@@ -8,7 +8,7 @@ export type Select08Params = {
 export type Select08Result = {
 	id: number;
 	param1: boolean;
-	param2?: boolean;
+	param2: boolean | null;
 }
 
 export function select08(db: Database, params: Select08Params): Select08Result[] {

@@ -4,9 +4,9 @@ import { mapper, type MySqlType } from '../mysql-mapping';
 import { parseSql } from '../describe-query';
 import CodeBlockWriter from 'code-block-writer';
 import { createNestedTsDescriptor } from '../ts-nested-descriptor';
-import { mapToDynamicResultColumns, mapToDynamicParams, mapToDynamicSelectColumns } from '../ts-dynamic-query-descriptor';
+import { mapToDynamicParams, mapToDynamicSelectColumns } from '../ts-dynamic-query-descriptor';
 import type { FragmentInfoResult } from '../mysql-query-analyzer/types';
-import { capitalize, convertToCamelCaseName, generateRelationType, ParamInfo, renameInvalidNames, TsDescriptor, writeSql } from './shared/codegen-util';
+import { capitalize, convertToCamelCaseName, generateRelationType, ParamInfo, renameInvalidNames, TsDescriptor, writeResultType, writeSql } from './shared/codegen-util';
 
 export function generateTsCodeForMySQL(tsDescriptor: TsDescriptor, fileName: string, crud = false): string {
 	const writer = new CodeBlockWriter();
@@ -53,8 +53,11 @@ export function generateTsCodeForMySQL(tsDescriptor: TsDescriptor, fileName: str
 	}
 
 	writeTypeBlock(writer, paramsTypes, paramsTypeName, false, tsDescriptor.dynamicQuery ? undefined : orderByField);
-	const resultTypes = tsDescriptor.dynamicQuery == null ? tsDescriptor.columns : mapToDynamicResultColumns(tsDescriptor.columns);
-	writeTypeBlock(writer, resultTypes, resultTypeName, false);
+	const resultTypes = tsDescriptor.dynamicQuery == null
+		? tsDescriptor.columns
+		: tsDescriptor.columns.map((c) => ({ ...c, optional: true, notNull: true }));
+	writeResultType(writer, resultTypeName, resultTypes);
+	writer.blankLine();
 	if (tsDescriptor.dynamicQuery) {
 		const selectFields = mapToDynamicSelectColumns(tsDescriptor.columns);
 		writeTypeBlock(writer, selectFields, selectColumnsTypeName, false);
@@ -343,8 +346,8 @@ export function generateTsCodeForMySQL(tsDescriptor: TsDescriptor, fileName: str
 					}
 					if (field.type === 'relation') {
 						const nestedRelationType = generateRelationType(capitalizedName, field.tsType);
-						const nullableOperator = field.notNull ? '' : '?';
-						writer.writeLine(`${field.name}${nullableOperator}: ${nestedRelationType};`);
+						const nullable = field.notNull ? '' : ' | null';
+						writer.writeLine(`${field.name}: ${nestedRelationType}${nullable};`);
 					}
 				});
 			});

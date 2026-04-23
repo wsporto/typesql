@@ -53,7 +53,7 @@ export type GetPersonParams = {
 
 export type GetPersonResult = {
     id: number;
-    name?: string;
+    name: string | null;
 }
 
 export async function getPerson(connection: Connection, params: GetPersonParams): Promise<GetPersonResult[]> {
@@ -116,7 +116,7 @@ export type GetPersonParams = {
 
 export type GetPersonResult = {
     id: number;
-    name?: string;
+    name: string | null;
 }
 
 export async function getPerson(connection: Connection, params: GetPersonParams): Promise<GetPersonResult[]> {
@@ -610,13 +610,13 @@ LEFT JOIN comments c on c.fk_post = p.id`;
 export type SelectUsersResult = {
     user_id: number;
     user_name: string;
-    post_id?: number;
-    post_title?: string;
-    post_body?: string;
-    role_id?: number;
-    role?: 'user' | 'admin' | 'guest';
-    comment_id?: number;
-    comment?: string;
+    post_id: number | null;
+    post_title: string | null;
+    post_body: string | null;
+    role_id: number | null;
+    role: 'user' | 'admin' | 'guest' | null;
+    comment_id: number | null;
+    comment: string | null;
 }
 
 export async function selectUsers(connection: Connection): Promise<SelectUsersResult[]> {
@@ -786,9 +786,9 @@ export type SelectUsersParams = {
 export type SelectUsersResult = {
     user_id: number;
     user_name: string;
-    post_id?: number;
-    post_title?: string;
-    post_body?: string;
+    post_id: number | null;
+    post_title: string | null;
+    post_body: string | null;
 }
 
 export async function selectUsers(connection: Connection, params: SelectUsersParams): Promise<SelectUsersResult[]> {
@@ -1030,7 +1030,7 @@ export type SelectClientsResult = {
     id_2: number;
     address: string;
     id_3: number;
-    address_2?: string;
+    address_2: string | null;
 }
 
 export async function selectClients(connection: Connection, params: SelectClientsParams): Promise<SelectClientsResult[]> {
@@ -1065,7 +1065,7 @@ function mapArrayToSelectClientsResult(data: any) {
 export type SelectClientsNestedC = {
     id: number;
     a1: SelectClientsNestedA1;
-    a2?: SelectClientsNestedA2;
+    a2: SelectClientsNestedA2 | null;
 }
 
 export type SelectClientsNestedA1 = {
@@ -1164,7 +1164,7 @@ export type SelectBooksResult = {
     author_ordinal: number;
     id_3: number;
     fullName: string;
-    shortName?: string;
+    shortName: string | null;
 }
 
 export async function selectBooks(connection: Connection): Promise<SelectBooksResult[]> {

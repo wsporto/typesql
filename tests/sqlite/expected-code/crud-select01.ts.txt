@@ -6,7 +6,7 @@ export type SelectFromMytable1Params = {
 
 export type SelectFromMytable1Result = {
 	id: number;
-	value?: number;
+	value: number | null;
 }
 
 export function selectFromMytable1(db: Database, params: SelectFromMytable1Params): SelectFromMytable1Result | null {

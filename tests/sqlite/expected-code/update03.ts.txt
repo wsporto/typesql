@@ -10,7 +10,7 @@ export type Update03Params = {
 
 export type Update03Result = {
 	id: number;
-	value?: number;
+	value: number | null;
 }
 
 export function update03(db: Database, data: Update03Data, params: Update03Params): Update03Result {

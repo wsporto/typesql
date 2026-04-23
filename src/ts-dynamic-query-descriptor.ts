@@ -12,19 +12,6 @@ function mapToSelectColumn(r: TsFieldDescriptor): TsFieldDescriptor {
 	};
 }
 
-export function mapToDynamicResultColumns(columns: TsFieldDescriptor[]): TsFieldDescriptor[] {
-	return columns.map((column) => mapToResultColumn(column));
-}
-
-function mapToResultColumn(r: TsFieldDescriptor): TsFieldDescriptor {
-	return {
-		name: r.name,
-		tsType: r.tsType,
-		notNull: false,
-		optional: true
-	};
-}
-
 export function mapToDynamicParams(columns: TsFieldDescriptor[]): TsFieldDescriptor[] {
 	return columns.map((column) => mapToDynamicParam(column));
 }

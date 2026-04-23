@@ -6,12 +6,12 @@ export type Select04Params = {
 }
 
 export type Select04Result = {
-	text_column?: string;
-	date_text?: Date;
-	datetime_text?: Date;
-	integer_column?: number;
-	date_integer?: Date;
-	datetime_integer?: Date;
+	text_column: string | null;
+	date_text: Date | null;
+	datetime_text: Date | null;
+	integer_column: number | null;
+	date_integer: Date | null;
+	datetime_integer: Date | null;
 }
 
 export async function select04(db: D1Database, params: Select04Params): Promise<Select04Result[]> {
