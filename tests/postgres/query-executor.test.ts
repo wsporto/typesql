@@ -117,24 +117,22 @@ describe('postgres-query-executor', () => {
 
 	it('postgresDescribe', async () => {
 		const actual = await postgresDescribe(sql, 'SELECT * FROM mytable1 WHERE id = $1');
-		const expected: PostgresDescribe = {
-			parameters: [23],
-			columns: [
-				{
-					name: 'id',
-					typeId: 23,
-					tableId: 16396
-				},
-				{
-					name: 'value',
-					typeId: 23,
-					tableId: 16396
-				}
-			]
-		};
 		if (actual.isErr()) {
 			assert.fail(`Shouldn't return an error: ${actual.error}`);
 		}
+		// tableId is a cluster-assigned OID; assert it's present and consistent
+		// across columns from the same table, but don't hardcode the value.
+		const tableIds = new Set(actual.value.columns.map((c) => c.tableId));
+		assert.strictEqual(tableIds.size, 1, 'all columns from mytable1 share one tableId');
+		const tableId = [...tableIds][0];
+		assert.strictEqual(typeof tableId, 'number');
+		const expected: PostgresDescribe = {
+			parameters: [23],
+			columns: [
+				{ name: 'id', typeId: 23, tableId },
+				{ name: 'value', typeId: 23, tableId }
+			]
+		};
 		assert.deepStrictEqual(actual.value, expected);
 	});
 });

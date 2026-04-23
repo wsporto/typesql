@@ -1,4 +1,4 @@
-import { CheckConstraintResult, EnumMap, EnumResult } from '../../src/drivers/postgres';
+import { CheckConstraintResult, EnumMap, EnumResult, loadEnumsMap } from '../../src/drivers/postgres';
 import { PostgresColumnSchema } from '../../src/drivers/types';
 import { UserFunctionSchema } from '../../src/postgres-query-analyzer/types';
 import { PostgresSchemaInfo } from '../../src/schema-info';
@@ -967,35 +967,31 @@ export const userDefinedFunctions: UserFunctionSchema[] = [
 	}
 ]
 
+// enumMap is populated dynamically at test startup from the live DB,
+// avoiding brittle hardcoded OIDs (which vary per cluster).
 export const enumMap: EnumMap = new Map();
-const enumValues: EnumResult[] = [
-	{
-		type_oid: 16651,
-		enumlabel: 'x-small',
-		enum_name: 'sizes_enum'
-	},
-	{
-		type_oid: 16651,
-		enumlabel: 'small',
-		enum_name: 'sizes_enum'
-	},
-	{
-		type_oid: 16651,
-		enumlabel: 'medium',
-		enum_name: 'sizes_enum'
-	},
-	{
-		type_oid: 16651,
-		enumlabel: 'large',
-		enum_name: 'sizes_enum'
-	},
-	{
-		type_oid: 16651,
-		enumlabel: 'x-large',
-		enum_name: 'sizes_enum'
+
+let enumBootstrapped = false;
+async function bootstrapEnumMap() {
+	if (enumBootstrapped) return;
+	const client = createTestClient();
+	try {
+		const result = await loadEnumsMap(client);
+		if (result.isOk()) {
+			enumMap.clear();
+			for (const [oid, values] of result.value) {
+				enumMap.set(oid, values);
+			}
+		}
+	} finally {
+		await client.end();
 	}
-]
-enumMap.set(16651, enumValues);
+	enumBootstrapped = true;
+}
+
+before(async () => {
+	await bootstrapEnumMap();
+});
 
 export const checkConstraints: CheckConstraintResult = {
 	'[public][all_types][enum_constraint]': `enum('x-small','small','medium','large','x-large')`,
