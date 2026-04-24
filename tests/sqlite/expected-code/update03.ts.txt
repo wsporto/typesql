@@ -13,7 +13,7 @@ export type Update03Result = {
 	value: number | null;
 }
 
-export function update03(db: Database, data: Update03Data, params: Update03Params): Update03Result {
+export function update03(db: Database, data: Update03Data, params: Update03Params): Update03Result | null {
 	const sql = `
 	UPDATE mytable1 SET value = ? WHERE id = ? RETURNING *
 	`
@@ -21,7 +21,7 @@ export function update03(db: Database, data: Update03Data, params: Update03Param
 		.raw(true)
 		.get([data.param1, params.param1]);
 
-	return mapArrayToUpdate03Result(res);
+	return res ? mapArrayToUpdate03Result(res) : null;
 }
 
 function mapArrayToUpdate03Result(data: any) {

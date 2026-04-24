@@ -9,7 +9,7 @@ export type Delete02Result = {
 	value: number | null;
 }
 
-export function delete02(db: Database, params: Delete02Params): Delete02Result {
+export function delete02(db: Database, params: Delete02Params): Delete02Result | null {
 	const sql = `
 	DELETE FROM mytable1 WHERE id=? RETURNING *
 	`
@@ -17,7 +17,7 @@ export function delete02(db: Database, params: Delete02Params): Delete02Result {
 		.raw(true)
 		.get([params.param1]);
 
-	return mapArrayToDelete02Result(res);
+	return res ? mapArrayToDelete02Result(res) : null;
 }
 
 function mapArrayToDelete02Result(data: any) {

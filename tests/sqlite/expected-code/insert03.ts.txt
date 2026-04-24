@@ -17,6 +17,7 @@ export function insert03(db: Database, params: Insert03Params): Insert03Result {
 		.raw(true)
 		.get([params.value]);
 
+	if (!res) { throw new Error('INSERT ... RETURNING returned no rows'); }
 	return mapArrayToInsert03Result(res);
 }
 

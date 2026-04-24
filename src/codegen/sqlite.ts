@@ -336,7 +336,9 @@ function generateCodeFromTsDescriptor(client: SQLiteClient, queryName: string, t
 		functionArguments += `, ${orderByField ? 'params' : 'params?'}: ${dynamicParamsTypeName}`;
 	}
 
-	const orNull = queryType === 'Select' ? ' | null' : '';
+	const orNull = queryType === 'Select'
+		|| ((queryType === 'Update' || queryType === 'Delete') && tsDescriptor.returning === true && !tsDescriptor.multipleRowsResult)
+		? ' | null' : '';
 	const returnType = tsDescriptor.multipleRowsResult ? `${resultTypeName}[]` : `${resultTypeName}${orNull}`;
 
 	const allParameters = (tsDescriptor.data?.map((param) => toDriver('data', param)) || []).concat(
@@ -829,11 +831,12 @@ function writeExecFunction(writer: CodeBlockWriter, client: SQLiteClient, params
 						writer.indent().write('.raw(true)').newLine();
 						writer.indent().write(`.get(${queryParams});`).newLine();
 						writer.blankLine();
-						if (!returning) {
-							writer.write(`return res ? mapArrayTo${resultTypeName}(res) : null;`);
+						if (returning && queryType === 'Insert') {
+							writer.write(`if (!res) { throw new Error('${INSERT_RETURNING_NO_ROWS_ERROR}'); }`).newLine();
+							writer.write(`return mapArrayTo${resultTypeName}(res);`);
 						}
 						else {
-							writer.write(`return mapArrayTo${resultTypeName}(res);`);
+							writer.write(`return res ? mapArrayTo${resultTypeName}(res) : null;`);
 						}
 					}
 				});
