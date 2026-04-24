@@ -22,58 +22,74 @@ describe('postgres-query-executor', () => {
 
 	it('loadDbSchema-connection-error', async () => {
 		const client = postgres('postgres://postgres:password123@127.0.0.1:5432/postgres');
-		const result = await loadDbSchema(client);
-		if (result.isOk()) {
-			assert.fail('Should return an error');
-		}
+		try {
+			const result = await loadDbSchema(client);
+			if (result.isOk()) {
+				assert.fail('Should return an error');
+			}
 
-		const expected: TypeSqlError = {
-			name: 'PostgresError',
-			description: `password authentication failed for user "postgres"`
+			const expected: TypeSqlError = {
+				name: 'PostgresError',
+				description: `password authentication failed for user "postgres"`
+			}
+			assert.deepStrictEqual(result.error, expected);
+		} finally {
+			await client.end();
 		}
-		assert.deepStrictEqual(result.error, expected);
 	});
 
 	it('postgresDescribe-connection-error', async () => {
 		const client = postgres('postgres://postgres:password123@127.0.0.1:5432/postgres');
-		const result = await postgresDescribe(client, 'SELECT 1');
-		if (result.isOk()) {
-			assert.fail('Should return an error');
-		}
+		try {
+			const result = await postgresDescribe(client, 'SELECT 1');
+			if (result.isOk()) {
+				assert.fail('Should return an error');
+			}
 
-		const expected: TypeSqlError = {
-			name: 'PostgresError',
-			description: `password authentication failed for user "postgres"`
+			const expected: TypeSqlError = {
+				name: 'PostgresError',
+				description: `password authentication failed for user "postgres"`
+			}
+			assert.deepStrictEqual(result.error, expected);
+		} finally {
+			await client.end();
 		}
-		assert.deepStrictEqual(result.error, expected);
 	});
 
 	it('postgresDescribe-Invalid sql', async () => {
 		const client = postgres('postgres://postgres:password@127.0.0.1:5432/postgres');
-		const result = await postgresDescribe(client, 'SELECT asdf FROM mytable1');
-		if (result.isOk()) {
-			assert.fail('Should return an error');
-		}
+		try {
+			const result = await postgresDescribe(client, 'SELECT asdf FROM mytable1');
+			if (result.isOk()) {
+				assert.fail('Should return an error');
+			}
 
-		const expected: TypeSqlError = {
-			name: 'PostgresError',
-			description: `column "asdf" does not exist`
+			const expected: TypeSqlError = {
+				name: 'PostgresError',
+				description: `column "asdf" does not exist`
+			}
+			assert.deepStrictEqual(result.error, expected);
+		} finally {
+			await client.end();
 		}
-		assert.deepStrictEqual(result.error, expected);
 	});
 
 	it('loadForeignKeys-connection-error', async () => {
 		const client = postgres('postgres://postgres:password123@127.0.0.1:5432/postgres');
-		const result = await loadForeignKeys(client);
-		if (result.isOk()) {
-			assert.fail('Should return an error');
-		}
+		try {
+			const result = await loadForeignKeys(client);
+			if (result.isOk()) {
+				assert.fail('Should return an error');
+			}
 
-		const expected: TypeSqlError = {
-			name: 'PostgresError',
-			description: `password authentication failed for user "postgres"`
+			const expected: TypeSqlError = {
+				name: 'PostgresError',
+				description: `password authentication failed for user "postgres"`
+			}
+			assert.deepStrictEqual(result.error, expected);
+		} finally {
+			await client.end();
 		}
-		assert.deepStrictEqual(result.error, expected);
 	});
 
 	it('loadDbSchema', async () => {

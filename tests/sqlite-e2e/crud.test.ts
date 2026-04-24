@@ -5,6 +5,10 @@ import { insertIntoRoles, selectFromRoles, SelectFromRolesResult, updateRoles } 
 describe('sqlite-nested-result', () => {
 	const db = new Database('./mydb.db');
 
+	after(() => {
+		db.close();
+	});
+
 	it('insert-default-value', async () => {
 
 		const insertTx = db.transaction(() => {

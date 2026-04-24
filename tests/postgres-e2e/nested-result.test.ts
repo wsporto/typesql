@@ -8,6 +8,10 @@ describe('postgres-nested-result', () => {
 		connectionString: 'postgres://postgres:password@127.0.0.1:5432/postgres'
 	})
 
+	after(async () => {
+		await pool.end();
+	});
+
 	it('nested01 - users -> posts', async () => {
 		const result = await nested01Nested(pool);
 

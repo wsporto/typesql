@@ -5,6 +5,10 @@ import { insert03, Insert03Result } from './sql';
 describe('sqlite-insert', () => {
 	const db = new Database('./mydb.db');
 
+	after(() => {
+		db.close();
+	});
+
 	it('insert03-returning *', async () => {
 
 		const insertTx = db.transaction(() => {

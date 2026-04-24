@@ -10,6 +10,10 @@ describe('Test simple select statements', () => {
 		client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
 	});
 
+	after(async () => {
+		await client.client.end();
+	});
+
 	//https://dev.mysql.com/doc/refman/8.0/en/comments.html
 	it('# This comment continues to the end of line', async () => {
 		const sql = `

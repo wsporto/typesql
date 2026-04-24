@@ -12,6 +12,10 @@ describe('e2e-postgres-dynamic-query', () => {
 		connectionString: 'postgres://postgres:password@127.0.0.1:5432/postgres'
 	})
 
+	after(async () => {
+		await pool.end();
+	});
+
 	it('dynamicQuery01 - without filters', async () => {
 		const result = await dynamicQuery01(pool);
 

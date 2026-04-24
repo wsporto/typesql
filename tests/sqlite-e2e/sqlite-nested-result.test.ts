@@ -5,6 +5,10 @@ import { nested01Nested, Nested01NestedUsers, nested02Nested, Nested02NestedUser
 describe('sqlite-nested-result', () => {
 	const db = new Database('./mydb.db');
 
+	after(() => {
+		db.close();
+	});
+
 	it('nested01 - users -> posts', () => {
 		const result = nested01Nested(db);
 

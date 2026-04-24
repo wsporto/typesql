@@ -11,6 +11,10 @@ describe('Test parse parameters', () => {
 		client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
 	});
 
+	after(async () => {
+		await client.client.end();
+	});
+
 	it('SELECT ? from mytable1', async () => {
 		const sql = `
         SELECT ? from mytable1

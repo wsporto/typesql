@@ -7,6 +7,10 @@ describe('e2e-postgres-dynamic-query', () => {
 		connectionString: 'postgres://postgres:password@127.0.0.1:5432/postgres'
 	})
 
+	after(async () => {
+		await pool.end();
+	});
+
 	it('selectJsonBuildObject01', async () => {
 		const result = await selectJsonBuildObject01(pool);
 

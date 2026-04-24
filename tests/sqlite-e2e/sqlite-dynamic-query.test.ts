@@ -12,6 +12,10 @@ describe('e2e-sqlite-dynamic-query', () => {
 
 	const db = new Database('./mydb.db');
 
+	after(() => {
+		db.close();
+	});
+
 	it('dynamicQuery01 - without filters', () => {
 		const result = dynamicQuery01(db);
 

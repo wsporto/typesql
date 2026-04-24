@@ -11,6 +11,10 @@ describe('dynamic-query', () => {
 		client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
 	});
 
+	after(async () => {
+		await client.client.end();
+	});
+
 	it('WHERE m2.name = :name AND m2.descr = :description', async () => {
 		const sql = `
         -- @dynamicQuery

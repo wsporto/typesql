@@ -5,6 +5,10 @@ import { update03, Update03Result } from './sql';
 describe('sqlite-update', () => {
     const db = new Database('./mydb.db');
 
+    after(() => {
+        db.close();
+    });
+
     it('update03-returning *', async () => {
 
         const insertTx = db.transaction(() => {

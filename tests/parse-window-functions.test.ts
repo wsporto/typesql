@@ -10,6 +10,10 @@ describe('Parse window functions', () => {
 		client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
 	});
 
+	after(async () => {
+		await client.client.end();
+	});
+
 	it('SELECT ROW_NUMBER() OVER() as num', async () => {
 		const sql = `
         SELECT

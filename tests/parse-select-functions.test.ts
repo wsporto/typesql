@@ -10,6 +10,10 @@ describe('Test parse select with functions', () => {
 		client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
 	});
 
+	after(async () => {
+		await client.client.end();
+	});
+
 	//TODO = column sum?
 	it('select sum(value) from mytable1', async () => {
 		const sql = `
