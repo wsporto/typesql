@@ -138,6 +138,34 @@ const updateResult = await updateProduct(...
 
 [Nested Query Result](/docs/nested-query-result.md)
 
+## Running the test suite
+
+The test suite needs MySQL, PostgreSQL, and SQLite databases populated with fixtures.
+A `docker-compose.yml` provides all three plus Flyway migration runners.
+
+Targeted versions:
+
+- MySQL 8.4 LTS
+- PostgreSQL 17
+- SQLite (via better-sqlite3)
+
+Steps:
+
+```sh
+npm install
+npm run test:compose   # one shot: starts compose, waits for migrations, builds, runs tests
+```
+
+The `migrate` service in `docker-compose.yml` is a no-op container that depends on every Flyway job, so `docker compose up --wait migrate` blocks until all four migration runs complete successfully. Healthchecks on `mysql-dev` and `postgres-dev` gate Flyway from racing the DBs.
+
+Other useful scripts:
+
+- `npm run db:up` — start DBs and run all migrations (idempotent)
+- `npm run db:down` — stop everything and wipe volumes
+- `npm test` — run tests against an already-running stack (skips compose)
+
+If tests fail with type-mismatch errors (e.g. `numeric` vs `float8`), verify your local `psql`/`mysql` is not shadowing the containerized versions on port 5432/3306.
+
 ## Project Status: Under Active Development
 
 **WARNING:** This is a work-in-progress experimental project. It is under active development and its API might change.
