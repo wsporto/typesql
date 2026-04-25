@@ -8,8 +8,8 @@ export type DynamicQuery08DynamicParams = {
 }
 
 export type DynamicQuery08Params = {
-	param1: number;
-	param2: number;
+	param1: string;
+	param2: string;
 }
 
 export type DynamicQuery08Result = {

@@ -1,6 +1,6 @@
 version: '3'
 services:
-  mysql-dev: 
+  mysql-dev:
     # image: "mysql:5.7.41"
     image: "mysql:8.0.33"
     container_name: "mysql-dev"
@@ -10,8 +10,8 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: "password"
       MYSQL_DATABASE: "mydb"
-  postgres-dev: 
-    image: "postgres:12.21"
+  postgres-dev:
+    image: "postgres:17"
     container_name: "postgres-dev"
     ports:
       - "5432:5432"
