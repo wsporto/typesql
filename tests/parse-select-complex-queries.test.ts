@@ -10,6 +10,10 @@ describe('Test parse complex queries', () => {
 		client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
 	});
 
+	after(async () => {
+		await client.client.end();
+	});
+
 	it('parse SELECT t1.name, t2.mycolumn2, t3.mycolumn3, count', async () => {
 		//mytable1 (id, value); mytable2 (id, name, descr); mytable3 (id)
 		const sql = `

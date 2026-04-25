@@ -11,6 +11,10 @@ describe('parse update statements', () => {
 		client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
 	});
 
+	after(async () => {
+		await client.client.end();
+	});
+
 	const columns: ColumnInfo[] = [
 		{
 			name: 'affectedRows',

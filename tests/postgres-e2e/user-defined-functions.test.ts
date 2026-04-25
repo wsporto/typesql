@@ -8,6 +8,10 @@ describe('e2e-postgres-user-defined-functions', () => {
 		connectionString: 'postgres://postgres:password@127.0.0.1:5432/postgres'
 	})
 
+	after(async () => {
+		await pool.end();
+	});
+
 	it('get_mytable1()', async () => {
 		const result = await selectUserFunction01(pool);
 

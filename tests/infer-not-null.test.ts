@@ -10,6 +10,10 @@ describe('infer-not-null', () => {
 		client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
 	});
 
+	after(async () => {
+		await client.client.end();
+	});
+
 	//here
 	it('select value from mytable1 where value is not null', async () => {
 		const sql = `

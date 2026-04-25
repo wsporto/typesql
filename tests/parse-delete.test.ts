@@ -10,6 +10,10 @@ describe('parse delete statements', () => {
 		client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
 	});
 
+	after(async () => {
+		await client.client.end();
+	});
+
 	it('delete from mytable1 where id = ?', async () => {
 		const sql = 'delete from mytable1 where id = ?';
 

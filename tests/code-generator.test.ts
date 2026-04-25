@@ -14,6 +14,10 @@ describe('code-generator', () => {
         client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
     });
 
+    after(async () => {
+        await client.client.end();
+    });
+
     it('generate main function with parameters', () => {
         const queryName = 'get-person';
         const tsDescriptor: TsDescriptor = {

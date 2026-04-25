@@ -10,6 +10,10 @@ describe('Test parse select with subqueries', () => {
 		client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
 	});
 
+	after(async () => {
+		await client.client.end();
+	});
+
 	//.only
 	it('parse a select with nested select', async () => {
 		const sql = `

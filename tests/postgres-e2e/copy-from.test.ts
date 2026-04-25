@@ -9,6 +9,10 @@ describe('e2e-postgres-crud', async () => {
 		connectionString: 'postgres://postgres:password@127.0.0.1:5432/postgres'
 	})
 
+	after(async () => {
+		await pool.end();
+	});
+
 	it('copy-from02', async () => {
 
 		const client = await pool.connect();

@@ -1,4 +1,7 @@
 import assert from 'assert';
+import { copyFileSync, mkdtempSync } from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
 import { isLeft } from 'fp-ts/lib/Either';
 import { createSqliteClient, explainSql } from '../../src/sqlite-query-analyzer/query-executor';
 import { createLibSqlClient } from '../../src/drivers/libsql';
@@ -6,10 +9,32 @@ import { SchemaDef } from '../../src/types';
 import { parseSql } from '../../src/sqlite-query-analyzer/parser';
 import { sqliteDbSchema } from '../mysql-query-analyzer/create-schema';
 
+// Committed sqlean binaries are arch-suffixed so they match upstream
+// sqlean release zips 1:1 (verifiable with shasum). sqlite's
+// load_extension derives the init symbol from the filename, so the
+// arch suffix corrupts the symbol. Resolve by copying the chosen
+// binary to a stable unsuffixed name in a temp dir at suite start.
+function resolveUuidExt(): string {
+	const dir = mkdtempSync(join(tmpdir(), 'typesql-ext-'));
+	if (process.platform === 'win32') {
+		copyFileSync('./tests/ext/uuid.dll', join(dir, 'uuid.dll'));
+	} else {
+		const suffix = process.platform === 'darwin' ? 'dylib' : 'so';
+		const arch = process.arch === 'arm64' ? 'arm64' : 'x64';
+		copyFileSync(`./tests/ext/uuid-${arch}.${suffix}`, join(dir, `uuid.${suffix}`));
+	}
+	return join(dir, 'uuid');
+}
+
 describe('load-extension', () => {
+	let uuidExt: string;
+	before(() => {
+		uuidExt = resolveUuidExt();
+	});
+
 	it('better-sqlite3 - load_extension uuid4', () => {
 
-		const client = createSqliteClient('better-sqlite3', './mydb.db', [], ['./tests/ext/uuid.dll']);
+		const client = createSqliteClient('better-sqlite3', './mydb.db', [], [uuidExt]);
 		if (client.isErr()) {
 			assert.fail(`Shouldn't return an Error`);
 		}
@@ -28,7 +53,7 @@ describe('load-extension', () => {
 
 	it('bun:sqlite - load_extension uuid4', () => {
 
-		const client = createSqliteClient('bun:sqlite', './mydb.db', [], ['./tests/ext/uuid.dll']);
+		const client = createSqliteClient('bun:sqlite', './mydb.db', [], [uuidExt]);
 		if (client.isErr()) {
 			assert.fail(`Shouldn't return an Error`);
 		}
@@ -48,7 +73,7 @@ describe('load-extension', () => {
 	it('libsql - load_extension uuid4', () => {
 
 		//C:\dev\typesql\tests\ext\uuid.dll
-		const client = createLibSqlClient('./mydb.db', [], ['./tests/ext/uuid.dll'], 'authtoken');
+		const client = createLibSqlClient('./mydb.db', [], [uuidExt], 'authtoken');
 		if (client.isErr()) {
 			assert.fail(`Shouldn't return an Error`);
 		}

@@ -10,6 +10,10 @@ describe('Test parse select with functions', () => {
 		client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
 	});
 
+	after(async () => {
+		await client.client.end();
+	});
+
 	//TODO = column sum?
 	it('select sum(value) from mytable1', async () => {
 		const sql = `
@@ -874,9 +878,9 @@ describe('Test parse select with functions', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
-	it(`SELECT md5('a') as md5`, async () => {
+	it(`SELECT hex('a') as hex`, async () => {
 		const sql = `
-        SELECT md5('a') as md5
+        SELECT hex('a') as hex
         `;
 		const actual = await parseSql(client, sql);
 		const expected: SchemaDef = {
@@ -885,7 +889,7 @@ describe('Test parse select with functions', () => {
 			multipleRowsResult: false,
 			columns: [
 				{
-					name: 'md5',
+					name: 'hex',
 					type: 'char',
 					notNull: true,
 					table: ''
@@ -900,9 +904,9 @@ describe('Test parse select with functions', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
-	it('SELECT md5(id + ?) as md5 from mytable1', async () => {
+	it('SELECT hex(id + ?) as hex from mytable1', async () => {
 		const sql = `
-        SELECT md5(id + ?) as md5 from mytable1
+        SELECT hex(id + ?) as hex from mytable1
         `;
 		const actual = await parseSql(client, sql);
 		const expected: SchemaDef = {
@@ -911,7 +915,7 @@ describe('Test parse select with functions', () => {
 			multipleRowsResult: true,
 			columns: [
 				{
-					name: 'md5',
+					name: 'hex',
 					type: 'char',
 					notNull: true,
 					table: ''
