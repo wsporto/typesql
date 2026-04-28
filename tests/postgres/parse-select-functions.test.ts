@@ -356,25 +356,25 @@ describe('postgres-parse-select-functions', () => {
 			columns: [
 				{
 					name: 'month1',
-					type: 'float8',
+					type: 'numeric',
 					notNull: false,
 					table: ''
 				},
 				{
 					name: 'month2',
-					type: 'float8',
+					type: 'numeric',
 					notNull: true,
 					table: ''
 				},
 				{
 					name: 'month3',
-					type: 'float8',
+					type: 'numeric',
 					notNull: false,
 					table: ''
 				},
 				{
 					name: 'month4',
-					type: 'float8',
+					type: 'numeric',
 					notNull: true,
 					table: ''
 				}

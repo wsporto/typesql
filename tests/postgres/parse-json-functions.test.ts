@@ -1376,7 +1376,7 @@ describe('postgres-json-functions', () => {
 						properties: [
 							{
 								key: 'extract_year',
-								type: { name: 'json_field', type: 'float8', notNull: true }
+								type: { name: 'json_field', type: 'numeric', notNull: true }
 							}
 						],
 					},

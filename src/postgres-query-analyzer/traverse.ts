@@ -1558,7 +1558,7 @@ function traversefunc_expr_common_subexpr(func_expr_common_subexpr: Func_expr_co
 			is_nullable: result.is_nullable,
 			table: '',
 			schema: '',
-			type: 'float8'
+			type: 'numeric'
 		}
 	}
 	func_expr_common_subexpr.a_expr_list().forEach(a_expr => {

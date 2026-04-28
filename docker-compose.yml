@@ -15,7 +15,7 @@ services:
       retries: 30
 
   postgres-dev:
-    image: "postgres:12.21"
+    image: "postgres:17"
     container_name: "postgres-dev"
     ports:
       - "5432:5432"
