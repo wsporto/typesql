@@ -10,6 +10,10 @@ describe('Test select with multiples tables', () => {
 		client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
 	});
 
+	after(async () => {
+		await client.client.end();
+	});
+
 	it('parse a basic with inner join', async () => {
 		//mytable1 (id, value); mytable2 (id, name, descr)
 		const sql = `

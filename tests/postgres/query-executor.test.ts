@@ -22,58 +22,74 @@ describe('postgres-query-executor', () => {
 
 	it('loadDbSchema-connection-error', async () => {
 		const client = postgres('postgres://postgres:password123@127.0.0.1:5432/postgres');
-		const result = await loadDbSchema(client);
-		if (result.isOk()) {
-			assert.fail('Should return an error');
-		}
+		try {
+			const result = await loadDbSchema(client);
+			if (result.isOk()) {
+				assert.fail('Should return an error');
+			}
 
-		const expected: TypeSqlError = {
-			name: 'PostgresError',
-			description: `password authentication failed for user "postgres"`
+			const expected: TypeSqlError = {
+				name: 'PostgresError',
+				description: `password authentication failed for user "postgres"`
+			}
+			assert.deepStrictEqual(result.error, expected);
+		} finally {
+			await client.end();
 		}
-		assert.deepStrictEqual(result.error, expected);
 	});
 
 	it('postgresDescribe-connection-error', async () => {
 		const client = postgres('postgres://postgres:password123@127.0.0.1:5432/postgres');
-		const result = await postgresDescribe(client, 'SELECT 1');
-		if (result.isOk()) {
-			assert.fail('Should return an error');
-		}
+		try {
+			const result = await postgresDescribe(client, 'SELECT 1');
+			if (result.isOk()) {
+				assert.fail('Should return an error');
+			}
 
-		const expected: TypeSqlError = {
-			name: 'PostgresError',
-			description: `password authentication failed for user "postgres"`
+			const expected: TypeSqlError = {
+				name: 'PostgresError',
+				description: `password authentication failed for user "postgres"`
+			}
+			assert.deepStrictEqual(result.error, expected);
+		} finally {
+			await client.end();
 		}
-		assert.deepStrictEqual(result.error, expected);
 	});
 
 	it('postgresDescribe-Invalid sql', async () => {
 		const client = postgres('postgres://postgres:password@127.0.0.1:5432/postgres');
-		const result = await postgresDescribe(client, 'SELECT asdf FROM mytable1');
-		if (result.isOk()) {
-			assert.fail('Should return an error');
-		}
+		try {
+			const result = await postgresDescribe(client, 'SELECT asdf FROM mytable1');
+			if (result.isOk()) {
+				assert.fail('Should return an error');
+			}
 
-		const expected: TypeSqlError = {
-			name: 'PostgresError',
-			description: `column "asdf" does not exist`
+			const expected: TypeSqlError = {
+				name: 'PostgresError',
+				description: `column "asdf" does not exist`
+			}
+			assert.deepStrictEqual(result.error, expected);
+		} finally {
+			await client.end();
 		}
-		assert.deepStrictEqual(result.error, expected);
 	});
 
 	it('loadForeignKeys-connection-error', async () => {
 		const client = postgres('postgres://postgres:password123@127.0.0.1:5432/postgres');
-		const result = await loadForeignKeys(client);
-		if (result.isOk()) {
-			assert.fail('Should return an error');
-		}
+		try {
+			const result = await loadForeignKeys(client);
+			if (result.isOk()) {
+				assert.fail('Should return an error');
+			}
 
-		const expected: TypeSqlError = {
-			name: 'PostgresError',
-			description: `password authentication failed for user "postgres"`
+			const expected: TypeSqlError = {
+				name: 'PostgresError',
+				description: `password authentication failed for user "postgres"`
+			}
+			assert.deepStrictEqual(result.error, expected);
+		} finally {
+			await client.end();
 		}
-		assert.deepStrictEqual(result.error, expected);
 	});
 
 	it('loadDbSchema', async () => {
@@ -117,24 +133,22 @@ describe('postgres-query-executor', () => {
 
 	it('postgresDescribe', async () => {
 		const actual = await postgresDescribe(sql, 'SELECT * FROM mytable1 WHERE id = $1');
-		const expected: PostgresDescribe = {
-			parameters: [23],
-			columns: [
-				{
-					name: 'id',
-					typeId: 23,
-					tableId: 16396
-				},
-				{
-					name: 'value',
-					typeId: 23,
-					tableId: 16396
-				}
-			]
-		};
 		if (actual.isErr()) {
 			assert.fail(`Shouldn't return an error: ${actual.error}`);
 		}
+		// tableId is a cluster-assigned OID; assert it's present and consistent
+		// across columns from the same table, but don't hardcode the value.
+		const tableIds = new Set(actual.value.columns.map((c) => c.tableId));
+		assert.strictEqual(tableIds.size, 1, 'all columns from mytable1 share one tableId');
+		const tableId = [...tableIds][0];
+		assert.strictEqual(typeof tableId, 'number');
+		const expected: PostgresDescribe = {
+			parameters: [23],
+			columns: [
+				{ name: 'id', typeId: 23, tableId },
+				{ name: 'value', typeId: 23, tableId }
+			]
+		};
 		assert.deepStrictEqual(actual.value, expected);
 	});
 });

@@ -8,6 +8,10 @@ describe('load-schema', () => {
 		client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
 	});
 
+	after(async () => {
+		await client.client.end();
+	});
+
 	it('filter schema', async () => {
 		const actual = await loadMysqlSchema(client.client, client.schema);
 		if (actual.isErr()) {

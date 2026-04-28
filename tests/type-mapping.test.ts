@@ -11,6 +11,10 @@ describe('type-mapping', () => {
 		client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
 	});
 
+	after(async () => {
+		await client.client.end();
+	});
+
 	it('select table with all types', async () => {
 		const sql = 'select * from all_types';
 		const actual = await parseSql(client, sql);

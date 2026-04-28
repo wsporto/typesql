@@ -5,6 +5,10 @@ import { delete02, Delete02Result } from './sql';
 describe('sqlite-delete', () => {
     const db = new Database('./mydb.db');
 
+    after(() => {
+        db.close();
+    });
+
     it('delete02-returning *', async () => {
 
         const deleteTx = db.transaction(() => {

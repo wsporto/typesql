@@ -10,6 +10,10 @@ describe('parse insert statements', () => {
 		client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
 	});
 
+	after(async () => {
+		await client.client.end();
+	});
+
 	it('insert into mytable1 (value) values (?)', async () => {
 		const sql = 'insert into mytable1 (value) values (?)';
 		const actual = await parseSql(client, sql);

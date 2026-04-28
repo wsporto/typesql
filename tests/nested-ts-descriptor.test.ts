@@ -11,6 +11,10 @@ describe('Test nested-ts-descriptor', () => {
 		client = await createMysqlClientForTest('mysql://root:password@localhost/mydb');
 	});
 
+	after(async () => {
+		await client.client.end();
+	});
+
 	it('SELECT FROM users u INNER JOIN posts p', async () => {
 		const dbSchema = await loadMysqlSchema(client.client, client.schema);
 

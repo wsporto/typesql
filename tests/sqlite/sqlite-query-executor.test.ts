@@ -322,7 +322,7 @@ describe('sqlite-query-executor', () => {
 			assert.fail(`Shouldn't return an error`);
 		}
 
-		const actual = dbSchema.right;
+		const actual = replaceNewlines(dbSchema.right);
 		const expected = replaceNewlines(`CREATE TABLE mytable1 (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     value INTEGER
@@ -379,7 +379,7 @@ describe('sqlite-query-executor', () => {
 			assert.fail(`Shouldn't return an error: ` + queryResult.error.description);
 		}
 
-		const actual = queryResult.value;
+		const actual = queryResult.value != null ? replaceNewlines(queryResult.value) : queryResult.value;
 		const expected = replaceNewlines(`CREATE TABLE all_types (
     int_column INT,
     integer_column INTEGER,
@@ -426,5 +426,5 @@ describe('sqlite-query-executor', () => {
 });
 
 function replaceNewlines(input: string): string {
-	return input.replace(/\n/g, '\r\n');
+	return input.replace(/\r\n/g, '\n');
 }

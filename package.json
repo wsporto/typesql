@@ -8,7 +8,11 @@
 	},
 	"scripts": {
 		"build": "tsc -w",
-		"test": "mocha --enable-source-maps dist/tests/**/*.js --watch --watch-files **/*.js",
+		"test": "mocha --enable-source-maps dist/tests/**/*.js",
+		"test:watch": "mocha --enable-source-maps dist/tests/**/*.js --watch --watch-files **/*.js",
+		"db:up": "shx rm -f mydb.db users.db && docker compose run --rm migrate",
+		"db:down": "docker compose down -v && shx rm -f mydb.db users.db",
+		"test:compose": "npm run db:up && tsc && npm test",
 		"antlr4ts": "antlr4ts -Xexact-output-dir -o ./parser/ ./grammar/*.g4",
 		"dist": "tsc && shx cp ./package.json ./README.md ./dist/src && cd ./dist/src && npm publish",
 		"dist-exp": "tsc && shx cp ./package.json ./README.md ./dist/src && cd ./dist/src && npm publish --tag experimental",
