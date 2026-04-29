@@ -15,7 +15,7 @@ export async function insert03(client: Client | Transaction, params: Insert03Par
 	`
 	return client.execute({ sql, args: [params.value] })
 		.then(res => res.rows)
-		.then(rows => mapArrayToInsert03Result(rows[0]));
+		.then(rows => { if (rows.length === 0) { throw new Error('INSERT ... RETURNING returned no rows'); } return mapArrayToInsert03Result(rows[0]); });
 }
 
 function mapArrayToInsert03Result(data: any) {

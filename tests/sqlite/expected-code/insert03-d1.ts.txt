@@ -16,7 +16,7 @@ export async function insert03(db: D1Database, params: Insert03Params): Promise<
 	return db.prepare(sql)
 		.bind(params.value)
 		.raw({ columnNames: false })
-		.then(rows => rows.map(row => mapArrayToInsert03Result(row))[0]);
+		.then(rows => { if (rows.length === 0) { throw new Error('INSERT ... RETURNING returned no rows'); } return mapArrayToInsert03Result(rows[0]); });
 }
 
 function mapArrayToInsert03Result(data: any) {

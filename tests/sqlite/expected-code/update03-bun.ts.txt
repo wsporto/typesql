@@ -1,4 +1,4 @@
-import type { Database } from 'better-sqlite3';
+import type { Database } from 'bun:sqlite';
 
 export type Update03Data = {
 	param1: number | null;
@@ -18,10 +18,9 @@ export function update03(db: Database, data: Update03Data, params: Update03Param
 	UPDATE mytable1 SET value = ? WHERE id = ? RETURNING *
 	`
 	const res = db.prepare(sql)
-		.raw(true)
-		.get([data.param1, params.param1]);
+		.values(data.param1, params.param1);
 
-	return res ? mapArrayToUpdate03Result(res) : null;
+	return res.length > 0 ? mapArrayToUpdate03Result(res[0]) : null;
 }
 
 function mapArrayToUpdate03Result(data: any) {

@@ -1,4 +1,4 @@
-import type { Database } from 'better-sqlite3';
+import type { D1Database } from '@cloudflare/workers-types';
 
 export type Delete02Params = {
 	param1: number;
@@ -9,15 +9,14 @@ export type Delete02Result = {
 	value: number | null;
 }
 
-export function delete02(db: Database, params: Delete02Params): Delete02Result | null {
+export async function delete02(db: D1Database, params: Delete02Params): Promise<Delete02Result | null> {
 	const sql = `
 	DELETE FROM mytable1 WHERE id=? RETURNING *
 	`
-	const res = db.prepare(sql)
-		.raw(true)
-		.get([params.param1]);
-
-	return res ? mapArrayToDelete02Result(res) : null;
+	return db.prepare(sql)
+		.bind(params.param1)
+		.raw({ columnNames: false })
+		.then(rows => rows.length > 0 ? mapArrayToDelete02Result(rows[0]) : null);
 }
 
 function mapArrayToDelete02Result(data: any) {
