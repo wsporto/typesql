@@ -899,26 +899,32 @@ function writeExecFunction(writer: CodeBlockWriter, client: SQLiteClient, params
 			return;
 		case 'bun:sqlite':
 			const bunArgs = 'db: Database' + restParameters;
-			if (queryType === 'Select') {
+			if (queryType === 'Select' || returning) {
 				writer.write(`export function ${functionName}(${bunArgs}): ${returnType}`).block(() => {
 					writeSql(writer, sql);
 					if (multipleRowsResult) {
 						writer.write('return db.prepare(sql)').newLine();
 						writer.indent().write(`.values(${queryParametersWithoutBrackes})`).newLine();
-						writer.indent().write(`.map(data => mapArrayTo${resultTypeName}(data))${multipleRowsResult ? '' : '[0]'};`);
+						writer.indent().write(`.map(data => mapArrayTo${resultTypeName}(data));`);
 					}
 					else {
 						writer.write('const res = db.prepare(sql)').newLine();
 						writer.indent().write(`.values(${queryParametersWithoutBrackes});`).newLine();
 						writer.blankLine();
-						writer.write(`return res.length > 0 ? mapArrayTo${resultTypeName}(res[0]) : null;`);
+						if (returning && queryType === 'Insert') {
+							writer.write(`if (res.length === 0) { throw new Error('${INSERT_RETURNING_NO_ROWS_ERROR}'); }`).newLine();
+							writer.write(`return mapArrayTo${resultTypeName}(res[0]);`);
+						}
+						else {
+							writer.write(`return res.length > 0 ? mapArrayTo${resultTypeName}(res[0]) : null;`);
+						}
 					}
 
 				});
 				writer.blankLine();
 				writeMapFunction(writer, mapFunctionParams);
 			}
-			if (queryType === 'Update' || queryType === 'Delete' || (queryType === 'Insert' && !returning)) {
+			if ((queryType === 'Update' || queryType === 'Delete' || queryType === 'Insert') && !returning) {
 				writer.write(`export function ${functionName}(${bunArgs}): ${resultTypeName}`).block(() => {
 					writeSql(writer, sql);
 					writer.write('return db.prepare(sql)').newLine();

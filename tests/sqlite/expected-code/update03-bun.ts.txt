@@ -1,0 +1,32 @@
+import type { Database } from 'bun:sqlite';
+
+export type Update03Data = {
+	param1: number | null;
+}
+
+export type Update03Params = {
+	param1: number;
+}
+
+export type Update03Result = {
+	id: number;
+	value: number | null;
+}
+
+export function update03(db: Database, data: Update03Data, params: Update03Params): Update03Result | null {
+	const sql = `
+	UPDATE mytable1 SET value = ? WHERE id = ? RETURNING *
+	`
+	const res = db.prepare(sql)
+		.values(data.param1, params.param1);
+
+	return res.length > 0 ? mapArrayToUpdate03Result(res[0]) : null;
+}
+
+function mapArrayToUpdate03Result(data: any) {
+	const result: Update03Result = {
+		id: data[0],
+		value: data[1]
+	}
+	return result;
+}

@@ -1,0 +1,28 @@
+import type { Database } from 'bun:sqlite';
+
+export type Delete02Params = {
+	param1: number;
+}
+
+export type Delete02Result = {
+	id: number;
+	value: number | null;
+}
+
+export function delete02(db: Database, params: Delete02Params): Delete02Result | null {
+	const sql = `
+	DELETE FROM mytable1 WHERE id=? RETURNING *
+	`
+	const res = db.prepare(sql)
+		.values(params.param1);
+
+	return res.length > 0 ? mapArrayToDelete02Result(res[0]) : null;
+}
+
+function mapArrayToDelete02Result(data: any) {
+	const result: Delete02Result = {
+		id: data[0],
+		value: data[1]
+	}
+	return result;
+}
