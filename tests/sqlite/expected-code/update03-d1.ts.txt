@@ -1,0 +1,32 @@
+import type { D1Database } from '@cloudflare/workers-types';
+
+export type Update03Data = {
+	param1: number | null;
+}
+
+export type Update03Params = {
+	param1: number;
+}
+
+export type Update03Result = {
+	id: number;
+	value: number | null;
+}
+
+export async function update03(db: D1Database, data: Update03Data, params: Update03Params): Promise<Update03Result | null> {
+	const sql = `
+	UPDATE mytable1 SET value = ? WHERE id = ? RETURNING *
+	`
+	return db.prepare(sql)
+		.bind(data.param1, params.param1)
+		.raw({ columnNames: false })
+		.then(rows => rows.length > 0 ? mapArrayToUpdate03Result(rows[0]) : null);
+}
+
+function mapArrayToUpdate03Result(data: any) {
+	const result: Update03Result = {
+		id: data[0],
+		value: data[1]
+	}
+	return result;
+}

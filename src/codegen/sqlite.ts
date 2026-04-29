@@ -949,14 +949,26 @@ function writeExecFunction(writer: CodeBlockWriter, client: SQLiteClient, params
 						writer.indent().write(`.then(rows => rows.length > 0 ? mapArrayTo${resultTypeName}(rows[0]) : null);`);
 					}
 				}
-				if (queryType === 'Insert' || queryType === 'Update' || queryType === 'Delete') {
-					if (returning) {
-						writer.indent().write('.raw({ columnNames: false })').newLine();
-						writer.indent().write(`.then(rows => rows.map(row => mapArrayTo${resultTypeName}(row))[0]);`);
+				if (queryType === 'Insert' && returning) {
+					writer.indent().write('.raw({ columnNames: false })').newLine();
+					// TODO(T17): `multipleRowsResult === true` branch unreachable until analyzer fix (B5/B6).
+					if (multipleRowsResult) {
+						writer.indent().write(`.then(rows => rows.map(row => mapArrayTo${resultTypeName}(row)));`);
 					} else {
-						writer.indent().write('.run()').newLine();
-						writer.indent().write(`.then(res => res.meta);`);
+						writer.indent().write(`.then(rows => { if (rows.length === 0) { throw new Error('${INSERT_RETURNING_NO_ROWS_ERROR}'); } return mapArrayTo${resultTypeName}(rows[0]); });`);
 					}
+				}
+				if ((queryType === 'Update' || queryType === 'Delete') && returning) {
+					writer.indent().write('.raw({ columnNames: false })').newLine();
+					if (multipleRowsResult) {
+						writer.indent().write(`.then(rows => rows.map(row => mapArrayTo${resultTypeName}(row)));`);
+					} else {
+						writer.indent().write(`.then(rows => rows.length > 0 ? mapArrayTo${resultTypeName}(rows[0]) : null);`);
+					}
+				}
+				if ((queryType === 'Insert' || queryType === 'Update' || queryType === 'Delete') && !returning) {
+					writer.indent().write('.run()').newLine();
+					writer.indent().write(`.then(res => res.meta);`);
 				}
 			});
 			if (queryType === 'Select' || returning) {

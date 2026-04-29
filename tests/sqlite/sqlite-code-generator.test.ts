@@ -482,6 +482,19 @@ AND datetime(integer_column, 'auto') = :date_time`;
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('update03-d1 - returning *', () => {
+		const sql = 'UPDATE mytable1 SET value = ? WHERE id = ? RETURNING *';
+
+		const actual = generateTsCode(sql, 'update03', sqliteDbSchema, 'd1');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+
+		const expected = readNormalizedEOL('tests/sqlite/expected-code/update03-d1.ts.txt');
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('delete01 - DELETE FROM mytable1 WHERE id=?', () => {
 		const sql = 'DELETE FROM mytable1 WHERE id=?';
 
@@ -559,6 +572,18 @@ AND datetime(integer_column, 'auto') = :date_time`;
 
 		const actual = generateTsCode(sql, 'delete02', sqliteDbSchema, 'bun:sqlite');
 		const expected = readNormalizedEOL('tests/sqlite/expected-code/delete02-bun.ts.txt');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('delete02-d1 - returning *', () => {
+		const sql = 'DELETE FROM mytable1 WHERE id=? RETURNING *';
+
+		const actual = generateTsCode(sql, 'delete02', sqliteDbSchema, 'd1');
+		const expected = readNormalizedEOL('tests/sqlite/expected-code/delete02-d1.ts.txt');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
