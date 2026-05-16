@@ -1,6 +1,6 @@
 import assert from 'node:assert';
 import Database from 'better-sqlite3';
-import { insert03, Insert03Result } from './sql';
+import { insert03, Insert03Result, insertReturningNoRows } from './sql';
 
 describe('sqlite-insert', () => {
 	const db = new Database('./mydb.db');
@@ -30,5 +30,19 @@ describe('sqlite-insert', () => {
 				throw e;
 			}
 		}
-	})
+	});
+
+	it('insert-returning-no-rows', async () => {
+
+		const insertTx = db.transaction(() => {
+			insertReturningNoRows(db);
+		});
+
+		assert.throws(
+			() => insertTx(),
+			{
+				message: 'INSERT ... RETURNING returned no rows'
+			}
+		);
+	});
 });

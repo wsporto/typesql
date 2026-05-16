@@ -6,6 +6,7 @@ export * from "./dynamic-query04.js";
 export * from "./dynamic-query05.js";
 export * from "./dynamic-query08.js";
 export * from "./dynamic-query10.js";
+export * from "./insert-returning-no-rows.js";
 export * from "./insert03.js";
 export * from "./nested01.js";
 export * from "./nested02.js";
