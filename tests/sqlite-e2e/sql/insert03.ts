@@ -6,7 +6,7 @@ export type Insert03Params = {
 
 export type Insert03Result = {
 	id: number;
-	value?: number;
+	value: number | null;
 }
 
 export function insert03(db: Database, params: Insert03Params): Insert03Result {
@@ -17,6 +17,7 @@ export function insert03(db: Database, params: Insert03Params): Insert03Result {
 		.raw(true)
 		.get([params.param1]);
 
+	if (!res) { throw new Error('INSERT ... RETURNING returned no rows'); }
 	return mapArrayToInsert03Result(res);
 }
 

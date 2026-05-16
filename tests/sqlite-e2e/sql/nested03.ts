@@ -8,8 +8,8 @@ export type Nested03Result = {
 	id: number;
 	id_2: number;
 	address: string;
-	id_3?: number;
-	address_2?: string;
+	id_3: number | null;
+	address_2: string | null;
 }
 
 export function nested03(db: Database, params: Nested03Params): Nested03Result[] {
