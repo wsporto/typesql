@@ -2007,9 +2007,11 @@ function traverse_insert_stmt(insert_stmt: Insert_stmtContext, traverseContext: 
 		});
 	});
 	const select_stmt = insert_stmt.select_stmt();
+	let selectMultipleRows = false;
 	if (select_stmt) {
 		const columnNullability = new Map<string, boolean | undefined>();
 		const selectResult = traverse_select_stmt(select_stmt, traverseContext);
+		selectMultipleRows = selectResult.multipleRowsResult;
 		selectResult.columns.forEach((selectColumn, index) => {
 			const col = columns[index];
 			traverseContext.constraints.unshift({
@@ -2059,7 +2061,7 @@ function traverse_insert_stmt(insert_stmt: Insert_stmtContext, traverseContext: 
 
 	const returning_clause = insert_stmt.returning_clause();
 	const returninColumns = returning_clause ? traverse_returning_clause(returning_clause, { ...traverseContext, fromColumns }) : [];
-	const multipleRowsResult = value_row_list.length > 1 && returning_clause != null;
+	const multipleRowsResult = returning_clause != null && (value_row_list.length > 1 || selectMultipleRows);
 
 	const queryResult: InsertResult = {
 		queryType: 'Insert',
