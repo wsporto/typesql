@@ -1877,12 +1877,8 @@ export function isMultipleRowResult(select_stmt: Select_stmtContext, dbSchema: C
 			return true;
 		}
 		const schema = table_or_subquery_list[0].schema_name()?.getText()?.toLowerCase() || 'main';
-		const uniqueKeys = dbSchema.filter(col => (col.table.toLowerCase() === tableName || `"${col.table.toLowerCase()}"` === tableName)
-			&& (col.schema === schema || `"${col.schema}"` === schema)
-			&& (col.columnKey === 'PRI' || col.columnKey === 'UNI'))
-			.map(col => col.column.toLowerCase());
 
-		const isSingleResult = where_is_single_result(_whereExpr, fromColumns, uniqueKeys);
+		const isSingleResult = where_is_single_result(_whereExpr, fromColumns, dbSchema, schema, tableName);
 		if (isSingleResult === true) {
 			return false;
 		}
@@ -1925,7 +1921,13 @@ function isLimitOne(select_stmt: Select_stmtContext) {
 	return false;
 }
 
-function where_is_single_result(whereExpr: ExprContext, fromColumns: ColumnDef[], uniqueKeys: string[]): boolean {
+function where_is_single_result(whereExpr: ExprContext, fromColumns: ColumnDef[], dbSchema: ColumnSchema[], schema: string, tableName: string): boolean {
+
+	const uniqueKeys = dbSchema.filter(col => (col.table.toLowerCase() === tableName || `"${col.table.toLowerCase()}"` === tableName)
+		&& (col.schema === schema || `"${col.schema}"` === schema)
+		&& (col.columnKey === 'PRI' || col.columnKey === 'UNI'))
+		.map(col => col.column.toLowerCase());
+
 	//only one assign (=). ex. id = 1
 	if (uniqueKeys.length === 0) {
 		return false;
@@ -2103,7 +2105,9 @@ function traverse_returning_clause(returning_clause: Returning_clauseContext, tr
 
 function traverse_update_stmt(update_stmt: Update_stmtContext, traverseContext: TraverseContext): UpdateResult {
 	const table_name = update_stmt.qualified_table_name().getText();
-	const fromColumns = filterColumns(traverseContext.dbSchema, [], '', splitName(table_name));
+	const tableFullName = splitName(table_name);
+	const schema = tableFullName.prefix || 'main';
+	const fromColumns = filterColumns(traverseContext.dbSchema, [], '', tableFullName);
 
 	const column_name_list = Array.from({
 		length: update_stmt.ASSIGN_list().length
@@ -2115,6 +2119,7 @@ function traverse_update_stmt(update_stmt: Update_stmtContext, traverseContext: 
 	const whereParams: TypeAndNullInferParam[] = [];
 	const expr_list = update_stmt.expr_list();
 	let paramsBefore = traverseContext.parameters.length;
+	let singleRowResult = false;
 	expr_list.forEach((expr, index) => {
 		paramsBefore = traverseContext.parameters.length;
 		const exprType = traverse_expr(expr, {
@@ -2134,15 +2139,17 @@ function traverse_update_stmt(update_stmt: Update_stmtContext, traverseContext: 
 					notNull: param.notNull && col.notNull
 				});
 			});
-		} else {
+		} else { //where expr
 			traverseContext.parameters.slice(paramsBefore).forEach((param, index) => {
 				whereParams.push(param);
 			});
+			singleRowResult = where_is_single_result(expr, fromColumns, traverseContext.dbSchema, schema, tableFullName.name);
 		}
 	});
 
 	const returning_clause = update_stmt.returning_clause();
 	const returningColumns = returning_clause ? traverse_returning_clause(returning_clause, { ...traverseContext, fromColumns }) : [];
+	const multipleRowsResult = returning_clause != null && !singleRowResult;
 
 	const queryResult: UpdateResult = {
 		queryType: 'Update',
@@ -2151,6 +2158,7 @@ function traverse_update_stmt(update_stmt: Update_stmtContext, traverseContext: 
 		whereParams: whereParams,
 		parameters: traverseContext.parameters,
 		returing: returning_clause != null,
+		multipleRowsResult,
 		returningColumns
 	};
 	return queryResult;

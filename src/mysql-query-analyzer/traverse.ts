@@ -660,6 +660,7 @@ export type UpdateResult = {
 	whereParams: TypeAndNullInferParam[];
 	returningColumns: TypeAndNullInfer[];
 	returing: boolean;
+	multipleRowsResult: boolean;
 };
 export type DeleteResult = {
 	constraints: Constraint[];
