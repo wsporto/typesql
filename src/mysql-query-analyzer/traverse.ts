@@ -650,6 +650,7 @@ export type InsertResult = {
 	parameters: TypeAndNullInferParam[];
 	columns: TypeAndNullInfer[];
 	returing: boolean;
+	multipleRowsResult: boolean;
 };
 export type UpdateResult = {
 	queryType: 'Update';
