@@ -5,7 +5,7 @@ export type InsertReturningNoRowsResult = {
 	value: number | null;
 }
 
-export function insertReturningNoRows(db: Database): InsertReturningNoRowsResult {
+export function insertReturningNoRows(db: Database): InsertReturningNoRowsResult[] {
 	const sql = `
 	INSERT INTO mytable1(
 	    value
@@ -15,12 +15,10 @@ export function insertReturningNoRows(db: Database): InsertReturningNoRowsResult
 	WHERE 1 > 2
 	RETURNING *
 	`
-	const res = db.prepare(sql)
+	return db.prepare(sql)
 		.raw(true)
-		.get();
-
-	if (!res) { throw new Error('INSERT ... RETURNING returned no rows'); }
-	return mapArrayToInsertReturningNoRowsResult(res);
+		.all()
+		.map(data => mapArrayToInsertReturningNoRowsResult(data));
 }
 
 function mapArrayToInsertReturningNoRowsResult(data: any) {
