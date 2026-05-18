@@ -619,6 +619,18 @@ RETURNING *`;
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('delete03 - multiple-row returning *', () => {
+		const sql = 'DELETE FROM mytable1 WHERE id > 1 RETURNING *';
+
+		const actual = generateTsCode(sql, 'delete03', sqliteDbSchema, 'better-sqlite3');
+		const expected = readNormalizedEOL('tests/sqlite/expected-code/delete03-multiple-row-result.ts.txt');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('crud-select01', () => {
 		const actual = generateCrud('better-sqlite3', 'Select', 'mytable1', sqliteDbSchema);
 		const expected = readNormalizedEOL('tests/sqlite/expected-code/crud-select01.ts.txt');
