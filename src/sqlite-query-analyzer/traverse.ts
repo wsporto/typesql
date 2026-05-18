@@ -2166,20 +2166,26 @@ function traverse_update_stmt(update_stmt: Update_stmtContext, traverseContext: 
 
 function traverse_delete_stmt(delete_stmt: Delete_stmtContext, traverseContext: TraverseContext): DeleteResult {
 	const table_name = delete_stmt.qualified_table_name().getText();
+	const tableSplitName = splitName(table_name);
+	const schema = tableSplitName.prefix || 'main';
 	const fromColumns = filterColumns(traverseContext.dbSchema, [], '', splitName(table_name));
 
 	const expr = delete_stmt.expr();
 	traverse_expr(expr, { ...traverseContext, fromColumns });
+	const singleRow = where_is_single_result(expr, fromColumns, traverseContext.dbSchema, schema, tableSplitName.name);
 
 	const returning_clause = delete_stmt.returning_clause();
 	const returningColumns = returning_clause ? traverse_returning_clause(returning_clause, { ...traverseContext, fromColumns }) : [];
+
+	const multipleRowsResult = returning_clause != null && !singleRow;
 
 	const queryResult: DeleteResult = {
 		queryType: 'Delete',
 		constraints: traverseContext.constraints,
 		parameters: traverseContext.parameters,
 		returningColumns,
-		returing: returning_clause != null
+		returing: returning_clause != null,
+		multipleRowsResult
 	};
 	return queryResult;
 }

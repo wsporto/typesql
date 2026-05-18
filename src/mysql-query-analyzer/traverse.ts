@@ -668,6 +668,7 @@ export type DeleteResult = {
 	parameters: TypeAndNullInferParam[];
 	returningColumns: TypeAndNullInfer[];
 	returing: boolean;
+	multipleRowsResult: boolean;
 };
 
 function renameFromColumns(fromColumns: TypeAndNullInfer[], recursiveNames: string[]): ColumnDef[] {
