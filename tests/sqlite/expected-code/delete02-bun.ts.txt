@@ -1,4 +1,4 @@
-import type { Database } from 'better-sqlite3';
+import type { Database } from 'bun:sqlite';
 
 export type Delete02Params = {
 	param1: number;
@@ -14,10 +14,9 @@ export function delete02(db: Database, params: Delete02Params): Delete02Result |
 	DELETE FROM mytable1 WHERE id=? RETURNING *
 	`
 	const res = db.prepare(sql)
-		.raw(true)
-		.get([params.param1]);
+		.values(params.param1);
 
-	return res ? mapArrayToDelete02Result(res) : null;
+	return res.length > 0 ? mapArrayToDelete02Result(res[0]) : null;
 }
 
 function mapArrayToDelete02Result(data: any) {

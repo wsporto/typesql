@@ -1,4 +1,4 @@
-import type { Database } from 'better-sqlite3';
+import type { Database } from 'bun:sqlite';
 
 export type Insert03Params = {
 	value: number | null;
@@ -14,11 +14,10 @@ export function insert03(db: Database, params: Insert03Params): Insert03Result {
 	INSERT INTO mytable1(value) VALUES(?) RETURNING *
 	`
 	const res = db.prepare(sql)
-		.raw(true)
-		.get([params.value]);
+		.values(params.value);
 
-	if (!res) { throw new Error('INSERT ... RETURNING returned no rows'); }
-	return mapArrayToInsert03Result(res);
+	if (res.length === 0) { throw new Error('INSERT ... RETURNING returned no rows'); }
+	return mapArrayToInsert03Result(res[0]);
 }
 
 function mapArrayToInsert03Result(data: any) {

@@ -1,4 +1,4 @@
-import type { Database } from 'better-sqlite3';
+import type { D1Database } from '@cloudflare/workers-types';
 
 export type Update03Data = {
 	param1: number | null;
@@ -13,15 +13,14 @@ export type Update03Result = {
 	value: number | null;
 }
 
-export function update03(db: Database, data: Update03Data, params: Update03Params): Update03Result | null {
+export async function update03(db: D1Database, data: Update03Data, params: Update03Params): Promise<Update03Result | null> {
 	const sql = `
 	UPDATE mytable1 SET value = ? WHERE id = ? RETURNING *
 	`
-	const res = db.prepare(sql)
-		.raw(true)
-		.get([data.param1, params.param1]);
-
-	return res ? mapArrayToUpdate03Result(res) : null;
+	return db.prepare(sql)
+		.bind(data.param1, params.param1)
+		.raw({ columnNames: false })
+		.then(rows => rows.length > 0 ? mapArrayToUpdate03Result(rows[0]) : null);
 }
 
 function mapArrayToUpdate03Result(data: any) {
