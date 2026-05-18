@@ -805,7 +805,7 @@ function writeExecFunction(writer: CodeBlockWriter, client: SQLiteClient, params
 
 	let restParameters = queryType === 'Update' && uniqueUpdateParams.length > 0 ? `, data: ${dataTypeName}` : '';
 	const dynamicQuery = false;
-	if (!dynamicQuery) {
+	if (!dynamicQuery && (parameters.length > uniqueUpdateParams.length || orderBy) {
 		restParameters += parameters.length > 0 || orderBy ? `, params: ${paramsTypeName}` : '';
 	}
 	const queryParametersWithoutBrackes = parameters.join(', ');

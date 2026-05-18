@@ -510,6 +510,19 @@ RETURNING *`;
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('update04 - multi-row-result returning *', () => {
+		const sql = 'UPDATE mytable1 SET value = ? WHERE id > 1 RETURNING *';
+
+		const actual = generateTsCode(sql, 'update04', sqliteDbSchema, 'better-sqlite3');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+
+		const expected = readNormalizedEOL('tests/sqlite/expected-code/update04-multiple-row-result.ts.txt');
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('delete01 - DELETE FROM mytable1 WHERE id=?', () => {
 		const sql = 'DELETE FROM mytable1 WHERE id=?';
 

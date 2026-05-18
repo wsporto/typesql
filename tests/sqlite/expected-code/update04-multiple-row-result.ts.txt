@@ -1,0 +1,28 @@
+import type { Database } from 'better-sqlite3';
+
+export type Update04Data = {
+	param1: number | null;
+}
+
+export type Update04Result = {
+	id: number;
+	value: number | null;
+}
+
+export function update04(db: Database, data: Update04Data): Update04Result[] {
+	const sql = `
+	UPDATE mytable1 SET value = ? WHERE id > 1 RETURNING *
+	`
+	return db.prepare(sql)
+		.raw(true)
+		.all([data.param1])
+		.map(data => mapArrayToUpdate04Result(data));
+}
+
+function mapArrayToUpdate04Result(data: any) {
+	const result: Update04Result = {
+		id: data[0],
+		value: data[1]
+	}
+	return result;
+}
