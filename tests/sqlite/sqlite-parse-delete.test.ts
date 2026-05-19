@@ -126,6 +126,34 @@ describe('sqlite-parse-delete', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('DELETE FROM mytable1 WHERE id > 1 RETURNING *', async () => {
+		const sql = 'DELETE FROM mytable1 WHERE id  > 1 RETURNING *';
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Delete',
+			multipleRowsResult: true,
+			returning: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'INTEGER',
+					notNull: true
+				},
+				{
+					name: 'value',
+					type: 'INTEGER',
+					notNull: false
+				}
+			],
+			parameters: []
+		};
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('delete from mytable1 where value = 0 or value is null', () => {
 		const sql = 'delete from mytable1 where value = 0 or value is null';
 		const actual = parseSql(sql, sqliteDbSchema);

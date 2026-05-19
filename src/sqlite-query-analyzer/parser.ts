@@ -203,7 +203,7 @@ function createSchemaDefinition(
 		const schemaDef: SchemaDef = {
 			sql,
 			queryType: queryResult.queryType,
-			multipleRowsResult: false,
+			multipleRowsResult: queryResult.multipleRowsResult,
 			columns,
 			parameters: paramsResult
 		};
@@ -249,7 +249,7 @@ function createSchemaDefinition(
 		const schemaDef: SchemaDef = {
 			sql,
 			queryType: queryResult.queryType,
-			multipleRowsResult: false,
+			multipleRowsResult: queryResult.multipleRowsResult,
 			columns: returninColumns,
 			data: paramsResult,
 			parameters: whereParams
@@ -285,7 +285,7 @@ function createSchemaDefinition(
 		const schemaDef: SchemaDef = {
 			sql,
 			queryType: queryResult.queryType,
-			multipleRowsResult: false,
+			multipleRowsResult: queryResult.multipleRowsResult,
 			columns: returninColumns,
 			parameters: whereParams
 		};

@@ -1,0 +1,1 @@
+DELETE FROM mytable1 WHERE id in (3, 4) RETURNING *

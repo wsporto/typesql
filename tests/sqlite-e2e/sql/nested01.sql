@@ -1,6 +1,6 @@
 -- @nested
-SELECT 
-	u.id as user_id, 
+SELECT
+	u.id as user_id,
 	u.name as user_name,
 	p.id as post_id,
 	p.title as post_title

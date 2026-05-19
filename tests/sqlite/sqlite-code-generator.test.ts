@@ -343,6 +343,21 @@ AND datetime(integer_column, 'auto') = :date_time`;
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('insert04-multiple-row-result', async () => {
+		const sql = `INSERT INTO mytable1(
+	value
+) VALUES (:value1), (:value2), (:value3)
+RETURNING *`;
+
+		const actual = await generateTsCode(sql, 'insert04', sqliteDbSchema, 'better-sqlite3', false);
+		const expected = readNormalizedEOL('tests/sqlite/expected-code/insert04-multiple-row-result.ts.txt');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('update01 - UPDATE mytable1 SET value=? WHERE id=?', () => {
 		const sql = 'UPDATE mytable1 SET value=? WHERE id=?';
 
@@ -495,6 +510,19 @@ AND datetime(integer_column, 'auto') = :date_time`;
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('update04 - multi-row-result returning *', () => {
+		const sql = 'UPDATE mytable1 SET value = ? WHERE id > 1 RETURNING *';
+
+		const actual = generateTsCode(sql, 'update04', sqliteDbSchema, 'better-sqlite3');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+
+		const expected = readNormalizedEOL('tests/sqlite/expected-code/update04-multiple-row-result.ts.txt');
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('delete01 - DELETE FROM mytable1 WHERE id=?', () => {
 		const sql = 'DELETE FROM mytable1 WHERE id=?';
 
@@ -584,6 +612,18 @@ AND datetime(integer_column, 'auto') = :date_time`;
 
 		const actual = generateTsCode(sql, 'delete02', sqliteDbSchema, 'd1');
 		const expected = readNormalizedEOL('tests/sqlite/expected-code/delete02-d1.ts.txt');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('delete03 - multiple-row returning *', () => {
+		const sql = 'DELETE FROM mytable1 WHERE id > 1 RETURNING *';
+
+		const actual = generateTsCode(sql, 'delete03', sqliteDbSchema, 'better-sqlite3');
+		const expected = readNormalizedEOL('tests/sqlite/expected-code/delete03-multiple-row-result.ts.txt');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);

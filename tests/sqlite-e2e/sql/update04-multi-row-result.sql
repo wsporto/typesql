@@ -1,0 +1,1 @@
+UPDATE mytable1 SET value = :value WHERE id in (3, 4) RETURNING *

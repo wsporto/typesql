@@ -650,6 +650,7 @@ export type InsertResult = {
 	parameters: TypeAndNullInferParam[];
 	columns: TypeAndNullInfer[];
 	returing: boolean;
+	multipleRowsResult: boolean;
 };
 export type UpdateResult = {
 	queryType: 'Update';
@@ -659,6 +660,7 @@ export type UpdateResult = {
 	whereParams: TypeAndNullInferParam[];
 	returningColumns: TypeAndNullInfer[];
 	returing: boolean;
+	multipleRowsResult: boolean;
 };
 export type DeleteResult = {
 	constraints: Constraint[];
@@ -666,6 +668,7 @@ export type DeleteResult = {
 	parameters: TypeAndNullInferParam[];
 	returningColumns: TypeAndNullInfer[];
 	returing: boolean;
+	multipleRowsResult: boolean;
 };
 
 function renameFromColumns(fromColumns: TypeAndNullInfer[], recursiveNames: string[]): ColumnDef[] {
