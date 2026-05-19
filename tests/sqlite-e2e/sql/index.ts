@@ -15,3 +15,4 @@ export * from "./nested03.js";
 export * from "./nested04-without-join-table.js";
 export * from "./nested04.js";
 export * from "./update03.js";
+export * from "./update04-multi-row-result.js";
