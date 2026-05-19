@@ -1,4 +1,5 @@
 export * from "./delete02.js";
+export * from "./delete03-multi-row-result.js";
 export * from "./dynamic-query01.js";
 export * from "./dynamic-query02.js";
 export * from "./dynamic-query03.js";
