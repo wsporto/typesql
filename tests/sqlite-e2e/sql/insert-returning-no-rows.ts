@@ -15,10 +15,11 @@ export function insertReturningNoRows(db: Database): InsertReturningNoRowsResult
 	WHERE 1 > 2
 	RETURNING *
 	`
-	return db.prepare(sql)
+	const rows = db.prepare(sql)
 		.raw(true)
-		.all()
-		.map(data => mapArrayToInsertReturningNoRowsResult(data));
+		.all();
+
+	return rows.map(data => mapArrayToInsertReturningNoRowsResult(data));
 }
 
 function mapArrayToInsertReturningNoRowsResult(data: any) {

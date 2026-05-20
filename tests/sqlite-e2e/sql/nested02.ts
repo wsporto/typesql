@@ -30,10 +30,11 @@ export function nested02(db: Database): Nested02Result[] {
 	INNER JOIN roles r on r.fk_user = u.id
 	INNER JOIN comments c on c.fk_post = p.id
 	`
-	return db.prepare(sql)
+	const rows = db.prepare(sql)
 		.raw(true)
-		.all()
-		.map(data => mapArrayToNested02Result(data));
+		.all();
+
+	return rows.map(data => mapArrayToNested02Result(data));
 }
 
 function mapArrayToNested02Result(data: any) {

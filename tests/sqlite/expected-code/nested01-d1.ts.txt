@@ -18,9 +18,10 @@ export async function nested01(db: D1Database): Promise<Nested01Result[]> {
 	FROM users u
 	INNER JOIN posts p on p.fk_user = u.id
 	`
-	return db.prepare(sql)
-		.raw({ columnNames: false })
-		.then(rows => rows.map(row => mapArrayToNested01Result(row)));
+	const rows = await db.prepare(sql)
+		.raw({ columnNames: false });
+
+	return rows.map(row => mapArrayToNested01Result(row));
 }
 
 function mapArrayToNested01Result(data: any) {

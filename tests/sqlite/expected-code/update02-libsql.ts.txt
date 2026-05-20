@@ -12,8 +12,9 @@ export async function update02(client: Client | Transaction, params: Update02Par
 	const sql = `
 	UPDATE mytable1 SET value = 42 WHERE id = ?
 	`
-	return client.execute({ sql, args: [params.id] })
-		.then(res => mapArrayToUpdate02Result(res));
+	const res = await client.execute({ sql, args: [params.id] });
+
+	return mapArrayToUpdate02Result(res);
 }
 
 function mapArrayToUpdate02Result(data: any) {

@@ -12,10 +12,11 @@ export function select05(db: Database, params: Select05Params): Select05Result[]
 	const sql = `
 	SELECT id FROM mytable1 ORDER BY ${buildOrderBy(params.orderBy)}
 	`
-	return db.prepare(sql)
+	const rows = db.prepare(sql)
 		.raw(true)
-		.all()
-		.map(data => mapArrayToSelect05Result(data));
+		.all();
+
+	return rows.map(data => mapArrayToSelect05Result(data));
 }
 
 function mapArrayToSelect05Result(data: any) {

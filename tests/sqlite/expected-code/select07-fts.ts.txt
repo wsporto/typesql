@@ -20,10 +20,11 @@ export function select07(db: Database, params: Select07Params): Select07Result[]
 	WHERE mytable2_fts MATCH ?
 	LIMIT 20
 	`
-	return db.prepare(sql)
+	const rows = db.prepare(sql)
 		.raw(true)
-		.all([params.match])
-		.map(data => mapArrayToSelect07Result(data));
+		.all([params.match]);
+
+	return rows.map(data => mapArrayToSelect07Result(data));
 }
 
 function mapArrayToSelect07Result(data: any) {

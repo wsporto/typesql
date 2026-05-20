@@ -8,9 +8,10 @@ export async function select02(db: D1Database): Promise<Select02Result[]> {
 	const sql = `
 	select id from mytable1
 	`
-	return db.prepare(sql)
-		.raw({ columnNames: false })
-		.then(rows => rows.map(row => mapArrayToSelect02Result(row)));
+	const rows = await db.prepare(sql)
+		.raw({ columnNames: false });
+
+	return rows.map(row => mapArrayToSelect02Result(row));
 }
 
 function mapArrayToSelect02Result(data: any) {

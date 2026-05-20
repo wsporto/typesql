@@ -16,9 +16,10 @@ export function select06(db: Database, params: Select06Params): Select06Result[]
 	WHERE id IN (${params.ids.map(() => '?')})
 	AND name IN (${params.names.map(() => '?')})
 	`
-	return db.prepare(sql)
-		.values(...params.ids, ...params.names)
-		.map(data => mapArrayToSelect06Result(data));
+	const rows = db.prepare(sql)
+		.values(...params.ids, ...params.names);
+
+	return rows.map(data => mapArrayToSelect06Result(data));
 }
 
 function mapArrayToSelect06Result(data: any) {

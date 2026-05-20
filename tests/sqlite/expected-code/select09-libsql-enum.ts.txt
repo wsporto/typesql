@@ -15,9 +15,9 @@ export async function select09(client: Client | Transaction, params: Select09Par
 	FROM all_types
 	where enum_column = ?
 	`
-	return client.execute({ sql, args: [params.enum_value] })
-		.then(res => res.rows)
-		.then(rows => rows.map(row => mapArrayToSelect09Result(row)));
+	const { rows } = await client.execute({ sql, args: [params.enum_value] });
+
+	return rows.map(row => mapArrayToSelect09Result(row));
 }
 
 function mapArrayToSelect09Result(data: any) {

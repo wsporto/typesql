@@ -18,10 +18,11 @@ export function nested01(db: Database): Nested01Result[] {
 	FROM users u
 	INNER JOIN posts p on p.fk_user = u.id
 	`
-	return db.prepare(sql)
+	const rows = db.prepare(sql)
 		.raw(true)
-		.all()
-		.map(data => mapArrayToNested01Result(data));
+		.all();
+
+	return rows.map(data => mapArrayToNested01Result(data));
 }
 
 function mapArrayToNested01Result(data: any) {

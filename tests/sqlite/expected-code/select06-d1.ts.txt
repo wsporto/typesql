@@ -16,10 +16,11 @@ export async function select06(db: D1Database, params: Select06Params): Promise<
 	WHERE id IN (${params.ids.map(() => '?')})
 	AND name IN (${params.names.map(() => '?')})
 	`
-	return db.prepare(sql)
+	const rows = await db.prepare(sql)
 		.bind(...params.ids, ...params.names)
-		.raw({ columnNames: false })
-		.then(rows => rows.map(row => mapArrayToSelect06Result(row)));
+		.raw({ columnNames: false });
+
+	return rows.map(row => mapArrayToSelect06Result(row));
 }
 
 function mapArrayToSelect06Result(data: any) {

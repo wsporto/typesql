@@ -12,8 +12,9 @@ export async function delete01(client: Client | Transaction, params: Delete01Par
 	const sql = `
 	DELETE FROM mytable1 WHERE id=?
 	`
-	return client.execute({ sql, args: [params.param1] })
-		.then(res => mapArrayToDelete01Result(res));
+	const res = await client.execute({ sql, args: [params.param1] });
+
+	return mapArrayToDelete01Result(res);
 }
 
 function mapArrayToDelete01Result(data: any) {

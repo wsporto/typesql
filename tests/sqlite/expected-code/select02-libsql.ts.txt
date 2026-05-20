@@ -8,9 +8,9 @@ export async function select02(client: Client | Transaction): Promise<Select02Re
 	const sql = `
 	select id from mytable1
 	`
-	return client.execute(sql)
-		.then(res => res.rows)
-		.then(rows => rows.map(row => mapArrayToSelect02Result(row)));
+	const { rows } = await client.execute(sql);
+
+	return rows.map(row => mapArrayToSelect02Result(row));
 }
 
 function mapArrayToSelect02Result(data: any) {

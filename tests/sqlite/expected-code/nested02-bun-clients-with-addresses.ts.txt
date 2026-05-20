@@ -24,9 +24,10 @@ export function nested02(db: Database, params: Nested02Params): Nested02Result[]
 	LEFT JOIN addresses as a2 ON a2.id = c.secondaryAddress
 	WHERE c.id = ?
 	`
-	return db.prepare(sql)
-		.values(params.clientId)
-		.map(data => mapArrayToNested02Result(data));
+	const rows = db.prepare(sql)
+		.values(params.clientId);
+
+	return rows.map(data => mapArrayToNested02Result(data));
 }
 
 function mapArrayToNested02Result(data: any) {

@@ -24,10 +24,11 @@ export function nested03(db: Database, params: Nested03Params): Nested03Result[]
 	LEFT JOIN addresses as a2 ON a2.id = c.secondaryAddress
 	WHERE c.id = ?
 	`
-	return db.prepare(sql)
+	const rows = db.prepare(sql)
 		.raw(true)
-		.all([params.param1])
-		.map(data => mapArrayToNested03Result(data));
+		.all([params.param1]);
+
+	return rows.map(data => mapArrayToNested03Result(data));
 }
 
 function mapArrayToNested03Result(data: any) {
