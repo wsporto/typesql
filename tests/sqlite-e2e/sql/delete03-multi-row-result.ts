@@ -9,10 +9,11 @@ export function delete03MultiRowResult(db: Database): Delete03MultiRowResultResu
 	const sql = `
 	DELETE FROM mytable1 WHERE id in (3, 4) RETURNING *
 	`
-	return db.prepare(sql)
+	const rows = db.prepare(sql)
 		.raw(true)
-		.all()
-		.map(data => mapArrayToDelete03MultiRowResultResult(data));
+		.all();
+
+	return rows.map(data => mapArrayToDelete03MultiRowResultResult(data));
 }
 
 function mapArrayToDelete03MultiRowResultResult(data: any) {

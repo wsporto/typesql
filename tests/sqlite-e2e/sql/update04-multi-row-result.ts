@@ -13,10 +13,11 @@ export function update04MultiRowResult(db: Database, data: Update04MultiRowResul
 	const sql = `
 	UPDATE mytable1 SET value = ? WHERE id in (3, 4) RETURNING *
 	`
-	return db.prepare(sql)
+	const rows = db.prepare(sql)
 		.raw(true)
-		.all([data.value])
-		.map(data => mapArrayToUpdate04MultiRowResultResult(data));
+		.all([data.value]);
+
+	return rows.map(data => mapArrayToUpdate04MultiRowResultResult(data));
 }
 
 function mapArrayToUpdate04MultiRowResultResult(data: any) {

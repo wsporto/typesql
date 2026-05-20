@@ -9,7 +9,7 @@ export type Insert03Result = {
 	value: number | null;
 }
 
-export function insert03(db: Database, params: Insert03Params): Insert03Result {
+export function insert03(db: Database, params: Insert03Params): Insert03Result | null {
 	const sql = `
 	INSERT INTO mytable1(value) VALUES(?) RETURNING *
 	`
@@ -17,8 +17,7 @@ export function insert03(db: Database, params: Insert03Params): Insert03Result {
 		.raw(true)
 		.get([params.param1]);
 
-	if (!res) { throw new Error('INSERT ... RETURNING returned no rows'); }
-	return mapArrayToInsert03Result(res);
+	return res ? mapArrayToInsert03Result(res) : null;
 }
 
 function mapArrayToInsert03Result(data: any) {

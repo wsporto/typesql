@@ -21,10 +21,11 @@ export function nested04(db: Database): Nested04Result[] {
 	INNER JOIN participants p on p.fk_survey = s.id
 	INNER JOIN users u on u.id = p.fk_user
 	`
-	return db.prepare(sql)
+	const rows = db.prepare(sql)
 		.raw(true)
-		.all()
-		.map(data => mapArrayToNested04Result(data));
+		.all();
+
+	return rows.map(data => mapArrayToNested04Result(data));
 }
 
 function mapArrayToNested04Result(data: any) {

@@ -18,10 +18,11 @@ export function insertMultipleRowResult(db: Database, params: InsertMultipleRowR
 	) VALUES (?), (?), (?)
 	RETURNING *
 	`
-	return db.prepare(sql)
+	const rows = db.prepare(sql)
 		.raw(true)
-		.all([params.value1, params.value2, params.value3])
-		.map(data => mapArrayToInsertMultipleRowResultResult(data));
+		.all([params.value1, params.value2, params.value3]);
+
+	return rows.map(data => mapArrayToInsertMultipleRowResultResult(data));
 }
 
 function mapArrayToInsertMultipleRowResultResult(data: any) {

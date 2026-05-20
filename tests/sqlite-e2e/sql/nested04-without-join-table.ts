@@ -17,10 +17,11 @@ export function nested04WithoutJoinTable(db: Database): Nested04WithoutJoinTable
 	INNER JOIN participants p on p.fk_survey = s.id
 	INNER JOIN users u on u.id = p.fk_user
 	`
-	return db.prepare(sql)
+	const rows = db.prepare(sql)
 		.raw(true)
-		.all()
-		.map(data => mapArrayToNested04WithoutJoinTableResult(data));
+		.all();
+
+	return rows.map(data => mapArrayToNested04WithoutJoinTableResult(data));
 }
 
 function mapArrayToNested04WithoutJoinTableResult(data: any) {
