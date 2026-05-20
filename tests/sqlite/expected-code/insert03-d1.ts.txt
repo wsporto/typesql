@@ -9,14 +9,15 @@ export type Insert03Result = {
 	value: number | null;
 }
 
-export async function insert03(db: D1Database, params: Insert03Params): Promise<Insert03Result> {
+export async function insert03(db: D1Database, params: Insert03Params): Promise<Insert03Result | null> {
 	const sql = `
 	INSERT INTO mytable1(value) VALUES(?) RETURNING *
 	`
-	return db.prepare(sql)
+	const rows = await db.prepare(sql)
 		.bind(params.value)
-		.raw({ columnNames: false })
-		.then(rows => { if (rows.length === 0) { throw new Error('INSERT ... RETURNING returned no rows'); } return mapArrayToInsert03Result(rows[0]); });
+		.raw({ columnNames: false });
+
+	return rows.length > 0 ? mapArrayToInsert03Result(rows[0]) : null;
 }
 
 function mapArrayToInsert03Result(data: any) {

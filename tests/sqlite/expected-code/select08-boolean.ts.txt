@@ -20,10 +20,11 @@ export function select08(db: Database, params: Select08Params): Select08Result[]
 	FROM mytable1
 	WHERE ? is true OR (? is true OR ? is null)
 	`
-	return db.prepare(sql)
+	const rows = db.prepare(sql)
 		.raw(true)
-		.all([params.param1 != null ? Number(params.param1) : params.param1, params.param2 != null ? Number(params.param2) : params.param2, params.param1 != null ? Number(params.param1) : params.param1, params.param2 != null ? Number(params.param2) : params.param2, params.param2 != null ? Number(params.param2) : params.param2])
-		.map(data => mapArrayToSelect08Result(data));
+		.all([params.param1 != null ? Number(params.param1) : params.param1, params.param2 != null ? Number(params.param2) : params.param2, params.param1 != null ? Number(params.param1) : params.param1, params.param2 != null ? Number(params.param2) : params.param2, params.param2 != null ? Number(params.param2) : params.param2]);
+
+	return rows.map(data => mapArrayToSelect08Result(data));
 }
 
 function mapArrayToSelect08Result(data: any) {

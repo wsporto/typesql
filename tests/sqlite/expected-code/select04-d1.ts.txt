@@ -29,10 +29,11 @@ export async function select04(db: D1Database, params: Select04Params): Promise<
 	AND datetime(text_column) = ?
 	AND datetime(integer_column, 'auto') = ?
 	`
-	return db.prepare(sql)
+	const rows = await db.prepare(sql)
 		.bind(params.date?.toISOString().split('T')[0], params.date?.toISOString().split('T')[0], params.date_time?.toISOString().split('.')[0].replace('T', ' '), params.date_time?.toISOString().split('.')[0].replace('T', ' '))
-		.raw({ columnNames: false })
-		.then(rows => rows.map(row => mapArrayToSelect04Result(row)));
+		.raw({ columnNames: false });
+
+	return rows.map(row => mapArrayToSelect04Result(row));
 }
 
 function mapArrayToSelect04Result(data: any) {

@@ -9,15 +9,14 @@ export type Insert03Result = {
 	value: number | null;
 }
 
-export function insert03(db: Database, params: Insert03Params): Insert03Result {
+export function insert03(db: Database, params: Insert03Params): Insert03Result | null {
 	const sql = `
 	INSERT INTO mytable1(value) VALUES(?) RETURNING *
 	`
-	const res = db.prepare(sql)
+	const rows = db.prepare(sql)
 		.values(params.value);
 
-	if (res.length === 0) { throw new Error('INSERT ... RETURNING returned no rows'); }
-	return mapArrayToInsert03Result(res[0]);
+	return rows.length > 0 ? mapArrayToInsert03Result(rows[0]) : null;
 }
 
 function mapArrayToInsert03Result(data: any) {

@@ -18,10 +18,11 @@ export function insert04(db: Database, params: Insert04Params): Insert04Result[]
 	) VALUES (?), (?), (?)
 	RETURNING *
 	`
-	return db.prepare(sql)
+	const rows = db.prepare(sql)
 		.raw(true)
-		.all([params.value1, params.value2, params.value3])
-		.map(data => mapArrayToInsert04Result(data));
+		.all([params.value1, params.value2, params.value3]);
+
+	return rows.map(data => mapArrayToInsert04Result(data));
 }
 
 function mapArrayToInsert04Result(data: any) {

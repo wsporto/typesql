@@ -17,10 +17,11 @@ export async function update03(db: D1Database, data: Update03Data, params: Updat
 	const sql = `
 	UPDATE mytable1 SET value = ? WHERE id = ? RETURNING *
 	`
-	return db.prepare(sql)
+	const rows = await db.prepare(sql)
 		.bind(data.param1, params.param1)
-		.raw({ columnNames: false })
-		.then(rows => rows.length > 0 ? mapArrayToUpdate03Result(rows[0]) : null);
+		.raw({ columnNames: false });
+
+	return rows.length > 0 ? mapArrayToUpdate03Result(rows[0]) : null;
 }
 
 function mapArrayToUpdate03Result(data: any) {

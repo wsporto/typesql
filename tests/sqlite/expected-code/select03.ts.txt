@@ -12,10 +12,11 @@ export function select03(db: Database, params: Select03Params): Select03Result[]
 	const sql = `
 	select id from mytable1 where id = ? or id = ?
 	`
-	return db.prepare(sql)
+	const rows = db.prepare(sql)
 		.raw(true)
-		.all([params.id, params.id])
-		.map(data => mapArrayToSelect03Result(data));
+		.all([params.id, params.id]);
+
+	return rows.map(data => mapArrayToSelect03Result(data));
 }
 
 function mapArrayToSelect03Result(data: any) {

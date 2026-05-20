@@ -9,13 +9,13 @@ export type Insert03Result = {
 	value: number | null;
 }
 
-export async function insert03(client: Client | Transaction, params: Insert03Params): Promise<Insert03Result> {
+export async function insert03(client: Client | Transaction, params: Insert03Params): Promise<Insert03Result | null> {
 	const sql = `
 	INSERT INTO mytable1(value) VALUES(?) RETURNING *
 	`
-	return client.execute({ sql, args: [params.value] })
-		.then(res => res.rows)
-		.then(rows => { if (rows.length === 0) { throw new Error('INSERT ... RETURNING returned no rows'); } return mapArrayToInsert03Result(rows[0]); });
+	const { rows } = await client.execute({ sql, args: [params.value] });
+
+	return rows.length > 0 ? mapArrayToInsert03Result(rows[0]) : null;
 }
 
 function mapArrayToInsert03Result(data: any) {

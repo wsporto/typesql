@@ -17,9 +17,9 @@ export async function update03(client: Client | Transaction, data: Update03Data,
 	const sql = `
 	UPDATE mytable1 SET value = ? WHERE id = ? RETURNING *
 	`
-	return client.execute({ sql, args: [data.param1, params.param1] })
-		.then(res => res.rows)
-		.then(rows => rows.length > 0 ? mapArrayToUpdate03Result(rows[0]) : null);
+	const { rows } = await client.execute({ sql, args: [data.param1, params.param1] });
+
+	return rows.length > 0 ? mapArrayToUpdate03Result(rows[0]) : null;
 }
 
 function mapArrayToUpdate03Result(data: any) {

@@ -13,9 +13,9 @@ export async function select01(client: Client | Transaction, params: Select01Par
 	const sql = `
 	select id, name from mytable2 where id = ?
 	`
-	return client.execute({ sql, args: [params.param1] })
-		.then(res => res.rows)
-		.then(rows => rows.length > 0 ? mapArrayToSelect01Result(rows[0]) : null);
+	const { rows } = await client.execute({ sql, args: [params.param1] });
+
+	return rows.length > 0 ? mapArrayToSelect01Result(rows[0]) : null;
 }
 
 function mapArrayToSelect01Result(data: any) {

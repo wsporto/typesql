@@ -15,10 +15,11 @@ export function select09(db: Database, params: Select09Params): Select09Result[]
 	FROM all_types
 	where enum_column = ?
 	`
-	return db.prepare(sql)
+	const rows = db.prepare(sql)
 		.raw(true)
-		.all([params.enum_value])
-		.map(data => mapArrayToSelect09Result(data));
+		.all([params.enum_value]);
+
+	return rows.map(data => mapArrayToSelect09Result(data));
 }
 
 function mapArrayToSelect09Result(data: any) {

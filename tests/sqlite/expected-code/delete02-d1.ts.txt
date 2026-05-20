@@ -13,10 +13,11 @@ export async function delete02(db: D1Database, params: Delete02Params): Promise<
 	const sql = `
 	DELETE FROM mytable1 WHERE id=? RETURNING *
 	`
-	return db.prepare(sql)
+	const rows = await db.prepare(sql)
 		.bind(params.param1)
-		.raw({ columnNames: false })
-		.then(rows => rows.length > 0 ? mapArrayToDelete02Result(rows[0]) : null);
+		.raw({ columnNames: false });
+
+	return rows.length > 0 ? mapArrayToDelete02Result(rows[0]) : null;
 }
 
 function mapArrayToDelete02Result(data: any) {

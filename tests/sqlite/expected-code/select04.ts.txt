@@ -29,10 +29,11 @@ export function select04(db: Database, params: Select04Params): Select04Result[]
 	AND datetime(text_column) = ?
 	AND datetime(integer_column, 'auto') = ?
 	`
-	return db.prepare(sql)
+	const rows = db.prepare(sql)
 		.raw(true)
-		.all([params.date?.toISOString().split('T')[0], params.date?.toISOString().split('T')[0], params.date_time?.toISOString().split('.')[0].replace('T', ' '), params.date_time?.toISOString().split('.')[0].replace('T', ' ')])
-		.map(data => mapArrayToSelect04Result(data));
+		.all([params.date?.toISOString().split('T')[0], params.date?.toISOString().split('T')[0], params.date_time?.toISOString().split('.')[0].replace('T', ' '), params.date_time?.toISOString().split('.')[0].replace('T', ' ')]);
+
+	return rows.map(data => mapArrayToSelect04Result(data));
 }
 
 function mapArrayToSelect04Result(data: any) {

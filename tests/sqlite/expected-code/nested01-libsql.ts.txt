@@ -18,9 +18,9 @@ export async function nested01(client: Client | Transaction): Promise<Nested01Re
 	FROM users u
 	INNER JOIN posts p on p.fk_user = u.id
 	`
-	return client.execute(sql)
-		.then(res => res.rows)
-		.then(rows => rows.map(row => mapArrayToNested01Result(row)));
+	const { rows } = await client.execute(sql);
+
+	return rows.map(row => mapArrayToNested01Result(row));
 }
 
 function mapArrayToNested01Result(data: any) {

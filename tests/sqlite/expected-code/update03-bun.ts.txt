@@ -17,10 +17,10 @@ export function update03(db: Database, data: Update03Data, params: Update03Param
 	const sql = `
 	UPDATE mytable1 SET value = ? WHERE id = ? RETURNING *
 	`
-	const res = db.prepare(sql)
+	const rows = db.prepare(sql)
 		.values(data.param1, params.param1);
 
-	return res.length > 0 ? mapArrayToUpdate03Result(res[0]) : null;
+	return rows.length > 0 ? mapArrayToUpdate03Result(rows[0]) : null;
 }
 
 function mapArrayToUpdate03Result(data: any) {

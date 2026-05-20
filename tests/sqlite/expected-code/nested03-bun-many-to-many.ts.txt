@@ -19,9 +19,10 @@ export function nested03(db: Database): Nested03Result[] {
 	INNER JOIN participants p on p.fk_survey = s.id
 	INNER JOIN users u on u.id = p.fk_user
 	`
-	return db.prepare(sql)
-		.values()
-		.map(data => mapArrayToNested03Result(data));
+	const rows = db.prepare(sql)
+		.values();
+
+	return rows.map(data => mapArrayToNested03Result(data));
 }
 
 function mapArrayToNested03Result(data: any) {

@@ -24,10 +24,11 @@ export async function nested02(db: D1Database, params: Nested02Params): Promise<
 	LEFT JOIN addresses as a2 ON a2.id = c.secondaryAddress
 	WHERE c.id = ?
 	`
-	return db.prepare(sql)
+	const rows = await db.prepare(sql)
 		.bind(params.clientId)
-		.raw({ columnNames: false })
-		.then(rows => rows.map(row => mapArrayToNested02Result(row)));
+		.raw({ columnNames: false });
+
+	return rows.map(row => mapArrayToNested02Result(row));
 }
 
 function mapArrayToNested02Result(data: any) {

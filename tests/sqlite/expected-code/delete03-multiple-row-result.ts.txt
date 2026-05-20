@@ -9,10 +9,11 @@ export function delete03(db: Database): Delete03Result[] {
 	const sql = `
 	DELETE FROM mytable1 WHERE id > 1 RETURNING *
 	`
-	return db.prepare(sql)
+	const rows = db.prepare(sql)
 		.raw(true)
-		.all()
-		.map(data => mapArrayToDelete03Result(data));
+		.all();
+
+	return rows.map(data => mapArrayToDelete03Result(data));
 }
 
 function mapArrayToDelete03Result(data: any) {

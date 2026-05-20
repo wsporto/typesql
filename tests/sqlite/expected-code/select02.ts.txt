@@ -8,10 +8,11 @@ export function select02(db: Database): Select02Result[] {
 	const sql = `
 	select id from mytable1
 	`
-	return db.prepare(sql)
+	const rows = db.prepare(sql)
 		.raw(true)
-		.all()
-		.map(data => mapArrayToSelect02Result(data));
+		.all();
+
+	return rows.map(data => mapArrayToSelect02Result(data));
 }
 
 function mapArrayToSelect02Result(data: any) {

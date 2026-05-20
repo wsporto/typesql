@@ -12,10 +12,11 @@ export async function select03(db: D1Database, params: Select03Params): Promise<
 	const sql = `
 	select id from mytable1 where id = ? or id = ?
 	`
-	return db.prepare(sql)
+	const rows = await db.prepare(sql)
 		.bind(params.id, params.id)
-		.raw({ columnNames: false })
-		.then(rows => rows.map(row => mapArrayToSelect03Result(row)));
+		.raw({ columnNames: false });
+
+	return rows.map(row => mapArrayToSelect03Result(row));
 }
 
 function mapArrayToSelect03Result(data: any) {
