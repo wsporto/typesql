@@ -2171,8 +2171,10 @@ function traverse_delete_stmt(delete_stmt: Delete_stmtContext, traverseContext: 
 	const fromColumns = filterColumns(traverseContext.dbSchema, [], '', splitName(table_name));
 
 	const expr = delete_stmt.expr();
-	traverse_expr(expr, { ...traverseContext, fromColumns });
-	const singleRow = where_is_single_result(expr, fromColumns, traverseContext.dbSchema, schema, tableSplitName.name);
+	if (expr) {
+		traverse_expr(expr, { ...traverseContext, fromColumns });
+	}
+	const singleRow = expr ? where_is_single_result(expr, fromColumns, traverseContext.dbSchema, schema, tableSplitName.name) : false;
 
 	const returning_clause = delete_stmt.returning_clause();
 	const returningColumns = returning_clause ? traverse_returning_clause(returning_clause, { ...traverseContext, fromColumns }) : [];
