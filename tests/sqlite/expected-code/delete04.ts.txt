@@ -1,0 +1,18 @@
+import type { Database } from 'better-sqlite3';
+
+export type Delete04Params = {
+	ids: number[];
+	ids2: number[];
+}
+
+export type Delete04Result = {
+	changes: number;
+}
+
+export function delete04(db: Database, params: Delete04Params): Delete04Result {
+	const sql = `
+	DELETE FROM mytable1 WHERE id IN (${params.ids.map(() => '?')}) OR id IN (${params.ids2.map(() => '?')})
+	`
+	return db.prepare(sql)
+		.run([...params.ids, ...params.ids2]) as Delete04Result;
+}

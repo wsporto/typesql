@@ -112,6 +112,20 @@ function createSchemaDefinition(
 			queryResult.parameters[sameNameList[index]].notNull = notNull;
 		}
 	});
+
+	const nameAndParamPosition = queryResult.parameters
+		.flatMap((param, index) => {
+			if (param.list) {
+				const nameAndPosition: ParameterNameAndPosition = {
+					name: namedParameters?.[index] ? namedParameters[index] : `param${index + 1}`,
+					paramPosition: queryResult.parameters[index].paramIndex
+				};
+				return nameAndPosition;
+			}
+			return []
+		});
+	const newSql = replaceListParams(sql, nameAndParamPosition);
+
 	const substitutions: SubstitutionHash = {}; //TODO - DUPLICADO
 	unify(queryResult.constraints, substitutions);
 	if (queryResult.queryType === 'Select') {
@@ -139,20 +153,6 @@ function createSchemaDefinition(
 			};
 			return colInfo;
 		});
-
-		const nameAndParamPosition = paramsResult
-			.flatMap((param, index) => {
-				if (param.columnType?.endsWith('[]')) {
-					const nameAndPosition: ParameterNameAndPosition = {
-						name: param.name,
-						paramPosition: queryResult.parameters[index].paramIndex
-					};
-					return nameAndPosition;
-				}
-				return []
-			});
-
-		const newSql = replaceListParams(sql, nameAndParamPosition);
 
 		const schemaDef: SchemaDef = {
 			sql: newSql,
@@ -269,6 +269,9 @@ function createSchemaDefinition(
 				columnType: verifyNotInferred(columnType),
 				notNull: columnNotNull
 			};
+			if (param.list) {
+				colInfo.list = param.list;
+			}
 			return colInfo;
 		});
 		const returninColumns = queryResult.returningColumns.map((col, index) => {
@@ -283,7 +286,7 @@ function createSchemaDefinition(
 		});
 
 		const schemaDef: SchemaDef = {
-			sql,
+			sql: newSql,
 			queryType: queryResult.queryType,
 			multipleRowsResult: queryResult.multipleRowsResult,
 			columns: returninColumns,

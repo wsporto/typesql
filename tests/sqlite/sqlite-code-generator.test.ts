@@ -631,6 +631,18 @@ RETURNING *`;
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('delete04 - DELETE ... WHERE id IN (:ids)', () => {
+		const sql = 'DELETE FROM mytable1 WHERE id IN (:ids) OR id IN (:ids2)';
+
+		const actual = generateTsCode(sql, 'delete04', sqliteDbSchema, 'better-sqlite3');
+		const expected = readNormalizedEOL('tests/sqlite/expected-code/delete04.ts.txt');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('crud-select01', () => {
 		const actual = generateCrud('better-sqlite3', 'Select', 'mytable1', sqliteDbSchema);
 		const expected = readNormalizedEOL('tests/sqlite/expected-code/crud-select01.ts.txt');
