@@ -232,6 +232,7 @@ export type TypeAndNullInfer = {
 	intrinsicNotNull?: boolean;
 	table: string;
 	hidden?: number;
+	list?: boolean;
 };
 
 export type TypeAndNullInferParam = TypeAndNullInfer & {

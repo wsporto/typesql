@@ -826,6 +826,7 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
 				const typeRight = traverse_expr(inExpr, traverseContext);
 				if (typeRight.name === '?') {
 					typeRight.notNull = true;
+					typeRight.list = true;
 				}
 				traverseContext.constraints.push({
 					expression: expr.getText(),
@@ -851,6 +852,7 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
 				const typeRight = traverse_expr(inExpr2, traverseContext);
 				if (typeRight.name === '?') {
 					typeRight.notNull = true;
+					typeRight.list = true;
 				}
 				traverseContext.constraints.push({
 					expression: expr.getText(),

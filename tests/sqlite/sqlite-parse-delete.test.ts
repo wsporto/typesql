@@ -71,6 +71,31 @@ describe('sqlite-parse-delete', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('DELETE FROM mytable1 WHERE id IN (:ids)', () => {
+		const sql = 'DELETE FROM mytable1 WHERE id IN (:ids)';
+
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql: `DELETE FROM mytable1 WHERE id IN (\${params.ids.map(() => '?')})`,
+			queryType: 'Delete',
+			multipleRowsResult: false,
+			columns: [],
+			parameters: [
+				{
+					name: 'ids',
+					notNull: true,
+					columnType: 'INTEGER[]',
+					list: true
+				}
+			]
+		};
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('DELETE FROM mytable1 WHERE id = :id RETURNING *', async () => {
 		const sql = 'DELETE FROM mytable1 WHERE id = :id RETURNING *';
 		const actual = parseSql(sql, sqliteDbSchema);

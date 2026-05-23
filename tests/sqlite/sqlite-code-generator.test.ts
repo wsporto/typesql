@@ -523,6 +523,19 @@ RETURNING *`;
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('update05 - array expansion', () => {
+		const sql = 'UPDATE mytable1 SET value = 1 where id IN (:ids) OR id IN (:ids2)';
+
+		const actual = generateTsCode(sql, 'update05', sqliteDbSchema, 'better-sqlite3');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+
+		const expected = readNormalizedEOL('tests/sqlite/expected-code/update05.ts.txt');
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('delete01 - DELETE FROM mytable1 WHERE id=?', () => {
 		const sql = 'DELETE FROM mytable1 WHERE id=?';
 
@@ -624,6 +637,18 @@ RETURNING *`;
 
 		const actual = generateTsCode(sql, 'delete03', sqliteDbSchema, 'better-sqlite3');
 		const expected = readNormalizedEOL('tests/sqlite/expected-code/delete03-multiple-row-result.ts.txt');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
+	it('delete04 - DELETE ... WHERE id IN (:ids)', () => {
+		const sql = 'DELETE FROM mytable1 WHERE id IN (:ids) OR id IN (:ids2)';
+
+		const actual = generateTsCode(sql, 'delete04', sqliteDbSchema, 'better-sqlite3');
+		const expected = readNormalizedEOL('tests/sqlite/expected-code/delete04.ts.txt');
 
 		if (isLeft(actual)) {
 			assert.fail(`Shouldn't return an error: ${actual.left.description}`);

@@ -1,0 +1,1 @@
+UPDATE mytable1 SET value = 1 where id IN (:ids) OR id IN (:ids2)

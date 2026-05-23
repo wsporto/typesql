@@ -1,5 +1,6 @@
 export * from "./delete02.js";
 export * from "./delete03-multi-row-result.js";
+export * from "./delete04.js";
 export * from "./dynamic-query01.js";
 export * from "./dynamic-query02.js";
 export * from "./dynamic-query03.js";
@@ -17,3 +18,4 @@ export * from "./nested04-without-join-table.js";
 export * from "./nested04.js";
 export * from "./update03.js";
 export * from "./update04-multi-row-result.js";
+export * from "./update05.js";
