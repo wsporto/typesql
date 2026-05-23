@@ -1,0 +1,18 @@
+import type { Database } from 'better-sqlite3';
+
+export type Update05Params = {
+	ids: number[];
+	ids2: number[];
+}
+
+export type Update05Result = {
+	changes: number;
+}
+
+export function update05(db: Database, params: Update05Params): Update05Result {
+	const sql = `
+	UPDATE mytable1 SET value = 1 where id IN (${params.ids.map(() => '?')}) OR id IN (${params.ids2.map(() => '?')})
+	`
+	return db.prepare(sql)
+		.run([...params.ids, ...params.ids2]) as Update05Result;
+}

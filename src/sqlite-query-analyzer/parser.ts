@@ -233,6 +233,9 @@ function createSchemaDefinition(
 				columnType: verifyNotInferred(columnType),
 				notNull: columnNotNull
 			};
+			if (param.list) {
+				colInfo.list = param.list;
+			}
 			return colInfo;
 		});
 		const returninColumns = queryResult.returningColumns.map((col, index) => {
@@ -247,7 +250,7 @@ function createSchemaDefinition(
 		});
 
 		const schemaDef: SchemaDef = {
-			sql,
+			sql: newSql,
 			queryType: queryResult.queryType,
 			multipleRowsResult: queryResult.multipleRowsResult,
 			columns: returninColumns,

@@ -523,6 +523,19 @@ RETURNING *`;
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('update05 - array expansion', () => {
+		const sql = 'UPDATE mytable1 SET value = 1 where id IN (:ids) OR id IN (:ids2)';
+
+		const actual = generateTsCode(sql, 'update05', sqliteDbSchema, 'better-sqlite3');
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+
+		const expected = readNormalizedEOL('tests/sqlite/expected-code/update05.ts.txt');
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('delete01 - DELETE FROM mytable1 WHERE id=?', () => {
 		const sql = 'DELETE FROM mytable1 WHERE id=?';
 

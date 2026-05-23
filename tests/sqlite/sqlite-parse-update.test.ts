@@ -74,6 +74,37 @@ describe('sqlite-parse-update', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it('UPDATE mytable1 SET value = 1 where id IN (:ids) OR id IN (:ids2)', async () => {
+		const sql = 'UPDATE mytable1 SET value = 1 where id IN (:ids) OR id IN (:ids2)';
+
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql: `UPDATE mytable1 SET value = 1 where id IN (\${params.ids.map(() => '?')}) OR id IN (\${params.ids2.map(() => '?')})`,
+			queryType: 'Update',
+			multipleRowsResult: false,
+			columns: [],
+			data: [],
+			parameters: [
+				{
+					name: 'ids',
+					columnType: 'INTEGER[]',
+					notNull: true,
+					list: true
+				},
+				{
+					name: 'ids2',
+					columnType: 'INTEGER[]',
+					notNull: true,
+					list: true
+				}
+			]
+		};
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('update mytable1 set value = :value where id > :min and id < :max', () => {
 		const sql = `
         update mytable1 set value = :value where id > :min and id < :max
