@@ -1,6 +1,6 @@
 import assert from 'node:assert';
 import Database from 'better-sqlite3';
-import { delete02, Delete02Result, delete03MultiRowResult, Delete03MultiRowResultResult } from './sql';
+import { delete02, Delete02Result, delete03MultiRowResult, Delete03MultiRowResultResult, delete04, Delete04Result } from './sql';
 
 describe('sqlite-delete', () => {
     const db = new Database('./mydb.db');
@@ -40,6 +40,34 @@ describe('sqlite-delete', () => {
                 {
                     id: 3,
                     value: 3
+                },
+                {
+                    id: 4,
+                    value: 4
+                }
+            ]
+            assert.deepStrictEqual(actual, expected);
+            throw new Error('__ROLLBACK__');
+        });
+
+        assert.throws(
+            () => deleteTx(),
+            (error: unknown) => {
+                assert.ok(error instanceof Error);
+                assert.strictEqual(error.message, '__ROLLBACK__');
+                return true;
+            }
+        );
+    })
+
+    it('delete04 - DELETE ... WHERE id IN (:ids)', async () => {
+
+        const deleteTx = db.transaction(() => {
+            const actual = delete04(db, { ids: [2, 4] });
+            const expected: Delete04Result[] = [
+                {
+                    id: 2,
+                    value: 2
                 },
                 {
                     id: 4,

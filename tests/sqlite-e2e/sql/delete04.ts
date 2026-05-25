@@ -2,7 +2,6 @@ import type { Database } from 'better-sqlite3';
 
 export type Delete04Params = {
 	ids: number[];
-	ids2: number[];
 }
 
 export type Delete04Result = {
@@ -12,11 +11,11 @@ export type Delete04Result = {
 
 export function delete04(db: Database, params: Delete04Params): Delete04Result[] {
 	const sql = `
-	SELECT * FROM mytable1 WHERE id IN (${params.ids.map(() => '?')}) or id IN (${params.ids2.map(() => '?')})
+	DELETE FROM mytable1 WHERE id IN (${params.ids.map(() => '?')}) RETURNING *
 	`
 	const rows = db.prepare(sql)
 		.raw(true)
-		.all([...params.ids, ...params.ids2]);
+		.all([...params.ids]);
 
 	return rows.map(data => mapArrayToDelete04Result(data));
 }

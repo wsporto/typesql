@@ -1,6 +1,6 @@
 import assert from 'node:assert';
 import Database from 'better-sqlite3';
-import { update03, Update03Result, update04MultiRowResult, Update04MultiRowResultResult } from './sql';
+import { update03, Update03Result, update04MultiRowResult, Update04MultiRowResultResult, update05, Update05Result } from './sql';
 
 describe('sqlite-update', () => {
     const db = new Database('./mydb.db');
@@ -44,6 +44,37 @@ describe('sqlite-update', () => {
                 {
                     id: 4,
                     value: 10,
+                },
+            ]
+
+            assert.deepStrictEqual(actual, expected);
+
+            // Force rollback so the database state is preserved
+            throw new Error('__ROLLBACK__');
+        });
+
+        assert.throws(
+            () => tx(),
+            (error: unknown) => {
+                assert.ok(error instanceof Error);
+                assert.strictEqual(error.message, '__ROLLBACK__');
+                return true;
+            }
+        );
+    });
+
+    it('update05 - UPDATE ... WHERE id IN (:ids)', () => {
+
+        const tx = db.transaction(() => {
+            const actual = update05(db, { ids: [3, 4] });
+            const expected: Update05Result[] = [
+                {
+                    id: 3,
+                    value: 1,
+                },
+                {
+                    id: 4,
+                    value: 1,
                 },
             ]
 
