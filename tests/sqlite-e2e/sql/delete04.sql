@@ -1,1 +1,1 @@
-SELECT * FROM mytable1 WHERE id IN (:ids) or id IN (:ids2)
+DELETE FROM mytable1 WHERE id IN (:ids) RETURNING *
