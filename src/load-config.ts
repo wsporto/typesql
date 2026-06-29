@@ -1,5 +1,6 @@
 import path from 'node:path';
 import fs from 'node:fs';
+import { hasMagic } from 'glob';
 import { TypeSqlConfig } from './types';
 
 export function loadConfig(configPath: string): TypeSqlConfig {
@@ -51,6 +52,34 @@ function resolveEnvVar(rawValue: string): string {
 
 function isRelativeFilePath(uri: string): boolean {
 	return typeof uri === 'string' && !uri.includes('://') && !path.isAbsolute(uri);
+}
+
+/**
+ * Derives the file-discovery glob and the static base directory from `sqlDir`.
+ *
+ * - When `sqlDir` already targets `.sql` files (e.g. `src/queries/**\/*.sql`), it is used
+ *   verbatim as the glob.
+ * - Otherwise `**\/*.sql` is appended, so both a plain directory (`./src`) and a directory
+ *   glob (`src/**\/queries`) recursively match every `.sql` file beneath what they describe.
+ *
+ * The base directory is the glob's leading magic-free prefix; it anchors output-path
+ * resolution (`resolveTsFilePath`) and crud-file detection.
+ */
+export function resolveSqlDir(sqlDir: string): { glob: string; baseDir: string } {
+	const normalized = sqlDir.split(path.sep).join('/'); // glob requires forward slashes
+	const glob = /\.sql$/i.test(normalized) ? normalized : path.posix.join(normalized, '**/*.sql');
+	const baseDir = hasMagic(glob, { magicalBraces: true }) ? globBaseDir(glob) : path.posix.dirname(glob);
+	return { glob, baseDir };
+}
+
+// Longest leading run of path segments that contain no glob magic.
+function globBaseDir(glob: string): string {
+	const baseSegments: string[] = [];
+	for (const segment of glob.split('/')) {
+		if (hasMagic(segment, { magicalBraces: true })) break;
+		baseSegments.push(segment);
+	}
+	return baseSegments.join('/') || '.';
 }
 
 export function resolveTsFilePath(sqlPath: string, sqlDir: string, outDir?: string) {
