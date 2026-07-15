@@ -652,6 +652,72 @@ describe('postgres-parse-insert', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('INSERT INTO ... SELECT :targetParam ... WHERE :whereParam (parameter order)', async () => {
+		//regression: target-list parameters must keep textual order relative to FROM/WHERE
+		//parameters so notNull flags land on the right parameter
+		const sql = `INSERT INTO mytable1 (value) SELECT :insertedValue FROM mytable2 WHERE name = :filterName`;
+		const actual = await describeQuery(client, sql, schemaInfo);
+		const expected: PostgresSchemaDef = {
+			sql: `INSERT INTO mytable1 (value) SELECT $1 FROM mytable2 WHERE name = $2`,
+			queryType: 'Insert',
+			multipleRowsResult: false,
+			columns: [],
+			parameters: [
+				{
+					name: 'insertedValue',
+					type: 'int4',
+					notNull: false
+				},
+				{
+					name: 'filterName',
+					type: 'text',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('INSERT ... ON CONFLICT DO UPDATE ... WHERE :param RETURNING', async () => {
+		//regression: the conflict-action WHERE predicate must be traversed so its
+		//parameter is collected (previously dropped, corrupting notNull of it and later params)
+		const sql = `INSERT INTO mytable1 (value) VALUES (:value) ON CONFLICT (id) DO UPDATE SET value = 0 WHERE mytable1.value < :threshold RETURNING id`;
+		const actual = await describeQuery(client, sql, schemaInfo);
+		const expected: PostgresSchemaDef = {
+			sql: `INSERT INTO mytable1 (value) VALUES ($1) ON CONFLICT (id) DO UPDATE SET value = 0 WHERE mytable1.value < $2 RETURNING id`,
+			queryType: 'Insert',
+			multipleRowsResult: false,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'mytable1'
+				}
+			],
+			parameters: [
+				{
+					name: 'value',
+					type: 'int4',
+					notNull: false
+				},
+				{
+					name: 'threshold',
+					type: 'int4',
+					notNull: true
+				}
+			],
+			returning: true
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
 	it('INSERT INTO mytable2 (id, name) SELECT id, descr FROM mytable2 WHERE id in (?)', async () => {
 		const sql = `
 			INSERT INTO mytable5 (id, name)

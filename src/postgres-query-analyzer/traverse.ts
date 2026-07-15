@@ -1,4 +1,4 @@
-import { A_expr_addContext, A_expr_andContext, A_expr_at_time_zoneContext, A_expr_betweenContext, A_expr_caretContext, A_expr_collateContext, A_expr_compareContext, A_expr_inContext, A_expr_is_notContext, A_expr_isnullContext, A_expr_lesslessContext, A_expr_likeContext, A_expr_mulContext, A_expr_orContext, A_expr_qual_opContext, A_expr_qualContext, A_expr_typecastContext, A_expr_unary_notContext, A_expr_unary_qualopContext, A_expr_unary_signContext, A_exprContext, AexprconstContext, Array_expr_listContext, Array_exprContext, C_expr_caseContext, C_expr_existsContext, C_expr_exprContext, C_exprContext, Case_defaultContext, ColidContext, ColumnElemContext, ColumnrefContext, Common_table_exprContext, CopystmtContext, DeletestmtContext, Expr_listContext, From_clauseContext, From_listContext, Func_applicationContext, Func_arg_exprContext, Func_expr_common_subexprContext, Func_expr_windowlessContext, Func_exprContext, Func_tableContext, IdentifierContext, In_expr_listContext, In_expr_selectContext, In_exprContext, IndirectionContext, Insert_column_itemContext, InsertstmtContext, Join_qualContext, Join_typeContext, Qualified_nameContext, Relation_exprContext, Select_clauseContext, Select_no_parensContext, Select_with_parensContext, SelectstmtContext, Set_clauseContext, Simple_select_intersectContext, Simple_select_pramaryContext, StmtContext, Table_refContext, Target_elContext, Target_labelContext, Target_listContext, Unreserved_keywordContext, UpdatestmtContext, Values_clauseContext, When_clauseContext, Where_clauseContext } from '@wsporto/typesql-parser/postgres/PostgreSQLParser';
+import { A_expr_addContext, A_expr_andContext, A_expr_at_time_zoneContext, A_expr_betweenContext, A_expr_caretContext, A_expr_collateContext, A_expr_compareContext, A_expr_inContext, A_expr_is_notContext, A_expr_isnullContext, A_expr_lesslessContext, A_expr_likeContext, A_expr_mulContext, A_expr_orContext, A_expr_qual_opContext, A_expr_qualContext, A_expr_typecastContext, A_expr_unary_notContext, A_expr_unary_qualopContext, A_expr_unary_signContext, A_exprContext, AexprconstContext, Array_expr_listContext, Array_exprContext, C_expr_caseContext, C_expr_existsContext, C_expr_exprContext, C_exprContext, Case_defaultContext, ColidContext, ColumnElemContext, ColumnrefContext, Common_table_exprContext, CopystmtContext, DeletestmtContext, Expr_listContext, From_clauseContext, From_listContext, Func_applicationContext, Func_arg_exprContext, Func_expr_common_subexprContext, Func_expr_windowlessContext, Func_exprContext, Func_tableContext, IdentifierContext, In_expr_listContext, In_expr_selectContext, In_exprContext, IndirectionContext, Insert_column_itemContext, InsertstmtContext, Join_qualContext, Join_typeContext, Qualified_nameContext, Relation_exprContext, Select_clauseContext, Select_no_parensContext, Select_with_parensContext, SelectstmtContext, Set_clauseContext, Simple_select_intersectContext, Simple_select_pramaryContext, StmtContext, Table_refContext, Target_elContext, Target_labelContext, Target_listContext, Unreserved_keywordContext, UpdatestmtContext, Values_clauseContext, When_clauseContext, Where_clauseContext, With_clauseContext, With_clause_Context } from '@wsporto/typesql-parser/postgres/PostgreSQLParser';
 import { ParserRuleContext } from '@wsporto/typesql-parser';
 import { PostgresColumnSchema } from '../drivers/types';
 import { extractOriginalSql, splitName, splitTableName } from '../mysql-query-analyzer/select-columns';
@@ -214,17 +214,34 @@ function traverse_selectstmt(selectstmt: SelectstmtContext, context: TraverseCon
 	};
 }
 
+//traverses each CTE of the WITH clause and pushes its columns into context.withColumns
+function traverse_with_clause(with_clause: With_clauseContext, context: TraverseContext, traverseResult: TraverseResult): void {
+	with_clause.cte_list().common_table_expr_list()
+		.forEach(common_table_expr => {
+			const recursiveTableName = with_clause.RECURSIVE() ? common_table_expr.name().getText() : undefined;
+			const recursiveColumnNames = common_table_expr.name_list_()?.name_list()?.name_list()?.map(name => name.getText());
+			const withResult = traverse_common_table_expr(common_table_expr, { ...context, recursiveTableName, recursiveColumnNames }, traverseResult);
+			const columns = recursiveColumnNames ? withResult.map((col, index) => ({ ...col, column_name: recursiveColumnNames[index] ?? col.column_name })) : withResult;
+			context.withColumns.push(...columns);
+		});
+}
+
+//A data-modifying statement (INSERT/UPDATE/DELETE) may carry its own leading WITH
+//clause. Traverse it into a child scope and return a context whose withColumns include
+//those CTEs; returns the context unchanged when there is no WITH clause.
+function traverse_dml_with_clause(with_clause_: With_clause_Context | undefined, context: TraverseContext, traverseResult: TraverseResult): TraverseContext {
+	if (!with_clause_) {
+		return context;
+	}
+	const scopedContext: TraverseContext = { ...context, withColumns: [...context.withColumns] };
+	traverse_with_clause(with_clause_.with_clause(), scopedContext, traverseResult);
+	return scopedContext;
+}
+
 function traverse_select_no_parens(select_no_parens: Select_no_parensContext, context: TraverseContext, traverseResult: TraverseResult): FromResult {
 	const with_clause = select_no_parens.with_clause()
 	if (with_clause) {
-		with_clause.cte_list().common_table_expr_list()
-			.forEach(common_table_expr => {
-				const recursiveTableName = with_clause.RECURSIVE() ? common_table_expr.name().getText() : undefined;
-				const recursiveColumnNames = common_table_expr.name_list_()?.name_list()?.name_list()?.map(name => name.getText());
-				const withResult = traverse_common_table_expr(common_table_expr, { ...context, recursiveTableName, recursiveColumnNames }, traverseResult);
-				const columns = recursiveColumnNames ? withResult.map((col, index) => ({ ...col, column_name: recursiveColumnNames[index] ?? col.column_name })) : withResult;
-				context.withColumns.push(...columns);
-			});
+		traverse_with_clause(with_clause, context, traverseResult);
 	}
 	const select_clause = select_no_parens.select_clause();
 	const selectResult = traverse_select_clause(select_clause, context, traverseResult);
@@ -273,10 +290,30 @@ function traverse_select_no_parens(select_no_parens: Select_no_parensContext, co
 
 function traverse_common_table_expr(common_table_expr: Common_table_exprContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo[] {
 	const tableName = common_table_expr.name().getText();
-	const select_stmt = common_table_expr.preparablestmt().selectstmt();
+	const preparablestmt = common_table_expr.preparablestmt();
+	const cteContext = { ...context, collectDynamicQueryInfo: false };
 	const numParamsBefore = traverseResult.parameters.length;
-	const selectResult = traverse_selectstmt(select_stmt, { ...context, collectDynamicQueryInfo: false }, traverseResult);
-	const columnsWithTalbeName = selectResult.columns.map(col => ({ ...col, table: tableName } satisfies NotNullInfo));
+	// The CTE body may be a SELECT or a data-modifying statement (INSERT/UPDATE/DELETE
+	// with an optional RETURNING). Dispatch on which one the grammar node holds; a
+	// data-modifying body without RETURNING contributes no columns but still collects
+	// its parameters into the shared traverseResult.
+	let columns: NotNullInfo[];
+	if (preparablestmt.selectstmt()) {
+		columns = traverse_selectstmt(preparablestmt.selectstmt(), cteContext, traverseResult).columns;
+	}
+	else if (preparablestmt.deletestmt()) {
+		columns = traverse_delete_body(preparablestmt.deletestmt(), cteContext, traverseResult);
+	}
+	else if (preparablestmt.insertstmt()) {
+		columns = traverse_insert_body(preparablestmt.insertstmt(), cteContext, traverseResult);
+	}
+	else if (preparablestmt.updatestmt()) {
+		columns = traverse_update_body(preparablestmt.updatestmt(), cteContext, traverseResult).columns;
+	}
+	else {
+		throw Error('traverse_common_table_expr - CTE body not supported: ' + preparablestmt.getText());
+	}
+	const columnsWithTalbeName = columns.map(col => ({ ...col, table: tableName } satisfies NotNullInfo));
 	if (context.collectDynamicQueryInfo) {
 		const parameters = getParametersIndexes(traverseResult.parameters.slice(numParamsBefore));
 		traverseResult.dynamicQueryInfo?.with.push({
@@ -2226,23 +2263,69 @@ function paramIsList(c_expr: ParserRuleContext) {
 }
 
 
+// Traverses an INSERT statement, collecting its parameters into the shared
+// `traverseResult` and resolving columns against the passed `context` (including
+// any accumulated CTE columns). Returns the RETURNING columns ([] when absent).
+// Reusable both at the top level and inside a data-modifying CTE.
+function traverse_insert_body(insertstmt: InsertstmtContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo[] {
+	const bodyContext = traverse_dml_with_clause(insertstmt.with_clause_(), context, traverseResult);
+
+	const insert_target = insertstmt.insert_target();
+	const tableName = splitName(insert_target.qualified_name().getText());
+	const tableAlias = insert_target.colid()?.getText() || '';
+	const insertColumns = filterSchemaColumns(bodyContext.dbSchema, tableName);
+	//RETURNING / ON CONFLICT reference the target table, honoring its alias when present
+	const aliasedInsertColumns: NotNullInfo[] = tableAlias
+		? insertColumns.map(col => ({ ...col, table: tableAlias } satisfies NotNullInfo))
+		: insertColumns;
+
+	const insert_rest = insertstmt.insert_rest();
+	//no explicit column list (VALUES / DEFAULT VALUES) defaults to all table columns
+	const insert_column_list = insert_rest.insert_column_list();
+	const insertColumnsList: NotNullInfo[] = insert_column_list
+		? insert_column_list.insert_column_item_list().map(insert_column_item => traverse_insert_column_item(insert_column_item, insertColumns))
+		: insertColumns;
+
+	const insertContext: TraverseContext = {
+		...bodyContext,
+		fromColumns: aliasedInsertColumns,
+		parentColumns: [],
+		collectNestedInfo: false,
+		collectDynamicQueryInfo: false
+	}
+
+	//null for DEFAULT VALUES (no source query to traverse)
+	const selectstmt = insert_rest.selectstmt();
+	if (selectstmt) {
+		traverse_selectstmt(selectstmt, { ...insertContext, fromColumns: insertColumnsList }, traverseResult);
+	}
+
+	const on_conflict = insertstmt.on_conflict_();
+	if (on_conflict) {
+		//set_clause_list is absent for ON CONFLICT DO NOTHING
+		const set_clause_list = on_conflict.set_clause_list()?.set_clause_list() || [];
+		set_clause_list.forEach(set_clause => traverse_set_clause(set_clause, insertContext, traverseResult));
+		//the DO UPDATE ... WHERE predicate can reference the target table and EXCLUDED
+		const conflict_where = on_conflict.where_clause()?.a_expr();
+		if (conflict_where) {
+			const excludedColumns = insertContext.fromColumns.map(col => ({ ...col, table: 'excluded' } satisfies NotNullInfo));
+			traverse_a_expr(conflict_where, { ...insertContext, fromColumns: insertContext.fromColumns.concat(excludedColumns) }, traverseResult);
+		}
+	}
+
+	const returning_clause = insertstmt.returning_clause();
+	const returninColumns = returning_clause ? traverse_target_list(returning_clause.target_list(), insertContext, traverseResult) : [];
+	return returninColumns;
+}
+
 function traverseInsertstmt(insertstmt: InsertstmtContext, dbSchema: PostgresColumnSchema[]): PostgresTraverseResult {
 	const traverseResult: TraverseResult = {
 		columnsNullability: [],
 		parameters: []
 	}
-	const insert_target = insertstmt.insert_target();
-	const tableName = splitName(insert_target.getText());
-	const insertColumns = filterSchemaColumns(dbSchema, tableName);
-
-	const insert_rest = insertstmt.insert_rest();
-	const insertColumnsList = insert_rest.insert_column_list()
-		.insert_column_item_list()
-		.map(insert_column_item => traverse_insert_column_item(insert_column_item, insertColumns));
-
 	const context: TraverseContext = {
 		dbSchema,
-		fromColumns: insertColumns,
+		fromColumns: [],
 		parentColumns: [],
 		withColumns: [],
 		checkConstraints: {},
@@ -2250,19 +2333,12 @@ function traverseInsertstmt(insertstmt: InsertstmtContext, dbSchema: PostgresCol
 		collectNestedInfo: false,
 		collectDynamicQueryInfo: false
 	}
-
-	const selectstmt = insert_rest.selectstmt();
-	traverseSelectstmt(selectstmt, { ...context, fromColumns: insertColumnsList }, traverseResult);
-
-	const on_conflict = insertstmt.on_conflict_();
-	if (on_conflict) {
-		const set_clause_list = on_conflict.set_clause_list().set_clause_list() || [];
-		set_clause_list.forEach(set_clause => traverse_set_clause(set_clause, context, traverseResult));
-	}
+	const returninColumns = traverse_insert_body(insertstmt, context, traverseResult);
+	//INSERT ... SELECT collects FROM/WHERE parameters before target-list parameters;
+	//sort by text position so parametersNullability aligns with textual placeholder order.
+	traverseResult.parameters.sort((param1, param2) => param1.paramPos - param2.paramPos);
 
 	const returning_clause = insertstmt.returning_clause();
-	const returninColumns = returning_clause ? traverse_target_list(returning_clause.target_list(), context, traverseResult) : [];
-
 	const paramIsListResult = getInParameterList(insertstmt);
 	const result: PostgresTraverseResult = {
 		queryType: 'Insert',
@@ -2277,18 +2353,45 @@ function traverseInsertstmt(insertstmt: InsertstmtContext, dbSchema: PostgresCol
 	return result;
 }
 
-function traverseDeletestmt(deleteStmt: DeletestmtContext, dbSchema: PostgresColumnSchema[], traverseResult: TraverseResult): PostgresTraverseResult {
+// Traverses a DELETE statement, collecting its parameters into the shared
+// `traverseResult` and resolving columns against the passed `context` (including
+// any accumulated CTE columns, so `USING <cte>` resolves). Returns the RETURNING
+// columns ([] when absent). Reusable both at the top level and inside a CTE.
+function traverse_delete_body(deleteStmt: DeletestmtContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo[] {
+	const bodyContext = traverse_dml_with_clause(deleteStmt.with_clause_(), context, traverseResult);
+	const relation_expr_opt_alias = deleteStmt.relation_expr_opt_alias();
+	const tableName = splitName(relation_expr_opt_alias.relation_expr().getText());
+	const tableAlias = relation_expr_opt_alias.colid()?.getText() || '';
+	const deleteColumns: NotNullInfo[] = filterSchemaColumns(bodyContext.dbSchema, tableName)
+		.map(col => ({ ...col, table: tableAlias || col.table } satisfies NotNullInfo));
 
-	const relation_expr = deleteStmt.relation_expr_opt_alias().relation_expr();
-	const tableName = splitName(relation_expr.getText());
-	const deleteColumns = filterSchemaColumns(dbSchema, tableName);
+	const deleteContext: TraverseContext = {
+		...bodyContext,
+		fromColumns: deleteColumns,
+		parentColumns: [],
+		collectNestedInfo: false,
+		collectDynamicQueryInfo: false
+	}
 
-	const paramIsListResult = getInParameterList(deleteStmt);
+	// USING <from_list> — resolves against dbSchema and accumulated CTE columns
+	const using_clause = deleteStmt.using_clause();
+	const usingResult = using_clause ? traverse_from_list(using_clause.from_list(), deleteContext, traverseResult) : { columns: [], singleRow: true };
+	const scopedContext: TraverseContext = { ...deleteContext, fromColumns: deleteColumns.concat(usingResult.columns) };
+
+	const whereExpr = deleteStmt.where_or_current_clause()?.a_expr();
+	if (whereExpr) {
+		traverse_a_expr(whereExpr, scopedContext, traverseResult);
+	}
 
 	const returning_clause = deleteStmt.returning_clause();
+	const returninColumns = returning_clause ? traverse_target_list(returning_clause.target_list(), scopedContext, traverseResult) : [];
+	return returninColumns;
+}
+
+function traverseDeletestmt(deleteStmt: DeletestmtContext, dbSchema: PostgresColumnSchema[], traverseResult: TraverseResult): PostgresTraverseResult {
 	const context: TraverseContext = {
 		dbSchema,
-		fromColumns: deleteColumns,
+		fromColumns: [],
 		parentColumns: [],
 		withColumns: [],
 		checkConstraints: {},
@@ -2296,13 +2399,10 @@ function traverseDeletestmt(deleteStmt: DeletestmtContext, dbSchema: PostgresCol
 		collectNestedInfo: false,
 		collectDynamicQueryInfo: false
 	}
-	const whereExpr = deleteStmt.where_or_current_clause()?.a_expr();
-	if (whereExpr) {
-		traverse_a_expr(whereExpr, context, traverseResult);
-	}
+	const returninColumns = traverse_delete_body(deleteStmt, context, traverseResult);
 
-	const returninColumns = returning_clause ? traverse_target_list(returning_clause.target_list(), context, traverseResult) : [];
-
+	const returning_clause = deleteStmt.returning_clause();
+	const paramIsListResult = getInParameterList(deleteStmt);
 	const result: PostgresTraverseResult = {
 		queryType: 'Delete',
 		multipleRowsResult: false,
@@ -2325,43 +2425,64 @@ function filterSchemaColumns(dbSchema: PostgresColumnSchema[], tableName: FieldN
 		&& (tableName.prefix === '' || col.schema.toLowerCase() === tableName.prefix.toLowerCase()))
 }
 
-function traverseUpdatestmt(updatestmt: UpdatestmtContext, traverseContext: TraverseContext, traverseResult: TraverseResult): PostgresTraverseResult {
-
+// Traverses an UPDATE statement, collecting its parameters into the shared
+// `traverseResult` and resolving columns against the passed `context` (including
+// any accumulated CTE columns). Returns the RETURNING columns ([] when absent) and
+// `whereParamStart` — the index in `traverseResult.parameters` where the WHERE-clause
+// parameters begin (SET/FROM parameters precede it). Reusable at the top level and
+// inside a data-modifying CTE.
+function traverse_update_body(updatestmt: UpdatestmtContext, context: TraverseContext, traverseResult: TraverseResult): { columns: NotNullInfo[]; whereParamStart: number } {
+	const bodyContext = traverse_dml_with_clause(updatestmt.with_clause_(), context, traverseResult);
 	const relation_expr_opt_alias = updatestmt.relation_expr_opt_alias();
 	const tableName = splitName(relation_expr_opt_alias.relation_expr().getText());
 	const tableAlias = relation_expr_opt_alias.colid()?.getText() || '';
-	const updateColumns: NotNullInfo[] = filterSchemaColumns(traverseContext.dbSchema, tableName)
+	const updateColumns: NotNullInfo[] = filterSchemaColumns(bodyContext.dbSchema, tableName)
 		.map(col => ({ ...col, table: tableAlias || col.table } satisfies NotNullInfo));
-	const context: TraverseContext = {
-		...traverseContext,
+	const updateContext: TraverseContext = {
+		...bodyContext,
 		fromColumns: updateColumns,
 		collectNestedInfo: false,
 		collectDynamicQueryInfo: false
 	}
 
-	updatestmt.set_clause_list().set_clause_list()
-		.forEach(set_clause => traverse_set_clause(set_clause, context, traverseResult));
-
+	//resolve FROM first so SET / WHERE / RETURNING can reference its columns (Postgres allows this)
 	const from_clause = updatestmt.from_clause();
-	const fromResult: FromResult = from_clause ? traverse_from_clause(from_clause, context, traverseResult) : { columns: [], singleRow: true };
+	const fromResult: FromResult = from_clause ? traverse_from_clause(from_clause, updateContext, traverseResult) : { columns: [], singleRow: true };
+	const scopedContext: TraverseContext = { ...updateContext, fromColumns: updateColumns.concat(fromResult.columns) };
 
-	const parametersBefore = traverseResult.parameters.length;
-	const where_clause = updatestmt.where_or_current_clause();
-	if (where_clause) {
-		const a_expr = where_clause.a_expr();
-		traverse_a_expr(a_expr, { ...context, fromColumns: updateColumns.concat(fromResult.columns) }, traverseResult);
+	updatestmt.set_clause_list().set_clause_list()
+		.forEach(set_clause => traverse_set_clause(set_clause, scopedContext, traverseResult));
+
+	//a_expr is null for WHERE CURRENT OF <cursor> (guarded like the DELETE path)
+	const where_a_expr = updatestmt.where_or_current_clause()?.a_expr();
+	const whereParamPositions = new Set<number>();
+	if (where_a_expr) {
+		const paramsBeforeWhere = traverseResult.parameters.length;
+		traverse_a_expr(where_a_expr, scopedContext, traverseResult);
+		traverseResult.parameters.slice(paramsBeforeWhere).forEach(param => whereParamPositions.add(param.paramPos));
 	}
 
-	const whereParameters = traverseResult.parameters.slice(parametersBefore);
-
 	const returning_clause = updatestmt.returning_clause();
-	const returninColumns = returning_clause ? traverse_target_list(returning_clause.target_list(), context, traverseResult) : [];
+	const returninColumns = returning_clause ? traverse_target_list(returning_clause.target_list(), scopedContext, traverseResult) : [];
 
+	//FROM parameters are collected before SET parameters but appear later in the SQL text;
+	//sort by text position so data parameters are reported in textual (placeholder) order.
+	traverseResult.parameters.sort((param1, param2) => param1.paramPos - param2.paramPos);
+	const firstWhereIndex = traverseResult.parameters.findIndex(param => whereParamPositions.has(param.paramPos));
+	const whereParamStart = firstWhereIndex === -1 ? traverseResult.parameters.length : firstWhereIndex;
+	return { columns: returninColumns, whereParamStart };
+}
+
+function traverseUpdatestmt(updatestmt: UpdatestmtContext, traverseContext: TraverseContext, traverseResult: TraverseResult): PostgresTraverseResult {
+	const { columns: returninColumns, whereParamStart } = traverse_update_body(updatestmt, traverseContext, traverseResult);
+
+	const whereParameters = traverseResult.parameters.slice(whereParamStart);
+	const returning_clause = updatestmt.returning_clause();
 	const paramIsListResult = getInParameterList(updatestmt);
 	const result: PostgresTraverseResult = {
 		queryType: 'Update',
 		multipleRowsResult: false,
-		parametersNullability: traverseResult.parameters.slice(0, parametersBefore).map(param => ({ isNotNull: param.isNotNull, ...addConstraintIfNotNull(param.checkConstraint) })),
+		parametersNullability: traverseResult.parameters.slice(0, whereParamStart).map(param => ({ isNotNull: param.isNotNull, ...addConstraintIfNotNull(param.checkConstraint) })),
 		columns: returninColumns,
 		parameterList: paramIsListResult,
 		whereParamtersNullability: whereParameters.map(param => ({ isNotNull: param.isNotNull, ...addConstraintIfNotNull(param.checkConstraint) }))

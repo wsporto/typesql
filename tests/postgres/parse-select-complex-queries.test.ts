@@ -358,6 +358,554 @@ describe('parse-select-complex-queries', () => {
 		assert.deepStrictEqual(actual.value, expected);
 	});
 
+	it('WITH deleted AS (DELETE ... RETURNING)', async () => {
+		const sql = `WITH deleted AS ( DELETE FROM mytable1 WHERE id = :id RETURNING id, value ) SELECT id, value FROM deleted`;
+		const actual = await describeQuery(client, sql, schemaInfo);
+		const expected: PostgresSchemaDef = {
+			sql: `WITH deleted AS ( DELETE FROM mytable1 WHERE id = $1 RETURNING id, value ) SELECT id, value FROM deleted`,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'deleted'
+				},
+				{
+					name: 'value',
+					type: 'int4',
+					notNull: false,
+					table: 'deleted'
+				}
+			],
+			parameters: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('WITH inserted AS (INSERT ... RETURNING)', async () => {
+		const sql = `WITH inserted AS ( INSERT INTO mytable1(value) VALUES (:value) RETURNING id, value ) SELECT id, value FROM inserted`;
+		const actual = await describeQuery(client, sql, schemaInfo);
+		const expected: PostgresSchemaDef = {
+			sql: `WITH inserted AS ( INSERT INTO mytable1(value) VALUES ($1) RETURNING id, value ) SELECT id, value FROM inserted`,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'inserted'
+				},
+				{
+					name: 'value',
+					type: 'int4',
+					notNull: false,
+					table: 'inserted'
+				}
+			],
+			parameters: [
+				{
+					name: 'value',
+					type: 'int4',
+					notNull: false
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('WITH updated AS (UPDATE ... RETURNING)', async () => {
+		const sql = `WITH updated AS ( UPDATE mytable1 SET value = :value WHERE id = :id RETURNING id, value ) SELECT id, value FROM updated`;
+		const actual = await describeQuery(client, sql, schemaInfo);
+		const expected: PostgresSchemaDef = {
+			sql: `WITH updated AS ( UPDATE mytable1 SET value = $1 WHERE id = $2 RETURNING id, value ) SELECT id, value FROM updated`,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'updated'
+				},
+				{
+					name: 'value',
+					type: 'int4',
+					notNull: false,
+					table: 'updated'
+				}
+			],
+			parameters: [
+				{
+					name: 'value',
+					type: 'int4',
+					notNull: false
+				},
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('WITH deleted AS (DELETE ... USING <prior cte> RETURNING)', async () => {
+		const sql = `WITH filtered AS ( SELECT id FROM mytable2 WHERE name = :name ), deleted AS ( DELETE FROM mytable1 m USING filtered f WHERE m.id = f.id RETURNING m.id, m.value ) SELECT id, value FROM deleted`;
+		const actual = await describeQuery(client, sql, schemaInfo);
+		const expected: PostgresSchemaDef = {
+			sql: `WITH filtered AS ( SELECT id FROM mytable2 WHERE name = $1 ), deleted AS ( DELETE FROM mytable1 m USING filtered f WHERE m.id = f.id RETURNING m.id, m.value ) SELECT id, value FROM deleted`,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'deleted'
+				},
+				{
+					name: 'value',
+					type: 'int4',
+					notNull: false,
+					table: 'deleted'
+				}
+			],
+			parameters: [
+				{
+					name: 'name',
+					type: 'text',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('WITH deleted AS (DELETE ... USING <prior cte> RETURNING *)', async () => {
+		//RETURNING * expands to the target table columns plus the USING relation columns
+		const sql = `WITH filtered AS ( SELECT id FROM mytable2 WHERE name = :name ), deleted AS ( DELETE FROM mytable1 m USING filtered f WHERE m.id = f.id RETURNING * ) SELECT * FROM deleted`;
+		const actual = await describeQuery(client, sql, schemaInfo);
+		const expected: PostgresSchemaDef = {
+			sql: `WITH filtered AS ( SELECT id FROM mytable2 WHERE name = $1 ), deleted AS ( DELETE FROM mytable1 m USING filtered f WHERE m.id = f.id RETURNING * ) SELECT * FROM deleted`,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'deleted'
+				},
+				{
+					name: 'value',
+					type: 'int4',
+					notNull: false,
+					table: 'deleted'
+				},
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'deleted'
+				}
+			],
+			parameters: [
+				{
+					name: 'name',
+					type: 'text',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('WITH del AS (DELETE without RETURNING) - parameter ordering', async () => {
+		const sql = `WITH del AS ( DELETE FROM mytable1 WHERE value = :value ) SELECT id FROM mytable1 WHERE id = :id`;
+		const actual = await describeQuery(client, sql, schemaInfo);
+		const expected: PostgresSchemaDef = {
+			sql: `WITH del AS ( DELETE FROM mytable1 WHERE value = $1 ) SELECT id FROM mytable1 WHERE id = $2`,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'mytable1'
+				}
+			],
+			parameters: [
+				{
+					name: 'value',
+					type: 'int4',
+					notNull: true
+				},
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('top-level WITH cte AS (SELECT ...) DELETE FROM ... USING cte', async () => {
+		const sql = `WITH ids AS ( SELECT id FROM mytable2 WHERE name = :name ) DELETE FROM mytable1 USING ids WHERE mytable1.id = ids.id RETURNING mytable1.id`;
+		const actual = await describeQuery(client, sql, schemaInfo);
+		const expected: PostgresSchemaDef = {
+			sql: `WITH ids AS ( SELECT id FROM mytable2 WHERE name = $1 ) DELETE FROM mytable1 USING ids WHERE mytable1.id = ids.id RETURNING mytable1.id`,
+			queryType: 'Delete',
+			multipleRowsResult: false,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'mytable1'
+				}
+			],
+			parameters: [
+				{
+					name: 'name',
+					type: 'text',
+					notNull: true
+				}
+			],
+			returning: true
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('nested WITH inside a data-modifying CTE body', async () => {
+		const sql = `WITH d AS ( WITH src AS ( SELECT id FROM mytable2 WHERE name = :name ) DELETE FROM mytable1 m USING src WHERE m.id = src.id RETURNING m.id ) SELECT id FROM d`;
+		const actual = await describeQuery(client, sql, schemaInfo);
+		const expected: PostgresSchemaDef = {
+			sql: `WITH d AS ( WITH src AS ( SELECT id FROM mytable2 WHERE name = $1 ) DELETE FROM mytable1 m USING src WHERE m.id = src.id RETURNING m.id ) SELECT id FROM d`,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'd'
+				}
+			],
+			parameters: [
+				{
+					name: 'name',
+					type: 'text',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('UPDATE CTE: SET/RETURNING reference FROM-clause columns', async () => {
+		const sql = `WITH u AS ( UPDATE mytable1 m SET value = t2.id FROM mytable2 t2 WHERE m.id = t2.id RETURNING m.id, t2.name ) SELECT id, name FROM u`;
+		const actual = await describeQuery(client, sql, schemaInfo);
+		const expected: PostgresSchemaDef = {
+			sql: `WITH u AS ( UPDATE mytable1 m SET value = t2.id FROM mytable2 t2 WHERE m.id = t2.id RETURNING m.id, t2.name ) SELECT id, name FROM u`,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'u'
+				},
+				{
+					name: 'name',
+					type: 'text',
+					notNull: false,
+					table: 'u'
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('WITH ins AS (INSERT ... ON CONFLICT DO NOTHING RETURNING)', async () => {
+		const sql = `WITH ins AS ( INSERT INTO mytable1(value) VALUES (:value) ON CONFLICT DO NOTHING RETURNING id ) SELECT id FROM ins`;
+		const actual = await describeQuery(client, sql, schemaInfo);
+		const expected: PostgresSchemaDef = {
+			sql: `WITH ins AS ( INSERT INTO mytable1(value) VALUES ($1) ON CONFLICT DO NOTHING RETURNING id ) SELECT id FROM ins`,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'ins'
+				}
+			],
+			parameters: [
+				{
+					name: 'value',
+					type: 'int4',
+					notNull: false
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('top-level WITH cte AS (SELECT ...) UPDATE ... FROM cte RETURNING', async () => {
+		const sql = `WITH ids AS ( SELECT id FROM mytable2 WHERE name = :name ) UPDATE mytable1 m SET value = :value FROM ids WHERE m.id = ids.id RETURNING m.id`;
+		const actual = await describeQuery(client, sql, schemaInfo);
+		const expected: PostgresSchemaDef = {
+			sql: `WITH ids AS ( SELECT id FROM mytable2 WHERE name = $1 ) UPDATE mytable1 m SET value = $2 FROM ids WHERE m.id = ids.id RETURNING m.id`,
+			queryType: 'Update',
+			multipleRowsResult: false,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'm'
+				}
+			],
+			parameters: [],
+			data: [
+				{
+					name: 'name',
+					type: 'text',
+					notNull: true
+				},
+				{
+					name: 'value',
+					type: 'int4',
+					notNull: false
+				}
+			],
+			returning: true
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('top-level WITH cte AS (SELECT ...) INSERT INTO ... SELECT FROM cte RETURNING', async () => {
+		const sql = `WITH v AS ( SELECT id FROM mytable2 WHERE name = :name ) INSERT INTO mytable1(value) SELECT id FROM v RETURNING id`;
+		const actual = await describeQuery(client, sql, schemaInfo);
+		const expected: PostgresSchemaDef = {
+			sql: `WITH v AS ( SELECT id FROM mytable2 WHERE name = $1 ) INSERT INTO mytable1(value) SELECT id FROM v RETURNING id`,
+			queryType: 'Insert',
+			multipleRowsResult: false,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'mytable1'
+				}
+			],
+			parameters: [
+				{
+					name: 'name',
+					type: 'text',
+					notNull: true
+				}
+			],
+			returning: true
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('WITH ins AS (INSERT INTO ... AS alias ... RETURNING alias.col)', async () => {
+		const sql = `WITH ins AS ( INSERT INTO mytable1 AS m (value) VALUES (:value) RETURNING m.id, m.value ) SELECT id, value FROM ins`;
+		const actual = await describeQuery(client, sql, schemaInfo);
+		const expected: PostgresSchemaDef = {
+			sql: `WITH ins AS ( INSERT INTO mytable1 AS m (value) VALUES ($1) RETURNING m.id, m.value ) SELECT id, value FROM ins`,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'ins'
+				},
+				{
+					name: 'value',
+					type: 'int4',
+					notNull: false,
+					table: 'ins'
+				}
+			],
+			parameters: [
+				{
+					name: 'value',
+					type: 'int4',
+					notNull: false
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('WITH u AS (UPDATE ... FROM (subquery) ...) - data param textual ordering', async () => {
+		//SET (:value) precedes FROM subquery (:filterName) which precedes WHERE (:whereValue)
+		const sql = `WITH u AS ( UPDATE mytable1 m SET value = :value FROM ( SELECT id FROM mytable2 WHERE name = :filterName ) t WHERE m.id = t.id AND m.value = :whereValue RETURNING m.id ) SELECT id FROM u`;
+		const actual = await describeQuery(client, sql, schemaInfo);
+		const expected: PostgresSchemaDef = {
+			sql: `WITH u AS ( UPDATE mytable1 m SET value = $1 FROM ( SELECT id FROM mytable2 WHERE name = $2 ) t WHERE m.id = t.id AND m.value = $3 RETURNING m.id ) SELECT id FROM u`,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'u'
+				}
+			],
+			parameters: [
+				{
+					name: 'value',
+					type: 'int4',
+					notNull: false
+				},
+				{
+					name: 'filterName',
+					type: 'text',
+					notNull: true
+				},
+				{
+					name: 'whereValue',
+					type: 'int4',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('WITH ins AS (INSERT INTO ... DEFAULT VALUES RETURNING)', async () => {
+		const sql = `WITH ins AS ( INSERT INTO mytable1 DEFAULT VALUES RETURNING id, value ) SELECT id, value FROM ins`;
+		const actual = await describeQuery(client, sql, schemaInfo);
+		const expected: PostgresSchemaDef = {
+			sql: `WITH ins AS ( INSERT INTO mytable1 DEFAULT VALUES RETURNING id, value ) SELECT id, value FROM ins`,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'ins'
+				},
+				{
+					name: 'value',
+					type: 'int4',
+					notNull: false,
+					table: 'ins'
+				}
+			],
+			parameters: []
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('WITH ins AS (INSERT INTO ... SELECT ... FROM ... WHERE :p RETURNING)', async () => {
+		const sql = `WITH ins AS ( INSERT INTO mytable1(value) SELECT id FROM mytable2 WHERE name = :name RETURNING id ) SELECT id FROM ins`;
+		const actual = await describeQuery(client, sql, schemaInfo);
+		const expected: PostgresSchemaDef = {
+			sql: `WITH ins AS ( INSERT INTO mytable1(value) SELECT id FROM mytable2 WHERE name = $1 RETURNING id ) SELECT id FROM ins`,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 'ins'
+				}
+			],
+			parameters: [
+				{
+					name: 'name',
+					type: 'text',
+					notNull: true
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	it('nested WITH inside a DML CTE body does not leak to the outer scope', async () => {
+		//`src` is defined inside `d`'s body; it must not be visible to the outer query.
+		//Postgres itself rejects the outer reference, confirming the scoped-copy isolation.
+		const sql = `WITH d AS ( WITH src AS ( SELECT id FROM mytable2 ) DELETE FROM mytable1 m USING src WHERE m.id = src.id RETURNING m.id ) SELECT id FROM d, src`;
+		const actual = await describeQuery(client, sql, schemaInfo);
+		if (actual.isOk()) {
+			assert.fail('inner CTE `src` must not be visible outside its DML body');
+		}
+		assert.strictEqual(actual.error.description, `relation "src" does not exist`);
+	});
+
 	it('WITH names AS (query1), allvalues AS (query2)', async () => {
 		const sql = `
        	WITH
