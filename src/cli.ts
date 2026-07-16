@@ -14,7 +14,7 @@ import { closeClient, createClient, loadSchemaInfo, loadTableSchema, PostgresSch
 import { generateCrud } from './codegen/sqlite';
 import { generateCrud as generatePgCrud } from './codegen/pg';
 import uniqBy from 'lodash.uniqby';
-import { buildExportList, buildExportMap, loadConfig, resolveTsFilePath } from './load-config';
+import { buildExportList, buildExportMap, loadConfig, resolveSqlDir, resolveTsFilePath } from './load-config';
 import { PostgresColumnSchema } from './drivers/types';
 import { createCodeBlockWriter } from './codegen/shared/codegen-util';
 
@@ -107,17 +107,15 @@ function validateDirectories(dir: string) {
 	}
 }
 
-function watchDirectories(client: DatabaseClient, sqlDir: string, outDir: string, dbSchema: SchemaInfo | PostgresSchemaInfo, config: TypeSqlConfig) {
-	const dirGlob = `${sqlDir}/**/*.sql`;
-
+function watchDirectories(client: DatabaseClient, dirGlob: string, baseDir: string, outDir: string, dbSchema: SchemaInfo | PostgresSchemaInfo, config: TypeSqlConfig) {
 	chokidar
 		.watch(dirGlob, {
 			awaitWriteFinish: {
 				stabilityThreshold: 100
 			}
 		})
-		.on('add', (path) => rewiteFiles(client, path, sqlDir, outDir, dbSchema, isCrudFile(sqlDir, path), config))
-		.on('change', (path) => rewiteFiles(client, path, sqlDir, outDir, dbSchema, isCrudFile(sqlDir, path), config));
+		.on('add', (path) => rewiteFiles(client, path, baseDir, outDir, dbSchema, isCrudFile(baseDir, path), config))
+		.on('change', (path) => rewiteFiles(client, path, baseDir, outDir, dbSchema, isCrudFile(baseDir, path), config));
 }
 
 async function rewiteFiles(client: DatabaseClient, sqlPath: string, sqlDir: string, outDir: string, schemaInfo: SchemaInfo | PostgresSchemaInfo, isCrudFile: boolean, config: TypeSqlConfig) {
@@ -134,8 +132,10 @@ async function main() {
 }
 
 async function compile(watch: boolean, config: TypeSqlConfig) {
-	const { sqlDir, outDir = sqlDir, databaseUri, client: dialect, attach, loadExtensions, authToken } = config;
-	validateDirectories(sqlDir);
+	const { sqlDir, databaseUri, client: dialect, attach, loadExtensions, authToken } = config;
+	const { glob: dirGlob, baseDir } = resolveSqlDir(sqlDir);
+	const outDir = config.outDir ?? baseDir;
+	validateDirectories(baseDir);
 
 	const databaseClientResult = await createClient(databaseUri, dialect, attach, loadExtensions, authToken);
 	if (databaseClientResult.isErr()) {
@@ -153,11 +153,10 @@ async function compile(watch: boolean, config: TypeSqlConfig) {
 	}
 
 	await generateCrudTables(outDir, dbSchema.value, includeCrudTables);
-	const dirGlob = `${sqlDir}/**/*.sql`;
 
 	const sqlFiles = globSync(dirGlob);
 
-	const filesGeneration = sqlFiles.map((sqlPath) => generateTsFile(databaseClient, sqlPath, resolveTsFilePath(sqlPath, sqlDir, outDir), dbSchema.value, isCrudFile(sqlDir, sqlPath)));
+	const filesGeneration = sqlFiles.map((sqlPath) => generateTsFile(databaseClient, sqlPath, resolveTsFilePath(sqlPath, baseDir, outDir), dbSchema.value, isCrudFile(baseDir, sqlPath)));
 	await Promise.all(filesGeneration);
 
 	if (config.generateIndexFiles !== false) {
@@ -166,7 +165,7 @@ async function compile(watch: boolean, config: TypeSqlConfig) {
 
 	if (watch) {
 		console.log('watching mode!');
-		watchDirectories(databaseClient, sqlDir, outDir, dbSchema.value, config);
+		watchDirectories(databaseClient, dirGlob, baseDir, outDir, dbSchema.value, config);
 	} else {
 		closeClient(databaseClient);
 	}
@@ -218,7 +217,8 @@ async function writeSql(stmtType: SqlGenOption, tableName: string, queryName: st
 	}
 
 	const columns = columnsOption.value;
-	const filePath = `${sqlDir}/${queryName}`;
+	const { baseDir } = resolveSqlDir(sqlDir);
+	const filePath = `${baseDir}/${queryName}`;
 
 	const generatedOk = checkAndGenerateSql(client.type, filePath, stmtType, tableName, columns);
 	return generatedOk;
