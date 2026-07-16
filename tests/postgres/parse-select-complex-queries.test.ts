@@ -1369,4 +1369,86 @@ describe('parse-select-complex-queries', () => {
 		}
 		assert.deepStrictEqual(actual.value, expected);
 	});
+
+	// A param passed only as a plpgsql function arg should stay nullable
+	it('SELECT FROM plpgsql function (call-site arg param stays nullable)', async () => {
+		const sql = `SELECT t.id FROM schema2.get_user_or_throw(:id) t WHERE :kind = 'x'`;
+		const actual = await describeQuery(client, sql, schemaInfo);
+		const expected: PostgresSchemaDef = {
+			sql: `SELECT t.id FROM schema2.get_user_or_throw($1) t WHERE $2 = 'x'`,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 't'
+				}
+			],
+			parameters: [
+				{
+					name: 'id',
+					notNull: false,
+					type: 'int4'
+				},
+				{
+					name: 'kind',
+					notNull: true,
+					type: 'text'
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
+
+	// Same, inside a data-modifying CTE
+	it('WITH t AS (SELECT FROM plpgsql function), del AS (DELETE ... USING t) - call-site arg param stays nullable', async () => {
+		const sql = `WITH t AS (
+  SELECT r.* FROM schema2.get_user_or_throw(:id) r
+),
+del AS (
+  DELETE FROM mytable1 m USING t WHERE :kind = 'x' AND m.id = t.id
+)
+SELECT t.id FROM t WHERE :kind = 'x'`;
+		const actual = await describeQuery(client, sql, schemaInfo);
+		const expected: PostgresSchemaDef = {
+			sql: `WITH t AS (
+  SELECT r.* FROM schema2.get_user_or_throw($1) r
+),
+del AS (
+  DELETE FROM mytable1 m USING t WHERE $2 = 'x' AND m.id = t.id
+)
+SELECT t.id FROM t WHERE $2 = 'x'`,
+			queryType: 'Select',
+			multipleRowsResult: true,
+			columns: [
+				{
+					name: 'id',
+					type: 'int4',
+					notNull: true,
+					table: 't'
+				}
+			],
+			parameters: [
+				{
+					name: 'id',
+					notNull: false,
+					type: 'int4'
+				},
+				{
+					name: 'kind',
+					notNull: true,
+					type: 'text'
+				}
+			]
+		};
+		if (actual.isErr()) {
+			assert.fail(`Shouldn't return an error: ${actual.error.description}`);
+		}
+		assert.deepStrictEqual(actual.value, expected);
+	});
 });

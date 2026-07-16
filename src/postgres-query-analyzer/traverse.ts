@@ -2158,6 +2158,9 @@ function traverse_func_expr_windowless(func_expr_windowless: Func_expr_windowles
 				};
 			}
 			else {
+				// Non-sql body isn't parsed, so collect the call-site args here as nullable params
+				const func_arg_expr_list = func_application.func_arg_list()?.func_arg_expr_list() || [];
+				func_arg_expr_list.forEach(func_arg_expr => traversefunc_arg_expr(func_arg_expr, { ...context, propagatesNull: true }, traverseResult));
 				return {
 					columns: functionResult.columns.map((c) => ({ ...c, table: funcSchema.function_name, schema: funcSchema.schema } satisfies NotNullInfo)),
 					singleRow: false
