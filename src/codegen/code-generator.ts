@@ -63,10 +63,26 @@ export async function generateTypeScriptContent(params: {
 	}
 }
 
+/**
+ * Skips the write when the file already holds this exact content, leaving its mtime alone.
+ * Rewriting an unchanged file wakes every watcher pointed at the output (nodemon, tsc -w,
+ * bundlers), which then rebuild for nothing - and in watch mode that can loop.
+ */
 export function writeFile(filePath: string, tsContent: string) {
+	if (isUpToDate(filePath, tsContent)) {
+		return;
+	}
 	const dir = path.dirname(filePath);
 	fs.mkdirSync(dir, { recursive: true });
 	fs.writeFileSync(filePath, tsContent);
+}
+
+function isUpToDate(filePath: string, tsContent: string): boolean {
+	try {
+		return fs.readFileSync(filePath).equals(Buffer.from(tsContent));
+	} catch {
+		return false; // missing or unreadable - write it
+	}
 }
 
 export function writeTsFile(filePath: string, tsContent: string, fileHeader: FileHeader) {
