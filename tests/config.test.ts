@@ -299,6 +299,65 @@ describe('resolveSqlDir', () => {
     });
   });
 
+  // An exclusion segment is magic, but minimatch reads a leading '!' as negating the whole
+  // pattern when the segment is tested alone - so it must not be absorbed into the base
+  // directory, where escaping would turn it into a literal folder name that matches nothing.
+  describe('exclusion patterns', () => {
+    let projectDir: string;
+
+    const files = [
+      'src/users/queries/get-user.sql',
+      'packages/api/queries/list.sql',
+      'node_modules/somepkg/queries/vendor.sql',
+      'packages/api/node_modules/dep/queries/nested-vendor.sql'
+    ];
+
+    before(() => {
+      projectDir = fs.mkdtempSync(path.join(os.tmpdir(), 'typesql-'));
+      for (const file of files) {
+        fs.mkdirSync(path.join(projectDir, path.dirname(file)), { recursive: true });
+        fs.writeFileSync(path.join(projectDir, file), 'select 1');
+      }
+    });
+
+    after(() => {
+      fs.rmSync(projectDir, { recursive: true, force: true });
+    });
+
+    it('treats a leading ! as magic rather than a literal directory', () => {
+      assert.deepStrictEqual(resolveSqlDir('./!(node_modules)/**/queries/**/*.sql'), {
+        glob: '!(node_modules)/**/queries/**/*.sql',
+        baseDir: '.'
+      });
+    });
+
+    it('anchors the base directory above the exclusion', () => {
+      const { baseDir } = resolveSqlDir(path.join(projectDir, '!(node_modules)/**/queries/**/*.sql'));
+
+      assert.strictEqual(baseDir, projectDir);
+    });
+
+    it('excludes a top-level node_modules', () => {
+      const { glob } = resolveSqlDir(path.join(projectDir, '!(node_modules)/**/queries/**/*.sql'));
+
+      const matched = globSync(glob).map((file) => path.relative(projectDir, file)).sort();
+
+      assert.ok(!matched.includes(path.join('node_modules/somepkg/queries/vendor.sql')));
+      assert.ok(matched.includes(path.join('src/users/queries/get-user.sql')));
+      assert.ok(matched.includes(path.join('packages/api/queries/list.sql')));
+    });
+
+    // Documented limitation: the exclusion constrains one segment, and the `**` after it
+    // re-admits every descendant - so a nested node_modules is still matched.
+    it('does not exclude a nested node_modules', () => {
+      const { glob } = resolveSqlDir(path.join(projectDir, '!(node_modules)/**/queries/**/*.sql'));
+
+      const matched = globSync(glob).map((file) => path.relative(projectDir, file));
+
+      assert.ok(matched.includes(path.join('packages/api/node_modules/dep/queries/nested-vendor.sql')));
+    });
+  });
+
   it('produces a base directory that preserves the sql tree in the output', () => {
     const { baseDir } = resolveSqlDir(`${path.resolve('/app/src')}/**/queries`);
     const sqlPath = path.resolve('/app/src/users/queries/get-user.sql');

@@ -90,6 +90,16 @@ Options:
 | **generateIndexFiles** | Whether to recursively generate index.ts barrel files in each output folder. Defaults to true if not specified.  | true                                                                                                    |
 | **fileHeader**         | Text prepended verbatim to every generated TypeScript file — queries, CRUD files and index files. An array is written one entry per line. Generated `.sql` files are not affected. | <ul><li>`"// AUTO-GENERATED - DO NOT EDIT"`</li><li>`["/* eslint-disable */", "// @ts-nocheck"]`</li></ul> |
 
+A `sqlDir` pattern can exclude a directory name with an extglob:
+
+```json
+{
+    "sqlDir": "./!(node_modules)/**/queries/**/*.sql"
+}
+```
+
+The exclusion applies to that one segment only — a nested `packages/*/node_modules` is still matched — so anchoring at the directories you own (`./packages/*/src/**/queries`) is usually simpler.
+
 `outDir` is read by shape. A **bare name** keeps every query folder's output local to it, which pairs well with a `sqlDir` glob:
 
 ```json

@@ -93,7 +93,7 @@ function splitPattern(pattern: string): { baseDir: string; rest: string } {
 	for (; index < segments.length - 1; index++) { // the trailing segment always belongs to the pattern
 		const segment = segments[index];
 		const candidate = baseSegments.concat(segment).join('/');
-		if (hasMagic(segment, { magicalBraces: true }) && !isDirectory(candidate)) break;
+		if (isMagicSegment(segment) && !isDirectory(candidate)) break;
 		baseSegments.push(segment);
 	}
 
@@ -101,6 +101,15 @@ function splitPattern(pattern: string): { baseDir: string; rest: string } {
 		baseDir: joinBaseSegments(baseSegments),
 		rest: segments.slice(index).join('/')
 	};
+}
+
+/**
+ * A segment is tested on its own, and minimatch reads a leading `!` as negation of the whole
+ * pattern - which hides the magic in an exclusion such as `!(node_modules)` and would let it
+ * be absorbed into the base directory and escaped. Treat any leading `!` as magic instead.
+ */
+function isMagicSegment(segment: string): boolean {
+	return segment.startsWith('!') || hasMagic(segment, { magicalBraces: true });
 }
 
 function joinBaseSegments(baseSegments: string[]): string {
