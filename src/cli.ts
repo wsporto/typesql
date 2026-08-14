@@ -4,17 +4,17 @@ import dotenv from 'dotenv';
 import path from 'node:path';
 import chokidar from 'chokidar';
 import yargs from 'yargs';
-import { generateTsFile, writeFile } from './codegen/code-generator';
+import { generateTsFile, writeFile, writeTsFile } from './codegen/code-generator';
 import { generateInsertStatement, generateUpdateStatement, generateDeleteStatement, generateSelectStatement } from './sql-generator';
 import type { ColumnSchema, Table } from './mysql-query-analyzer/types';
-import type { TypeSqlConfig, SqlGenOption, DatabaseClient, TypeSqlDialect, SQLiteClient, CrudQueryType } from './types';
+import type { TypeSqlConfig, SqlGenOption, DatabaseClient, TypeSqlDialect, SQLiteClient, CrudQueryType, FileHeader } from './types';
 import { type Either, isLeft, left } from 'fp-ts/lib/Either';
 import { globSync } from 'glob';
 import { closeClient, createClient, loadSchemaInfo, loadTableSchema, PostgresSchemaInfo, SchemaInfo, selectTables } from './schema-info';
 import { generateCrud } from './codegen/sqlite';
 import { generateCrud as generatePgCrud } from './codegen/pg';
 import uniqBy from 'lodash.uniqby';
-import { buildExportList, buildExportMap, loadConfig, resolveTsFilePath } from './load-config';
+import { buildExportList, collectSqlFiles, crudFilePaths, crudRootDir, indexFileDirs, loadConfig, type OutputConfig, resolveSqlDir, resolveSqlFile, resolveTsFilePath, type SqlFile } from './load-config';
 import { PostgresColumnSchema } from './drivers/types';
 import { createCodeBlockWriter } from './codegen/shared/codegen-util';
 
@@ -107,23 +107,22 @@ function validateDirectories(dir: string) {
 	}
 }
 
-function watchDirectories(client: DatabaseClient, sqlDir: string, outDir: string, dbSchema: SchemaInfo | PostgresSchemaInfo, config: TypeSqlConfig) {
-	const dirGlob = `${sqlDir}/**/*.sql`;
+function watchDirectories(client: DatabaseClient, watchPaths: string[], output: OutputConfig, crudPaths: ReadonlySet<string>, dbSchema: SchemaInfo | PostgresSchemaInfo, config: TypeSqlConfig) {
+	const rewrite = (sqlPath: string) => rewiteFiles(client, resolveSqlFile(sqlPath, output, crudPaths), dbSchema, config);
 
 	chokidar
-		.watch(dirGlob, {
+		.watch(watchPaths, {
 			awaitWriteFinish: {
 				stabilityThreshold: 100
 			}
 		})
-		.on('add', (path) => rewiteFiles(client, path, sqlDir, outDir, dbSchema, isCrudFile(sqlDir, path), config))
-		.on('change', (path) => rewiteFiles(client, path, sqlDir, outDir, dbSchema, isCrudFile(sqlDir, path), config));
+		.on('add', rewrite)
+		.on('change', rewrite);
 }
 
-async function rewiteFiles(client: DatabaseClient, sqlPath: string, sqlDir: string, outDir: string, schemaInfo: SchemaInfo | PostgresSchemaInfo, isCrudFile: boolean, config: TypeSqlConfig) {
-	const tsFilePath = resolveTsFilePath(sqlPath, sqlDir, outDir);
-	await generateTsFile(client, sqlPath, tsFilePath, schemaInfo, isCrudFile);
-	const tsDir = path.dirname(tsFilePath);
+async function rewiteFiles(client: DatabaseClient, sqlFile: SqlFile, schemaInfo: SchemaInfo | PostgresSchemaInfo, config: TypeSqlConfig) {
+	await generateTsFile(client, sqlFile.sqlPath, sqlFile.tsPath, schemaInfo, sqlFile.isCrud, config.fileHeader);
+	const tsDir = path.dirname(sqlFile.tsPath);
 	if (config.generateIndexFiles !== false) {
 		writeIndexFileFor(tsDir, config);
 	}
@@ -134,8 +133,10 @@ async function main() {
 }
 
 async function compile(watch: boolean, config: TypeSqlConfig) {
-	const { sqlDir, outDir = sqlDir, databaseUri, client: dialect, attach, loadExtensions, authToken } = config;
-	validateDirectories(sqlDir);
+	const { sqlDir, databaseUri, client: dialect, attach, loadExtensions, authToken } = config;
+	const { glob: dirGlob, baseDir } = resolveSqlDir(sqlDir);
+	const output: OutputConfig = { baseDir, outDir: config.outDir };
+	validateDirectories(baseDir);
 
 	const databaseClientResult = await createClient(databaseUri, dialect, attach, loadExtensions, authToken);
 	if (databaseClientResult.isErr()) {
@@ -152,32 +153,30 @@ async function compile(watch: boolean, config: TypeSqlConfig) {
 		return;
 	}
 
-	await generateCrudTables(outDir, dbSchema.value, includeCrudTables);
-	const dirGlob = `${sqlDir}/**/*.sql`;
+	const crudFiles = await generateCrudTables(output, dbSchema.value, includeCrudTables, config.fileHeader);
+	const crudSqlFiles = crudFiles.filter((file) => file.endsWith('.sql'));
 
-	const sqlFiles = globSync(dirGlob);
+	const sqlFiles = collectSqlFiles(globSync(dirGlob), crudSqlFiles, output);
 
-	const filesGeneration = sqlFiles.map((sqlPath) => generateTsFile(databaseClient, sqlPath, resolveTsFilePath(sqlPath, sqlDir, outDir), dbSchema.value, isCrudFile(sqlDir, sqlPath)));
+	const filesGeneration = sqlFiles.map((sqlFile) => generateTsFile(databaseClient, sqlFile.sqlPath, sqlFile.tsPath, dbSchema.value, sqlFile.isCrud, config.fileHeader));
 	await Promise.all(filesGeneration);
 
 	if (config.generateIndexFiles !== false) {
-		writeIndexFile(outDir, config);
+		const generatedTsFiles = [...sqlFiles.map((sqlFile) => sqlFile.tsPath), ...crudFiles.filter((file) => file.endsWith('.ts'))];
+		writeIndexFiles(generatedTsFiles, config);
 	}
 
 	if (watch) {
 		console.log('watching mode!');
-		watchDirectories(databaseClient, sqlDir, outDir, dbSchema.value, config);
+		watchDirectories(databaseClient, [dirGlob, ...crudSqlFiles], output, crudFilePaths(crudSqlFiles), dbSchema.value, config);
 	} else {
 		closeClient(databaseClient);
 	}
 }
 
-function writeIndexFile(outDir: string, config: TypeSqlConfig) {
-	const exportMap = buildExportMap(outDir);
-	for (const [dir, files] of exportMap.entries()) {
-		const indexContent = generateIndexContent(files, config.moduleExtension);
-		const indexPath = path.join(dir, 'index.ts');
-		writeFile(indexPath, indexContent);
+function writeIndexFiles(generatedTsFiles: string[], config: TypeSqlConfig) {
+	for (const dir of indexFileDirs(generatedTsFiles)) {
+		writeIndexFileFor(dir, config);
 	}
 }
 
@@ -186,7 +185,7 @@ function writeIndexFileFor(tsDir: string, config: TypeSqlConfig) {
 		const tsFiles = buildExportList(tsDir);
 		const indexContent = generateIndexContent(tsFiles, config.moduleExtension);
 		const tsPath = path.join(tsDir, 'index.ts');
-		writeFile(tsPath, indexContent);
+		writeTsFile(tsPath, indexContent, config.fileHeader);
 	}
 }
 
@@ -218,7 +217,8 @@ async function writeSql(stmtType: SqlGenOption, tableName: string, queryName: st
 	}
 
 	const columns = columnsOption.value;
-	const filePath = `${sqlDir}/${queryName}`;
+	const { baseDir } = resolveSqlDir(sqlDir);
+	const filePath = `${baseDir}/${queryName}`;
 
 	const generatedOk = checkAndGenerateSql(client.type, filePath, stmtType, tableName, columns);
 	return generatedOk;
@@ -268,31 +268,54 @@ function _filterTables(schemaInfo: SchemaInfo | PostgresSchemaInfo, includeCrudT
 	return filteredTables;
 }
 
-async function generateCrudTables(sqlFolderPath: string, schemaInfo: SchemaInfo | PostgresSchemaInfo, includeCrudTables: string[]) {
+// Returns every crud file written, so the caller can compile the generated `.sql` queries and
+// write index files for the generated `.ts` ones without rescanning the output directory.
+async function generateCrudTables(output: OutputConfig, schemaInfo: SchemaInfo | PostgresSchemaInfo, includeCrudTables: string[], fileHeader: FileHeader): Promise<string[]> {
 
+	const generatedFiles: string[] = [];
 	const filteredTables = _filterTables(schemaInfo, includeCrudTables);
 	for (const tableInfo of filteredTables) {
 		const tableName = tableInfo.table;
-		const filePath = `${sqlFolderPath}/${CRUD_FOLDER}/${tableName}/`;
+		const filePath = `${crudRootDir(output)}/${CRUD_FOLDER}/${tableName}/`;
 		if (schemaInfo.kind === 'mysql2') {
 			const columns = schemaInfo.columns.filter((col) => col.table === tableName);
-			checkAndGenerateSql(schemaInfo.kind, `${filePath}select-from-${tableName}.sql`, 'select', tableName, columns);
-			checkAndGenerateSql(schemaInfo.kind, `${filePath}insert-into-${tableName}.sql`, 'insert', tableName, columns);
-			checkAndGenerateSql(schemaInfo.kind, `${filePath}update-${tableName}.sql`, 'update', tableName, columns);
-			checkAndGenerateSql(schemaInfo.kind, `${filePath}delete-from-${tableName}.sql`, 'delete', tableName, columns);
+			const sqlFiles = [
+				{ path: `${filePath}select-from-${tableName}.sql`, stmtType: 'select' },
+				{ path: `${filePath}insert-into-${tableName}.sql`, stmtType: 'insert' },
+				{ path: `${filePath}update-${tableName}.sql`, stmtType: 'update' },
+				{ path: `${filePath}delete-from-${tableName}.sql`, stmtType: 'delete' }
+			] satisfies { path: string; stmtType: SqlGenOption }[];
+			for (const sqlFile of sqlFiles) {
+				if (checkAndGenerateSql(schemaInfo.kind, sqlFile.path, sqlFile.stmtType, tableName, columns)) {
+					generatedFiles.push(sqlFile.path);
+				}
+			}
 		} else {
-			generateAndWriteCrud(schemaInfo.kind, `${filePath}select-from-${tableName}.ts`, 'Select', tableName, schemaInfo.columns);
-			generateAndWriteCrud(schemaInfo.kind, `${filePath}insert-into-${tableName}.ts`, 'Insert', tableName, schemaInfo.columns);
-			generateAndWriteCrud(schemaInfo.kind, `${filePath}update-${tableName}.ts`, 'Update', tableName, schemaInfo.columns);
-			generateAndWriteCrud(schemaInfo.kind, `${filePath}delete-from-${tableName}.ts`, 'Delete', tableName, schemaInfo.columns);
+			const tsFiles = [
+				{ path: crudTsPath(`${filePath}select-from-${tableName}.sql`, output), queryType: 'Select' },
+				{ path: crudTsPath(`${filePath}insert-into-${tableName}.sql`, output), queryType: 'Insert' },
+				{ path: crudTsPath(`${filePath}update-${tableName}.sql`, output), queryType: 'Update' },
+				{ path: crudTsPath(`${filePath}delete-from-${tableName}.sql`, output), queryType: 'Delete' }
+			] satisfies { path: string; queryType: CrudQueryType }[];
+			for (const tsFile of tsFiles) {
+				generateAndWriteCrud(schemaInfo.kind, tsFile.path, tsFile.queryType, tableName, schemaInfo.columns, fileHeader);
+				generatedFiles.push(tsFile.path);
+			}
 		}
 	}
+	return generatedFiles;
 }
 
-function generateAndWriteCrud(client: 'pg' | SQLiteClient, filePath: string, queryType: CrudQueryType, tableName: string, columns: ColumnSchema[] | PostgresColumnSchema[]) {
+// Crud .ts files follow the same outDir rules as any other query: the .sql path they mirror
+// decides where they land, so a nested outDir puts them in a subfolder of the crud folder too.
+function crudTsPath(crudSqlPath: string, output: OutputConfig): string {
+	return resolveTsFilePath(crudSqlPath, crudRootDir(output), output.outDir);
+}
+
+function generateAndWriteCrud(client: 'pg' | SQLiteClient, filePath: string, queryType: CrudQueryType, tableName: string, columns: ColumnSchema[] | PostgresColumnSchema[], fileHeader: FileHeader) {
 
 	const content = client === 'pg' ? generatePgCrud(queryType, tableName, columns as PostgresColumnSchema[]) : generateCrud(client, queryType, tableName, columns as ColumnSchema[]);
-	writeFile(filePath, content);
+	writeTsFile(filePath, content, fileHeader);
 	console.log('Generated file:', filePath);
 }
 
@@ -307,11 +330,4 @@ async function selectAllTables(client: DatabaseClient): Promise<Either<string, T
 		return left(`Error selecting table names: ${selectTablesResult.left.description}`);
 	}
 	return selectTablesResult;
-}
-
-//https://stackoverflow.com/a/45242825
-function isCrudFile(sqlDir: string, sqlFile: string): boolean {
-	const relative = path.relative(`${sqlDir}/${CRUD_FOLDER}`, sqlFile);
-	const result = relative != null && !relative.startsWith('..') && !path.isAbsolute(relative);
-	return result;
 }
