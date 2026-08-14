@@ -6,8 +6,10 @@ import { globSync } from 'glob';
 import { TypeSqlConfig } from '../src/types';
 import {
   collectSqlFiles,
+  crudRootDir,
   indexFileDirs,
   isCrudFile,
+  isNestedOutDir,
   resolveConfig,
   resolveEnvVars,
   resolveSqlDir,
@@ -309,6 +311,106 @@ describe('resolveSqlDir', () => {
   });
 });
 
+// `outDir` is read by shape: a bare name sits beside each query, an explicitly rooted path
+// keeps one global output tree mirroring the base directory.
+describe('outDir modes', () => {
+  const baseDir = path.resolve('/app/src');
+  const sqlPath = path.resolve('/app/src/users/queries/get-user.sql');
+
+  describe('isNestedOutDir', () => {
+    it('treats a bare name as nested', () => {
+      assert.strictEqual(isNestedOutDir('gen'), true);
+      assert.strictEqual(isNestedOutDir('generated/ts'), true);
+    });
+
+    it('treats an explicitly rooted path as global', () => {
+      assert.strictEqual(isNestedOutDir('./gen'), false);
+      assert.strictEqual(isNestedOutDir('../gen'), false);
+      assert.strictEqual(isNestedOutDir('.'), false);
+      assert.strictEqual(isNestedOutDir('..'), false);
+      assert.strictEqual(isNestedOutDir(path.resolve('/abs/out')), false);
+    });
+
+    it('treats a missing or blank outDir as global', () => {
+      assert.strictEqual(isNestedOutDir(undefined), false);
+      assert.strictEqual(isNestedOutDir(''), false);
+      assert.strictEqual(isNestedOutDir('   '), false);
+    });
+  });
+
+  describe('resolveTsFilePath', () => {
+    it('puts output beside the query for a bare name', () => {
+      assert.strictEqual(
+        resolveTsFilePath(sqlPath, baseDir, 'gen'),
+        path.resolve('/app/src/users/queries/gen/get-user.ts')
+      );
+    });
+
+    it('keeps each query directory separate rather than merging them', () => {
+      const other = path.resolve('/app/src/posts/queries/get-post.sql');
+
+      assert.strictEqual(resolveTsFilePath(other, baseDir, 'gen'), path.resolve('/app/src/posts/queries/gen/get-post.ts'));
+    });
+
+    it('mirrors the tree into a global outDir for a rooted path', () => {
+      assert.strictEqual(
+        resolveTsFilePath(sqlPath, baseDir, path.resolve('/app/generated')),
+        path.resolve('/app/generated/users/queries/get-user.ts')
+      );
+    });
+
+    it('ignores the base directory entirely when nested', () => {
+      const unrelatedBase = path.resolve('/somewhere/else');
+
+      assert.strictEqual(
+        resolveTsFilePath(sqlPath, unrelatedBase, 'gen'),
+        path.resolve('/app/src/users/queries/gen/get-user.ts')
+      );
+    });
+
+    it('supports a multi-segment nested name', () => {
+      assert.strictEqual(
+        resolveTsFilePath(sqlPath, baseDir, 'gen/sql'),
+        path.resolve('/app/src/users/queries/gen/sql/get-user.ts')
+      );
+    });
+  });
+
+  describe('crudRootDir', () => {
+    it('uses the base directory when outDir is nested', () => {
+      assert.strictEqual(crudRootDir({ baseDir, outDir: 'gen' }), baseDir);
+    });
+
+    it('uses the base directory when no outDir is set', () => {
+      assert.strictEqual(crudRootDir({ baseDir }), baseDir);
+    });
+
+    it('uses the global outDir when one is configured', () => {
+      const outDir = path.resolve('/app/generated');
+
+      assert.strictEqual(crudRootDir({ baseDir, outDir }), outDir);
+    });
+  });
+
+  it('generates a nested query through collectSqlFiles', () => {
+    const actual = collectSqlFiles([sqlPath], [], { baseDir, outDir: 'gen' });
+
+    assert.deepStrictEqual(actual, [
+      { sqlPath, tsPath: path.resolve('/app/src/users/queries/gen/get-user.ts'), isCrud: false }
+    ]);
+  });
+
+  it('keeps generated crud sql at the crud root and its output nested', () => {
+    const crudQuery = path.resolve('/app/src/crud/users/select-from-users.sql');
+
+    const actual = collectSqlFiles([], [crudQuery], { baseDir, outDir: 'gen' });
+
+    assert.deepStrictEqual(actual, [
+      { sqlPath: crudQuery, tsPath: path.resolve('/app/src/crud/users/gen/select-from-users.ts'), isCrud: true }
+    ]);
+  });
+});
+
 describe('isCrudFile', () => {
   const sqlDir = path.resolve('/app/src');
 
@@ -337,7 +439,7 @@ describe('resolveSqlFile', () => {
     const outDir = path.resolve('/app/generated');
     const sqlPath = path.resolve('/app/src/users/queries/get-user.sql');
 
-    assert.deepStrictEqual(resolveSqlFile(sqlPath, baseDir, outDir, noCrud), {
+    assert.deepStrictEqual(resolveSqlFile(sqlPath, { baseDir, outDir }, noCrud), {
       sqlPath,
       tsPath: path.resolve('/app/generated/users/queries/get-user.ts'),
       isCrud: false
@@ -347,7 +449,7 @@ describe('resolveSqlFile', () => {
   it('flags a hand-written query living under the crud folder', () => {
     const sqlPath = path.resolve('/app/src/crud/users/select-from-users.sql');
 
-    assert.deepStrictEqual(resolveSqlFile(sqlPath, baseDir, baseDir, noCrud), {
+    assert.deepStrictEqual(resolveSqlFile(sqlPath, { baseDir, outDir: baseDir }, noCrud), {
       sqlPath,
       tsPath: path.resolve('/app/src/crud/users/select-from-users.ts'),
       isCrud: true
@@ -361,7 +463,7 @@ describe('resolveSqlFile', () => {
     const sqlPath = path.resolve('/app/generated/crud/users/select-from-users.sql');
     const crudPaths = new Set([sqlPath]);
 
-    assert.deepStrictEqual(resolveSqlFile(sqlPath, baseDir, outDir, crudPaths), {
+    assert.deepStrictEqual(resolveSqlFile(sqlPath, { baseDir, outDir }, crudPaths), {
       sqlPath,
       tsPath: path.resolve('/app/generated/crud/users/select-from-users.ts'),
       isCrud: true
@@ -372,7 +474,7 @@ describe('resolveSqlFile', () => {
     const sqlPath = path.resolve('/app/src/crud/users/select-from-users.sql');
     const crudPaths = new Set([sqlPath]);
 
-    assert.deepStrictEqual(resolveSqlFile(sqlPath, baseDir, baseDir, crudPaths), {
+    assert.deepStrictEqual(resolveSqlFile(sqlPath, { baseDir, outDir: baseDir }, crudPaths), {
       sqlPath,
       tsPath: path.resolve('/app/src/crud/users/select-from-users.ts'),
       isCrud: true
@@ -383,7 +485,7 @@ describe('resolveSqlFile', () => {
     const crudPaths = new Set([path.resolve('/app/src/crud/users/select-from-users.sql')]);
     const sqlPath = path.resolve('/app/src/users/../crud/users/select-from-users.sql');
 
-    assert.strictEqual(resolveSqlFile(sqlPath, baseDir, baseDir, crudPaths).isCrud, true);
+    assert.strictEqual(resolveSqlFile(sqlPath, { baseDir, outDir: baseDir }, crudPaths).isCrud, true);
   });
 });
 
@@ -392,7 +494,7 @@ describe('collectSqlFiles', () => {
   const query = path.resolve('/app/src/users/queries/get-user.sql');
 
   it('compiles the files the glob matched', () => {
-    const actual = collectSqlFiles([query], [], baseDir, baseDir);
+    const actual = collectSqlFiles([query], [], { baseDir, outDir: baseDir });
 
     assert.deepStrictEqual(actual, [
       { sqlPath: query, tsPath: path.resolve('/app/src/users/queries/get-user.ts'), isCrud: false }
@@ -403,7 +505,7 @@ describe('collectSqlFiles', () => {
   it('compiles generated crud queries the glob did not match', () => {
     const crudQuery = path.resolve('/app/src/crud/users/select-from-users.sql');
 
-    const actual = collectSqlFiles([query], [crudQuery], baseDir, baseDir);
+    const actual = collectSqlFiles([query], [crudQuery], { baseDir, outDir: baseDir });
 
     assert.deepStrictEqual(actual, [
       { sqlPath: query, tsPath: path.resolve('/app/src/users/queries/get-user.ts'), isCrud: false },
@@ -414,7 +516,7 @@ describe('collectSqlFiles', () => {
   it('compiles a generated crud query only once when the glob already matched it', () => {
     const crudQuery = path.resolve('/app/src/crud/users/select-from-users.sql');
 
-    const actual = collectSqlFiles([query, crudQuery], [crudQuery], baseDir, baseDir);
+    const actual = collectSqlFiles([query, crudQuery], [crudQuery], { baseDir, outDir: baseDir });
 
     assert.deepStrictEqual(actual.map((file) => file.sqlPath), [query, crudQuery]);
     assert.strictEqual(actual[1].isCrud, true);
@@ -424,7 +526,7 @@ describe('collectSqlFiles', () => {
     const outDir = path.resolve('/app/generated');
     const crudQuery = path.resolve('/app/generated/crud/users/select-from-users.sql');
 
-    const actual = collectSqlFiles([query], [crudQuery], baseDir, outDir);
+    const actual = collectSqlFiles([query], [crudQuery], { baseDir, outDir });
 
     assert.deepStrictEqual(actual, [
       { sqlPath: query, tsPath: path.resolve('/app/generated/users/queries/get-user.ts'), isCrud: false },
@@ -433,7 +535,7 @@ describe('collectSqlFiles', () => {
   });
 
   it('returns nothing when no files matched and no crud was generated', () => {
-    assert.deepStrictEqual(collectSqlFiles([], [], baseDir, baseDir), []);
+    assert.deepStrictEqual(collectSqlFiles([], [], { baseDir, outDir: baseDir }), []);
   });
 });
 

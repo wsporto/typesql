@@ -84,10 +84,32 @@ Options:
 | **client**             | Database client driver to use.                                                                                   | <ul><li>pg</li><li>mysql2</li><li>better-sqlite3</li><li>libsql</li><li>bun:sqlite</li><li>d1</li></ul> |
 | **databaseUri**        | Connection string for the database. Supports environment variables (`${VAR_NAME}`).                              | <ul><li>mysql://root:password@localhost/mydb</li><li>./database.sqlite</li></ul>                        |
 | **sqlDir**             | Where SQL queries are located. A directory (or directory glob) searches recursively — `**/*.sql` is appended automatically. A pattern already ending in `.sql` is used as-is for full control over which files match. | <ul><li>`./src`</li><li>`./src/**/queries`</li><li>`./src/**/*.query.sql`</li></ul> |
+| **outDir**             | Where generated code is written. A bare name is resolved against each query's own directory; an explicitly rooted path is a single output tree mirroring `sqlDir`. Defaults to writing each file next to its query. | <ul><li>`gen`</li><li>`./generated`</li></ul> |
 | **authToken**          | Authentication token. Required **only for the `libsql` client**. Supports environment variables (`${VAR_NAME}`). |                                                                                                         |
 | **includeCrudTables**  | Generates `select`, `insert`, `update`, and `delete` queries for specified tables.                               | `['users', 'permissions', 'tags']`                                                                      |
 | **generateIndexFiles** | Whether to recursively generate index.ts barrel files in each output folder. Defaults to true if not specified.  | true                                                                                                    |
 | **fileHeader**         | Text prepended verbatim to every generated TypeScript file — queries, CRUD files and index files. An array is written one entry per line. Generated `.sql` files are not affected. | <ul><li>`"// AUTO-GENERATED - DO NOT EDIT"`</li><li>`["/* eslint-disable */", "// @ts-nocheck"]`</li></ul> |
+
+`outDir` is read by shape. A **bare name** keeps every query folder's output local to it, which pairs well with a `sqlDir` glob:
+
+```json
+{
+    "sqlDir": "./src/**/queries",
+    "outDir": "gen"
+}
+```
+
+```
+src/users/queries/get-user.sql    ->  src/users/queries/gen/get-user.ts
+src/posts/queries/get-post.sql    ->  src/posts/queries/gen/get-post.ts
+```
+
+An **explicitly rooted path** (`./generated`, `../out`, or an absolute path) collects everything into one tree instead, mirroring the structure beneath `sqlDir`:
+
+```
+src/users/queries/get-user.sql    ->  generated/users/queries/get-user.ts
+src/posts/queries/get-post.sql    ->  generated/posts/queries/get-post.ts
+```
 
 Because the header is written verbatim, it must already be valid TypeScript — typesql does not add comment markers:
 
