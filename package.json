@@ -35,7 +35,7 @@
 		"@types/pg": "^8.20.0",
 		"@types/pg-copy-streams": "^1.2.5",
 		"@types/yargs": "^17.0.35",
-		"mocha": "^10.8.2",
+		"mocha": "^12.0.3",
 		"pg": "^8.20.0",
 		"pg-copy-streams": "^6.0.6",
 		"prettier": "^3.8.3",
