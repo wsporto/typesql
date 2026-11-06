@@ -6,7 +6,8 @@ import { createSqliteClient, ForeignKeyInfo, loadDbSchema, selectSqliteTablesFro
 import { DatabaseClient, MySqlClient, SQLiteClient, TypeSqlDialect, TypeSqlError } from './types';
 import {
 	loadDbSchema as loadPostgresDbSchema, loadForeignKeys as loadPostgresForeignKeys,
-	loadEnumsMap as loadPostgresEnumsMap, loadUserFunctions as loadPostgresUserFunctions, loadCheckConstraints as loadPostgresCheckConstraints
+	loadEnumsMap as loadPostgresEnumsMap, loadUserFunctions as loadPostgresUserFunctions, loadCheckConstraints as loadPostgresCheckConstraints,
+	loadFunctionStrictness as loadPostgresFunctionStrictness
 } from './drivers/postgres';
 import { okAsync, ResultAsync } from 'neverthrow';
 import { Either, right } from 'fp-ts/lib/Either';
@@ -27,6 +28,7 @@ export type PostgresSchemaInfo = {
 	userFunctions: UserFunctionSchema[];
 	enumTypes: EnumMap;
 	checkConstraints: CheckConstraintResult;
+	functionStrictness: Map<string, boolean>;
 }
 
 export function createClient(databaseUri: string, dialect: TypeSqlDialect, attach?: string[], loadExtensions?: string[], authToken?: string): ResultAsync<DatabaseClient, TypeSqlError> {
@@ -82,15 +84,17 @@ function _loadPostgresSchemaInfo(client: Sql, schemas: string[] | null): ResultA
 	const enumTypesResult = loadPostgresEnumsMap(client);
 	const userFunctionsResult = loadPostgresUserFunctions(client, schemas);
 	const checkConstraintsResult = loadPostgresCheckConstraints(client);
-	const schemaInfo = ResultAsync.combine([schemaResult, foreignKeysResult, enumTypesResult, userFunctionsResult, checkConstraintsResult])
-		.map(([schema, foreignKeys, enumTypes, userFunctions, checkConstraints]) => {
+	const functionStrictnessResult = loadPostgresFunctionStrictness(client);
+	const schemaInfo = ResultAsync.combine([schemaResult, foreignKeysResult, enumTypesResult, userFunctionsResult, checkConstraintsResult, functionStrictnessResult])
+		.map(([schema, foreignKeys, enumTypes, userFunctions, checkConstraints, functionStrictness]) => {
 			const result: PostgresSchemaInfo = {
 				kind: 'pg',
 				columns: schema,
 				foreignKeys,
 				userFunctions,
 				enumTypes,
-				checkConstraints
+				checkConstraints,
+				functionStrictness
 			}
 			return result;
 		});

@@ -18,11 +18,11 @@ import { replaceOrderByParamWithPlaceholder, replaceOrderByPlaceholderWithBuildO
 
 function describeQueryRefine(describeParameters: DescribeParameters): Result<PostgresSchemaDef, TypeSqlError> {
 	const { sql, postgresDescribeResult, namedParameters, schemaInfo } = describeParameters;
-	const { columns: dbSchema, enumTypes, userFunctions, checkConstraints } = schemaInfo;
+	const { columns: dbSchema, enumTypes, userFunctions, checkConstraints, functionStrictness } = schemaInfo;
 	const generateNestedInfo = hasAnnotation(sql, '@nested');
 	const generateDynamicQueryInfo = hasAnnotation(sql, '@dynamicQuery');
 
-	const parseResult = safeParseSql(sql, dbSchema, checkConstraints, userFunctions, { collectNestedInfo: generateNestedInfo, collectDynamicQueryInfo: generateDynamicQueryInfo });
+	const parseResult = safeParseSql(sql, dbSchema, checkConstraints, userFunctions, { collectNestedInfo: generateNestedInfo, collectDynamicQueryInfo: generateDynamicQueryInfo }, functionStrictness);
 	if (parseResult.isErr()) {
 		return err({
 			name: 'ParserError',

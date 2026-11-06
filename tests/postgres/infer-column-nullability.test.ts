@@ -2193,4 +2193,72 @@ describe('Infer column nullability', () => {
 		}
 		assert.deepStrictEqual(actual, expected);
 	});
+
+	it('strict function with NOT NULL arg: SELECT abs(id) FROM mytable1', () => {
+		const sql = 'SELECT abs(id) FROM mytable1';
+		const strictness = new Map([['abs', true]]);
+		const actual = parseSql(sql, dbSchema, {}, [], undefined, strictness);
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'abs',
+				is_nullable: false,
+				table: '',
+				schema: '',
+				type: 'unknown'
+			}
+		];
+		assert.deepStrictEqual(actual.columns, expected);
+	});
+
+	it('strict function with nullable arg: SELECT abs(value) FROM mytable1', () => {
+		const sql = 'SELECT abs(value) FROM mytable1';
+		const strictness = new Map([['abs', true]]);
+		const actual = parseSql(sql, dbSchema, {}, [], undefined, strictness);
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'abs',
+				is_nullable: true,
+				table: '',
+				schema: '',
+				type: 'unknown'
+			}
+		];
+		assert.deepStrictEqual(actual.columns, expected);
+	});
+
+	it('strict function without strictness data falls back to nullable', () => {
+		const sql = 'SELECT abs(id) FROM mytable1';
+		const actual = parseSql(sql, dbSchema, {}, []);
+		const expected: NotNullInfo[] = [
+			{
+				column_name: 'abs',
+				is_nullable: true,
+				table: '',
+				schema: '',
+				type: 'unknown'
+			}
+		];
+		assert.deepStrictEqual(actual.columns, expected);
+	});
+
+	it('strict function with multiple args, all NOT NULL', () => {
+		const sql = 'SELECT replace(name, name, name) FROM mytable2 WHERE name IS NOT NULL';
+		const strictness = new Map([['replace', true]]);
+		const actual = parseSql(sql, dbSchema, {}, [], undefined, strictness);
+		assert.strictEqual(actual.columns[0].is_nullable, false);
+	});
+
+	it('strict function with multiple args, one nullable', () => {
+		const sql = 'SELECT replace(name, descr, name) FROM mytable2 WHERE name IS NOT NULL';
+		const strictness = new Map([['replace', true]]);
+		const actual = parseSql(sql, dbSchema, {}, [], undefined, strictness);
+		assert.strictEqual(actual.columns[0].is_nullable, true);
+	});
+
+	it('non-strict function stays nullable even with NOT NULL args', () => {
+		const sql = 'SELECT abs(id) FROM mytable1';
+		const strictness = new Map([['abs', false]]);
+		const actual = parseSql(sql, dbSchema, {}, [], undefined, strictness);
+		assert.strictEqual(actual.columns[0].is_nullable, true);
+	});
 });

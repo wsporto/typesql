@@ -215,6 +215,26 @@ export function loadForeignKeys(sql: Sql): ResultAsync<ForeignKeyInfo[], TypeSql
 	)();
 }
 
+export function loadFunctionStrictness(sql: Sql): ResultAsync<Map<string, boolean>, TypeSqlError> {
+	return ResultAsync.fromThrowable(
+		async () => {
+			const result = await sql<{ function_name: string; is_strict: boolean }[]>`
+				SELECT
+					p.proname AS function_name,
+					bool_and(p.proisstrict) AS is_strict
+				FROM pg_proc p
+				WHERE p.prokind = 'f'
+				GROUP BY p.proname`;
+			const map = new Map<string, boolean>();
+			for (const row of result) {
+				map.set(row.function_name, row.is_strict);
+			}
+			return map;
+		},
+		err => convertPostgresErrorToTypeSQLError(err)
+	)();
+}
+
 export function loadUserFunctions(sql: Sql, schemas: string[] | null = null): ResultAsync<UserFunctionSchema[], TypeSqlError> {
 	return ResultAsync.fromThrowable(() =>
 		_loadUserFunctions(sql, schemas),

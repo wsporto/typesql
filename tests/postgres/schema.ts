@@ -1170,7 +1170,8 @@ export function createSchemaInfo(): PostgresSchemaInfo {
 		foreignKeys: [],
 		userFunctions,
 		enumTypes: enumMap,
-		checkConstraints
+		checkConstraints,
+		functionStrictness: new Map()
 	}
 	return schemaInfo;
 }

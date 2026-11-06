@@ -5,10 +5,10 @@ import { Result, err, ok } from 'neverthrow';
 import { CheckConstraintResult } from '../drivers/postgres';
 import { UserFunctionSchema } from './types';
 
-export function parseSql(sql: string, dbSchema: PostgresColumnSchema[], checkConstraints: CheckConstraintResult, userFunctions: UserFunctionSchema[], options = defaultOptions()): PostgresTraverseResult {
+export function parseSql(sql: string, dbSchema: PostgresColumnSchema[], checkConstraints: CheckConstraintResult, userFunctions: UserFunctionSchema[], options = defaultOptions(), functionStrictness: Map<string, boolean> = new Map()): PostgresTraverseResult {
 	const parser = _parseSql(sql);
 
-	const traverseResult = traverseSmt(parser.stmt(), dbSchema, checkConstraints, userFunctions, options);
+	const traverseResult = traverseSmt(parser.stmt(), dbSchema, checkConstraints, userFunctions, options, functionStrictness);
 
 	return {
 		...traverseResult,
@@ -16,9 +16,9 @@ export function parseSql(sql: string, dbSchema: PostgresColumnSchema[], checkCon
 	};
 }
 
-export function safeParseSql(sql: string, dbSchema: PostgresColumnSchema[], checkConstraints: CheckConstraintResult, userFunctions: UserFunctionSchema[], options = defaultOptions()): Result<PostgresTraverseResult, string> {
+export function safeParseSql(sql: string, dbSchema: PostgresColumnSchema[], checkConstraints: CheckConstraintResult, userFunctions: UserFunctionSchema[], options = defaultOptions(), functionStrictness: Map<string, boolean> = new Map()): Result<PostgresTraverseResult, string> {
 	try {
-		const result = parseSql(sql, dbSchema, checkConstraints, userFunctions, options);
+		const result = parseSql(sql, dbSchema, checkConstraints, userFunctions, options, functionStrictness);
 		return ok(result);
 	}
 	catch (e) {

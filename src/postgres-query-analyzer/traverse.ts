@@ -64,6 +64,7 @@ type TraverseContext = {
 	withColumns: NotNullInfo[];
 	checkConstraints: CheckConstraintResult;
 	userFunctions: UserFunctionSchema[],
+	functionStrictness: Map<string, boolean>;
 	propagatesNull?: boolean;
 	collectNestedInfo: boolean;
 	collectDynamicQueryInfo: boolean;
@@ -93,7 +94,7 @@ export function defaultOptions(): TraverseOptions {
 	};
 }
 
-export function traverseSmt(stmt: StmtContext, dbSchema: PostgresColumnSchema[], checkConstraints: CheckConstraintResult, userFunctions: UserFunctionSchema[], options: TraverseOptions): PostgresTraverseResult {
+export function traverseSmt(stmt: StmtContext, dbSchema: PostgresColumnSchema[], checkConstraints: CheckConstraintResult, userFunctions: UserFunctionSchema[], options: TraverseOptions, functionStrictness: Map<string, boolean> = new Map()): PostgresTraverseResult {
 	const { collectNestedInfo = false, collectDynamicQueryInfo = false } = options;
 
 	const traverseResult: TraverseResult = {
@@ -120,7 +121,8 @@ export function traverseSmt(stmt: StmtContext, dbSchema: PostgresColumnSchema[],
 		parentColumns: [],
 		withColumns: [],
 		checkConstraints,
-		userFunctions
+		userFunctions,
+		functionStrictness
 	}
 	const selectstmt = stmt.selectstmt();
 	if (selectstmt) {
@@ -1550,6 +1552,16 @@ function traversefunc_application(func_application: Func_applicationContext, con
 		};
 	}
 
+	if (context.functionStrictness.get(functionName)) {
+		return {
+			column_name: functionName,
+			is_nullable: argsResult.length > 0 ? argsResult.some(col => col.is_nullable) : true,
+			table: '',
+			schema: '',
+			type: 'unknown'
+		};
+	}
+
 	return {
 		column_name: functionName,
 		is_nullable: true,
@@ -2333,6 +2345,7 @@ function traverseInsertstmt(insertstmt: InsertstmtContext, dbSchema: PostgresCol
 		withColumns: [],
 		checkConstraints: {},
 		userFunctions: [],
+		functionStrictness: new Map(),
 		collectNestedInfo: false,
 		collectDynamicQueryInfo: false
 	}
@@ -2399,6 +2412,7 @@ function traverseDeletestmt(deleteStmt: DeletestmtContext, dbSchema: PostgresCol
 		withColumns: [],
 		checkConstraints: {},
 		userFunctions: [],
+		functionStrictness: new Map(),
 		collectNestedInfo: false,
 		collectDynamicQueryInfo: false
 	}
