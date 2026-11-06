@@ -51,7 +51,7 @@
 		"code-block-writer": "^13.0.3",
 		"dotenv": "^17.4.2",
 		"fp-ts": "^2.16.11",
-		"glob": "^11.1.0",
+		"glob": "^14.0.4",
 		"libsql": "^0.4.7",
 		"lodash.uniqby": "^4.7.0",
 		"moment": "^2.30.1",
