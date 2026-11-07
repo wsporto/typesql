@@ -187,6 +187,15 @@ export type TypeSqlConfig = {
 	 * Defaults to true if not specified.
 	 */
 	generateIndexFiles?: boolean;
+	/**
+	 * Text prepended verbatim to every generated TypeScript file, for banners such as
+	 * `// AUTO-GENERATED - DO NOT EDIT` or directives such as `/* eslint-disable *\/`.
+	 * An array is joined with newlines, one entry per line. Generated `.sql` files are
+	 * not affected.
+	 */
+	fileHeader?: string | string[];
 };
+
+export type FileHeader = TypeSqlConfig['fileHeader'];
 
 export type SqlGenOption = 'select' | 's' | 'insert' | 'i' | 'update' | 'u' | 'delete' | 'd';

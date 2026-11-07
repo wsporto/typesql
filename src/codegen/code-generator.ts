@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path, { parse } from 'node:path';
 import { PostgresSchemaInfo, SchemaInfo } from '../schema-info';
-import { DatabaseClient, TypeSqlError } from '../types';
+import { DatabaseClient, FileHeader, TypeSqlError } from '../types';
 import { generateTsFileFromContent } from './mysql2';
 import { Either, isLeft, left, right } from 'fp-ts/lib/Either';
 import { validateAndGenerateCode } from './sqlite';
@@ -9,7 +9,7 @@ import { generateCode } from './pg';
 import { ColumnSchema } from '../mysql-query-analyzer/types';
 import { convertToCamelCaseName } from './shared/codegen-util';
 
-export async function generateTsFile(client: DatabaseClient, sqlFile: string, tsFilePath: string, schemaInfo: SchemaInfo | PostgresSchemaInfo, isCrudFile: boolean) {
+export async function generateTsFile(client: DatabaseClient, sqlFile: string, tsFilePath: string, schemaInfo: SchemaInfo | PostgresSchemaInfo, isCrudFile: boolean, fileHeader?: FileHeader) {
 	const sqlContent = fs.readFileSync(sqlFile, 'utf8');
 
 	if (sqlContent.trim() === '') {
@@ -31,12 +31,12 @@ export async function generateTsFile(client: DatabaseClient, sqlFile: string, ts
 	if (isLeft(tsContentResult)) {
 		console.error('ERROR: ', tsContentResult.left.description);
 		console.error('at ', sqlFile);
-		writeFile(tsFilePath, '//Invalid SQL');
+		writeTsFile(tsFilePath, '//Invalid SQL', fileHeader);
 		return;
 	}
 	const tsContent = tsContentResult.right;
 
-	writeFile(tsFilePath, tsContent);
+	writeTsFile(tsFilePath, tsContent, fileHeader);
 }
 
 export async function generateTypeScriptContent(params: {
@@ -63,8 +63,38 @@ export async function generateTypeScriptContent(params: {
 	}
 }
 
+/**
+ * Skips the write when the file already holds this exact content, leaving its mtime alone.
+ * Rewriting an unchanged file wakes every watcher pointed at the output (nodemon, tsc -w,
+ * bundlers), which then rebuild for nothing - and in watch mode that can loop.
+ */
 export function writeFile(filePath: string, tsContent: string) {
+	if (isUpToDate(filePath, tsContent)) {
+		return;
+	}
 	const dir = path.dirname(filePath);
 	fs.mkdirSync(dir, { recursive: true });
 	fs.writeFileSync(filePath, tsContent);
+}
+
+function isUpToDate(filePath: string, tsContent: string): boolean {
+	try {
+		return fs.readFileSync(filePath).equals(Buffer.from(tsContent));
+	} catch {
+		return false; // missing or unreadable - write it
+	}
+}
+
+export function writeTsFile(filePath: string, tsContent: string, fileHeader: FileHeader) {
+	writeFile(filePath, applyFileHeader(tsContent, fileHeader));
+}
+
+/**
+ * Prepends the configured header to generated TypeScript. The header is written verbatim -
+ * it is the user's own comment or directive - followed by a single newline.
+ */
+export function applyFileHeader(tsContent: string, fileHeader: FileHeader): string {
+	const header = Array.isArray(fileHeader) ? fileHeader.join('\n') : fileHeader ?? '';
+
+	return header.trim() === '' ? tsContent : `${header}\n${tsContent}`;
 }
