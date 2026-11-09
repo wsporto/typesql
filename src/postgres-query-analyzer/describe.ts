@@ -76,10 +76,20 @@ function describeQueryRefine(describeParameters: DescribeParameters): Result<Pos
 	return ok(descResult);
 }
 
+function stripNullabilitySuffix(name: string): string {
+	if (name.endsWith('!')) {
+		return name.slice(0, -1);
+	}
+	if (name.endsWith('?') && !name.startsWith('?')) {
+		return name.slice(0, -1);
+	}
+	return name;
+}
+
 function mapToColumnInfo(collectNestedInfo: boolean, col: DescribeQueryColumn, posgresTypes: PostgresTypeHash, enumTypes: EnumMap, checkConstraints: CheckConstraintResult, colInfo: NotNullInfo): PostgresColumnInfo {
 	const constraintKey = `[${colInfo.schema}][${colInfo.table}][${colInfo.column_name}]`;
 	const columnInfo: PostgresColumnInfo = {
-		name: col.name,
+		name: stripNullabilitySuffix(col.name),
 		notNull: !colInfo.is_nullable,
 		type: createType(col.typeId, posgresTypes, enumTypes.get(col.typeId), checkConstraints[constraintKey], colInfo.jsonType),
 		table: colInfo.table

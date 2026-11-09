@@ -526,11 +526,13 @@ function traverse_target_el(target_el: Target_elContext, context: TraverseContex
 		const colLabel = target_el.colLabel();
 		const alias = colLabel != null ? get_colid_text(colLabel) : '';
 
-		if (alias) {
+		const { cleanAlias, nullabilityOverride } = parseNullabilityOverride(alias);
+
+		if (cleanAlias) {
 			traverseResult.relations?.forEach(relation => {
 				if ((relation.name === exprResult.table || relation.alias === exprResult.table)
 					&& relation.joinColumn === exprResult.column_name) {
-					relation.joinColumn = alias;
+					relation.joinColumn = cleanAlias;
 				}
 			})
 		}
@@ -544,9 +546,10 @@ function traverse_target_el(target_el: Target_elContext, context: TraverseContex
 				parameters
 			})
 		}
+		const is_nullable = nullabilityOverride !== undefined ? nullabilityOverride : exprResult.is_nullable;
 		return {
-			column_name: alias || exprResult.column_name,
-			is_nullable: exprResult.is_nullable,
+			column_name: cleanAlias || exprResult.column_name,
+			is_nullable,
 			table: exprResult.table,
 			schema: exprResult.schema,
 			type: exprResult.type,
@@ -556,6 +559,16 @@ function traverse_target_el(target_el: Target_elContext, context: TraverseContex
 		};
 	}
 	throw Error('Column not found');
+}
+
+function parseNullabilityOverride(alias: string): { cleanAlias: string; nullabilityOverride: boolean | undefined } {
+	if (alias.endsWith('!')) {
+		return { cleanAlias: alias.slice(0, -1), nullabilityOverride: false };
+	}
+	if (alias.endsWith('?')) {
+		return { cleanAlias: alias.slice(0, -1), nullabilityOverride: true };
+	}
+	return { cleanAlias: alias, nullabilityOverride: undefined };
 }
 
 function traverse_a_expr(a_expr: A_exprContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
