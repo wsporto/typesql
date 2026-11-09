@@ -2261,4 +2261,32 @@ describe('Infer column nullability', () => {
 		const actual = parseSql(sql, dbSchema, {}, [], undefined, strictness);
 		assert.strictEqual(actual.columns[0].is_nullable, true);
 	});
+
+	it('escape hatch ! suffix forces non-nullable', () => {
+		const sql = 'SELECT value AS "value!" FROM mytable1';
+		const actual = parseSql(sql, dbSchema, {}, []);
+		assert.strictEqual(actual.columns[0].is_nullable, false);
+		assert.strictEqual(actual.columns[0].column_name, 'value');
+	});
+
+	it('escape hatch ? suffix forces nullable', () => {
+		const sql = 'SELECT id AS "id?" FROM mytable1';
+		const actual = parseSql(sql, dbSchema, {}, []);
+		assert.strictEqual(actual.columns[0].is_nullable, true);
+		assert.strictEqual(actual.columns[0].column_name, 'id');
+	});
+
+	it('escape hatch ! on nullable function result', () => {
+		const sql = "SELECT regexp_match(name, 'pattern') AS \"match!\" FROM mytable2 WHERE name IS NOT NULL";
+		const actual = parseSql(sql, dbSchema, {}, []);
+		assert.strictEqual(actual.columns[0].is_nullable, false);
+		assert.strictEqual(actual.columns[0].column_name, 'match');
+	});
+
+	it('alias without suffix has no override effect', () => {
+		const sql = 'SELECT value AS val FROM mytable1';
+		const actual = parseSql(sql, dbSchema, {}, []);
+		assert.strictEqual(actual.columns[0].is_nullable, true);
+		assert.strictEqual(actual.columns[0].column_name, 'val');
+	});
 });
