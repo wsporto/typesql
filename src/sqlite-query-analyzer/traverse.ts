@@ -384,7 +384,11 @@ function traverse_table_or_subquery(
 	table_or_subquery_list.forEach((table_or_subquery, index) => {
 		const numParamsBefore = traverseContext.parameters.length;
 
-		const isLeftJoin = index > 0 && join_operator_list ? join_operator_list[index - 1]?.LEFT_() != null : false;
+		//grammar error: in "FROM table1 LEFT JOIN table2", LEFT is parsed as the alias of table1 and the join operator is only JOIN
+		const isLeftJoin =
+			index > 0 && join_operator_list
+				? join_operator_list[index - 1]?.LEFT_() != null || getJoinKeywordParsedAsAlias(table_or_subquery_list[index - 1]) === 'left'
+				: false;
 		const table_function_name = table_or_subquery.table_function_name();
 		const table_name = table_or_subquery.table_name() || table_function_name;
 		const table_alias_temp = table_or_subquery.table_alias()?.getText() || '';
@@ -394,15 +398,7 @@ function traverse_table_or_subquery(
 
 		//grammar error: select * from table1 inner join table2....; inner is parsed as table_alias
 		const table_alias =
-			table_alias_temp.toLowerCase() === 'left' ||
-				table_alias_temp.toLowerCase() === 'right' ||
-				table_alias_temp.toLowerCase() === 'full' ||
-				table_alias_temp.toLowerCase() === 'outer' ||
-				table_alias_temp.toLowerCase() === 'inner' ||
-				table_alias_temp.toLowerCase() === 'cross' ||
-				table_alias_temp.match(virtualTableMatch)
-				? ''
-				: table_alias_temp;
+			getJoinKeywordParsedAsAlias(table_or_subquery) != null || table_alias_temp.match(virtualTableMatch) ? '' : table_alias_temp;
 
 		const join_constraint = join_constraint_list && index > 0 ? join_constraint_list[index - 1] : undefined;
 		const asAlias = table_or_subquery.AS_() || false;
@@ -1886,6 +1882,17 @@ export function isMultipleRowResult(select_stmt: Select_stmtContext, dbSchema: C
 		}
 	}
 	return true;
+}
+
+const joinKeywords = ['left', 'right', 'full', 'outer', 'inner', 'cross'];
+
+//Returns the join keyword (ex. 'left') when the parser read it as the table alias. "FROM t AS left JOIN ..." is a real alias.
+function getJoinKeywordParsedAsAlias(table_or_subquery: Table_or_subqueryContext): string | undefined {
+	if (table_or_subquery.AS_() != null) {
+		return undefined;
+	}
+	const alias = table_or_subquery.table_alias()?.getText().toLowerCase();
+	return alias != null && joinKeywords.includes(alias) ? alias : undefined;
 }
 
 function isAgregateFunction(result_column: Result_columnContext) {
