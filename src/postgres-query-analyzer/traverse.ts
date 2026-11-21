@@ -75,6 +75,41 @@ type TraverseContext = {
 	ignoreColumnRef?: boolean;
 }
 
+const STRICT_BUT_NULLABLE_FUNCTIONS = new Set([
+	'regexp_match',
+	'regexp_substr',
+	'array_length',
+	'array_upper',
+	'array_lower',
+	'array_position',
+	'json_object_field',
+	'jsonb_object_field',
+	'json_object_field_text',
+	'jsonb_object_field_text',
+	'json_array_element',
+	'jsonb_array_element',
+	'json_array_element_text',
+	'jsonb_array_element_text',
+	'json_extract_path',
+	'jsonb_extract_path',
+	'json_extract_path_text',
+	'jsonb_extract_path_text',
+	'jsonb_path_query_first',
+	'to_regclass',
+	'to_regtype',
+	'to_regproc',
+	'to_regnamespace',
+	'to_regrole',
+	'to_regoper',
+	'obj_description',
+	'col_description',
+	'shobj_description',
+	'pg_get_viewdef',
+	'pg_get_indexdef',
+	'pg_get_constraintdef',
+	'pg_get_serial_sequence',
+]);
+
 export type Relation3 = {
 	name: string;
 	alias: string;
@@ -784,6 +819,8 @@ function traverse_expr_like(a_expr_like: A_expr_likeContext, context: TraverseCo
 	throw Error('traverse_expr_like -  Not expected:' + a_expr_like.getText());
 }
 
+const NULLABLE_OPERATORS = new Set(['->', '->>', '#>', '#>>']);
+
 function traverse_expr_qual_op(a_expr_qual_op: A_expr_qual_opContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
 	const a_expr_unary_qualop = a_expr_qual_op.a_expr_unary_qualop_list();
 	if (a_expr_unary_qualop) {
@@ -791,9 +828,10 @@ function traverse_expr_qual_op(a_expr_qual_op: A_expr_qual_opContext, context: T
 		if (result.length === 1) {
 			return result[0];
 		}
+		const hasNullableOp = a_expr_qual_op.qual_op_list().some(op => NULLABLE_OPERATORS.has(op.getText()));
 		return {
 			column_name: '?column?',
-			is_nullable: result.some(col => col.is_nullable),
+			is_nullable: hasNullableOp || result.some(col => col.is_nullable),
 			table: '',
 			schema: '',
 			type: 'unknown'
@@ -1552,7 +1590,7 @@ function traversefunc_application(func_application: Func_applicationContext, con
 		};
 	}
 
-	if (context.functionStrictness.get(functionName)) {
+	if (context.functionStrictness.get(functionName) && !STRICT_BUT_NULLABLE_FUNCTIONS.has(functionName)) {
 		return {
 			column_name: functionName,
 			is_nullable: argsResult.length > 0 ? argsResult.some(col => col.is_nullable) : true,

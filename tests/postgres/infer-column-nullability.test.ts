@@ -2261,4 +2261,52 @@ describe('Infer column nullability', () => {
 		const actual = parseSql(sql, dbSchema, {}, [], undefined, strictness);
 		assert.strictEqual(actual.columns[0].is_nullable, true);
 	});
+
+	it('deny-listed strict function regexp_match is always nullable', () => {
+		const sql = "SELECT regexp_match(name, 'pattern') FROM mytable2 WHERE name IS NOT NULL";
+		const strictness = new Map([['regexp_match', true]]);
+		const actual = parseSql(sql, dbSchema, {}, [], undefined, strictness);
+		assert.strictEqual(actual.columns[0].is_nullable, true);
+	});
+
+	it('deny-listed strict function array_length is always nullable', () => {
+		const sql = 'SELECT array_length(ARRAY[1,2,3], 1) FROM mytable1';
+		const strictness = new Map([['array_length', true]]);
+		const actual = parseSql(sql, dbSchema, {}, [], undefined, strictness);
+		assert.strictEqual(actual.columns[0].is_nullable, true);
+	});
+
+	it('deny-listed strict function jsonb_extract_path is always nullable', () => {
+		const sql = "SELECT jsonb_extract_path('{\"a\": 1}'::jsonb, 'a') FROM mytable1";
+		const strictness = new Map([['jsonb_extract_path', true]]);
+		const actual = parseSql(sql, dbSchema, {}, [], undefined, strictness);
+		assert.strictEqual(actual.columns[0].is_nullable, true);
+	});
+
+	it('deny-listed strict function to_regclass is always nullable', () => {
+		const sql = "SELECT to_regclass('pg_class') FROM mytable1";
+		const strictness = new Map([['to_regclass', true]]);
+		const actual = parseSql(sql, dbSchema, {}, [], undefined, strictness);
+		assert.strictEqual(actual.columns[0].is_nullable, true);
+	});
+
+	it('non-deny-listed strict function with NOT NULL arg is not nullable', () => {
+		const sql = 'SELECT lower(name) FROM mytable2 WHERE name IS NOT NULL';
+		const strictness = new Map([['lower', true]]);
+		const actual = parseSql(sql, dbSchema, {}, [], undefined, strictness);
+		assert.strictEqual(actual.columns[0].is_nullable, false);
+	});
+
+	it('JSON -> operator is always nullable', () => {
+		const sql = "SELECT name::jsonb -> 'key' FROM mytable2 WHERE name IS NOT NULL";
+		const actual = parseSql(sql, dbSchema, {}, []);
+		assert.strictEqual(actual.columns[0].is_nullable, true);
+	});
+
+	it('JSON ->> operator is always nullable', () => {
+		const sql = "SELECT name::jsonb ->> 'key' FROM mytable2 WHERE name IS NOT NULL";
+		const actual = parseSql(sql, dbSchema, {}, []);
+		assert.strictEqual(actual.columns[0].is_nullable, true);
+	});
+
 });
