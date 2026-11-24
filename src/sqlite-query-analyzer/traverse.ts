@@ -114,9 +114,9 @@ function traverse_select_stmt(
 		}
 	}
 
-	unionSelect.forEach((select_core) => {
-		const unionResult = traverse_select_core(select_core, traverseContext, subQuery, recursive);
-		unionResult.columns.forEach((col, colIndex) => {
+	const unionResult = unionSelect.map((select_core) => {
+		const selectResult = traverse_select_core(select_core, traverseContext, subQuery, recursive);
+		selectResult.columns.forEach((col, colIndex) => {
 			mainQueryResult.columns[colIndex].table = '';
 			traverseContext.constraints.push({
 				expression: 'UNION',
@@ -124,13 +124,20 @@ function traverse_select_stmt(
 				type2: col.type
 			});
 		});
+		return selectResult;
 	});
+
+	const resultColumns = mainQueryResult.columns.map((col, colIndex) => ({
+		...col,
+		notNull: [col, ...unionResult.map(result => result.columns[colIndex])]
+			.every(column => column.notNull)
+	}));
 
 	const sortedParameters = traverseContext.parameters.sort((param1, param2) => param1.paramIndex - param2.paramIndex);
 	const selectResult: SelectResult = {
 		queryType: 'Select',
 		parameters: sortedParameters,
-		columns: mainQueryResult.columns,
+		columns: resultColumns,
 		multipleRowsResult: isMultipleRowResult(select_stmt, traverseContext.dbSchema, mainQueryResult.fromColumns),
 		relations: traverseContext.relations,
 		dynamicQueryInfo: traverseContext.dynamicSqlInfo2,
@@ -139,7 +146,7 @@ function traverse_select_stmt(
 	const order_by_stmt = select_stmt.order_by_stmt();
 	let hasOrderByParameter = false;
 	if (order_by_stmt) {
-		const selectColumns = mainQueryResult.columns.map((col, index) => mapTypeAndNullInferToColumnDef(col, recursiveNames[index]));
+		const selectColumns = resultColumns.map((col, index) => mapTypeAndNullInferToColumnDef(col, recursiveNames[index]));
 		const ordering_term_list = order_by_stmt.ordering_term_list();
 		ordering_term_list.forEach((ordering_term) => {
 			const expr = ordering_term.expr();
@@ -153,7 +160,7 @@ function traverse_select_stmt(
 			}
 		});
 		if (hasOrderByParameter) {
-			const orderByColumns = getOrderByColumns(mainQueryResult.fromColumns, mainQueryResult.columns);
+			const orderByColumns = getOrderByColumns(mainQueryResult.fromColumns, resultColumns);
 			selectResult.orderByColumns = orderByColumns;
 		}
 	}
