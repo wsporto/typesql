@@ -6,7 +6,7 @@ import { safeParseSql } from './parser';
 import { replacePostgresParams } from '../sqlite-query-analyzer/replace-list-params';
 import { ok, Result, ResultAsync, err } from 'neverthrow';
 import { postgresTypes } from '../dialects/postgres';
-import { NotNullInfo, PostgresTraverseResult } from './traverse';
+import { NotNullInfo, outputColumnName, PostgresTraverseResult } from './traverse';
 import { describeNestedQuery } from '../sqlite-query-analyzer/sqlite-describe-nested-query';
 import { isLeft } from 'fp-ts/lib/Either';
 import { hasAnnotation, preprocessSql } from '../describe-query';
@@ -76,20 +76,12 @@ function describeQueryRefine(describeParameters: DescribeParameters): Result<Pos
 	return ok(descResult);
 }
 
-function stripNullabilitySuffix(name: string): string {
-	if (name.endsWith('!')) {
-		return name.slice(0, -1);
-	}
-	if (name.endsWith('?') && !name.startsWith('?')) {
-		return name.slice(0, -1);
-	}
-	return name;
-}
-
 function mapToColumnInfo(collectNestedInfo: boolean, col: DescribeQueryColumn, posgresTypes: PostgresTypeHash, enumTypes: EnumMap, checkConstraints: CheckConstraintResult, colInfo: NotNullInfo): PostgresColumnInfo {
-	const constraintKey = `[${colInfo.schema}][${colInfo.table}][${colInfo.column_name}]`;
+	const constraintKey = `[${colInfo.schema}][${colInfo.table}][${outputColumnName(colInfo)}]`;
+	// Strip the suffix only if Postgres reports the same name (-t."id!" is "?column?").
+	const name = colInfo.has_nullability_suffix && col.name === colInfo.column_name ? outputColumnName(colInfo) : col.name;
 	const columnInfo: PostgresColumnInfo = {
-		name: stripNullabilitySuffix(col.name),
+		name,
 		notNull: !colInfo.is_nullable,
 		type: createType(col.typeId, posgresTypes, enumTypes.get(col.typeId), checkConstraints[constraintKey], colInfo.jsonType),
 		table: colInfo.table

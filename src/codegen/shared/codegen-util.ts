@@ -120,7 +120,8 @@ export function renameInvalidNames(columnNames: string[]): string[] {
 }
 
 export function escapeInvalidTsField(columnName: string) {
-	const validPattern = /^[a-zA-Z0-9_$]+$/g;
+	// An identifier or a plain number.
+	const validPattern = /^([a-zA-Z_$][a-zA-Z0-9_$]*|0|[1-9][0-9]*)$/;
 	if (!validPattern.test(columnName)) {
 		return `"${columnName}"`;
 	}

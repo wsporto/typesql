@@ -1,4 +1,4 @@
-import { A_expr_addContext, A_expr_andContext, A_expr_at_time_zoneContext, A_expr_betweenContext, A_expr_caretContext, A_expr_collateContext, A_expr_compareContext, A_expr_inContext, A_expr_is_notContext, A_expr_isnullContext, A_expr_lesslessContext, A_expr_likeContext, A_expr_mulContext, A_expr_orContext, A_expr_qual_opContext, A_expr_qualContext, A_expr_typecastContext, A_expr_unary_notContext, A_expr_unary_qualopContext, A_expr_unary_signContext, A_exprContext, AexprconstContext, Array_expr_listContext, Array_exprContext, C_expr_caseContext, C_expr_existsContext, C_expr_exprContext, C_exprContext, Case_defaultContext, ColidContext, ColumnElemContext, ColumnrefContext, Common_table_exprContext, CopystmtContext, DeletestmtContext, Expr_listContext, From_clauseContext, From_listContext, Func_applicationContext, Func_arg_exprContext, Func_expr_common_subexprContext, Func_expr_windowlessContext, Func_exprContext, Func_tableContext, IdentifierContext, In_expr_listContext, In_expr_selectContext, In_exprContext, IndirectionContext, Insert_column_itemContext, InsertstmtContext, Join_qualContext, Join_typeContext, Qualified_nameContext, Relation_exprContext, Select_clauseContext, Select_no_parensContext, Select_with_parensContext, SelectstmtContext, Set_clauseContext, Simple_select_intersectContext, Simple_select_pramaryContext, StmtContext, Table_refContext, Target_elContext, Target_labelContext, Target_listContext, Unreserved_keywordContext, UpdatestmtContext, Values_clauseContext, When_clauseContext, Where_clauseContext, With_clauseContext, With_clause_Context } from '@wsporto/typesql-parser/postgres/PostgreSQLParser';
+import { A_expr_addContext, A_expr_andContext, A_expr_at_time_zoneContext, A_expr_betweenContext, A_expr_caretContext, A_expr_collateContext, A_expr_compareContext, A_expr_inContext, A_expr_is_notContext, A_expr_isnullContext, A_expr_lesslessContext, A_expr_likeContext, A_expr_mulContext, A_expr_orContext, A_expr_qual_opContext, A_expr_qualContext, A_expr_typecastContext, A_expr_unary_notContext, A_expr_unary_qualopContext, A_expr_unary_signContext, A_exprContext, AexprconstContext, Array_expr_listContext, Array_exprContext, C_expr_caseContext, C_expr_existsContext, C_expr_exprContext, C_exprContext, Case_defaultContext, ColidContext, ColumnElemContext, ColumnrefContext, Common_table_exprContext, CopystmtContext, DeletestmtContext, Expr_listContext, From_clauseContext, From_listContext, Func_applicationContext, Func_arg_exprContext, Func_expr_common_subexprContext, Func_expr_windowlessContext, Func_exprContext, Func_tableContext, IdentifierContext, In_expr_listContext, In_expr_selectContext, In_exprContext, IndirectionContext, Insert_column_itemContext, InsertstmtContext, Join_qualContext, Join_typeContext, NameContext, Qualified_nameContext, Relation_exprContext, Select_clauseContext, Select_no_parensContext, Select_with_parensContext, SelectstmtContext, Set_clauseContext, Simple_select_intersectContext, Simple_select_pramaryContext, StmtContext, Table_refContext, Target_elContext, Target_labelContext, Target_listContext, Unreserved_keywordContext, UpdatestmtContext, Values_clauseContext, When_clauseContext, Where_clauseContext, With_clauseContext, With_clause_Context } from '@wsporto/typesql-parser/postgres/PostgreSQLParser';
 import { ParserRuleContext } from '@wsporto/typesql-parser';
 import { PostgresColumnSchema } from '../drivers/types';
 import { extractOriginalSql, splitName, splitTableName } from '../mysql-query-analyzer/select-columns';
@@ -23,6 +23,10 @@ export type NotNullInfo = {
 	type: PostgresSimpleType;
 	jsonType?: JsonType;
 	recordTypes?: NotNullInfo[];
+	// Set by a `!`/`?` alias suffix; re-applied after a UNION merges nullability.
+	nullability_override?: boolean;
+	// column_name ends in a `!`/`?` suffix. Postgres keeps it; only the generated name drops it.
+	has_nullability_suffix?: boolean;
 }
 
 
@@ -92,6 +96,44 @@ export function defaultOptions(): TraverseOptions {
 		collectNestedInfo: false,
 		collectDynamicQueryInfo: false
 	};
+}
+
+// "name!" forces NOT NULL, "name?" forces nullable. "!", "?" and "?column?" are plain names.
+function parseNullabilitySuffix(name: string): { baseName: string; isNullable: boolean } | undefined {
+	if (name.length < 2 || name === '?column?') {
+		return undefined;
+	}
+	if (name.endsWith('!')) {
+		return { baseName: name.slice(0, -1), isNullable: false };
+	}
+	if (name.endsWith('?')) {
+		return { baseName: name.slice(0, -1), isNullable: true };
+	}
+	return undefined;
+}
+
+export function outputColumnName(col: NotNullInfo): string {
+	if (!col.has_nullability_suffix) {
+		return col.column_name;
+	}
+	return parseNullabilitySuffix(col.column_name)?.baseName ?? col.column_name;
+}
+
+// A suffix on the new name forces nullability; one on the old name is dropped.
+function renameColumn(col: NotNullInfo, name: string): NotNullInfo {
+	const { nullability_override: _override, has_nullability_suffix: _suffix, ...rest } = col;
+	const suffix = parseNullabilitySuffix(name);
+	return {
+		...rest,
+		column_name: name,
+		...(suffix && { is_nullable: suffix.isNullable, nullability_override: suffix.isNullable, has_nullability_suffix: true })
+	};
+}
+
+// Unquote only suffixed column-list names, e.g. WITH t("b!") AS (...).
+function get_column_list_name(name: NameContext): string {
+	const unquoted = get_colid_text(name.colid());
+	return parseNullabilitySuffix(unquoted) ? unquoted : name.getText();
 }
 
 export function traverseSmt(stmt: StmtContext, dbSchema: PostgresColumnSchema[], checkConstraints: CheckConstraintResult, userFunctions: UserFunctionSchema[], options: TraverseOptions, functionStrictness: Map<string, boolean> = new Map()): PostgresTraverseResult {
@@ -221,9 +263,9 @@ function traverse_with_clause(with_clause: With_clauseContext, context: Traverse
 	with_clause.cte_list().common_table_expr_list()
 		.forEach(common_table_expr => {
 			const recursiveTableName = with_clause.RECURSIVE() ? common_table_expr.name().getText() : undefined;
-			const recursiveColumnNames = common_table_expr.name_list_()?.name_list()?.name_list()?.map(name => name.getText());
+			const recursiveColumnNames = common_table_expr.name_list_()?.name_list()?.name_list()?.map(get_column_list_name);
 			const withResult = traverse_common_table_expr(common_table_expr, { ...context, recursiveTableName, recursiveColumnNames }, traverseResult);
-			const columns = recursiveColumnNames ? withResult.map((col, index) => ({ ...col, column_name: recursiveColumnNames[index] ?? col.column_name })) : withResult;
+			const columns = recursiveColumnNames ? withResult.map((col, index) => recursiveColumnNames[index] !== undefined ? renameColumn(col, recursiveColumnNames[index]) : col) : withResult;
 			context.withColumns.push(...columns);
 		});
 }
@@ -340,17 +382,24 @@ function traverse_select_clause(select_clause: Select_clauseContext, context: Tr
 	//union
 	const { recursiveTableName, recursiveColumnNames } = context;
 	const recursiveColumns = recursiveTableName ? mainSelectResult.columns
-		.map((col, index) => ({ ...col, table: recursiveTableName, column_name: recursiveColumnNames?.[index] ?? col.column_name } satisfies NotNullInfo)) : [];
+		.map((col, index) => {
+			const recursiveColumn = { ...col, table: recursiveTableName } satisfies NotNullInfo;
+			const columnName = recursiveColumnNames?.[index];
+			return columnName !== undefined ? renameColumn(recursiveColumn, columnName) : recursiveColumn;
+		}) : [];
 	for (let index = 1; index < simple_select_intersect_list.length; index++) {
 		const unionResult = traverse_simple_select_intersect(simple_select_intersect_list[index], { ...context, fromColumns: context.fromColumns.concat(recursiveColumns) }, traverseResult);
 		columns = columns.map((value, columnIndex) => {
 			const col: NotNullInfo = {
 				column_name: value.column_name,
-				is_nullable: value.is_nullable || unionResult.columns[columnIndex].is_nullable,
+				// The first branch's suffix wins over the merged nullability.
+				is_nullable: value.nullability_override ?? (value.is_nullable || unionResult.columns[columnIndex].is_nullable),
 				table: '',
 				schema: '',
 				type: value.type,
 				...(value.column_default && { column_default: value.column_default }),
+				...(value.nullability_override !== undefined && { nullability_override: value.nullability_override }),
+				...(value.has_nullability_suffix && { has_nullability_suffix: value.has_nullability_suffix }),
 			}
 			return col;
 		});
@@ -499,9 +548,10 @@ function traverse_target_list(target_list: Target_listContext, context: Traverse
 			const columns = filterColumns(context.fromColumns, fieldName);
 			if (context.collectDynamicQueryInfo) {
 				columns.forEach(col => {
+					const columnRef = col.has_nullability_suffix ? `${col.table}."${col.column_name}"` : `${col.table}.${col.column_name}`;
 					traverseResult.dynamicQueryInfo?.select.push({
-						fragment: `${col.table}.${col.column_name}`,
-						fragmentWitoutAlias: `${col.table}.${col.column_name}`,
+						fragment: columnRef,
+						fragmentWitoutAlias: columnRef,
 						dependOnRelations: [col.table],
 						parameters: []
 					});
@@ -523,16 +573,26 @@ function traverse_target_el(target_el: Target_elContext, context: TraverseContex
 		const a_expr = target_el.a_expr();
 		const numParamsBefore = traverseResult.parameters.length;
 		const exprResult = traverse_a_expr(a_expr, context, traverseResult);
-		const colLabel = target_el.colLabel();
-		const alias = colLabel != null ? get_colid_text(colLabel) : '';
+		const alias = get_target_label_alias(target_el);
+		const exprColumn: NotNullInfo = {
+			column_name: exprResult.column_name,
+			is_nullable: exprResult.is_nullable,
+			table: exprResult.table,
+			schema: exprResult.schema,
+			type: exprResult.type,
+			...(exprResult.column_default != null) && { column_default: exprResult.column_default },
+			...(exprResult.column_key != null && { column_key: exprResult.column_key }),
+			...(exprResult.jsonType != null && { jsonType: exprResult.jsonType }),
+			// t."id!"::text keeps the suffixed name; coalesce(t."id!", 0) doesn't.
+			...(exprResult.has_nullability_suffix && parseNullabilitySuffix(exprResult.column_name) && { has_nullability_suffix: true })
+		};
+		const column = alias ? renameColumn(exprColumn, alias) : exprColumn;
 
-		const { cleanAlias, nullabilityOverride } = parseNullabilityOverride(alias);
-
-		if (cleanAlias) {
+		if (alias) {
 			traverseResult.relations?.forEach(relation => {
 				if ((relation.name === exprResult.table || relation.alias === exprResult.table)
-					&& relation.joinColumn === exprResult.column_name) {
-					relation.joinColumn = cleanAlias;
+					&& relation.joinColumn === outputColumnName(exprResult)) {
+					relation.joinColumn = outputColumnName(column);
 				}
 			})
 		}
@@ -546,29 +606,20 @@ function traverse_target_el(target_el: Target_elContext, context: TraverseContex
 				parameters
 			})
 		}
-		const is_nullable = nullabilityOverride !== undefined ? nullabilityOverride : exprResult.is_nullable;
-		return {
-			column_name: cleanAlias || exprResult.column_name,
-			is_nullable,
-			table: exprResult.table,
-			schema: exprResult.schema,
-			type: exprResult.type,
-			...(exprResult.column_default != null) && { column_default: exprResult.column_default },
-			...(exprResult.column_key != null && { column_key: exprResult.column_key }),
-			...(exprResult.jsonType != null && { jsonType: exprResult.jsonType })
-		};
+		return column;
 	}
 	throw Error('Column not found');
 }
 
-function parseNullabilityOverride(alias: string): { cleanAlias: string; nullabilityOverride: boolean | undefined } {
-	if (alias.endsWith('!')) {
-		return { cleanAlias: alias.slice(0, -1), nullabilityOverride: false };
+// A bare label (`expr "label!"`) is only used when it has a suffix.
+function get_target_label_alias(target_label: Target_labelContext): string {
+	const colLabel = target_label.colLabel();
+	if (colLabel != null) {
+		return get_colid_text(colLabel);
 	}
-	if (alias.endsWith('?')) {
-		return { cleanAlias: alias.slice(0, -1), nullabilityOverride: true };
-	}
-	return { cleanAlias: alias, nullabilityOverride: undefined };
+	const bareIdentifier = target_label.bareColLabel()?.identifier();
+	const bareLabel = bareIdentifier != null ? get_identifier_text(bareIdentifier) : '';
+	return parseNullabilitySuffix(bareLabel) ? bareLabel : '';
 }
 
 function traverse_a_expr(a_expr: A_exprContext, context: TraverseContext, traverseResult: TraverseResult): NotNullInfo {
@@ -1112,9 +1163,12 @@ function traversec_expr(c_expr: C_exprContext, context: TraverseContext, travers
 			const result = traverse_select_with_parens(select_with_parens, { ...context, parentColumns: context.fromColumns, fromColumns: [] }, traverseResult);
 			const jsonType = result.columns[0].jsonType;
 			const is_nullable = jsonType == null ? true : jsonType.name !== 'json[]' && jsonType.name !== 'json_map'; //json[], json_map are not nullable
+			// Keep a suffixed name so the field drops the suffix; the subquery stays nullable.
+			const suffixed = result.columns[0].has_nullability_suffix === true;
 
 			return {
-				column_name: '?column?',
+				column_name: suffixed ? result.columns[0].column_name : '?column?',
+				...(suffixed && { has_nullability_suffix: true }),
 				is_nullable,
 				table: '',
 				schema: '',
@@ -1183,6 +1237,7 @@ function filterColumns(fromColumns: NotNullInfo[], fieldName: FieldName): NotNul
 				...(col.column_key !== undefined) && { column_key: col.column_key },
 				...(col.jsonType !== undefined) && { jsonType: col.jsonType },
 				...(col.original_is_nullable !== undefined && { original_is_nullable: col.original_is_nullable }),
+				...(col.has_nullability_suffix && { has_nullability_suffix: col.has_nullability_suffix }),
 			}
 			return result;
 		});
@@ -1834,7 +1889,7 @@ function traverse_table_ref(table_ref: Table_refContext, context: TraverseContex
 				alias: alias,
 				renameAs,
 				parentRelation: '',
-				joinColumn: key[0]?.column_name || '',
+				joinColumn: key[0] ? outputColumnName(key[0]) : '',
 				cardinality: 'one',
 				parentCardinality: 'one'
 			}
@@ -1926,14 +1981,13 @@ function traverse_select_with_parens_or_func_table(tableRef: Table_refContext, c
 	const select_with_parens = tableRef.select_with_parens();
 	if (select_with_parens) {
 		const columns = traverse_select_with_parens(select_with_parens, { ...context, collectDynamicQueryInfo: false }, traverseResult);
-		const aliasNameList = tableRef.alias_clause()?.name_list()?.name_list()?.map(name => name.getText());
+		const aliasNameList = tableRef.alias_clause()?.name_list()?.name_list()?.map(get_column_list_name);
 		const alias = tableRef.alias_clause()?.colid().getText() ?? '';
-		const withAlias = columns.columns.map((col, i) => (
-			{
-				...col,
-				column_name: aliasNameList?.[i] || col.column_name,
-				table: alias || col.table
-			}) satisfies NotNullInfo);
+		const withAlias = columns.columns.map((col, i) => {
+			const withTable = { ...col, table: alias || col.table } satisfies NotNullInfo;
+			const columnName = aliasNameList?.[i];
+			return columnName !== undefined ? renameColumn(withTable, columnName) : withTable;
+		});
 		return {
 			columns: withAlias,
 			singleRow: false
@@ -2849,7 +2903,7 @@ function isSingleRowResult(selectstmt: SelectstmtContext, fromColumns: NotNullIn
 	const where_clause = simple_select_pramary.where_clause();
 	if (where_clause) {
 		const uniqueKeys = fromColumns.filter(col => col.column_key === 'PRI' || col.column_key === 'UNI')
-			.map(col => col.column_name);
+			.map(col => outputColumnName(col));
 		return isSingleRowResult_where(where_clause.a_expr(), uniqueKeys)
 	}
 	return false;

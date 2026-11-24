@@ -23,6 +23,8 @@ describe('rename invalid names', () => {
 		assert.deepStrictEqual(escapeInvalidTsField('id+id'), '"id+id"'); //escaped
 		assert.deepStrictEqual(escapeInvalidTsField('id + id'), '"id + id"'); //escaped
 		assert.deepStrictEqual(escapeInvalidTsField('count(*)'), '"count(*)"'); //escaped
+		assert.deepStrictEqual(escapeInvalidTsField('1a'), '"1a"'); //escaped
+		assert.deepStrictEqual(escapeInvalidTsField('01'), '"01"'); //escaped
 	});
 
 	it('rename/escape column names', async () => {

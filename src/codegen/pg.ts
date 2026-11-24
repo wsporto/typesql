@@ -1,5 +1,5 @@
 import CodeBlockWriter from 'code-block-writer';
-import { capitalize, convertToCamelCaseName, generateRelationType, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor, writeNestedTypes, writeCollectFunction, writeGroupByFunction, createTypeNames, createCodeBlockWriter, writeDynamicQueryParamType, writeSelectFragements, writeSql } from './shared/codegen-util';
+import { capitalize, convertToCamelCaseName, escapeInvalidTsField, generateRelationType, removeDuplicatedParameters2, renameInvalidNames, TsDescriptor, writeNestedTypes, writeCollectFunction, writeGroupByFunction, createTypeNames, createCodeBlockWriter, writeDynamicQueryParamType, writeSelectFragements, writeSql } from './shared/codegen-util';
 import { CrudQueryType, PgDielect, QueryType, TsFieldDescriptor, TsParameterDescriptor, TypeSqlError } from '../types';
 import { describeQuery } from '../postgres-query-analyzer/describe';
 import { mapper } from '../dialects/postgres';
@@ -249,7 +249,8 @@ function writeResultType(writer: CodeBlockWriter, resultTypeName: string, column
 }
 
 function createJsonType(capitalizedName: string, columnName: string) {
-	const jsonType = capitalize(convertToCamelCaseName(columnName));
+	// JSON keys can contain characters like "!".
+	const jsonType = capitalize(convertToCamelCaseName(columnName.replace(/[^A-Za-z0-9_$]/g, '_')));
 	const fullName = `${capitalizedName}${jsonType}`;
 	return fullName;
 }
@@ -257,17 +258,18 @@ function createJsonType(capitalizedName: string, columnName: string) {
 function writeJsonTypes(writer: CodeBlockWriter, typeName: string, type: JsonObjType) {
 	writer.write(`export type ${typeName}Type =`).block(() => {
 		type.properties.forEach((field) => {
+			const key = escapeInvalidTsField(field.key);
 			if (isJsonObjType(field.type)) {
 				const nullable = field.type.notNull ? '' : ' | null';
 				const jsonTypeName = createJsonType(typeName, field.key);
-				writer.writeLine(`${field.key}: ${jsonTypeName}Type${nullable};`);
+				writer.writeLine(`${key}: ${jsonTypeName}Type${nullable};`);
 			} else if (isJsonArrayType(field.type)) {
 				const jsonParentName = createJsonType(typeName, field.key);
 				const jsonTypeName = createJsonArrayType(jsonParentName, field.type);
-				writer.writeLine(`${field.key}: ${jsonTypeName};`);
+				writer.writeLine(`${key}: ${jsonTypeName};`);
 			} else if (isJsonFieldType(field.type)) {
 				const nullable = field.type.notNull ? '' : ' | null';
-				writer.writeLine(`${field.key}: ${mapper.mapColumnType(field.type.type, true)}${nullable};`);
+				writer.writeLine(`${key}: ${mapper.mapColumnType(field.type.type, true)}${nullable};`);
 			}
 		});
 	});
@@ -555,9 +557,7 @@ function getColumnsForQuery(capitalizedName: string, schemaDef: PostgresSchemaDe
 
 function toDriver(variableData: string, param: TsFieldDescriptor) {
 	if (param.tsType === 'Date') {
-		if (param.notNull && !param.optional) {
-			return `new Date(${variableData})`;
-		}
+		// Guarded even when notNull: new Date(null) is 1970-01-01.
 		return `${variableData} != null ? new Date(${variableData}) : ${variableData}`;
 	}
 	if (param.tsType === 'boolean') {
