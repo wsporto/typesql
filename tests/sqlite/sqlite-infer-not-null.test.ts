@@ -93,6 +93,28 @@ describe('sqlite-infer-not-null.test', () => {
 
 		assert.deepStrictEqual(actual, [true]);
 	});
+
+	it('SELECT id AS val FROM mytable1 UNION SELECT value FROM mytable1', () => {
+		const sql = 'SELECT id AS val FROM mytable1 UNION SELECT value FROM mytable1'; // not null union null
+		const result = parseSql(sql, sqliteDbSchema);
+		if (isLeft(result)) {
+			assert.fail(`Shouldn't return an error: ${result.left.description}`);
+		}
+		const actual = getColumnNullability(result.right.columns);
+
+		assert.deepStrictEqual(actual, [false]);
+	});
+
+	it('SELECT id AS val FROM mytable1 UNION SELECT value FROM mytable1 where value is not null', () => {
+		const sql = 'SELECT id AS val FROM mytable1 UNION SELECT value FROM mytable1 where value is not null'; // not null union not null
+		const result = parseSql(sql, sqliteDbSchema);
+		if (isLeft(result)) {
+			assert.fail(`Shouldn't return an error: ${result.left.description}`);
+		}
+		const actual = getColumnNullability(result.right.columns);
+
+		assert.deepStrictEqual(actual, [true]);
+	});
 });
 
 function getColumnNullability(columns: ColumnInfo[]) {
