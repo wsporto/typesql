@@ -115,6 +115,17 @@ describe('sqlite-infer-not-null.test', () => {
 
 		assert.deepStrictEqual(actual, [true]);
 	});
+
+	it('SELECT id AS val FROM mytable1 UNION SELECT value FROM mytable1 where value is not null', () => {
+		const sql = 'SELECT max(id) AS max, min(id) AS min, avg(id) AS avg, sum(id) AS sum FROM mytable1 WHERE id > 999';
+		const result = parseSql(sql, sqliteDbSchema);
+		if (isLeft(result)) {
+			assert.fail(`Shouldn't return an error: ${result.left.description}`);
+		}
+		const actual = getColumnNullability(result.right.columns);
+
+		assert.deepStrictEqual(actual, [false, false, false, false]);
+	});
 });
 
 function getColumnNullability(columns: ColumnInfo[]) {

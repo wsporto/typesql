@@ -1000,7 +1000,7 @@ function traverse_function(expr: ExprContext, function_name: string, traverseCon
 		return {
 			name: functionType.name,
 			type: functionType,
-			notNull: paramType.notNull,
+			notNull: false,
 			table: functionType.table || ''
 		};
 	}
@@ -1017,12 +1017,8 @@ function traverse_function(expr: ExprContext, function_name: string, traverseCon
 	}
 	if (function_name === 'min' || function_name === 'max') {
 		const functionType = freshVar(expr.getText(), '?');
-		let paramNotNull: boolean | undefined = false;
 		const paramsTypes = expr.expr_list().map((exprParam, index, array) => {
 			const paramType = traverse_expr(exprParam, traverseContext);
-			// if (array.length == 1 && index == 0) {
-			// 	paramNotNull = paramType.notNull;
-			// }
 			traverseContext.constraints.push({
 				expression: expr.getText(),
 				type1: functionType,
@@ -1031,10 +1027,11 @@ function traverse_function(expr: ExprContext, function_name: string, traverseCon
 			return paramType;
 		})
 
+		const isAggFunction = paramsTypes.length == 1;
 		return {
 			name: functionType.name,
 			type: functionType,
-			notNull: paramsTypes.every(param => param.notNull),
+			notNull: isAggFunction ? false : paramsTypes.every(param => param.notNull),
 			table: functionType.table || ''
 		};
 	}
