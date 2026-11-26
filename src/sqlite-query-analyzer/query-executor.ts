@@ -7,6 +7,7 @@ import type { EnumColumnMap, EnumMap, SQLiteType } from './types';
 import { enumParser } from './enum-parser';
 import { virtualTablesSchema } from './virtual-tables';
 import { err, ok, Result } from 'neverthrow';
+import { checkAffinity } from './type-affinity';
 
 export function createSqliteClient(client: 'better-sqlite3' | 'bun:sqlite' | 'd1', databaseUri: string, attachList: string[], loadExtensions: string[]): Result<DatabaseClient, TypeSqlError> {
 	const db = new Database(databaseUri);
@@ -94,22 +95,6 @@ export function getTables(db: DatabaseType | LibSqlDatabase, schema: string): Ta
 
 function getTableType(rootpage: number | null): TableAndType['type'] {
 	return rootpage != null && rootpage !== 0 ? 'T' : 'VT';
-}
-
-function checkAffinity(type: string): SQLiteType {
-	if (type.includes('INT')) {
-		return 'INTEGER';
-	}
-	if (type.includes('CHAR') || type.includes('CLOB') || type.includes('TEXT')) {
-		return 'TEXT';
-	}
-	if (type === '' || type.includes('BLOB')) {
-		return 'BLOB';
-	}
-	if (type.includes('REAL') || type.includes('FLOA') || type.includes('DOUB')) {
-		return 'REAL';
-	}
-	return 'NUMERIC';
 }
 
 function loadDbSchemaForSchema(db: DatabaseType | LibSqlDatabase, schema: '' | string = ''): Result<ColumnSchema[], TypeSqlError> {
