@@ -54,6 +54,51 @@ describe('sqlite-infer-not-null.test', () => {
 		assert.deepStrictEqual(actual, [true, false]);
 	});
 
+	it('left join after a cross join, a comma join and a join without ON', () => {
+		//the ON belongs to the left join, not to the join before it
+		const sqls = [
+			'select t1.id, t2.id as id2, t3.id as id3 from mytable1 t1 CROSS JOIN mytable2 t2 LEFT JOIN mytable3 t3 ON t3.id = t2.id',
+			'select t1.id, t2.id as id2, t3.id as id3 from mytable1 t1, mytable2 t2 LEFT JOIN mytable3 t3 ON t3.id = t2.id',
+			'select t1.id, t2.id as id2, t3.id as id3 from mytable1 t1 JOIN mytable2 t2 LEFT JOIN mytable3 t3 ON t3.id = t2.id',
+			'select t1.id, t2.id as id2, t3.id as id3 from mytable1 t1 NATURAL JOIN mytable2 t2 LEFT JOIN mytable3 t3 ON t3.id = t1.id'
+		];
+		for (const sql of sqls) {
+			const result = parseSql(sql, sqliteDbSchema);
+			if (isLeft(result)) {
+				assert.fail(
+					`Shouldn't return an error: ${result.left.description} (${sql})`
+				);
+			}
+			assert.deepStrictEqual(
+				getColumnNullability(result.right.columns),
+				[true, true, false],
+				sql
+			);
+		}
+	});
+
+	it('select * with a left join using after a cross join', () => {
+		const sql =
+			'select * from mytable1 t1 CROSS JOIN mytable2 t2 LEFT JOIN mytable3 t3 USING (id)';
+		const result = parseSql(sql, sqliteDbSchema);
+		if (isLeft(result)) {
+			assert.fail(`Shouldn't return an error: ${result.left.description}`);
+		}
+		//same columns as sqlite: t3.id is merged into the USING column
+		assert.deepStrictEqual(
+			result.right.columns.map((col) => [col.name, col.notNull]),
+			[
+				['id', true],
+				['value', false],
+				['id', true],
+				['name', false],
+				['descr', false],
+				['double_value', false],
+				['name', false]
+			]
+		);
+	});
+
 	it('select from mytable1 as left join: left is an alias, so this is an inner join', () => {
 		//sqlite: "from a as left join b" is "a" aliased as "left", then a plain JOIN
 		const sql = `

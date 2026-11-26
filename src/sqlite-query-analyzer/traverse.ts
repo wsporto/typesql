@@ -2,17 +2,18 @@ import {
 	type Select_stmtContext,
 	type Sql_stmtContext,
 	ExprContext,
-	type Table_or_subqueryContext,
+	Table_or_subqueryContext,
 	type Result_columnContext,
 	type Insert_stmtContext,
 	Column_nameContext,
 	type Update_stmtContext,
 	type Delete_stmtContext,
-	type Join_constraintContext,
+	Join_constraintContext,
 	type Table_nameContext,
 	type Join_operatorContext,
 	type Returning_clauseContext,
-	type Select_coreContext
+	type Select_coreContext,
+	type Join_clauseContext
 } from '@wsporto/typesql-parser/sqlite';
 import type { ColumnDef, ColumnSchema, ExtensionFunctionCatalog, FieldName, TraverseContext, TypeAndNullInfer, TypeAndNullInferParam } from '../mysql-query-analyzer/types';
 import { filterColumns, findColumn, getExpressions, includeColumn, splitName } from '../mysql-query-analyzer/select-columns';
@@ -228,7 +229,7 @@ function traverse_select_core(
 	const join_clause = select_core.join_clause();
 	if (join_clause) {
 		const join_table_or_subquery = join_clause.table_or_subquery_list();
-		const join_constraint_list = join_clause.join_constraint_list();
+		const join_constraint_list = getJoinConstraintsByTable(join_clause);
 		const join_operator_list = join_clause.join_operator_list();
 		const fields = traverse_table_or_subquery(join_table_or_subquery, join_constraint_list, join_operator_list, traverseContext);
 		columnsResult.push(...fields);
@@ -381,9 +382,26 @@ function extractRelationsAndParams(expr: ExprContext, fromColumns: ColumnDef[], 
 	};
 }
 
+// join_clause.join_constraint_list() only has the joins with ON/USING, so it does not line up with
+// the tables once a join has none (CROSS JOIN, a comma, NATURAL JOIN, a plain JOIN). Element i is
+// the constraint of the join that adds table i: undefined for the first table and joins without one.
+function getJoinConstraintsByTable(join_clause: Join_clauseContext): (Join_constraintContext | undefined)[] {
+	const constraints: (Join_constraintContext | undefined)[] = [];
+	let tableIndex = -1;
+	for (const child of join_clause.children ?? []) {
+		if (child instanceof Table_or_subqueryContext) {
+			tableIndex++;
+			constraints[tableIndex] = undefined;
+		} else if (child instanceof Join_constraintContext) {
+			constraints[tableIndex] = child;
+		}
+	}
+	return constraints;
+}
+
 function traverse_table_or_subquery(
 	table_or_subquery_list: Table_or_subqueryContext[],
-	join_constraint_list: Join_constraintContext[] | null,
+	join_constraint_list: (Join_constraintContext | undefined)[] | null,
 	join_operator_list: Join_operatorContext[] | null,
 	traverseContext: TraverseContext
 ): ColumnDef[] {
@@ -407,7 +425,7 @@ function traverse_table_or_subquery(
 		const table_alias =
 			getJoinKeywordParsedAsAlias(table_or_subquery) != null || table_alias_temp.match(virtualTableMatch) ? '' : table_alias_temp;
 
-		const join_constraint = join_constraint_list && index > 0 ? join_constraint_list[index - 1] : undefined;
+		const join_constraint = join_constraint_list ? join_constraint_list[index] : undefined;
 		const asAlias = table_or_subquery.AS_() || false;
 		const tableAlias = table_or_subquery.table_alias()?.getText();
 		const tableOrSubqueryName = table_name ? table_name.any_name().getText() : '';
