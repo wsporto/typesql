@@ -31,6 +31,7 @@ import type { Relation2 } from './sqlite-describe-nested-query';
 import { type Either, left, right } from 'fp-ts/lib/Either';
 import type { TypeSqlError } from '../types';
 import type { ParserRuleContext } from '@wsporto/typesql-parser';
+import { checkAffinity } from './type-affinity';
 
 function traverse_Sql_stmtContext(sql_stmt: Sql_stmtContext, traverseContext: TraverseContext): TraverseResult2 {
 	const select_stmt = sql_stmt.select_stmt();
@@ -938,6 +939,21 @@ function traverse_expr(expr: ExprContext, traverseContext: TraverseContext): Typ
 			notNull: true,
 			table: type.table || ''
 		};
+	}
+	if (expr.CAST_()) {
+		const castExprType = traverse_expr(expr.expr(0), traverseContext);
+		//CAST(value AS TEXT)
+		//CAST(value AS DOUBLE PRECISION)
+		//CAST(value AS VARCHAR(255))
+		//CAST(value AS NUMERIC(12, 4))
+		const typeName = expr.type_name().getText();
+		const castType = checkAffinity(typeName);
+		return {
+			name: castExprType.name,
+			type: freshVar(expr.getText(), castType),
+			notNull: castExprType.notNull,
+			table: castExprType.table
+		}
 	}
 	const select_stmt = expr.select_stmt();
 	if (select_stmt) {

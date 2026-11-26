@@ -572,6 +572,51 @@ describe('sqlite-parse-select-functions', () => {
 		assert.deepStrictEqual(actual.right, expected);
 	});
 
+	it(`SELECT CAST(1 AS TEXT) as as_text, CAST('1' AS INTEGER) AS as_int ...`, async () => {
+		const sql = `
+			SELECT CAST(1 AS TEXT) as as_text, CAST('a' AS INTEGER) AS as_int, 
+			CAST('a' AS DOUBLE PRECISION) as as_double, CAST(2.0 AS DECIMAL(10, 2)) as as_numeric
+			`;
+		const actual = parseSql(sql, sqliteDbSchema);
+		const expected: SchemaDef = {
+			sql,
+			queryType: 'Select',
+			multipleRowsResult: false,
+			columns: [
+				{
+					name: 'as_text',
+					type: 'TEXT',
+					notNull: true,
+					table: ''
+				},
+				{
+					name: 'as_int',
+					type: 'INTEGER',
+					notNull: true,
+					table: ''
+				},
+				{
+					name: 'as_double',
+					type: 'REAL',
+					notNull: true,
+					table: ''
+				},
+				{
+					name: 'as_numeric',
+					type: 'NUMERIC',
+					notNull: true,
+					table: ''
+				}
+			],
+			parameters: []
+		};
+
+		if (isLeft(actual)) {
+			assert.fail(`Shouldn't return an error: ${actual.left.description}`);
+		}
+		assert.deepStrictEqual(actual.right, expected);
+	});
+
 	it('SELECT lower(?), upper(?)', () => {
 		const sql = `
 			SELECT lower(?), upper(?)
