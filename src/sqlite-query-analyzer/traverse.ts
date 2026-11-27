@@ -1950,6 +1950,12 @@ function isAgregateFunctionExpr(expr: ExprContext) {
 		return isAgrr;
 	}
 	const function_name = expr.function_name()?.getText().toLowerCase();
+	if (function_name === 'max' || function_name === 'min') {
+		const numberOfParams = expr.expr_list().length;
+		if (numberOfParams >= 2) {
+			return false;
+		}
+	}
 	return (
 		function_name === 'count' ||
 		function_name === 'sum' ||

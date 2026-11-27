@@ -347,7 +347,7 @@ describe('sqlite-parse-select-functions', () => {
 		const expected: SchemaDef = {
 			sql,
 			queryType: 'Select',
-			multipleRowsResult: false,
+			multipleRowsResult: true,
 			columns: [
 				{
 					name: 'max',
@@ -953,7 +953,7 @@ describe('sqlite-parse-select-functions', () => {
 		const expected: SchemaDef = {
 			sql,
 			queryType: 'Select',
-			multipleRowsResult: false,
+			multipleRowsResult: true,
 			columns: [
 				{
 					name: 'result',
@@ -994,7 +994,7 @@ describe('sqlite-parse-select-functions', () => {
 		const expected: SchemaDef = {
 			sql,
 			queryType: 'Select',
-			multipleRowsResult: false,
+			multipleRowsResult: true,
 			columns: [
 				{
 					name: 'result',
@@ -1039,7 +1039,7 @@ describe('sqlite-parse-select-functions', () => {
 			sql: sql.replace(':param1', '?').replace(':param1', '?')
 				.replace(':param2', '?').replace(':param2', '?'),
 			queryType: 'Select',
-			multipleRowsResult: false,
+			multipleRowsResult: true,
 			columns: [
 				{
 					name: 'result',
@@ -1090,7 +1090,7 @@ describe('sqlite-parse-select-functions', () => {
 		const expected: SchemaDef = {
 			sql: sql.replace(':param1', '?').replace(':param1', '?'),
 			queryType: 'Select',
-			multipleRowsResult: false,
+			multipleRowsResult: true,
 			columns: [
 				{
 					name: 'double_value',
@@ -1134,7 +1134,7 @@ describe('sqlite-parse-select-functions', () => {
 		const expected: SchemaDef = {
 			sql: sql.replace(':param1', '?').replace(':param1', '?'),
 			queryType: 'Select',
-			multipleRowsResult: false,
+			multipleRowsResult: true,
 			columns: [
 				{
 					name: 'name',
