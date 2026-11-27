@@ -51,7 +51,7 @@ deno syntax:
 
 - **Infer parameters and columns types.** `SELECT DATEDIFF(:date1, :date2) as days_stayed` will resolve the `date1` and `date2` parameters to the type `Date` and the function return type as `number`.
 
-- **Infer parameter and column nullability.** The nullable database column `email` will generate a nullable field for the query `SELECT email FROM mytable`, but will generate a non-nullable field for the query `SELECT email FROM mytable WHERE email is not null`;
+- **Infer parameter and column nullability.** The nullable database column `email` will generate a nullable field for the query `SELECT email FROM mytable`, but will generate a non-nullable field for the query `SELECT email FROM mytable WHERE email is not null`. On PostgreSQL you can override the inference with an alias suffix: `AS "name!"` (non-nullable) or `AS "name?"` (nullable). See [here](/docs/nullability-override.md);
 
 - **Infer the query return type (single row vs multiple rows).** If the `id` is a primary key or unique key, then function for the query `SELECT * FROM Books where id = :id` will return `Book|null`, instead of `Book[]`. The same is true for filters with LIMIT 1;
 
@@ -137,6 +137,8 @@ const updateResult = await updateProduct(...
 [LIKE](/docs/like.md)
 
 [Nested Query Result](/docs/nested-query-result.md)
+
+[Overriding nullability (PostgreSQL)](/docs/nullability-override.md)
 
 ## Project Status: Under Active Development
 
